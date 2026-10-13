@@ -19,6 +19,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   const result = await page.evaluate(async (root) => {
     const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
     const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+    const { normalizeActionCamSettings } = await import(
+      `/@fs/${root}/src/runtime/action-cam-settings.ts`
+    )
     const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
       `/@fs/${root}/src/config/gameplay-tuning.ts`
     )
@@ -44,6 +47,16 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       preview = false
     const runtime = {
       actionCamEnabled: true,
+      actionCamSettings: normalizeActionCamSettings({}),
+      setActionCamSettings: (patch: object) => {
+        runtime.actionCamSettings = normalizeActionCamSettings({
+          ...runtime.actionCamSettings,
+          ...patch,
+        })
+      },
+      resetActionCamSettings: () => {
+        runtime.actionCamSettings = normalizeActionCamSettings({})
+      },
       setActionCamEnabled: (enabled: boolean) => {
         runtime.actionCamEnabled = enabled
       },
@@ -73,6 +86,13 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setLensFlareAmount: () => {},
     }
     mountSettingsHud(runtime as never)
+    const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
+    roll.value = '2'
+    roll.dispatchEvent(new Event('input', { bubbles: true }))
+    const rollRadians = runtime.actionCamSettings.stepRollRadians
+    document.getElementById('action-cam-soft')!.click()
+    const softStride = runtime.actionCamSettings.strideMetres
+    document.getElementById('action-cam-reset')!.click()
     const actionCam = document.getElementById('camera-action-cam') as HTMLInputElement
     actionCam.checked = false
     actionCam.dispatchEvent(new Event('change', { bubbles: true }))
@@ -103,6 +123,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
         .filter(Boolean)
     return {
       before,
+      rollRadians,
+      softStride,
+      resetStride: runtime.actionCamSettings.strideMetres,
       actionCam: runtime.actionCamEnabled,
       actionCamPane: pane('camera-action-cam'),
       cameraControls: ['camera-first-person-mode', 'camera-action-cam', 'quality-tunnel'].map(
@@ -139,6 +162,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
   expect(result.actionCam).toBe(false)
+  expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
+  expect(result.softStride).toBe(2.8)
+  expect(result.resetStride).toBe(2.8)
   expect(result.actionCamPane).toBe('settings-pane-options')
   expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
   expect(result.smoke).toBe(false)

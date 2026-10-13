@@ -146,11 +146,7 @@ export class GameInput {
       frontBrake: bike && keys.has('Space') ? 1 : 0,
       sprint: shift || twin || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
       jump: false,
-      brake:
-        (bike ? pedal : keys.has('Space')) ||
-        analog.brake ||
-        touch.brake ||
-        driving.brake,
+      brake: (bike ? pedal : keys.has('Space')) || analog.brake || touch.brake || driving.brake,
       // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.
       riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
       riderForward: flight ? 0 : axis('KeyI', 'KeyL'),

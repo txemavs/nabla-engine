@@ -32,7 +32,7 @@ tree. Saving stores the authored document, not the runtime physics state.
 | Accelerate                                        | Shift                             |
 | Handbrake in vehicle                              | Space                             |
 | Enter / exit                                      | E                                 |
-| Camera cycle (incl. overhead / cinematic)         | C                                 |
+| Camera cycle (incl. overhead / cinematic)         | V                                 |
 | Overhead height / cinematic distance              | Mouse wheel                       |
 | Latch / release cargo                             | F                                 |
 | Transfer controls between latched car and carrier | T                                 |
@@ -540,3 +540,8 @@ is held neutral with the brake applied while the menu has focus. The colour chan
 is a normal scene edit; use **Save** to persist it. Retracting GPS with **G** closes
 the menu. Its layers and actions live in `src/catalog/monitors/car.ts`; the reusable
 monitor contract is documented in `src/render/monitors/README.md`.
+
+## Cámara y pistola
+
+Véase [controles de cámara y pistola](weapon-camera-controls.md) para C/C+Espacio,
+Q/E al apuntar, rueda independiente, corredera y preferencias guardadas.

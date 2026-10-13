@@ -68,3 +68,34 @@ it('stops when the play session is aborted', async () => {
   })
   expect(renderer.compileAsync).not.toHaveBeenCalled()
 })
+
+it('uses actual world lighting and removes warmup copies even when compilation fails', async () => {
+  const scene = new Scene(),
+    original = new Group(),
+    effect = new Group()
+  original.name = 'world'
+  scene.add(original)
+  effect.visible = false
+  const renderer = {
+    shadowMap: { autoUpdate: true, needsUpdate: false },
+    getRenderTarget: () => null,
+    setRenderTarget: vi.fn(),
+    compileAsync: async (target: Scene) => {
+      expect(target).toBe(scene)
+      expect(scene.children).toHaveLength(2)
+      expect(scene.children[1].visible).toBe(true)
+      throw new Error('compile failed')
+    },
+  }
+  await expect(
+    warmEffectPresentation(
+      renderer as unknown as WebGLRenderer,
+      new PerspectiveCamera(),
+      [effect],
+      scene,
+    ),
+  ).rejects.toThrow('compile failed')
+  expect(scene.children).toEqual([original])
+  expect(effect.visible).toBe(false)
+  expect(renderer.shadowMap).toEqual({ autoUpdate: true, needsUpdate: false })
+})

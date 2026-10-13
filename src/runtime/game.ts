@@ -255,12 +255,16 @@ export class GameRuntime {
       }
       return message
     }
-    if (code === 'KeyC') {
+    if (code === 'KeyV') {
       const seated = !!sim.player.vehicleId
       const view = cycleGameCamera(this.cameraState, seated)
       return this.text(cameraNotice[view === 'chase' && !seated ? 'third-person' : view])
     }
-    if (code === 'KeyV') return sim.toggleFlight()
+    if (code === 'KeyC') {
+      if (sim.player.vehicleId) return sim.toggleFlight()
+      sim.setStance(sim.stance === 'standing' ? 'crouching' : 'standing')
+      return sim.stance === 'standing' ? 'De pie' : 'Agachado'
+    }
     if (code === 'KeyF') return sim.toggleHitch() ?? sim.toggleDock()
     if (code === 'KeyM') return sim.cycleHelmMode()
     if (code === 'KeyB') return sim.automaticTransmission()

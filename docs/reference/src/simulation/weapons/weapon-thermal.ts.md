@@ -37,9 +37,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 
+## WeaponThermal.ruptured
+
+[Implementation, line 22](../../../../../src/simulation/weapons/weapon-thermal.ts#L22)
+
+Arcade thermal response; these temperatures are not real-world measurements.
+
+```ts
+ruptured(): boolean
+```
+
 ## WeaponThermal.reset
 
-[Implementation, line 23](../../../../../src/simulation/weapons/weapon-thermal.ts#L23)
+[Implementation, line 26](../../../../../src/simulation/weapons/weapon-thermal.ts#L26)
 
 Arcade thermal response; these temperatures are not real-world measurements.
 
@@ -49,7 +59,7 @@ reset(): void
 
 ## WeaponThermal.step
 
-[Implementation, line 27](../../../../../src/simulation/weapons/weapon-thermal.ts#L27)
+[Implementation, line 30](../../../../../src/simulation/weapons/weapon-thermal.ts#L30)
 
 Arcade thermal response; these temperatures are not real-world measurements.
 
@@ -65,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponThermal.shot
 
-[Implementation, line 36](../../../../../src/simulation/weapons/weapon-thermal.ts#L36)
+[Implementation, line 39](../../../../../src/simulation/weapons/weapon-thermal.ts#L39)
 
 Arcade thermal response; these temperatures are not real-world measurements.
 

@@ -509,7 +509,11 @@ export function updateGameCamera(
     camera.lookAt(shot.target)
     vehicleEntrance = null
   } else if (!p.vehicleId && eyes) {
-    camera.position.fromArray(p.position)
+    // The walking physics position is the body centre (0.9 m above the feet).
+    // Place the eyes at 1.65 m, following the local planetary up direction.
+    camera.position
+      .fromArray(p.position)
+      .add(new THREE.Vector3(0, sim.eyeOffset, 0).applyQuaternion(playerFrameQ))
     camera.quaternion
       .copy(playerFrameQ)
       .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))

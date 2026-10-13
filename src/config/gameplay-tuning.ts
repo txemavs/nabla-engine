@@ -92,8 +92,8 @@ export const weaponPoseDefaults: WeaponPoseTuning = {
   aimed: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
   inspect: { pitch: 11.2, yaw: -41, roll: -26.6, x: 0, y: 0, z: 0 },
   inspectAimed: { pitch: 29.6, yaw: -19.8, roll: -47.2, x: 0, y: 0, z: 0 },
-  chamber: { pitch: 48, yaw: -17.5, roll: 27.1, x: 0, y: 0, z: 0 },
-  chamberAimed: { pitch: 63, yaw: -22.2, roll: 12.7, x: 0, y: 0, z: 0 },
+  chamber: { pitch: 9, yaw: -16.1, roll: 14.7, x: -0.1, y: 64.7, z: 0.3 },
+  chamberAimed: { pitch: 7.3, yaw: -6.1, roll: 27.9, x: 0, y: 19.5, z: -90.1 },
 }
 
 export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.022, angle: -1.2 }
@@ -116,18 +116,18 @@ export const normalViewTuning = {
 /** Action cam walking motion: metres, radians and seconds. No post-processing. */
 export const actionCamTuning = {
   enabled: true,
-  strideMetres: 1.4,
+  strideMetres: 2.8,
   referenceSpeed: 4,
   maxSpeed: 8,
-  bobMetres: 0.026,
-  swayMetres: 0.014,
-  stepRollRadians: 0.011,
-  stepPitchRadians: 0.006,
-  strafeRollRadians: 0.018,
+  bobMetres: 0.012,
+  swayMetres: 0.007,
+  stepRollRadians: 0.005,
+  stepPitchRadians: 0.003,
+  strafeRollRadians: 0.012,
   turnLeanSeconds: 0.035,
-  maxTurnRollRadians: 0.06,
-  response: 9,
-  aimedScale: 0.22,
+  maxTurnRollRadians: 0.045,
+  response: 5,
+  aimedScale: 0.15,
 }
 export const weaponViewTuning = {
   slideLockHoldMs: 2000,

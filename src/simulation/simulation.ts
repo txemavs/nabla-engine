@@ -876,7 +876,7 @@ export class Simulation {
       riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
       riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
-    this.jumpPending ||= input.jump
+    this.jumpPending ||= input.jump && this.footStance === 'standing'
   }
   private displayedPose(body: Body): Transform {
     if (!body.mass) return pose(body)
@@ -1192,8 +1192,39 @@ export class Simulation {
       ...map,
     ])
   }
+  private footStance: 'standing' | 'crouching' | 'prone' = 'standing'
+  get stance(): 'standing' | 'crouching' | 'prone' {
+    return this.footStance
+  }
+  get eyeOffset(): number {
+    return this.footStance === 'standing' ? 0.75 : this.footStance === 'crouching' ? 0.4 : 0.15
+  }
+  setStance(next: 'standing' | 'crouching' | 'prone'): void {
+    if (this.vehicleId || next === this.footStance) return
+    const oldHalf = this.playerHalfHeight
+    this.footStance = next
+    const half = this.playerHalfHeight
+    this.playerBody.removeShape(this.playerBody.shapes[0])
+    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, half, PLAYER_RADIUS)))
+    this.playerBody.position.vadd(
+      this.radialUp(this.playerBody).scale(half - oldHalf),
+      this.playerBody.position,
+    )
+    this.playerBody.previousPosition.copy(this.playerBody.position)
+    this.playerBody.updateMassProperties()
+    this.playerBody.updateBoundingRadius()
+    this.playerBody.aabbNeedsUpdate = true
+    this.playerBody.wakeUp()
+    this.jumpPending = false
+  }
   private get playerHalfHeight(): number {
-    return this.options.playerMode === 'hover' ? 0.28 : PLAYER_HALF_HEIGHT
+    return this.footStance === 'prone'
+      ? 0.2
+      : this.footStance === 'crouching'
+        ? 0.5
+        : this.options.playerMode === 'hover'
+          ? 0.28
+          : PLAYER_HALF_HEIGHT
   }
 
   get playerFrame(): Transform | null {
@@ -1487,9 +1518,14 @@ export class Simulation {
         x /= len
         z /= len
       }
-      const speed = this.input.sprint
-        ? simulationDefaults.sprintSpeed
-        : simulationDefaults.walkSpeed
+      const speed =
+        this.footStance === 'prone'
+          ? 1
+          : this.footStance === 'crouching'
+            ? 2
+            : this.input.sprint
+              ? simulationDefaults.sprintSpeed
+              : simulationDefaults.walkSpeed
       const c = Math.cos(this.input.yaw),
         s = Math.sin(this.input.yaw)
       const platformVelocity = new Vec3()

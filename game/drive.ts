@@ -134,6 +134,27 @@ try {
       },
     ]
   }
+  const noTerrainTest = location.pathname === '/test.html'
+  if (noTerrainTest) {
+    // Space the test fleet explicitly; attached parts retain local transforms.
+    const testPositions: Record<string, [number, number, number]> = {
+      'player-vehicle': [0, 2, 0],
+      'demo-car': [8, 2, 0],
+      'demo-white-truck': [24, 2, 8],
+      'demo-trailer': [24, 2, 15.33],
+      'demo-carrier': [90, 2, 60],
+      spawn: [-4, 2, -4],
+    }
+    for (const entity of scene.entities) {
+      const position = testPositions[entity.id]
+      if (position) entity.transform.position = [...position]
+    }
+    // Keep the planetary frame; the test floor is a local box.
+    const ground = createEntity('test-ground', 'box', [0, -0.25, 0])
+    ground.size = [1000, 0.5, 1000]
+    ground.color = '#73787a'
+    scene.entities.push(ground)
+  }
   const player = scene.entities.find((entity) => entity.id === vehicle.id)
   if (player) player.transform.rotation = headingRotation(config.spawn.heading)
   const lights = flat && new URLSearchParams(location.search).has('lights')
@@ -191,24 +212,26 @@ try {
       : undefined,
     depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
     performance: { preset: new URLSearchParams(location.search).get('quality') ?? 'custom' },
-    tiles: flat
-      ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
-      : {
-          baseUrl: tilesBase,
-          apiUrl: '/prepare',
-          mode: config.staticTiles ? 'static' : 'dynamic',
-          // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
-          osmRoads: osmRoadsRequested(location.search),
-          // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
-          ...(config.staticTiles && {
-            atlas: { relief: 'engine' as const, photo: 'full' as const },
-            imagery: 'package' as const,
-            missing: new MissingTiles({
-              key: `nabla.terrain.missing:${tilesBase}`,
-              storage: browserStorage(),
+    tiles: noTerrainTest
+      ? undefined
+      : flat
+        ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
+        : {
+            baseUrl: tilesBase,
+            apiUrl: '/prepare',
+            mode: config.staticTiles ? 'static' : 'dynamic',
+            // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
+            osmRoads: osmRoadsRequested(location.search),
+            // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
+            ...(config.staticTiles && {
+              atlas: { relief: 'engine' as const, photo: 'full' as const },
+              imagery: 'package' as const,
+              missing: new MissingTiles({
+                key: `nabla.terrain.missing:${tilesBase}`,
+                storage: browserStorage(),
+              }),
             }),
-          }),
-        },
+          },
     onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
       ? (sample) =>
           document
@@ -237,7 +260,8 @@ try {
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
   void runBootPhase(runtime, loading, boot)
-  await runtime.play({ vehicleId: vehicle.id })
+  await runtime.play(noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
+  if (noTerrainTest) runtime.equipTestSidearm()
   if (scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   if (scene.geography && config.portals?.length)

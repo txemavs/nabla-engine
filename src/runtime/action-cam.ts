@@ -1,4 +1,4 @@
-import { actionCamTuning as tuning } from '../config/gameplay-tuning.js'
+import { normalizeActionCamSettings, type ActionCamSettings } from './action-cam-settings.js'
 export interface ActionCamMotion {
   side: number
   up: number
@@ -8,6 +8,16 @@ export interface ActionCamMotion {
 const neutral = (): ActionCamMotion => ({ side: 0, up: 0, pitch: 0, roll: 0 })
 /** Distance-driven foot rhythm; bounded head tilt, eased starts/stops and quieter aiming. */
 export class ActionCam {
+  private tuning = normalizeActionCamSettings({})
+  get settings(): ActionCamSettings {
+    return { ...this.tuning }
+  }
+  setSettings(settings: Partial<ActionCamSettings>): void {
+    this.tuning = normalizeActionCamSettings({ ...this.tuning, ...settings })
+  }
+  resetSettings(): void {
+    this.tuning = normalizeActionCamSettings({})
+  }
   private phase = 0
   private strength = 0
   private lean = 0
@@ -26,6 +36,7 @@ export class ActionCam {
   ): ActionCamMotion {
     if (dt <= 0) return { ...this.motion }
     dt = Math.min(dt, 0.1)
+    const tuning = this.tuning
     const blend = 1 - Math.exp(-tuning.response * dt)
     const speed = input.grounded ? Math.max(0, Math.min(tuning.maxSpeed, input.speed)) : 0
     this.strength += (Math.min(1.5, speed / tuning.referenceSpeed) - this.strength) * blend

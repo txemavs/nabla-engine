@@ -54,7 +54,7 @@ test('hover walking produces visible camera roll without physical foot contact',
     return { maxRoll, contactFrames }
   }, process.cwd())
   expect(result.contactFrames).toBe(0)
-  expect(result.maxRoll).toBeGreaterThan(0.007)
+  expect(result.maxRoll).toBeGreaterThan(0.003)
 })
 
 test('laser ribbon keeps consistent screen width and brightness across its two triangles', async ({

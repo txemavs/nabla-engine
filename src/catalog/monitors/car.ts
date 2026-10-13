@@ -19,7 +19,7 @@ export const carMenuItems: MonitorMenuItem[] = [
       },
       {
         id: 'trailer-cargo',
-        label: 'CARGAR 2 A3',
+        label: 'CARGAR 2 S3',
         action: { type: 'vehicle.trailer', value: 'cargo' },
       },
       {

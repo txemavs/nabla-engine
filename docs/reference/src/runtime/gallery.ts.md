@@ -160,13 +160,20 @@ shoot(sim: Simulation, view: SceneView, camera: THREE.PerspectiveCamera, range =
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.min`
+- `THREE.Matrix3`
 - `THREE.Raycaster`
 - `THREE.Vector2`
 - `THREE.Vector3`
 - `foreground.setFromCamera`
 - `glassPoint.clone`
 - `glassPoint.clone().sub`
+- `new THREE.Matrix3().getNormalMatrix`
+- `normal.dot`
+- `normal.negate`
+- `normal.toArray`
+- `object.updateWorldMatrix`
 - `point.toArray`
+- `ray.ray.direction.clone`
 - `ray.ray.direction.toArray`
 - `ray.ray.origin.clone`
 - `ray.ray.origin.clone().add`
@@ -177,6 +184,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.damageVehicle`
 - `sim.entityTransform`
 - `sim.shoot`
+- `skin.point.toArray`
+- `skinRay.intersectObject`
+- `skinRay.intersectObject(object, true).find`
 - `this.respawn.set`
 - `view.brokenGlass.hit`
 - `view.destruction.balloons.hit`
@@ -185,6 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.document.entities.some`
 - `view.hitSprite`
 - `view.impacts.add`
+- `view.impacts.addSurface`
 - `view.impacts.addWorld`
 - `view.objects.get`
 
@@ -246,4 +257,12 @@ callback@179(object): object is THREE.Group
 
 ```ts
 callback@206(entity): inferred by TypeScript; see implementation
+```
+
+## Gallery.shoot.callback@219
+
+[Implementation, line 219](../../../../src/runtime/gallery.ts#L219)
+
+```ts
+callback@219(candidate): inferred by TypeScript; see implementation
 ```

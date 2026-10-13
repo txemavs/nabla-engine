@@ -207,7 +207,34 @@ export class Gallery {
       )
         this.lastMetalImpact = [...hit.point] as [number, number, number]
       if (object && hit.entityId) {
-        view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+        // Physics hulls can sit inside truck/trailer bodywork. Find the visible skin
+        // along the same shot instead of leaving the mark hidden inside that hull.
+        object.updateWorldMatrix(true, true)
+        const skinRay = new THREE.Raycaster(
+          ray.ray.origin.clone().add(view.root.position),
+          ray.ray.direction.clone(),
+          0,
+          ray.ray.origin.distanceTo(new THREE.Vector3(...hit.point)) + 2,
+        )
+        const skin = skinRay.intersectObject(object, true).find((candidate) => {
+          if (!candidate.face || !(candidate.object as THREE.Mesh).isMesh) return false
+          let node: THREE.Object3D | null = candidate.object
+          while (node) {
+            if (!node.visible || node.name === 'shot-impact') return false
+            node = node.parent
+          }
+          return true
+        })
+        if (skin?.face) {
+          const normal = skin.face.normal
+            .clone()
+            .applyMatrix3(new THREE.Matrix3().getNormalMatrix(skin.object.matrixWorld))
+            .normalize()
+          if (normal.dot(skinRay.ray.direction) > 0) normal.negate()
+          view.impacts.addSurface(skin.object, skin.point.toArray(), normal.toArray())
+        } else {
+          view.impacts.add(object, sim.entityTransform(hit.entityId), hit.point, hit.normal)
+        }
         if (damage > 0)
           view.destruction.balloons.hit(object, new THREE.Vector3(...hit.point), ray.ray.direction)
       } else {

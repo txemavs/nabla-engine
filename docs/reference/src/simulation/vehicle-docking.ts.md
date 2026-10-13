@@ -52,28 +52,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.docks.values`
 - `this.vehicles.get`
 
-## VehicleDocking.candidate.callback@21
+## VehicleDocking.candidate.callback@24
 
-[Implementation, line 21](../../../../src/simulation/vehicle-docking.ts#L21)
+[Implementation, line 24](../../../../src/simulation/vehicle-docking.ts#L24)
 
 ```ts
-callback@21(d): inferred by TypeScript; see implementation
+callback@24(d): inferred by TypeScript; see implementation
 ```
 
-## VehicleDocking.candidate.callback@30
+## VehicleDocking.candidate.callback@35
 
-[Implementation, line 30](../../../../src/simulation/vehicle-docking.ts#L30)
+[Implementation, line 35](../../../../src/simulation/vehicle-docking.ts#L35)
 
 ```ts
-callback@30(w): inferred by TypeScript; see implementation
+callback@35(w): inferred by TypeScript; see implementation
 ```
 
-## VehicleDocking.candidate.callback@34
+## VehicleDocking.candidate.callback@39
 
-[Implementation, line 34](../../../../src/simulation/vehicle-docking.ts#L34)
+[Implementation, line 39](../../../../src/simulation/vehicle-docking.ts#L39)
 
 ```ts
-callback@34(collider): inferred by TypeScript; see implementation
+callback@39(collider): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -85,17 +85,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vec`
 - `vec(local).some`
 
-## VehicleDocking.candidate.callback@34.callback@49
+## VehicleDocking.candidate.callback@39.callback@54
 
-[Implementation, line 49](../../../../src/simulation/vehicle-docking.ts#L49)
+[Implementation, line 54](../../../../src/simulation/vehicle-docking.ts#L54)
 
 ```ts
-callback@49(n, i): inferred by TypeScript; see implementation
+callback@54(n, i): inferred by TypeScript; see implementation
 ```
 
 ## VehicleDocking.toggle
 
-[Implementation, line 58](../../../../src/simulation/vehicle-docking.ts#L58)
+[Implementation, line 63](../../../../src/simulation/vehicle-docking.ts#L63)
 
 Attach/release one car, preserving flight restrictions and raycast ownership.
 
@@ -105,26 +105,41 @@ toggle(id: string | null): string
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `LockConstraint`
-- `car.body.angularVelocity.copy`
-- `car.body.velocity.copy`
 - `car.body.wakeUp`
 - `car.raycast.addToWorld`
-- `car.raycast.removeFromWorld`
+- `this.attach`
 - `this.candidate`
 - `this.docks.delete`
 - `this.docks.get`
-- `this.docks.set`
 - `this.setRamp`
 - `this.vehicles.get`
 - `this.vehicles.get(dock.carrierId)!.body.velocity.length`
+- `this.world.removeConstraint`
+
+## VehicleDocking.attach
+
+[Implementation, line 84](../../../../src/simulation/vehicle-docking.ts#L84)
+
+```ts
+attach(id: string, carrierId: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `LockConstraint`
+- `car.body.angularVelocity.copy`
+- `car.body.velocity.copy`
+- `car.raycast.removeFromWorld`
+- `this.docks.has`
+- `this.docks.set`
+- `this.setRamp`
+- `this.vehicles.get`
 - `this.world.addBody`
 - `this.world.addConstraint`
-- `this.world.removeConstraint`
 
 ## VehicleDocking.dispose
 
-[Implementation, line 89](../../../../src/simulation/vehicle-docking.ts#L89)
+[Implementation, line 99](../../../../src/simulation/vehicle-docking.ts#L99)
 
 Remove owned lock joints before the simulation world is freed.
 

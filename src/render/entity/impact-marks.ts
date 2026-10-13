@@ -88,6 +88,11 @@ export class ImpactMarks {
     return this.marks.length
   }
 
+  /** Shared GPU resources, without creating a live impact or consuming a pool entry. */
+  warmupObject(): THREE.Mesh {
+    return new THREE.Mesh(this.geom, this.material)
+  }
+
   private take(): THREE.Group {
     if (this.marks.length >= MAX_IMPACT_MARKS) {
       const oldest = this.marks.shift()!
@@ -112,10 +117,23 @@ export class ImpactMarks {
     void local
   }
 
+  /** Exact rendered surface hit, anchored in the moving mesh's local frame. */
+  addSurface(parent: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
+    const mark = this.take()
+    mark.removeFromParent()
+    mark.scale.set(1, 1, 1)
+    this.place(mark, point, normal, false)
+    mark.updateMatrixWorld(true)
+    parent.updateWorldMatrix(true, false)
+    parent.attach(mark)
+    this.marks.push(mark)
+  }
+
   /** Mark on a scene entity (car, prop, authored mesh) in that entity's local frame. */
   add(parent: THREE.Object3D, pose: Transform, point: Vec3Tuple, normal: Vec3Tuple): void {
     const mark = this.take()
     mark.removeFromParent()
+    mark.scale.set(1, 1, 1)
     const inverse = new THREE.Quaternion(...pose.rotation).invert()
     const n = new THREE.Vector3(...normal).normalize().applyQuaternion(inverse)
     if (n.lengthSq() < 1e-8) n.set(0, 1, 0)
@@ -138,6 +156,7 @@ export class ImpactMarks {
   addWorld(root: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
     const mark = this.take()
     mark.removeFromParent()
+    mark.scale.set(1, 1, 1)
     this.place(mark, point, normal, false)
     root.add(mark)
     this.marks.push(mark)

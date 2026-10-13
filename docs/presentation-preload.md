@@ -81,3 +81,10 @@ operations was 13.7 ms. Before the change, globe additions produced 7–10 secon
 render stalls and the first added car produced a 3.5 second stall. This run took
 approximately 113 seconds to become playable, including terrain/network loading
 and preparation of 26 host vehicles; it does not measure startup improvement.
+
+## Pistola y cámaras (octubre de 2026)
+
+La precarga incluye las reservas de expulsión, impactos y humo en ambas vistas,
+la luz frontal del fogonazo y las variantes de foco/túnel. Se usa la iluminación
+final de cada vista; preparar solo el modelo con luces de estudio no basta.
+Véase [weapon-camera-controls.md](weapon-camera-controls.md) para el contrato y pruebas.

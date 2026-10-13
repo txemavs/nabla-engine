@@ -1,6 +1,25 @@
 import { expect, it } from 'vitest'
 import { ActionCam } from '../../src/runtime/action-cam.js'
 const walking = { speed: 4, grounded: true, right: 0, yaw: 0, aim: 0 }
+it('applies live settings per camera and rejects invalid persisted values', () => {
+  const a = new ActionCam(),
+    b = new ActionCam()
+  a.setSettings({
+    strideMetres: 0,
+    response: NaN,
+    bobMetres: 0,
+    swayMetres: 0,
+    stepPitchRadians: 0,
+    stepRollRadians: 0,
+  })
+  expect(a.settings.strideMetres).toBe(0.8)
+  expect(Number.isFinite(a.settings.response)).toBe(true)
+  expect(b.settings.bobMetres).toBeGreaterThan(0)
+  for (let i = 0; i < 60; i++) a.step(1 / 60, walking)
+  for (const value of Object.values(a.step(1 / 60, walking))) expect(Math.abs(value)).toBe(0)
+  a.resetSettings()
+  expect(a.settings).toEqual(b.settings)
+})
 it('uses travelled distance consistently across frame rates', () => {
   const run = (fps: number) => {
     const cam = new ActionCam()

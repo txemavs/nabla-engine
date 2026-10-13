@@ -91,7 +91,7 @@ scene-depth occlusion.
 | Z + fire       | Toggle safety; Z alone inspects                                                                                   |
 | X              | Inspect chamber                                                                                                   |
 | Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                                    |
-| Shift + fire   | Keep aim height steady: suppress vertical recoil while held; normal recoil resumes on release                     |
+| W+A+S+D + fire | Hold all four movement keys together to suppress vertical recoil; releasing any one resumes normal recoil         |
 | G / H          | Laser / flashlight                                                                                                |
 
 Fresh magazines are unlimited supplies, but each dropped magazine retains its
@@ -204,8 +204,8 @@ Bare trailer: the black LoadingDeck has a matching moving collider. Tractor menu
 returns flat and stationary cars wholly supported by it are locked for transport;
 opening releases cargo. With a drawn gun R still operates the magazine. The reset toolbar button
 recovers the vehicle directly, even with the gun drawn.
-The white-car-transporter preset has a lower tilting deck and a sliding upper section for two cars. CARGAR 2 A3 in the tractor menu
-preloads and places two physical A3s in the slots in trailerPlatformTuning, locks
+The white-car-transporter preset has a lower tilting deck and a sliding upper section for two cars. CARGAR 2 S3 in the tractor menu
+preloads and places two physical S3s (the `car` preset) in the slots in trailerPlatformTuning, locks
 them to the trailer and refuses duplicate loading. Boxed trailers keep their box
 and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
 
@@ -233,20 +233,32 @@ Platform colliders, hinge and loading angle are in the trailer presets under
 
 Action cam is an independent, default-on walking preference in Settings beside the
 first-person mode (Options → Camera). It adds distance-driven lateral sway, foot bob and a bounded
-head roll when stepping, strafing and turning. Walking stays subtle: 2.6 cm bob,
-1.4 cm sway and 0.63° step roll at normal walking speed. Turn lean follows angular
-speed and is capped at 3.4° before the walking-speed scale; quick curves lean more
+head roll when stepping, strafing and turning. The soft profile is the default: 1.2 cm bob,
+0.7 cm sway and 0.29° step roll at normal walking speed. Turn lean follows angular
+speed and is capped at 2.58° before the walking-speed scale; quick curves lean more
 than slow turns. Starts/stops ease smoothly; aiming
-reduces motion to 22%. Airborne motion fades and the effect resets in vehicles,
+reduces motion to 15%. Airborne motion fades and the effect resets in vehicles,
 exterior views, falls and recovery. It changes the final camera transform only,
 before weapon/audio rendering, without modifying simulation heading, FOV, lights
 or post-processing. `actionCamTuning` in `src/config/gameplay-tuning.ts` owns all
 amplitudes, stride and response settings. `nabla.actionCam` persists the toggle;
 AJUSTES PREDETERMINADOS restores its default.
 
+Options → Camera → Adjust Action Cam exposes live, per-runtime settings in three
+foldouts: rhythm/movement, angles, and response/aiming. Ranges and displayed units
+live in `src/runtime/action-cam-settings.ts`; factory values remain in
+`src/config/gameplay-tuning.ts`. Sliders show centimetres, degrees, metres per
+second and seconds, converting to SI for simulation. A longer stride cycle slows
+the rhythm; the two speed settings scale/cap the effect, not player movement.
+Changes persist under `nabla.actionCamSettings`, with finite-value validation and
+range limits on load. General defaults clear this key too. “Apply soft” restores
+the soft 2.8 m cycle length and gentle bob/rotation. “Reset Action Cam” restores only
+its numeric factory settings. The enable checkbox is independent. Tuning does not
+reset the current step phase, so changing frequency does not restart a step.
+
 Camera continuity: walking offsets/roll and the effective Normal-mode FOV are
 part of the target pose before view/seat interpolation, so `lastPose` represents
-what was actually rendered. C now blends into overhead too; rapidly interrupting
+what was actually rendered. V now blends into overhead too; rapidly interrupting
 one transition starts from its last rendered pose. Explicit `nextTransitionMs: 0`
 still allows a deliberate cut. Bodycam FOV offsets ease with `normalViewTuning.fovResponse`;
 Action cam fades when disabled on foot instead of dropping its current offset.
@@ -257,3 +269,16 @@ The laser uses a constant pixel-width ribbon. Its transverse shader coordinate
 is interpolated in screen space to keep the bright core uniform across both
 triangles at different endpoint depths. Longitudinal smoke sampling remains in
 world space, so smoke can brighten only the intersecting part of the beam.
+
+# Cartridge ejection
+
+`src/render/entity/ejection-port.ts` derives the ejection point from the right side of
+`ChamberExterior`, including the weapon's current transform. First-person rendering
+maps this point through the viewmodel FOV so the casing appears at the visible port;
+third-person rendering uses the mounted weapon directly. Cartridge clones are centred
+before tumbling. The HK workshop uses the same port for spent cases and live rounds.
+
+## Ajustes revisados de cámara y pistola
+
+Los controles, valores de fábrica, claves de almacenamiento y precarga vigentes
+se describen en [weapon-camera-controls.md](weapon-camera-controls.md).

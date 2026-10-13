@@ -11,7 +11,7 @@
 
 ## setCarMenuMusicLabel
 
-[Implementation, line 87](../../../../../src/catalog/monitors/car.ts#L87)
+[Implementation, line 129](../../../../../src/catalog/monitors/car.ts#L129)
 
 Name the «MUSICA» page's play entry after the host's track (`MusicTrack.menuLabel`); the
 monitor shows 11 ASCII characters, so longer names are cut and accents are dropped.
@@ -20,26 +20,26 @@ monitor shows 11 ASCII characters, so longer names are cut and accents are dropp
 setCarMenuMusicLabel(label: string): void
 ```
 
-## setCarMenuMusicLabel.callback@89
+## setCarMenuMusicLabel.callback@131
 
-[Implementation, line 89](../../../../../src/catalog/monitors/car.ts#L89)
+[Implementation, line 131](../../../../../src/catalog/monitors/car.ts#L131)
 
 ```ts
-callback@89(item): inferred by TypeScript; see implementation
+callback@131(item): inferred by TypeScript; see implementation
 ```
 
-## setCarMenuMusicLabel.callback@90
+## setCarMenuMusicLabel.callback@132
 
-[Implementation, line 90](../../../../../src/catalog/monitors/car.ts#L90)
+[Implementation, line 132](../../../../../src/catalog/monitors/car.ts#L132)
 
 ```ts
-callback@90(item): inferred by TypeScript; see implementation
+callback@132(item): inferred by TypeScript; see implementation
 ```
 
-## callback@119
+## callback@161
 
-[Implementation, line 119](../../../../../src/catalog/monitors/car.ts#L119)
+[Implementation, line 161](../../../../../src/catalog/monitors/car.ts#L161)
 
 ```ts
-callback@119(i): inferred by TypeScript; see implementation
+callback@161(i): inferred by TypeScript; see implementation
 ```

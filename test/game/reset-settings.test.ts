@@ -6,6 +6,7 @@ it('clears game preferences and per-model settings without clearing terrain or u
     'nabla.cameraFov': '25',
     'nabla.driverPose': '{}',
     'nabla.actionCam': 'false',
+    'nabla.actionCamSettings': '{"strideMetres":3}',
     'nabla.mirrors:/bike.glb': '{}',
     'nabla.steeringWheel:/car.glb': '{}',
     'nabla.terrain.cache': 'keep',

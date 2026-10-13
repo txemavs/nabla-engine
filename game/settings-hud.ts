@@ -6,6 +6,7 @@
  * a ship interior monitor can remount later without a second stylesheet.
  */
 import { resetGameSettings } from './reset-settings.js'
+import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   weaponPoseNames,
@@ -62,6 +63,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-planet-air', 'planet'],
   ['settings-planet-sky', 'planet'],
   ['camera-extras', 'options'],
+  ['settings-muzzle-flash', 'options'],
   ['driving-extras', 'options'],
   ['settings-options-driver', 'dev'],
   ['settings-options-sidearm', 'dev'],
@@ -408,6 +410,69 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     label.append(input, ' Action cam (pasos e inclinación al caminar)')
     cameraOptions.append(label)
   }
+  if (runtime.actionCamSettings && typeof runtime.setActionCamSettings === 'function') {
+    const tuning = doc.createElement('details'),
+      title = doc.createElement('summary')
+    tuning.id = 'camera-action-cam-settings'
+    title.textContent = 'Ajustar Action Cam'
+    tuning.append(title)
+    const note = doc.createElement('p')
+    note.textContent =
+      'Cambios en directo y guardados en este navegador. Un ciclo más largo baja el ritmo de pasos. Las velocidades controlan el efecto, no al personaje.'
+    tuning.append(note)
+    const groups = new Map<string, HTMLDetailsElement>(),
+      refresh: Array<() => void> = []
+    for (const control of actionCamControls) {
+      let group = groups.get(control.group)
+      if (!group) {
+        group = doc.createElement('details')
+        const summary = doc.createElement('summary')
+        summary.textContent = control.group
+        group.open = groups.size === 0
+        group.append(summary)
+        groups.set(control.group, group)
+        tuning.append(group)
+      }
+      const row = doc.createElement('label'),
+        slider = doc.createElement('input'),
+        value = doc.createElement('output')
+      slider.type = 'range'
+      slider.id = `action-cam-${control.key}`
+      slider.min = String(control.min)
+      slider.max = String(control.max)
+      slider.step = String(control.step)
+      const sync = () => {
+        const amount = runtime.actionCamSettings[control.key] * control.scale
+        slider.value = String(amount)
+        value.textContent = `${amount.toFixed(control.step < 0.01 ? 3 : 2)} ${control.unit}`
+      }
+      slider.addEventListener('input', () => {
+        runtime.setActionCamSettings({ [control.key]: slider.valueAsNumber / control.scale })
+        sync()
+      })
+      row.append(control.label, slider, value)
+      group.append(row)
+      refresh.push(sync)
+      sync()
+    }
+    const soft = doc.createElement('button'),
+      reset = doc.createElement('button')
+    soft.type = reset.type = 'button'
+    soft.id = 'action-cam-soft'
+    reset.id = 'action-cam-reset'
+    soft.textContent = 'Aplicar suave'
+    reset.textContent = 'Restablecer Action Cam'
+    soft.addEventListener('click', () => {
+      runtime.setActionCamSettings(softActionCamSettings)
+      refresh.forEach((sync) => sync())
+    })
+    reset.addEventListener('click', () => {
+      runtime.resetActionCamSettings()
+      refresh.forEach((sync) => sync())
+    })
+    tuning.append(soft, reset)
+    cameraOptions.append(tuning)
+  }
   if (typeof runtime.tunnelEnabled === 'boolean') {
     const label = doc.createElement('label')
     const input = doc.createElement('input')
@@ -455,6 +520,62 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const driver = fieldset('settings-options-driver', 'Conductor, volante y espejos')
     driver.append(...driverGroups)
     place(driver)
+  }
+
+  {
+    const group = fieldset('settings-muzzle-flash', 'Pistola · fogonazo')
+    const note = doc.createElement('p')
+    note.textContent =
+      'Desplazamiento respecto a la posición original, en milímetros. Intensidad de luz en %. Se guarda en este navegador.'
+    group.append(note)
+    const controls = new Map<string, [HTMLInputElement, HTMLInputElement]>()
+    const refresh = () => {
+      const values = runtime.muzzleFlashTuning
+      for (const [key, inputs] of controls)
+        for (const input of inputs) input.value = String(values[key as keyof typeof values])
+    }
+    for (const [key, text] of [
+      ['x', 'Izquierda / derecha (mm)'],
+      ['y', 'Abajo / arriba (mm)'],
+      ['z', 'Adelante / atrás (mm)'],
+      ['intensity', 'Intensidad (%)'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        slider = doc.createElement('input'),
+        number = doc.createElement('input')
+      slider.type = 'range'
+      number.type = 'number'
+      slider.id = `muzzle-flash-${key}`
+      number.id = `muzzle-flash-${key}-value`
+      for (const input of [slider, number]) {
+        input.min = key === 'intensity' ? '0' : '-200'
+        input.max = key === 'intensity' ? '300' : '200'
+        input.step = key === 'intensity' ? '1' : '0.1'
+        input.setAttribute('aria-label', text + (input === number ? ' valor' : ''))
+        input.addEventListener('input', () => {
+          if (!Number.isFinite(input.valueAsNumber)) return
+          runtime.setMuzzleFlashTuning({ [key]: input.valueAsNumber })
+          refresh()
+        })
+      }
+      number.style.width = '75px'
+      row.append(text + ' ', slider, number)
+      group.append(row)
+      controls.set(key, [slider, number])
+    }
+    const preview = doc.createElement('button'),
+      reset = doc.createElement('button')
+    preview.type = reset.type = 'button'
+    preview.textContent = 'Probar fogonazo (1 s)'
+    preview.onclick = () => runtime.previewMuzzleFlash()
+    reset.textContent = 'Restablecer fogonazo'
+    reset.onclick = () => {
+      runtime.setMuzzleFlashTuning({ x: 0, y: 0, z: -72, intensity: 100 })
+      refresh()
+    }
+    group.append(preview, reset)
+    refresh()
+    place(group)
   }
 
   // Live aimed-pistol adjustments remain visible with the mouse free over the sliders.

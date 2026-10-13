@@ -11,7 +11,7 @@ Only persisted game preferences; terrain data and unrelated origin storage survi
 
 ## resetGameSettings
 
-[Implementation, line 25](../../../game/reset-settings.ts#L25)
+[Implementation, line 30](../../../game/reset-settings.ts#L30)
 
 ```ts
 resetGameSettings(storage: Storage): void

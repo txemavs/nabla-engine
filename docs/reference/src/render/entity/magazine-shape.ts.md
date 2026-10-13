@@ -12,8 +12,36 @@
 
 [Implementation, line 4](../../../../../src/render/entity/magazine-shape.ts#L4)
 
-Artistic extended magazine: retain the mouth and cartridge, extend the body below it.
+Extend below the actual authored mouth, independent of the model's pivot.
 
 ```ts
 poseMagazineCapacity(magazine: Object3D, capacity: number): void
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Box3`
+- `Matrix4`
+- `Vector3`
+- `body.traverse`
+- `bounds.isEmpty`
+- `magazine.updateWorldMatrix`
+- `new Matrix4().copy`
+- `new Matrix4().copy(magazine.matrixWorld).invert`
+
+## poseMagazineCapacity.callback@12
+
+[Implementation, line 12](../../../../../src/render/entity/magazine-shape.ts#L12)
+
+```ts
+callback@12(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Matrix4`
+- `bounds.expandByPoint`
+- `mesh.geometry.computeBoundingBox`
+- `new Matrix4().multiplyMatrices`
+- `point.set`
+- `point.set(x, y, z).applyMatrix4`
