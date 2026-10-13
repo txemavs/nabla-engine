@@ -20,6 +20,7 @@ import {
 } from '../drivetrain.js'
 import { surfaceGripScale, type WheelSurface } from '../../wheel-surface.js'
 import { stepWheelMomentum } from '../wheel-momentum.js'
+import { stepJumpControl } from '../jump-control.js'
 import type {
   EngineMode,
   PowertrainDefinition,
@@ -307,7 +308,7 @@ export function stepWheeledVehicle(
     v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
     const rearShare = v.drivetrain.burnout
       ? 1
-      : active && input.handbrake
+      : (active && input.handbrake) || aggressiveLaunch
         ? 0.7
         : 0.55 + v.drivetrain.launchSlip * 0.15
     const share =
@@ -318,7 +319,7 @@ export function stepWheeledVehicle(
     )
     if (tune) {
       const desiredGrip =
-        (active && input.handbrake && i >= 2
+        (((active && input.handbrake) || aggressiveLaunch) && i >= 2
           ? 0.7
           : i >= 2
             ? tune.grip * (1 - v.drivetrain.launchSlip * 0.6)
@@ -341,6 +342,7 @@ export function stepWheeledVehicle(
     )
   }
   stepWheelMomentum(v, dt, active && !starting, powered, input.throttle)
+  stepJumpControl(v, input, active)
 }
 /**
  * A driver gets in (spawned in the seat, entered with E, or took over the controls): the

@@ -17,7 +17,7 @@
 Equipment actions shared by game hosts. Persistence is a host concern.
 
 ```ts
-vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText(), engineMode?: (id: string, mode: 'normal' | 'beast') => string, fov?: (action: string) => string, music?: (action: string) => string): { handled: boolean; opened?: boolean }
+vehicleMenuKey(view: SceneView, document: SceneDocument, id: string, code: string, repeat: boolean, report: (message: string) => void, update: (id: string, patch: Partial<SceneDocument['entities'][number]>) => void, text: RuntimeText = createRuntimeText(), engineMode?: (id: string, mode: 'normal' | 'beast') => string, fov?: (action: string) => string, music?: (action: string) => string, trailer?: (action: string) => string): { handled: boolean; opened?: boolean }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -33,6 +33,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `music`
 - `report`
 - `text`
+- `trailer`
 - `update`
 - `view.setVehicleMapFollow`
 - `view.setVehicleMirrorTilt`
@@ -40,18 +41,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.toggleVehicleMenu`
 - `view.vehicleMenu`
 
-## vehicleMenuKey.callback@34
+## vehicleMenuKey.callback@35
 
-[Implementation, line 34](../../../../src/runtime/vehicle-menu.ts#L34)
+[Implementation, line 35](../../../../src/runtime/vehicle-menu.ts#L35)
 
 ```ts
-callback@34(e): inferred by TypeScript; see implementation
+callback@35(e): inferred by TypeScript; see implementation
 ```
 
-## vehicleMenuKey.callback@57
+## vehicleMenuKey.callback@59
 
-[Implementation, line 57](../../../../src/runtime/vehicle-menu.ts#L57)
+[Implementation, line 59](../../../../src/runtime/vehicle-menu.ts#L59)
 
 ```ts
-callback@57(e): inferred by TypeScript; see implementation
+callback@59(e): inferred by TypeScript; see implementation
 ```

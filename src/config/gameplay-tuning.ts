@@ -5,6 +5,15 @@ import type { GameCameraSettings } from './camera.js'
 import type { WeaponPoseTuning } from '../runtime/weapon-pose-tuning.js'
 import type { SidearmTuning } from '../runtime/sidearm-tuning.js'
 
+/** Relative weights for the + toolbar button; aircraft and ships are excluded. */
+export const randomVehicleTuning = [
+  { kind: 'motorcycle', weight: 4 },
+  { kind: 'car', weight: 3 },
+  { kind: 'truck', weight: 2 },
+  { kind: 'truckTrailer', weight: 1 },
+  { kind: 'trailer', weight: 1 },
+] as const
+
 export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
   autoCenterDelayMs: 10_000,
   autoCenterBlendMs: 500,
@@ -83,12 +92,15 @@ export const weaponPoseDefaults: WeaponPoseTuning = {
   aimed: { pitch: 0, yaw: 0, roll: 0, x: 0, y: 0, z: 0 },
   inspect: { pitch: 11.2, yaw: -41, roll: -26.6, x: 0, y: 0, z: 0 },
   inspectAimed: { pitch: 29.6, yaw: -19.8, roll: -47.2, x: 0, y: 0, z: 0 },
-  chamber: { pitch: 48, yaw: -17.5, roll: 27.1, x: 0, y: 0, z: 0 },
-  chamberAimed: { pitch: 63, yaw: -22.2, roll: 12.7, x: 0, y: 0, z: 0 },
+  chamber: { pitch: 9, yaw: -16.1, roll: 14.7, x: -0.1, y: 64.7, z: 0.3 },
+  chamberAimed: { pitch: 7.3, yaw: -6.1, roll: 27.9, x: 0, y: 19.5, z: -90.1 },
 }
 
 export const sidearmTuningDefaults: Readonly<SidearmTuning> = { height: -0.022, angle: -1.2 }
-export const sidearmTuningRanges = { height: [-0.08, 0.015, 0.001], angle: [-5, 8, 0.1] } as const
+export const sidearmTuningRanges = {
+  height: [-0.08, 0.015, 0.00001],
+  angle: [-30, 8, 0.01],
+} as const
 
 export const cameraFovTuning = { min: -15, max: 25, step: 5, default: 15 }
 export const normalViewTuning = {
@@ -99,8 +111,28 @@ export const normalViewTuning = {
   pitchLimitRadians: 0.11,
   followRate: 3.5,
   aimedFollowRate: 22,
+  fovResponse: 10,
+}
+/** Action cam walking motion: metres, radians and seconds. No post-processing. */
+export const actionCamTuning = {
+  enabled: true,
+  strideMetres: 2.8,
+  referenceSpeed: 4,
+  maxSpeed: 8,
+  bobMetres: 0.012,
+  swayMetres: 0.007,
+  stepRollRadians: 0.005,
+  stepPitchRadians: 0.003,
+  strafeRollRadians: 0.012,
+  turnLeanSeconds: 0.035,
+  maxTurnRollRadians: 0.045,
+  response: 5,
+  aimedScale: 0.15,
 }
 export const weaponViewTuning = {
+  slideLockHoldMs: 2000,
+  alignmentDistanceMetres: 25,
+  thirdPerson: { shoulder: [0.22, -0.2, 0] as const, reachMetres: 0.58 },
   hip: { position: [0.1, -0.125, -0.34] as const, fov: 55 },
   aimed: { position: [0, -0.027, -0.2] as const, fov: 42 },
   aimBlendPerFrame: 0.28,
@@ -110,9 +142,9 @@ export const weaponViewTuning = {
   inspectBaseRadians: { yaw: 0.9, roll: -0.35, raiseMetres: 0.055 },
 }
 export const focusTuning = {
-  radiusPixels: 5,
-  sideStart: 0.18,
-  sideEnd: 0.49,
+  radiusPixels: 12,
+  sideStart: 0.12,
+  sideEnd: 0.4,
   nearStartMetres: 2,
   nearEndMetres: 18,
 }
@@ -126,6 +158,37 @@ export const laserTuning = {
   beamWidthPixels: 7,
 }
 export const smokeTuning = { defaultPercent: 50, maxPercent: 300 }
+/** Arcade overheating response, not measured firearm temperatures. */
+export const weaponHeatTuning = {
+  heatPerShotC: 9,
+  coolingSeconds: 180,
+  hotRiseC: 900,
+  glowStarts: 0.53,
+  orangeStarts: 0.7,
+  ruptureHeat: 0.82,
+  smokeStarts: 0.35,
+  spreadStarts: 0.2,
+  maxSpreadDegrees: 2,
+}
+/** Contact speeds are relative impact speeds, not dashboard speeds. */
+export const vehicleDamageTuning = {
+  minimumImpactSpeed: 3,
+  catastrophicImpactSpeed: 50,
+  contactWindowSeconds: 0.35,
+  damagePerSpeed: 0.3,
+  maxOrdinaryDamage: 10,
+  smokeDamageThreshold: 0.5,
+  smokeMaxAmount: 2,
+}
+/** Jump orientation assistance: angular acceleration (rad/s²), no linear thrust. */
+export const jumpControlTuning = {
+  pitchAcceleration: 0.9,
+  yawAcceleration: 0.35,
+  rollAcceleration: 0.5,
+  riderPitchAcceleration: 0.8,
+  riderRollAcceleration: 1.0,
+  maxAssistedRate: 1.8,
+}
 export const explosionTuning = {
   radiusMetres: 12,
   impulseSpeed: 9,
@@ -146,4 +209,12 @@ export const balloonTuning = {
   maxCount: 240,
   openingRadians: 1.15,
   openingRate: 5,
+}
+
+/** Tilting car carrier cargo positions, metres. */
+export const trailerPlatformTuning = {
+  cargoSlots: [
+    [0, 0.9, -3.2],
+    [0, 0.9, 3.2],
+  ] as const,
 }

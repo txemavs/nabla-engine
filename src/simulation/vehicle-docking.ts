@@ -18,7 +18,12 @@ export class VehicleDocking {
     if (!car || car.definition.garage) return null
     for (const [carrierId, carrier] of this.vehicles) {
       const bay = carrier.definition.garage
-      if (!bay || [...this.docks.values()].some((d) => d.carrierId === carrierId)) continue
+      if (
+        !bay ||
+        (carrier.definition.garage?.ramp?.loadAngle === undefined &&
+          [...this.docks.values()].some((d) => d.carrierId === carrierId))
+      )
+        continue
       if (
         carrier.body.velocity.length() > 0.8 ||
         car.body.velocity.vsub(carrier.body.velocity).length() > 0.8
@@ -73,7 +78,13 @@ export class VehicleDocking {
     }
     const carrierId = this.candidate(id)
     if (!carrierId) return 'Aparca completamente dentro del garaje y frena'
-    const carrier = this.vehicles.get(carrierId)!
+    this.attach(id, carrierId)
+    return 'Coche sujeto · T para cambiar de mando'
+  }
+  attach(id: string, carrierId: string): void {
+    if (this.docks.has(id)) return
+    const car = this.vehicles.get(id)!,
+      carrier = this.vehicles.get(carrierId)!
     car.raycast.removeFromWorld(this.world)
     this.world.addBody(car.body)
     car.body.velocity.copy(carrier.body.velocity)
@@ -83,7 +94,6 @@ export class VehicleDocking {
     this.world.addConstraint(constraint)
     this.docks.set(id, { carrierId, constraint })
     this.setRamp(carrier, true)
-    return 'A3 sujeto al suelo · T para conducir el container'
   }
   /** Remove owned lock joints before the simulation world is freed. */
   dispose(): void {

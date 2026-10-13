@@ -17,8 +17,10 @@ export async function warmEffectPresentation(
   renderer: WebGLRenderer,
   camera: PerspectiveCamera,
   roots: readonly Object3D[],
+  world?: Scene,
 ): Promise<void> {
-  const scene = new EffectScene()
+  const scene = world ?? new EffectScene()
+  const copies: Object3D[] = []
   for (const root of roots) {
     const copy = root.clone(true)
     copy.traverse((object) => {
@@ -26,13 +28,14 @@ export async function warmEffectPresentation(
       object.frustumCulled = false
     })
     scene.add(copy)
+    copies.push(copy)
   }
-  await renderer.compileAsync(scene, camera)
   const previous = renderer.getRenderTarget()
   const target = new WebGLRenderTarget(1, 1)
   const auto = renderer.shadowMap.autoUpdate,
     needs = renderer.shadowMap.needsUpdate
   try {
+    await renderer.compileAsync(scene, camera)
     renderer.shadowMap.autoUpdate = false
     renderer.shadowMap.needsUpdate = false
     renderer.setRenderTarget(target)
@@ -42,7 +45,7 @@ export async function warmEffectPresentation(
     renderer.shadowMap.autoUpdate = auto
     renderer.shadowMap.needsUpdate = needs
     target.dispose()
-    scene.clear()
+    for (const copy of copies) copy.removeFromParent()
   }
 }
 

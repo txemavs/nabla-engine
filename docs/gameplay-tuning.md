@@ -32,6 +32,47 @@ Aim alignment is the separate `aim` object in the copied JSON.
 
 ## Views and controls
 
+`jumpControlTuning` controls gameplay assistance during road-vehicle jumps. It
+adds only angular torque while every tyre is airborne and the vehicle is actively
+controlled. Gas raises the nose, brake lowers it; steering provides a small yaw
+and roll correction. Bike rider weight adds pitch/roll authority using the existing
+body controls. Wheel momentum reaction is retained. This is deliberately a mild
+gameplay assist, not a physically exact airborne steering model. There is no
+linear thrust, auto-level or removal of existing tumble; the rate limit only
+stops assistance from accelerating an already fast rotation in the same direction.
+Unoccupied/passive vehicles and grounded tyre dynamics are unaffected.
+
+Road cars: W+S (or Up+Down) requests an aggressive launch without applying brakes,
+using the existing launch wheelspin and reduced rear grip for drifting with A/D.
+The rear grip reduction and rear-biased drive remain active at speed while W+S
+is held, even after the low-speed launch wheelspin fades; no brake is applied.
+Add Space to hold a stationary front-brake/rear-drive burnout. Release Space,
+keeping W+S held, to launch; release S to return to ordinary W throttle.
+Motorcycle W+S and front-lever mappings are unchanged.
+
+`vehicleDamageTuning` controls cumulative physical damage: impacts above 3 m/s
+add 0.3 health points per m/s above that threshold, capped at 10 per ordinary
+blow. Contacts within 0.35 seconds share the strongest damage rather than adding
+every wheel/collider separately. Relative impact speed of 50 m/s is catastrophic.
+A 25 m/s impact costs 6.6 points: an intact vehicle survives 15 such blows and
+breaks on the sixteenth. Small blows also accumulate; airborne rotation does not.
+Vehicles start emitting black underside smoke only beyond 50% damage
+(`vehicleDamageTuning.smokeDamageThreshold = 0.5`). Emission increases progressively
+from zero at that threshold to `smokeMaxAmount` near destruction, respecting
+the smoke switch and density preference; destruction replaces it with wreck smoke.
+
+Rendimiento → Calidad → **Efecto túnel al apuntar** is an independent saved
+preference (`nabla.tunnel`). Default: off on low/medium, on on high/ultra. Resetting
+preferences restores the profile default. Enabled Normal view keeps its colour
+and flare compositing path even at zero aim blend, avoiding colour/transparency
+changes when aiming. Its peripheral blur radius is 12 pixels with a wider side
+mask; only the blur strength follows aim. This costs an extra full-resolution
+render target/pass while enabled, including when the weapon is lowered.
+
+The carrier joins default menu vehicle warmup. Camera far-plane reduction checks
+the whole diagonal field of view, including rolled cockpits, so seeing the horizon
+in a wide first-person view retains the ordinary far plane.
+
 Normal is the default first-person behavior (internally `bodycam`). Modo Puntero
 restores the earlier aiming behavior. Select only in Options → Primera persona;
 B no longer toggles it. C cycles first person, third person and overhead on foot;
@@ -42,15 +83,16 @@ blend; the weapon and central sight picture remain sharp. HDR/linear postprocess
 applies display tone mapping once; the solar flare is composed afterward with
 scene-depth occlusion.
 
-| Weapon control | Action                                                                           |
-| -------------- | -------------------------------------------------------------------------------- |
-| R              | Drop current magazine; press again with an empty well for a full normal magazine |
-| M              | Replace with a full extended 30-round magazine; automatic fire                   |
-| F              | Work slide, or close it using the catch when already open                        |
-| Z + fire       | Toggle safety; Z alone inspects                                                  |
-| X              | Inspect chamber                                                                  |
-| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                   |
-| G / H          | Laser / flashlight                                                               |
+| Weapon control | Action                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| R              | Drop current magazine; press again with an empty well for a full normal magazine                                  |
+| M              | Replace with a full extended 30-round magazine; automatic fire                                                    |
+| F              | Work slide; hold to keep it back. Holding over 2 seconds latches it open with the catch; press F again to release |
+| Z + fire       | Toggle safety; Z alone inspects                                                                                   |
+| X              | Inspect chamber                                                                                                   |
+| Right mouse    | Aim, independent of inspection and magazine/slide manipulation                                                    |
+| W+A+S+D + fire | Hold all four movement keys together to suppress vertical recoil; releasing any one resumes normal recoil         |
+| G / H          | Laser / flashlight                                                                                                |
 
 Fresh magazines are unlimited supplies, but each dropped magazine retains its
 own ID and rounds. Chamber and magazine ammunition are separate. Manual slide
@@ -105,3 +147,138 @@ and toolbar are versioned here. The host must update old B/T/Y tips independentl
 Effect warmup includes on-foot start views and detached physical wheels. It runs
 after gameplay lighting is prepared and draws effect buffers offscreen, including
 transparent front/back passes, before the first explosion.
+
+## Restore the shipped appearance
+
+The settings window's **AJUSTES PREDETERMINADOS** button clears the game's saved
+browser preferences (including weapon poses, FOV, lighting, audio and per-model
+mirror/steering adjustments) and reloads. Terrain cache and unrelated origin data
+are preserved. Explicit URL/build configuration still defines the host defaults.
+The action rail is hidden until gameplay is revealed and centred beneath the
+menu/time button. Motorcycle mirror adjustment changes the reflected view while
+keeping the visible glass fitted in its housing. HUD locality/street lookup is
+coalesced and yields in small batches; labels update only when a result is ready.
+
+Third-person weapon placement uses weaponViewTuning.thirdPerson: shoulder offset relative to the avatar head (metres), and reachMetres for the extended arm. The hand and barrel follow the camera target independently of first-person pose offsets. No arm mesh is added.
+
+The settings HUD keeps its tabs and folds sections into native keyboard-accessible disclosures.
+Development contains Weapon (aim calibration and poses), Vehicle (steering wheel and mirrors),
+Lighting, and Planet/diagnostics. Fine calibration lives here rather than in everyday Options.
+Closing weapon disclosures stops pose preview. Existing controls and saved settings are retained.
+
+Shots use the authored MuzzleSocket and the weapon's full pose before trigger recoil.
+The rigid RedLaserSocket and TorchSocket retain their own origins and share the same pose
+conversion, including the viewmodel FOV. They do not track the camera independently.
+Laser/barrel separation and ballistic drop remain physical differences.
+Neutral first-person alignment is a base rotation at
+`weaponViewTuning.alignmentDistanceMetres` (25 m). The reviewed gesture rotation
+is applied relative to that base, so X/Z/slide animations retain their offsets.
+Only the factory neutral rotation is corrected: user pitch/yaw/roll and the aimed
+angle calibration remain visible after alignment, including in pose preview.
+Changing these rotations also changes the mounted barrel, laser and torch direction.
+Normal mode retains bodycam free aim; aiming converges toward its aim direction.
+
+Sustained fire uses `weaponHeatTuning` in the same tuning module: heat per shot,
+cooling time, glow/smoke thresholds and maximum dispersion angle. These are arcade
+values. Only successful shots add heat; the barrel glows red, emits lingering smoke
+while hot (respecting the smoke option), and bullets spread uniformly within a cone.
+The rigid laser stays on its optical axis; it does not follow random bullet spread.
+
+Weapon heat is shared by SEMI and M: 9 arcade degrees per successful shot,
+180-second cooling constant. Two rapid 30-round magazines (2-second reload)
+reach red; continued fire turns orange and ruptures during the third.
+`weaponHeatTuning` exposes `glowStarts`, `orangeStarts`, and `ruptureHeat`.
+The rupture ejects slide, barrel, frame and seated magazine using world debris
+collision. The weapon stays broken until reset; reload does not repair it.
+Slide heating is not simulated. This is game tuning, not measured firearm data.
+
+Bare trailers retain the black `ChassisFrame` mesh from the source asset; only
+cargo walls and box-mounted marker lights are split into the cargo attachment.
+`box: false` preserves the same kingpin and towing joint as the boxed trailer.
+In overhead view the equipped weapon aims along the avatar forward axis,
+so its mounted laser and bullets travel through the world rather than down
+along the overhead camera ray.
+
+Bare trailer: the black LoadingDeck has a matching moving collider. Tractor menu
+(J → REMOLQUE) switches RAMPA SALTO / PLATAFORMA while stopped. The deck
+returns flat and stationary cars wholly supported by it are locked for transport;
+opening releases cargo. With a drawn gun R still operates the magazine. The reset toolbar button
+recovers the vehicle directly, even with the gun drawn.
+The white-car-transporter preset has a lower tilting deck and a sliding upper section for two cars. CARGAR 2 S3 in the tractor menu
+preloads and places two physical S3s (the `car` preset) in the slots in trailerPlatformTuning, locks
+them to the trailer and refuses duplicate loading. Boxed trailers keep their box
+and have no platform controls. Gameplay heat and all trailer dimensions are arcade tuning.
+
+Cargo positions are in `src/config/gameplay-tuning.ts` (`trailerPlatformTuning`).
+The + toolbar uses `randomVehicleTuning` in the same file: motorcycle 4, car 3,
+truck 2, truck with trailer 1, standalone trailer 1. These are relative weights
+(total 11). Aircraft and ships never enter this draw. Trailer variants are equally
+likely: boxed, bare platform and car transporter.
+The Add menu includes passive trailers too: boxed trailer, black transport
+platform and car transporter. Only explicitly hidden presets are omitted.
+Added platforms/car carriers have Bajar rampa and Horizontal · fijar coches buttons
+in their Add list entry, so detached trailers can be operated too. Opening releases
+the cars; flattening automatically locks stopped cars fully supported on the deck.
+In J → REMOLQUE, ANGULO +3 / -3 adjusts the jump pitch, EXTENDER slides the upper
+section rearward and RECOGER retracts it. PLATAFORMA levels and retracts both sections
+before locking cargo. Telescope travel (12 m, 0.8 m overlap), speed (2 m/s), angle limits
+(-30° to 2.6°) and step (3°) are in the car-transporter preset's `garage.ramp.telescope`.
+The visual sections are 8 cm / 4 cm thick, with the sliding section's end tapered over
+40 cm. Both have moving physical colliders; the upper collider is a thin box, so the
+physical seam is at most 4 cm. These dimensions are in the authoring script and preset.
+Platform colliders, hinge and loading angle are in the trailer presets under
+`assets/library/cars/white-truck/`. Visible deck dimensions are authored in
+`scripts/split-trailer-box.mjs`; regenerate with `npm run trailer:split`, then
+`npm run rigs:generate` and `npm run assets:pack` after changing geometry.
+
+Action cam is an independent, default-on walking preference in Settings beside the
+first-person mode (Options → Camera). It adds distance-driven lateral sway, foot bob and a bounded
+head roll when stepping, strafing and turning. The soft profile is the default: 1.2 cm bob,
+0.7 cm sway and 0.29° step roll at normal walking speed. Turn lean follows angular
+speed and is capped at 2.58° before the walking-speed scale; quick curves lean more
+than slow turns. Starts/stops ease smoothly; aiming
+reduces motion to 15%. Airborne motion fades and the effect resets in vehicles,
+exterior views, falls and recovery. It changes the final camera transform only,
+before weapon/audio rendering, without modifying simulation heading, FOV, lights
+or post-processing. `actionCamTuning` in `src/config/gameplay-tuning.ts` owns all
+amplitudes, stride and response settings. `nabla.actionCam` persists the toggle;
+AJUSTES PREDETERMINADOS restores its default.
+
+Options → Camera → Adjust Action Cam exposes live, per-runtime settings in three
+foldouts: rhythm/movement, angles, and response/aiming. Ranges and displayed units
+live in `src/runtime/action-cam-settings.ts`; factory values remain in
+`src/config/gameplay-tuning.ts`. Sliders show centimetres, degrees, metres per
+second and seconds, converting to SI for simulation. A longer stride cycle slows
+the rhythm; the two speed settings scale/cap the effect, not player movement.
+Changes persist under `nabla.actionCamSettings`, with finite-value validation and
+range limits on load. General defaults clear this key too. “Apply soft” restores
+the soft 2.8 m cycle length and gentle bob/rotation. “Reset Action Cam” restores only
+its numeric factory settings. The enable checkbox is independent. Tuning does not
+reset the current step phase, so changing frequency does not restart a step.
+
+Camera continuity: walking offsets/roll and the effective Normal-mode FOV are
+part of the target pose before view/seat interpolation, so `lastPose` represents
+what was actually rendered. V now blends into overhead too; rapidly interrupting
+one transition starts from its last rendered pose. Explicit `nextTransitionMs: 0`
+still allows a deliberate cut. Bodycam FOV offsets ease with `normalViewTuning.fovResponse`;
+Action cam fades when disabled on foot instead of dropping its current offset.
+The geographic demo uses a hover-supported walker without physical foot contacts;
+that mode also enables the walking rhythm. Ordinary airborne walk mode still fades it.
+
+The laser uses a constant pixel-width ribbon. Its transverse shader coordinate
+is interpolated in screen space to keep the bright core uniform across both
+triangles at different endpoint depths. Longitudinal smoke sampling remains in
+world space, so smoke can brighten only the intersecting part of the beam.
+
+# Cartridge ejection
+
+`src/render/entity/ejection-port.ts` derives the ejection point from the right side of
+`ChamberExterior`, including the weapon's current transform. First-person rendering
+maps this point through the viewmodel FOV so the casing appears at the visible port;
+third-person rendering uses the mounted weapon directly. Cartridge clones are centred
+before tumbling. The HK workshop uses the same port for spent cases and live rounds.
+
+## Ajustes revisados de cámara y pistola
+
+Los controles, valores de fábrica, claves de almacenamiento y precarga vigentes
+se describen en [weapon-camera-controls.md](weapon-camera-controls.md).

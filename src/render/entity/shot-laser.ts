@@ -20,21 +20,24 @@ export class ShotLaser {
       resolution: { value: new THREE.Vector2(1, 1) },
     },
     vertexShader: `uniform vec3 start; uniform vec3 end; uniform vec2 resolution; varying vec2 laserUv;
+    varying float acrossW; varying float clipW;
     #include <common>
     #include <logdepthbuf_pars_vertex>
     void main(){laserUv=uv; vec4 a=projectionMatrix*modelViewMatrix*vec4(start,1.); vec4 b=projectionMatrix*modelViewMatrix*vec4(end,1.);
     vec2 direction=(b.xy/b.w-a.xy/a.w)*resolution;
     vec2 perpendicular=normalize(vec2(-direction.y,direction.x)+vec2(0.00001));
     gl_Position=mix(a,b,uv.y); gl_Position.xy+=perpendicular*(uv.x-.5)*${(laserTuning.beamWidthPixels * 2).toFixed(4)}/resolution*gl_Position.w;
+    // Cancel perspective interpolation across this constant-pixel-width ribbon.
+    acrossW=uv.x*gl_Position.w; clipW=gl_Position.w;
     #include <logdepthbuf_vertex>
     }`,
-    fragmentShader: `varying vec2 laserUv; uniform float smoke[32];
+    fragmentShader: `varying vec2 laserUv; varying float acrossW; varying float clipW; uniform float smoke[32];
     #include <logdepthbuf_pars_fragment>
     void main(){
     #include <logdepthbuf_fragment>
     float t=clamp(laserUv.y,0.,1.)*31.;int i=int(floor(t));
     float fog=mix(smoke[i],smoke[min(i+1,31)],fract(t));
-    float d=abs(laserUv.x-.5)*2.;float halo=exp(-d*d*3.);float core=exp(-d*d*180.);
+    float d=abs(acrossW/clipW-.5)*2.;float halo=exp(-d*d*3.);float core=exp(-d*d*180.);
     gl_FragColor=vec4(mix(vec3(1.,.015,.01),vec3(1.,.5,.35),core),(.035*halo+.55*core+fog*(.7*halo+.3*core))*(1.-smoothstep(.8,1.,d)));}`,
   })
   private readonly beam: THREE.Mesh

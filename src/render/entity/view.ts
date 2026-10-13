@@ -87,6 +87,7 @@ import { terrainVertices, terrainIndices } from '../../planet/land/terrain.js'
 import { triangles, trianglesWithRoofInfo } from '../../math/solid/mesh.js'
 import { UprightBillboard, softenFoliage } from './billboard.js'
 import { driverHeadPose } from './driving-camera.js'
+import { normalizeDriverPose, type DriverPoseAdjustment } from '../../config/driver-pose.js'
 import {
   createMonitorAvatar,
   MonitorMotion,
@@ -125,6 +126,7 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export interface SceneViewOptions {
+  driverPoseOffset?: (model: string) => DriverPoseAdjustment
   vehiclePresentation?: VehiclePresentationResolver
   /** Stock A3 mount recipe. Null/omitted disables instruments in the bare renderer. */
   carInstruments?: CarInstrumentDefinition | null
@@ -262,6 +264,24 @@ export class SceneView {
       })
   }
   private readonly headOffsets = new Map<string, readonly number[]>()
+  private readonly driverPoseOffsets = new Map<string, DriverPoseAdjustment>()
+  driverPoseAdjustment(model: string): DriverPoseAdjustment {
+    if (!this.driverPoseOffsets.has(model))
+      this.driverPoseOffsets.set(model, normalizeDriverPose(this.options.driverPoseOffset?.(model)))
+    return structuredClone(this.driverPoseOffsets.get(model)!)
+  }
+  setDriverPoseAdjustment(model: string, adjustment: DriverPoseAdjustment): DriverPoseAdjustment {
+    const applied = normalizeDriverPose(adjustment)
+    this.driverPoseOffsets.set(model, applied)
+    return structuredClone(applied)
+  }
+  vehicleCameraOffset(id: string): readonly number[] | undefined {
+    const head = this.vehicleHeadOffset(id)
+    const model = this.document.entities.find((e) => e.id === id)?.visual?.body.url
+    if (!head || !model) return head
+    const extra = this.driverPoseAdjustment(model).view
+    return head.map((v, i) => v + extra[i])
+  }
   /** Two-wheeler rider offset ([x, z] chassis metres) from the last pose; moves the head. */
   private readonly riderShifts = new Map<string, readonly [number, number]>()
   /** Two-wheeler tuck (0..1) from the last pose and the tucked eye offset of its preset. */
@@ -274,7 +294,10 @@ export class SceneView {
    */
   readonly rideSmoothing = new RideSmoothing()
   vehicleHeadOffset(id: string): readonly number[] | undefined {
-    const base = this.headOffsets.get(id)
+    const authored = this.headOffsets.get(id)
+    const model = this.document.entities.find((e) => e.id === id)?.visual?.body.url
+    const extra = model ? this.driverPoseAdjustment(model).head : [0, 0, 0]
+    const base = authored?.map((v, i) => v + extra[i])
     const shift = this.riderShifts.get(id)
     if (!base || !shift) return base
     const eye =
@@ -1305,6 +1328,12 @@ export class SceneView {
         hinge.attach(part)
       }
       this.ramps.set(e.id, hinge)
+      if (visual.ramp.telescopeNode) {
+        const section = hinge.getObjectByName(visual.ramp.telescopeNode)
+        if (!section) throw new Error('Missing telescopic ramp node')
+        hinge.userData.telescope = section
+        hinge.userData.telescopeZ = section.position.z
+      }
       this.shipLights.get(e.id)?.attachStern(hinge)
     })
     if (visual.wheel || visual.wheels) {
@@ -1676,7 +1705,12 @@ export class SceneView {
       gear.setDeployed(sim.vehicleInfo(id).landingGear, now)
       gear.update(now)
     }
-    for (const [id, ramp] of this.ramps) ramp.rotation.x = sim.vehicleInfo(id).rampAngle
+    for (const [id, ramp] of this.ramps) {
+      const info = sim.vehicleInfo(id)
+      ramp.rotation.x = info.rampAngle
+      if (ramp.userData.telescope)
+        ramp.userData.telescope.position.z = ramp.userData.telescopeZ + info.rampExtension
+    }
     for (const [id, wheel] of this.steering)
       poseSteeringWheel(
         wheel,

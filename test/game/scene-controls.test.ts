@@ -16,7 +16,7 @@ import {
 } from '../../game/terrain.js'
 
 it('prepares the common menu vehicles and permits an explicit reduced or empty list', () => {
-  expect(menuPreloadVehicles().map((assembly) => assembly[0].visual?.presentation)).toHaveLength(3)
+  expect(menuPreloadVehicles().map((assembly) => assembly[0].visual?.presentation)).toHaveLength(4)
   expect(menuPreloadVehicles([])).toEqual([])
   expect(menuPreloadVehicles(['car', 'car', 'unknown'])).toHaveLength(1)
 })
@@ -92,13 +92,14 @@ describe('menu helpers', () => {
     expect(seaStatus({ level: 3, state: 'Manual' }, true)).toBe('Nivel fijo: 3,0 m')
   })
 
-  it('offers the drivable catalog vehicles and leaves out the passive trailer', () => {
+  it('offers visible vehicles including every passive trailer', () => {
     const ids = vehicleChoices().map((choice) => choice.id)
     expect(ids).toEqual(expect.arrayContaining(['car', 'white-truck', 'carrier']))
     // The A3 stays an internal preset (Studio, examples, tests); the S3 in Normal mode covers it.
     expect(ids).not.toContain('a3')
-    expect(ids).not.toContain('white-trailer')
-    expect(ids).not.toContain('white-trailer-chassis')
+    expect(ids).toContain('white-trailer')
+    expect(ids).toContain('white-trailer-chassis')
+    expect(ids).toContain('white-car-transporter')
     for (const choice of vehicleChoices()) expect(choice.label.length).toBeGreaterThan(0)
   })
 })

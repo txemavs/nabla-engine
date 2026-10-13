@@ -19,6 +19,9 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   const result = await page.evaluate(async (root) => {
     const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
     const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+    const { normalizeActionCamSettings } = await import(
+      `/@fs/${root}/src/runtime/action-cam-settings.ts`
+    )
     const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
       `/@fs/${root}/src/config/gameplay-tuning.ts`
     )
@@ -43,6 +46,27 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      actionCamEnabled: true,
+      actionCamSettings: normalizeActionCamSettings({}),
+      setActionCamSettings: (patch: object) => {
+        runtime.actionCamSettings = normalizeActionCamSettings({
+          ...runtime.actionCamSettings,
+          ...patch,
+        })
+      },
+      resetActionCamSettings: () => {
+        runtime.actionCamSettings = normalizeActionCamSettings({})
+      },
+      setActionCamEnabled: (enabled: boolean) => {
+        runtime.actionCamEnabled = enabled
+      },
+      muzzleFlashTuning: { x: 0, y: 0, z: -72, intensity: 100 },
+      setMuzzleFlashTuning: (patch: object) => {
+        runtime.muzzleFlashTuning = { ...runtime.muzzleFlashTuning, ...patch }
+      },
+      previewMuzzleFlash: () => {},
+      tunnelEnabled: true,
+      setTunnelEnabled: () => {},
       weaponPoseTuning: structuredClone(weaponPoseDefaults),
       smokePercent: 50,
       smokeEnabled: true,
@@ -67,6 +91,16 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setLensFlareAmount: () => {},
     }
     mountSettingsHud(runtime as never)
+    const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
+    roll.value = '2'
+    roll.dispatchEvent(new Event('input', { bubbles: true }))
+    const rollRadians = runtime.actionCamSettings.stepRollRadians
+    document.getElementById('action-cam-soft')!.click()
+    const softStride = runtime.actionCamSettings.strideMetres
+    document.getElementById('action-cam-reset')!.click()
+    const actionCam = document.getElementById('camera-action-cam') as HTMLInputElement
+    actionCam.checked = false
+    actionCam.dispatchEvent(new Event('change', { bubbles: true }))
     const smoke = document.getElementById('quality-smoke') as HTMLInputElement
     smoke.checked = false
     smoke.dispatchEvent(new Event('change', { bubbles: true }))
@@ -89,9 +123,19 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     await new Promise((resolve) => setTimeout(resolve, 0))
     const pane = (id: string) => document.getElementById(id)?.closest('.settings-pane')?.id
     const order = (paneId: string) =>
-      [...document.getElementById(paneId)!.children].map((el) => el.id).filter(Boolean)
+      [...document.getElementById(paneId)!.querySelectorAll('.menu-section')]
+        .map((el) => el.id)
+        .filter(Boolean)
     return {
       before,
+      rollRadians,
+      softStride,
+      resetStride: runtime.actionCamSettings.strideMetres,
+      actionCam: runtime.actionCamEnabled,
+      actionCamPane: pane('camera-action-cam'),
+      cameraControls: ['camera-first-person-mode', 'camera-action-cam', 'quality-tunnel'].map(
+        (id) => document.getElementById(id)?.closest('fieldset')?.id,
+      ),
       smoke: runtime.smokeEnabled,
       smokePane: pane('quality-smoke'),
       sidearm,
@@ -122,11 +166,17 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
 
   const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
+  expect(result.actionCam).toBe(false)
+  expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
+  expect(result.softStride).toBe(2.8)
+  expect(result.resetStride).toBe(2.8)
+  expect(result.actionCamPane).toBe('settings-pane-options')
+  expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
   expect(result.smoke).toBe(false)
   expect(result.smokePane).toBe('settings-pane-performance')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
-  expect(result.weaponOutputs).toEqual(['-33 mm', '0.7°'])
+  expect(result.weaponOutputs).toEqual(['-33.00 mm', '0.70°'])
   expect(result.after).toEqual(visible)
   expect(result.planet).toEqual([
     'terrain-position',
@@ -139,12 +189,18 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.video).toEqual(['quality-shadows', 'road-style'])
   expect(result.options).toEqual([
     'camera-extras',
+    'settings-muzzle-flash',
     'driving-extras',
-    'settings-options-sidearm',
-    'settings-weapon-poses',
     'settings-options-labels',
   ])
-  expect(result.dev).toEqual(['settings-config-planet', 'terrain-source'])
+  expect(result.dev.sort()).toEqual(
+    [
+      'settings-config-planet',
+      'terrain-source',
+      'settings-options-sidearm',
+      'settings-weapon-poses',
+    ].sort(),
+  )
   expect(result.places).toBe('settings-pane-options')
   expect(result.placesGroup).toBe('settings-options-labels')
   expect(result.road).toBe('settings-pane-planet')
@@ -157,4 +213,20 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.clouds).toBe('settings-planet-air')
   expect(result.flare).toBe('settings-planet-sky')
   expect(result.vehicles).toBe('settings-pane-objects')
+  await page.locator('#settings-toggle').click()
+  await page.getByRole('tab', { name: 'Desarrollo' }).click()
+  const branch = page
+    .locator('#settings-pane-dev > details')
+    .filter({ has: page.locator('summary', { hasText: /^Arma$/ }) })
+  await expect(branch).not.toHaveAttribute('open', '')
+  await branch.locator(':scope > summary').focus()
+  await page.keyboard.press('Enter')
+  await expect(branch).toHaveAttribute('open', '')
+  await branch.getByText('Ajuste del apuntado', { exact: true }).first().click()
+  await expect(page.locator('#sidearm-aim-height')).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 740 })
+  expect(
+    await page.locator('#settings-window').evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true)
+  await page.screenshot({ path: '/tmp/settings-tree.png' })
 })

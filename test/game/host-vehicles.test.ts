@@ -254,6 +254,7 @@ describe('installHostVehicles', () => {
           vehicle: 'white-trailer',
           color: '#b91929',
           tow: true,
+          box: false,
         },
         { lat: 43.339, lon: -1.79, heading: 0, vehicle: 'white-trailer', color: '#f0f0ea' },
       ],

@@ -2,6 +2,8 @@ import { expect, it } from 'vitest'
 import { Body, Box, Vec3, World } from '../../src/simulation/physics.js'
 import { createWheeledVehicle } from '../../src/simulation/vehicles/wheeled/runtime.js'
 import { stepWheelMomentum } from '../../src/simulation/vehicles/wheel-momentum.js'
+import { stepJumpControl } from '../../src/simulation/vehicles/jump-control.js'
+import { idleWheeledInput } from '../../src/simulation/vehicles/wheeled/contracts.js'
 
 function rig() {
   const world = new World()
@@ -28,6 +30,50 @@ function rig() {
   v.raycast.addToWorld(world)
   return { world, body, v }
 }
+
+it('permits sustained jump orientation without linear thrust and leaves inactive vehicles alone', () => {
+  const { world, body, v } = rig()
+  try {
+    const input = { ...idleWheeledInput(), throttle: 1, steering: 1 }
+    stepJumpControl(v, input, false)
+    world.step(1 / 60)
+    expect(body.angularVelocity.length()).toBeCloseTo(0)
+    for (let i = 0; i < 30; i++) {
+      stepJumpControl(v, input, true)
+      world.step(1 / 60)
+    }
+    expect(body.angularVelocity.x).toBeGreaterThan(0.2)
+    expect(body.angularVelocity.y).toBeLessThan(-0.05)
+    expect(body.angularVelocity.z).toBeLessThan(-0.05)
+    expect(body.velocity.length()).toBeCloseTo(0, 6)
+    const before = body.angularVelocity.clone()
+    stepJumpControl(v, idleWheeledInput(), true)
+    expect([body.angularVelocity.x, body.angularVelocity.y, body.angularVelocity.z]).toEqual([
+      before.x,
+      before.y,
+      before.z,
+    ])
+  } finally {
+    v.raycast.removeFromWorld(world)
+    world.removeBody(body)
+    world.raw.free()
+  }
+})
+
+it('never applies jump assistance while any tyre touches the ground', () => {
+  const { world, body, v } = rig()
+  try {
+    // Use the authoritative controller contact, rather than stale visual wheel state.
+    v.raycast.controller!.wheelIsInContact = () => true
+    stepJumpControl(v, { ...idleWheeledInput(), throttle: 1, steering: 1 }, true)
+    world.step(1 / 60)
+    expect(body.angularVelocity.length()).toBeCloseTo(0)
+  } finally {
+    v.raycast.removeFromWorld(world)
+    world.removeBody(body)
+    world.raw.free()
+  }
+})
 
 it('exchanges wheel momentum for chassis pitch without translating an airborne vehicle', () => {
   const { world, body, v } = rig()

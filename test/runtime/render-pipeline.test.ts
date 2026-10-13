@@ -53,6 +53,22 @@ function fixture() {
   } as unknown as GameRenderFrame
   return { frame, renderer, overlay, target, events, pipeline: new GameRenderPipeline() }
 }
+it('keeps the same colour pass at rest and throughout tunnel aiming', () => {
+  const { frame, pipeline, target } = fixture()
+  const begin = vi.spyOn(pipeline.depthOfField, 'begin').mockImplementation(() => {})
+  const present = vi.spyOn(pipeline.depthOfField, 'present').mockImplementation(() => {})
+  for (const progress of [0, 0.0001, 0.5, 1, 0]) {
+    frame.tunnelFocus = progress
+    pipeline.render(frame)
+  }
+  expect(begin).toHaveBeenCalledTimes(5)
+  expect(present).toHaveBeenCalledTimes(5)
+  frame.tunnelFocus = undefined
+  pipeline.render(frame)
+  expect(begin).toHaveBeenCalledTimes(5)
+  pipeline.dispose()
+  target.dispose()
+})
 it('renders auxiliary views before the main world, restores apertures before postprocessing', () => {
   const { frame, renderer, overlay, target, events, pipeline } = fixture()
   frame.depthOfField = true

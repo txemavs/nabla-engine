@@ -1,5 +1,17 @@
-import { weaponViewTuning } from '../config/gameplay-tuning.js'
+import {
+  normalizeWeaponWheel,
+  weaponWheelOffset,
+  weaponWheelTunnel,
+  type WeaponWheelSettings,
+} from './weapon-wheel.js'
+import {
+  weaponViewTuning,
+  weaponHeatTuning,
+  weaponPoseDefaults,
+} from '../config/gameplay-tuning.js'
+import { extendedWeaponPose } from './world-weapon-pose.js'
 import * as THREE from 'three'
+import { ejectionPort, centeredCartridge } from '../render/entity/ejection-port.js'
 import { weaponPresets, type WeaponPreset } from '../catalog/weapons/library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import {
@@ -35,6 +47,7 @@ import {
 import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
 import { poseHKDetails } from './hk-presentation.js'
 import { ViewmodelLighting } from './viewmodel-lighting.js'
+import { warmEffectPresentation } from './presentation-warmup.js'
 import { normalizeWeaponPoses, type WeaponPoseTuning } from './weapon-pose-tuning.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
@@ -104,6 +117,7 @@ export class Sidearm {
   readonly recoilYaw = new RecoilYaw()
   readonly state: FirearmState
   private readonly rise: MuzzleRise | null
+  private steadyHeld = false
   private rig: WeaponRig = defaultRig
   private slide: Part | null = null
   private triggerPart: Part | null = null
@@ -127,7 +141,10 @@ export class Sidearm {
   private hammerArmed = false
   private hammerStrikeAt = -Infinity
   private lastAction: 'single' | 'double' = 'double'
+  broken = false
   readonly temperature = new WeaponThermal()
+  private hotMaterials: THREE.MeshStandardMaterial[] = []
+  private heatSmokeAt = -Infinity
   private variantId: HKVariantId = 'sa-da-combined-left'
   private safetyOn = false
   private worldPresentation: THREE.Group | null = null
@@ -137,12 +154,24 @@ export class Sidearm {
   private smokeEnabled = true
   private assembledModel: THREE.Group | null = null
   private legacySlide: THREE.Object3D | null = null
+  private readonly muzzleLight = new THREE.SpotLight(0xffc078, 0, 6, Math.PI / 3, 0.65, 2)
+  private readonly worldMuzzleLight = new THREE.SpotLight(0xffc078, 0, 6, Math.PI / 3, 0.65, 2)
+  flashTuning = { x: 0, y: 0, z: -72, intensity: 100 }
+  private flashPreviewUntil = -Infinity
+  previewFlash(): void {
+    this.flashPreviewUntil = performance.now() + 1000
+  }
   private readonly flash: THREE.Mesh
   private readonly flashAt: [number, number, number]
   private readonly laserLine: THREE.Line
   private enabled = false
   private disposed = false
   private aiming = false
+  playerWheel: WeaponWheelSettings = normalizeWeaponWheel()
+  private smoothWheel: WeaponWheelSettings = normalizeWeaponWheel()
+  get playerTunnel(): number {
+    return weaponWheelTunnel(this.smoothWheel.distance)
+  }
   private aimBlend = 0
   private laserOn = false
   private lightOn = false
@@ -192,6 +221,18 @@ export class Sidearm {
           assembly.add(object)
           this.model.add(assembly)
           this.assembledModel = assembly
+          object.getObjectByName('Barrel')?.traverse((node) => {
+            if (!(node instanceof THREE.Mesh)) return
+            const prepare = (material: THREE.Material) => {
+              if (!(material instanceof THREE.MeshStandardMaterial)) return material
+              const own = material.clone()
+              this.hotMaterials.push(own)
+              return own
+            }
+            node.material = Array.isArray(node.material)
+              ? node.material.map(prepare)
+              : prepare(node.material)
+          })
           this.slide = part(object, this.rig.parts.slide)
           this.triggerPart = part(object, this.rig.parts.trigger)
           this.magazine = part(object, this.rig.parts.magazine)
@@ -256,6 +297,11 @@ export class Sidearm {
     this.flash.position.set(this.flashAt[0], this.flashAt[1], this.flashAt[2] - 0.015)
     this.flash.visible = false
     this.model.add(this.flash)
+    this.muzzleLight.name = 'sidearm-muzzle-light'
+    this.worldMuzzleLight.name = 'sidearm-world-muzzle-light'
+    this.worldMuzzleLight.userData.excludeFromViewmodel = true
+    this.muzzleLight.position.copy(this.flash.position)
+    this.model.add(this.muzzleLight, this.muzzleLight.target)
     this.model.add(this.smoke.root)
     const laserPositions = new Float32Array([
       this.flashAt[0],
@@ -293,10 +339,22 @@ export class Sidearm {
    * textures and compile its programs (flash and laser included) against the viewmodel lights,
    * then draw it once off screen. The first draw then shows the pistol, not the placeholder.
    */
-  async warm(renderer: THREE.WebGLRenderer): Promise<void> {
+  async warm(renderer: THREE.WebGLRenderer, world?: THREE.Scene): Promise<void> {
     await this.ready
     if (this.disposed) return
+    if (world) {
+      this.studioLights.visible = false
+      this.worldLighting.root.visible = true
+      this.worldLighting.sync(world)
+      this.scene.environment = world.environment
+      this.scene.environmentIntensity = world.environmentIntensity
+      this.scene.environmentRotation.copy(world.environmentRotation)
+      this.model.traverse((object) => {
+        if (object instanceof THREE.Mesh) object.receiveShadow = true
+      })
+    }
     const flash = this.flash.visible,
+      smoke = this.smoke.root.visible,
       laser = this.laserLine.visible
     const accessory = this.assembledModel?.getObjectByName('LightLaserModule')
     const accessoryVisible = accessory?.visible ?? false
@@ -316,17 +374,25 @@ export class Sidearm {
       if (this.disposed) return
       const previous = renderer.getRenderTarget()
       const target = new THREE.WebGLRenderTarget(1, 1)
+      const shadowAuto = renderer.shadowMap.autoUpdate
+      const shadowNeeds = renderer.shadowMap.needsUpdate
       try {
+        renderer.shadowMap.autoUpdate = false
+        renderer.shadowMap.needsUpdate = false
         renderer.setRenderTarget(target)
         renderer.render(this.scene, this.camera)
       } finally {
         renderer.setRenderTarget(previous)
+        renderer.shadowMap.autoUpdate = shadowAuto
+        renderer.shadowMap.needsUpdate = shadowNeeds
         target.dispose()
       }
+      if (world && this.worldSmoke)
+        await warmEffectPresentation(renderer, this.camera, [this.worldSmoke.root], world)
     } finally {
       this.flash.visible = flash
       if (accessory) accessory.visible = accessoryVisible
-      this.smoke.root.visible = false
+      this.smoke.root.visible = smoke
       this.laserLine.visible = laser
     }
   }
@@ -335,6 +401,10 @@ export class Sidearm {
     if (this.disposed) return
     this.visible = false
     this.disposed = true
+    this.worldMuzzleLight.target.removeFromParent()
+    this.worldMuzzleLight.removeFromParent()
+    this.worldMuzzleLight.dispose()
+    this.muzzleLight.dispose()
     this.smoke.dispose()
     this.worldSmoke?.dispose()
     this.worldPresentation?.removeFromParent()
@@ -347,7 +417,7 @@ export class Sidearm {
 
   set visible(value: boolean) {
     this.enabled = value && !this.disposed
-    if (this.worldPresentation) this.worldPresentation.visible = this.enabled
+    if (this.worldPresentation) this.worldPresentation.visible = this.visible
     if (!this.enabled) {
       this.worldPresentation?.removeFromParent()
       this.aiming = false
@@ -356,7 +426,7 @@ export class Sidearm {
     }
   }
   get visible(): boolean {
-    return this.enabled
+    return this.enabled && !this.broken
   }
 
   setAiming(value: boolean): void {
@@ -380,7 +450,7 @@ export class Sidearm {
     return this.laserOn
   }
   get laserEnabled(): boolean {
-    return this.laserOn
+    return this.laserOn && !this.broken
   }
 
   /** Real-firearm data present (ammunition, reload, ballistics). */
@@ -399,6 +469,7 @@ export class Sidearm {
   }
 
   reset(): void {
+    this.broken = false
     this.temperature.reset()
     this.inspection = null
     this.hammerArmed = false
@@ -431,7 +502,7 @@ export class Sidearm {
     )
       return trigger(this.state, this.firearm, false, now)
     this.inspection = null
-    if (this.safetyOn) return trigger(this.state, this.firearm, false, now)
+    if (this.broken || this.safetyOn) return trigger(this.state, this.firearm, false, now)
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
     const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
     if (event.fired || event.dry) {
@@ -445,10 +516,62 @@ export class Sidearm {
         this.smoke.burst(now, this.flashAt)
         if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
       }
-      this.rise?.shot(now)
+      if (!this.steadyHeld) this.rise?.shot(now)
       if (this.mode === 'burst30') this.recoilYaw.kick()
     }
     return event
+  }
+
+  /** Snapshot the four physical components before hiding the destroyed weapon. */
+  ruptureParts(
+    camera: THREE.PerspectiveCamera,
+    space: THREE.Group,
+    firstPerson: boolean,
+  ): THREE.Group | null {
+    if (this.broken || !this.assembledModel) return null
+    const source = firstPerson ? this.model : this.worldPresentation
+    if (!source) return null
+    source.updateWorldMatrix(true, true)
+    const body = source.clone(true)
+    // Clone only the physical assembly. Hidden laser lines and live smoke still
+    // contribute to Box3 bounds and would give debris metres of invisible support.
+    const assembly = firstPerson ? this.assembledModel : source.children[0]
+    if (source !== assembly) {
+      for (let i = source.children.length - 1; i >= 0; i--)
+        if (source.children[i] !== assembly) body.children[i].removeFromParent()
+    }
+    const hidden: THREE.Object3D[] = []
+    body.traverse((node) => {
+      if (!node.visible) hidden.push(node)
+    })
+    for (const node of hidden) node.removeFromParent()
+    if (firstPerson) {
+      const local = this.viewRig.worldToLocal(source.getWorldPosition(new THREE.Vector3()))
+      body.position.copy(local.applyQuaternion(camera.quaternion).add(camera.position))
+      body.quaternion.copy(camera.quaternion).multiply(source.quaternion)
+    } else {
+      body.position.copy(space.worldToLocal(source.getWorldPosition(new THREE.Vector3())))
+      body.quaternion
+        .copy(space.getWorldQuaternion(new THREE.Quaternion()).invert())
+        .multiply(source.getWorldQuaternion(new THREE.Quaternion()))
+    }
+    const group = new THREE.Group()
+    space.add(group)
+    group.add(body)
+    group.updateWorldMatrix(true, true)
+    // Detach children first so neither the slide nor the body duplicates the barrel.
+    for (const name of ['Barrel', 'Slide', 'Magazine']) {
+      const part = body.getObjectByName(name)
+      if (part) group.attach(part)
+    }
+    body.name = 'Broken pistol frame'
+    group.traverse((node) => {
+      if (node instanceof THREE.Points) node.visible = false
+    })
+    this.broken = true
+    if (this.worldPresentation) this.worldPresentation.visible = false
+    this.release()
+    return group
   }
 
   /** Trigger released: resets it for the next shot. */
@@ -491,7 +614,7 @@ export class Sidearm {
     }
     if (!this.state.slideLocked) return this.manipulate('slide-release', now)
     const event = releaseSlide(this.state, now)
-    if (event.slideReleased) {
+    if (event.slideReleased || event.manualSlideLocked) {
       this.hammerArmed = !this.variant.dao
       this.slideLeverPoseAt = now
     }
@@ -508,17 +631,48 @@ export class Sidearm {
   /** Advance the slide and any reload; call once per frame. */
   update(now: number): FirearmEvent {
     this.temperature.step(now)
+    const heat = this.temperature.heat
+    const glow = Math.max(
+      0,
+      (heat - weaponHeatTuning.glowStarts) / (1 - weaponHeatTuning.glowStarts),
+    )
+    for (const material of this.hotMaterials) {
+      const orange = THREE.MathUtils.clamp(
+        (heat - weaponHeatTuning.orangeStarts) /
+          (weaponHeatTuning.ruptureHeat - weaponHeatTuning.orangeStarts),
+        0,
+        1,
+      )
+      material.emissive.setRGB(1, 0.035 + orange * 0.5, orange * 0.035)
+      material.emissiveIntensity = glow * 2.5
+    }
+    if (
+      this.visible &&
+      this.smokeEnabled &&
+      heat > weaponHeatTuning.smokeStarts &&
+      now - this.heatSmokeAt > 500 - heat * 350
+    ) {
+      this.heatSmokeAt = now
+      this.smoke.burst(now, this.flashAt)
+      if (this.worldPresentation?.visible) this.worldSmoke?.burst(now, this.flashAt)
+    }
     const event = advanceFirearm(this.state, this.firearm, now)
-    if (event.slideReleased) {
+    if (event.slideReleased || event.manualSlideLocked) {
       this.hammerArmed = !this.variant.dao
       this.slideLeverPoseAt = now
     }
     return event
   }
 
+  /** Hold Shift to suppress vertical recoil; discard pending rise on entry. */
+  setSteadyHeld(held: boolean): void {
+    if (held && !this.steadyHeld) this.rise?.reset()
+    this.steadyHeld = held
+  }
+
   /** Muzzle rise since the previous call (rad, positive = up), to add to the aim. */
   aimRise(now: number): number {
-    return this.rise ? this.rise.step(now) : 0
+    return !this.steadyHeld && this.rise ? this.rise.step(now) : 0
   }
 
   impact(_hit: boolean): void {}
@@ -529,6 +683,9 @@ export class Sidearm {
       new THREE.Vector3(ADS_POSE.position[0], this.tuning.height, ADS_POSE.position[2]),
       this.aimBlend,
     )
+    const playerOffset = weaponWheelOffset(this.smoothWheel, this.aimBlend, this.slidePoseBlend)
+    pos.x += playerOffset.x
+    pos.add(new THREE.Vector3(0, 0, playerOffset.z).applyQuaternion(this.model.quaternion))
     return pos.add(
       new THREE.Vector3(...this.flashAt).applyAxisAngle(
         new THREE.Vector3(1, 0, 0),
@@ -537,13 +694,25 @@ export class Sidearm {
     )
   }
 
-  /** Ejection port in the viewmodel camera's space: right of and behind the muzzle. */
-  ejectionViewOffset(): THREE.Vector3 {
-    if (this.chamberRound) {
-      this.model.updateWorldMatrix(true, true)
-      return this.viewRig.worldToLocal(this.chamberRound.getWorldPosition(new THREE.Vector3()))
+  /** Eye-relative in first person, world-space in third person. */
+  ejectionPose(firstPerson: boolean, worldFov: number) {
+    const root = firstPerson ? this.model : this.worldPresentation
+    if (!root) return null
+    const pose = ejectionPort(root)
+    if (!pose || !firstPerson) return pose
+    const right = pose.position.clone().add(pose.right)
+    const up = pose.position.clone().add(pose.up)
+    const fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
+    const ratio =
+      Math.tan(THREE.MathUtils.degToRad(worldFov / 2)) / Math.tan(THREE.MathUtils.degToRad(fov / 2))
+    for (const point of [pose.position, right, up]) {
+      this.viewRig.worldToLocal(point)
+      point.x *= ratio
+      point.y *= ratio
     }
-    return this.muzzleViewOffset().add(new THREE.Vector3(0.012, 0.01, 0.08))
+    pose.right.copy(right).sub(pose.position).normalize()
+    pose.up.copy(up).sub(pose.position).normalize()
+    return pose
   }
 
   render(
@@ -554,11 +723,17 @@ export class Sidearm {
     world?: THREE.Scene,
     eye?: THREE.Camera,
   ): void {
-    if (!this.enabled) return
+    if (!this.visible) return
     const height = renderer.getDrawingBufferSize(new THREE.Vector2()).y
     this.smoke.update(now, height)
     this.worldSmoke?.update(now, height)
     this.aimBlend = this.aimTransition
+    this.smoothWheel.hand = THREE.MathUtils.lerp(this.smoothWheel.hand, this.playerWheel.hand, 0.2)
+    this.smoothWheel.distance = THREE.MathUtils.lerp(
+      this.smoothWheel.distance,
+      this.playerWheel.distance,
+      0.2,
+    )
     this.laserLine.visible = false
     if (!firstPerson) return
     this.camera.aspect = aspect
@@ -566,6 +741,7 @@ export class Sidearm {
     this.camera.updateProjectionMatrix()
     this.viewPose(now)
     this.studioLights.visible = !world
+    if (eye instanceof THREE.PerspectiveCamera) this.alignViewAim(eye.fov)
     this.worldLighting.root.visible = !!world
     if (world && eye) {
       this.worldLighting.sync(world)
@@ -586,7 +762,20 @@ export class Sidearm {
       this.camera.quaternion.identity()
     }
     const age = now - this.state.lastShotMs
-    this.flash.visible = age >= 0 && age < 30
+    this.flash.position.set(
+      this.flashAt[0] + this.flashTuning.x / 1000,
+      this.flashAt[1] + this.flashTuning.y / 1000,
+      this.flashAt[2] - 0.015 + this.flashTuning.z / 1000,
+    )
+    this.muzzleLight.position.copy(this.flash.position)
+    this.muzzleLight.target.position.copy(this.flash.position).add(new THREE.Vector3(0, 0, -1))
+    this.flash.visible =
+      this.flashTuning.intensity > 0 && ((age >= 0 && age < 60) || now < this.flashPreviewUntil)
+    ;(this.flash.material as THREE.MeshBasicMaterial).opacity = Math.min(
+      1,
+      (0.55 * this.flashTuning.intensity) / 100,
+    )
+    this.muzzleLight.intensity = this.flashIntensity(now)
     const autoClear = renderer.autoClear
     const shadowUpdate = renderer.shadowMap.autoUpdate
     const shadowNeedsUpdate = renderer.shadowMap.needsUpdate
@@ -611,7 +800,7 @@ export class Sidearm {
     aim?: THREE.Vector3,
     up = new THREE.Vector3(0, 1, 0),
   ): void {
-    if (!this.enabled || firstPerson || !this.assembledModel) {
+    if (!this.visible || firstPerson || !this.assembledModel) {
       if (this.worldPresentation) this.worldPresentation.visible = false
       return
     }
@@ -636,12 +825,7 @@ export class Sidearm {
     )
     world.quaternion.copy(this.model.quaternion)
     if (aim) {
-      const rotation = new THREE.Quaternion().setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(world.getWorldPosition(new THREE.Vector3()), aim, up),
-      )
-      world.quaternion
-        .copy(parent.getWorldQuaternion(new THREE.Quaternion()).invert())
-        .multiply(rotation)
+      extendedWeaponPose(world, parent, aim, up)
       if (this.inspection) world.quaternion.multiply(this.model.quaternion)
     }
     for (const source of [
@@ -682,9 +866,98 @@ export class Sidearm {
     }
   }
 
+  /** Short cosmetic light pulse; an empty trigger pull never sets lastShotMs. */
+  private flashIntensity(now: number): number {
+    const age = now - this.state.lastShotMs
+    if (!this.visible) return 0
+    const strength = (18 * this.flashTuning.intensity) / 100
+    if (now < this.flashPreviewUntil) return strength
+    return age >= 0 && age < 75 ? strength * (1 - age / 75) ** 2 : 0
+  }
+
+  syncMuzzleLight(
+    now: number,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    firstPerson: boolean,
+  ): void {
+    const light = this.worldMuzzleLight
+    if (light.parent !== scene) scene.add(light, light.target)
+    light.intensity = this.flashIntensity(now)
+    if (!light.intensity) return
+    const offset = new THREE.Vector3(
+      this.flashTuning.x,
+      this.flashTuning.y,
+      this.flashTuning.z,
+    ).multiplyScalar(0.001)
+    if (firstPerson) {
+      light.position
+        .copy(camera.position)
+        .add(
+          this.muzzleViewOffset(now)
+            .add(offset.applyQuaternion(this.model.quaternion))
+            .applyQuaternion(camera.quaternion),
+        )
+    } else {
+      const position = this.worldMuzzle()
+      if (position)
+        light.position
+          .copy(position)
+          .add(
+            offset.applyQuaternion(
+              this.worldPresentation!.getWorldQuaternion(new THREE.Quaternion()),
+            ),
+          )
+      else light.intensity = 0
+    }
+    const direction = new THREE.Vector3(0, 0, -1)
+    if (firstPerson)
+      direction.applyQuaternion(this.model.quaternion).applyQuaternion(camera.quaternion)
+    else if (this.worldPresentation)
+      direction.applyQuaternion(this.worldPresentation.getWorldQuaternion(new THREE.Quaternion()))
+    light.target.position.copy(light.position).add(direction)
+    light.target.updateMatrixWorld(true)
+  }
+
   worldMuzzle(): THREE.Vector3 | null {
     const world = this.worldPresentation
+    const socket = world?.getObjectByName('MuzzleSocket')
+    if (world?.visible && socket) return socket.getWorldPosition(new THREE.Vector3())
     return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
+  }
+
+  /** Torch follows its authored mount, including inspection, recoil and third-person pose. */
+  accessoryRay(
+    now: number,
+    firstPerson: boolean,
+    worldFov: number,
+    socketName: 'TorchSocket' | 'RedLaserSocket' | 'Barrel',
+  ): { origin: THREE.Vector3; target: THREE.Vector3 } | null {
+    if (firstPerson) {
+      this.viewPose(now)
+      this.alignViewAim(worldFov)
+    }
+    const root = firstPerson ? this.model : this.worldPresentation
+    const muzzle = socketName === 'Barrel' ? root?.getObjectByName('MuzzleSocket') : undefined
+    const socket = socketName === 'Barrel' ? (muzzle ?? root) : root?.getObjectByName(socketName)
+    if (!socket) return null
+    socket.updateWorldMatrix(true, false)
+    const local =
+      socketName === 'Barrel' && !muzzle ? new THREE.Vector3(...this.flashAt) : new THREE.Vector3()
+    const origin = socket.localToWorld(local.clone())
+    const target = socket.localToWorld(local.clone().add(new THREE.Vector3(0, 0, -10)))
+    if (firstPerson) {
+      const fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
+      const ratio =
+        Math.tan(THREE.MathUtils.degToRad(worldFov / 2)) /
+        Math.tan(THREE.MathUtils.degToRad(fov / 2))
+      for (const point of [origin, target]) {
+        this.viewRig.worldToLocal(point)
+        point.x *= ratio
+        point.y *= ratio
+      }
+    }
+    return { origin, target }
   }
 
   worldMagazineDropView(): ReturnType<Sidearm['magazineDropView']> {
@@ -709,11 +982,67 @@ export class Sidearm {
       )
     this.model.rotation.set(0, 0, 0)
     this.pose(now)
+    const playerOffset = weaponWheelOffset(this.smoothWheel, this.aimBlend, this.slidePoseBlend)
+    this.model.position.x += playerOffset.x
     if (this.bodycamEnabled) {
       this.model.position.y -= 0.025 * (1 - this.aimBlend)
       this.model.rotation.y += this.bodycamYaw
       this.model.rotation.x -= this.bodycamPitch
     }
+  }
+
+  /** Align the factory neutral pose; preserve user calibration and gesture rotations. */
+  private alignViewAim(worldFov: number): void {
+    const t = this.aimBlend
+    const base = this.poseTuning.normal,
+      aimed = this.poseTuning.aimed
+    const mix = (key: keyof typeof base) => THREE.MathUtils.lerp(base[key], aimed[key], t)
+    const original = (key: 'pitch' | 'yaw' | 'roll') =>
+      THREE.MathUtils.lerp(weaponPoseDefaults.normal[key], weaponPoseDefaults.aimed[key], t)
+    const pitch =
+      THREE.MathUtils.degToRad(sidearmTuningDefaults.angle * t + original('pitch')) -
+      (this.bodycamEnabled ? this.bodycamPitch : 0)
+    const yaw =
+      THREE.MathUtils.degToRad(original('yaw')) + (this.bodycamEnabled ? this.bodycamYaw : 0)
+    const neutral = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(pitch, yaw, THREE.MathUtils.degToRad(original('roll'))),
+    )
+    const gesture = neutral.clone().invert().multiply(this.model.quaternion)
+    const position = new THREE.Vector3(...HIP_POSE.position).lerp(
+      new THREE.Vector3(ADS_POSE.position[0], this.tuning.height, ADS_POSE.position[2]),
+      t,
+    )
+    position.add(new THREE.Vector3(mix('x'), mix('y'), mix('z')).multiplyScalar(0.001))
+    const playerOffset = weaponWheelOffset(this.smoothWheel, t, this.slidePoseBlend)
+    position.x += playerOffset.x
+    if (this.bodycamEnabled) position.y -= 0.025 * (1 - t)
+    const target = new THREE.Vector3(0, 0, -weaponViewTuning.alignmentDistanceMetres)
+    if (this.bodycamEnabled)
+      target.applyEuler(new THREE.Euler(-this.bodycamPitch, this.bodycamYaw, 0, 'YXZ'))
+    const viewFov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, t)
+    const ratio =
+      Math.tan(THREE.MathUtils.degToRad(viewFov / 2)) /
+      Math.tan(THREE.MathUtils.degToRad(worldFov / 2))
+    target.x *= ratio
+    target.y *= ratio
+    const socket = this.model.getObjectByName('MuzzleSocket')
+    this.model.updateWorldMatrix(true, true)
+    const muzzle = socket
+      ? this.model.worldToLocal(socket.getWorldPosition(new THREE.Vector3()))
+      : new THREE.Vector3(...this.flashAt)
+    const aligned = neutral.clone()
+    for (let i = 0; i < 3; i++) {
+      const from = muzzle.clone().applyQuaternion(aligned).add(position)
+      aligned.setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(from, target, new THREE.Vector3(0, 1, 0)),
+      )
+    }
+    this.model.quaternion.copy(aligned).multiply(gesture)
+    // Translate along the calibrated weapon axis, not camera Z. Re-aiming from a
+    // different camera-Z position changes the line through the front/rear sights.
+    this.model.position.add(
+      new THREE.Vector3(0, 0, playerOffset.z).applyQuaternion(this.model.quaternion),
+    )
   }
 
   /**
@@ -742,7 +1071,7 @@ export class Sidearm {
   }
 
   cartridgeClone(): THREE.Object3D | null {
-    return this.chamberRound?.clone(true) ?? null
+    return this.chamberRound ? centeredCartridge(this.chamberRound) : null
   }
 
   /** A detached copy of the `Magazine` node. Geometry and materials stay shared. */

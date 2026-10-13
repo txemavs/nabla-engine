@@ -5,6 +5,21 @@ import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { createEntity } from '../../src/entity/schema.js'
 import type { Vehicle } from '../../src/entity/vehicle/vehicle.js'
 
+it('accumulates separate blows, aggregates simultaneous contacts and allows catastrophic impacts', () => {
+  const damage = new VehicleDamage()
+  damage.impact('car', 1, 25, 0)
+  damage.impact('car', 2, 25, 0.1)
+  expect(damage.remaining('car')).toBeCloseTo(93.4)
+  for (let i = 1; i < 15; i++) damage.impact('car', i, 25, i)
+  expect(damage.destroyed('car')).toBe(false)
+  damage.impact('car', 20, 25, 16)
+  expect(damage.destroyed('car')).toBe(true)
+  damage.impact('truck', 1, 8, 0)
+  damage.impact('truck', 2, 60, 0.1)
+  expect(damage.destroyed('truck')).toBe(true)
+  expect(damage.remaining('airborne')).toBe(100)
+})
+
 it('accumulates real damage, ignores invalid damage, emits destruction only once', () => {
   const damage = new VehicleDamage()
   damage.apply('car', NaN)
@@ -20,13 +35,13 @@ it('accumulates real damage, ignores invalid damage, emits destruction only once
 
 it('ignores gentle contacts and prevents sustained collision damage every frame', () => {
   const damage = new VehicleDamage()
-  damage.impact('car', 2, 5, 0)
+  damage.impact('car', 2, 2, 0)
   expect(damage.remaining('car')).toBe(100)
   damage.impact('car', 2, 17, 0)
   damage.impact('car', 2, 17, 0.1)
-  expect(damage.remaining('car')).toBe(65)
+  expect(damage.remaining('car')).toBeCloseTo(95.8)
   damage.impact('car', 2, 17, 1.1)
-  expect(damage.remaining('car')).toBe(30)
+  expect(damage.remaining('car')).toBeCloseTo(91.6)
 })
 
 it('blast moves nearby bodies, cannot damage distant vehicles, and wreck cannot restart', () => {
@@ -80,7 +95,7 @@ it('a strong physical collision destroys a vehicle, without requiring a gun hit'
   try {
     sim.startInVehicle('car')
     const vehicle = (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get('car')!
-    vehicle.body.velocity.set(0, 0, -32)
+    vehicle.body.velocity.set(0, 0, -60)
     for (let i = 0; i < 20; i++) sim.step(1 / 60)
     expect(sim.vehicleDamage('car').destroyed).toBe(true)
     const impacts = sim.consumeExplosions()

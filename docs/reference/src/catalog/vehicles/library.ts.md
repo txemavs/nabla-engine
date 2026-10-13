@@ -125,7 +125,7 @@ Explicit throws in this body:
 
 ## presetVehicle
 
-[Implementation, line 136](../../../../../src/catalog/vehicles/library.ts#L136)
+[Implementation, line 140](../../../../../src/catalog/vehicles/library.ts#L140)
 
 One vehicle. Omit position to use the preset's placement.
 
@@ -142,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## presetEntities
 
-[Implementation, line 158](../../../../../src/catalog/vehicles/library.ts#L158)
+[Implementation, line 162](../../../../../src/catalog/vehicles/library.ts#L162)
 
 The vehicle, plus the carrier stern portal when the preset asks for one.
 

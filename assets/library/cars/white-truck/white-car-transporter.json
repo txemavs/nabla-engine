@@ -1,0 +1,116 @@
+{
+  "id": "white-car-transporter",
+  "label": "Portacoches · rampa telescópica",
+  "clearance": 1.2,
+  "placement": [10, 1.2, 7.33],
+  "order": 9,
+  "name": "Portacoches · rampa telescópica",
+  "color": "#eeeeee",
+  "size": [2.55, 1.4, 13.5],
+  "mass": 5000,
+  "vehicle": {
+    "controls": "none",
+    "passive": true,
+    "colliders": [
+      {
+        "size": [2.4, 0.08, 12.8],
+        "transform": {
+          "position": [0, 0.19, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "transform": {
+          "position": [0, 0.25, 0],
+          "rotation": [0, 0, 0, 1]
+        },
+        "size": [2.32, 0.04, 12.8]
+      }
+    ],
+    "wheelRadius": 0.5723822231286207,
+    "suspensionRest": 0.22,
+    "stiffness": 110,
+    "engineForce": 1,
+    "brakeForce": 120,
+    "cameraDistance": 24,
+    "garage": {
+      "min": [-1.25, 0.1, -6.4],
+      "max": [1.25, 2.6, 6.4],
+      "ramp": {
+        "colliderIndex": 0,
+        "hinge": [0, 0.19, -6.4],
+        "closeAngle": 0,
+        "loadAngle": 0.045,
+        "telescope": {
+          "colliderIndex": 1,
+          "maxAngle": 0.045,
+          "minAngle": -0.5235987756,
+          "travel": 12.0,
+          "speed": 2,
+          "angleStep": 0.05235987756
+        }
+      }
+    }
+  },
+  "visual": {
+    "body": {
+      "url": "/library/trucks/white-truck/assets/trailer.transporter.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheels": [
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
+        "transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "presentation": "nabla.truck",
+    "ramp": {
+      "nodes": ["LoadingDeck", "SlidingDeck"],
+      "hinge": [0, 0.19, -6.4],
+      "closeAngle": 0,
+      "telescopeNode": "SlidingDeck"
+    }
+  },
+  "rig": "glb"
+}

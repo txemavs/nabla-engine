@@ -299,6 +299,8 @@ export class CarMirrors {
     /** Unit vector away from the vehicle body, in the lens parent's frame. */
     outward: THREE.Vector3
     rotation: THREE.Quaternion
+    opticalRotation: THREE.Quaternion
+    fixedGlass: boolean
     original: THREE.Mesh
     mirror: Reflector
     render: Reflector['onBeforeRender']
@@ -387,6 +389,8 @@ export class CarMirrors {
         up,
         outward,
         rotation,
+        opticalRotation: rotation.clone(),
+        fixedGlass: /^mirror_[LR]$/.test(original.parent?.userData.nabla?.part ?? ''),
         capture: new THREE.PerspectiveCamera(),
         width: capture.width,
         height: capture.height,
@@ -432,6 +436,9 @@ export class CarMirrors {
       .copy(e.rotation)
       .premultiply(new THREE.Quaternion().setFromUnitVectors(e.normal, raised))
       .premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, yaw))
+    e.opticalRotation.copy(e.mirror.quaternion)
+    // Motorcycle glass is fitted to its rim: adjust the capture, not the visible silhouette.
+    if (e.fixedGlass) e.mirror.quaternion.copy(e.rotation)
     e.next = 0
   }
   /** Signed view-only yaw of a side, radians, about the lens parent's vehicle-up. */
@@ -496,8 +503,9 @@ export class CarMirrors {
         const up = e.up.clone()
         if (e.mirror.parent) up.transformDirection(e.mirror.parent.matrixWorld)
         // View-only yaw: turn the glass for the capture and back, so the mesh never moves.
-        const viewYaw = this.viewYaw(e)
         const placed = e.mirror.quaternion.clone()
+        if (e.fixedGlass) e.mirror.quaternion.copy(e.opticalRotation)
+        const viewYaw = this.viewYaw(e)
         if (viewYaw !== 0)
           e.mirror.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(e.up, viewYaw))
         e.mirror.updateMatrixWorld(true)

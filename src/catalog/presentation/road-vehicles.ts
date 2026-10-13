@@ -91,7 +91,10 @@ export const s3Presentation: VehiclePresentationAdapter = {
     if (!candidates.length) console.warn('S3 mirrors omitted: missing lens material Llanta 2')
     const mounts = definition ? createA3Mounts(model, e.vehicle?.clusterOffset) : undefined
     const instruments = mounts && definition ? new CarInstruments(mounts, definition) : undefined
-    if (instruments) instruments.mirrorTilt = e.vehicle?.mirrorTilt ?? -2
+    if (instruments) {
+      instruments.mirrorTilt = e.vehicle?.mirrorTilt ?? -2
+      instruments.menu.items = instruments.menu.items.filter((item) => item.id !== 'trailer')
+    }
     return {
       lights: createA3Lights(model),
       exhaust: {

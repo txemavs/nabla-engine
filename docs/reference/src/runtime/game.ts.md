@@ -336,6 +336,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.interact`
 - `sim.liftNearbyBike`
 - `sim.recoverVehicle`
+- `sim.setStance`
 - `sim.shiftVehicle`
 - `sim.toggleDock`
 - `sim.toggleFlight`

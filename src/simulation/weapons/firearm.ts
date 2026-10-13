@@ -6,6 +6,7 @@
  * round is kept.
  */
 import { createMagazine, type MagazineEntity } from './magazine.js'
+import { weaponViewTuning } from '../../config/gameplay-tuning.js'
 
 export interface FirearmSpec {
   magazineCapacity: number
@@ -37,6 +38,9 @@ export interface FirearmState {
   /** Workshop manipulation: finish only the requested step, then wait. */
   reloadAction?: ReloadPhase
   manualRackBack?: boolean
+  /** Keep a manual rack fully rearward until the user releases the control. */
+  manualRackHeld?: boolean
+  manualRackStartedMs?: number
   manualSlideTravel?: number
   /** The trigger is still held from the last press: it has to be released (reset) first. */
   triggerHeld: boolean
@@ -59,6 +63,8 @@ export interface FirearmEvent {
   /** Trigger pressed with the slide forward on an empty chamber: the hammer falls, click. */
   dry: boolean
   cartridgeEjected?: boolean
+  /** The user latched the rearward slide by holding the rack control. */
+  manualSlideLocked?: boolean
 }
 
 /** Continuous viewer slide manipulation, sharing the same ammunition state. */
@@ -208,7 +214,10 @@ export function beginReloadAction(
   }
   state.reload = action
   state.reloadAction = action
-  if (action === 'slide-release') state.manualSlideTravel = undefined
+  if (action === 'slide-release') {
+    state.manualSlideTravel = undefined
+    state.manualRackStartedMs = now
+  }
   const offset =
     action === 'magazine-in'
       ? spec.reloadMs.magazineOut
@@ -269,14 +278,31 @@ export function trigger(
 export function advanceFirearm(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent {
   const event = empty()
   if (state.reload !== 'none') {
-    const age = now - state.reloadStartMs
+    let age = now - state.reloadStartMs
     const { magazineOut, magazineIn, slideRelease } = spec.reloadMs
+    // A held manual rack pauses at full travel, before feeding the next cartridge.
+    const pulledBackAt = magazineIn + (slideRelease - magazineIn) / 2
+    if (state.manualRackHeld && state.reloadAction === 'slide-release' && age >= pulledBackAt) {
+      age = pulledBackAt
+      state.reloadStartMs = now - age
+    }
     if (
       state.reload === 'slide-release' &&
       state.reloadAction &&
       age >= magazineIn + (slideRelease - magazineIn) / 2
     ) {
       event.cartridgeEjected = moveSlide(state, spec, 1, now).cartridgeEjected
+      if (
+        state.manualRackHeld &&
+        now - (state.manualRackStartedMs ?? now) > weaponViewTuning.slideLockHoldMs
+      ) {
+        state.slideLocked = true
+        state.manualRackHeld = false
+        state.manualSlideTravel = undefined
+        state.reload = 'none'
+        state.reloadAction = undefined
+        event.manualSlideLocked = true
+      }
     }
     if (state.reload === 'magazine-out' && age >= magazineOut) {
       event.droppedMagazine = state.magazineEntity ?? undefined

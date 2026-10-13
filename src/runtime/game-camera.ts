@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../presentation/scene-view.js'
 import type { Vec3Tuple } from '../entity/schema.js'
+import type { ActionCamMotion } from './action-cam.js'
 import { localToGeo } from '../math/geo/sphere.js'
 import {
   driverHeadPose,
@@ -87,6 +88,9 @@ export interface GameCameraState {
   mapFollow: CriticalFollow
   /** Active eased blend from the previous view into the current one, or null. */
   transition: GameCameraTransition | null
+  /** Final first-person target effects, applied before view/seat interpolation. */
+  walkingMotion: ActionCamMotion | null
+  firstPersonFovOffset: number | null
   /** Blend length for the next view change only (start sequences); null uses `modeTransitionMs`. */
   nextTransitionMs: number | null
   /** Last rendered pose and view; a view change blends from here. */
@@ -139,6 +143,8 @@ export function createGameCameraState(settings: Partial<GameCameraSettings> = {}
     groundHeading: new GroundHeading(resolved),
     mapFollow: new CriticalFollow(),
     transition: null,
+    walkingMotion: null,
+    firstPersonFovOffset: null,
     nextTransitionMs: null,
     lastPose: null,
     lastView: null,
@@ -217,8 +223,7 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
 /**
  * Switch to `wanted` the way C does (pitch, head look and cinematic orbit reset). The next
  * `updateGameCamera` blends into it over `modeTransitionMs` (or `nextTransitionMs`).
- * Entering the overhead view cuts unless `nextTransitionMs` is set: the blend climbed out
- * through the cabin while the field of view lerped, and that frame hitch is the stall.
+ * Every ordinary view change blends, including overhead. A one-off duration of zero cuts.
  */
 export function setGameCameraView(
   state: GameCameraState,
@@ -284,10 +289,24 @@ export class IdleCinematic {
  * under the camera is only about `eyeHeight` metres away; keep enough for relief.
  * `viewDown` is the camera's forward Y (−1 is straight down).
  */
-export function downwardViewFar(far: number, eyeHeight: number, viewDown: number): number {
+export function downwardViewFar(
+  far: number,
+  eyeHeight: number,
+  viewDown: number,
+  verticalFov = 0,
+  aspect = 1,
+): number {
   if (!(viewDown < -0.65) || !Number.isFinite(far)) return far
   const height = Number.isFinite(eyeHeight) ? Math.max(0, eyeHeight) : 0
-  return Math.min(far, Math.max(180, height * 3 + 80))
+  // A downward central ray does not mean the whole wide-angle cockpit sees ground.
+  // Use the diagonal cone (also safe under roll), and retain the horizon if any
+  // corner can see it. Otherwise keep enough range for the shallowest ground ray.
+  const halfCone = Math.atan(
+    Math.tan(THREE.MathUtils.degToRad(verticalFov) / 2) * Math.hypot(1, aspect),
+  )
+  const shallowDown = Math.sin(Math.asin(Math.min(1, -viewDown)) - halfCone)
+  if (shallowDown <= 0.1) return far
+  return Math.min(far, Math.max(180, height * 3 + 80, (height + 80) / shallowDown))
 }
 
 /** Shared gameplay camera, independent of editor UI and renderer ownership.
@@ -296,7 +315,7 @@ export function downwardViewFar(far: number, eyeHeight: number, viewDown: number
 export function updateGameCamera(
   sim: Simulation,
   view: Pick<SceneView, 'document' | 'vehicleHeadOffset' | 'objects'> &
-    Partial<Pick<SceneView, 'rideSmoothing'>>,
+    Partial<Pick<SceneView, 'rideSmoothing' | 'vehicleCameraOffset'>>,
   camera: THREE.PerspectiveCamera,
   state: GameCameraState,
   now: number,
@@ -339,7 +358,8 @@ export function updateGameCamera(
   const fov = cinematic
     ? tuning.cinematicFov
     : (cockpit && info) || (!p.vehicleId && eyes)
-      ? tuning.firstPersonFov
+      ? tuning.firstPersonFov +
+        (state.firstPersonFovOffset ?? (state.bodycam ? normalViewTuning.extraFovDegrees : 0))
       : tuning.chaseFov
   if (camera.fov !== fov) {
     camera.fov = fov
@@ -464,7 +484,8 @@ export function updateGameCamera(
         seat.isCarrier,
         headYaw,
         headPitch,
-        view.vehicleHeadOffset(recovery.vehicleId),
+        view.vehicleCameraOffset?.(recovery.vehicleId) ??
+          view.vehicleHeadOffset(recovery.vehicleId),
         view.document.entities.find((entity) => entity.id === recovery.vehicleId)?.vehicle
           ?.headRotation,
       )
@@ -488,7 +509,11 @@ export function updateGameCamera(
     camera.lookAt(shot.target)
     vehicleEntrance = null
   } else if (!p.vehicleId && eyes) {
-    camera.position.fromArray(p.position)
+    // The walking physics position is the body centre (0.9 m above the feet).
+    // Place the eyes at 1.65 m, following the local planetary up direction.
+    camera.position
+      .fromArray(p.position)
+      .add(new THREE.Vector3(0, sim.eyeOffset, 0).applyQuaternion(playerFrameQ))
     camera.quaternion
       .copy(playerFrameQ)
       .multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-pitch, yaw, 0, 'YXZ')))
@@ -550,7 +575,7 @@ export function updateGameCamera(
       info.isCarrier,
       headYaw,
       headPitch,
-      view.vehicleHeadOffset(p.vehicleId!),
+      view.vehicleCameraOffset?.(p.vehicleId!) ?? view.vehicleHeadOffset(p.vehicleId!),
       view.document.entities.find((entity) => entity.id === p.vehicleId)?.vehicle?.headRotation,
     )
     // The eye rides the smoothed vehicle: small, fast bounce is absorbed, the cockpit keeps it.
@@ -649,8 +674,16 @@ export function updateGameCamera(
           camera.quaternion,
         ),
       )
-    camera.fov += normalViewTuning.extraFovDegrees
-    camera.updateProjectionMatrix()
+  }
+
+  if (eyes && !p.vehicleId && !riderFall && !recovery && state.walkingMotion) {
+    const motion = state.walkingMotion
+    camera.position.add(
+      new THREE.Vector3(motion.side, motion.up, 0).applyQuaternion(camera.quaternion),
+    )
+    camera.quaternion.multiply(
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(motion.pitch, 0, motion.roll, 'YXZ')),
+    )
   }
 
   const seatMove = state.seatMove
@@ -709,10 +742,7 @@ export function updateGameCamera(
   let transition = state.transition
   const last = state.lastView
   if (last && state.lastPose && last.view !== cameraView) {
-    // Overhead cuts. The pose is already tracked (`mapFollow` runs in every view), and the
-    // old 700 ms climb retargeted cascaded shadows on every frame as the fov lerped from the
-    // cockpit's 70° to 48°. A start sequence can still blend by setting `nextTransitionMs`.
-    const duration = state.nextTransitionMs ?? (cameraView === 'map' ? 0 : tuning.modeTransitionMs)
+    const duration = state.nextTransitionMs ?? tuning.modeTransitionMs
     transition =
       last.vehicleId === vehicleKey && duration > 0
         ? {

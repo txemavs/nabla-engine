@@ -1,7 +1,17 @@
-import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
-import { presetEntities, vehiclePresets } from '../catalog/vehicles/library.js'
+import { normalizeWeaponWheel, stepWeaponWheel } from './weapon-wheel.js'
+import { normalViewTuning, smokeTuning, actionCamTuning } from '../config/gameplay-tuning.js'
+import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
+import { presetVehicle } from '../catalog/vehicles/library.js'
+import { randomRoadVehicle } from './random-vehicle.js'
+import {
+  readDriverPose,
+  writeDriverPose,
+  type DriverPoseAdjustment,
+} from '../config/driver-pose.js'
 import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
+import { ActionCam } from './action-cam.js'
+import type { ActionCamSettings } from './action-cam-settings.js'
 import { smokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
 import { WeaponControls } from './weapon-controls.js'
 /**
@@ -210,11 +220,7 @@ import {
 import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
-import {
-  navigationRoads,
-  nearestLocality,
-  nearestStreet,
-} from '../render/entity/navigation-places.js'
+import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigation-places.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
 
@@ -524,6 +530,7 @@ export class GameRuntime {
   private vehicleWarmup: VehicleWarmup | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
+  private aimLean = 0
   private weaponDrawn = false
   private fireRequested = false
   private triggerReleased = false
@@ -536,6 +543,8 @@ export class GameRuntime {
   private magazineAction: 'drop' | 'insert' | 'release' | 'automatic' | null = null
   private weaponLightOn = false
   private readonly bodycam = new BodycamAim()
+  private readonly actionCam = new ActionCam()
+  private actionCamOn = actionCamTuning.enabled
   private safetyClickHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
@@ -591,6 +600,7 @@ export class GameRuntime {
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
   private disposed = false
+  private readonly placeLookup = new NavigationPlaceLookup()
   private readonly toolbar: GameToolbar
   private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
@@ -601,6 +611,16 @@ export class GameRuntime {
   private weaponTuning = readSidearmTuning(browserStorage())
   private sidearmAimPreview = false
   private weaponPosePreview: WeaponPose | null = null
+  private weaponWheel = (() => {
+    try {
+      return normalizeWeaponWheel(
+        JSON.parse(browserStorage()?.getItem('nabla.weaponWheel') ?? '{}'),
+      )
+    } catch {
+      return normalizeWeaponWheel()
+    }
+  })()
+
   private weaponPoses: WeaponPoseTuning = (() => {
     try {
       return normalizeWeaponPoses(
@@ -635,6 +655,8 @@ export class GameRuntime {
   constructor(private readonly options: GameRuntimeOptions) {
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
+      this.actionCamOn =
+        (browserStorage()?.getItem('nabla.actionCam') ?? String(actionCamTuning.enabled)) === 'true'
       setSmokeDensity(
         Number(browserStorage()?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
       )
@@ -642,6 +664,13 @@ export class GameRuntime {
       /* Keep the default if storage is disabled. */
     }
     this.startCameras = resolveStartCameras(options.startCameras)
+    try {
+      this.actionCam.setSettings(
+        JSON.parse(browserStorage()?.getItem('nabla.actionCamSettings') ?? '{}'),
+      )
+    } catch {
+      /* Keep defaults when storage is unavailable or invalid. */
+    }
     this.flipCinematic.enabled = options.flipCinematic !== false
     applyAsphaltContrast(options.asphaltContrast ?? 1)
     // Reject malformed JavaScript callers before allocating browser resources.
@@ -665,12 +694,20 @@ export class GameRuntime {
       40,
       async () => {
         try {
-          const choices = vehiclePresets().filter((preset) => !preset.hidden)
-          if (!choices.length) throw new Error('No hay vehículos disponibles')
-          const selected = choices[Math.floor(Math.random() * choices.length)]
-          this.options.onMessage?.('Preparando ' + selected.label + '…')
-          await this.spawnVehicle(presetEntities(selected.id, 'random-vehicle'))
-          this.options.onMessage?.('Vehículo añadido: ' + selected.label)
+          const selected = randomRoadVehicle()
+          this.options.onMessage?.('Preparando ' + selected.vehicle.name + '…')
+          const id = await this.spawnVehicle(selected.vehicle)
+          if (selected.trailer) {
+            selected.trailer.vehicle!.tow = {
+              vehicleId: id,
+              hitch: selected.vehicle.vehicle!.hitch!,
+              anchor: selected.trailer.vehicle!.towAnchor!,
+            }
+            const pose = this.session.simulation!.entityTransform(id)
+            const yaw = 2 * Math.atan2(pose.rotation[1], pose.rotation[3])
+            await this.placeVehicle(selected.trailer, pose.position, yaw)
+          }
+          this.options.onMessage?.('Vehículo añadido: ' + selected.vehicle.name)
         } catch (error) {
           this.options.onMessage?.(
             error instanceof Error ? error.message : 'No se pudo añadir el vehículo',
@@ -754,6 +791,7 @@ export class GameRuntime {
     this.view = new SceneView(this.document, false, false, {
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
+      driverPoseOffset: (model) => readDriverPose(browserStorage(), model),
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
       startLights: options.startLights ?? 'auto',
     })
@@ -836,7 +874,10 @@ export class GameRuntime {
       },
       interact: () => this.action('KeyE'),
       camera: () => this.cycleCamera(),
-      respawn: () => this.action('KeyR'),
+      respawn: () => {
+        const message = this.game.action('KeyR')
+        if (message) this.options.onMessage?.(message)
+      },
     }
     this.touchDriving =
       options.touchControls === false
@@ -893,8 +934,8 @@ export class GameRuntime {
       this.world.setRelief(this.quality.relief)
       this.scene.add(this.world.root)
       setPlanetCharts(() => this.world!.chartTiles)
-      setNavigationPlaces(() => this.world!.navigationPlaces)
-      setNavigationRoads(() => this.world!.navigationRoads)
+      setNavigationPlaces(() => this.world!.iterateNavigationPlaces())
+      setNavigationRoads(() => this.world!.iterateNavigationRoads())
     }
     this.loop = new FrameLoop((time) => {
       try {
@@ -919,6 +960,7 @@ export class GameRuntime {
     this.stop()
     const controller = new AbortController()
     this.loading = controller
+    this.options.canvas.dataset.loadingStage = 'terrain'
     const document = structuredClone(this.document)
     try {
       if (this.world) {
@@ -976,6 +1018,7 @@ export class GameRuntime {
       if (this.probing) await this.probing.catch(() => undefined)
       controller.signal.throwIfAborted()
       this.options.onProgress?.('Starting simulation…')
+      this.options.canvas.dataset.loadingStage = 'physics'
       const simulation = await this.game.play(document, {
         playerMode: 'walk',
         vehicleDamage: true,
@@ -1008,6 +1051,7 @@ export class GameRuntime {
       const clock = this.document.sky
       if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
       this.options.canvas.dataset.reveal = 'play'
+      this.toolbar.setVisible(true)
       this.stopAttract()
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
@@ -1044,6 +1088,8 @@ export class GameRuntime {
   }
   /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
   stop(): void {
+    this.toolbar?.setVisible(false)
+    this.placeLookup.reset()
     if (this.disposed) return
     this.loading?.abort()
     this.loading = null
@@ -1311,18 +1357,64 @@ export class GameRuntime {
       this.sidearm.bodycamYaw = this.bodycam.yaw
       this.sidearm.bodycamPitch = this.bodycam.pitch
     }
+    const targetEyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
+    if (targetEyes && !sim.player.vehicleId && !sim.playerEjection && !sim.playerBikeRecovery) {
+      this.cameraState.walkingMotion = this.actionCam.step(dt, {
+        speed: this.actionCamOn
+          ? sim.player.speed * Math.min(1, Math.hypot(input.forward, input.right))
+          : 0,
+        // The geographic demo's hover walker is supported without foot contacts.
+        grounded: sim.player.grounded || sim.options.playerMode === 'hover',
+        right: this.actionCamOn ? input.right : 0,
+        yaw: this.cameraState.yaw,
+        aim: this.sidearm?.aimTransition ?? 0,
+      })
+    } else {
+      this.actionCam.reset()
+      this.cameraState.walkingMotion = null
+    }
+    const fovOffsetTarget =
+      this.cameraState.bodycam && targetEyes
+        ? normalViewTuning.extraFovDegrees *
+          (1 - (bodycamActive ? (this.sidearm?.aimTransition ?? 0) : 0))
+        : 0
+    const currentFovOffset = this.cameraState.firstPersonFovOffset ?? fovOffsetTarget
+    this.cameraState.firstPersonFovOffset =
+      currentFovOffset +
+      (fovOffsetTarget - currentFovOffset) *
+        (1 - Math.exp(-normalViewTuning.fovResponse * Math.min(dt, 0.1)))
     const { player, info } = this.game.updateCamera(this.view, this.camera, time, dt)
     const canvas = this.options.canvas
     canvas.dataset.vehicle = player.vehicleId ?? ''
     canvas.dataset.interior = player.interiorId ?? ''
     canvas.dataset.cameraMode = gameCameraView(this.cameraState, !!player.vehicleId)
     const eyes = isFirstPersonView(this.cameraState, !!player.vehicleId)
-    if (bodycamActive) {
-      this.camera.fov =
-        this.cameraState.settings.firstPersonFov +
-        normalViewTuning.extraFovDegrees * (1 - (this.sidearm?.aimTransition ?? 0))
-      this.camera.updateProjectionMatrix()
+    const canLean =
+      eyes && !player.vehicleId && this.weaponDrawn && !!this.sidearm?.isAiming && this.hasInput()
+    const leanTarget = canLean
+      ? Number(this.keys.values.has('KeyE')) - Number(this.keys.values.has('KeyQ'))
+      : 0
+    this.aimLean += (leanTarget - this.aimLean) * (1 - Math.exp(-14 * Math.min(dt, 0.1)))
+    if (!eyes || player.vehicleId) this.aimLean = 0
+    if (Math.abs(this.aimLean) > 0.0001) {
+      const origin = this.camera.position.clone()
+      const lateral = new THREE.Vector3(Math.sign(this.aimLean), 0, 0).applyQuaternion(
+        this.camera.quaternion,
+      )
+      let distance = Math.abs(this.aimLean) * 0.23
+      const wall = sim.shoot(origin.toArray(), lateral.toArray(), distance + 0.08, 0)
+      if (wall)
+        distance = Math.min(
+          distance,
+          Math.max(0, origin.distanceTo(new THREE.Vector3(...wall.point)) - 0.08),
+        )
+      this.camera.position.addScaledVector(lateral, distance)
+      this.camera.rotateZ(
+        ((-Math.sign(this.aimLean) * distance) / 0.23) * THREE.MathUtils.degToRad(12),
+      )
+      this.camera.updateMatrixWorld(true)
     }
+    canvas.dataset.aimLean = this.aimLean.toFixed(3)
     this.effects.audio.setListener(
       this.camera.position.toArray(),
       this.camera.quaternion.toArray(),
@@ -1372,6 +1464,12 @@ export class GameRuntime {
         this.accidentReplacement.schedule()
       }
     }
+    for (const entity of this.document.entities) {
+      if (entity.kind !== 'vehicle') continue
+      const object = this.view.objects.get(entity.id)
+      if (object)
+        this.view.destruction.setDamage(entity.id, object, sim.vehicleDamage(entity.id).health)
+    }
     this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
       const hit = sim.shoot(
         from.toArray() as Vec3Tuple,
@@ -1389,6 +1487,7 @@ export class GameRuntime {
       this.sidearm.slidePosePreview =
         this.sidearmAimPreview && !!this.weaponPosePreview?.startsWith('slide')
       this.sidearm.poseTuning = this.weaponPoses
+      this.sidearm.playerWheel = this.sidearmAimPreview ? normalizeWeaponWheel() : this.weaponWheel
       this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       if (this.weaponControls.aiming) this.sidearm.setAiming(true)
@@ -1401,16 +1500,19 @@ export class GameRuntime {
         )
       let aim: THREE.Vector3 | undefined
       if (this.sidearm.visible && !eyes && !this.sidearmAimPreview) {
-        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
-        const hit = sim.shoot(
-          this.camera.position.toArray(),
-          direction.toArray(),
-          this.sidearm.range,
-          0,
+        const overhead = this.cameraState.mode === 'map'
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(
+          overhead
+            ? this.view.avatar.getWorldQuaternion(new THREE.Quaternion())
+            : this.camera.quaternion,
         )
+        const rayOrigin = overhead
+          ? this.view.avatar.getWorldPosition(new THREE.Vector3()).sub(this.view.root.position)
+          : this.camera.position
+        const hit = sim.shoot(rayOrigin.toArray(), direction.toArray(), this.sidearm.range, 0)
         aim = hit
           ? new THREE.Vector3(...hit.point)
-          : this.camera.position.clone().addScaledVector(direction, this.sidearm.range)
+          : rayOrigin.clone().addScaledVector(direction, this.sidearm.range)
         aim.add(this.view.root.position)
       }
       this.sidearm.syncWorld(
@@ -1418,7 +1520,11 @@ export class GameRuntime {
         time,
         eyes || this.sidearmAimPreview,
         aim,
-        this.camera.up,
+        this.cameraState.mode === 'map'
+          ? new THREE.Vector3(0, 1, 0).applyQuaternion(
+              this.view.avatar.getWorldQuaternion(new THREE.Quaternion()),
+            )
+          : this.camera.up,
       )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
@@ -1452,9 +1558,9 @@ export class GameRuntime {
       this.wheelDebug.update(sim, player.vehicleId, this.origin)
     }
     {
-      const city = nearestLocality(player.position).replace(/^Cerca de /, '')
-      const street = nearestStreet(player.position) ?? ''
-      this.touchDriving?.setPlace(city, street)
+      this.placeLookup.request(player.position, (city, street) =>
+        this.touchDriving?.setPlace(city, street),
+      )
       const vid = player.vehicleId
       const sim = this.session.simulation
       if (vid && sim) {
@@ -1511,10 +1617,10 @@ export class GameRuntime {
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
-        ? 'E exit · C camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
+        ? 'E exit · V camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
         : nearbyPickup
           ? this.text('E pick up {0}', nearbyPickup.name)
-          : 'WASD move · Space jump · E enter · C camera',
+          : 'WASD move · Space jump · E enter · V camera · C crouch · C+Space prone',
       wheelDebug: this.wheelDebug.formatHud(),
     })
     this.effects.updateAudio(sim, this.document, eye)
@@ -1549,6 +1655,8 @@ export class GameRuntime {
         ),
         eye.y,
         this.camera.getWorldDirection(this.viewForward).y,
+        this.camera.fov,
+        this.camera.aspect,
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
@@ -1593,6 +1701,8 @@ export class GameRuntime {
       hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
     }
     this.applyLightTuning()
+    if (this.sidearm) this.sidearm.flashTuning = this.flashSettings
+    this.sidearm?.syncMuzzleLight(time, this.scene, this.camera, eyes || this.sidearmAimPreview)
     try {
       this.pipeline.render({
         externalViews: this.worldContent
@@ -1619,7 +1729,10 @@ export class GameRuntime {
         mirrorVehicle:
           this.quality.mirrors && this.cameraState.mode === 'cockpit' ? player.vehicleId : null,
         shadowsEnabled: this.syncShadowSwitch(),
-        tunnelFocus: bodycamActive ? (this.sidearm?.aimTransition ?? 0) : 0,
+        tunnelFocus:
+          bodycamActive && this.tunnelEnabled
+            ? (this.sidearm?.aimTransition ?? 0) * (this.sidearm?.playerTunnel ?? 1)
+            : undefined,
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
         cull: (position) => this.cull(position),
       })
@@ -1670,7 +1783,7 @@ export class GameRuntime {
    * or host callbacks, 1 px scissored on the canvas. Programs (shadow and transmission passes
    * included), buffers and textures of that view are built while the host still covers it.
    */
-  private warmFrame(sim: Simulation, state: GameCameraState, time: number): void {
+  private warmFrame(sim: Simulation, state: GameCameraState, time: number, focus = false): void {
     this.view.flushMapInstall(
       streamingDefaults.mapInstallBudgetMs * 3,
       streamingDefaults.mapInstallCount * 4,
@@ -1718,6 +1831,8 @@ export class GameRuntime {
         ),
         eye.y,
         this.camera.getWorldDirection(this.viewForward).y,
+        this.camera.fov,
+        this.camera.aspect,
       )
       this.camera.updateProjectionMatrix()
     }
@@ -1756,6 +1871,11 @@ export class GameRuntime {
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
       scissorTest = this.renderer.getScissorTest()
     this.applyLightTuning()
+    const weaponVisible = this.sidearm?.visible ?? false
+    if (this.sidearm) {
+      this.sidearm.visible = true
+      this.sidearm.syncWorld(this.view.avatar, time, false)
+    }
     try {
       this.renderer.setScissor(0, 0, 1, 1)
       this.renderer.setScissorTest(true)
@@ -1777,9 +1897,14 @@ export class GameRuntime {
         mirrorVehicle: this.quality.mirrors && state.mode === 'cockpit' ? player.vehicleId : null,
         shadowsEnabled: this.syncShadowSwitch(),
         depthOfField: this.options.depthOfField ?? !!this.quality.dof,
+        tunnelFocus: focus ? 1 : undefined,
         cull: (position) => this.cull(position),
       })
     } finally {
+      if (this.sidearm) {
+        this.sidearm.visible = weaponVisible
+        this.sidearm.syncWorld(this.view.avatar, time, true)
+      }
       this.renderer.setScissor(scissor)
       this.renderer.setScissorTest(scissorTest)
       this.camera.position.copy(eye)
@@ -1814,7 +1939,11 @@ export class GameRuntime {
     if (first?.view === 'map' && first.fromHeight !== undefined)
       for (const height of descentWarmHeights(first.fromHeight, settings.mapHeight))
         views.push({ mode: 'map', height })
-    views.push({ mode: sim.player.vehicleId ? 'cockpit' : 'first-person' }, { mode: 'chase' })
+    views.push(
+      { mode: sim.player.vehicleId ? 'cockpit' : 'first-person' },
+      { mode: 'chase' },
+      { mode: 'map' },
+    )
     // Light the views as the reveal will: a live clock starts at its authored time then (e.g.
     // 10:00), and day or night changes lights and therefore shader programs.
     const clock = this.document.sky
@@ -1831,6 +1960,23 @@ export class GameRuntime {
           state.mapDescentDamping = START_DESCENT_DAMPING
         }
         this.warmFrame(sim, state, performance.now())
+        if (this.tunnelEnabled) this.warmFrame(sim, state, performance.now(), true)
+        // Effects need the final light count too, including field lights and shadow maps.
+        await warmEffectPresentation(
+          this.renderer,
+          this.camera,
+          [
+            this.effects.smoke.root,
+            this.effects.marks.root,
+            this.view.impacts.warmupObject(),
+            ...[this.casingMeshes, this.cartridgeMeshes, this.magazineMeshes].flatMap((pool) =>
+              pool ? [pool.root] : [],
+            ),
+          ],
+          this.scene,
+        )
+        // Compile the viewmodel against the lights and shadow maps this view actually uses.
+        await this.sidearm?.warm(this.renderer, this.scene)
         await new Promise<void>((resolve) => setTimeout(resolve, 0))
       }
     } catch {
@@ -2170,6 +2316,51 @@ export class GameRuntime {
     if (!sim) throw new Error('A running game is required')
     return sim.unhitchTrailer(trailerId)
   }
+  private loadingTrailerCargo = false
+  get driverPose(): { name: string; model: string; offset: DriverPoseAdjustment } | null {
+    const id = this.session.simulation?.player.vehicleId
+    const entity = this.document.entities.find((e) => e.id === id)
+    const model = entity?.visual?.body.url
+    if (!model || !entity?.vehicle?.headOffset) return null
+    return { name: entity.name, model, offset: this.view.driverPoseAdjustment(model) }
+  }
+  setDriverPoseOffset(offset: DriverPoseAdjustment): DriverPoseAdjustment | null {
+    const current = this.driverPose
+    if (!current) return null
+    const applied = this.view.setDriverPoseAdjustment(current.model, offset)
+    writeDriverPose(browserStorage(), current.model, applied)
+    return applied
+  }
+  resetDriverPoseOffset(): DriverPoseAdjustment | null {
+    const current = this.driverPose
+    if (!current) return null
+    writeDriverPose(browserStorage(), current.model)
+    return this.view.setDriverPoseAdjustment(current.model, { head: [0, 0, 0], view: [0, 0, 0] })
+  }
+  setTrailerPlatform(id: string, flat: boolean): string {
+    this.assertAlive()
+    return this.session.simulation!.setTrailerPlatform(id, flat)
+  }
+  async loadTrailerCars(tractorId: string): Promise<void> {
+    const sim = this.session.simulation!
+    const trailerId = sim.cargoTrailer(tractorId)
+    if (!trailerId) throw Error('Engancha el portacoches para cargar los S3')
+    if (this.loadingTrailerCargo) return
+    if (sim.cargoCount(trailerId)) throw Error('El portacoches ya tiene carga')
+    this.loadingTrailerCargo = true
+    try {
+      const trailer = sim.entityTransform(trailerId)
+      for (const slot of trailerPlatformTuning.cargoSlots) {
+        const template = presetVehicle('car', 'cargo-s3')
+        const id = await this.placeVehicle(template, trailer.position, 0)
+        sim.mountCargo(id, trailerId, [...slot])
+      }
+      this.options.onMessage?.('Dos S3 sujetos al portacoches')
+    } finally {
+      this.loadingTrailerCargo = false
+    }
+  }
+
   /** Occupied tractor: hitch a nearby free trailer, or uncouple the attached one. */
   toggleHitch(): string | null {
     this.assertAlive()
@@ -2638,6 +2829,30 @@ export class GameRuntime {
     return { ...this.weaponTuning }
   }
   /** World pickups and inventory are session state; previewing settings never grants a weapon. */
+  /** Explicit host loadout for a test session, after play() has started. */
+  equipTestSidearm(): void {
+    this.assertAlive()
+    const sim = this.session.simulation
+    const preset = weaponPresets()[0]
+    if (!sim || !preset) throw new Error('Start a session before equipping its sidearm')
+    const position: Vec3Tuple = [...sim.renderPlayerPosition]
+    if (!this.inventory.has(preset.id)) {
+      this.inventory.add({
+        id: 'test-start-sidearm',
+        itemId: preset.id,
+        name: preset.name,
+        position,
+      })
+      this.inventory.take('test-start-sidearm', position)
+    }
+    this.ownedWeaponId = preset.id
+    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!, preset)
+    this.weaponDrawn = true
+    this.sidearm.visible = true
+    this.sidearm.setAiming(false)
+    this.fireRequested = false
+    this.triggerDown = false
+  }
   get weaponOwned(): boolean {
     return this.ownedWeaponId !== null && this.inventory.has(this.ownedWeaponId)
   }
@@ -2775,6 +2990,59 @@ export class GameRuntime {
   get bodycamEnabled(): boolean {
     return !!this.cameraState.bodycam
   }
+  get actionCamEnabled(): boolean {
+    return this.actionCamOn
+  }
+  get actionCamSettings(): ActionCamSettings {
+    return this.actionCam.settings
+  }
+  setActionCamSettings(settings: Partial<ActionCamSettings>): void {
+    this.actionCam.setSettings(settings)
+    try {
+      browserStorage()?.setItem('nabla.actionCamSettings', JSON.stringify(this.actionCam.settings))
+    } catch {
+      /* Session settings still work. */
+    }
+  }
+  resetActionCamSettings(): void {
+    this.actionCam.resetSettings()
+    try {
+      browserStorage()?.setItem('nabla.actionCamSettings', JSON.stringify(this.actionCam.settings))
+    } catch {
+      /* Session settings still work. */
+    }
+  }
+  setActionCamEnabled(enabled: boolean): void {
+    this.actionCamOn = enabled
+    try {
+      browserStorage()?.setItem('nabla.actionCam', String(enabled))
+    } catch {
+      /* Keep the session preference. */
+    }
+  }
+  private tunnelOverride: boolean | null | undefined
+  get tunnelEnabled(): boolean {
+    if (this.tunnelOverride === undefined) {
+      this.tunnelOverride = null
+      try {
+        const saved = browserStorage()?.getItem('nabla.tunnel')
+        if (saved === 'true' || saved === 'false') this.tunnelOverride = saved === 'true'
+      } catch {
+        /* Use the quality default if storage is unavailable. */
+      }
+    }
+    return (
+      this.tunnelOverride ?? (this.quality.preset === 'high' || this.quality.preset === 'ultra')
+    )
+  }
+  setTunnelEnabled(enabled: boolean): void {
+    this.tunnelOverride = enabled
+    try {
+      browserStorage()?.setItem('nabla.tunnel', String(enabled))
+    } catch {
+      /* Memory preference remains valid. */
+    }
+  }
   setBodycamEnabled(enabled: boolean): void {
     this.cameraState.bodycam = enabled
     this.bodycam.reset()
@@ -2822,6 +3090,49 @@ export class GameRuntime {
       this.sidearm?.stopInspect(performance.now())
     }
     if (!enabled) this.sidearm?.setAiming(false)
+  }
+  private flashSettings = (() => {
+    const result = { x: 0, y: 0, z: -72, intensity: 100 }
+    try {
+      const saved = JSON.parse(browserStorage()?.getItem('nabla.muzzleFlash') ?? '{}')
+      for (const key of ['x', 'y', 'z', 'intensity'] as const)
+        if (typeof saved?.[key] === 'number' && Number.isFinite(saved[key]))
+          result[key] = Math.max(
+            key === 'intensity' ? 0 : -200,
+            Math.min(key === 'intensity' ? 300 : 200, saved[key]),
+          )
+    } catch {
+      /* Optional preference. */
+    }
+    return result
+  })()
+  get muzzleFlashTuning() {
+    return { ...this.flashSettings }
+  }
+  setMuzzleFlashTuning(
+    value: Partial<{ x: number; y: number; z: number; intensity: number }>,
+  ): void {
+    for (const key of ['x', 'y', 'z', 'intensity'] as const) {
+      const n = value[key]
+      if (typeof n === 'number' && Number.isFinite(n))
+        this.flashSettings[key] = Math.max(
+          key === 'intensity' ? 0 : -200,
+          Math.min(key === 'intensity' ? 300 : 200, n),
+        )
+    }
+    if (this.sidearm) this.sidearm.flashTuning = { ...this.flashSettings }
+    try {
+      browserStorage()?.setItem('nabla.muzzleFlash', JSON.stringify(this.flashSettings))
+    } catch {
+      /* Optional preference. */
+    }
+  }
+  previewMuzzleFlash(): void {
+    this.setSidearmAimPreview(true)
+    if (this.sidearm) {
+      this.sidearm.flashTuning = { ...this.flashSettings }
+      this.sidearm.previewFlash()
+    }
   }
   get weaponPoseTuning(): WeaponPoseTuning {
     return normalizeWeaponPoses(this.weaponPoses)
@@ -3010,6 +3321,7 @@ export class GameRuntime {
     // Stages for hosts that pace an intro on loading (`data-reveal-stage`, `data-reveal-progress`).
     const stage = (name: string, done: number) => {
       canvas.dataset.revealStage = name
+      canvas.dataset.loadingStage = name
       canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
     }
     canvas.dataset.reveal = 'preparing'
@@ -3037,6 +3349,22 @@ export class GameRuntime {
     signal.throwIfAborted()
     // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
     this.ensureCasingMeshes()
+    // Allocate the other ejection pools before their first use, without ejecting anything.
+    if (!this.cartridgeMeshes) {
+      const clone = this.sidearm.cartridgeClone()
+      if (clone) {
+        this.cartridgeMeshes = new DroppedMagazines(clone, 24, false)
+        this.view.root.add(this.cartridgeMeshes.root)
+      }
+    }
+    if (!this.magazineMeshes) {
+      const clone = this.sidearm.magazineClone()
+      if (clone) {
+        this.magazineMeshes = new DroppedMagazines(clone, 8)
+        this.view.root.add(this.magazineMeshes.root)
+      }
+    }
+    this.sidearm.syncMuzzleLight(performance.now(), this.scene, this.camera, true)
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
@@ -3080,10 +3408,19 @@ export class GameRuntime {
         )
       const camera = this.camera.clone()
       await within(
-        warmEffectPresentation(this.renderer, camera, [
-          this.effects.smoke.root,
-          this.effects.marks.root,
-        ]),
+        warmEffectPresentation(
+          this.renderer,
+          camera,
+          [
+            this.effects.smoke.root,
+            this.effects.marks.root,
+            this.view.impacts.warmupObject(),
+            ...[this.casingMeshes, this.cartridgeMeshes, this.magazineMeshes].flatMap((pool) =>
+              pool ? [pool.root] : [],
+            ),
+          ],
+          this.scene,
+        ),
         20_000,
       )
       await within(
@@ -3271,6 +3608,7 @@ export class GameRuntime {
   /** Expose input health on the canvas so a stuck-control report can be checked in devtools. */
   private canvasDiagnostics(frameMs: number): void {
     const data = this.options.canvas.dataset
+    data.stance = this.session.simulation?.stance ?? 'standing'
     data.heldKeys = [...this.keys.values].join(' ')
     data.keyExpirations = String(this.keys.expirations)
     if (frameMs > 100) data.longFrames = String(Number(data.longFrames ?? 0) + 1)
@@ -3278,6 +3616,7 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    if (this.sidearm) this.sidearm.state.manualRackHeld = false
     this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
@@ -3298,6 +3637,9 @@ export class GameRuntime {
    */
   private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
     const sidearm = this.sidearm!
+    sidearm.setSteadyHeld(
+      ['KeyW', 'KeyA', 'KeyS', 'KeyD'].every((key) => this.keys.values.has(key)),
+    )
     const weaponPosition = (
       eyes
         ? this.camera.position
@@ -3346,6 +3688,15 @@ export class GameRuntime {
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
         this.ejectCasing(sim, eyes)
+        if (sidearm.temperature.ruptured && !sidearm.broken) {
+          const parts = sidearm.ruptureParts(this.camera, this.view.root, eyes)
+          if (parts) {
+            this.view.destruction.breakWeapon(parts)
+            this.effects.audio.destruction(weaponPosition, false)
+            this.view.sparks.add(weaponPosition as [number, number, number], time)
+            this.options.onMessage?.('Arma destruida por sobrecalentamiento')
+          }
+        }
       }
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
@@ -3358,6 +3709,10 @@ export class GameRuntime {
       }
       if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
       if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
+      if (event.manualSlideLocked) {
+        this.effects.audio.weaponSound('slide-lock', weaponPosition)
+        this.options.onMessage?.('Corredera bloqueada · F para desbloquear')
+      }
       if (event.locked)
         this.options.onMessage?.('R: sacar / meter cargador · M: cargador largo · F: corredera')
     }
@@ -3404,7 +3759,17 @@ export class GameRuntime {
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
   }
-  private ejectCartridge(sim: Simulation, eyes: boolean): void {
+  private ejectionPose(eyes: boolean) {
+    const pose = this.sidearm?.ejectionPose(eyes, this.camera.fov)
+    if (pose && eyes) {
+      pose.position.applyQuaternion(this.camera.quaternion).add(this.camera.position)
+      pose.right.applyQuaternion(this.camera.quaternion)
+      pose.up.applyQuaternion(this.camera.quaternion)
+    }
+    return pose
+  }
+
+  private ejectCartridge(_sim: Simulation, eyes: boolean): void {
     const sidearm = this.sidearm,
       casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
@@ -3415,34 +3780,26 @@ export class GameRuntime {
       this.view.root.add(this.cartridgeMeshes.root)
     }
     this.cartridgeMotion ??= new CasingMotion(casing)
-    const q = this.camera.quaternion
-    const port = eyes
-      ? this.camera.position.clone().add(sidearm.ejectionViewOffset().applyQuaternion(q))
-      : new THREE.Vector3(...sim.renderPlayerPosition).add(new THREE.Vector3(0, 0.3, 0))
+    const pose = this.ejectionPose(eyes)
+    if (!pose) return
     this.cartridgeMotion.eject(
-      port.toArray() as Vec3Tuple,
-      new THREE.Vector3(1, 0, 0).applyQuaternion(q).toArray() as Vec3Tuple,
-      new THREE.Vector3(0, 1, 0).applyQuaternion(q).toArray() as Vec3Tuple,
+      pose.position.toArray() as Vec3Tuple,
+      pose.right.toArray() as Vec3Tuple,
+      pose.up.toArray() as Vec3Tuple,
     )
   }
 
-  private ejectCasing(sim: Simulation, eyes: boolean): void {
+  private ejectCasing(_sim: Simulation, eyes: boolean): void {
     const casing = this.sidearm?.preset?.casing
     if (!casing) return
     if (!this.casingMotion) this.casingMotion = new CasingMotion(casing)
     this.ensureCasingMeshes()
-    const q = this.camera.quaternion
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(q)
-    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
-    const port = eyes
-      ? this.camera.position.clone().add(this.sidearm!.ejectionViewOffset().applyQuaternion(q))
-      : new THREE.Vector3(...sim.renderPlayerPosition)
-          .addScaledVector(right, 0.2)
-          .addScaledVector(up, 0.3)
+    const pose = this.ejectionPose(eyes)
+    if (!pose) return
     this.casingMotion.eject(
-      port.toArray() as Vec3Tuple,
-      right.toArray() as Vec3Tuple,
-      up.toArray() as Vec3Tuple,
+      pose.position.toArray() as Vec3Tuple,
+      pose.right.toArray() as Vec3Tuple,
+      pose.up.toArray() as Vec3Tuple,
     )
   }
 
@@ -3489,42 +3846,49 @@ export class GameRuntime {
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
   private updateSidearmLaser(sim: Simulation, time: number): void {
+    const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     if (this.weaponLight) {
-      this.weaponLight.intensity = this.weaponLightOn && this.weaponDrawn ? 35 : 0
-      this.weaponLight.position
-        .set(0, -0.05, -0.35)
-        .applyQuaternion(this.camera.quaternion)
-        .add(this.camera.position)
-        .sub(this.origin)
-      this.weaponLight.target.position
-        .set(0, 0, -10)
-        .applyQuaternion(this.camera.quaternion)
-        .add(this.camera.position)
-        .sub(this.origin)
+      const torch =
+        this.weaponLightOn && this.weaponDrawn && !this.sidearm?.broken
+          ? this.sidearm?.accessoryRay(time, eyes, this.camera.fov, 'TorchSocket')
+          : null
+      this.weaponLight.intensity = torch ? 35 : 0
+      if (torch) {
+        if (eyes) {
+          for (const point of [torch.origin, torch.target])
+            point
+              .applyQuaternion(this.camera.quaternion)
+              .add(this.camera.position)
+              .add(this.view.root.position)
+        }
+        this.weaponLight.position.copy(torch.origin)
+        this.weaponLight.target.position.copy(torch.target)
+      }
     }
     if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
       this.view.laser.enabled = false
       return
     }
     this.view.laser.enabled = true
-    const direction = this.sidearm.aimDirection(this.camera.quaternion)
-    const origin = this.camera.position.clone()
-    if (isFirstPersonView(this.cameraState, !!sim.player.vehicleId)) {
-      origin.add(this.sidearm.muzzleViewOffset(time).applyQuaternion(this.camera.quaternion))
-    } else {
-      const muzzle = this.sidearm.worldMuzzle()
-      if (muzzle) origin.copy(muzzle).add(this.origin)
-      else origin.fromArray(sim.renderPlayerPosition)
+    const ray = this.sidearm.accessoryRay(time, eyes, this.camera.fov, 'RedLaserSocket')
+    if (!ray) {
+      this.view.laser.enabled = false
+      return
     }
+    for (const point of [ray.origin, ray.target]) {
+      if (eyes) point.applyQuaternion(this.camera.quaternion).add(this.camera.position)
+      else point.sub(this.view.root.position)
+    }
+    const origin = ray.origin
+    const direction = ray.target.sub(origin).normalize()
+    const target = origin.clone().addScaledVector(direction, this.sidearm.range)
     const aimed = sim.shoot(
       origin.toArray() as Vec3Tuple,
       direction.toArray() as Vec3Tuple,
-      this.sidearm.range,
+      origin.distanceTo(target) + 0.01,
       0,
     )
-    const end = (
-      aimed ? aimed.point : origin.clone().addScaledVector(direction, this.sidearm.range).toArray()
-    ) as Vec3Tuple
+    const end = (aimed ? aimed.point : target.toArray()) as Vec3Tuple
     this.view.laser.set(origin.toArray() as Vec3Tuple, end, !!aimed)
   }
 
@@ -3635,7 +3999,9 @@ export class GameRuntime {
   private applyStartCamera(action: StartCameraAction, sim: Simulation): void {
     if (action.startEngine) sim.startEngine()
     if (action.view && sim.player.vehicleId) {
-      if (action.view !== gameCameraView(this.cameraState, true)) {
+      const current = gameCameraView(this.cameraState, true)
+      // Normal first person is reported as bodycam, but it occupies the same driver seat.
+      if (action.view !== (current === 'bodycam' ? 'cockpit' : current)) {
         this.cameraState.nextTransitionMs = action.transitionMs ?? null
         setGameCameraView(this.cameraState, action.view, true)
       }
@@ -3649,7 +4015,7 @@ export class GameRuntime {
     // C during the start sequence hands the camera to the player (a held engine starts).
     const sim = this.session.simulation
     if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
-    const message = this.game.action('KeyC')
+    const message = this.game.action('KeyV')
     if (message) this.options.onMessage?.(message)
   }
   private pollGamepad(): Gamepad | null {
@@ -3665,7 +4031,7 @@ export class GameRuntime {
     if (pressed(0)) this.action('KeyE')
     if (pressed(1)) this.cycleCamera()
     if (pressed(2)) this.action('KeyF')
-    if (pressed(3)) this.action('KeyV')
+    if (pressed(3)) this.action('KeyC')
     if (pressed(4)) this.action('KeyR')
     this.previousButtons = pad.buttons.map((button) => button.pressed)
     return pad
@@ -3673,6 +4039,22 @@ export class GameRuntime {
   private action(code: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    if (
+      (code === 'KeyQ' || code === 'KeyE') &&
+      !sim.player.vehicleId &&
+      this.weaponDrawn &&
+      this.sidearm?.isAiming
+    )
+      return
+    if (
+      !sim.player.vehicleId &&
+      ((code === 'Space' && this.keys.values.has('KeyC')) ||
+        (code === 'KeyC' && this.keys.values.has('Space')))
+    ) {
+      sim.setStance('prone')
+      this.options.onMessage?.('Cuerpo a tierra · C para levantarse')
+      return
+    }
     if (code === 'KeyE') {
       const nearby = this.nearbyPickup(sim)
       const item =
@@ -3787,6 +4169,26 @@ export class GameRuntime {
         // cinematic orbit distance. Other views leave the wheel to the page.
         const state = this.cameraState
         if (!this.hasInput() || !this.session.simulation) return
+        const sim = this.session.simulation
+        if (
+          !sim.player.vehicleId &&
+          this.weaponDrawn &&
+          this.sidearm?.visible &&
+          !this.sidearmAimPreview &&
+          isFirstPersonView(state, false)
+        ) {
+          this.weaponWheel = stepWeaponWheel(this.weaponWheel, this.sidearm.isAiming, event.deltaY)
+          this.sidearm.playerWheel = this.weaponWheel
+          try {
+            browserStorage()?.setItem('nabla.weaponWheel', JSON.stringify(this.weaponWheel))
+          } catch {
+            /* Storage is optional. */
+          }
+          canvas.dataset.weaponHandStep = String(this.weaponWheel.hand + 1)
+          canvas.dataset.weaponAimDistance = this.weaponWheel.distance.toFixed(2)
+          event.preventDefault()
+          return
+        }
         const scale = Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity)
         if (state.mode === 'map') {
           state.mapZoom = THREE.MathUtils.clamp(
@@ -3942,6 +4344,18 @@ export class GameRuntime {
                 ? 'Música: ' + (track.title ?? 'pista')
                 : 'Música silenciada en Ajustes → Audio'
             },
+            (action) => {
+              const sim = this.session.simulation!
+              if (action === 'cargo') {
+                void this.loadTrailerCars(id).catch((error) =>
+                  this.options.onMessage?.(String(error)),
+                )
+                return 'Preparando carga del portacoches'
+              }
+              if (['extend', 'retract', 'angle-up', 'angle-down'].includes(action))
+                return sim.adjustTrailerRamp(id, action)
+              return sim.setTrailerPlatform(id, action === 'flat')
+            },
           )
           if (result.handled) {
             event.preventDefault()
@@ -3953,6 +4367,9 @@ export class GameRuntime {
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) {
+          if (event.code === 'KeyF' && this.weaponDrawn && this.sidearm)
+            this.sidearm.state.manualRackHeld =
+              this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
           this.action(event.code)
         }
       },
@@ -3962,6 +4379,7 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
+        if (event.code === 'KeyF' && this.sidearm) this.sidearm.state.manualRackHeld = false
         if (event.code === 'KeyZ' || event.code === 'KeyX') {
           this.sidearm?.stopInspect(performance.now())
           if (event.code === 'KeyX' && this.weaponDrawn)

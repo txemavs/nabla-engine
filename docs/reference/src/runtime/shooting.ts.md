@@ -25,9 +25,41 @@ lock often delivers that second press only as `mousedown`, not `pointerdown`.
 sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' | 'unaim' | null
 ```
 
+## sidearmAimRay
+
+[Implementation, line 44](../../../../src/runtime/shooting.ts#L44)
+
+Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
+
+```ts
+sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean, now = 0): { origin: Vector3; direction: Vector3 }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vector3`
+- `barrel.target.sub`
+- `barrel.target.sub(barrel.origin).normalize`
+- `camera.position.clone`
+- `camera.position.clone().addScaledVector`
+- `camera.position.toArray`
+- `look.toArray`
+- `new Vector3(0, 0, -1).applyQuaternion`
+- `origin.copy`
+- `origin.copy(muzzle).sub`
+- `point.applyQuaternion`
+- `point.applyQuaternion(camera.quaternion).add`
+- `point.sub`
+- `sidearm.accessoryRay`
+- `sidearm.aimDirection`
+- `sidearm.worldMuzzle`
+- `sim.shoot`
+- `target.sub`
+- `target.sub(origin).normalize`
+
 ## fitted
 
-[Implementation, line 43](../../../../src/runtime/shooting.ts#L43)
+[Implementation, line 73](../../../../src/runtime/shooting.ts#L73)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -42,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 59](../../../../src/runtime/shooting.ts#L59)
+[Implementation, line 89](../../../../src/runtime/shooting.ts#L89)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -55,15 +87,23 @@ fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.abs`
+- `Math.cos`
 - `Math.max`
 - `Math.min`
+- `Math.random`
+- `Math.sin`
+- `Math.sqrt`
+- `Math.tan`
 - `Vector3`
+- `axis.cross`
+- `axis.cross(direction).normalize`
 - `bulletEnergy`
 - `camera.clone`
-- `camera.position.clone`
-- `camera.position.clone().addScaledVector`
-- `camera.position.toArray`
 - `destination.toArray`
+- `direction.clone`
+- `direction.clone().cross`
+- `direction.clone().cross(right).normalize`
 - `direction.toArray`
 - `firing.lookAt`
 - `firing.position.clone`
@@ -73,30 +113,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `firing.updateMatrixWorld`
 - `fitted`
 - `gallery.shoot`
-- `look.clone`
-- `look.toArray`
-- `new Vector3(0, 0, -1).applyQuaternion`
 - `origin.clone`
 - `origin.clone().addScaledVector`
-- `origin.copy`
-- `origin.copy(muzzle).sub`
 - `origin.toArray`
-- `sidearm.aimDirection`
 - `sidearm.impact`
 - `sidearm.pull`
-- `sidearm.worldMuzzle`
+- `sidearmAimRay`
 - `sim.shoot`
-- `target.sub`
-- `target.sub(origin).normalize`
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@98
+## fireSidearm.callback@125
 
-[Implementation, line 98](../../../../src/runtime/shooting.ts#L98)
+[Implementation, line 125](../../../../src/runtime/shooting.ts#L125)
 
 ```ts
-callback@98(from, dir, length): inferred by TypeScript; see implementation
+callback@125(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

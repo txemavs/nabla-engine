@@ -26,3 +26,4 @@ local-backup/
 # Per-user vehicles. Publish one by moving it under assets/library.
 assets/custom/**
 !assets/custom/README.md
+assets/packs/

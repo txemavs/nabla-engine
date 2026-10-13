@@ -23,6 +23,7 @@ import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
 import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
+import { driverPoseControls, type DriverPoseRuntime } from './driver-pose-controls.js'
 import { assignVehicleColor } from './vehicle-colors.js'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
@@ -32,7 +33,8 @@ export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
  * What the controls need from the engine's `GameRuntime`; tests pass a fake. The steering-wheel
  * members are optional: without them «Volante» stays disabled.
  */
-export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<MirrorRuntime> {
+export interface SceneRuntime
+  extends Partial<SteeringWheelRuntime>, Partial<MirrorRuntime>, Partial<DriverPoseRuntime> {
   readonly skyClock: SkyClock
   setSkyClock(clock: SkyClock): void
   readonly waterSettings: { mode: 'manual' | 'tide'; level: number; amplitude: number } | undefined
@@ -53,6 +55,7 @@ export interface SceneRuntime extends Partial<SteeringWheelRuntime>, Partial<Mir
   /** Load a vehicle's models ahead of `spawnVehicle` so adding it does not freeze a frame. */
   prewarmVehicle?(template: Entity | Entity[]): Promise<void>
   removeSpawnedVehicle(id: string): void
+  setTrailerPlatform?(id: string, flat: boolean): string
   readonly placedObjects: { id: string; name: string }[]
   spawnEntities(entities: Entity[], distance?: number, name?: string): Promise<string>
   removePlaced(id: string): void
@@ -144,7 +147,7 @@ export function addLabel(choiceId: string): string {
   return `Añadir ${object.label.charAt(0).toLowerCase()}${object.label.slice(1)}`
 }
 
-/** A vehicle that can be added: the catalog presets a player can drive (trailers are passive). */
+/** A vehicle that can be added, including passive trailers. */
 export interface VehicleChoice {
   id: string
   label: string
@@ -153,13 +156,13 @@ export interface VehicleChoice {
 /** The vehicles the menu offers, in catalog order. The catalog has no planes or helicopters. */
 export function vehicleChoices(): VehicleChoice[] {
   return vehiclePresets()
-    .filter((preset) => !preset.vehicle.passive && !preset.hidden)
+    .filter((preset) => !preset.hidden)
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 
-/** Common add-menu models prepared behind the opening credits; large ships stay on demand. */
+/** Prepare common vehicles and the flying carrier behind the opening credits. */
 export function menuPreloadVehicles(
-  ids: readonly string[] = ['car', 'vfr800', 'white-truck'],
+  ids: readonly string[] = ['car', 'vfr800', 'white-truck', 'carrier'],
 ): Entity[][] {
   return [...new Set(ids)]
     .filter((id) => vehicleChoices().some((choice) => choice.id === id))
@@ -389,6 +392,7 @@ export function bindSceneControls(
   const wheel = steeringWheelControls()
   // «Espejos»: per-model glass angle of each mirror of the vehicle the player drives.
   const mirrors = mirrorControls()
+  const driverPose = driverPoseControls()
   // «Exportar posición de vehículos»: JSON for the start / host-vehicles config.
   const exportButton = button('vehicle-export', 'Exportar posición de vehículos')
   exportButton.title = 'Copia al portapapeles la posición de todos los vehículos (JSON)'
@@ -407,6 +411,7 @@ export function bindSceneControls(
     exportText,
     wheel.root,
     mirrors.root,
+    driverPose.root,
   )
 
   isolateKeys(timeRange, timeInput, timeSpeed, seaRange, seaInput, cloudAmount, choice, exportText)
@@ -549,9 +554,11 @@ export function bindSceneControls(
 
     const refreshWheel = wheel.bind(runtime)
     const refreshMirrors = mirrors.bind(runtime)
+    const refreshDriverPose = driverPose.bind(runtime)
     const timer = setInterval(() => {
       refreshWheel()
       refreshMirrors()
+      refreshDriverPose()
       showSea(false)
       if (runtime.skyClock.mode === 'live') showTime()
     }, 1000)
@@ -575,6 +582,18 @@ export function bindSceneControls(
           renderList()
         })
         item.append(name, remove)
+        if (runtime.setTrailerPlatform && /Portacoches|plataforma negra/.test(spawned.name)) {
+          for (const [flat, label] of [
+            [false, 'Bajar rampa'],
+            [true, 'Horizontal · fijar coches'],
+          ] as const) {
+            const control = button(`platform-${spawned.id}-${flat}`, label)
+            control.addEventListener('click', () => {
+              vehicleMessage.textContent = runtime.setTrailerPlatform!(spawned.id, flat)
+            })
+            item.append(control)
+          }
+        }
         vehicleList.append(item)
       }
       for (const placed of runtime.placedObjects) {

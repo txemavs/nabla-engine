@@ -1,9 +1,11 @@
+import { vehicleDamageTuning as tuning } from '../config/gameplay-tuning.js'
+
 /** Session-only vehicle health. Physics and presentation consume each destruction once. */
 export class VehicleDamage {
   private readonly health = new Map<string, number>()
   private readonly wrecks = new Set<string>()
   private readonly pending: string[] = []
-  private readonly impacts = new Map<string, number>()
+  private readonly impacts = new Map<string, { at: number; damage: number }>()
   remaining(id: string): number {
     return this.health.get(id) ?? 100
   }
@@ -19,13 +21,26 @@ export class VehicleDamage {
     this.pending.push(id)
     return true
   }
-  impact(id: string, other: number, speed: number, seconds: number): void {
-    if (!Number.isFinite(speed) || speed < 12) return
-    const key = `${id}:${other}`
-    if (seconds - (this.impacts.get(key) ?? -Infinity) < 1) return
-    this.impacts.set(key, seconds)
-    if (this.impacts.size > 1024) this.impacts.delete(this.impacts.keys().next().value!)
-    this.apply(id, Math.min(100, (speed - 12) * 7))
+  impact(id: string, _other: number, speed: number, seconds: number): void {
+    if (!Number.isFinite(speed) || !Number.isFinite(seconds) || speed <= tuning.minimumImpactSpeed)
+      return
+    const amount =
+      speed >= tuning.catastrophicImpactSpeed
+        ? 100
+        : Math.min(
+            tuning.maxOrdinaryDamage,
+            (speed - tuning.minimumImpactSpeed) * tuning.damagePerSpeed,
+          )
+    const previous = this.impacts.get(id)
+    // Several wheels/panels may strike different colliders during the same blow.
+    // Charge its strongest contact, including a later catastrophic contact.
+    if (previous && seconds >= previous.at && seconds - previous.at < tuning.contactWindowSeconds) {
+      this.apply(id, Math.max(0, amount - previous.damage))
+      previous.damage = Math.max(previous.damage, amount)
+      return
+    }
+    this.impacts.set(id, { at: seconds, damage: amount })
+    this.apply(id, amount)
   }
   drain(): string[] {
     return this.pending.splice(0)
@@ -33,7 +48,7 @@ export class VehicleDamage {
   remove(id: string): void {
     this.health.delete(id)
     this.wrecks.delete(id)
-    for (const key of this.impacts.keys()) if (key.startsWith(`${id}:`)) this.impacts.delete(key)
+    this.impacts.delete(id)
     for (let i = this.pending.length - 1; i >= 0; i--)
       if (this.pending[i] === id) this.pending.splice(i, 1)
   }

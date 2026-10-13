@@ -367,7 +367,17 @@ describe('reflection environment orientation', () => {
 
 describe('vfr800 rear-view mirrors', () => {
   /** Where the eye sees through each live glass (`Reflector`), as a reflected unit direction. */
-  const views = (root: THREE.Object3D, lenses: THREE.Mesh[], eye: THREE.Vector3) => {
+  const views = (
+    root: THREE.Object3D,
+    lenses: THREE.Mesh[],
+    eye: THREE.Vector3,
+    mirrors: CarMirrors,
+  ) => {
+    const entries = (
+      mirrors as unknown as {
+        entries: { original: THREE.Mesh; opticalRotation: THREE.Quaternion }[]
+      }
+    ).entries
     root.updateMatrixWorld(true)
     return Object.fromEntries(
       lenses.map((lens) => {
@@ -375,7 +385,10 @@ describe('vfr800 rear-view mirrors', () => {
           (node) => (node as { isReflector?: boolean }).isReflector,
         )!
         const centre = glass.getWorldPosition(new THREE.Vector3())
-        const normal = new THREE.Vector3(0, 0, 1).transformDirection(glass.matrixWorld)
+        const optical = entries.find((entry) => entry.original === lens)!.opticalRotation
+        const normal = new THREE.Vector3(0, 0, 1)
+          .applyQuaternion(optical)
+          .transformDirection(glass.parent!.matrixWorld)
         const d = centre.sub(eye).normalize()
         return [lens.userData.nabla.mirror as string, d.addScaledVector(normal, -2 * d.dot(normal))]
       }),
@@ -401,20 +414,20 @@ describe('vfr800 rear-view mirrors', () => {
     expect(eye).toBeTruthy()
     const mirrors = new CarMirrors(lenses, new THREE.Vector3(0, 1, 0), 0, {}, root)
     expect(mirrors.sides).toEqual(['left', 'right'])
-    const authored = views(root, lenses, eye!)
+    const authored = views(root, lenses, eye!, mirrors)
     // The glass as modelled shows the road behind (the bike faces −Z), each on its own side.
     for (const side of ['left', 'right']) expect(authored[side].z).toBeGreaterThan(0.5)
     expect(authored.left.x).toBeLessThan(authored.right.x)
 
     mirrors.setAdjustment({ left: { yaw: 5 }, right: { yaw: 5 } })
-    const outward = views(root, lenses, eye!)
+    const outward = views(root, lenses, eye!, mirrors)
     expect(outward.left.x).toBeLessThan(authored.left.x - 0.1)
     expect(outward.right.x).toBeGreaterThan(authored.right.x + 0.1)
     expect(degrees(outward.left, authored.left)).toBeGreaterThan(8)
     expect(degrees(outward.left, authored.left)).toBeLessThan(12)
 
     mirrors.setAdjustment({ right: { tilt: 4 } })
-    const raised = views(root, lenses, eye!)
+    const raised = views(root, lenses, eye!, mirrors)
     expect(raised.right.y).toBeGreaterThan(authored.right.y + 0.05)
     expect(degrees(raised.left, authored.left)).toBeLessThan(1e-3)
     mirrors.dispose()

@@ -27,12 +27,14 @@ describe('assembled HK Compact asset', () => {
     for (const name of [
       'GuardGripCurvedJoin',
       'BarrelInterior',
-      'FrameRearRail_Left',
-      'FrameRearRail_Right',
+      'ChamberExterior',
+      'TriggerGuardUndersideClosure',
     ])
       expect(gltf.nodes.some((node: { name: string }) => node.name === name)).toBe(true)
     const trigger = gltf.nodes.find((node: { name: string }) => node.name === 'Trigger')
-    expect(trigger.translation).toEqual([0, 0.083, -0.027])
+    expect(trigger.translation[0]).toBeCloseTo(0, 6)
+    expect(trigger.translation[1]).toBeCloseTo(0.083, 6)
+    expect(trigger.translation[2]).toBeCloseTo(-0.027, 6)
     const slide = gltf.nodes.find((node: { name: string }) => node.name === 'Slide')
     expect(slide.children.length).toBeGreaterThan(1)
     expect(rig.bounds.max[2] - rig.bounds.min[2]).toBeGreaterThan(0.16)

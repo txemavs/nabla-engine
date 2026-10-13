@@ -377,7 +377,7 @@ export class Simulation {
         const active = this.portalEntities.some(
           (e) => e.parentId === v.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
         )
-        this.setRamp(v, active)
+        this.setRamp(v, v.definition.passive ? true : active)
         if (active) v.rampAngle = v.rampTarget
         this.updateRamp(v, 0)
       }
@@ -837,6 +837,8 @@ export class Simulation {
       rampClosed: false,
       rampAngle: 0,
       rampTarget: 0,
+      rampExtension: 0,
+      rampExtensionTarget: 0,
       rampPortalActive: false,
       cruiseSpeed: 1000,
       helm: 'car',
@@ -874,7 +876,7 @@ export class Simulation {
       riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
       riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
-    this.jumpPending ||= input.jump
+    this.jumpPending ||= input.jump && this.footStance === 'standing'
   }
   private displayedPose(body: Body): Transform {
     if (!body.mass) return pose(body)
@@ -1079,7 +1081,13 @@ export class Simulation {
       if (carry) host!.getVelocityAtWorldPoint(this.playerBody.position, carry.velocity)
       if (this.ticks % mapCollisionDefaults.activationIntervalTicks === 0)
         this.updateMapCollisions()
-      for (const vehicle of this.vehicles.values()) this.updateRamp(vehicle, FIXED_STEP)
+      for (const vehicle of this.vehicles.values()) {
+        this.updateRamp(vehicle, FIXED_STEP)
+        if (vehicle.definition.garage?.ramp?.loadAngle !== undefined && vehicle.rampClosed)
+          for (const [id, car] of this.vehicles)
+            if (!car.definition.passive && this.garage.candidate(id) === vehicle.entity.id)
+              this.garage.attach(id, vehicle.entity.id)
+      }
       this.beforeTick()
       this.updateCatchFloor()
       const impactVelocities = this.options.vehicleDamage
@@ -1184,8 +1192,39 @@ export class Simulation {
       ...map,
     ])
   }
+  private footStance: 'standing' | 'crouching' | 'prone' = 'standing'
+  get stance(): 'standing' | 'crouching' | 'prone' {
+    return this.footStance
+  }
+  get eyeOffset(): number {
+    return this.footStance === 'standing' ? 0.75 : this.footStance === 'crouching' ? 0.4 : 0.15
+  }
+  setStance(next: 'standing' | 'crouching' | 'prone'): void {
+    if (this.vehicleId || next === this.footStance) return
+    const oldHalf = this.playerHalfHeight
+    this.footStance = next
+    const half = this.playerHalfHeight
+    this.playerBody.removeShape(this.playerBody.shapes[0])
+    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, half, PLAYER_RADIUS)))
+    this.playerBody.position.vadd(
+      this.radialUp(this.playerBody).scale(half - oldHalf),
+      this.playerBody.position,
+    )
+    this.playerBody.previousPosition.copy(this.playerBody.position)
+    this.playerBody.updateMassProperties()
+    this.playerBody.updateBoundingRadius()
+    this.playerBody.aabbNeedsUpdate = true
+    this.playerBody.wakeUp()
+    this.jumpPending = false
+  }
   private get playerHalfHeight(): number {
-    return this.options.playerMode === 'hover' ? 0.28 : PLAYER_HALF_HEIGHT
+    return this.footStance === 'prone'
+      ? 0.2
+      : this.footStance === 'crouching'
+        ? 0.5
+        : this.options.playerMode === 'hover'
+          ? 0.28
+          : PLAYER_HALF_HEIGHT
   }
 
   get playerFrame(): Transform | null {
@@ -1479,9 +1518,14 @@ export class Simulation {
         x /= len
         z /= len
       }
-      const speed = this.input.sprint
-        ? simulationDefaults.sprintSpeed
-        : simulationDefaults.walkSpeed
+      const speed =
+        this.footStance === 'prone'
+          ? 1
+          : this.footStance === 'crouching'
+            ? 2
+            : this.input.sprint
+              ? simulationDefaults.sprintSpeed
+              : simulationDefaults.walkSpeed
       const c = Math.cos(this.input.yaw),
         s = Math.sin(this.input.yaw)
       const platformVelocity = new Vec3()
@@ -2313,6 +2357,7 @@ export class Simulation {
     dockedTo: string | null
     rampClosed: boolean
     rampAngle: number
+    rampExtension: number
     rampMoving: boolean
     speedKmh: number
     braking: boolean
@@ -2386,6 +2431,7 @@ export class Simulation {
       dockedTo: this.docks.get(id)?.carrierId ?? null,
       rampClosed: v.rampClosed,
       rampAngle: v.rampAngle,
+      rampExtension: v.rampExtension,
       rampMoving: Math.abs(v.rampTarget - v.rampAngle) > 0.001,
       speedKmh: ground.speedMps * 3.6,
       braking: ground.braking,
@@ -2488,6 +2534,76 @@ export class Simulation {
     return this.roadGuidance.settings
   }
 
+  /** Operate the attached trailer from the tractor menu, only while stationary. */
+  setTrailerPlatform(tractorId: string, flat: boolean): string {
+    const tractor = this.vehicles.get(tractorId)
+    const trailer =
+      tractor?.definition.passive && tractor.definition.garage?.ramp?.loadAngle !== undefined
+        ? tractor
+        : [...this.vehicles.values()].find(
+            (v) =>
+              v.definition.tow?.vehicleId === tractorId &&
+              v.definition.garage?.ramp?.loadAngle !== undefined,
+          )
+    if (!tractor || !trailer) return 'Engancha un remolque plataforma o portacoches'
+    if (tractor.body.velocity.length() > 0.8)
+      return 'Detén el vehículo antes de mover la plataforma'
+    if (!flat)
+      for (const [id, dock] of [...this.docks])
+        if (dock.carrierId === trailer.entity.id) this.garage.toggle(id)
+    this.setRamp(trailer, flat)
+    return flat
+      ? 'Bajando plataforma · la carga se sujetará al quedar horizontal'
+      : 'Rampa de salto · carga libre'
+  }
+  cargoTrailer(tractorId: string): string | null {
+    return (
+      [...this.vehicles.values()].find(
+        (v) =>
+          v.definition.tow?.vehicleId === tractorId &&
+          v.entity.visual?.body.url.endsWith('trailer.transporter.glb'),
+      )?.entity.id ?? null
+    )
+  }
+  adjustTrailerRamp(tractorId: string, action: string): string {
+    const tractor = this.vehicles.get(tractorId)
+    const trailer = tractor?.definition.passive
+      ? tractor
+      : [...this.vehicles.values()].find(
+          (v) => v.definition.tow?.vehicleId === tractorId && v.definition.garage?.ramp?.telescope,
+        )
+    const telescope = trailer?.definition.garage?.ramp?.telescope
+    if (!tractor || !trailer || !telescope) return 'Engancha el portacoches telescópico'
+    if (tractor.body.velocity.length() > 0.8 || trailer.body.velocity.length() > 0.8)
+      return 'Detén el camión antes de ajustar la rampa'
+    for (const [id, dock] of [...this.docks])
+      if (dock.carrierId === trailer.entity.id) this.garage.toggle(id)
+    if (action === 'extend' || action === 'retract') {
+      trailer.rampExtensionTarget = action === 'extend' ? telescope.travel : 0
+    } else if (action === 'angle-up' || action === 'angle-down') {
+      trailer.rampTarget = clamp(
+        trailer.rampTarget + (action === 'angle-up' ? -1 : 1) * telescope.angleStep,
+        telescope.minAngle,
+        telescope.maxAngle,
+      )
+    }
+    trailer.rampClosed = false
+    return `Rampa: ${Math.round((-trailer.rampTarget * 180) / Math.PI)}° · extensión ${trailer.rampExtensionTarget.toFixed(1)} m`
+  }
+  cargoCount(carrierId: string): number {
+    return [...this.docks.values()].filter((dock) => dock.carrierId === carrierId).length
+  }
+  mountCargo(id: string, carrierId: string, local: Vec3Tuple): void {
+    const car = this.vehicles.get(id)!,
+      carrier = this.vehicles.get(carrierId)!
+    car.body.position.copy(carrier.body.pointToWorldFrame(new Vec3(...local)))
+    car.body.quaternion.copy(carrier.body.quaternion)
+    car.body.previousPosition.copy(car.body.position)
+    car.body.interpolatedPosition.copy(car.body.position)
+    car.body.previousQuaternion.copy(car.body.quaternion)
+    this.garage.attach(id, carrierId)
+  }
+
   setGarageDoor(id: string, closed: boolean): string {
     const carrier = this.vehicles.get(id)
     if (!carrier?.definition.garage) throw new Error('Nave desconocida')
@@ -2533,7 +2649,8 @@ export class Simulation {
       ))
         this.configurePortal(mouth.id, mouth.portal!.pairId, 'closed')
     }
-    carrier.rampTarget = closed ? ramp.closeAngle : 0
+    carrier.rampTarget = closed ? ramp.closeAngle : (ramp.loadAngle ?? 0)
+    if (closed) carrier.rampExtensionTarget = 0
     carrier.rampClosed = closed && Math.abs(carrier.rampAngle - ramp.closeAngle) < 0.001
   }
 
@@ -2541,15 +2658,30 @@ export class Simulation {
     const ramp = carrier.definition.garage?.ramp
     if (!ramp) return
     const previous = carrier.rampAngle
+    const previousExtension = carrier.rampExtension
+    const telescope = ramp.telescope
+    if (telescope)
+      carrier.rampExtension += clamp(
+        carrier.rampExtensionTarget - carrier.rampExtension,
+        -dt * telescope.speed,
+        dt * telescope.speed,
+      )
     carrier.rampAngle += clamp(carrier.rampTarget - carrier.rampAngle, -dt * 0.9, dt * 0.9)
     carrier.rampClosed =
       carrier.rampTarget === ramp.closeAngle &&
+      carrier.rampExtension < 0.001 &&
+      carrier.rampExtensionTarget === 0 &&
       Math.abs(carrier.rampAngle - ramp.closeAngle) < 0.001
     const portalActive = this.portalEntities.some(
       (e) =>
         e.parentId === carrier.entity.id && e.portal!.clearsRamp && e.portal!.mode !== 'closed',
     )
-    if (dt > 0 && previous === carrier.rampAngle && portalActive === carrier.rampPortalActive)
+    if (
+      dt > 0 &&
+      previous === carrier.rampAngle &&
+      previousExtension === carrier.rampExtension &&
+      portalActive === carrier.rampPortalActive
+    )
       return
     carrier.rampPortalActive = portalActive
     const collider = carrier.definition.colliders[ramp.colliderIndex]
@@ -2565,6 +2697,18 @@ export class Simulation {
     carrier.body.shapeOrientations[ramp.colliderIndex].copy(
       rotation.mult(new Quaternion(...collider.transform.rotation)),
     )
+    if (telescope) {
+      const section = carrier.definition.colliders[telescope.colliderIndex]
+      const local = new Vec3(...section.transform.position)
+      local.z += carrier.rampExtension
+      carrier.body.shapeOffsets[telescope.colliderIndex].copy(
+        rotation.vmult(local.vsub(hinge)).vadd(hinge),
+      )
+      carrier.body.shapeOrientations[telescope.colliderIndex].copy(
+        rotation.mult(new Quaternion(...section.transform.rotation)),
+      )
+      carrier.body.updateShapeTransform(telescope.colliderIndex)
+    }
     carrier.body.updateBoundingRadius()
     carrier.body.updateShapeTransform(ramp.colliderIndex)
     carrier.body.aabbNeedsUpdate = true

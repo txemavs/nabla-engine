@@ -1,4 +1,5 @@
 /** Split trailer.anchored.glb into a shared chassis and a swappable cargo box. */
+import * as THREE from 'three'
 import { readGlb, writeGlb } from './lib/glb.mjs'
 
 const SOURCE = 'assets/library/trucks/white-truck/assets/trailer.anchored.glb'
@@ -6,7 +7,7 @@ const CHASSIS = 'assets/library/trucks/white-truck/assets/trailer.chassis.glb'
 const BOX = 'assets/library/trucks/white-truck/assets/trailer.box.glb'
 
 /** Cargo walls, deck and the marker lights that live on the box outline. */
-const BOX_NODE = /^(box01|Box_|light_back|light_fron|light_le|light_ri)/i
+const BOX_NODE = /^(box01|light_back|light_fron|light_le|light_ri)/i
 
 function parentsOf(nodes) {
   const parent = new Map()
@@ -79,6 +80,9 @@ function meshNames(json) {
 }
 
 const { json, read, bin } = readGlb(SOURCE)
+// The original Box_ref mesh is the black underframe, not the cargo walls.
+for (const node of json.nodes) if (/^Box_ref/i.test(node.name ?? '')) node.name = 'ChassisFrame'
+
 const boxNodes = withAncestors(
   new Set(json.nodes.flatMap((node, i) => (BOX_NODE.test(node.name ?? '') ? [i] : []))),
   json.nodes,
@@ -89,7 +93,63 @@ const chassisNodes = new Set(
 
 const chassis = extract(json, chassisNodes)
 const box = extract(json, boxNodes)
-writeGlb(CHASSIS, chassis, read, bin)
+const added = new Map()
+function plate(doc, name, size, position, bevel = 0) {
+  const geometry = new THREE.BoxGeometry(...size, 1, 1, bevel ? 32 : 1)
+  if (bevel) {
+    const vertices = geometry.attributes.position
+    for (let i = 0; i < vertices.count; i++)
+      if (vertices.getY(i) > 0) {
+        const share = Math.min(1, Math.max(0, (size[2] / 2 - Math.abs(vertices.getZ(i))) / bevel))
+        vertices.setY(i, -size[1] / 2 + size[1] * share)
+      }
+    geometry.computeVertexNormals()
+  }
+  const attributes = {}
+  for (const [semantic, attr] of [
+    ['POSITION', geometry.attributes.position],
+    ['NORMAL', geometry.attributes.normal],
+  ]) {
+    const index = doc.accessors.length
+    doc.accessors.push({ type: 'VEC3', count: attr.count })
+    added.set(
+      index,
+      Array.from({ length: attr.count }, (_, i) => [attr.getX(i), attr.getY(i), attr.getZ(i)]),
+    )
+    attributes[semantic] = index
+  }
+  const indices = doc.accessors.length
+  doc.accessors.push({ type: 'SCALAR', count: geometry.index.count })
+  added.set(
+    indices,
+    Array.from(geometry.index.array, (value) => [value]),
+  )
+  const material = doc.materials.length
+  doc.materials.push({
+    name: 'Platform black steel',
+    pbrMetallicRoughness: {
+      baseColorFactor: [0.025, 0.027, 0.03, 1],
+      metallicFactor: 0.55,
+      roughnessFactor: 0.7,
+    },
+  })
+  const mesh = doc.meshes.length
+  doc.meshes.push({ primitives: [{ attributes, indices, material }] })
+  const node = doc.nodes.length
+  doc.nodes.push({ name, mesh, translation: position })
+  doc.scenes[doc.scene ?? 0].nodes.push(node)
+}
+plate(chassis, 'LoadingDeck', [2.4, 0.08, 12.8], [0, 0.19, 0])
+const readAdded = (id) => added.get(id) ?? read(id)
+writeGlb(CHASSIS, chassis, readAdded, bin)
+const transporter = structuredClone(chassis)
+plate(transporter, 'SlidingDeck', [2.32, 0.04, 12.8], [0, 0.25, 0], 0.4)
+writeGlb(
+  'assets/library/trucks/white-truck/assets/trailer.transporter.glb',
+  transporter,
+  readAdded,
+  bin,
+)
 writeGlb(BOX, box, read, bin)
 
 console.log(

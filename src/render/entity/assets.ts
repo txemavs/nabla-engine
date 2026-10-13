@@ -1,6 +1,8 @@
 import { repairPortalFrame } from '../portal/frame.js'
 import * as THREE from 'three'
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'meshoptimizer'
+import { AssetPack } from './asset-pack.js'
 
 /** Rebind light targets to the cloned hierarchy; Three's light copy leaves a detached target. */
 export function cloneAssetScene(source: THREE.Group): THREE.Group {
@@ -26,22 +28,30 @@ export function cloneAssetScene(source: THREE.Group): THREE.Group {
 
 /** Owns shared geometry/textures. Views own their cloned materials and transforms. */
 export class AssetLibrary {
-  private readonly loader = new GLTFLoader()
+  private readonly loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
+  private readonly pack = new AssetPack()
   private readonly cache = new Map<string, Promise<GLTF>>()
   async instantiate(url: string): Promise<THREE.Group> {
     let pending = this.cache.get(url)
     if (!pending) {
-      pending = this.loader.loadAsync(url).then((gltf) => {
-        if (url === '/library/portals/portal.frame.glb') {
-          gltf.scene.traverse((object) => {
-            if (!(object instanceof THREE.Mesh)) return
-            const source = object.geometry
-            object.geometry = repairPortalFrame(source)
-            source.dispose()
-          })
-        }
-        return gltf
-      })
+      pending = this.pack
+        .read(url)
+        .then((buffer) =>
+          buffer
+            ? this.loader.parseAsync(buffer, url.slice(0, url.lastIndexOf('/') + 1))
+            : this.loader.loadAsync(url),
+        )
+        .then((gltf) => {
+          if (url === '/library/portals/portal.frame.glb') {
+            gltf.scene.traverse((object) => {
+              if (!(object instanceof THREE.Mesh)) return
+              const source = object.geometry
+              object.geometry = repairPortalFrame(source)
+              source.dispose()
+            })
+          }
+          return gltf
+        })
       this.cache.set(url, pending)
       pending.catch(() => this.cache.delete(url))
     }

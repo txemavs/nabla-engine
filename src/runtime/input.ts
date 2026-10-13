@@ -123,7 +123,7 @@ export class GameInput {
     const bike = !flight && !!vehicle?.twoWheeled
     const up = keys.has('KeyW') || keys.has('ArrowUp')
     const down = keys.has('KeyS') || keys.has('ArrowDown')
-    const twin = bike && up && down
+    const twin = (bike || !!roadCar) && up && down
     const rolling = !!info && !info.reversing && info.speedKmh >= BIKE_PADDLE_KMH
     const pedal = bike && down && !up && rolling
     const keyForward = twin

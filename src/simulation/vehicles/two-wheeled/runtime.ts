@@ -38,6 +38,7 @@ import {
 } from '../drivetrain.js'
 import { holdInPark, isValidPowertrain, type WheeledVehicle } from '../wheeled/runtime.js'
 import { stepWheelMomentum } from '../wheel-momentum.js'
+import { stepJumpControl } from '../jump-control.js'
 
 const parkedHeadings = new WeakMap<WheeledVehicle, Vec3>()
 import type { WheeledDefinition, WheeledInput } from '../wheeled/contracts.js'
@@ -832,6 +833,7 @@ export function stepTwoWheeledVehicle(
   }
 
   stepWheelMomentum(v, dt, active, powered, input.throttle)
+  stepJumpControl(v, input, active)
   if (stationary || state.donutLean !== 0)
     holdDonut(v, stationary, active ? input.steering : 0, throttle, forward, gravityUp, dt)
   stepLean(

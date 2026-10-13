@@ -32,6 +32,8 @@ describe('trailer chassis + box assets', () => {
   it('keeps landing gear and the kingpin on the chassis GLB', () => {
     const names = meshNames(CHASSIS)
     expect(names.some((name) => STUETZBEIN.test(name))).toBe(true)
+    expect(names).toContain('ChassisFrame')
+    expect(names).toContain('LoadingDeck')
     expect(names.some((name) => BOX_MESH.test(name))).toBe(false)
     expect(
       readGlbJson(CHASSIS).nodes.some((node) => node.extras?.nabla?.anchor === 'tow.anchor'),

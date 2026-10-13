@@ -124,7 +124,7 @@ Explicit throws in this body:
 
 ## GameRenderPipeline.blankShadowMaps
 
-[Implementation, line 183](../../../../src/runtime/render-pipeline.ts#L183)
+[Implementation, line 185](../../../../src/runtime/render-pipeline.ts#L185)
 
 Clear every shadow map to its far depth (fully lit); the current render target is kept.
 
@@ -140,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## missingShadowMap
 
-[Implementation, line 201](../../../../src/runtime/render-pipeline.ts#L201)
+[Implementation, line 203](../../../../src/runtime/render-pipeline.ts#L203)
 
 A shadow-casting light whose map the renderer has not created yet.
 
@@ -152,10 +152,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `lights.some`
 
-## missingShadowMap.callback@202
+## missingShadowMap.callback@204
 
-[Implementation, line 202](../../../../src/runtime/render-pipeline.ts#L202)
+[Implementation, line 204](../../../../src/runtime/render-pipeline.ts#L204)
 
 ```ts
-callback@202(light): inferred by TypeScript; see implementation
+callback@204(light): inferred by TypeScript; see implementation
 ```

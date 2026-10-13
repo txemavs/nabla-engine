@@ -64,16 +64,22 @@ export class VehicleWarmup {
       await renderer.compileAsync(group, camera, scene)
       if (this.disposed) return
       const previous = renderer.getRenderTarget()
+      const shadowNeedsUpdate = renderer.shadowMap.needsUpdate
       const target = new THREE.WebGLRenderTarget(1, 1)
       // Attach, draw and detach in one synchronous block: attract/game frames never see
       // these representatives. Use the real scene's lights and shadow configuration.
       scene.add(group)
       try {
+        // Warmup bypasses the main pipeline's shadow allocation. A frozen shadow
+        // manager may not have depth textures yet; sampling its placeholder as
+        // sampler2DShadow causes GL_INVALID_OPERATION on the very first draw.
+        renderer.shadowMap.needsUpdate = true
         renderer.setRenderTarget(target)
         renderer.render(scene, camera)
         for (const id of view.mirroredVehicles)
           view.renderMirrors(renderer, scene, camera, id, performance.now())
       } finally {
+        renderer.shadowMap.needsUpdate = shadowNeedsUpdate
         renderer.setRenderTarget(previous)
         target.dispose()
         group.removeFromParent()

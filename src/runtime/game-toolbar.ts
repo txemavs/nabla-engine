@@ -13,7 +13,8 @@ export class GameToolbar {
     this.root.setAttribute('role', 'group')
     this.root.setAttribute('aria-label', 'Controles del juego')
     this.root.style.cssText =
-      'position:absolute;right:8px;top:62px;z-index:48;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;max-height:calc(100% - 70px)'
+      'position:fixed;right:20px;top:72px;z-index:48;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;max-height:calc(100% - 70px)'
+    this.setVisible(false)
     const group = document.createElement('div')
     group.style.cssText = 'order:30;position:relative'
     const button = document.createElement('button')
@@ -104,6 +105,9 @@ export class GameToolbar {
       'display:flex;flex-direction:column;align-items:center;gap:8px;order:' + order
     this.root.append(group)
     group.querySelectorAll('button').forEach((button) => GameToolbar.styleButton(button))
+  }
+  setVisible(visible: boolean): void {
+    this.root.style.display = visible ? 'flex' : 'none'
   }
   dispose(): void {
     this.lifetime.abort()

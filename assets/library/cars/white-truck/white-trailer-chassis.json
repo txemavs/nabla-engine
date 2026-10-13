@@ -1,10 +1,10 @@
 {
   "id": "white-trailer-chassis",
-  "label": "Chasis de remolque",
+  "label": "Remolque plataforma negra",
   "clearance": 1.2,
   "placement": [10, 1.2, 7.33],
   "order": 8,
-  "name": "Chasis de remolque",
+  "name": "Remolque plataforma negra",
   "color": "#eeeeee",
   "size": [2.55, 1.4, 13.5],
   "mass": 4000,
@@ -13,9 +13,9 @@
     "passive": true,
     "colliders": [
       {
-        "size": [2.48, 0.55, 13.45],
+        "size": [2.4, 0.08, 12.8],
         "transform": {
-          "position": [0, 0.6, 0],
+          "position": [0, 0.19, 0],
           "rotation": [0, 0, 0, 1]
         }
       }
@@ -25,7 +25,17 @@
     "stiffness": 110,
     "engineForce": 1,
     "brakeForce": 120,
-    "cameraDistance": 24
+    "cameraDistance": 24,
+    "garage": {
+      "min": [-1.25, 0.1, -6.4],
+      "max": [1.25, 4.8, 6.4],
+      "ramp": {
+        "colliderIndex": 0,
+        "hinge": [0, 0.19, -6.4],
+        "closeAngle": 0,
+        "loadAngle": 0.105
+      }
+    }
   },
   "visual": {
     "body": {
@@ -79,7 +89,12 @@
         }
       }
     ],
-    "presentation": "nabla.truck"
+    "presentation": "nabla.truck",
+    "ramp": {
+      "nodes": ["LoadingDeck"],
+      "hinge": [0, 0.19, -6.4],
+      "closeAngle": 0
+    }
   },
   "rig": "glb"
 }

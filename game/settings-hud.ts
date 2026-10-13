@@ -5,6 +5,8 @@
  * Architecture: the Planeta tab hosts `createPlanetSettingsPanel().root`, which
  * a ship interior monitor can remount later without a second stylesheet.
  */
+import { resetGameSettings } from './reset-settings.js'
+import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   weaponPoseNames,
@@ -44,12 +46,12 @@ type TabId = (typeof TABS)[number]['id']
 /**
  * Where each menu section (`menuSection(id, …)`) lives, in display order within its tab:
  *   Planeta     — Posición, Hora, Tierra (map layers), Mar, Aire (clouds), Cielo (sky, sun, flare)
- *   Opciones    — player preferences: Cámara, Conducción, Volante y espejos, Mapa (city labels)
+ *   Opciones    — everyday preferences: Cámara, Conducción, Mapa (city labels)
  *   Rendimiento — Calidad (profile, FPS limit, resolution scale, apply) and the terrain Caché
  *   Vídeo       — Sombras and Postproceso (asphalt contrast)
  *   Audio       — General / Motor / Música volumes and music mute
  *   Objetos     — Añadir (vehicles and objects to place)
- *   Desarrollo  — planet values to copy, light tuning sliders, terrain source
+ *   Desarrollo  — folded tree: weapon poses, vehicle calibration, lighting, planet/debug values
  * Sections created after the HUD mounts (the Tierra layer list is bound later) are placed as they
  * appear. An unknown id lands in Opciones so a new feature is never left in the hidden legacy menu.
  */
@@ -61,10 +63,11 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-planet-air', 'planet'],
   ['settings-planet-sky', 'planet'],
   ['camera-extras', 'options'],
+  ['settings-muzzle-flash', 'options'],
   ['driving-extras', 'options'],
-  ['settings-options-driver', 'options'],
-  ['settings-options-sidearm', 'options'],
-  ['settings-weapon-poses', 'options'],
+  ['settings-options-driver', 'dev'],
+  ['settings-options-sidearm', 'dev'],
+  ['settings-weapon-poses', 'dev'],
   ['settings-options-labels', 'options'],
   ['display-quality-section', 'performance'],
   ['display-performance', 'performance'],
@@ -90,6 +93,8 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'road-style': 'Postproceso',
   'scene-vehicles': 'Añadir',
   'settings-light': 'Luz (ajuste fino)',
+  'settings-options-sidearm': 'Ajuste del apuntado',
+  'settings-weapon-poses': 'Posturas y animaciones',
 }
 
 /** Shorter names for the Tierra layer switches (by `data-layer`). */
@@ -176,11 +181,38 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     paneEls.set(tab.id, pane)
   }
 
+  // Keep the shared action rail centred below the menu/time button, even when its label grows.
+  const alignToolbar = () => {
+    const rect = toggle.getBoundingClientRect()
+    const toolbar = doc.querySelector<HTMLElement>('.game-toolbar')
+    if (!toolbar || !rect.width) return
+    toolbar.style.right = `${window.innerWidth - rect.right}px`
+    toolbar.style.width = `${rect.width}px`
+    toolbar.style.top = `${rect.bottom + 8}px`
+  }
+  const toolbarResize = new ResizeObserver(alignToolbar)
+  toolbarResize.observe(toggle)
+  window.addEventListener('resize', alignToolbar)
   const closeBtn = doc.createElement('button')
   closeBtn.type = 'button'
   closeBtn.className = 'settings-close'
   closeBtn.textContent = 'Cerrar'
-  console.append(title, tabBar, panes, closeBtn)
+  const defaults = doc.createElement('button')
+  defaults.type = 'button'
+  defaults.id = 'settings-defaults'
+  defaults.textContent = 'AJUSTES PREDETERMINADOS'
+  defaults.title = 'Borra los ajustes guardados del juego y recarga con los valores de serie'
+  defaults.addEventListener('click', () => {
+    try {
+      runtime.pause()
+      resetGameSettings(localStorage)
+      resetGameSettings(sessionStorage)
+      location.reload()
+    } catch {
+      defaults.textContent = 'No se pudieron borrar los ajustes. Reintentar'
+    }
+  })
+  console.append(title, tabBar, panes, defaults, closeBtn)
   win.append(console)
 
   const planetPane = paneEls.get('planet')!
@@ -209,7 +241,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const pane = paneEls.get(tab)!
     if (el.parentElement !== pane) {
       const rank = order(el.id)
-      const next = rank === -1 ? null : [...pane.children].find((child) => order(child.id) > rank)
+      const next =
+        rank === -1
+          ? null
+          : [...pane.children].find(
+              (child) => order(child.id || child.querySelector('.menu-section')?.id || '') > rank,
+            )
       pane.insertBefore(el, next ?? null)
     }
     const title = SECTION_TITLES[el.id]
@@ -339,7 +376,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     performanceGroup.hidden = true
   }
 
-  if (quality) {
+  let cameraOptions = byId('camera-extras')
+  if (!cameraOptions) {
+    cameraOptions = fieldset('camera-extras', 'Cámara')
+    place(cameraOptions)
+  }
+  {
     const label = doc.createElement('label')
     const input = doc.createElement('select')
     input.id = 'camera-first-person-mode'
@@ -355,7 +397,91 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.value = runtime.bodycamEnabled ? 'normal' : 'pointer'
     input.addEventListener('change', () => runtime.setBodycamEnabled(input.value === 'normal'))
     label.append('Primera persona ', input)
-    quality.append(label)
+    cameraOptions.append(label)
+  }
+
+  if (typeof runtime.actionCamEnabled === 'boolean') {
+    const label = doc.createElement('label'),
+      input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'camera-action-cam'
+    input.checked = runtime.actionCamEnabled
+    input.addEventListener('change', () => runtime.setActionCamEnabled(input.checked))
+    label.append(input, ' Action cam (pasos e inclinación al caminar)')
+    cameraOptions.append(label)
+  }
+  if (runtime.actionCamSettings && typeof runtime.setActionCamSettings === 'function') {
+    const tuning = doc.createElement('details'),
+      title = doc.createElement('summary')
+    tuning.id = 'camera-action-cam-settings'
+    title.textContent = 'Ajustar Action Cam'
+    tuning.append(title)
+    const note = doc.createElement('p')
+    note.textContent =
+      'Cambios en directo y guardados en este navegador. Un ciclo más largo baja el ritmo de pasos. Las velocidades controlan el efecto, no al personaje.'
+    tuning.append(note)
+    const groups = new Map<string, HTMLDetailsElement>(),
+      refresh: Array<() => void> = []
+    for (const control of actionCamControls) {
+      let group = groups.get(control.group)
+      if (!group) {
+        group = doc.createElement('details')
+        const summary = doc.createElement('summary')
+        summary.textContent = control.group
+        group.open = groups.size === 0
+        group.append(summary)
+        groups.set(control.group, group)
+        tuning.append(group)
+      }
+      const row = doc.createElement('label'),
+        slider = doc.createElement('input'),
+        value = doc.createElement('output')
+      slider.type = 'range'
+      slider.id = `action-cam-${control.key}`
+      slider.min = String(control.min)
+      slider.max = String(control.max)
+      slider.step = String(control.step)
+      const sync = () => {
+        const amount = runtime.actionCamSettings[control.key] * control.scale
+        slider.value = String(amount)
+        value.textContent = `${amount.toFixed(control.step < 0.01 ? 3 : 2)} ${control.unit}`
+      }
+      slider.addEventListener('input', () => {
+        runtime.setActionCamSettings({ [control.key]: slider.valueAsNumber / control.scale })
+        sync()
+      })
+      row.append(control.label, slider, value)
+      group.append(row)
+      refresh.push(sync)
+      sync()
+    }
+    const soft = doc.createElement('button'),
+      reset = doc.createElement('button')
+    soft.type = reset.type = 'button'
+    soft.id = 'action-cam-soft'
+    reset.id = 'action-cam-reset'
+    soft.textContent = 'Aplicar suave'
+    reset.textContent = 'Restablecer Action Cam'
+    soft.addEventListener('click', () => {
+      runtime.setActionCamSettings(softActionCamSettings)
+      refresh.forEach((sync) => sync())
+    })
+    reset.addEventListener('click', () => {
+      runtime.resetActionCamSettings()
+      refresh.forEach((sync) => sync())
+    })
+    tuning.append(soft, reset)
+    cameraOptions.append(tuning)
+  }
+  if (typeof runtime.tunnelEnabled === 'boolean') {
+    const label = doc.createElement('label')
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'quality-tunnel'
+    input.checked = runtime.tunnelEnabled
+    input.addEventListener('change', () => runtime.setTunnelEnabled(input.checked))
+    label.append(input, ' Efecto túnel al apuntar')
+    cameraOptions.append(label)
   }
 
   // Quality preference applies immediately to both exhaust and gun smoke.
@@ -385,11 +511,71 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   // Opciones → Volante y espejos: the driver's steering wheel and mirror glass adjustments.
-  const driverGroups = rows(byId('scene-steering-wheel'), byId('scene-mirrors'))
+  const driverGroups = rows(
+    byId('scene-driver-pose'),
+    byId('scene-steering-wheel'),
+    byId('scene-mirrors'),
+  )
   if (driverGroups.length) {
-    const driver = fieldset('settings-options-driver', 'Volante y espejos')
+    const driver = fieldset('settings-options-driver', 'Conductor, volante y espejos')
     driver.append(...driverGroups)
     place(driver)
+  }
+
+  {
+    const group = fieldset('settings-muzzle-flash', 'Pistola · fogonazo')
+    const note = doc.createElement('p')
+    note.textContent =
+      'Desplazamiento respecto a la posición original, en milímetros. Intensidad de luz en %. Se guarda en este navegador.'
+    group.append(note)
+    const controls = new Map<string, [HTMLInputElement, HTMLInputElement]>()
+    const refresh = () => {
+      const values = runtime.muzzleFlashTuning
+      for (const [key, inputs] of controls)
+        for (const input of inputs) input.value = String(values[key as keyof typeof values])
+    }
+    for (const [key, text] of [
+      ['x', 'Izquierda / derecha (mm)'],
+      ['y', 'Abajo / arriba (mm)'],
+      ['z', 'Adelante / atrás (mm)'],
+      ['intensity', 'Intensidad (%)'],
+    ] as const) {
+      const row = doc.createElement('label'),
+        slider = doc.createElement('input'),
+        number = doc.createElement('input')
+      slider.type = 'range'
+      number.type = 'number'
+      slider.id = `muzzle-flash-${key}`
+      number.id = `muzzle-flash-${key}-value`
+      for (const input of [slider, number]) {
+        input.min = key === 'intensity' ? '0' : '-200'
+        input.max = key === 'intensity' ? '300' : '200'
+        input.step = key === 'intensity' ? '1' : '0.1'
+        input.setAttribute('aria-label', text + (input === number ? ' valor' : ''))
+        input.addEventListener('input', () => {
+          if (!Number.isFinite(input.valueAsNumber)) return
+          runtime.setMuzzleFlashTuning({ [key]: input.valueAsNumber })
+          refresh()
+        })
+      }
+      number.style.width = '75px'
+      row.append(text + ' ', slider, number)
+      group.append(row)
+      controls.set(key, [slider, number])
+    }
+    const preview = doc.createElement('button'),
+      reset = doc.createElement('button')
+    preview.type = reset.type = 'button'
+    preview.textContent = 'Probar fogonazo (1 s)'
+    preview.onclick = () => runtime.previewMuzzleFlash()
+    reset.textContent = 'Restablecer fogonazo'
+    reset.onclick = () => {
+      runtime.setMuzzleFlashTuning({ x: 0, y: 0, z: -72, intensity: 100 })
+      refresh()
+    }
+    group.append(preview, reset)
+    refresh()
+    place(group)
   }
 
   // Live aimed-pistol adjustments remain visible with the mouse free over the sliders.
@@ -432,7 +618,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       for (const [key, { input, output }] of controls) {
         const value = (tuning[key] - sidearmTuningDefaults[key]) * (key === 'height' ? 1000 : 1)
         input.value = String(value)
-        output.value = key === 'height' ? `${Math.round(value)} mm` : `${value.toFixed(1)}°`
+        output.value = key === 'height' ? `${value.toFixed(2)} mm` : `${value.toFixed(2)}°`
         input.setAttribute('aria-valuetext', output.value)
       }
     }
@@ -587,12 +773,71 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       if (btn) btn.hidden = !pane.querySelector(':scope > :not([hidden])')
     }
   }
+  // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
+  const devBranches = [
+    ['Arma', ['settings-options-sidearm', 'settings-weapon-poses']],
+    ['Vehículo', ['settings-options-driver']],
+    ['Iluminación', ['settings-light']],
+    ['Planeta y diagnóstico', ['settings-config-planet', 'terrain-source']],
+  ] as const
+  const branches = new Map<string, HTMLDetailsElement>()
+  const foldSections = () => {
+    for (const [tab, pane] of paneEls) {
+      for (const section of [...pane.querySelectorAll<HTMLElement>(':scope > .menu-section')]) {
+        if (section.hidden) continue
+        let parent: HTMLElement = pane
+        if (tab === 'dev') {
+          const category =
+            devBranches.find(([, ids]) => (ids as readonly string[]).includes(section.id))?.[0] ??
+            'Otros ajustes'
+          let branch = branches.get(category)
+          if (!branch) {
+            branch = doc.createElement('details')
+            branch.className = 'settings-branch'
+            const summary = doc.createElement('summary')
+            summary.textContent = category
+            branch.append(summary)
+            pane.append(branch)
+            branches.set(category, branch)
+            if (category === 'Arma')
+              branch.addEventListener('toggle', () => {
+                if (!branch!.open) runtime.setSidearmAimPreview?.(false)
+              })
+          }
+          parent = branch
+        }
+        const fold = doc.createElement('details')
+        fold.className = 'settings-fold'
+        const summary = doc.createElement('summary')
+        const legend = section.querySelector<HTMLElement>(':scope > legend')
+        summary.textContent = legend?.textContent ?? section.id
+        if (legend) legend.hidden = true
+        fold.append(summary)
+        if (parent === pane) pane.insertBefore(fold, section)
+        else parent.append(fold)
+        fold.append(section)
+        if (
+          section.id.startsWith('settings-options-sidearm') ||
+          section.id === 'settings-weapon-poses'
+        )
+          fold.addEventListener('toggle', () => {
+            if (!fold.open) runtime.setSidearmAimPreview?.(false)
+          })
+      }
+    }
+    for (const [category] of devBranches) {
+      const branch = branches.get(category)
+      if (branch) paneEls.get('dev')!.append(branch)
+    }
+  }
+  foldSections()
   syncTabs()
   // Sections bound after the HUD (Tierra in the terrain game) are placed when they appear.
   const observer = menu
     ? new MutationObserver((records) => {
         for (const record of records)
           for (const node of record.addedNodes) if (node instanceof HTMLElement) place(node)
+        foldSections()
         syncTabs()
       })
     : null
@@ -624,9 +869,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-window {
   position: fixed;
   top: 72px;
-  right: 20px;
+  right: 76px;
   z-index: 30;
-  width: min(580px, calc(100vw - 24px));
+  width: min(480px, calc(100vw - 88px));
   max-height: calc(100vh - 92px);
   overflow: auto;
   pointer-events: auto;
@@ -634,7 +879,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-console {
   width: 100%;
   height: auto;
-  min-height: 280px;
+  min-height: 0;
   max-height: none;
 }
 .settings-tabs {
@@ -646,7 +891,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 .settings-console .settings-tab {
   min-width: 0;
   padding: 4px;
-  font-size: 16px;
+  font-size: 14px;
+}
+.settings-console { padding: 12px; font-size: 14px; }
+.settings-console > strong { min-height: 0; margin-bottom: 6px; }
+.settings-console button, .settings-console select { font-size: 14px; padding: 6px 8px; }
+.settings-console .settings-tab { margin: 0; padding: 5px 2px; font-size: 12px; }
+.settings-fold, .settings-branch { margin: 5px 0; border: 1px solid #395e7966; border-radius: 6px; }
+.settings-fold > summary, .settings-branch > summary { padding: 8px 10px; cursor: pointer; color: #c6e6ff; }
+.settings-fold > summary:hover, .settings-branch > summary:hover { background: #1d4e7344; }
+.settings-fold > summary:focus-visible, .settings-branch > summary:focus-visible { outline: 2px solid #8fd0ff; }
+.settings-branch > .settings-fold { margin: 5px 8px 8px 16px; }
+.settings-fold > .menu-section { padding: 0 10px 10px; margin: 0; }
+.settings-console input[type='number'] { max-width: 76px; }
+@media (max-width: 520px) {
+  .settings-pane label:has(select), .settings-pane label:has(input[type='range']) { flex-wrap: wrap !important; white-space: normal !important; }
 }
 .settings-tab[hidden],
 .settings-pane [hidden] {
@@ -754,7 +1013,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
-    if (id !== 'options') runtime.setSidearmAimPreview?.(false)
+    if (id !== 'dev') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
       const btn = doc.getElementById(`settings-tab-${tab.id}`)
       const pane = paneEls.get(tab.id)!
@@ -805,6 +1064,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     close,
     toggle: toggleWin,
     destroy: () => {
+      toolbarResize.disconnect()
+      window.removeEventListener('resize', alignToolbar)
       runtime.setSidearmAimPreview?.(false)
       observer?.disconnect()
       planetPanel?.destroy()

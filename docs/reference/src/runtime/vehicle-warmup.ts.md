@@ -159,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleWarmup.dispose
 
-[Implementation, line 89](../../../../src/runtime/vehicle-warmup.ts#L89)
+[Implementation, line 95](../../../../src/runtime/vehicle-warmup.ts#L95)
 
 Retain prepared materials until runtime disposal so Three.js retains their programs.
 

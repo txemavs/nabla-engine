@@ -38,6 +38,26 @@ const definition = (): WheeledDefinition => ({
 const chassis = (x = 0) =>
   new Body({ mass: 900, position: new Vec3(x, 0.8, 0), shape: new Box(new Vec3(0.8, 0.25, 1.5)) })
 
+it('keeps powered rear slip above launch speed without braking and restores grip on release', () => {
+  const car = createWheeledVehicle(
+    chassis(),
+    { ...definition(), drivenWheels: 'all' },
+    { parked: false },
+  )
+  car.body.velocity.set(0, 0, -25)
+  const input = { ...idleWheeledInput(), throttle: 1, launch: true, steering: 0.5 }
+  for (let i = 0; i < 120; i++) stepWheeledVehicle(car, input, 1 / 60)
+  expect(car.drivetrain.launchSlip).toBe(0)
+  expect(car.raycast.wheelInfos.every((w) => w.brake === 0)).toBe(true)
+  expect(car.raycast.wheelInfos[2].frictionSlip).toBeLessThan(1)
+  expect(car.raycast.wheelInfos[0].frictionSlip).toBeGreaterThan(4)
+  expect(car.raycast.wheelInfos[2].engineForce).toBeGreaterThan(
+    car.raycast.wheelInfos[0].engineForce,
+  )
+  for (let i = 0; i < 120; i++) stepWheeledVehicle(car, { ...input, launch: false }, 1 / 60)
+  expect(car.raycast.wheelInfos[2].frictionSlip).toBeGreaterThan(4)
+})
+
 it('reports reverse only after R engages, not on reverse input or backward rolling in D', () => {
   const car = createWheeledVehicle(chassis(), definition())
   const input = { ...idleWheeledInput(), throttle: -1 }
