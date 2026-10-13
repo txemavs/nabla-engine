@@ -50,11 +50,21 @@ test('hover walking produces visible camera roll without physical foot contact',
       maxRoll = Math.max(maxRoll, Math.abs(tilted.x))
       if (internal.session.simulation.player.grounded) contactFrames++
     }
+    runtime.setActionCamEnabled(false)
+    for (let i = 100; i < 220; i++) runtime.tick((i * 1000) / 60)
+    const { Vector3 } = await import(String('/e2e/render-fixture.ts'))
+    const disabledRoll = Math.abs(
+      new Vector3(0, 1, 0).applyQuaternion(internal.camera.quaternion).x,
+    )
+    const { actionCamTuning } = await import(`/@fs/${root}/src/config/gameplay-tuning.ts`)
     runtime.dispose()
-    return { maxRoll, contactFrames }
+    return { maxRoll, contactFrames, disabledRoll, stepRoll: actionCamTuning.stepRollRadians }
   }, process.cwd())
   expect(result.contactFrames).toBe(0)
-  expect(result.maxRoll).toBeGreaterThan(0.003)
+  // The soft profile has a 0.005 rad step roll, scaled by hover walking speed.
+  expect(result.maxRoll).toBeGreaterThan(result.stepRoll * 0.4)
+  expect(result.maxRoll).toBeLessThan(result.stepRoll * 1.5)
+  expect(result.disabledRoll).toBeLessThan(0.0001)
 })
 
 test('laser ribbon keeps consistent screen width and brightness across its two triangles', async ({

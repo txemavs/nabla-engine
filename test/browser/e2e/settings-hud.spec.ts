@@ -60,6 +60,11 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       setActionCamEnabled: (enabled: boolean) => {
         runtime.actionCamEnabled = enabled
       },
+      muzzleFlashTuning: { x: 0, y: 0, z: -72, intensity: 100 },
+      setMuzzleFlashTuning: (patch: object) => {
+        runtime.muzzleFlashTuning = { ...runtime.muzzleFlashTuning, ...patch }
+      },
+      previewMuzzleFlash: () => {},
       tunnelEnabled: true,
       setTunnelEnabled: () => {},
       weaponPoseTuning: structuredClone(weaponPoseDefaults),
