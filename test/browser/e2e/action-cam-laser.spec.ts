@@ -43,6 +43,8 @@ test('hover walking produces visible camera roll without physical foot contact',
     let maxRoll = 0,
       contactFrames = 0
     for (let i = 0; i < 100; i++) {
+      // Held keys expire on the real input clock; software GPU frames may be slow.
+      internal.keys.press('KeyW', true, performance.now())
       runtime.tick((i * 1000) / 60)
       const up = { x: 0, y: 1, z: 0 }
       const { Vector3 } = await import(String('/e2e/render-fixture.ts'))
@@ -51,7 +53,10 @@ test('hover walking produces visible camera roll without physical foot contact',
       if (internal.session.simulation.player.grounded) contactFrames++
     }
     runtime.setActionCamEnabled(false)
-    for (let i = 100; i < 220; i++) runtime.tick((i * 1000) / 60)
+    for (let i = 100; i < 220; i++) {
+      internal.keys.press('KeyW', true, performance.now())
+      runtime.tick((i * 1000) / 60)
+    }
     const { Vector3 } = await import(String('/e2e/render-fixture.ts'))
     const disabledRoll = Math.abs(
       new Vector3(0, 1, 0).applyQuaternion(internal.camera.quaternion).x,
