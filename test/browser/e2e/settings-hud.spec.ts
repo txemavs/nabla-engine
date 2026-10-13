@@ -187,7 +187,12 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   ])
   expect(result.performance).toEqual(['display-quality-section', 'display-performance'])
   expect(result.video).toEqual(['quality-shadows', 'road-style'])
-  expect(result.options).toEqual(['camera-extras', 'driving-extras', 'settings-options-labels'])
+  expect(result.options).toEqual([
+    'camera-extras',
+    'settings-muzzle-flash',
+    'driving-extras',
+    'settings-options-labels',
+  ])
   expect(result.dev.sort()).toEqual(
     [
       'settings-config-planet',
