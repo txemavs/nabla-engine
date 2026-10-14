@@ -465,6 +465,25 @@ export function setGroundPhotoAnisotropy(value: number): number {
 export class PlanetWorld {
   readonly root = new THREE.Group()
   status = 'Preparando baldosas del planeta…'
+  private readonly pinned = new Map<string, MapTile>()
+  private readonly tileBases = new Map<string, string>()
+  /** Retain an explicitly requested cell alongside the normal streaming cover. */
+  pinTile(tile: MapTile, baseUrl?: string): void {
+    const key = mapTileId(tile)
+    this.pinned.set(key, tile)
+    if (baseUrl && !this.resident.has(key)) {
+      this.tileBases.set(key, baseUrl)
+      this.missing.resolve(tile)
+      this.failedManifests.delete(key)
+      this.next = 0
+    }
+  }
+  unpinTile(tile: MapTile): void {
+    this.pinned.delete(mapTileId(tile))
+  }
+  private tileBase(tile: MapTile): string {
+    return this.tileBases.get(mapTileId(tile)) ?? this.base
+  }
   get activeTiles() {
     return this.visible.map(
       (key) =>
@@ -892,16 +911,22 @@ export class PlanetWorld {
     }
     this.wanted = [
       ...new Map(
-        [center, ...protectedTiles, ...corridor, ...plan.requests, future].map((t) => [
-          mapTileId(t),
-          t,
-        ]),
+        [
+          ...this.pinned.values(),
+          center,
+          ...protectedTiles,
+          ...corridor,
+          ...plan.requests,
+          future,
+        ].map((t) => [mapTileId(t), t]),
       ).values(),
     ]
     const known = this.sourceOptions.coverage ?? this.sourceOptions.tiles
     if (known) {
       const available = new Set(known.map(mapTileId))
-      this.wanted = this.wanted.filter((tile) => available.has(mapTileId(tile)))
+      this.wanted = this.wanted.filter(
+        (tile) => available.has(mapTileId(tile)) || this.pinned.has(mapTileId(tile)),
+      )
     }
     const needed = new Set(this.wanted.map(mapTileId))
     this.installQueue = this.installQueue.filter((job) => {
@@ -1024,7 +1049,7 @@ export class PlanetWorld {
         this.manifestsInFlight++
         try {
           const manifest = await fetchTileManifest(tile, {
-            baseUrl: this.base,
+            baseUrl: this.tileBase(tile),
             signal: this.controller.signal,
             cors: true,
             missingStatuses: [403, 404],
@@ -1099,7 +1124,7 @@ export class PlanetWorld {
           imagery === 'package' && manifest.photo && tile.z === 15
             ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }
             : undefined,
-        directory: this.base.replace(/\/$/, '') + '/' + mapTilePath(tile) + '/',
+        directory: this.tileBase(tile).replace(/\/$/, '') + '/' + mapTilePath(tile) + '/',
       })
     }
   }
@@ -1187,7 +1212,9 @@ export class PlanetWorld {
       () => this.changed(),
       (material) => this.setupMaterial(material),
       imagery,
-      manifest.photo ? atlasFileUrl(this.base, manifest.tile, manifest.photo.path) : undefined,
+      manifest.photo
+        ? atlasFileUrl(this.tileBase(manifest.tile), manifest.tile, manifest.photo.path)
+        : undefined,
       (error) => {
         this.status = 'Foto del terreno no disponible · ' + String(error)
         this.changed()
@@ -1211,7 +1238,7 @@ export class PlanetWorld {
     group.userData.planetTile = {
       key,
       manifest,
-      directory: this.base + '/' + mapTilePath(manifest.tile) + '/',
+      directory: this.tileBase(manifest.tile) + '/' + mapTilePath(manifest.tile) + '/',
     }
     for (const place of validPlanetPlaces(manifest.places)) {
       const label = placeLabel(place.text)
@@ -1308,7 +1335,7 @@ export class PlanetWorld {
     this.osmLoads.get(key)?.abort()
     const ac = new AbortController()
     this.osmLoads.set(key, ac)
-    const url = atlasFileUrl(this.base, manifest.tile, file.path)
+    const url = atlasFileUrl(this.tileBase(manifest.tile), manifest.tile, file.path)
     void fetchOsmSnapshot(url, file, AbortSignal.any([ac.signal, this.controller.signal]))
       .then((json) => {
         const resident = this.resident.get(key)
@@ -1332,6 +1359,18 @@ export class PlanetWorld {
     const cover = planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
     // Keep the last city cover if the new plan has nothing ready yet.
     this.visible = cover.length ? cover : this.visible
+    const pinned = [...this.pinned.values()].filter((tile) => this.resident.has(mapTileId(tile)))
+    // A pinned detailed cell replaces an overlapping coarse cover, never another Z15.
+    this.visible = this.visible.filter((key) => {
+      const tile = this.ready.get(key)!.tile
+      return !pinned.some(
+        (p) =>
+          p.z > tile.z &&
+          Math.floor(p.x / 2 ** (p.z - tile.z)) === tile.x &&
+          Math.floor(p.y / 2 ** (p.z - tile.z)) === tile.y,
+      )
+    })
+    this.visible = [...new Set([...this.visible, ...pinned.map(mapTileId)])]
     this.horizon.setCoverage(this.visible.map((key) => this.ready.get(key)!.tile))
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {

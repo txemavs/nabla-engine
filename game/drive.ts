@@ -1,3 +1,4 @@
+import { bindVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
@@ -43,6 +44,7 @@ bindTerrainSelector()
 const attachSceneControls = bindSceneControls({ rememberInUrl: false })
 let runtime: GameRuntime | undefined
 try {
+  const solo = new URLSearchParams(location.search).get('solo') === '1'
   const config = parseGameConfig()
   const flat = new URLSearchParams(location.search).get('example') === 'flat'
   const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
@@ -66,7 +68,7 @@ try {
         },
         entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
       }
-  if (flat) {
+  if (flat && !solo) {
     const fleet = ['car', 'white-truck', 'carrier']
     scene.entities = [
       createEntity('spawn', 'spawn', [-4, 2, 0]),
@@ -134,8 +136,28 @@ try {
       },
     ]
   }
-  const noTerrainTest = location.pathname === '/test.html'
+  if (solo)
+    scene.entities = [
+      createEntity('spawn', 'spawn', [-4, 2, -4]),
+      ...presetEntities(config.vehicle, vehicle.id, [0, 2, 0]),
+    ]
+  // Explicit flat-track load test: one simulation and shared asset cache for every copy.
+  if (flat && solo) {
+    const raw = Number(new URLSearchParams(location.search).get('copies') ?? 1)
+    const copies = Number.isFinite(raw) ? Math.min(20, Math.max(1, Math.floor(raw))) : 1
+    for (let i = 1; i < copies; i++) {
+      const column = (i - 1) % 5
+      const row = Math.floor((i - 1) / 5)
+      scene.entities.push(
+        presetVehicle(config.vehicle, `trial-copy-${i}`, [(column - 2) * 5, 2, -8 - row * 7]),
+      )
+    }
+  }
+  const noTerrainTest = ['/test.html', '/xr.html'].includes(location.pathname)
+
   if (noTerrainTest) {
+    if (!solo && !scene.entities.some((entity) => entity.vehicle?.twoWheeled))
+      scene.entities.push(...presetEntities('vfr800', 'demo-vfr800', [-4, 2, 0]))
     // Space the test fleet explicitly; attached parts retain local transforms.
     const testPositions: Record<string, [number, number, number]> = {
       'player-vehicle': [0, 2, 0],
@@ -194,7 +216,7 @@ try {
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     scene,
-    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
+    preloadVehicles: solo ? [] : menuPreloadVehicles(boot.preloadVehicles),
     world,
     sea: !flat,
     fieldLights: lights
@@ -260,9 +282,11 @@ try {
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
   void runBootPhase(runtime, loading, boot)
-  await runtime.play(noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
-  if (noTerrainTest) runtime.equipTestSidearm()
-  if (scene.geography && config.vehicles.length)
+  await runtime.play(!solo && noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
+  bindVR(runtime)
+  if (noTerrainTest && (!solo || new URLSearchParams(location.search).has('xr')))
+    runtime.equipTestSidearm()
+  if (!solo && scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   if (scene.geography && config.portals?.length)
     await installHostPortals(runtime, scene.geography, config.portals)

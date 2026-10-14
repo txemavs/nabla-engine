@@ -1,4 +1,4 @@
-import { Vector3, type PerspectiveCamera } from 'three'
+import { Vector3, PerspectiveCamera } from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
 import type { Sidearm } from './sidearm.js'
@@ -144,7 +144,9 @@ export function fireSidearm(
   // Marks, targets, portals and the push go through the gallery along the chord to the impact.
   // A miss checks only the near stretch (gallery targets): far away the chord to the end of a
   // dropping trajectory would cut through ground the bullet flew over.
-  const firing = camera.clone()
+  // The XR camera may have an asymmetric eye projection. A gameplay ray must
+  // not inherit its off-axis centre, or decals diverge from the ballistic hit.
+  const firing = new PerspectiveCamera(50, 1, 0.01, sidearm.range + 1)
   firing.position.copy(origin)
   const missed = load && !event.distance
   firing.lookAt(missed ? firing.position.clone().addScaledVector(direction, 100) : destination)

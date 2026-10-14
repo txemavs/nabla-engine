@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nabla · Quest 3 · Apuntar y HK</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #17242e;
+        color: #eef4f8;
+        font:
+          16px system-ui,
+          sans-serif;
+      }
+      canvas#viewport {
+        display: block;
+        width: 100vw;
+        height: 100dvh;
+      }
+      aside {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        width: min(420px, calc(100vw - 32px));
+        padding: 20px;
+        border-radius: 16px;
+        background: #101b27ee;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      p {
+        line-height: 1.5;
+      }
+      button {
+        padding: 12px 16px;
+        margin: 0 6px 8px 0;
+        border: 0;
+        border-radius: 8px;
+        font: inherit;
+        background: #a9dcff;
+        color: #10202c;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #status {
+        min-height: 48px;
+      }
+      output {
+        display: block;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="viewport" aria-label="Coche parado sobre un suelo de prueba"></canvas>
+    <aside>
+      <h1>Nabla · Quest 3: apuntar y HK</h1>
+      <p>
+        Apunta al coche o a los tres bloques de prueba. Gatillo izquierdo: seleccionar. Gatillo
+        derecho: disparar la HK. Botón lateral izquierdo: recentrar. Botón lateral derecho:
+        recargar.
+      </p>
+      <button id="enter" disabled>Entrar en VR</button>
+      <button id="exit" disabled>Salir de VR</button>
+      <button id="center" disabled>Recentrar</button>
+      <p id="status" role="status" aria-label="Estado de VR">Cargando el coche…</p>
+      <output id="metrics" aria-label="Rendimiento"></output>
+      <p>
+        Para salir dentro del casco, usa el menú de Meta. La demo no mueve al usuario ni permite
+        conducir.
+      </p>
+    </aside>
+    <script type="module" src="./xr.ts"></script>
+  </body>
+</html>

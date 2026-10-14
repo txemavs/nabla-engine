@@ -1,4 +1,4 @@
-import { Box3, Group, Mesh, Vector3, type Object3D } from 'three'
+import { Box3, Group, Matrix4, Mesh, Vector3, type Object3D } from 'three'
 
 const STUETZBEIN = /stuetzbein/i
 
@@ -57,9 +57,14 @@ export function landingGearMeshBounds(model: Object3D): Box3 | null {
   const box = new Box3()
   let found = false
   model.updateWorldMatrix(true, true)
+  const inverse = new Matrix4().copy(model.matrixWorld).invert()
   model.traverse((node) => {
     if (!(node instanceof Mesh) || !STUETZBEIN.test(node.name)) return
-    box.expandByObject(node)
+    node.geometry.computeBoundingBox()
+    if (!node.geometry.boundingBox) return
+    // Deployment travels along model-local Y, independent of a falling/rotated chassis.
+    const local = new Matrix4().multiplyMatrices(inverse, node.matrixWorld)
+    box.union(node.geometry.boundingBox.clone().applyMatrix4(local))
     found = true
   })
   return found ? box : null

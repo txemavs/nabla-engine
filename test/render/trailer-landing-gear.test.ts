@@ -19,6 +19,14 @@ it('drops authored Stützbein meshes to the tyre plane when a free trailer deplo
   const authored = landingGearMeshBounds(model)
   expect(authored).not.toBeNull()
   const contact = trailerWheelContactY(presetVehicle('white-trailer', 't').vehicle!)
+  const parent = new Group()
+  parent.position.set(500, 25, -800)
+  parent.rotation.set(1.2, 0.7, 2.4)
+  parent.add(model)
+  const tilted = landingGearMeshBounds(model)!
+  expect(tilted.min.distanceTo(authored!.min)).toBeLessThan(1e-8)
+  expect(tilted.max.distanceTo(authored!.max)).toBeLessThan(1e-8)
+  parent.remove(model)
   const travel = contact - authored!.min.y
   expect(travel).toBeLessThan(-0.2)
   const gear = mountLandingGear(model, travel)

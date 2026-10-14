@@ -45,5 +45,8 @@
 - `../render/portal/remote.js`
 - `../config/camera.js`
 - `./planet-settings-panel.js`
+- `./xr.js`
+- `./xr-input.js`
+- `./xr-session.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

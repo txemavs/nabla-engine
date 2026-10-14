@@ -1,10 +1,10 @@
 {
   "id": "white-truck",
-  "label": "Cami\u00f3n blanco",
+  "label": "Camión blanco",
   "clearance": 1.45,
   "placement": [10, 1.45, 0],
   "order": 6,
-  "name": "Cami\u00f3n blanco \u00b7 tractora",
+  "name": "Camión blanco · tractora",
   "color": "#eeeeee",
   "size": [2.55, 4, 6.2],
   "mass": 7500,
@@ -12,7 +12,16 @@
     "controls": "road",
     "reverseAlarm": true,
     "mirrorTilt": 0,
-    "mirrorAim": { "left": { "yaw": 3, "tilt": 2 }, "right": { "yaw": 1, "tilt": 5 } },
+    "mirrorAim": {
+      "left": {
+        "yaw": 3,
+        "tilt": 2
+      },
+      "right": {
+        "yaw": 1,
+        "tilt": 5
+      }
+    },
     "colliders": [
       {
         "size": [2.2, 2.8, 2.7],
@@ -87,7 +96,8 @@
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0, 1]
-      }
+      },
+      "lowUrl": "/library/trucks/white-truck/assets/tractor.low.glb"
     },
     "wheels": [
       {
@@ -95,33 +105,38 @@
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
-        }
+        },
+        "lowUrl": "/library/trucks/white-truck/assets/wheel.front-low.glb"
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.front.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
-        }
+        },
+        "lowUrl": "/library/trucks/white-truck/assets/wheel.front-low.glb"
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
-        }
+        },
+        "lowUrl": "/library/trucks/white-truck/assets/wheel.rear-low.glb"
       },
       {
         "url": "/library/trucks/white-truck/assets/wheel.rear.glb",
         "transform": {
           "position": [0, 0, 0],
           "rotation": [0, 0, 0, 1]
-        }
+        },
+        "lowUrl": "/library/trucks/white-truck/assets/wheel.rear-low.glb"
       }
     ],
     "steering": {
       "url": "/library/trucks/white-truck/assets/steering.glb",
-      "axis": [0, -0.81915, -0.57358]
+      "axis": [0, -0.81915, -0.57358],
+      "lowUrl": "/library/trucks/white-truck/assets/steering.low.glb"
     },
     "presentation": "nabla.truck"
   },

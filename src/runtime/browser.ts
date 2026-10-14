@@ -1,3 +1,9 @@
+import { readXRQuality } from './xr-quality.js'
+import { XRMotorcycle } from './xr-motorcycle.js'
+import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
+import { XRLoadout } from './xr-loadout.js'
+import { XRGrab } from './xr-grab.js'
+import { GameXR } from './xr.js'
 import { normalizeWeaponWheel, stepWeaponWheel } from './weapon-wheel.js'
 import { normalViewTuning, smokeTuning, actionCamTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
@@ -178,7 +184,8 @@ import {
   EARTH_RADIUS,
   type GeoPoint,
 } from '../math/geo/sphere.js'
-import { mapTileSample } from '../scene/mercator.js'
+import { nearestExtraZ15 } from './nearest-z15.js'
+import { mapTileSample, mapTileAt, mapTileId } from '../scene/mercator.js'
 import type { PlayOptions } from './session.js'
 import {
   createGameCameraState,
@@ -317,6 +324,8 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /** Override automatic low-profile/Quest geometry selection. Requires a new runtime. */
+  assetQuality?: AssetQuality
   /** Fixed initial pickup location; projected onto the ground, takes precedence over a vehicle. */
   weaponPickupLocation?: GeoPoint
   /** Place the initial HK on the ground beside the nearest road car (or a specific vehicle id). */
@@ -437,6 +446,7 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 }
 
 export class GameRuntime {
+  readonly xr: GameXR
   readonly game = new SharedGameRuntime()
   readonly session = this.game.session
   readonly cameraState = this.game.cameraState
@@ -533,6 +543,9 @@ export class GameRuntime {
   private aimLean = 0
   private weaponDrawn = false
   private fireRequested = false
+  private xrMotorcycle: XRMotorcycle | null = null
+  private xrLoadout: XRLoadout | null = null
+  private xrGrab!: XRGrab
   private triggerReleased = false
   /**
    * Left button held (on foot, pistol drawn). `fireRequested` is a one-frame edge cleared every
@@ -591,6 +604,7 @@ export class GameRuntime {
   private readonly lifetime = new AbortController()
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
+  private terrainLoad: AbortController | null = null
   private loading: AbortController | null = null
   private readonly revealGates: Promise<unknown>[] = []
   private readonly revealTasks: (() => Promise<unknown>)[] = []
@@ -789,6 +803,9 @@ export class GameRuntime {
     this.fieldLighting = options.fieldLights ? new FieldLighting(options.fieldLights) : null
     if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
     this.view = new SceneView(this.document, false, false, {
+      assetQuality:
+        this.options.assetQuality ??
+        assetQualityForDevice(this.quality.preset, navigator.userAgent),
       mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
       steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
       driverPoseOffset: (model) => readDriverPose(browserStorage(), model),
@@ -903,6 +920,8 @@ export class GameRuntime {
       options.touchControls === false
         ? null
         : new TouchWalk(options.canvas.parentElement!, options.touchControls ?? 'auto', this.text)
+    if (readXRQuality().shadows && this.quality.shadows === 0)
+      this.quality = { ...this.quality, shadows: 512 }
     this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
     if (this.quality.shadows > 0)
       this.shadows.init({
@@ -945,6 +964,57 @@ export class GameRuntime {
         this.options.onError?.(error)
       }
     })
+    let desktopView:
+      Pick<GameCameraState, 'mode' | 'firstPerson' | 'bodycam' | 'pitch' | 'headPitch'> | undefined
+    const desktopSunVisible = this.sun.visible
+    this.xrGrab = new XRGrab(this.scene)
+    this.xr = new GameXR(
+      this.renderer,
+      this.camera,
+      this.scene,
+      (active) => {
+        this.loop.stop()
+        this.releaseInput()
+        if (this.xrGrab?.slideHeld) this.sidearm?.moveSlide(0, performance.now())
+        this.xrGrab?.reset()
+        this.xrMotorcycle?.reset()
+        this.xrLoadout?.suspend(performance.now())
+        if (this.sidearm) this.sidearm.tracked = active
+        if (active) this.effects.audio.unlock()
+        this.lastTime = null
+        this.options.canvas.dataset.xr = String(active)
+        if (active) {
+          const { mode, firstPerson, bodycam, pitch, headPitch } = this.cameraState
+          desktopView = { mode, firstPerson, bodycam, pitch, headPitch }
+          this.stopAttract()
+          this.renderer.setAnimationLoop((time, frame) => {
+            if (!frame || this.disposed) return
+            try {
+              this.xr.update(frame)
+              this.frameXR(time)
+            } catch (error) {
+              this.pause()
+              this.options.onError?.(error)
+              void this.xr.exit()
+            }
+          })
+        } else {
+          this.renderer.setAnimationLoop(null)
+          if (this.sidearm) this.sidearm.model.visible = false
+          this.sun.visible = desktopSunVisible
+          if (desktopView)
+            Object.assign(this.cameraState, desktopView, {
+              lastPose: null,
+              lastView: null,
+              transition: null,
+            })
+          this.resize()
+          if (!this.disposed && this.session.state === 'playing' && this.options.clock !== 'manual')
+            this.loop.start()
+        }
+      },
+      (error) => this.options.onError?.(error),
+    )
     this.loop.setMaxFps(this.display.maxFps)
     this.originalTabIndex = options.canvas.getAttribute('tabindex')
     options.canvas.tabIndex = 0
@@ -1057,7 +1127,7 @@ export class GameRuntime {
       this.effects.audio.setSuspended(globalThis.document.hidden)
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
       this.lastTime = null
-      if (this.options.clock !== 'manual') this.loop.start()
+      if (this.options.clock !== 'manual' && !this.xr.active) this.loop.start()
     } catch (error) {
       if (this.loading === controller) this.stop()
       throw error
@@ -1084,13 +1154,16 @@ export class GameRuntime {
     this.game.resume()
     this.effects.audio.setSuspended(document.hidden)
     this.lastTime = null
-    if (this.session.state === 'playing' && this.options.clock !== 'manual') this.loop.start()
+    if (this.session.state === 'playing' && this.options.clock !== 'manual' && !this.xr.active)
+      this.loop.start()
   }
   /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
   stop(): void {
     this.toolbar?.setVisible(false)
     this.placeLookup.reset()
     if (this.disposed) return
+    this.terrainLoad?.abort()
+    this.terrainLoad = null
     this.loading?.abort()
     this.loading = null
     this.loop.stop()
@@ -1111,6 +1184,9 @@ export class GameRuntime {
     if (this.sidearm) {
       this.sidearm.visible = false
       this.sidearm.reset()
+      this.xrLoadout?.pistols[1]?.weapon.dispose()
+      this.xrLoadout?.dispose()
+      this.xrLoadout = null
     }
     this.casingMotion?.reset()
     this.casingMeshes?.sync([])
@@ -1132,11 +1208,11 @@ export class GameRuntime {
   tick(time: number): void {
     this.assertAlive()
     if (this.options.clock !== 'manual') throw new Error('tick requires a manual clock')
-    this.frame(time)
+    if (!this.xr.active) this.frame(time)
   }
   /** Fit renderer and projection to canvas CSS dimensions; ignore notifications after disposal. */
   resize(): void {
-    if (this.disposed) return
+    if (this.disposed || this.renderer.xr.isPresenting) return
     const width = Math.max(1, this.options.canvas.clientWidth)
     const height = Math.max(1, this.options.canvas.clientHeight)
     this.renderer.setSize(width, height, false)
@@ -1149,6 +1225,8 @@ export class GameRuntime {
     this.stopAttract()
     this.stop()
     this.disposed = true
+    this.renderer.setAnimationLoop(null)
+    this.xr.dispose()
     this.lifetime.abort()
     this.observer.disconnect()
     this.game.dispose()
@@ -1156,6 +1234,9 @@ export class GameRuntime {
     setPlanetCharts(() => [])
     setNavigationPlaces(() => [])
     setNavigationRoads(() => [])
+    this.xrGrab.dispose()
+    this.xrLoadout?.pistols[1]?.weapon.dispose()
+    this.xrLoadout?.dispose()
     this.sidearm?.dispose()
     this.clearPickups()
     this.casingMeshes?.dispose()
@@ -1190,11 +1271,283 @@ export class GameRuntime {
     else this.options.canvas.setAttribute('tabindex', this.originalTabIndex)
   }
 
+  /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
+  private frameXR(time: number): void {
+    const started = performance.now()
+    const sim = this.session.simulation
+    if (!sim || this.session.state !== 'playing') return
+    const enabled = this.xr.visible
+    const dt =
+      enabled && this.lastTime !== null
+        ? Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
+        : 0
+    this.lastTime = enabled ? time : null
+    if (!enabled) this.releaseInput()
+    const vehicle = sim.player.vehicleId
+    const info = vehicle ? sim.vehicleInfo(vehicle) : null
+    this.xr.reservedInput = (source) => this.xrMotorcycle?.owns(source) ?? false
+    this.xr.interactCalibration(enabled, (source) => {
+      const pistol = this.xrLoadout?.pistols.find((p) => p.holder?.source === source)
+      return pistol?.weapon.worldMuzzle() ?? null
+    })
+    const controls = this.xr.input.read(
+      this.xr.gameplaySources,
+      !!info?.flightMode,
+      !!vehicle,
+      enabled,
+      this.weaponDrawn,
+    )
+    if (vehicle && !info?.flightMode && this.xrLoadout) {
+      const freeTrigger = (side: string) => {
+        const hand = this.xr.grabHands.find((h) => h.source?.handedness === side)
+        return hand && !this.xrLoadout!.occupied(hand) && !this.xr.calibrationOwns(hand.source)
+          ? (hand.source?.gamepad?.buttons[0]?.value ?? 0)
+          : 0
+      }
+      controls.touch.forward = freeTrigger('right') - freeTrigger('left')
+    }
+    for (const code of controls.actions) {
+      if (code === 'XRMenu') this.xr.toggleMenu()
+      else this.action(code)
+    }
+    // Keep a stable body heading. Head orientation belongs exclusively to WebXR.
+    this.cameraState.yaw += controls.snap
+    Object.assign(this.cameraState, {
+      mode: sim.player.vehicleId ? 'cockpit' : 'chase',
+      firstPerson: true,
+      bodycam: false,
+      pitch: 0,
+      headYaw: 0,
+      headPitch: 0,
+      walkingMotion: null,
+      firstPersonFovOffset: 0,
+      entrance: null,
+      seatMove: null,
+      transition: null,
+      lastPose: null,
+      lastView: null,
+    })
+    this.touchDriving?.setActive(false)
+    this.touchFlight?.setActive(false)
+    this.touchWalk?.setActive(false)
+    this.monitors.hide()
+    this.world?.flushInstall(streamingDefaults.mobileInstallBudgetMs)
+    this.view.flushMapInstall(
+      streamingDefaults.mapInstallBudgetMs,
+      streamingDefaults.mapInstallCount,
+      this.xr.rig.position,
+    )
+    const bike =
+      !!sim.player.vehicleId &&
+      !!this.document.entities.find((e) => e.id === sim.player.vehicleId)?.vehicle?.twoWheeled
+    this.xrMotorcycle ??= new XRMotorcycle(this.xr.calibration)
+    const motorcycleInput = this.xrMotorcycle.update(
+      this.xr.grabHands.filter(
+        (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+      ),
+      bike ? this.view.motorcycleGrab(sim.player.vehicleId!) : null,
+      info?.steer ?? 0,
+      enabled,
+    )
+    if (bike) {
+      controls.touch.forward = 0
+      controls.touch.right = 0
+      controls.touch.brake = false
+    }
+    const wheelInput = this.xrGrab.wheel(
+      enabled
+        ? this.xr.grabHands.filter(
+            (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+          )
+        : [],
+      vehicle ? this.view.steeringGrab(vehicle) : null,
+      info?.steer ?? 0,
+    )
+    if (wheelInput !== null) controls.touch.right = wheelInput
+    const input = this.game.readInput(dt, {
+      keys: new Set(),
+      yaw: this.cameraState.yaw + (sim.player.vehicleId ? 0 : this.xr.headYaw),
+      touch: controls.touch,
+      enabled,
+    })
+    if (bike) {
+      input.forward = motorcycleInput.throttle
+      input.right = motorcycleInput.steering
+      input.frontBrake = motorcycleInput.frontBrake
+      input.rearBrake = motorcycleInput.rearBrake
+      input.brake = false
+    }
+    const water = worldWater(this.document.water, this.document.sky)
+    const physicsStarted = performance.now()
+    this.game.step(dt, input, water.level, time)
+    const physicsMs = performance.now() - physicsStarted
+    if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
+    this.view.sync(sim, dt, true, 0, 0)
+    this.game.updateCamera(this.view, this.xr.anchorCamera, time, dt)
+    const eye = this.xr.anchorCamera.position.clone()
+    const rotation = this.xr.anchorCamera.quaternion.clone()
+    this.origin.set(0, 0, 0)
+    if (
+      new THREE.Vector3(...sim.player.position).length() > streamingDefaults.floatingOriginDistance
+    )
+      this.origin.fromArray(sim.player.position)
+    this.view.root.position.copy(this.origin).negate()
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    const disk = sim.catchDisk()
+    if (disk) this.catchFloor.show(disk.position, disk.rotation, this.origin)
+    else this.catchFloor.hide()
+    this.environment.updateSky(
+      this.sky,
+      eye,
+      this.origin,
+      this.document.sky ?? { mode: 'live' },
+      this.quality.fog,
+    )
+    if (this.sky.enabled) this.environment.applyLighting(this.sky, this.planet.sun)
+    this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
+    this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
+    // A solid background is stereo-safe; the desktop atmosphere/DOF/mirrors render to 2D targets.
+    this.scene.background = new THREE.Color(this.view.night ? '#101827' : '#93b7cd')
+    this.scene.fog = new THREE.Fog(this.scene.background, this.quality.fog * 0.75, this.quality.fog)
+    this.sun.visible = true
+    this.cull(eye)
+    this.xr.anchor(eye.clone().sub(this.origin), rotation)
+    this.xr.calibrationScreen?.sync(this.camera, this.origin, enabled, time)
+    const head = this.camera.getWorldPosition(new THREE.Vector3()).add(this.origin)
+    this.effects.audio.setListener(
+      head.toArray(),
+      this.camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),
+      info?.speedKmh ?? 0,
+    )
+    this.gallery.update(this.view, true, dt)
+    this.view.tracers.update(time)
+    this.view.sparks.update(time)
+    this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
+      const hit = sim.shoot(
+        from.toArray() as Vec3Tuple,
+        direction.toArray() as Vec3Tuple,
+        length,
+        0,
+        excludeEntityId,
+      )
+      return hit
+        ? { point: new THREE.Vector3(...hit.point), normal: new THREE.Vector3(...hit.normal) }
+        : null
+    })
+    if (this.sidearm) {
+      this.xrLoadout ??= new XRLoadout(
+        this.scene,
+        [this.sidearm, new Sidearm(this.options.canvas.parentElement!, this.sidearm.preset!)],
+        this.xr.calibration,
+      )
+      const loadout = this.xrLoadout
+      const height = this.renderer.getDrawingBufferSize(new THREE.Vector2()).y
+      const events = loadout.update(
+        this.xr.grabHands.filter(
+          (hand) =>
+            loadout.occupied(hand) ||
+            (!this.xr.calibrationOwns(hand.source) && !this.xrMotorcycle?.owns(hand.source)),
+        ),
+        this.camera,
+        this.origin,
+        time,
+        dt,
+        enabled && this.weaponOwned,
+        height,
+        (from, distance) => {
+          const hit = sim.shoot(from.clone().add(this.origin).toArray(), [0, -1, 0], distance, 0)
+          return hit ? new THREE.Vector3(...hit.point).sub(this.origin) : null
+        },
+        (weapon) =>
+          this.effects.audio.weaponSound(
+            'slide-back',
+            weapon.worldMuzzle()?.add(this.origin).toArray(),
+          ),
+      )
+      this.weaponDrawn = loadout.pistols.some((p) => !!p.holder)
+      this.magazineAction = null
+      for (const [index, pistol] of loadout.pistols.entries()) {
+        const weapon = pistol.weapon
+        weapon.setTuning(this.weaponTuning)
+        weapon.flashTuning = this.flashSettings
+        weapon.setSmokeEnabled(this.smokeOn)
+        const down =
+          weapon.visible &&
+          !!pistol.holder?.source?.gamepad?.buttons[0]?.pressed &&
+          !loadout.slideHeld(pistol) &&
+          !this.xr.calibrationOwns(pistol.holder?.source ?? null)
+        this.fireRequested = down && !pistol.triggerDown
+        this.triggerReleased = !down
+        this.triggerDown = pistol.triggerDown = down
+        this.updateSidearm(
+          sim,
+          time,
+          dt,
+          false,
+          true,
+          false,
+          events.get(weapon),
+          weapon,
+          index === loadout.pistols.length - 1,
+        )
+        if (weapon.visible) weapon.syncTracked(loadout.mount(pistol), time, height)
+        weapon.syncMuzzleLight(time, this.scene, this.camera, false)
+      }
+      this.fireRequested = this.triggerReleased = this.triggerDown = false
+      this.updateSidearmLaser(sim, time, true)
+    }
+    this.renderer.info.reset()
+    const shadowEnabled = this.renderer.shadowMap.enabled
+    const xrShadows = this.xr.quality.shadows && this.shadows.enabled
+    this.renderer.shadowMap.enabled = xrShadows
+    const shadowLights = this.shadows.lights.map((light) => ({ light, visible: light.visible }))
+    for (const { light } of shadowLights) light.visible = xrShadows
+    this.sun.visible = !xrShadows
+    if (xrShadows) {
+      this.shadows.setLightDirection(
+        this.sun.target.position.clone().sub(this.sun.position).normalize(),
+      )
+      this.shadows.setLightIntensity(this.sun.intensity)
+      this.shadows.setLightColor(this.sun.color)
+      this.shadows.update(this.camera, this.origin)
+      this.renderer.shadowMap.needsUpdate = true
+    }
+    const sparkVisible = this.view.sparks.root.visible
+    this.view.sparks.root.visible = this.xr.quality.effects && sparkVisible
+    try {
+      this.renderer.render(this.scene, this.camera)
+    } finally {
+      this.view.sparks.root.visible = sparkVisible
+      this.sun.visible = this.quality.shadows === 0
+      this.renderer.shadowMap.enabled = shadowEnabled
+      for (const { light, visible } of shadowLights) light.visible = visible
+    }
+    this.options.canvas.dataset.vehicle = sim.player.vehicleId ?? ''
+    this.options.canvas.dataset.cameraMode = 'vr'
+    this.options.canvas.dataset.xrCalls = String(this.renderer.info.render.calls)
+    this.effects.updateAudio(sim, this.document, eye)
+    if (enabled)
+      this.xr.recordStats(
+        time,
+        performance.now() - started,
+        physicsMs,
+        this.renderer.info.render.calls,
+        this.renderer.info.render.triangles,
+      )
+    this.options.onFrame?.({
+      speedKmh: sim.player.speed * 3.6,
+      gear: info?.gear ?? null,
+      gearLabel: null,
+      location: localToGeo(this.document.geography!, sim.player.position),
+      controls: this.controlSurfaces(sim),
+    })
+  }
+
   private frame(time: number): void {
     const sim = this.session.simulation
     if (this.disposed || !sim || this.session.state !== 'playing') return
     if (!Number.isFinite(time)) throw new Error('Invalid frame time')
-    const measuring = !!this.options.onDiagnostics
+    const measuring = !!this.options.onDiagnostics || !!this.xr.onStats
     const cpuStart = measuring ? performance.now() : 0
     const frameMs = this.lastTime === null ? 0 : Math.max(0, time - this.lastTime)
     if (measuring) this.renderer.info.reset()
@@ -1760,6 +2113,13 @@ export class GameRuntime {
         height: this.renderer.domElement.height,
         droppedSeconds: sim.stats.droppedSeconds,
       })
+    this.xr.recordStats(
+      time,
+      performance.now() - cpuStart,
+      physicsMs,
+      this.renderer.info.render.calls,
+      this.renderer.info.render.triangles,
+    )
     this.options.onFrame?.({
       speedKmh: player.speed * 3.6,
       gear: info?.gear ?? null,
@@ -2285,6 +2645,9 @@ export class GameRuntime {
           false,
           false,
           {
+            assetQuality:
+              this.options.assetQuality ??
+              assetQualityForDevice(this.quality.preset, navigator.userAgent),
             mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
             steeringWheelOffset: (model) =>
               initialSteeringWheelOffset(this.options.steeringWheel, model),
@@ -2635,6 +2998,70 @@ export class GameRuntime {
     this.game.removePlaced(entry.ids)
     this.placed = this.placed.filter((item) => item !== entry)
     if (portals) this.monitors.rebuild(this.document)
+  }
+
+  /** Add the nearest unloaded Z15, retaining the current cells and live XR session. */
+  async loadNearestZ15(
+    baseUrl: string,
+    onProgress: (message: string) => void = () => {},
+  ): Promise<string> {
+    this.assertAlive()
+    const sim = this.session.simulation
+    const geography = this.document.geography
+    const world = this.world
+    if (!sim || !geography || !world)
+      throw new Error('Entra primero en Zaisa para añadir celdas a su terreno')
+    if (this.terrainLoad) throw new Error('Ya se está cargando una celda')
+    normalizeTilesBase(baseUrl)
+    const here = localToGeo(geography, sim.player.position)
+    const current = mapTileAt(here.latitude, here.longitude, 15)
+    const tile = nearestExtraZ15(
+      here.latitude,
+      here.longitude,
+      world.activeTiles.map((t) => t.key),
+    )
+    if (!tile) throw new Error('No quedan celdas cercanas por añadir')
+    const controller = new AbortController()
+    this.terrainLoad = controller
+    // Pin the existing cover before asking for more: it must not be evicted by the quality budget.
+    world.pinTile(current)
+    for (const cell of world.activeTiles) world.pinTile(cell.manifest.tile)
+    world.pinTile(tile, baseUrl)
+    const point = geoToLocal(geography, mapTileSample(tile, 1, 1, 2))
+    try {
+      onProgress(`Añadiendo Z15 ${tile.x}/${tile.y}…`)
+      await waitForGround(
+        {
+          update: () => world.update(sim.player.position, [0, 0, 0]),
+          flushInstall: (budget) => world.flushInstall(budget),
+          // Test residency, not a coarse parent or sea surface beneath this cell.
+          groundHeight: () =>
+            world.activeTiles.some((t) => t.key === mapTileId(tile)) ? 0 : undefined,
+          missingTileAt: (p) => world.missingTileAt(p),
+          get status() {
+            return world.status
+          },
+          get loadProgress() {
+            return world.loadProgress
+          },
+        },
+        point,
+        {
+          signal: controller.signal,
+          installBudgetMs: 0.5,
+          pollMs: 30,
+          timeoutMs: 60000,
+        },
+      )
+      return `${world.activeTiles.length} celdas · añadido ${tile.x}/${tile.y}`
+    } catch (error) {
+      world.unpinTile(tile)
+      if (world.missingTileAt(point))
+        throw new Error(`Z15 ${tile.x}/${tile.y} no disponible; se conserva el terreno actual`)
+      throw error
+    } finally {
+      if (this.terrainLoad === controller) this.terrainLoad = null
+    }
   }
 
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
@@ -3635,8 +4062,17 @@ export class GameRuntime {
    * Sidearm frame: trigger press / reset, reload, slide, the muzzle rise added to the aim (the
    * player pulls it back down), the shot, the ejected brass and the mechanical sounds.
    */
-  private updateSidearm(sim: Simulation, time: number, dt: number, eyes: boolean): void {
-    const sidearm = this.sidearm!
+  private updateSidearm(
+    sim: Simulation,
+    time: number,
+    dt: number,
+    eyes: boolean,
+    tracked = false,
+    reload = false,
+    grabEvents: FirearmEvent[] = [],
+    sidearm: Sidearm = this.sidearm!,
+    advancePools = true,
+  ): void {
     sidearm.setSteadyHeld(
       ['KeyW', 'KeyA', 'KeyS', 'KeyD'].every((key) => this.keys.values.has(key)),
     )
@@ -3649,14 +4085,15 @@ export class GameRuntime {
           new THREE.Vector3(...sim.renderPlayerPosition))
     ).toArray()
     const canvas = this.options.canvas
-    const events: FirearmEvent[] = [sidearm.update(time)]
+    const events: FirearmEvent[] = [...grabEvents, sidearm.update(time)]
+    if (reload && sidearm.visible) events.push(sidearm.reload(time))
     if (this.magazineAction && sidearm.visible) {
       const reload = sidearm.handleMagazine(this.magazineAction, time)
       events.push(reload)
     }
     if (this.triggerReleased) sidearm.release()
     const rise = sidearm.aimRise(time)
-    if (rise) {
+    if (rise && !tracked) {
       const pitchKey = sim.player.vehicleId ? 'headPitch' : 'pitch'
       this.cameraState[pitchKey] = THREE.MathUtils.clamp(
         this.cameraState[pitchKey] - rise,
@@ -3666,14 +4103,14 @@ export class GameRuntime {
     }
     const automatic = sidearm.fireMode === 'burst30'
     const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
-    if (yaw) {
+    if (yaw && !tracked) {
       if (sim.player.vehicleId) this.cameraState.headYaw += yaw
       else this.cameraState.yaw += yaw
     }
     if (
       this.weaponOwned &&
       (this.fireRequested || (automatic && this.triggerDown)) &&
-      this.hasInput()
+      (tracked || this.hasInput())
     ) {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot?.fired && this.gallery.lastGlassImpact)
@@ -3687,7 +4124,7 @@ export class GameRuntime {
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
-        this.ejectCasing(sim, eyes)
+        this.ejectCasing(sim, eyes, sidearm)
         if (sidearm.temperature.ruptured && !sidearm.broken) {
           const parts = sidearm.ruptureParts(this.camera, this.view.root, eyes)
           if (parts) {
@@ -3701,7 +4138,7 @@ export class GameRuntime {
       canvas.dataset.impacts = String(this.view.impacts.count)
     }
     for (const event of events) {
-      if (event.cartridgeEjected) this.ejectCartridge(sim, eyes)
+      if (event.cartridgeEjected) this.ejectCartridge(sim, eyes, sidearm)
       if (event.dry) this.effects.audio.weaponSound('dry', weaponPosition)
       if (event.magazineDropped) {
         this.effects.audio.weaponSound('magazine-out', weaponPosition)
@@ -3716,7 +4153,7 @@ export class GameRuntime {
       if (event.locked)
         this.options.onMessage?.('R: sacar / meter cargador · M: cargador largo · F: corredera')
     }
-    if (this.casingMotion && this.casingMeshes) {
+    if (advancePools && this.casingMotion && this.casingMeshes) {
       this.casingMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
@@ -3725,7 +4162,7 @@ export class GameRuntime {
       this.casingMeshes.sync(this.casingMotion.poses())
       canvas.dataset.casings = String(this.casingMotion.count)
     }
-    if (this.cartridgeMotion && this.cartridgeMeshes) {
+    if (advancePools && this.cartridgeMotion && this.cartridgeMeshes) {
       this.cartridgeMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
@@ -3734,7 +4171,7 @@ export class GameRuntime {
       this.cartridgeMeshes.sync(this.cartridgeMotion.poses())
       canvas.dataset.cartridges = String(this.cartridgeMotion.count)
     }
-    if (this.magazineMotion && this.magazineMeshes) {
+    if (advancePools && this.magazineMotion && this.magazineMeshes) {
       this.magazineMotion.update(dt, (from, direction, length) =>
         sim.shoot(from, direction, length, 0),
       )
@@ -3759,19 +4196,19 @@ export class GameRuntime {
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
   }
-  private ejectionPose(eyes: boolean) {
-    const pose = this.sidearm?.ejectionPose(eyes, this.camera.fov)
+  private ejectionPose(eyes: boolean, sidearm = this.sidearm) {
+    const pose = sidearm?.ejectionPose(eyes, this.camera.fov)
     if (pose && eyes) {
       pose.position.applyQuaternion(this.camera.quaternion).add(this.camera.position)
       pose.right.applyQuaternion(this.camera.quaternion)
       pose.up.applyQuaternion(this.camera.quaternion)
     }
+    if (pose && sidearm?.tracked) pose.position.add(this.origin)
     return pose
   }
 
-  private ejectCartridge(_sim: Simulation, eyes: boolean): void {
-    const sidearm = this.sidearm,
-      casing = sidearm?.preset?.casing
+  private ejectCartridge(_sim: Simulation, eyes: boolean, sidearm = this.sidearm): void {
+    const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
     if (!this.cartridgeMeshes) {
       const clone = sidearm.cartridgeClone()
@@ -3780,7 +4217,7 @@ export class GameRuntime {
       this.view.root.add(this.cartridgeMeshes.root)
     }
     this.cartridgeMotion ??= new CasingMotion(casing)
-    const pose = this.ejectionPose(eyes)
+    const pose = this.ejectionPose(eyes, sidearm)
     if (!pose) return
     this.cartridgeMotion.eject(
       pose.position.toArray() as Vec3Tuple,
@@ -3789,12 +4226,12 @@ export class GameRuntime {
     )
   }
 
-  private ejectCasing(_sim: Simulation, eyes: boolean): void {
-    const casing = this.sidearm?.preset?.casing
+  private ejectCasing(_sim: Simulation, eyes: boolean, sidearm = this.sidearm): void {
+    const casing = sidearm?.preset?.casing
     if (!casing) return
     if (!this.casingMotion) this.casingMotion = new CasingMotion(casing)
     this.ensureCasingMeshes()
-    const pose = this.ejectionPose(eyes)
+    const pose = this.ejectionPose(eyes, sidearm)
     if (!pose) return
     this.casingMotion.eject(
       pose.position.toArray() as Vec3Tuple,
@@ -3845,11 +4282,11 @@ export class GameRuntime {
   }
 
   /** World laser beam from the sidearm muzzle along the look ray (when H-toggled on). */
-  private updateSidearmLaser(sim: Simulation, time: number): void {
-    const eyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
+  private updateSidearmLaser(sim: Simulation, time: number, tracked = false): void {
+    const eyes = !tracked && isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     if (this.weaponLight) {
       const torch =
-        this.weaponLightOn && this.weaponDrawn && !this.sidearm?.broken
+        this.weaponLightOn && this.weaponDrawn && this.sidearm?.visible && !this.sidearm?.broken
           ? this.sidearm?.accessoryRay(time, eyes, this.camera.fov, 'TorchSocket')
           : null
       this.weaponLight.intensity = torch ? 35 : 0
@@ -3865,7 +4302,7 @@ export class GameRuntime {
         this.weaponLight.target.position.copy(torch.target)
       }
     }
-    if (!this.sidearm?.laserEnabled || !this.weaponDrawn) {
+    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || !this.sidearm.visible) {
       this.view.laser.enabled = false
       return
     }
@@ -4103,6 +4540,12 @@ export class GameRuntime {
       )
       return
     }
+    if (
+      this.xr.active &&
+      this.weaponDrawn &&
+      ['KeyR', 'KeyF', 'KeyM', 'KeyX', 'KeyZ'].includes(code)
+    )
+      return
     if ((code === 'KeyR' || code === 'KeyF') && this.weaponDrawn) {
       if (this.sidearm?.state.reload !== 'none') return
       this.magazineAction =

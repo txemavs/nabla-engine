@@ -11,6 +11,7 @@ export interface PlayerInput {
   turn?: number // -1 left, +1 right; independent of camera yaw
   riderRight?: number // two-wheelers: rider counterweight, -1 hang off left, +1 right
   riderForward?: number // two-wheelers: -1 sit back, +1 weight over the tank
+  rearBrake?: number // two-wheelers: proportional rear pedal, 0..1
   frontBrake?: number // two-wheelers: front lever (Space), 0..1
 }
 export const idleInput = (): PlayerInput => ({

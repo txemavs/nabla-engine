@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cloudStyleForPerformancePreset
 
-[Implementation, line 232](../../../../src/config/performance.ts#L232)
+[Implementation, line 252](../../../../src/config/performance.ts#L252)
 
 Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer.
 
@@ -49,7 +49,7 @@ cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic'
 
 ## tileBudget
 
-[Implementation, line 237](../../../../src/config/performance.ts#L237)
+[Implementation, line 257](../../../../src/config/performance.ts#L257)
 
 z15 meshes for a custom draw distance. Named presets carry their own cap.
 
@@ -59,7 +59,7 @@ tileBudget(distance: number): number
 
 ## streamBudget
 
-[Implementation, line 245](../../../../src/config/performance.ts#L245)
+[Implementation, line 265](../../../../src/config/performance.ts#L265)
 
 ```ts
 streamBudget(settings: PerformanceSettings): inferred by TypeScript; see implementation
@@ -72,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## performanceProfile
 
-[Implementation, line 255](../../../../src/config/performance.ts#L255)
+[Implementation, line 275](../../../../src/config/performance.ts#L275)
 
 ```ts
 performanceProfile(settings: PerformanceSettings): inferred by TypeScript; see implementation

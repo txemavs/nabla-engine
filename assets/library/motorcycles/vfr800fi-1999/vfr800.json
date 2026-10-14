@@ -9,7 +9,16 @@
   "size": [0.735, 1.19, 2.095],
   "mass": 310,
   "vehicle": {
-    "mirrorAim": { "left": { "yaw": -1.5, "tilt": 8.5 }, "right": { "yaw": 9, "tilt": 8.5 } },
+    "mirrorAim": {
+      "left": {
+        "yaw": -1.5,
+        "tilt": 8.5
+      },
+      "right": {
+        "yaw": 9,
+        "tilt": 8.5
+      }
+    },
     "controls": "road",
     "colliders": [
       {
@@ -50,8 +59,14 @@
       "steeringAxis": [0, 0.9106, 0.4133],
       "steerLimit": 0.610865,
       "pegLean": {
-        "left": { "lean": 0.9098, "point": [-0.2324, -0.2512, 0.3299] },
-        "right": { "lean": 0.9458, "point": [0.321, -0.105, 0.592] }
+        "left": {
+          "lean": 0.9098,
+          "point": [-0.2324, -0.2512, 0.3299]
+        },
+        "right": {
+          "lean": 0.9458,
+          "point": [0.321, -0.105, 0.592]
+        }
       },
       "frontBrakeForce": 72,
       "rearBrakeForce": 9,
@@ -82,7 +97,8 @@
       "transform": {
         "position": [0, -0.55, 0],
         "rotation": [0, 0, 0, 1]
-      }
+      },
+      "lowUrl": "/library/motorcycles/vfr800fi-1999/vfr800fi-1999-quest.glb"
     }
   },
   "rig": "glb"

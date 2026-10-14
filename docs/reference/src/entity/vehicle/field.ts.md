@@ -9,24 +9,24 @@
 - `zod`
 - `../coords.js`
 
-## callback@17
+## callback@22
 
-[Implementation, line 17](../../../../../src/entity/vehicle/field.ts#L17)
+[Implementation, line 22](../../../../../src/entity/vehicle/field.ts#L22)
 
 ```ts
-callback@17(v): inferred by TypeScript; see implementation
+callback@22(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.hypot`
 
-## callback@36
+## callback@41
 
-[Implementation, line 36](../../../../../src/entity/vehicle/field.ts#L36)
+[Implementation, line 41](../../../../../src/entity/vehicle/field.ts#L41)
 
 ```ts
-callback@36(v): inferred by TypeScript; see implementation
+callback@41(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

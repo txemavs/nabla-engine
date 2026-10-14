@@ -1,13 +1,16 @@
 import { defineConfig, loadEnv } from 'vite'
+import { readFileSync } from 'node:fs'
 import { terrainFolder } from './scripts/vite-terrain-folder.js'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  if (!!env.NABLA_HTTPS_CERT !== !!env.NABLA_HTTPS_KEY)
+    throw new Error('NABLA_HTTPS_CERT and NABLA_HTTPS_KEY must be supplied together')
   return {
     root: 'game',
     plugins: [terrainFolder(env)],
     optimizeDeps: {
-      entries: ['index.html'],
+      entries: ['index.html', 'xr.html'],
       // Pre-bundle the heavy graph so the first «Initializing...» visit is not an optimizeDeps run.
       include: [
         'lerc',
@@ -25,10 +28,16 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           game: 'game/index.html',
+          test: 'game/test.html',
+          quest: 'game/xr.html',
+          questDemo: 'game/xr-demo.html',
         },
       },
     },
     server: {
+      https: env.NABLA_HTTPS_CERT
+        ? { cert: readFileSync(env.NABLA_HTTPS_CERT), key: readFileSync(env.NABLA_HTTPS_KEY) }
+        : undefined,
       port: 5174,
       strictPort: true,
       watch: { usePolling: true, interval: 300 },

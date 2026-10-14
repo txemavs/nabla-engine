@@ -327,3 +327,40 @@ it('releases the catch with an empty magazine or no magazine without creating am
     expect(state.magazineSeated).toBe(seated)
   }
 })
+
+it('physical magazines retain identity and ammunition across extraction and another weapon', async () => {
+  const { takeMagazine, seatMagazine } = await import('../../src/simulation/weapons/firearm.js')
+  const a = freshFirearm(spec()),
+    b = freshFirearm(spec())
+  a.magazine = 5
+  const magazine = a.magazineEntity!
+  const chamber = a.chamber
+  expect(takeMagazine(a).droppedMagazine).toBe(magazine)
+  expect(a.chamber).toBe(chamber)
+  expect(a.magazineEntity).toBeNull()
+  expect(takeMagazine(a).magazineDropped).toBe(false)
+  expect(seatMagazine(b, magazine).magazineSeated).toBe(false)
+  takeMagazine(b)
+  expect(seatMagazine(b, magazine).magazineSeated).toBe(true)
+  expect(b.magazineEntity).toBe(magazine)
+  expect(b.magazine).toBe(5)
+  expect(a.magazine).toBe(0)
+  takeMagazine(b)
+  expect(seatMagazine(a, magazine).magazineSeated).toBe(true)
+  expect(a.magazine).toBe(5)
+})
+
+it('seating a physical magazine does not create a chambered round', async () => {
+  const { takeMagazine, seatMagazine } = await import('../../src/simulation/weapons/firearm.js')
+  const state = freshFirearm(spec())
+  const magazine = takeMagazine(state).droppedMagazine!
+  state.chamber = 0
+  state.slideLocked = true
+  seatMagazine(state, magazine)
+  expect(state.chamber).toBe(0)
+  expect(state.slideLocked).toBe(true)
+  moveSlide(state, spec(), 1, 0)
+  moveSlide(state, spec(), 0, 1)
+  expect(state.chamber).toBe(1)
+  expect(magazine.rounds).toBe(magazine.capacity - 1)
+})

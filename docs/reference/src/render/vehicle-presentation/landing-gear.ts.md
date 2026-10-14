@@ -97,18 +97,26 @@ landingGearMeshBounds(model: Object3D): Box3 | null
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Box3`
+- `Matrix4`
 - `model.traverse`
 - `model.updateWorldMatrix`
+- `new Matrix4().copy`
+- `new Matrix4().copy(model.matrixWorld).invert`
 
-## landingGearMeshBounds.callback@60
+## landingGearMeshBounds.callback@61
 
-[Implementation, line 60](../../../../../src/render/vehicle-presentation/landing-gear.ts#L60)
+[Implementation, line 61](../../../../../src/render/vehicle-presentation/landing-gear.ts#L61)
 
 ```ts
-callback@60(node): inferred by TypeScript; see implementation
+callback@61(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Matrix4`
 - `STUETZBEIN.test`
-- `box.expandByObject`
+- `box.union`
+- `new Matrix4().multiplyMatrices`
+- `node.geometry.boundingBox.clone`
+- `node.geometry.boundingBox.clone().applyMatrix4`
+- `node.geometry.computeBoundingBox`
