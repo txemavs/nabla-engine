@@ -4,6 +4,14 @@ import { Euler, Quaternion } from 'three'
 export class XRSessionController {
   private session: XRSession | null = null
   private floor: XRReferenceSpace | null = null
+  private unbounded: XRReferenceSpace | null = null
+  /** True once the initial tracking origin has been aligned to the real floor. */
+  get referenceReady(): boolean {
+    return !this.centerRequested && !!this.floor
+  }
+  get referenceSpaceType(): 'unbounded' | 'local-floor' {
+    return this.unbounded ? 'unbounded' : 'local-floor'
+  }
   private pending = false
   private closed = false
   private centerRequested = false
@@ -12,6 +20,7 @@ export class XRSessionController {
     private readonly xr: {
       setSession(session: XRSession | null): Promise<void>
       setReferenceSpace(space: XRReferenceSpace): void
+      setReferenceSpaceType?(type: XRReferenceSpaceType): void
     },
     private readonly changed: (active: boolean) => void,
     private readonly report: (error: unknown) => void,
@@ -22,13 +31,19 @@ export class XRSessionController {
   }
 
   /** Call directly from a user gesture; never await feature detection before requesting. */
-  async enter(system: XRSystem): Promise<void> {
+  async enter(
+    system: XRSystem,
+    mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr',
+  ): Promise<void> {
     if (this.pending || this.session || this.closed) return
     this.pending = true
     let session: XRSession | undefined
     try {
-      session = await system.requestSession('immersive-vr', {
-        requiredFeatures: ['local-floor'],
+      session = await system.requestSession(mode, {
+        requiredFeatures: mode === 'immersive-ar' ? ['unbounded', 'local-floor'] : ['local-floor'],
+        ...(mode === 'immersive-ar'
+          ? { optionalFeatures: ['plane-detection', 'mesh-detection'] }
+          : {}),
       })
       if (this.closed) {
         await session.end()
@@ -39,6 +54,12 @@ export class XRSessionController {
       this.floor = await session.requestReferenceSpace('local-floor')
       if (this.session !== session || this.closed) return
       this.floor.addEventListener('reset', this.recenter)
+      if (mode === 'immersive-ar') {
+        this.unbounded = await session.requestReferenceSpace('unbounded')
+        if (this.session !== session || this.closed) return
+        this.unbounded.addEventListener('reset', this.recenter)
+      }
+      this.xr.setReferenceSpaceType?.(this.referenceSpaceType)
       await this.xr.setSession(session)
       if (this.session !== session || this.closed) return
       this.centerRequested = true
@@ -66,8 +87,14 @@ export class XRSessionController {
   /** Preserve floor height; only horizontal position and yaw are recentered. */
   update(frame: XRFrame): void {
     if (!this.centerRequested || !this.floor) return
-    const pose = frame.getViewerPose(this.floor)
+    const tracking = this.unbounded ?? this.floor
+    const pose = frame.getViewerPose(tracking)
     if (!pose) return
+    // Unbounded has no guaranteed floor height. Measure local-floor in that space,
+    // then keep the actual render/reference space unbounded for every scene consumer.
+    const floorPose = this.unbounded ? frame.getPose(this.floor, this.unbounded) : null
+    if (this.unbounded && !floorPose) return
+    const floorY = floorPose?.transform.position.y ?? 0
     const { position, orientation } = pose.transform
     const yaw = new Euler().setFromQuaternion(
       new Quaternion(orientation.x, orientation.y, orientation.z, orientation.w),
@@ -75,8 +102,8 @@ export class XRSessionController {
     ).y
     const rotation = new Quaternion().setFromEuler(new Euler(0, yaw, 0))
     this.xr.setReferenceSpace(
-      this.floor.getOffsetReferenceSpace(
-        new XRRigidTransform({ x: position.x, y: 0, z: position.z }, rotation),
+      tracking.getOffsetReferenceSpace(
+        new XRRigidTransform({ x: position.x, y: floorY, z: position.z }, rotation),
       ),
     )
     this.centerRequested = false
@@ -95,8 +122,10 @@ export class XRSessionController {
   private readonly ended = (): void => {
     this.session?.removeEventListener('end', this.ended)
     this.floor?.removeEventListener('reset', this.recenter)
+    this.unbounded?.removeEventListener('reset', this.recenter)
     this.session = null
     this.floor = null
+    this.unbounded = null
     this.centerRequested = false
     this.changed(false)
   }

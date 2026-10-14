@@ -33,6 +33,10 @@ for (const [vehicle, label] of [
   }
   tests.append(row)
 }
+const ar = document.createElement('a')
+ar.href = '/ar.html'
+ar.textContent = 'Realidad mixta · prueba de habitación'
+tests.append(ar)
 if (params.get('solo') === '1')
   destinations.querySelector('summary')!.textContent =
     `Prueba individual: ${({ car: 'Coche', vfr800: 'Moto', 'vfr800-quest': 'Moto Quest', 'white-truck': 'Camión', carrier: 'Nave' } as Record<string, string>)[params.get('vehicle') ?? 'car'] ?? 'Vehículo'} · ${params.has('terrain') ? 'Zaisa' : 'pista'}`

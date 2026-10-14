@@ -1,3 +1,4 @@
+import { ForkliftMechanism, type ForkliftInput } from './forklift.js'
 import { explosionTuning } from '../config/gameplay-tuning.js'
 import { TowOverload } from './tow-overload.js'
 import { VehicleDamage } from './vehicle-damage.js'
@@ -67,6 +68,7 @@ import {
   HingeConstraint,
   Quaternion,
   Sphere,
+  Trimesh,
   Vec3,
   World,
 } from './physics.js'
@@ -247,6 +249,18 @@ export class Simulation {
     return this.planetCollisions.ready
   }
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
+  private readonly forklifts = new WeakMap<Vehicle, ForkliftMechanism>()
+  private forkliftInput: ForkliftInput = [0, 0, 0]
+  setForkliftInput(input: ForkliftInput): void {
+    this.forkliftInput = input.map((v) =>
+      Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0,
+    ) as ForkliftInput
+  }
+  forkliftPose(id: string) {
+    const v = this.vehicles.get(id)
+    const m = v && this.forklifts.get(v)
+    return m ? { lift: m.lift, tilt: m.tilt, side: m.side } : null
+  }
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
@@ -909,6 +923,67 @@ export class Simulation {
       this.vehicleId ? this.vehicles.get(this.vehicleId)!.body : this.playerBody,
     ).position
   }
+  /** Host-provided collision surfaces (for example an XR room), in simulation metres. */
+  private externalSurfaces = new Map<string, Body>()
+  setExternalCollisionMesh(id: string, vertices: Float32Array | null, indices?: Uint32Array): void {
+    const previous = this.externalSurfaces.get(id)
+    if (previous) {
+      this.world.removeBody(previous)
+      this.externalSurfaces.delete(id)
+    }
+    if (!vertices || !indices) return
+    const body = new Body({ mass: 0 })
+    body.addShape(new Trimesh(vertices, indices))
+    this.world.addBody(body)
+    this.externalSurfaces.set(id, body)
+  }
+  /** Reposition a held assembly atomically; the host pauses stepping while manipulating it. */
+  relocateVehicles(poses: { id: string; transform: Transform }[]): void {
+    // Validate the whole assembly before moving any body. Teleports must preserve the
+    // unit-quaternion invariant even while ordinary physics stepping is paused.
+    const normalized = poses.map(({ id, transform }) => {
+      const length = Math.hypot(...transform.rotation)
+      if (
+        ![...transform.position, ...transform.rotation].every(Number.isFinite) ||
+        !Number.isFinite(length) ||
+        length < 1e-12
+      )
+        throw new Error(`Invalid vehicle relocation: ${id}`)
+      return {
+        id,
+        transform: {
+          position: transform.position,
+          rotation: transform.rotation.map((value) => value / length) as Transform['rotation'],
+        },
+      }
+    })
+    for (const { id, transform } of normalized) {
+      const vehicle = this.vehicles.get(id)
+      if (!vehicle) continue
+      vehicle.body.position.set(...transform.position)
+      vehicle.body.quaternion.set(...transform.rotation)
+      vehicle.body.previousPosition.copy(vehicle.body.position)
+      vehicle.body.previousQuaternion.copy(vehicle.body.quaternion)
+      vehicle.body.velocity.setZero()
+      vehicle.body.angularVelocity.setZero()
+      vehicle.body.wakeUp()
+      if (vehicle.twoWheeled) resetTwoWheeled(vehicle.twoWheeled)
+    }
+    this.previousWheels.clear()
+  }
+  /** Release a manipulated rigid assembly into the ordinary physics world. */
+  releaseVehicles(motion: { id: string; velocity: Vec3Tuple; angularVelocity: Vec3Tuple }[]): void {
+    for (const entry of motion)
+      if (![...entry.velocity, ...entry.angularVelocity].every(Number.isFinite))
+        throw new Error(`Invalid vehicle release: ${entry.id}`)
+    for (const entry of motion) {
+      const body = this.vehicles.get(entry.id)?.body
+      if (!body) continue
+      body.velocity.set(...entry.velocity)
+      body.angularVelocity.set(...entry.angularVelocity)
+      body.wakeUp()
+    }
+  }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
     if (body) return interpolated ? this.displayedPose(body) : pose(body)
@@ -1084,6 +1159,17 @@ export class Simulation {
       if (this.ticks % mapCollisionDefaults.activationIntervalTicks === 0)
         this.updateMapCollisions()
       for (const vehicle of this.vehicles.values()) {
+        if (vehicle.definition.forklift) {
+          let mechanism = this.forklifts.get(vehicle)
+          if (!mechanism) {
+            mechanism = new ForkliftMechanism(vehicle)
+            this.forklifts.set(vehicle, mechanism)
+          }
+          mechanism.update(
+            this.player.vehicleId === vehicle.entity.id ? this.forkliftInput : [0, 0, 0],
+            FIXED_STEP,
+          )
+        }
         this.updateRamp(vehicle, FIXED_STEP)
         if (vehicle.definition.garage?.ramp?.loadAngle !== undefined && vehicle.rampClosed)
           for (const [id, car] of this.vehicles)
@@ -2764,6 +2850,7 @@ export class Simulation {
     this.bodies.clear()
     this.mapCollision.clear()
     this.portalTraversal.clear()
+    this.externalSurfaces.clear()
     this.world.raw.free()
     this.disposed = true
   }

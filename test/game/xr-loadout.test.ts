@@ -64,7 +64,7 @@ function hand(): GrabHand {
 function squeeze(h: GrabHand, pressed: boolean) {
   ;(h.source!.gamepad!.buttons[1] as { pressed: boolean }).pressed = pressed
 }
-it('keeps thrown magazines through origin shifts and tracking loss, with no pocket refill', () => {
+it('keeps thrown magazines through origin shifts and tracking loss, while replenishing the chest supply', () => {
   const scene = new THREE.Scene(),
     camera = new THREE.PerspectiveCamera()
   camera.position.y = 1.65
@@ -103,7 +103,7 @@ it('keeps thrown magazines through origin shifts and tracking loss, with no pock
   origin.x = 1000
   tick()
   expect(magazine.root.position.x).toBeCloseTo(x - 1000 + magazine.velocity.x * 0.01)
-  expect(loadout.magazines).toHaveLength(2)
+  expect(loadout.magazines).toHaveLength(3)
   h.grip.position.copy(magazine.root.getWorldPosition(new THREE.Vector3()))
   squeeze(h, true)
   tick()
@@ -115,7 +115,7 @@ it('keeps thrown magazines through origin shifts and tracking loss, with no pock
   expect(loadout.body.visible).toBe(false)
   expect(loadout.pistols.every((p) => !p.weapon.model.visible)).toBe(true)
   tick()
-  expect(loadout.magazines).toHaveLength(2)
+  expect(loadout.magazines).toHaveLength(3)
   loadout.dispose()
 })
 
@@ -168,5 +168,203 @@ it('allows either hand to draw either pistol but never gives one hand two object
   expect(loadout.pistols[1].holder).toBeNull()
   expect(loadout.pistols[1].weapon.model.parent).toBe(loadout.pistols[1].adjustment)
   expect(loadout.pistols[1].adjustment.parent).toBe(loadout.pistols[1].holster)
+  loadout.dispose()
+})
+
+it('replenishes full magazines of both sizes and bounds discarded ones', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera()
+  const loadout = new XRLoadout(scene, [weapon(), weapon()])
+  const tick = () =>
+    loadout.update(
+      [],
+      camera,
+      new THREE.Vector3(),
+      1000,
+      0.01,
+      true,
+      100,
+      () => null,
+      () => {},
+    )
+  tick()
+  for (let i = 0; i < 40; i++) {
+    const m = loadout.magazines.find((m) => m.pocket === loadout.pockets[i % 2])!
+    m.entity.rounds = 0
+    m.pocket = null
+    loadout.loose.attach(m.root)
+    tick()
+    const fresh = loadout.magazines.find((m) => m.pocket === loadout.pockets[i % 2])!
+    expect(fresh.entity.rounds).toBe(i % 2 === 0 ? 13 : 30)
+    expect(fresh.entity.id).not.toBe(m.entity.id)
+  }
+  expect(loadout.magazines).toHaveLength(18)
+  loadout.dispose()
+})
+
+it('requires a downward pull to extract and an upward push to insert a held magazine', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera()
+  camera.position.y = 1.65
+  scene.add(camera)
+  const gun = weapon(),
+    loadout = new XRLoadout(scene, [gun]),
+    right = hand(),
+    left = hand()
+  scene.add(right.grip, left.grip)
+  right.grip.position.set(0.4, 1.2, -0.5)
+  squeeze(right, true)
+  loadout.pistols[0].holder = right
+  let now = 0
+  const tick = () =>
+    loadout.update(
+      [right, left],
+      camera,
+      new THREE.Vector3(),
+      (now += 20),
+      0.02,
+      true,
+      1024,
+      () => null,
+      () => {},
+    )
+  tick()
+  left.grip.position
+    .copy(gun.trackedMagazine!.getWorldPosition(new THREE.Vector3()))
+    .add(new THREE.Vector3(0, -0.02, 0))
+  squeeze(left, true)
+  tick()
+  expect(gun.state.magazineSeated).toBe(true)
+  left.grip.position.y -= 0.05
+  tick()
+  expect(gun.state.magazineSeated).toBe(false)
+  expect(loadout.magazines.some((m) => m.holder === left)).toBe(true)
+  tick() // insertion corridor records the start, proximity alone does not seat
+  expect(gun.state.magazineSeated).toBe(false)
+  left.grip.position.y += 0.045
+  tick()
+  expect(gun.state.magazineSeated).toBe(true)
+  loadout.dispose()
+})
+
+it('supports the front of a pistol and hands it over when the original grip releases', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera()
+  camera.position.y = 1.65
+  scene.add(camera)
+  const gun = weapon(),
+    loadout = new XRLoadout(scene, [gun]),
+    right = hand(),
+    left = hand()
+  gun.worldMuzzle = () => gun.model.localToWorld(new THREE.Vector3(0, 0, -0.22))
+  scene.add(right.grip, left.grip)
+  right.grip.position.set(0.4, 1.2, -0.5)
+  squeeze(right, true)
+  loadout.pistols[0].holder = right
+  const tick = () =>
+    loadout.update(
+      [right, left],
+      camera,
+      new THREE.Vector3(),
+      0,
+      0.02,
+      true,
+      1024,
+      () => null,
+      () => {},
+    )
+  tick()
+  left.grip.position.copy(gun.worldMuzzle()!)
+  squeeze(left, true)
+  tick()
+  expect(loadout.supported(loadout.pistols[0])).toBe(true)
+  expect(gun.trackedSupport).toBe(true)
+  squeeze(right, false)
+  tick()
+  expect(loadout.pistols[0].holder).toBe(left)
+  expect(loadout.supported(loadout.pistols[0])).toBe(false)
+  loadout.dispose()
+})
+
+it('toggles the existing laser once per fingertip touch, with separation required to toggle again', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    gun = weapon()
+  const muzzle = new THREE.Vector3(0, 1, -0.5)
+  let on = false,
+    toggles = 0
+  Object.assign(gun, {
+    worldMuzzle: () => muzzle.clone(),
+    toggleLaser: () => {
+      toggles++
+      return (on = !on)
+    },
+  })
+  Object.defineProperty(gun, 'laserEnabled', { get: () => on })
+  const loadout = new XRLoadout(scene, [gun]),
+    owner = hand(),
+    finger = hand()
+  const tip = new THREE.Group()
+  scene.add(tip, owner.grip, finger.grip)
+  finger.visual = { indexTip: tip }
+  squeeze(owner, true)
+  loadout.pistols[0].holder = owner
+  const tick = () =>
+    loadout.update(
+      [owner, finger],
+      camera,
+      new THREE.Vector3(),
+      1000,
+      1 / 90,
+      true,
+      100,
+      () => null,
+      () => {},
+    )
+  tip.position.copy(muzzle)
+  tick()
+  tick()
+  expect(toggles).toBe(1)
+  expect(on).toBe(true)
+  tip.position.x = 0.04
+  tick()
+  expect(toggles).toBe(1)
+  tip.position.x = 0.08
+  tick()
+  tip.position.copy(muzzle)
+  tick()
+  expect(toggles).toBe(2)
+  expect(on).toBe(false)
+  loadout.dispose()
+})
+
+it('draws the native laser at its authored socket and clips it to the hit without creating an impact', () => {
+  const scene = new THREE.Scene(),
+    gun = weapon(),
+    loadout = new XRLoadout(scene, [gun]),
+    owner = hand()
+  loadout.pistols[0].holder = owner
+  Object.defineProperty(gun, 'laserEnabled', { value: true })
+  Object.defineProperty(gun, 'range', { value: 50 })
+  Object.assign(gun, {
+    accessoryRay: (_now: number, _fp: boolean, _fov: number, socket: string) => {
+      expect(socket).toBe('RedLaserSocket')
+      return { origin: new THREE.Vector3(1, 2, 3), target: new THREE.Vector3(1, 2, -7) }
+    },
+  })
+  let casts = 0
+  loadout.updateLasers(1000, 65, (origin, direction, range) => {
+    casts++
+    expect(origin.toArray()).toEqual([1, 2, 3])
+    expect(direction.toArray()).toEqual([0, 0, -1])
+    expect(range).toBe(50)
+    return new THREE.Vector3(1, 2, -2)
+  })
+  expect(casts).toBe(1)
+  const laser = scene.children.find((o) => o.name === 'Shot laser')!
+  expect(laser.visible).toBe(true)
+  expect(laser.children[1].position.toArray()).toEqual([1, 2, -2])
+  loadout.suspend(1010)
+  expect(laser.visible).toBe(false)
   loadout.dispose()
 })

@@ -6,6 +6,9 @@
 
 ## Module dependencies
 
+- `../render/entity/shot-laser.js`
+- `./xr-object-grab.js`
+- `./xr-body-anchor.js`
 - `./xr-calibration.js`
 - `three`
 - `./sidearm.js`
@@ -16,7 +19,7 @@
 
 ## position
 
-[Implementation, line 9](../../../../src/runtime/xr-loadout.ts#L9)
+[Implementation, line 12](../../../../src/runtime/xr-loadout.ts#L12)
 
 ```ts
 position(o: THREE.Object3D): inferred by TypeScript; see implementation
@@ -29,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## squeezed
 
-[Implementation, line 10](../../../../src/runtime/xr-loadout.ts#L10)
+[Implementation, line 13](../../../../src/runtime/xr-loadout.ts#L13)
 
 ```ts
 squeezed(h: GrabHand): inferred by TypeScript; see implementation
@@ -37,7 +40,7 @@ squeezed(h: GrabHand): inferred by TypeScript; see implementation
 
 ## XRLoadout.constructor
 
-[Implementation, line 48](../../../../src/runtime/xr-loadout.ts#L48)
+[Implementation, line 72](../../../../src/runtime/xr-loadout.ts#L72)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -47,6 +50,7 @@ constructor(scene: THREE.Scene, weapons: Sidearm[], readonly calibration = new X
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `ShotLaser`
 - `THREE.Group`
 - `THREE.Mesh`
 - `THREE.Vector3`
@@ -57,15 +61,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pouch.position.copy(pocket.position).add`
 - `scene.add`
 - `this.body.add`
+- `this.lasers.push`
 - `this.pockets.push`
 - `weapons.map`
 
-## XRLoadout.constructor.callback@54
+## XRLoadout.constructor.callback@78
 
-[Implementation, line 54](../../../../src/runtime/xr-loadout.ts#L54)
+[Implementation, line 78](../../../../src/runtime/xr-loadout.ts#L78)
 
 ```ts
-callback@54(weapon, i): inferred by TypeScript; see implementation
+callback@78(weapon, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -73,16 +78,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Group`
 - `THREE.Mesh`
 - `THREE.Vector3`
+- `XRObjectGrab`
 - `holster.add`
 - `holster.attach`
 - `holster.position.set`
 - `pouch.position.copy`
 - `pouch.position.copy(holster.position).add`
 - `this.body.add`
+- `this.loose.add`
 
 ## XRLoadout.occupied
 
-[Implementation, line 78](../../../../src/runtime/xr-loadout.ts#L78)
+[Implementation, line 117](../../../../src/runtime/xr-loadout.ts#L117)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -92,37 +99,66 @@ occupied(hand: GrabHand): boolean
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `[...this.supports.values()].includes`
 - `this.magazines.some`
 - `this.pistols.some`
+- `this.pulls.some`
 - `this.slides.some`
+- `this.supports.values`
 
-## XRLoadout.occupied.callback@80
+## XRLoadout.occupied.callback@119
 
-[Implementation, line 80](../../../../src/runtime/xr-loadout.ts#L80)
-
-```ts
-callback@80(p): inferred by TypeScript; see implementation
-```
-
-## XRLoadout.occupied.callback@81
-
-[Implementation, line 81](../../../../src/runtime/xr-loadout.ts#L81)
+[Implementation, line 119](../../../../src/runtime/xr-loadout.ts#L119)
 
 ```ts
-callback@81(m): inferred by TypeScript; see implementation
+callback@119(p): inferred by TypeScript; see implementation
 ```
 
-## XRLoadout.occupied.callback@82
+## XRLoadout.occupied.callback@120
 
-[Implementation, line 82](../../../../src/runtime/xr-loadout.ts#L82)
+[Implementation, line 120](../../../../src/runtime/xr-loadout.ts#L120)
 
 ```ts
-callback@82(s): inferred by TypeScript; see implementation
+callback@120(m): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `m.grab.hands.includes`
+
+## XRLoadout.occupied.callback@121
+
+[Implementation, line 121](../../../../src/runtime/xr-loadout.ts#L121)
+
+```ts
+callback@121(s): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.occupied.callback@122
+
+[Implementation, line 122](../../../../src/runtime/xr-loadout.ts#L122)
+
+```ts
+callback@122(p): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.supported
+
+[Implementation, line 126](../../../../src/runtime/xr-loadout.ts#L126)
+
+Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
+
+```ts
+supported(pistol: CarriedPistol): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.supports.has`
 
 ## XRLoadout.slideHeld
 
-[Implementation, line 85](../../../../src/runtime/xr-loadout.ts#L85)
+[Implementation, line 129](../../../../src/runtime/xr-loadout.ts#L129)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -134,17 +170,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.slides.some`
 
-## XRLoadout.slideHeld.callback@86
+## XRLoadout.slideHeld.callback@130
 
-[Implementation, line 86](../../../../src/runtime/xr-loadout.ts#L86)
+[Implementation, line 130](../../../../src/runtime/xr-loadout.ts#L130)
 
 ```ts
-callback@86(s): inferred by TypeScript; see implementation
+callback@130(s): inferred by TypeScript; see implementation
 ```
 
 ## XRLoadout.mount
 
-[Implementation, line 88](../../../../src/runtime/xr-loadout.ts#L88)
+[Implementation, line 132](../../../../src/runtime/xr-loadout.ts#L132)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -152,9 +188,77 @@ Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities nev
 mount(pistol: CarriedPistol): THREE.Group
 ```
 
+## XRLoadout.updateLasers
+
+[Implementation, line 138](../../../../src/runtime/xr-loadout.ts#L138)
+
+Same engine sight and weapon state as desktop; only the scene-query adapter differs.
+
+```ts
+updateLasers(now: number, fov: number, cast: (origin: THREE.Vector3, direction: THREE.Vector3, range: number) => THREE.Vector3 | null): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(hit ?? ray.origin.clone().addScaledVector(direction, weapon.range)).toArray`
+- `cast`
+- `laser.set`
+- `ray.origin.clone`
+- `ray.origin.clone().addScaledVector`
+- `ray.origin.toArray`
+- `ray.target.sub`
+- `ray.target.sub(ray.origin).normalize`
+- `this.pistols.entries`
+- `weapon.accessoryRay`
+
+## XRLoadout.touchLasers
+
+[Implementation, line 163](../../../../src/runtime/xr-loadout.ts#L163)
+
+Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
+
+```ts
+touchLasers(hands: readonly GrabHand[]): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hand.source?.gamepad?.hapticActuators?.[0]?.pulse`
+- `hand.source?.gamepad?.hapticActuators?.[0]?.pulse(0.15, 25).catch`
+- `hands.find`
+- `pistol.weapon.toggleLaser`
+- `pistol.weapon.worldMuzzle`
+- `this.laserTouches.add`
+- `this.laserTouches.delete`
+- `this.laserTouches.has`
+
+## XRLoadout.touchLasers.callback@170
+
+[Implementation, line 170](../../../../src/runtime/xr-loadout.ts#L170)
+
+```ts
+callback@170(h): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `h.visual.indexTip.getWorldPosition`
+- `h.visual.indexTip.getWorldPosition(new THREE.Vector3()).distanceTo`
+- `squeezed`
+- `this.occupied`
+
+## XRLoadout.touchLasers.callback@180
+
+[Implementation, line 180](../../../../src/runtime/xr-loadout.ts#L180)
+
+```ts
+callback@180(): inferred by TypeScript; see implementation
+```
+
 ## XRLoadout.suspend
 
-[Implementation, line 93](../../../../src/runtime/xr-loadout.ts#L93)
+[Implementation, line 187](../../../../src/runtime/xr-loadout.ts#L187)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -164,15 +268,22 @@ suspend(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `item.angularVelocity.set`
+- `item.grab.reset`
 - `item.velocity.set`
+- `pistol.grab.reset`
 - `pistol.weapon.release`
 - `slide.pistol.weapon.moveSlide`
+- `this.bodyAnchor.reset`
 - `this.held.clear`
+- `this.insertions.clear`
+- `this.laserTouches.clear`
 - `this.loose.attach`
+- `this.supports.clear`
 
 ## XRLoadout.dispose
 
-[Implementation, line 113](../../../../src/runtime/xr-loadout.ts#L113)
+[Implementation, line 216](../../../../src/runtime/xr-loadout.ts#L216)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -182,6 +293,7 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `laser.dispose`
 - `performance.now`
 - `this.body.removeFromParent`
 - `this.geometry.dispose`
@@ -191,7 +303,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRLoadout.item
 
-[Implementation, line 121](../../../../src/runtime/xr-loadout.ts#L121)
+[Implementation, line 225](../../../../src/runtime/xr-loadout.ts#L225)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -203,6 +315,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.Group`
 - `THREE.Vector3`
+- `XRObjectGrab`
 - `model.getObjectByName`
 - `model.position.set`
 - `model.quaternion.identity`
@@ -215,7 +328,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRLoadout.update
 
-[Implementation, line 146](../../../../src/runtime/xr-loadout.ts#L146)
+[Implementation, line 252](../../../../src/runtime/xr-loadout.ts#L252)
 
 Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn.
 
@@ -226,56 +339,96 @@ update(hands: readonly GrabHand[], camera: THREE.Camera, origin: THREE.Vector3, 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Map`
-- `Math.atan2`
 - `Math.max`
 - `Math.min`
 - `Set`
 - `THREE.Box3`
+- `THREE.Matrix3`
+- `THREE.Matrix4`
 - `THREE.Quaternion`
 - `THREE.Vector3`
+- `axis.clone`
+- `axis.clone().transformDirection`
 - `bounds.clampPoint`
-- `camera.getWorldQuaternion`
 - `candidate`
 - `candidates.sort`
 - `candidates.sort((a, b) => a.distance - b.distance)[0]?.grab`
 - `createMagazine`
+- `dropped.slice`
 - `emit`
 - `ground`
 - `hands.filter`
 - `hands.filter(squeezed).map`
+- `hands.find`
 - `hands.includes`
 - `item.root.updateWorldMatrix`
+- `m.angularVelocity.clone`
+- `m.angularVelocity.clone().divideScalar`
+- `m.angularVelocity.copy`
+- `m.angularVelocity.length`
+- `m.angularVelocity.set`
+- `m.grab.hands.every`
+- `m.grab.hands.filter`
+- `m.grab.hands.includes`
+- `m.grab.shiftOrigin`
+- `m.grab.update`
 - `m.previous.copy`
 - `m.root.position.add`
 - `m.root.position.addScaledVector`
+- `m.root.position.clone`
+- `m.root.position.copy`
+- `m.root.position.copy(pose.position).addScaledVector`
 - `m.root.position.set`
+- `m.root.quaternion.copy`
 - `m.root.quaternion.identity`
 - `m.root.removeFromParent`
 - `m.velocity.copy`
-- `m.velocity.copy(here).sub`
-- `m.velocity.copy(here).sub(m.previous).divideScalar`
-- `m.velocity.copy(here).sub(m.previous).divideScalar(dt).clampLength`
 - `m.velocity.set`
 - `new THREE.Box3().setFromObject`
-- `new THREE.Vector3(0, 0, -1).applyQuaternion`
+- `new THREE.Matrix3().setFromMatrix4`
+- `new THREE.Matrix4().copy`
+- `new THREE.Matrix4().copy(target.weapon.model.matrixWorld).invert`
+- `new THREE.Quaternion().setFromAxisAngle`
+- `p.grab.reset`
+- `p.grab.shiftOrigin`
+- `p.grab.update`
+- `p.holdMount.position.copy`
+- `p.holder.mount.getWorldPosition`
+- `p.holder.mount.getWorldQuaternion`
 - `p.weapon.model.getObjectByName`
+- `p.weapon.model.worldToLocal`
 - `p.weapon.syncTracked`
+- `p.weapon.takeMagazine`
+- `p.weapon.worldMagazineDropView`
+- `p.weapon.worldMuzzle`
 - `pocket.add`
 - `position`
+- `position(target.weapon.trackedMagazine!).distanceTo`
+- `pull.axis.clone`
+- `pull.axis.clone().transformDirection`
 - `s.pistol.weapon.moveSlide`
 - `slide.object.parent!.worldToLocal`
 - `slide.object.parent!.worldToLocal(position(s.hand.grip)).sub`
 - `slide.object.parent!.worldToLocal(position(s.hand.grip)).sub(s.start).dot`
 - `squeezed`
+- `target.weapon.model.worldToLocal`
 - `target.weapon.seatMagazine`
-- `this.body.position.copy`
-- `this.body.rotation.set`
+- `target.weapon.worldMagazineDropView`
 - `this.body.updateWorldMatrix`
+- `this.bodyAnchor.update`
 - `this.calibration.apply`
+- `this.droppedPhysics`
 - `this.held.has`
+- `this.insertions.delete`
+- `this.insertions.get`
+- `this.insertions.set`
 - `this.item`
-- `this.loose.attach`
+- `this.loose.getWorldQuaternion`
+- `this.loose.getWorldQuaternion(new THREE.Quaternion()).invert`
+- `this.loose.worldToLocal`
+- `this.magazines.filter`
 - `this.magazines.indexOf`
+- `this.magazines.some`
 - `this.magazines.splice`
 - `this.mount`
 - `this.occupied`
@@ -288,22 +441,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pockets.find`
 - `this.pockets.forEach`
 - `this.pockets[i].add`
+- `this.pulls.indexOf`
+- `this.pulls.some`
+- `this.pulls.splice`
 - `this.slideHeld`
 - `this.slides.indexOf`
 - `this.slides.splice`
+- `this.supported`
+- `this.supports.delete`
+- `this.supports.get`
+- `this.supports.has`
 - `this.suspend`
+- `this.touchLasers`
 
-## XRLoadout.update.callback@157
+## XRLoadout.update.callback@263
 
-[Implementation, line 157](../../../../src/runtime/xr-loadout.ts#L157)
+[Implementation, line 263](../../../../src/runtime/xr-loadout.ts#L263)
 
 ```ts
-callback@157(p): inferred by TypeScript; see implementation
+callback@263(p): inferred by TypeScript; see implementation
 ```
 
 ## XRLoadout.update.emit
 
-[Implementation, line 158](../../../../src/runtime/xr-loadout.ts#L158)
+[Implementation, line 264](../../../../src/runtime/xr-loadout.ts#L264)
 
 ```ts
 emit(p: CarriedPistol, e: FirearmEvent): inferred by TypeScript; see implementation
@@ -314,49 +475,96 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `events.get`
 - `events.get(p.weapon)!.push`
 
-## XRLoadout.update.callback@172
+## XRLoadout.update.callback@276
 
-[Implementation, line 172](../../../../src/runtime/xr-loadout.ts#L172)
+[Implementation, line 276](../../../../src/runtime/xr-loadout.ts#L276)
 
 ```ts
-callback@172(p, i): inferred by TypeScript; see implementation
+callback@276(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.calibration.apply`
 
-## XRLoadout.update.callback@176
+## XRLoadout.update.callback@280
 
-[Implementation, line 176](../../../../src/runtime/xr-loadout.ts#L176)
+[Implementation, line 280](../../../../src/runtime/xr-loadout.ts#L280)
 
 ```ts
-callback@176(p, i): inferred by TypeScript; see implementation
+callback@280(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.calibration.apply`
 
-## XRLoadout.update.callback@212
+## XRLoadout.update.callback@288
 
-[Implementation, line 212](../../../../src/runtime/xr-loadout.ts#L212)
+[Implementation, line 288](../../../../src/runtime/xr-loadout.ts#L288)
 
 ```ts
-callback@212(p): inferred by TypeScript; see implementation
+callback@288(m): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@311
+
+[Implementation, line 311](../../../../src/runtime/xr-loadout.ts#L311)
+
+```ts
+callback@311(grip): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `position`
-- `position(p.weapon.trackedMagazine).distanceTo`
+- `hands.some`
 
-## XRLoadout.update.callback@227
+## XRLoadout.update.callback@311.callback@311
 
-[Implementation, line 227](../../../../src/runtime/xr-loadout.ts#L227)
+[Implementation, line 311](../../../../src/runtime/xr-loadout.ts#L311)
 
 ```ts
-callback@227(p): inferred by TypeScript; see implementation
+callback@311(h): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `squeezed`
+
+## XRLoadout.update.callback@312
+
+[Implementation, line 312](../../../../src/runtime/xr-loadout.ts#L312)
+
+```ts
+callback@312(grip): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hands.some`
+
+## XRLoadout.update.callback@312.callback@312
+
+[Implementation, line 312](../../../../src/runtime/xr-loadout.ts#L312)
+
+```ts
+callback@312(h): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@314
+
+[Implementation, line 314](../../../../src/runtime/xr-loadout.ts#L314)
+
+```ts
+callback@314(h): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@320
+
+[Implementation, line 320](../../../../src/runtime/xr-loadout.ts#L320)
+
+```ts
+callback@320(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -365,17 +573,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position(p).distanceTo`
 - `this.magazines.some`
 
-## XRLoadout.update.callback@227.callback@229
+## XRLoadout.update.callback@320.callback@322
 
-[Implementation, line 229](../../../../src/runtime/xr-loadout.ts#L229)
+[Implementation, line 322](../../../../src/runtime/xr-loadout.ts#L322)
 
 ```ts
-callback@229(other): inferred by TypeScript; see implementation
+callback@322(other): inferred by TypeScript; see implementation
 ```
+
+## XRLoadout.update.callback@380
+
+[Implementation, line 380](../../../../src/runtime/xr-loadout.ts#L380)
+
+```ts
+callback@380(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `position`
+- `position(p.weapon.trackedMagazine).distanceTo`
 
 ## XRLoadout.update.candidate
 
-[Implementation, line 247](../../../../src/runtime/xr-loadout.ts#L247)
+[Implementation, line 426](../../../../src/runtime/xr-loadout.ts#L426)
 
 ```ts
 candidate(point: THREE.Vector3, radius: number, grab: () => void): inferred by TypeScript; see implementation
@@ -386,58 +607,95 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `candidates.push`
 - `point.distanceTo`
 
-## XRLoadout.update.callback@253
+## XRLoadout.update.callback@432
 
-[Implementation, line 253](../../../../src/runtime/xr-loadout.ts#L253)
+[Implementation, line 432](../../../../src/runtime/xr-loadout.ts#L432)
 
 ```ts
-callback@253(): inferred by TypeScript; see implementation
+callback@432(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `h.grip.attach`
+- `hands.find`
+- `m.grab.update`
 - `m.previous.copy`
 - `m.velocity.set`
 - `position`
+- `this.loose.attach`
 
-## XRLoadout.update.callback@264
+## XRLoadout.update.callback@432.callback@435
 
-[Implementation, line 264](../../../../src/runtime/xr-loadout.ts#L264)
+[Implementation, line 435](../../../../src/runtime/xr-loadout.ts#L435)
 
 ```ts
-callback@264(): inferred by TypeScript; see implementation
+callback@435(hand): inferred by TypeScript; see implementation
 ```
 
-## XRLoadout.update.callback@274
+## XRLoadout.update.callback@444
 
-[Implementation, line 274](../../../../src/runtime/xr-loadout.ts#L274)
+[Implementation, line 444](../../../../src/runtime/xr-loadout.ts#L444)
 
 ```ts
-callback@274(): inferred by TypeScript; see implementation
+callback@444(): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@454
+
+[Implementation, line 454](../../../../src/runtime/xr-loadout.ts#L454)
+
+```ts
+callback@454(pull): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@455
+
+[Implementation, line 455](../../../../src/runtime/xr-loadout.ts#L455)
+
+```ts
+callback@455(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `emit`
-- `h.grip.attach`
-- `m.previous.copy`
-- `m.root.position.copy`
-- `m.root.quaternion.copy`
-- `m.root.removeFromParent`
-- `p.weapon.takeMagazine`
+- `THREE.Matrix4`
+- `handPosition.clone`
+- `new THREE.Matrix4().copy`
+- `new THREE.Matrix4().copy(p.weapon.model.matrixWorld).invert`
+- `p.weapon.model.worldToLocal`
 - `p.weapon.worldMagazineDropView`
-- `position`
-- `this.item`
-- `this.magazines.indexOf`
-- `this.magazines.splice`
+- `this.pulls.push`
 
-## XRLoadout.update.callback@300
+## XRLoadout.update.callback@472
 
-[Implementation, line 300](../../../../src/runtime/xr-loadout.ts#L300)
+[Implementation, line 472](../../../../src/runtime/xr-loadout.ts#L472)
 
 ```ts
-callback@300(): inferred by TypeScript; see implementation
+callback@472(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.supports.delete`
+
+## XRLoadout.update.callback@478
+
+[Implementation, line 478](../../../../src/runtime/xr-loadout.ts#L478)
+
+```ts
+callback@478(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.supports.set`
+
+## XRLoadout.update.callback@487
+
+[Implementation, line 487](../../../../src/runtime/xr-loadout.ts#L487)
+
+```ts
+callback@487(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -448,18 +706,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `slideSound`
 - `this.slides.push`
 
-## XRLoadout.update.callback@312
+## XRLoadout.update.callback@499
 
-[Implementation, line 312](../../../../src/runtime/xr-loadout.ts#L312)
+[Implementation, line 499](../../../../src/runtime/xr-loadout.ts#L499)
 
 ```ts
-callback@312(a, b): inferred by TypeScript; see implementation
+callback@499(a, b): inferred by TypeScript; see implementation
 ```
 
-## XRLoadout.update.callback@334
+## XRLoadout.update.callback@509
 
-[Implementation, line 334](../../../../src/runtime/xr-loadout.ts#L334)
+[Implementation, line 509](../../../../src/runtime/xr-loadout.ts#L509)
 
 ```ts
-callback@334(h): inferred by TypeScript; see implementation
+callback@509(m): inferred by TypeScript; see implementation
+```
+
+## XRLoadout.update.callback@558
+
+[Implementation, line 558](../../../../src/runtime/xr-loadout.ts#L558)
+
+```ts
+callback@558(h): inferred by TypeScript; see implementation
 ```

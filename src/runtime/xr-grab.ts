@@ -7,6 +7,7 @@ export interface GrabHand {
   grip: THREE.Group
   mount: THREE.Group
   source: XRInputSource | null
+  visual?: { indexTip: THREE.Object3D }
 }
 const squeezed = (hand: GrabHand) =>
   !!hand.source?.gamepad?.buttons[1]?.pressed ||

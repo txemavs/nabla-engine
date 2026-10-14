@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nabla · AR radiocontrol</title>
+    <style>
+      body {
+        margin: 0;
+        background: #102632;
+        color: #eefaff;
+        font: 18px system-ui;
+      }
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      main {
+        position: relative;
+        margin: 2rem;
+        max-width: 32rem;
+      }
+      button {
+        font: inherit;
+        padding: 1rem;
+        background: #326078;
+        color: white;
+        border: 0;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+    <main id="panel">
+      <a href="/headset.html" style="color: #9bdeff">← Nabla HeadSet</a>
+      <h1>Radiocontrol AR</h1>
+      <p>
+        Solo el vehículo elegido y su puesto de conducción. Agarra el mando para conducir; agarra la
+        base inferior y pulsa su botón negro para fijarlo. Vuelve a pulsarlo para llevarlo al pecho.
+        También puedes coger el vehículo con el agarre.
+      </p>
+      <button id="enter" disabled>Entrar en AR</button>
+      <p id="status">Comprobando compatibilidad…</p>
+    </main>
+    <script type="module" src="./ar-rc-demo.ts"></script>
+  </body>
+</html>

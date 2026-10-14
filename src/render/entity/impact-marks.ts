@@ -84,6 +84,13 @@ export class ImpactMarks {
     polygonOffsetUnits: -2,
   })
   private marks: THREE.Group[] = []
+  private limit = MAX_IMPACT_MARKS
+  setLimit(limit: number): void {
+    this.limit = Number.isFinite(limit)
+      ? Math.max(0, Math.min(MAX_IMPACT_MARKS, Math.floor(limit)))
+      : MAX_IMPACT_MARKS
+    while (this.marks.length > this.limit) this.marks.shift()!.removeFromParent()
+  }
   get count(): number {
     return this.marks.length
   }
@@ -94,7 +101,7 @@ export class ImpactMarks {
   }
 
   private take(): THREE.Group {
-    if (this.marks.length >= MAX_IMPACT_MARKS) {
+    if (this.marks.length >= this.limit) {
       const oldest = this.marks.shift()!
       oldest.removeFromParent()
       return oldest
@@ -119,6 +126,7 @@ export class ImpactMarks {
 
   /** Exact rendered surface hit, anchored in the moving mesh's local frame. */
   addSurface(parent: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
+    if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
     mark.scale.set(1, 1, 1)
@@ -131,6 +139,7 @@ export class ImpactMarks {
 
   /** Mark on a scene entity (car, prop, authored mesh) in that entity's local frame. */
   add(parent: THREE.Object3D, pose: Transform, point: Vec3Tuple, normal: Vec3Tuple): void {
+    if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
     mark.scale.set(1, 1, 1)
@@ -154,6 +163,7 @@ export class ImpactMarks {
    * or `PlanetWorld.root`).
    */
   addWorld(root: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
+    if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
     mark.scale.set(1, 1, 1)

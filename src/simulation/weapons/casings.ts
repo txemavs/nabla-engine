@@ -61,6 +61,13 @@ export class CasingMotion {
     private readonly standoff = STANDOFF,
   ) {}
 
+  private limit: number | null = null
+  setLimit(limit: number): void {
+    this.limit = Number.isFinite(limit)
+      ? Math.max(0, Math.min(this.capacity, Math.floor(limit)))
+      : this.capacity
+    if (this.casings.length > this.limit) this.casings.splice(0, this.casings.length - this.limit)
+  }
   get count(): number {
     return this.casings.length
   }
@@ -76,7 +83,9 @@ export class CasingMotion {
     carry: Vec3Tuple = [0, 0, 0],
     random = Math.random,
   ): void {
-    if (this.casings.length >= this.capacity) this.casings.shift()
+    const limit = this.limit ?? this.capacity
+    if (!limit) return
+    if (this.casings.length >= limit) this.casings.shift()
     const spread = () => 1 + (random() - 0.5) * 0.3
     const speed = this.spec.ejectSpeedMs * spread()
     const lift = this.spec.ejectSpeedMs * 0.5 * spread()
@@ -106,7 +115,9 @@ export class CasingMotion {
     orientation: [number, number, number, number] = [0, 0, 0, 1],
     entityId?: string,
   ): void {
-    if (this.casings.length >= this.capacity) this.casings.shift()
+    const limit = this.limit ?? this.capacity
+    if (!limit) return
+    if (this.casings.length >= limit) this.casings.shift()
     this.casings.push({
       position: [...origin],
       velocity: [...velocity],

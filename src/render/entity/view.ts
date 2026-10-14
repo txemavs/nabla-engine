@@ -1079,7 +1079,10 @@ export class SceneView {
 
         group.add(surface)
       }
-      if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
+      if (e.kind === 'box' && !e.light) {
+        if (e.visual) this.addAsset(group, e.visual.body)
+        else group.add(box(e.size, e.color))
+      }
       if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
         if (e.vehicle?.headOffset) this.headOffsets.set(e.id, e.vehicle.headOffset)
@@ -1592,14 +1595,22 @@ export class SceneView {
         if (object) object.visible = !playing
       }
   }
-  sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
+  /** Disable interpolation for externally positioned bodies (for example, an XR hand grab). */
+  sync(
+    sim: Simulation,
+    elapsed = 1 / 60,
+    cockpit = false,
+    headYaw = 0,
+    headPitch = 0.05,
+    interpolate = true,
+  ): void {
     if (sim.playerEjection || sim.playerBikeRecovery?.phase === 'rising') cockpit = false
     this.simulated = true
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
       const object = this.objects.get(e.id)
       if (!object) continue
-      applyPose(object, sim.entityTransform(e.id, true))
+      applyPose(object, sim.entityTransform(e.id, interpolate))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
         const surface = this.portals.get(e.id)!
@@ -1613,8 +1624,21 @@ export class SceneView {
         light.material.color.set(e.portal.mode === 'open' ? '#5bacff' : '#354254')
       }
     }
+    for (const [id, object] of this.objects) {
+      const pose = sim.forkliftPose(id)
+      if (!pose) continue
+      const mast = object.getObjectByName('forklift-mast'),
+        carriage = object.getObjectByName('forklift-carriage')
+      const inner = object.getObjectByName('forklift-inner-mast')
+      if (inner) inner.position.y = pose.lift * 0.5
+      if (mast) mast.rotation.x = pose.tilt
+      if (carriage) {
+        carriage.position.y = pose.lift
+        carriage.position.x = pose.side
+      }
+    }
     for (const [id, wheels] of this.wheels) {
-      const poses = sim.wheelTransforms(id, true)
+      const poses = sim.wheelTransforms(id, interpolate)
       poses.forEach((p, i) => {
         // Wheel snapshots are in world space; render beneath an identity root.
         this.root.add(wheels[i])

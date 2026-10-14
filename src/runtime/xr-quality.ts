@@ -3,6 +3,10 @@ export interface XRQualitySettings {
   foveation: number
   effects: boolean
   shadows: boolean
+  impactLimit: number
+  casingLimit: number
+  sparks: boolean
+  hideOwnWheels: boolean
   roadDetail: number
 }
 const key = 'nabla.xr.quality.v1'
@@ -14,6 +18,10 @@ export function readXRQuality(): XRQualitySettings {
   const number = (n: unknown, fallback: number, min: number, max: number) =>
     typeof n === 'number' && Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback
   return {
+    impactLimit: Math.floor(number(value.impactLimit, 96, 0, 96)),
+    casingLimit: Math.floor(number(value.casingLimit, 24, 0, 24)),
+    sparks: typeof value.sparks === 'boolean' ? value.sparks : value.effects !== false,
+    hideOwnWheels: value.hideOwnWheels === true,
     scale: number(value.scale, 0.8, 0.5, 1.5),
     foveation: number(value.foveation, 0.5, 0, 1),
     effects: typeof value.effects === 'boolean' ? value.effects : true,

@@ -305,6 +305,8 @@ export const vehicleField = z
     ]),
     /** Unpowered trailer, excluded from player boarding. */
     passive: z.boolean().optional(),
+    forklift: z.boolean().optional(),
+    rearSteering: z.boolean().optional(),
     /** Chassis-local towing mount, extracted from the body's tow.hitch anchor. */
     hitch: vector.optional(),
     /** Trailer-side kingpin extracted from the tow.anchor node. */

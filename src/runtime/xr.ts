@@ -11,39 +11,17 @@ import { XRGameInput } from './xr-input.js'
 export class GameXR {
   readonly calibration = new XRCalibration()
   calibrationScreen: XRCalibrationScreen | null = null
-  private armedSources = new Set<XRInputSource>()
-  private settingsButton: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null
   enableCalibrationScreen(): void {
     if (this.calibrationScreen) return
     this.calibrationScreen = new XRCalibrationScreen(this.scene, this.calibration)
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = 128
-    const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#ffffff'
-    ctx.font = '90px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('⚙', 64, 64)
-    this.settingsButton = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.065, 0.065),
-      new THREE.MeshBasicMaterial({
-        map: new THREE.CanvasTexture(canvas),
-        transparent: true,
-        depthTest: false,
-        depthWrite: false,
-      }),
-    )
-    this.settingsButton.position.set(-0.02, 0.27, -1)
-    this.settingsButton.renderOrder = 10001
-    this.settingsButton.visible = this.active
-    this.camera.add(this.settingsButton)
   }
+
   showCalibrationScreen(): void {
     this.enableCalibrationScreen()
-    this.calibrationScreen!.show()
+    this.calibrationScreen!.show(true)
   }
   get gameplaySources(): readonly XRInputSource[] {
-    return this.sources.filter((source) => !this.calibrationScreen?.captured.has(source))
+    return this.sources.filter((source) => !this.calibrationOwns(source))
   }
   calibrationOwns(source: XRInputSource | null): boolean {
     return !!source && !!this.calibrationScreen?.captured.has(source)
@@ -70,156 +48,45 @@ export class GameXR {
     enabled: boolean,
     weaponTip: (source: XRInputSource) => THREE.Vector3 | null,
   ): void {
-    this.armedSources.clear()
-    this.calibrationScreen?.interact(
-      this.grabHands
-        .filter((hand) => !this.reservedInput(hand.source!))
-        .map((hand) => {
-          const tip = weaponTip(hand.source!)
-          if (tip) this.armedSources.add(hand.source!)
-          return {
-            source: hand.source!,
-            armed: !!tip,
-            tip: tip ?? hand.visual.indexTip.getWorldPosition(new THREE.Vector3()),
-            aim: hand.aim,
-          }
-        }),
-      enabled,
-    )
+    const pointers = this.grabHands
+      .filter((hand) => !this.reservedInput(hand.source!))
+      .map((hand) => {
+        const tip = weaponTip(hand.source!)
+        return {
+          source: hand.source!,
+          grip: hand.grip,
+          armed: !!tip,
+          tip: tip ?? hand.visual.indexTip.getWorldPosition(new THREE.Vector3()),
+          aim: hand.aim,
+        }
+      })
+    this.calibrationScreen?.interact(pointers, enabled)
   }
+
   private readonly stats = new XRStats()
-  private statsPanel: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null
-  private statsCanvas: HTMLCanvasElement | null = null
   onStats?: (text: string) => void
   grabStatus = 'Agarre v2'
 
-  /** Opt-in small head-mounted display; the host may mirror its text on the page. */
+  /** Retained host hook; statistics are delivered through onStats. */
   enableStats(): void {
-    if (this.statsPanel) return
-    this.statsCanvas = document.createElement('canvas')
-    this.statsCanvas.width = 256
-    this.statsCanvas.height = 80
-    const texture = new THREE.CanvasTexture(this.statsCanvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    this.statsPanel = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.16, 0.05),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        depthTest: false,
-        depthWrite: false,
-        transparent: true,
-      }),
-    )
-    this.statsPanel.position.set(0.12, 0.27, -1)
-    this.statsPanel.renderOrder = 10000
-    this.statsPanel.frustumCulled = false
-    this.statsPanel.visible = this.active
-    this.camera.add(this.statsPanel)
+    // Statistics remain available to the monitor without a head-mounted overlay.
   }
 
   recordStats(time: number, cpu: number, physics: number, calls: number, triangles: number): void {
-    if (!this.statsPanel || !this.statsCanvas) return
     const sample = this.stats.sample(time, cpu, physics, calls, triangles)
     const fps = sample?.match(/FPS app ([\d.]+)/)?.[1]
     if (!fps) return
     const text = `${fps} FPS`
-    const context = this.statsCanvas.getContext('2d')!
-    context.clearRect(0, 0, 256, 80)
-    context.fillStyle = '#eefaff'
-    context.font = '42px sans-serif'
-    context.textAlign = 'center'
-    context.fillText(text, 128, 55, 248)
-    this.statsPanel.material.map!.needsUpdate = true
     this.onStats?.(text)
   }
 
-  private exitButton: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null
-  private terrainButton: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null
-  private terrainCanvas: HTMLCanvasElement | null = null
-  private terrainAction: (() => Promise<void>) | null = null
-  private terrainBusy = false
+  /** Legacy host hooks: all visible actions now live on the monitor. */
+  enableTerrainButton(_action: () => Promise<void>): void {}
+  setTerrainStatus(_text: string): void {}
 
-  enableTerrainButton(action: () => Promise<void>): void {
-    this.terrainAction = action
-    if (this.terrainButton) return
-    this.terrainCanvas = document.createElement('canvas')
-    this.terrainCanvas.width = 128
-    this.terrainCanvas.height = 128
-    const texture = new THREE.CanvasTexture(this.terrainCanvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    this.terrainButton = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.065, 0.065),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        depthTest: false,
-        depthWrite: false,
-        transparent: true,
-      }),
-    )
-    this.terrainButton.position.set(0.29, 0.27, -1)
-    this.terrainButton.renderOrder = 10001
-    this.terrainButton.frustumCulled = false
-    this.terrainButton.visible = this.active
-    this.camera.add(this.terrainButton)
-    this.setTerrainStatus('Añadir Z15 cercano')
-  }
-
-  setTerrainStatus(text: string): void {
-    if (!this.terrainCanvas || !this.terrainButton) return
-    const context = this.terrainCanvas.getContext('2d')!
-    this.terrainButton.userData.status = text
-    context.clearRect(0, 0, 128, 128)
-    context.fillStyle = 'white'
-    context.font = '90px sans-serif'
-    context.textAlign = 'center'
-    context.fillText('+', 64, 96)
-    this.terrainButton.material.map!.needsUpdate = true
-  }
-
-  private uiCaptured: XRInputSource | null = null
-  private readonly exitRay = new THREE.Raycaster()
-
-  /** Head-mounted exit target, selected with a tracked controller trigger. */
+  /** Retained host hook; exit is on the monitor. */
   enableExitButton(): void {
-    if (this.exitButton) return
-    const canvas = document.createElement('canvas')
-    canvas.width = 128
-    canvas.height = 128
-    const context = canvas.getContext('2d')!
-    context.fillStyle = 'white'
-    context.font = '64px sans-serif'
-    context.textAlign = 'center'
-    context.fillText('X', 64, 88)
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    this.exitButton = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.065, 0.065),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        depthTest: false,
-        depthWrite: false,
-        transparent: true,
-      }),
-    )
-    this.exitButton.position.set(0.4, 0.27, -1)
-    this.exitButton.renderOrder = 10001
-    this.exitButton.frustumCulled = false
-    this.exitButton.visible = this.active
-    this.camera.add(this.exitButton)
-  }
-
-  private aimsAtExit(aim: THREE.Object3D): boolean {
-    return this.aimsAtButton(aim, this.exitButton)
-  }
-
-  private aimsAtButton(aim: THREE.Object3D, button: THREE.Object3D | null): boolean {
-    if (!button?.visible) return false
-    this.exitRay.ray.origin.copy(aim.getWorldPosition(new THREE.Vector3()))
-    this.exitRay.ray.direction
-      .set(0, 0, -1)
-      .applyQuaternion(aim.getWorldQuaternion(new THREE.Quaternion()))
-    button.updateWorldMatrix(true, false)
-    return this.exitRay.intersectObject(button).length > 0
+    // Exit is provided by the monitor.
   }
 
   readonly rig = new THREE.Group()
@@ -243,18 +110,20 @@ export class GameXR {
   }[] = []
   private tracked: XRInputSource[] = []
   get sources(): readonly XRInputSource[] {
-    return this.tracked.filter((source) => source !== this.uiCaptured)
+    return this.tracked
   }
   get grabHands() {
-    return this.hands.filter((hand) => !!hand.source && this.sources.includes(hand.source))
+    return this.hands.filter((hand) => !!hand.source && this.tracked.includes(hand.source))
   }
   get rightHand() {
     return this.hands.find(
-      (hand) =>
-        hand.source?.handedness === 'right' &&
-        hand.source !== this.uiCaptured &&
-        this.tracked.includes(hand.source),
+      (hand) => hand.source?.handedness === 'right' && this.tracked.includes(hand.source),
     )
+  }
+
+  /** Load application-owned articulated gloves, retaining procedural hands on failure. */
+  async setHandModel(url: string): Promise<void> {
+    await Promise.all(this.hands.map((hand) => hand.visual.loadModel(url)))
   }
 
   constructor(
@@ -274,12 +143,7 @@ export class GameXR {
       (active) => {
         this.input.reset()
         this.stats.reset()
-        this.uiCaptured = null
         this.calibrationScreen?.suspend()
-        if (this.settingsButton) this.settingsButton.visible = active
-        if (this.exitButton) this.exitButton.visible = active
-        if (this.terrainButton) this.terrainButton.visible = active
-        if (this.statsPanel) this.statsPanel.visible = active
         this.height = null
         this.headPosition.set(0, 1.65, 0)
         this.headRotation.identity()
@@ -322,33 +186,6 @@ export class GameXR {
       aim.addEventListener('disconnected', () => {
         slot.source = null
       })
-      aim.addEventListener('selectstart', () => {
-        if (slot.source && this.reservedInput(slot.source)) return
-        if (!this.active || !this.visible || !slot.source || !this.tracked.includes(slot.source))
-          return
-        if (!this.armedSources.has(slot.source) && this.aimsAtButton(aim, this.settingsButton)) {
-          this.uiCaptured = slot.source
-          this.showCalibrationScreen()
-        } else if (this.aimsAtExit(aim)) {
-          this.uiCaptured = slot.source
-          void this.exit().catch((error) => {
-            this.uiCaptured = null
-            report(error)
-          })
-        } else if (this.aimsAtButton(aim, this.terrainButton)) {
-          this.uiCaptured = slot.source
-          if (this.terrainBusy || !this.terrainAction) return
-          this.terrainBusy = true
-          void this.terrainAction()
-            .catch(report)
-            .finally(() => {
-              this.terrainBusy = false
-            })
-        }
-      })
-      aim.addEventListener('selectend', () => {
-        if (this.uiCaptured === slot.source) this.uiCaptured = null
-      })
       this.hands.push(slot)
     }
   }
@@ -360,10 +197,13 @@ export class GameXR {
     return this.renderer.xr.getSession()?.visibilityState === 'visible'
   }
   /** Call from the host's button gesture, after play() has completed. */
-  enter(system: XRSystem = navigator.xr!): Promise<void> {
+  enter(
+    system: XRSystem = navigator.xr!,
+    mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr',
+  ): Promise<void> {
     if (!system) return Promise.reject(new Error('WebXR requiere HTTPS y un navegador compatible'))
     this.renderer.xr.setFramebufferScaleFactor(this.quality.scale)
-    return this.session.enter(system)
+    return this.session.enter(system, mode)
   }
   exit(): Promise<void> {
     return this.session.exit()
@@ -394,26 +234,6 @@ export class GameXR {
         this.calibration.apply(hand.mount, `grip-${side}`)
       }
     }
-    if (this.exitButton)
-      this.exitButton.material.color.set(
-        this.hands.some(
-          (hand) =>
-            !!hand.source && this.tracked.includes(hand.source) && this.aimsAtExit(hand.aim),
-        )
-          ? '#ffe19a'
-          : '#ffffff',
-      )
-    if (this.terrainButton)
-      this.terrainButton.material.color.set(
-        this.hands.some(
-          (hand) =>
-            !!hand.source &&
-            this.tracked.includes(hand.source) &&
-            this.aimsAtButton(hand.aim, this.terrainButton),
-        )
-          ? '#ffe19a'
-          : '#ffffff',
-      )
     const pose = space && frame.getViewerPose(space)
     if (pose) {
       const q = pose.transform.orientation
@@ -444,23 +264,7 @@ export class GameXR {
     void this.session.dispose()
     this.input.reset()
     for (const { grip } of this.hands) grip.clear()
-    this.terrainButton?.removeFromParent()
-    this.terrainButton?.geometry.dispose()
-    this.terrainButton?.material.map?.dispose()
-    this.terrainButton?.material.dispose()
     this.calibrationScreen?.dispose()
-    this.settingsButton?.removeFromParent()
-    this.settingsButton?.geometry.dispose()
-    this.settingsButton?.material.map?.dispose()
-    this.settingsButton?.material.dispose()
-    this.exitButton?.removeFromParent()
-    this.exitButton?.geometry.dispose()
-    this.exitButton?.material.map?.dispose()
-    this.exitButton?.material.dispose()
-    this.statsPanel?.removeFromParent()
-    this.statsPanel?.geometry.dispose()
-    this.statsPanel?.material.map?.dispose()
-    this.statsPanel?.material.dispose()
     for (const hand of this.hands) hand.visual.dispose()
     this.rig.removeFromParent()
   }

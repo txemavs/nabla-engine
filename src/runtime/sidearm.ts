@@ -838,6 +838,7 @@ export class Sidearm {
   /** Present in a host-owned tracked grip, in the main scene and without a camera pass.
    * Call update(now) separately. The host owns tracking, visibility and input release.
    */
+  trackedSupport = false
   syncTracked(parent: THREE.Object3D, now: number, height = 1024): void {
     this.tracked = true
     if (this.worldPresentation) this.worldPresentation.visible = false
@@ -850,7 +851,11 @@ export class Sidearm {
     this.model.quaternion.identity()
     const age = Math.max(0, now - this.state.lastShotMs)
     const kick = Math.exp(-age / 90) * Math.min(1, age / 15)
-    this.model.rotateX((((this.preset?.recoil?.riseDeg ?? 3) * Math.PI) / 180) * kick)
+    this.model.rotateX(
+      (((this.preset?.recoil?.riseDeg ?? 3) * Math.PI) / 180) *
+        kick *
+        (this.trackedSupport ? 0.4 : 1),
+    )
     this.model.updateWorldMatrix(true, true)
     const grip = this.model.getObjectByName('GripSocket')
     if (grip) {

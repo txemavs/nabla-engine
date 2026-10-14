@@ -211,6 +211,7 @@ export interface WheeledDefinition {
   engineForce: number
   brakeForce: number
   drivenWheels?: 'front' | 'rear' | 'all'
+  rearSteering?: boolean
   powertrain?: PowertrainDefinition
   /** Present on a two-wheeler; such a definition is driven by `createTwoWheeledVehicle`. */
   twoWheeled?: TwoWheeledGeometry

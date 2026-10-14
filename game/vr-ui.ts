@@ -1,12 +1,20 @@
-import { bindXRQuality } from './xr-quality-ui.js'
-import { bindXRCalibration } from './xr-calibration-ui.js'
+import { bindXRQuality, bindXRCalibration } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
 /** Both online terrain and test.html use the Engine's immersive session. */
 export function bindVR(runtime: GameRuntime): void {
+  if (new URLSearchParams(location.search).has('xr'))
+    void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
+      console.warn('No se pudieron cargar los guantes; se mantienen las manos básicas.', error)
+    })
   bindXRCalibration(runtime)
   runtime.xr.enableCalibrationScreen()
-  bindXRQuality(runtime)
+  bindXRQuality(
+    runtime,
+    ['xr-calibration', 'xr-destinations']
+      .map((id) => document.getElementById(id))
+      .filter((element): element is HTMLElement => element !== null),
+  )
   if (new URLSearchParams(location.search).has('xr')) {
     runtime.xr.enableStats()
     const output = document.createElement('output')

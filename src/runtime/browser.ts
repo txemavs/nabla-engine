@@ -1,3 +1,4 @@
+import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
@@ -543,6 +544,7 @@ export class GameRuntime {
   private aimLean = 0
   private weaponDrawn = false
   private fireRequested = false
+  private readonly xrForklift = new XRForklift()
   private xrMotorcycle: XRMotorcycle | null = null
   private xrLoadout: XRLoadout | null = null
   private xrGrab!: XRGrab
@@ -1285,7 +1287,15 @@ export class GameRuntime {
     if (!enabled) this.releaseInput()
     const vehicle = sim.player.vehicleId
     const info = vehicle ? sim.vehicleInfo(vehicle) : null
-    this.xr.reservedInput = (source) => this.xrMotorcycle?.owns(source) ?? false
+    this.xr.reservedInput = (source) =>
+      (this.xrMotorcycle?.owns(source) ?? false) ||
+      this.xrForklift.owns(source) ||
+      this.xr.grabHands.some(
+        (hand) =>
+          hand.source === source &&
+          !!this.xrLoadout?.occupied(hand) &&
+          !this.xrLoadout.pistols.some((pistol) => pistol.holder?.source === source),
+      )
     this.xr.interactCalibration(enabled, (source) => {
       const pistol = this.xrLoadout?.pistols.find((p) => p.holder?.source === source)
       return pistol?.weapon.worldMuzzle() ?? null
@@ -1343,7 +1353,10 @@ export class GameRuntime {
     this.xrMotorcycle ??= new XRMotorcycle(this.xr.calibration)
     const motorcycleInput = this.xrMotorcycle.update(
       this.xr.grabHands.filter(
-        (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+        (hand) =>
+          !this.xrLoadout?.occupied(hand) &&
+          !this.xr.calibrationOwns(hand.source) &&
+          !this.xrForklift.owns(hand.source),
       ),
       bike ? this.view.motorcycleGrab(sim.player.vehicleId!) : null,
       info?.steer ?? 0,
@@ -1354,10 +1367,25 @@ export class GameRuntime {
       controls.touch.right = 0
       controls.touch.brake = false
     }
+    const forklift =
+      vehicle && this.document.entities.find((e) => e.id === vehicle)?.vehicle?.forklift
+    sim.setForkliftInput(
+      this.xrForklift.update(
+        enabled
+          ? this.xr.grabHands.filter(
+              (h) => !this.xrLoadout?.occupied(h) && !this.xr.calibrationOwns(h.source),
+            )
+          : [],
+        forklift ? (this.view.objects.get(vehicle!) ?? null) : null,
+      ),
+    )
     const wheelInput = this.xrGrab.wheel(
       enabled
         ? this.xr.grabHands.filter(
-            (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+            (hand) =>
+              !this.xrLoadout?.occupied(hand) &&
+              !this.xr.calibrationOwns(hand.source) &&
+              !this.xrForklift.owns(hand.source),
           )
         : [],
       vehicle ? this.view.steeringGrab(vehicle) : null,
@@ -1421,6 +1449,9 @@ export class GameRuntime {
     )
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
+    this.view.impacts.setLimit(this.xr.quality.impactLimit)
+    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
+    this.view.sparks.enabled = this.xr.quality.sparks
     this.view.sparks.update(time)
     this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
       const hit = sim.shoot(
@@ -1446,7 +1477,9 @@ export class GameRuntime {
         this.xr.grabHands.filter(
           (hand) =>
             loadout.occupied(hand) ||
-            (!this.xr.calibrationOwns(hand.source) && !this.xrMotorcycle?.owns(hand.source)),
+            (!this.xr.calibrationOwns(hand.source) &&
+              !this.xrMotorcycle?.owns(hand.source) &&
+              !this.xrForklift.owns(hand.source)),
         ),
         this.camera,
         this.origin,
@@ -1495,6 +1528,15 @@ export class GameRuntime {
       }
       this.fireRequested = this.triggerReleased = this.triggerDown = false
       this.updateSidearmLaser(sim, time, true)
+      loadout.updateLasers(time, this.camera.fov, (origin, direction, range) => {
+        const hit = sim.shoot(
+          origin.clone().add(this.origin).toArray(),
+          direction.toArray(),
+          range,
+          0,
+        )
+        return hit ? new THREE.Vector3(...hit.point).sub(this.origin) : null
+      })
     }
     this.renderer.info.reset()
     const shadowEnabled = this.renderer.shadowMap.enabled
@@ -1512,11 +1554,17 @@ export class GameRuntime {
       this.shadows.update(this.camera, this.origin)
       this.renderer.shadowMap.needsUpdate = true
     }
+    const hiddenWheels =
+      this.xr.quality.hideOwnWheels && sim.player.vehicleId
+        ? (this.view.wheels.get(sim.player.vehicleId) ?? []).filter((wheel) => wheel.visible)
+        : []
+    for (const wheel of hiddenWheels) wheel.visible = false
     const sparkVisible = this.view.sparks.root.visible
-    this.view.sparks.root.visible = this.xr.quality.effects && sparkVisible
+    this.view.sparks.root.visible = this.xr.quality.sparks && sparkVisible
     try {
       this.renderer.render(this.scene, this.camera)
     } finally {
+      for (const wheel of hiddenWheels) wheel.visible = true
       this.view.sparks.root.visible = sparkVisible
       this.sun.visible = this.quality.shadows === 0
       this.renderer.shadowMap.enabled = shadowEnabled
@@ -1651,6 +1699,15 @@ export class GameRuntime {
       this.cameraActivity()
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
+    const hydraulicKey = (positive: string, negative: string) =>
+      this.hasInput()
+        ? Number(this.keys.values.has(positive)) - Number(this.keys.values.has(negative))
+        : 0
+    sim.setForkliftInput([
+      hydraulicKey('KeyI', 'KeyK'),
+      hydraulicKey('KeyJ', 'KeyL'),
+      hydraulicKey('KeyO', 'KeyU'),
+    ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
       this.lightSensorSeconds += dt
@@ -1779,6 +1836,9 @@ export class GameRuntime {
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
     this.view.scrapeSparks(sim, time)
+    this.view.impacts.setLimit(this.xr.quality.impactLimit)
+    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
+    this.view.sparks.enabled = this.xr.quality.sparks
     this.view.sparks.update(time)
     const replacement = playing ? this.accidentReplacement?.step(dt) : null
     if (replacement && this.world) {
@@ -4233,6 +4293,7 @@ export class GameRuntime {
     this.ensureCasingMeshes()
     const pose = this.ejectionPose(eyes, sidearm)
     if (!pose) return
+    this.casingMotion.setLimit(this.xr.quality.casingLimit)
     this.casingMotion.eject(
       pose.position.toArray() as Vec3Tuple,
       pose.right.toArray() as Vec3Tuple,
@@ -4302,7 +4363,7 @@ export class GameRuntime {
         this.weaponLight.target.position.copy(torch.target)
       }
     }
-    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || !this.sidearm.visible) {
+    if (tracked || !this.sidearm?.laserEnabled || !this.weaponDrawn || !this.sidearm.visible) {
       this.view.laser.enabled = false
       return
     }

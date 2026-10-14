@@ -34,6 +34,10 @@ preserves the edit/play contract and a single physics owner.
 
 ## Composable engine modules
 
+- [XR reutilizable y Nabla HeadSet](xr-module.md): auditoría de xr.html, API compartida y entrada VR/AR con selector Test/Z15.
+
+- [AR reutilizable y contrato multiplataforma](ar-module.md): auditoría de la demo, API optativa, ejemplo R/C mínimo y límites pendientes.
+
 - [Presentation preparation](presentation-preload.md): preload behind credits and keep street-light budgets stable.
 
 - [Module map and compatibility](architecture/module-map.md)

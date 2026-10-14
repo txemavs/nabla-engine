@@ -148,9 +148,61 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `console.warn`
 
+## HtmlMonitor.press
+
+[Implementation, line 96](../../../../../src/render/monitors/html-monitor.ts#L96)
+
+Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
+Scripts are never executed. Inline styles/fonts only; external resources are not supported.
+
+```ts
+press(selector: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clearTimeout`
+- `setTimeout`
+- `this.template.querySelector`
+- `this.template.querySelector(selector)?.classList.add`
+- `this.template.querySelectorAll`
+- `this.template.querySelectorAll('.pressed').forEach`
+
+## HtmlMonitor.press.callback@99
+
+[Implementation, line 99](../../../../../src/render/monitors/html-monitor.ts#L99)
+
+```ts
+callback@99(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `node.classList.remove`
+
+## HtmlMonitor.press.callback@103
+
+[Implementation, line 103](../../../../../src/render/monitors/html-monitor.ts#L103)
+
+```ts
+callback@103(): inferred by TypeScript; see implementation
+```
+
+## HtmlMonitor.press.callback@103.callback@106
+
+[Implementation, line 106](../../../../../src/render/monitors/html-monitor.ts#L106)
+
+```ts
+callback@106(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `node.classList.remove`
+
 ## HtmlMonitor.update
 
-[Implementation, line 95](../../../../../src/render/monitors/html-monitor.ts#L95)
+[Implementation, line 111](../../../../../src/render/monitors/html-monitor.ts#L111)
 
 Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
 Scripts are never executed. Inline styles/fonts only; external resources are not supported.
@@ -171,12 +223,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.serializer.serializeToString`
 
-## HtmlMonitor.update.callback@133
+## HtmlMonitor.update.callback@149
 
-[Implementation, line 133](../../../../../src/render/monitors/html-monitor.ts#L133)
+[Implementation, line 149](../../../../../src/render/monitors/html-monitor.ts#L149)
 
 ```ts
-callback@133(): inferred by TypeScript; see implementation
+callback@149(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -186,17 +238,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.canvas.getContext`
 
-## HtmlMonitor.update.callback@145
+## HtmlMonitor.update.callback@161
 
-[Implementation, line 145](../../../../../src/render/monitors/html-monitor.ts#L145)
+[Implementation, line 161](../../../../../src/render/monitors/html-monitor.ts#L161)
 
 ```ts
-callback@145(): inferred by TypeScript; see implementation
+callback@161(): inferred by TypeScript; see implementation
 ```
 
 ## HtmlMonitor.dispose
 
-[Implementation, line 152](../../../../../src/render/monitors/html-monitor.ts#L152)
+[Implementation, line 168](../../../../../src/render/monitors/html-monitor.ts#L168)
 
 Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
 Scripts are never executed. Inline styles/fonts only; external resources are not supported.
@@ -207,5 +259,6 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `clearTimeout`
 - `this.abort.abort`
 - `this.texture.dispose`

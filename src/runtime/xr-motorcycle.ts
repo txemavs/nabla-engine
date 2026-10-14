@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import type { GrabHand } from './xr-grab.js'
+import type { GrabHand as FullGrabHand } from './xr-grab.js'
+type GrabHand = Pick<FullGrabHand, 'grip' | 'source'>
 import type { XRCalibration } from './xr-calibration.js'
 
 export interface MotorcycleGrab {
@@ -21,7 +22,9 @@ export class XRMotorcycle {
   private holders = new Map<string, Held>()
   private bar: THREE.Object3D | null = null
   private anchors = { left: new THREE.Object3D(), right: new THREE.Object3D() }
-  constructor(private readonly calibration: XRCalibration) {}
+  constructor(
+    private readonly calibration: Pick<XRCalibration, 'get' | 'apply' | 'motorcycleStatus'>,
+  ) {}
   reset(): void {
     this.holders.clear()
     this.bar = null

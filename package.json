@@ -182,6 +182,26 @@
     "./config/driver-pose": {
       "types": "./dist/config/driver-pose.d.ts",
       "import": "./dist/config/driver-pose.js"
+    },
+    "./ar": {
+      "types": "./dist/runtime/ar/index.d.ts",
+      "import": "./dist/runtime/ar/index.js"
+    },
+    "./ar/models": {
+      "types": "./dist/runtime/ar/model.d.ts",
+      "import": "./dist/runtime/ar/model.js"
+    },
+    "./ar/weapons": {
+      "types": "./dist/runtime/xr-ar-weapons.d.ts",
+      "import": "./dist/runtime/xr-ar-weapons.js"
+    },
+    "./xr": {
+      "types": "./dist/runtime/xr/index.d.ts",
+      "import": "./dist/runtime/xr/index.js"
+    },
+    "./xr/ui": {
+      "types": "./dist/runtime/xr/ui.d.ts",
+      "import": "./dist/runtime/xr/ui.js"
     }
   },
   "imports": {

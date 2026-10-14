@@ -106,3 +106,16 @@ it('renders each mark as one alpha-blended quad without depth write, polygon-off
   expect(material.polygonOffsetUnits).toBeLessThan(0)
   marks.dispose()
 })
+
+it('trims existing marks and disables new marks at zero', () => {
+  const marks = new ImpactMarks(),
+    root = new THREE.Group()
+  for (let i = 0; i < 8; i++) marks.addWorld(root, [i, 0, 0], [0, 1, 0])
+  marks.setLimit(2)
+  expect(marks.count).toBe(2)
+  expect(root.children.map((o) => o.position.x)).toEqual([6, 7])
+  marks.setLimit(0)
+  marks.addSurface(root, [0, 0, 0], [0, 1, 0])
+  expect(root.children).toHaveLength(0)
+  marks.dispose()
+})

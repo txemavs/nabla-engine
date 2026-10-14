@@ -37,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
 ```ts
-updateAudio(sim: Simulation | null, document: SceneDocument, eye: Vector3): void
+updateAudio(sim: Simulation | null, document: SceneDocument, eye: Vector3, worldScale = 1): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -48,8 +48,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `eye.distanceTo`
 - `resolveVehicleSound`
 - `sim!.entityTransform`
+- `sim!.entityTransform(pilot, true).position.map`
 - `sim!.vehicleInfo`
 - `sim.entityTransform`
+- `sim.entityTransform(entity.id, true).position.map`
 - `sim.vehicleInfo`
 - `this.audio.powertrain`
 - `this.audio.propeller`
@@ -59,17 +61,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.audio.turbine`
 - `this.playGearChanges`
 
-## VehicleEffects.updateAudio.callback@57
+## VehicleEffects.updateAudio.callback@42
 
-[Implementation, line 57](../../../../src/runtime/vehicle-effects.ts#L57)
+[Implementation, line 42](../../../../src/runtime/vehicle-effects.ts#L42)
 
 ```ts
-callback@57(entity): inferred by TypeScript; see implementation
+callback@42(v): inferred by TypeScript; see implementation
+```
+
+## VehicleEffects.updateAudio.callback@58
+
+[Implementation, line 58](../../../../src/runtime/vehicle-effects.ts#L58)
+
+```ts
+callback@58(v): inferred by TypeScript; see implementation
+```
+
+## VehicleEffects.updateAudio.callback@60
+
+[Implementation, line 60](../../../../src/runtime/vehicle-effects.ts#L60)
+
+```ts
+callback@60(entity): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.playGearChanges
 
-[Implementation, line 88](../../../../src/runtime/vehicle-effects.ts#L88)
+[Implementation, line 91](../../../../src/runtime/vehicle-effects.ts#L91)
 
 Gear-change sound per the vehicle's `audio.gearShift`. `clack` (default): one clack per
 audible change (D/R engagement or manual shift, never an automatic shift). `click`: one
@@ -87,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleEffects.updateTires
 
-[Implementation, line 116](../../../../src/runtime/vehicle-effects.ts#L116)
+[Implementation, line 119](../../../../src/runtime/vehicle-effects.ts#L119)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -109,33 +127,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.smoke.clear`
 - `this.smoke.update`
 
-## VehicleEffects.updateTires.callback@124
+## VehicleEffects.updateTires.callback@127
 
-[Implementation, line 124](../../../../src/runtime/vehicle-effects.ts#L124)
+[Implementation, line 127](../../../../src/runtime/vehicle-effects.ts#L127)
 
 ```ts
-callback@124(wheel): inferred by TypeScript; see implementation
+callback@127(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@128
+## VehicleEffects.updateTires.callback@131
 
-[Implementation, line 128](../../../../src/runtime/vehicle-effects.ts#L128)
+[Implementation, line 131](../../../../src/runtime/vehicle-effects.ts#L131)
 
 ```ts
-callback@128(wheel): inferred by TypeScript; see implementation
+callback@131(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@129
+## VehicleEffects.updateTires.callback@132
 
-[Implementation, line 129](../../../../src/runtime/vehicle-effects.ts#L129)
+[Implementation, line 132](../../../../src/runtime/vehicle-effects.ts#L132)
 
 ```ts
-callback@129(wheel): inferred by TypeScript; see implementation
+callback@132(wheel): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.dispose
 
-[Implementation, line 139](../../../../src/runtime/vehicle-effects.ts#L139)
+[Implementation, line 142](../../../../src/runtime/vehicle-effects.ts#L142)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 

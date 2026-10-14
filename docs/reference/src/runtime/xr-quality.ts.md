@@ -9,7 +9,7 @@
 
 ## readXRQuality
 
-[Implementation, line 9](../../../../src/runtime/xr-quality.ts#L9)
+[Implementation, line 13](../../../../src/runtime/xr-quality.ts#L13)
 
 ```ts
 readXRQuality(): XRQualitySettings
@@ -18,12 +18,13 @@ readXRQuality(): XRQualitySettings
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `JSON.parse`
+- `Math.floor`
 - `localStorage.getItem`
 - `number`
 
 ## readXRQuality.number
 
-[Implementation, line 14](../../../../src/runtime/xr-quality.ts#L14)
+[Implementation, line 18](../../../../src/runtime/xr-quality.ts#L18)
 
 ```ts
 number(n: unknown, fallback: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -37,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveXRQuality
 
-[Implementation, line 24](../../../../src/runtime/xr-quality.ts#L24)
+[Implementation, line 32](../../../../src/runtime/xr-quality.ts#L32)
 
 ```ts
 saveXRQuality(value: XRQualitySettings): void

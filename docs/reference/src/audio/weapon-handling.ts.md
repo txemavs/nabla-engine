@@ -10,7 +10,7 @@
 
 ## WeaponHandling.constructor
 
-[Implementation, line 31](../../../../src/audio/weapon-handling.ts#L31)
+[Implementation, line 33](../../../../src/audio/weapon-handling.ts#L33)
 
 Independent procedural handling actions; shared by desktop and future hand interactions.
 
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponHandling.trigger
 
-[Implementation, line 41](../../../../src/audio/weapon-handling.ts#L41)
+[Implementation, line 43](../../../../src/audio/weapon-handling.ts#L43)
 
 Independent procedural handling actions; shared by desktop and future hand interactions.
 
@@ -47,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponHandling.silence
 
-[Implementation, line 51](../../../../src/audio/weapon-handling.ts#L51)
+[Implementation, line 53](../../../../src/audio/weapon-handling.ts#L53)
 
 Independent procedural handling actions; shared by desktop and future hand interactions.
 

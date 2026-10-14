@@ -89,3 +89,19 @@ it('a dropped magazine falls, rests, and the pool keeps only the newest', () => 
   expect(motion.count).toBe(8)
   expect(motion.poses()[0].position[0]).toBeGreaterThan(10)
 })
+
+it('limits live casings and avoids collision work when disabled', () => {
+  const motion = new CasingMotion(spec())
+  for (let i = 0; i < 8; i++) motion.eject([i, 1, 0], [1, 0, 0], [0, 1, 0])
+  motion.setLimit(2)
+  expect(motion.count).toBe(2)
+  motion.setLimit(0)
+  motion.eject([0, 1, 0], [1, 0, 0], [0, 1, 0])
+  let casts = 0
+  motion.update(0.016, () => {
+    casts++
+    return null
+  })
+  expect(motion.count).toBe(0)
+  expect(casts).toBe(0)
+})

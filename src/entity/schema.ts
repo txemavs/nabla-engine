@@ -6,7 +6,7 @@
  * Document limits stay in `scene/document.ts`. The transform graph is `scene/graph.ts`.
  */
 import { boxSolid } from '../math/solid/mesh.js'
-import { finite, size, transform, vector } from './coords.js'
+import { boxCollider, finite, size, transform, vector } from './coords.js'
 import { portalField } from './portal/field.js'
 import { lightField } from './light/field.js'
 import { spriteField } from './sprite/field.js'
@@ -52,6 +52,7 @@ export const entitySchema = z
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     motion: z.enum(['none', 'static', 'dynamic']),
     mass: finite.min(0.1).max(100000),
+    colliders: z.array(boxCollider).min(1).max(32).optional(),
     light: lightField.optional(),
     railway: z
       .object({ part: z.enum(['ballast', 'rail']) })

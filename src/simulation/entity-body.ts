@@ -30,7 +30,7 @@ export function createEntityBody(
     ? portalColliders(e)
     : e.kind === 'vehicle'
       ? vehicleDefinition(e).colliders
-      : [
+      : (e.colliders ?? [
           {
             size: (e.light && e.light.shape !== 'globe'
               ? [Math.max(e.size[0], 0.44), e.size[1], Math.max(e.size[2], 0.44)]
@@ -40,7 +40,7 @@ export function createEntityBody(
               rotation: [0, 0, 0, 1] as [number, number, number, number],
             },
           },
-        ]
+        ])
   if (e.sprite) {
     const height = Math.max(1, e.size[1])
     body.addShape(new Box(new Vec3(0.35, height / 2, 0.35)), new Vec3(0, height / 2, 0))

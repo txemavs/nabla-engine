@@ -8,19 +8,39 @@
 
 - `three`
 
-## XRSessionController.constructor
+## XRSessionController.referenceReady
 
-[Implementation, line 11](../../../../src/runtime/xr-session.ts#L11)
+[Implementation, line 9](../../../../src/runtime/xr-session.ts#L9)
+
+True once the initial tracking origin has been aligned to the real floor.
+
+```ts
+referenceReady(): boolean
+```
+
+## XRSessionController.referenceSpaceType
+
+[Implementation, line 12](../../../../src/runtime/xr-session.ts#L12)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
 ```ts
-constructor(private readonly xr: { setSession(session: XRSession | null): Promise<void> setReferenceSpace(space: XRReferenceSpace): void }, private readonly changed: (active: boolean) => void, private readonly report: (error: unknown) => void): instance
+referenceSpaceType(): 'unbounded' | 'local-floor'
+```
+
+## XRSessionController.constructor
+
+[Implementation, line 19](../../../../src/runtime/xr-session.ts#L19)
+
+Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
+
+```ts
+constructor(private readonly xr: { setSession(session: XRSession | null): Promise<void> setReferenceSpace(space: XRReferenceSpace): void setReferenceSpaceType?(type: XRReferenceSpaceType): void }, private readonly changed: (active: boolean) => void, private readonly report: (error: unknown) => void): instance
 ```
 
 ## XRSessionController.active
 
-[Implementation, line 20](../../../../src/runtime/xr-session.ts#L20)
+[Implementation, line 29](../../../../src/runtime/xr-session.ts#L29)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -30,12 +50,12 @@ active(): boolean
 
 ## XRSessionController.enter
 
-[Implementation, line 25](../../../../src/runtime/xr-session.ts#L25)
+[Implementation, line 34](../../../../src/runtime/xr-session.ts#L34)
 
 Call directly from a user gesture; never await feature detection before requesting.
 
 ```ts
-enter(system: XRSystem): Promise<void>
+enter(system: XRSystem, mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr'): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -48,6 +68,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.ended`
 - `this.floor.addEventListener`
 - `this.report`
+- `this.unbounded.addEventListener`
+- `this.xr.setReferenceSpaceType`
 - `this.xr.setSession`
 
 Explicit throws in this body:
@@ -56,7 +78,7 @@ Explicit throws in this body:
 
 ## XRSessionController.recenter
 
-[Implementation, line 62](../../../../src/runtime/xr-session.ts#L62)
+[Implementation, line 83](../../../../src/runtime/xr-session.ts#L83)
 
 ```ts
 recenter(): void
@@ -64,7 +86,7 @@ recenter(): void
 
 ## XRSessionController.update
 
-[Implementation, line 67](../../../../src/runtime/xr-session.ts#L67)
+[Implementation, line 88](../../../../src/runtime/xr-session.ts#L88)
 
 Preserve floor height; only horizontal position and yaw are recentered.
 
@@ -77,15 +99,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Euler`
 - `Quaternion`
 - `XRRigidTransform`
+- `frame.getPose`
 - `frame.getViewerPose`
 - `new Euler().setFromQuaternion`
 - `new Quaternion().setFromEuler`
-- `this.floor.getOffsetReferenceSpace`
 - `this.xr.setReferenceSpace`
+- `tracking.getOffsetReferenceSpace`
 
 ## XRSessionController.exit
 
-[Implementation, line 85](../../../../src/runtime/xr-session.ts#L85)
+[Implementation, line 112](../../../../src/runtime/xr-session.ts#L112)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -99,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.dispose
 
-[Implementation, line 90](../../../../src/runtime/xr-session.ts#L90)
+[Implementation, line 117](../../../../src/runtime/xr-session.ts#L117)
 
 Terminal: late permission grants are immediately ended.
 
@@ -113,7 +136,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.ended
 
-[Implementation, line 95](../../../../src/runtime/xr-session.ts#L95)
+[Implementation, line 122](../../../../src/runtime/xr-session.ts#L122)
 
 ```ts
 ended(): void
@@ -124,3 +147,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.changed`
 - `this.floor?.removeEventListener`
 - `this.session?.removeEventListener`
+- `this.unbounded?.removeEventListener`

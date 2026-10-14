@@ -92,6 +92,22 @@ export class HtmlMonitor {
         if (!this.disposed) console.warn('Could not load monitor', url, error)
       })
   }
+  private pressTimer?: ReturnType<typeof setTimeout>
+  press(selector: string): void {
+    if (!this.template || this.disposed) return
+    clearTimeout(this.pressTimer)
+    this.template.querySelectorAll('.pressed').forEach((node) => node.classList.remove('pressed'))
+    this.template.querySelector(selector)?.classList.add('pressed')
+    this.lastPayload = ''
+    this.nextFrame = 0
+    this.pressTimer = setTimeout(() => {
+      this.template
+        ?.querySelectorAll('.pressed')
+        .forEach((node) => node.classList.remove('pressed'))
+      this.lastPayload = ''
+      this.nextFrame = 0
+    }, 240)
+  }
   update(data: MonitorData, now: number): void {
     if (this.lastNow !== undefined) {
       const elapsed = Math.max(0, Math.min(100, now - this.lastNow))
@@ -150,6 +166,7 @@ export class HtmlMonitor {
     image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
   }
   dispose(): void {
+    clearTimeout(this.pressTimer)
     this.disposed = true
     this.abort.abort()
     this.texture.dispose()

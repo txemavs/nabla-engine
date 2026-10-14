@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { Euler, Quaternion } from 'three'
-import { QuestSession } from '../../game/xr-session.js'
+import { XRSessionController as QuestSession } from '../../src/runtime/xr-session.js'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -15,7 +15,11 @@ function setup() {
     }),
   })
   const system = { requestSession: vi.fn(async () => native) }
-  const xr = { setSession: vi.fn(async () => {}), setReferenceSpace: vi.fn() }
+  const xr = {
+    setSession: vi.fn(async () => {}),
+    setReferenceSpace: vi.fn(),
+    setReferenceSpaceType: vi.fn(),
+  }
   const changed = vi.fn()
   const report = vi.fn()
   const session = new QuestSession(xr, changed, report)
@@ -109,4 +113,71 @@ test('recentering preserves floor height, removes only yaw, and waits for a trac
   t.floor.dispatchEvent(new Event('reset'))
   t.session.update(frame as unknown as XRFrame)
   expect(t.xr.setReferenceSpace).toHaveBeenCalledTimes(2)
+})
+
+test('requests an explicit AR session while retaining normal teardown', async () => {
+  const t = setup()
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  expect(t.system.requestSession).toHaveBeenCalledWith('immersive-ar', {
+    requiredFeatures: ['unbounded', 'local-floor'],
+    optionalFeatures: ['plane-detection', 'mesh-detection'],
+  })
+  expect(t.session.active).toBe(true)
+  await t.session.exit()
+  expect(t.session.active).toBe(false)
+})
+
+test('AR uses an unbounded render space calibrated from the real floor and waits for both poses', async () => {
+  const t = setup()
+  const unbounded = Object.assign(new EventTarget(), {
+    getOffsetReferenceSpace: vi.fn(() => ({ unbounded: true })),
+  })
+  t.native.requestReferenceSpace.mockImplementation(async (...args: unknown[]) =>
+    args[0] === 'unbounded' ? (unbounded as unknown as typeof t.floor) : t.floor,
+  )
+  const transforms: { position: unknown }[] = []
+  vi.stubGlobal(
+    'XRRigidTransform',
+    class {
+      constructor(position: unknown) {
+        transforms.push({ position })
+      }
+    },
+  )
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  expect(t.xr.setReferenceSpaceType).toHaveBeenCalledWith('unbounded')
+  expect(t.session.referenceReady).toBe(false)
+  const frame = {
+    getViewerPose: vi.fn(() => ({
+      transform: { position: { x: 2, y: 0, z: 3 }, orientation: { x: 0, y: 0, z: 0, w: 1 } },
+    })),
+    getPose: vi
+      .fn()
+      .mockReturnValueOnce(null)
+      .mockReturnValue({ transform: { position: { x: 0, y: -1.72, z: 0 } } }),
+  }
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.xr.setReferenceSpace).not.toHaveBeenCalled()
+  t.session.update(frame as unknown as XRFrame)
+  expect(frame.getViewerPose).toHaveBeenCalledWith(unbounded)
+  expect(frame.getPose).toHaveBeenCalledWith(t.floor, unbounded)
+  expect(transforms[0].position).toEqual({ x: 2, y: -1.72, z: 3 })
+  expect(t.xr.setReferenceSpace).toHaveBeenCalledWith({ unbounded: true })
+  expect(t.session.referenceReady).toBe(true)
+  await t.session.exit()
+  unbounded.dispatchEvent(new Event('reset'))
+  await t.enter()
+  expect(t.xr.setReferenceSpaceType).toHaveBeenLastCalledWith('local-floor')
+})
+
+test('AR does not silently fall back to a limited session when unbounded is unsupported', async () => {
+  const t = setup()
+  t.system.requestSession.mockRejectedValueOnce(
+    new DOMException('unbounded unavailable', 'NotSupportedError'),
+  )
+  await expect(t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')).rejects.toThrow(
+    'unbounded unavailable',
+  )
+  expect(t.system.requestSession).toHaveBeenCalledTimes(1)
+  expect(t.session.active).toBe(false)
 })
