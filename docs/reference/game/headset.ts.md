@@ -4,14 +4,15 @@
 
 [Source](../../../game/headset.ts)
 
-Host navigation only: the launcher does not load the engine or any models.
+One launcher. The AR demo is prepared only when its tab is selected, then
+its existing Enter handler requests WebXR directly from the user's click.
 
 ## Module dependencies
 
 
 ## update
 
-[Implementation, line 4](../../../game/headset.ts#L4)
+[Implementation, line 10](../../../game/headset.ts#L10)
 
 ```ts
 update(): inferred by TypeScript; see implementation
@@ -22,3 +23,99 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.entries`
 - `URLSearchParams`
 - `query.set`
+
+## prepareAR
+
+[Implementation, line 30](../../../game/headset.ts#L30)
+
+```ts
+prepareAR(): Promise<void>
+```
+
+## prepareAR.callback@31
+
+[Implementation, line 31](../../../game/headset.ts#L31)
+
+```ts
+callback@31(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `DOMParser`
+- `ar.configureARHost`
+- `document.body.append`
+- `import`
+- `new DOMParser().parseFromString`
+- `panel.classList.add`
+- `panel.querySelector`
+- `panel.querySelector('#enter')?.remove`
+- `panel.querySelector('#status')?.remove`
+- `template.querySelector`
+
+## prepareAR.callback@31.callback@44
+
+[Implementation, line 44](../../../game/headset.ts#L44)
+
+```ts
+callback@44(active): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `enter.focus`
+
+## prepareAR.callback@50
+
+[Implementation, line 50](../../../game/headset.ts#L50)
+
+```ts
+callback@50(error): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+
+## selectTab
+
+[Implementation, line 55](../../../game/headset.ts#L55)
+
+```ts
+selectTab(mode: 'vr' | 'ar'): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `document.getElementById`
+- `prepareAR`
+- `tab.setAttribute`
+
+## callback@67
+
+[Implementation, line 67](../../../game/headset.ts#L67)
+
+```ts
+callback@67(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `selectTab`
+
+## callback@68
+
+[Implementation, line 68](../../../game/headset.ts#L68)
+
+```ts
+callback@68(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes`
+- `document.getElementById`
+- `document.getElementById(\`tab-${next}\`)!.focus`
+- `event.preventDefault`
+- `selectTab`

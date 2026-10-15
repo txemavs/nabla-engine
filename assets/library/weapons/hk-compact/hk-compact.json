@@ -2,7 +2,7 @@
   "id": "hk-compact",
   "name": "HK USP Compact 9mm",
   "order": 0,
-  "model": "/library/weapons/hk-compact/hk-compact.glb",
+  "model": "/library/weapons/hk-compact/hk-compact-low.glb",
   "rig": "/rigs/weapons/hk-compact.rig.json",
   "scale": 1,
   "assembly": [0, -0.108, -0.017],
@@ -31,7 +31,11 @@
     "semiAutomatic": true,
     "slideLocksOnEmpty": true,
     "cycleMs": 100,
-    "reloadMs": { "magazineOut": 350, "magazineIn": 1250, "slideRelease": 1600 }
+    "reloadMs": {
+      "magazineOut": 350,
+      "magazineIn": 1250,
+      "slideRelease": 1600
+    }
   },
   "ammunition": {
     "load": "Federal American Eagle AE9AP 9mm Luger 124 gr FMJ",
@@ -40,11 +44,26 @@
     "testBarrelM": 0.1016,
     "ballisticCoefficientG1": 0.15,
     "velocityTable": [
-      { "yards": 0, "fps": 1150 },
-      { "yards": 25, "fps": 1095 },
-      { "yards": 50, "fps": 1049 },
-      { "yards": 75, "fps": 1010 },
-      { "yards": 100, "fps": 977 }
+      {
+        "yards": 0,
+        "fps": 1150
+      },
+      {
+        "yards": 25,
+        "fps": 1095
+      },
+      {
+        "yards": 50,
+        "fps": 1049
+      },
+      {
+        "yards": 75,
+        "fps": 1010
+      },
+      {
+        "yards": 100,
+        "fps": 977
+      }
     ],
     "zeroRangeM": 22.86,
     "sightHeightM": 0.02286,
@@ -85,5 +104,6 @@
     "TODO(unverified): no penetration model; a bullet stops at the first solid and transfers its momentum.",
     "TODO(unverified): no dispersion; the pistol shoots to the point of aim.",
     "TODO(unverified): spare magazines are unlimited; a magazine dropped on a reload is lost with its cartridges."
-  ]
+  ],
+  "modelLow": "/library/weapons/hk-compact/hk-compact-low.glb"
 }

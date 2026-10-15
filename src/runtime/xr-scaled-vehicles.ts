@@ -62,14 +62,15 @@ export class XRScaledVehicles {
         this.simulation.setExternalCollisionMesh(id, null)
         this.surfaces.delete(id)
       }
-    if (!meshes.length && !this.fallback) {
+    const hasRoom = meshes.some((m) => !m.userData.xrSupplementalCollision)
+    if (!hasRoom && !this.fallback) {
       this.simulation.setExternalCollisionMesh(
         'xr-floor',
         new Float32Array([-10000, 0, -10000, -10000, 0, 10000, 10000, 0, 10000, 10000, 0, -10000]),
         new Uint32Array([0, 1, 2, 0, 2, 3]),
       )
       this.fallback = true
-    } else if (meshes.length && this.fallback) {
+    } else if (hasRoom && this.fallback) {
       this.simulation.setExternalCollisionMesh('xr-floor', null)
       this.fallback = false
     }
@@ -80,15 +81,23 @@ export class XRScaledVehicles {
       throttle: number
       steering: number
       brake: number
+      handbrake?: boolean
       frontBrake?: number
       rearBrake?: number
+      /** Existing Engine flight axes: propulsion and rudder. */
+      lift?: number
+      forklift?: [number, number, number]
+      turn?: number
     },
   ): void {
+    this.simulation.setForkliftInput(input.forklift ?? [0, 0, 0])
     this.simulation.setInput({
       ...idleInput(),
       forward: input.throttle,
+      lift: input.lift,
+      turn: input.turn,
       right: input.steering,
-      brake: input.brake > 0.05,
+      brake: input.handbrake ?? false,
       frontBrake: input.frontBrake ?? input.brake,
       rearBrake: input.rearBrake ?? input.brake,
     })
@@ -101,6 +110,32 @@ export class XRScaledVehicles {
       rotation: pose.rotation,
     }
   }
+  /** Picking a hitched trailer releases the ordinary Engine hitch first. */
+  beginGrab(id: string): void {
+    if (this.simulation.vehicleList().find((vehicle) => vehicle.id === id)?.towedBy)
+      this.simulation.unhitchTrailer(id)
+  }
+  private assemblyIds(id: string): Set<string> {
+    const vehicles = this.simulation.vehicleList(),
+      ids = new Set([id])
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const vehicle of vehicles) {
+        if (vehicle.towedBy && (ids.has(vehicle.id) || ids.has(vehicle.towedBy))) {
+          if (!ids.has(vehicle.id)) {
+            ids.add(vehicle.id)
+            changed = true
+          }
+          if (!ids.has(vehicle.towedBy)) {
+            ids.add(vehicle.towedBy)
+            changed = true
+          }
+        }
+      }
+    }
+    return ids
+  }
   /** Move all attached bodies together, preserving the real hitch geometry. */
   moveAssembly(id: string, position: THREE.Vector3, rotation: THREE.Quaternion): void {
     const old = this.pose(id),
@@ -109,43 +144,51 @@ export class XRScaledVehicles {
     // Quaternion.invert() is a conjugate and assumes unit length. Feeding the previous
     // unnormalised result back into delta * old squares its norm on every held frame.
     const delta = targetRotation.clone().multiply(inverse).normalize()
-    this.simulation.relocateVehicles(
-      this.entities.map((entity) => {
-        if (entity.id === id)
-          return {
-            id,
-            transform: {
-              position: position.clone().divideScalar(this.scale).toArray(),
-              rotation: targetRotation.toArray(),
-            },
-          }
-        const pose = this.pose(entity.id)
-        const p = new THREE.Vector3(...pose.position)
-          .sub(new THREE.Vector3(...old.position))
-          .applyQuaternion(delta)
-          .add(position)
-          .divideScalar(this.scale)
-        const q = delta
-          .clone()
-          .multiply(new THREE.Quaternion(...pose.rotation).normalize())
-          .normalize()
-        return { id: entity.id, transform: { position: p.toArray(), rotation: q.toArray() } }
-      }),
+    this.simulation.relocateEntities(
+      this.entities
+        .filter((entity) => this.assemblyIds(id).has(entity.id))
+        .map((entity) => {
+          if (entity.id === id)
+            return {
+              id,
+              transform: {
+                position: position.clone().divideScalar(this.scale).toArray(),
+                rotation: targetRotation.toArray(),
+              },
+            }
+          const pose = this.pose(entity.id)
+          const p = new THREE.Vector3(...pose.position)
+            .sub(new THREE.Vector3(...old.position))
+            .applyQuaternion(delta)
+            .add(position)
+            .divideScalar(this.scale)
+          const q = delta
+            .clone()
+            .multiply(new THREE.Quaternion(...pose.rotation).normalize())
+            .normalize()
+          return { id: entity.id, transform: { position: p.toArray(), rotation: q.toArray() } }
+        }),
     )
   }
   /** Preserve release motion in real metres; angular speed is independent of model scale. */
   releaseAssembly(id: string, velocity: THREE.Vector3, angularVelocity: THREE.Vector3): void {
     const centre = new THREE.Vector3(...this.pose(id).position)
-    this.simulation.releaseVehicles(
-      this.entities.map((entity) => {
-        const offset = new THREE.Vector3(...this.pose(entity.id).position).sub(centre)
-        const linear = angularVelocity.clone().cross(offset).add(velocity).divideScalar(this.scale)
-        return {
-          id: entity.id,
-          velocity: linear.toArray(),
-          angularVelocity: angularVelocity.toArray(),
-        }
-      }),
+    this.simulation.releaseEntities(
+      this.entities
+        .filter((entity) => this.assemblyIds(id).has(entity.id))
+        .map((entity) => {
+          const offset = new THREE.Vector3(...this.pose(entity.id).position).sub(centre)
+          const linear = angularVelocity
+            .clone()
+            .cross(offset)
+            .add(velocity)
+            .divideScalar(this.scale)
+          return {
+            id: entity.id,
+            velocity: linear.toArray(),
+            angularVelocity: angularVelocity.toArray(),
+          }
+        }),
     )
   }
   contacts(id: string) {

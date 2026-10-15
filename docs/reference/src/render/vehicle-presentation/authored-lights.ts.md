@@ -24,7 +24,7 @@ channel(value?: string): VehicleLightChannel
 
 ## lowBeamMask
 
-[Implementation, line 36](../../../../../src/render/vehicle-presentation/authored-lights.ts#L36)
+[Implementation, line 37](../../../../../src/render/vehicle-presentation/authored-lights.ts#L37)
 
 Project a soft horizontal cutoff; texture +Y is up in the spotlight projection.
 
@@ -44,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.constructor
 
-[Implementation, line 76](../../../../../src/render/vehicle-presentation/authored-lights.ts#L76)
+[Implementation, line 77](../../../../../src/render/vehicle-presentation/authored-lights.ts#L77)
 
 ```ts
 constructor(model: Object3D, readonly controller = new VehicleLightController()): instance
@@ -57,7 +57,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.absorb
 
-[Implementation, line 83](../../../../../src/render/vehicle-presentation/authored-lights.ts#L83)
+[Implementation, line 84](../../../../../src/render/vehicle-presentation/authored-lights.ts#L84)
 
 Bind lamps from another GLB (a cargo box) onto this vehicle's light controller.
 
@@ -69,12 +69,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## AuthoredVehicleLights.absorb.callback@84
+## AuthoredVehicleLights.absorb.callback@85
 
-[Implementation, line 84](../../../../../src/render/vehicle-presentation/authored-lights.ts#L84)
+[Implementation, line 85](../../../../../src/render/vehicle-presentation/authored-lights.ts#L85)
 
 ```ts
-callback@84(node): inferred by TypeScript; see implementation
+callback@85(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -88,17 +88,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.emitters.some`
 - `this.lamps.push`
 
-## AuthoredVehicleLights.absorb.callback@84.callback@91
+## AuthoredVehicleLights.absorb.callback@85.callback@92
 
-[Implementation, line 91](../../../../../src/render/vehicle-presentation/authored-lights.ts#L91)
+[Implementation, line 92](../../../../../src/render/vehicle-presentation/authored-lights.ts#L92)
 
 ```ts
-callback@91(entry): inferred by TypeScript; see implementation
+callback@92(entry): inferred by TypeScript; see implementation
 ```
 
 ## AuthoredVehicleLights.illuminators
 
-[Implementation, line 131](../../../../../src/render/vehicle-presentation/authored-lights.ts#L131)
+[Implementation, line 132](../../../../../src/render/vehicle-presentation/authored-lights.ts#L132)
 
 Hidden GLB lamps. A shared rig copies the occupied vehicle into a fixed renderer budget.
 
@@ -113,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.toggle
 
-[Implementation, line 141](../../../../../src/render/vehicle-presentation/authored-lights.ts#L141)
+[Implementation, line 142](../../../../../src/render/vehicle-presentation/authored-lights.ts#L142)
 
 Null means this asset has no controllable authored light sources.
 
@@ -127,7 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.cycle
 
-[Implementation, line 145](../../../../../src/render/vehicle-presentation/authored-lights.ts#L145)
+[Implementation, line 146](../../../../../src/render/vehicle-presentation/authored-lights.ts#L146)
 
 Step the light switch (off → position → low → off); null without authored light sources.
 
@@ -142,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.isEnabled
 
-[Implementation, line 152](../../../../../src/render/vehicle-presentation/authored-lights.ts#L152)
+[Implementation, line 153](../../../../../src/render/vehicle-presentation/authored-lights.ts#L153)
 
 Current light switch, also used by attached trailers.
 
@@ -152,7 +152,7 @@ isEnabled(): boolean
 
 ## AuthoredVehicleLights.toggleHighBeam
 
-[Implementation, line 156](../../../../../src/render/vehicle-presentation/authored-lights.ts#L156)
+[Implementation, line 157](../../../../../src/render/vehicle-presentation/authored-lights.ts#L157)
 
 Select high/low beams independently of the master light switch.
 
@@ -166,17 +166,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.lamps.some`
 - `this.update`
 
-## AuthoredVehicleLights.toggleHighBeam.callback@157
+## AuthoredVehicleLights.toggleHighBeam.callback@158
 
-[Implementation, line 157](../../../../../src/render/vehicle-presentation/authored-lights.ts#L157)
+[Implementation, line 158](../../../../../src/render/vehicle-presentation/authored-lights.ts#L158)
 
 ```ts
-callback@157(lamp): inferred by TypeScript; see implementation
+callback@158(lamp): inferred by TypeScript; see implementation
 ```
 
 ## AuthoredVehicleLights.dispose
 
-[Implementation, line 163](../../../../../src/render/vehicle-presentation/authored-lights.ts#L163)
+[Implementation, line 164](../../../../../src/render/vehicle-presentation/authored-lights.ts#L164)
 
 Release the per-vehicle beam texture on scene disposal.
 
@@ -190,7 +190,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.update
 
-[Implementation, line 169](../../../../../src/render/vehicle-presentation/authored-lights.ts#L169)
+[Implementation, line 170](../../../../../src/render/vehicle-presentation/authored-lights.ts#L170)
 
 Reverse lamps follow the engaged gear independently of the driving-light switch.
 
@@ -204,7 +204,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AuthoredVehicleLights.apply
 
-[Implementation, line 175](../../../../../src/render/vehicle-presentation/authored-lights.ts#L175)
+[Implementation, line 176](../../../../../src/render/vehicle-presentation/authored-lights.ts#L176)
 
 Render authored bindings using the same controller as cars, or the towing vehicle's controller.
 

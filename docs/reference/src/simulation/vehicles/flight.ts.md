@@ -24,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createFlight
 
-[Implementation, line 33](../../../../../src/simulation/vehicles/flight.ts#L33)
+[Implementation, line 42](../../../../../src/simulation/vehicles/flight.ts#L42)
 
 ```ts
 createFlight(body: Body, altitude: number, plane = false): FlightRuntime
@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## stepFlight
 
-[Implementation, line 44](../../../../../src/simulation/vehicles/flight.ts#L44)
+[Implementation, line 53](../../../../../src/simulation/vehicles/flight.ts#L53)
 
 Accumulates forces only: the host steps its single shared physics world.
 

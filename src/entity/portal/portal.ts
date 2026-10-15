@@ -123,7 +123,7 @@ export function assertPlaceable(
       e.terrain ||
       e.road ||
       e.source ||
-      e.motion === 'dynamic'
+      (e.motion === 'dynamic' && e.kind !== 'box')
     )
       throw new Error(`Entity ${e.id} cannot be placed while playing`)
     if (!e.portal) continue

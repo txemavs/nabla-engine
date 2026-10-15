@@ -28,6 +28,7 @@ it('steers with a held wheel, uses triggers only while held and releases safely'
     brake: 0,
     frontBrake: 0,
     rearBrake: 0,
+    forklift: [0, 0, 0],
   })
   expect(controls.owns(grip, hand.source)).toBe(false)
   controls.enabled = false
@@ -182,5 +183,38 @@ it('uses the engine signed drive command for braking and reverse while the wheel
   const command = controls.update([hand])
   expect(command.throttle).toBe(-0.7)
   expect(command.brake).toBe(0)
+  controls.dispose()
+})
+
+it('calibrates the forklift wheel and lever console independently while pinning them as one station', async () => {
+  const { XRCalibration } = await import('../../src/runtime/xr-calibration.js')
+  const calibration = new XRCalibration()
+  const controls = new ARRCControls(new THREE.Scene(), calibration)
+  controls.kind = 'forklift'
+  const camera = new THREE.PerspectiveCamera()
+  camera.position.set(1, 1.6, 2)
+  controls.place(camera)
+  const knob = new THREE.Object3D()
+  knob.position.set(0.45, -0.07, 0)
+  controls.equipment.add(knob)
+  const before = knob.getWorldPosition(new THREE.Vector3())
+  calibration.set('ar-rc-forklift', { rx: -30, x: 8 }, false)
+  controls.update([])
+  expect(knob.getWorldPosition(new THREE.Vector3()).distanceTo(before)).toBeLessThan(1e-9)
+  expect(controls.root.rotation.x).toBeCloseTo(-Math.PI / 6)
+  const wheel = controls.root.matrixWorld.clone()
+  calibration.set('ar-rc-forklift-levers', { rx: 15, z: 5 }, false)
+  controls.update([])
+  expect(controls.root.matrixWorld.equals(wheel)).toBe(true)
+  expect(controls.equipment.rotation.x).toBeCloseTo(Math.PI / 12)
+  expect(controls.equipment.position.z).toBeCloseTo(-0.4)
+  controls.fixed = true
+  const fixed = controls.equipment.matrixWorld.clone()
+  camera.position.set(8, 2, 9)
+  controls.update([], 1 / 60)
+  expect(controls.equipment.matrixWorld.equals(fixed)).toBe(true)
+  controls.enabled = false
+  controls.update([])
+  expect(controls.equipment.visible).toBe(false)
   controls.dispose()
 })

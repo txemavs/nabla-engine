@@ -7,3 +7,5 @@ export { XRMotorcycle, type MotorcycleGrab } from '../xr-motorcycle.js'
 export { XRGrab, type GrabHand } from '../xr-grab.js'
 
 export { XRObjectGrab } from '../xr-object-grab.js'
+
+export { XRTrackedHand } from '../xr-tracked-hands.js'

@@ -133,7 +133,7 @@ describe('car sound selection per engine mode', () => {
         volume: 0.48,
       })
       for (const preset of vehiclePresets().filter(
-        (p) => !['car', 'vfr800', 'vfr800-quest', 'white-truck'].includes(p.id),
+        (p) => !['car', 'vfr800', 'vfr800-quest', 'white-truck', 'forklift-rc'].includes(p.id),
       ))
         expect(resolveVehicleSound(preset.vehicle.audio, mode).engine.voice).toBe('note')
       expect(

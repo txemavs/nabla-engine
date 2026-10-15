@@ -82,14 +82,14 @@ export class CasingMotion {
     up: Vec3Tuple,
     carry: Vec3Tuple = [0, 0, 0],
     random = Math.random,
-  ): void {
+  ): { velocity: Vec3Tuple; spin: Vec3Tuple } | undefined {
     const limit = this.limit ?? this.capacity
     if (!limit) return
     if (this.casings.length >= limit) this.casings.shift()
     const spread = () => 1 + (random() - 0.5) * 0.3
     const speed = this.spec.ejectSpeedMs * spread()
     const lift = this.spec.ejectSpeedMs * 0.5 * spread()
-    this.casings.push({
+    const casing: Casing = {
       position: [...origin],
       velocity: [0, 1, 2].map((i) => carry[i] + right[i] * speed + up[i] * lift) as [
         number,
@@ -100,7 +100,9 @@ export class CasingMotion {
       angle: 0,
       age: 0,
       resting: false,
-    })
+    }
+    this.casings.push(casing)
+    return { velocity: [...casing.velocity], spin: [...casing.spin] }
   }
 
   /**

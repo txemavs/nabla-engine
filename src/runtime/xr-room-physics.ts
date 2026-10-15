@@ -1,3 +1,5 @@
+import type { HoopBallSample } from '../simulation/sports/hoop.js'
+import type { XRDisposalTest } from './xr-disposal-portal.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import * as THREE from 'three'
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
@@ -16,7 +18,11 @@ interface Ball {
 }
 /** Small bounded physics playground using the scanned room as static collision geometry. */
 export class ARBalls {
+  /** Shared extensions apply forces at the same fixed rate as the room world. */
+  beforePhysicsStep?: (dt: number) => void
+  afterPhysicsStep?: (dt: number) => void
   readonly ready: Promise<void>
+  disposalTest?: XRDisposalTest
   private engineWorld: World | null = null
   private get world() {
     return this.engineWorld?.raw ?? null
@@ -43,6 +49,15 @@ export class ARBalls {
   }
   get physicsWorld() {
     return this.engineWorld
+  }
+  /** Immutable ball samples for shared gameplay such as hoops; bodies stay private. */
+  get ballSamples(): readonly HoopBallSample[] {
+    return this.balls.map((ball) => ({
+      id: ball.body.handle,
+      position: { ...ball.body.translation() },
+      radius: 0.11,
+      held: !!ball.holder,
+    }))
   }
   get targets(): THREE.Mesh[] {
     return this.balls.map((b) => b.mesh)
@@ -132,8 +147,19 @@ export class ARBalls {
   update(dt: number, surfaces: THREE.Mesh[]): void {
     const world = this.world
     if (!world) return
+    for (const ball of [...this.balls]) {
+      if (ball.holder || !this.disposalTest) continue
+      const from = new THREE.Vector3().copy(ball.body.translation())
+      const to = from
+        .clone()
+        .addScaledVector(
+          new THREE.Vector3().copy(ball.body.linvel()),
+          Math.min(Math.max(dt, 0), 0.05),
+        )
+      if (this.disposalTest(from, to, 0.112)) this.remove(ball)
+    }
     // A reference-space floor is only a fallback before any room surface is available.
-    this.floor?.setEnabled(surfaces.length === 0)
+    this.floor?.setEnabled(!surfaces.some((s) => !s.userData.xrSupplementalCollision))
     const live = new Set(surfaces)
     for (const [mesh, entry] of this.room)
       if (!live.has(mesh)) {
@@ -143,20 +169,13 @@ export class ARBalls {
     for (const mesh of surfaces) {
       mesh.updateWorldMatrix(true, false)
       const previous = this.room.get(mesh)
-      if (previous?.geometry === mesh.geometry) {
-        if (!previous.matrix.equals(mesh.matrixWorld)) {
-          previous.collider.setTranslation(mesh.getWorldPosition(new THREE.Vector3()))
-          previous.collider.setRotation(mesh.getWorldQuaternion(new THREE.Quaternion()))
-          previous.matrix.copy(mesh.matrixWorld)
-        }
-        continue
-      }
+      if (previous?.geometry === mesh.geometry && previous.matrix.equals(mesh.matrixWorld)) continue
       if (previous) world.removeCollider(previous.collider, true)
       const positions = mesh.geometry.getAttribute('position')
       const vertices = new Float32Array(positions.count * 3)
       const p = new THREE.Vector3()
       for (let i = 0; i < positions.count; i++) {
-        p.fromBufferAttribute(positions, i)
+        p.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld)
         p.toArray(vertices, i * 3)
       }
       const indices = mesh.geometry.index
@@ -166,14 +185,14 @@ export class ARBalls {
       const collider = world.createCollider(
         RAPIER.ColliderDesc.trimesh(vertices, indices).setRestitution(0.65).setFriction(0.6),
       )
-      collider.setTranslation(mesh.getWorldPosition(new THREE.Vector3()))
-      collider.setRotation(mesh.getWorldQuaternion(new THREE.Quaternion()))
       this.room.set(mesh, { geometry: mesh.geometry, collider, matrix: mesh.matrixWorld.clone() })
     }
     this.accumulator += Math.min(Math.max(dt, 0), 0.05)
     world.timestep = 1 / 90
     while (this.accumulator >= 1 / 90) {
+      this.beforePhysicsStep?.(1 / 90)
       this.engineWorld!.step(1 / 90)
+      this.afterPhysicsStep?.(1 / 90)
       this.accumulator -= 1 / 90
     }
     for (const ball of [...this.balls]) {

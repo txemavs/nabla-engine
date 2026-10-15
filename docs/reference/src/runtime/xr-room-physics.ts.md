@@ -6,6 +6,8 @@
 
 ## Module dependencies
 
+- `../simulation/sports/hoop.js`
+- `./xr-disposal-portal.js`
 - `./xr-object-grab.js`
 - `three`
 - `@dimforge/rapier3d-compat/rapier.es.js`
@@ -14,7 +16,7 @@
 
 ## ARBalls.world
 
-[Implementation, line 21](../../../../src/runtime/xr-room-physics.ts#L21)
+[Implementation, line 27](../../../../src/runtime/xr-room-physics.ts#L27)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -24,7 +26,7 @@ world(): inferred by TypeScript; see implementation
 
 ## ARBalls.constructor
 
-[Implementation, line 35](../../../../src/runtime/xr-room-physics.ts#L35)
+[Implementation, line 41](../../../../src/runtime/xr-room-physics.ts#L41)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -37,12 +39,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `initPhysics`
 - `initPhysics().then`
 
-## ARBalls.constructor.callback@36
+## ARBalls.constructor.callback@42
 
-[Implementation, line 36](../../../../src/runtime/xr-room-physics.ts#L36)
+[Implementation, line 42](../../../../src/runtime/xr-room-physics.ts#L42)
 
 ```ts
-callback@36(): inferred by TypeScript; see implementation
+callback@42(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -54,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARBalls.physicsWorld
 
-[Implementation, line 44](../../../../src/runtime/xr-room-physics.ts#L44)
+[Implementation, line 50](../../../../src/runtime/xr-room-physics.ts#L50)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -62,9 +64,35 @@ Small bounded physics playground using the scanned room as static collision geom
 physicsWorld(): inferred by TypeScript; see implementation
 ```
 
+## ARBalls.ballSamples
+
+[Implementation, line 54](../../../../src/runtime/xr-room-physics.ts#L54)
+
+Immutable ball samples for shared gameplay such as hoops; bodies stay private.
+
+```ts
+ballSamples(): readonly HoopBallSample[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.balls.map`
+
+## ARBalls.ballSamples.callback@55
+
+[Implementation, line 55](../../../../src/runtime/xr-room-physics.ts#L55)
+
+```ts
+callback@55(ball): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `ball.body.translation`
+
 ## ARBalls.targets
 
-[Implementation, line 47](../../../../src/runtime/xr-room-physics.ts#L47)
+[Implementation, line 62](../../../../src/runtime/xr-room-physics.ts#L62)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -76,17 +104,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.balls.map`
 
-## ARBalls.targets.callback@48
+## ARBalls.targets.callback@63
 
-[Implementation, line 48](../../../../src/runtime/xr-room-physics.ts#L48)
+[Implementation, line 63](../../../../src/runtime/xr-room-physics.ts#L63)
 
 ```ts
-callback@48(b): inferred by TypeScript; see implementation
+callback@63(b): inferred by TypeScript; see implementation
 ```
 
 ## ARBalls.spawn
 
-[Implementation, line 50](../../../../src/runtime/xr-room-physics.ts#L50)
+[Implementation, line 65](../../../../src/runtime/xr-room-physics.ts#L65)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -120,17 +148,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.world.createCollider`
 - `this.world.createRigidBody`
 
-## ARBalls.spawn.callback@53
+## ARBalls.spawn.callback@68
 
-[Implementation, line 53](../../../../src/runtime/xr-room-physics.ts#L53)
+[Implementation, line 68](../../../../src/runtime/xr-room-physics.ts#L68)
 
 ```ts
-callback@53(b): inferred by TypeScript; see implementation
+callback@68(b): inferred by TypeScript; see implementation
 ```
 
 ## ARBalls.owns
 
-[Implementation, line 84](../../../../src/runtime/xr-room-physics.ts#L84)
+[Implementation, line 99](../../../../src/runtime/xr-room-physics.ts#L99)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -142,12 +170,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.balls.some`
 
-## ARBalls.owns.callback@85
+## ARBalls.owns.callback@100
 
-[Implementation, line 85](../../../../src/runtime/xr-room-physics.ts#L85)
+[Implementation, line 100](../../../../src/runtime/xr-room-physics.ts#L100)
 
 ```ts
-callback@85(b): inferred by TypeScript; see implementation
+callback@100(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -156,7 +184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARBalls.grab
 
-[Implementation, line 87](../../../../src/runtime/xr-room-physics.ts#L87)
+[Implementation, line 102](../../../../src/runtime/xr-room-physics.ts#L102)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -190,54 +218,54 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARBalls.grab.pressed
 
-[Implementation, line 88](../../../../src/runtime/xr-room-physics.ts#L88)
+[Implementation, line 103](../../../../src/runtime/xr-room-physics.ts#L103)
 
 ```ts
 pressed(h: BallHand): inferred by TypeScript; see implementation
 ```
 
-## ARBalls.grab.callback@91
+## ARBalls.grab.callback@106
 
-[Implementation, line 91](../../../../src/runtime/xr-room-physics.ts#L91)
+[Implementation, line 106](../../../../src/runtime/xr-room-physics.ts#L106)
 
 ```ts
-callback@91(ball): inferred by TypeScript; see implementation
+callback@106(ball): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `ball.grab.hands.filter`
 
-## ARBalls.grab.callback@91.callback@93
+## ARBalls.grab.callback@106.callback@108
 
-[Implementation, line 93](../../../../src/runtime/xr-room-physics.ts#L93)
+[Implementation, line 108](../../../../src/runtime/xr-room-physics.ts#L108)
 
 ```ts
-callback@93(grip): inferred by TypeScript; see implementation
+callback@108(grip): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hands.some`
 
-## ARBalls.grab.callback@91.callback@93.callback@93
+## ARBalls.grab.callback@106.callback@108.callback@108
 
-[Implementation, line 93](../../../../src/runtime/xr-room-physics.ts#L93)
+[Implementation, line 108](../../../../src/runtime/xr-room-physics.ts#L108)
 
 ```ts
-callback@93(h): inferred by TypeScript; see implementation
+callback@108(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `pressed`
 
-## ARBalls.grab.callback@100
+## ARBalls.grab.callback@115
 
-[Implementation, line 100](../../../../src/runtime/xr-room-physics.ts#L100)
+[Implementation, line 115](../../../../src/runtime/xr-room-physics.ts#L115)
 
 ```ts
-callback@100(b): inferred by TypeScript; see implementation
+callback@115(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -245,12 +273,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `b.mesh.position.distanceTo`
 - `next.get`
 
-## ARBalls.grab.callback@102
+## ARBalls.grab.callback@117
 
-[Implementation, line 102](../../../../src/runtime/xr-room-physics.ts#L102)
+[Implementation, line 117](../../../../src/runtime/xr-room-physics.ts#L117)
 
 ```ts
-callback@102(a, b): inferred by TypeScript; see implementation
+callback@117(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -258,27 +286,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `a.mesh.position.distanceToSquared`
 - `b.mesh.position.distanceToSquared`
 
-## ARBalls.grab.callback@111
+## ARBalls.grab.callback@126
 
-[Implementation, line 111](../../../../src/runtime/xr-room-physics.ts#L111)
+[Implementation, line 126](../../../../src/runtime/xr-room-physics.ts#L126)
 
 ```ts
-callback@111(grip): inferred by TypeScript; see implementation
+callback@126(grip): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hands.some`
 
-## ARBalls.grab.callback@111.callback@111
-
-[Implementation, line 111](../../../../src/runtime/xr-room-physics.ts#L111)
-
-```ts
-callback@111(h): inferred by TypeScript; see implementation
-```
-
-## ARBalls.grab.callback@126
+## ARBalls.grab.callback@126.callback@126
 
 [Implementation, line 126](../../../../src/runtime/xr-room-physics.ts#L126)
 
@@ -286,9 +306,17 @@ callback@111(h): inferred by TypeScript; see implementation
 callback@126(h): inferred by TypeScript; see implementation
 ```
 
+## ARBalls.grab.callback@141
+
+[Implementation, line 141](../../../../src/runtime/xr-room-physics.ts#L141)
+
+```ts
+callback@141(h): inferred by TypeScript; see implementation
+```
+
 ## ARBalls.hit
 
-[Implementation, line 128](../../../../src/runtime/xr-room-physics.ts#L128)
+[Implementation, line 143](../../../../src/runtime/xr-room-physics.ts#L143)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -303,17 +331,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `direction.clone().multiplyScalar`
 - `this.balls.find`
 
-## ARBalls.hit.callback@129
+## ARBalls.hit.callback@144
 
-[Implementation, line 129](../../../../src/runtime/xr-room-physics.ts#L129)
+[Implementation, line 144](../../../../src/runtime/xr-room-physics.ts#L144)
 
 ```ts
-callback@129(b): inferred by TypeScript; see implementation
+callback@144(b): inferred by TypeScript; see implementation
 ```
 
 ## ARBalls.update
 
-[Implementation, line 132](../../../../src/runtime/xr-room-physics.ts#L132)
+[Implementation, line 147](../../../../src/runtime/xr-room-physics.ts#L147)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -330,28 +358,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `RAPIER.ColliderDesc.trimesh(vertices, indices).setRestitution`
 - `RAPIER.ColliderDesc.trimesh(vertices, indices).setRestitution(0.65).setFriction`
 - `Set`
-- `THREE.Quaternion`
 - `THREE.Vector3`
 - `Uint32Array`
 - `Uint32Array.from`
+- `ball.body.linvel`
 - `ball.body.rotation`
 - `ball.body.translation`
 - `ball.mesh.position.copy`
 - `ball.mesh.quaternion.copy`
-- `collider.setRotation`
-- `collider.setTranslation`
 - `live.has`
 - `mesh.geometry.getAttribute`
-- `mesh.getWorldPosition`
-- `mesh.getWorldQuaternion`
 - `mesh.matrixWorld.clone`
 - `mesh.updateWorldMatrix`
+- `new THREE.Vector3().copy`
 - `p.fromBufferAttribute`
+- `p.fromBufferAttribute(positions, i).applyMatrix4`
 - `p.toArray`
-- `previous.collider.setRotation`
-- `previous.collider.setTranslation`
-- `previous.matrix.copy`
 - `previous.matrix.equals`
+- `surfaces.some`
+- `this.afterPhysicsStep`
+- `this.beforePhysicsStep`
+- `this.disposalTest`
 - `this.engineWorld!.step`
 - `this.floor?.setEnabled`
 - `this.remove`
@@ -361,17 +388,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `world.createCollider`
 - `world.removeCollider`
 
-## ARBalls.update.callback@164
+## ARBalls.update.callback@162
 
-[Implementation, line 164](../../../../src/runtime/xr-room-physics.ts#L164)
+[Implementation, line 162](../../../../src/runtime/xr-room-physics.ts#L162)
 
 ```ts
-callback@164(_, i): inferred by TypeScript; see implementation
+callback@162(s): inferred by TypeScript; see implementation
+```
+
+## ARBalls.update.callback@183
+
+[Implementation, line 183](../../../../src/runtime/xr-room-physics.ts#L183)
+
+```ts
+callback@183(_, i): inferred by TypeScript; see implementation
 ```
 
 ## ARBalls.remove
 
-[Implementation, line 185](../../../../src/runtime/xr-room-physics.ts#L185)
+[Implementation, line 204](../../../../src/runtime/xr-room-physics.ts#L204)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -389,7 +424,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARBalls.reset
 
-[Implementation, line 191](../../../../src/runtime/xr-room-physics.ts#L191)
+[Implementation, line 210](../../../../src/runtime/xr-room-physics.ts#L210)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 
@@ -404,7 +439,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARBalls.dispose
 
-[Implementation, line 196](../../../../src/runtime/xr-room-physics.ts#L196)
+[Implementation, line 215](../../../../src/runtime/xr-room-physics.ts#L215)
 
 Small bounded physics playground using the scanned room as static collision geometry.
 

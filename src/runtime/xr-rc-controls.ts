@@ -1,6 +1,6 @@
-import { XRObjectGrab } from './xr-object-grab.js'
-import { XRUiClick } from './xr-ui-click.js'
-import { XRBodyAnchor } from './xr-body-anchor.js'
+import { XRForklift } from './xr-forklift.js'
+import type { ForkliftInput } from '../simulation/forklift.js'
+import { XRStationPlacement } from './xr-station-placement.js'
 import * as THREE from 'three'
 import { XRMotorcycle } from './xr-motorcycle.js'
 import { XRCalibration } from './xr-calibration.js'
@@ -15,10 +15,15 @@ export class ARRCControls {
   private camera?: THREE.Camera
   readonly root = new THREE.Group()
   readonly spin = new THREE.Group()
-  enabled = false
-  fixed = false
-  private readonly bodyAnchor = new XRBodyAnchor()
-  private readonly click = new XRUiClick()
+  readonly equipment = new THREE.Group()
+  private readonly hydraulics = new XRForklift()
+  enabled = true
+  get fixed(): boolean {
+    return this.placement.fixed
+  }
+  set fixed(value: boolean) {
+    this.placement.fixed = value
+  }
   readonly pinButton = new THREE.Mesh(
     new THREE.CylinderGeometry(0.025, 0.025, 0.018, 16),
     new THREE.MeshStandardMaterial({ color: '#101010', roughness: 0.7 }),
@@ -27,9 +32,13 @@ export class ARRCControls {
     new THREE.BoxGeometry(0.1, 0.07, 0.035),
     new THREE.MeshStandardMaterial({ color: '#555e66', roughness: 0.8 }),
   )
-  private readonly stationGrab = new XRObjectGrab()
-  private pinDown = new Set<THREE.Group>()
-  private buttonHands = new Set<THREE.Group>()
+  private readonly placement: XRStationPlacement
+  private get stationGrab() {
+    return this.placement.grab
+  }
+  private get buttonHands() {
+    return this.placement.buttonHands
+  }
   private bike: XRMotorcycle
   private holders = new Map<THREE.Group, { angle: number; steer: number }>()
   private steering = 0
@@ -46,34 +55,46 @@ export class ARRCControls {
     this.pinButton.position.set(0, -0.3, 0.05)
     this.pinButton.rotation.x = Math.PI / 2
     this.pinButton.name = 'Fijar / llevar al pecho'
+    this.placement = new XRStationPlacement(this.body, this.pinButton, this.pinBase)
     this.root.add(this.spin, this.pinBase, this.pinButton)
     this.root.visible = false
-    this.body.add(this.root)
+    this.body.add(this.root, this.equipment)
     scene.add(this.body)
   }
   place(camera: THREE.Camera): void {
-    if (!this.camera) this.root.position.set(0, -0.35, -0.45)
+    if (!this.camera) {
+      this.root.position.set(0, -0.35, -0.45)
+      this.equipment.position.set(0, -0.35, -0.45)
+    }
     this.fixed = false
     this.stationGrab.reset()
-    this.bodyAnchor.reset()
+    this.placement.resetAnchor()
     this.camera = camera
     this.followBody(0)
     this.reset()
   }
   private followBody(dt: number): void {
     if (!this.camera) return
-    if (!this.fixed && !this.stationGrab.hands.length)
-      this.bodyAnchor.update(this.body, this.camera, dt)
+    this.placement.follow(this.camera, dt)
     this.calibration.apply(
       this.root,
-      this.kind === 'vfr' ? 'ar-rc-bike' : this.kind === 'truck' ? 'ar-rc-truck' : 'ar-rc-s3',
+      this.kind === 'vfr'
+        ? 'ar-rc-bike'
+        : this.kind === 'truck'
+          ? 'ar-rc-truck'
+          : this.kind === 'forklift'
+            ? 'ar-rc-forklift'
+            : 'ar-rc-s3',
     )
+    // Both follow/pin with the same station, but wheel calibration cannot rotate
+    // the lever console. Its own zero preserves the original unrotated layout.
+    this.calibration.apply(this.equipment, 'ar-rc-forklift-levers')
     this.root.updateWorldMatrix(true, true)
+    this.equipment.updateWorldMatrix(true, true)
   }
   reset(): void {
-    this.stationGrab.reset()
-    this.pinDown.clear()
-    this.buttonHands.clear()
+    this.placement.reset()
+    this.hydraulics.update([], null)
     this.holders.clear()
     this.bike.reset()
     this.steering = 0
@@ -85,52 +106,20 @@ export class ARRCControls {
       (this.stationGrab.hands.includes(grip) ||
         this.buttonHands.has(grip) ||
         this.holders.has(grip) ||
-        this.bike.owns(source ?? null))
+        this.bike.owns(source ?? null) ||
+        this.hydraulics.owns(source ?? null))
     )
   }
   private updatePin(hands: readonly GrabHand[]): void {
-    this.buttonHands.clear()
-    const grips = this.stationGrab.hands.filter((grip) =>
-      hands.some((h) => h.grip === grip && squeeze(h)),
+    this.placement.update(
+      hands,
+      0,
+      (hand) => !this.holders.has(hand.grip) && !this.bike.owns(hand.source),
     )
-    this.stationGrab.update(this.body, grips, 0)
-    const down = new Set<THREE.Group>()
-    for (const hand of hands) {
-      const gripPosition = hand.grip.getWorldPosition(new THREE.Vector3())
-      const buttonPosition = this.pinButton.getWorldPosition(new THREE.Vector3())
-      const near = gripPosition.distanceTo(buttonPosition) < 0.075
-      if (
-        near &&
-        squeeze(hand) &&
-        grips.length < 2 &&
-        !grips.includes(hand.grip) &&
-        !this.holders.has(hand.grip) &&
-        !this.bike.owns(hand.source)
-      ) {
-        grips.push(hand.grip)
-        this.stationGrab.update(this.body, grips, 0)
-      }
-      const finger = hand.visual?.indexTip.getWorldPosition(new THREE.Vector3())
-      const touch = !squeeze(hand) && !!finger && finger.distanceTo(buttonPosition) < 0.03
-      const trigger = hand.source?.gamepad?.buttons[0]
-      const pressed = !!trigger?.pressed || (trigger?.value ?? 0) > 0.8
-      if (touch || (near && pressed)) {
-        down.add(hand.grip)
-        this.buttonHands.add(hand.grip)
-        if (!this.pinDown.has(hand.grip)) {
-          this.fixed = !this.fixed
-          this.click.play()
-          void hand.source?.gamepad?.hapticActuators?.[0]?.pulse(0.25, 40).catch(() => {})
-        }
-      }
-    }
-    this.pinDown = down
-    this.pinButton.position.z = down.size ? 0.044 : 0.05
-    this.pinBase.material.color.set(this.fixed ? '#4e9aaf' : '#555e66')
   }
   dispose(): void {
     this.reset()
-    this.click.dispose()
+    this.placement.dispose()
     this.pinButton.geometry.dispose()
     this.pinButton.material.dispose()
     this.pinBase.geometry.dispose()
@@ -140,7 +129,15 @@ export class ARRCControls {
   update(hands: readonly GrabHand[], dt = 1 / 60) {
     this.followBody(dt)
     this.root.visible = this.enabled && !!this.kind
-    const result = { throttle: 0, steering: 0, brake: 0, frontBrake: 0, rearBrake: 0 }
+    this.equipment.visible = this.enabled && this.kind === 'forklift'
+    const result = {
+      throttle: 0,
+      steering: 0,
+      brake: 0,
+      frontBrake: 0,
+      rearBrake: 0,
+      forklift: [0, 0, 0] as ForkliftInput,
+    }
     if (!this.root.visible) {
       this.reset()
       return result
@@ -150,6 +147,11 @@ export class ARRCControls {
       (hand) => !this.stationGrab.hands.includes(hand.grip) && !this.buttonHands.has(hand.grip),
     )
     this.root.updateWorldMatrix(true, true)
+    result.forklift = this.hydraulics.update(
+      hands,
+      this.kind === 'forklift' ? this.equipment : null,
+    )
+    hands = hands.filter((hand) => !this.hydraulics.owns(hand.source))
     if (this.kind === 'vfr') {
       const input = this.bike.update(
         hands,
@@ -168,6 +170,7 @@ export class ARRCControls {
       this.steering = input.steering
       this.spin.rotation.y = -input.steering * 0.61
       return {
+        forklift: result.forklift,
         throttle: input.throttle,
         steering: input.steering,
         brake: Math.max(input.frontBrake, input.rearBrake),

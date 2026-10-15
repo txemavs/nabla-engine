@@ -36,7 +36,11 @@ export class VehicleEffects {
       flightSpeed = 0
     if (sim)
       for (const entity of document.entities) {
-        if (!entity.vehicle?.flight || entity.vehicle.plane) continue
+        if (
+          !entity.vehicle?.flight ||
+          (entity.vehicle.plane && entity.vehicle.aircraft?.propulsion !== 'jet')
+        )
+          continue
         const info = sim.vehicleInfo(entity.id)
         if (!info.flightMode) continue
         const position = sim.entityTransform(entity.id, true).position.map((v) => v * worldScale)
@@ -58,7 +62,11 @@ export class VehicleEffects {
         sim!.entityTransform(pilot, true).position.map((v) => v * worldScale),
       )
     const piloted = pilot ? document.entities.find((entity) => entity.id === pilot) : undefined
-    this.audio.propeller(piloted?.vehicle?.plane ? sim!.vehicleInfo(pilot!).engine : 0)
+    this.audio.propeller(
+      piloted?.vehicle?.plane && piloted.vehicle.aircraft?.propulsion !== 'jet'
+        ? sim!.vehicleInfo(pilot!).engine
+        : 0,
+    )
     const car =
       pilot &&
       piloted?.vehicle &&

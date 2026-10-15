@@ -42,10 +42,12 @@ it('lands to the right, bounces once and disappears after its lifetime', () => {
   expect(pose.position[1]).toBeLessThan(0.02)
   // It comes to rest on the ground and stays there.
   for (let i = 0; i < 120; i++) motion.update(1 / 60, ground)
+  expect(motion.impacts).toEqual([])
   const resting = motion.poses()[0].position.slice()
   expect(resting[1]).toBeLessThan(0.02)
   motion.update(1 / 60, ground)
   expect(motion.poses()[0].position[0]).toBeCloseTo(resting[0], 3)
+  expect(motion.impacts).toEqual([])
   for (let i = 0; i < Math.ceil(casing.lifetimeS * 60); i++) motion.update(1 / 60, ground)
   expect(motion.count).toBe(0)
 })

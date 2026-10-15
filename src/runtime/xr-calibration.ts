@@ -18,6 +18,8 @@ export const xrCalibrationObjects = {
   'bike-right': 'Moto · puño derecho',
   'ar-rc-s3': 'AR · Puesto S3',
   'ar-rc-truck': 'AR · Puesto camión',
+  'ar-rc-forklift': 'AR · Volante toro',
+  'ar-rc-forklift-levers': 'AR · Palancas toro',
   'ar-rc-bike': 'AR · Puesto moto',
 } as const
 export type XRCalibrationObject = keyof typeof xrCalibrationObjects
@@ -66,6 +68,7 @@ const defaults: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> 
 }
 // Compose the accepted V2 adjustments after the previous baseline rotation.
 const baselineAdjustments: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> = {
+  'ar-rc-truck': { rx: 20, rz: 180 },
   'hand-left': { x: 1, z: 0.5, rx: 3, ry: 23, rz: 4 },
   'hand-right': { x: -1, z: 0.5, rx: 3, ry: -23, rz: -4 },
   'grip-left': { x: 1.5, rx: 6, ry: -12, rz: -6 },
@@ -123,6 +126,17 @@ export class XRCalibration {
             rz: THREE.MathUtils.radToDeg(e.z),
           }
         }
+      // Accepted truck posture is the new zero; keep position and the other angle.
+      if (localStorage.getItem('nabla.xr.truck-zero') !== 'x20-z180') {
+        if (stored['ar-rc-truck'])
+          stored['ar-rc-truck'] = { ...stored['ar-rc-truck'], rx: 0, rz: 0 }
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(stored))
+          localStorage.setItem('nabla.xr.truck-zero', 'x20-z180')
+        } catch {
+          // A read-only store must not discard the adjustments already read.
+        }
+      }
       for (const id of Object.keys(xrCalibrationObjects) as XRCalibrationObject[]) {
         // Prefer the saved left hand; pistol pairs keep the saved right side.
         const pair = mirrorPairs.find((pair) => pair.includes(id))

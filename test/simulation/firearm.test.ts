@@ -9,6 +9,8 @@ import {
   beginReload,
   beginReloadAction,
   moveSlide,
+  seatCartridge,
+  takeMagazine,
   insertFreshMagazine,
   swapFreshMagazine,
   releaseSlide,
@@ -363,4 +365,18 @@ it('seating a physical magazine does not create a chambered round', async () => 
   moveSlide(state, spec(), 0, 1)
   expect(state.chamber).toBe(1)
   expect(magazine.rounds).toBe(magazine.capacity - 1)
+})
+
+it('loads a single loose cartridge and fires with no magazine', () => {
+  const preset = spec(),
+    state = freshFirearm(preset)
+  takeMagazine(state)
+  expect(seatCartridge(state)).toBe(false)
+  moveSlide(state, preset, 1, 1000)
+  expect(state.chamber).toBe(0)
+  expect(seatCartridge(state)).toBe(true)
+  expect(seatCartridge(state)).toBe(false)
+  moveSlide(state, preset, 0, 1016)
+  expect(trigger(state, preset, true, 1200).fired).toBe(true)
+  expect(state.chamber).toBe(0)
 })

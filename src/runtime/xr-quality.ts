@@ -1,4 +1,7 @@
 export interface XRQualitySettings {
+  handTracking: boolean
+  showVest: boolean
+  showHands: boolean
   scale: number
   foveation: number
   effects: boolean
@@ -18,6 +21,9 @@ export function readXRQuality(): XRQualitySettings {
   const number = (n: unknown, fallback: number, min: number, max: number) =>
     typeof n === 'number' && Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback
   return {
+    handTracking: value.handTracking === true,
+    showVest: value.showVest !== false,
+    showHands: value.showHands !== false,
     impactLimit: Math.floor(number(value.impactLimit, 96, 0, 96)),
     casingLimit: Math.floor(number(value.casingLimit, 24, 0, 24)),
     sparks: typeof value.sparks === 'boolean' ? value.sparks : value.effects !== false,

@@ -1,0 +1,81 @@
+{
+  "id": "f14",
+  "label": "F14 Tomcat \u00b7 R/C",
+  "clearance": 2.5,
+  "placement": [0, 2.5, 0],
+  "order": 20,
+  "name": "F14 Tomcat",
+  "color": "#a1a5aa",
+  "size": [19.303, 4.94, 19.1],
+  "mass": 18000,
+  "vehicle": {
+    "flight": true,
+    "plane": true,
+    "controls": "flight",
+    "colliders": [
+      {
+        "size": [2.4, 2.1, 17.8],
+        "transform": {
+          "position": [0, -0.5, 0],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [18.9, 0.25, 5.5],
+        "transform": {
+          "position": [0, -0.25, 1.7],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [7.8, 0.3, 3.2],
+        "transform": {
+          "position": [0, 0.25, 7],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [0.35, 3.4, 3.2],
+        "transform": {
+          "position": [-2.1, 1.1, 6],
+          "rotation": [0, 0, 0, 1]
+        }
+      },
+      {
+        "size": [0.35, 3.4, 3.2],
+        "transform": {
+          "position": [2.1, 1.1, 6],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "hubs": [
+      [-1, -1.6, -5],
+      [1, -1.6, -5],
+      [-1.8, -1.6, 3],
+      [1.8, -1.6, 3]
+    ],
+    "wheelRadius": 0.4,
+    "suspensionRest": 0.2,
+    "stiffness": 50,
+    "engineForce": 6000,
+    "brakeForce": 60,
+    "cameraDistance": 25,
+    "aircraft": {
+      "propulsion": "jet",
+      "slowSpeedMs": 68,
+      "fastSpeedMs": 140,
+      "accelerationMs2": 20
+    },
+    "driver": [0, 0.1, -5.5]
+  },
+  "visual": {
+    "body": {
+      "url": "/library/planes/f14/f14.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    }
+  }
+}

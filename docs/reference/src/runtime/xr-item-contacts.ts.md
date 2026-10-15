@@ -6,12 +6,32 @@
 
 ## Module dependencies
 
+- `@dimforge/rapier3d-compat/rapier.es.js`
+- `./xr-disposal-portal.js`
 - `three`
 - `../simulation/physics.js`
 
+## XRItemContacts.entersDisposal
+
+[Implementation, line 16](../../../../src/runtime/xr-item-contacts.ts#L16)
+
+Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
+
+```ts
+entersDisposal(root: THREE.Object3D, test: XRDisposalTest, dt: number): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `THREE.Vector3`
+- `test`
+- `this.dropped.get`
+
 ## XRItemContacts.drop
 
-[Implementation, line 14](../../../../src/runtime/xr-item-contacts.ts#L14)
+[Implementation, line 29](../../../../src/runtime/xr-item-contacts.ts#L29)
 
 Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
 
@@ -23,6 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Body`
 - `Box`
+- `Material`
 - `Math.max`
 - `THREE.Box3`
 - `THREE.Quaternion`
@@ -33,6 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `body.position.set`
 - `body.quaternion.set`
 - `body.raw!.enableCcd`
+- `body.raw!.setBodyType`
 - `body.velocity.set`
 - `bounds.getCenter`
 - `bounds.getSize`
@@ -57,12 +79,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `velocity.set`
 - `world.addBody`
 
-## XRItemContacts.drop.callback@31
+## XRItemContacts.drop.callback@46
 
-[Implementation, line 31](../../../../src/runtime/xr-item-contacts.ts#L31)
+[Implementation, line 46](../../../../src/runtime/xr-item-contacts.ts#L46)
 
 ```ts
-callback@31(node): inferred by TypeScript; see implementation
+callback@46(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -72,9 +94,79 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `inverse.clone().multiply`
 - `mesh.geometry.computeBoundingBox`
 
+## XRItemContacts.trackHeld
+
+[Implementation, line 103](../../../../src/runtime/xr-item-contacts.ts#L103)
+
+Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
+
+```ts
+trackHeld(root: THREE.Object3D, world: World | null): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `body.position.set`
+- `body.quaternion.set`
+- `body.raw!.setBodyType`
+- `body.raw!.setNextKinematicRotation`
+- `body.raw!.setNextKinematicTranslation`
+- `root.getWorldPosition`
+- `root.getWorldQuaternion`
+- `this.drop`
+- `this.dropped.get`
+- `this.dropped.has`
+
+## XRItemContacts.hit
+
+[Implementation, line 123](../../../../src/runtime/xr-item-contacts.ts#L123)
+
+Mesh hits feed an impulse into the existing engine rigid body, including torque.
+
+```ts
+hit(object: THREE.Object3D, point: THREE.Vector3, direction: THREE.Vector3): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vec3`
+- `body.applyImpulse`
+- `direction.clone`
+- `direction.clone().normalize`
+- `direction.clone().normalize().multiplyScalar`
+- `this.dropped.get`
+
+## XRItemContacts.targets
+
+[Implementation, line 138](../../../../src/runtime/xr-item-contacts.ts#L138)
+
+Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
+
+```ts
+targets(): THREE.Object3D[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `root.traverseVisible`
+
+## XRItemContacts.targets.callback@142
+
+[Implementation, line 142](../../../../src/runtime/xr-item-contacts.ts#L142)
+
+```ts
+callback@142(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `meshes.push`
+
 ## XRItemContacts.retainDropped
 
-[Implementation, line 77](../../../../src/runtime/xr-item-contacts.ts#L77)
+[Implementation, line 147](../../../../src/runtime/xr-item-contacts.ts#L147)
 
 Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
 
@@ -90,7 +182,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRItemContacts.dispose
 
-[Implementation, line 84](../../../../src/runtime/xr-item-contacts.ts#L84)
+[Implementation, line 154](../../../../src/runtime/xr-item-contacts.ts#L154)
 
 Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
 
@@ -104,7 +196,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRItemContacts.resolve
 
-[Implementation, line 89](../../../../src/runtime/xr-item-contacts.ts#L89)
+[Implementation, line 159](../../../../src/runtime/xr-item-contacts.ts#L159)
 
 Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
 
@@ -126,6 +218,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `points.map`
 - `this.apply`
 - `this.corrections.set`
+- `this.dropped.get`
+- `this.dropped.has`
 - `this.onContact`
 - `this.previous.get`
 - `this.previous.set`
@@ -139,12 +233,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `travel.multiplyScalar`
 - `world.sweepSphere`
 
-## XRItemContacts.resolve.callback@123
+## XRItemContacts.resolve.callback@197
 
-[Implementation, line 123](../../../../src/runtime/xr-item-contacts.ts#L123)
+[Implementation, line 197](../../../../src/runtime/xr-item-contacts.ts#L197)
 
 ```ts
-callback@123(p): inferred by TypeScript; see implementation
+callback@197(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -152,12 +246,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `p.clone`
 - `p.clone().add`
 
-## XRItemContacts.resolve.callback@124
+## XRItemContacts.resolve.callback@198
 
-[Implementation, line 124](../../../../src/runtime/xr-item-contacts.ts#L124)
+[Implementation, line 198](../../../../src/runtime/xr-item-contacts.ts#L198)
 
 ```ts
-callback@124(p): inferred by TypeScript; see implementation
+callback@198(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -166,7 +260,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRItemContacts.apply
 
-[Implementation, line 129](../../../../src/runtime/xr-item-contacts.ts#L129)
+[Implementation, line 203](../../../../src/runtime/xr-item-contacts.ts#L203)
 
 Reapply after recoil posing without running collision/audio twice in one frame.
 
@@ -187,7 +281,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRItemContacts.forget
 
-[Implementation, line 136](../../../../src/runtime/xr-item-contacts.ts#L136)
+[Implementation, line 210](../../../../src/runtime/xr-item-contacts.ts#L210)
 
 Tracking adapter over the engine's Rapier scene. Inventory/render meshes are never colliders.
 

@@ -1,3 +1,4 @@
+import type { FlightState } from '../../simulation/vehicles/flight.js'
 import type { DrivetrainState } from '../../simulation/vehicles/drivetrain.js'
 import type { TwoWheeledState } from '../../simulation/vehicles/two-wheeled/contracts.js'
 import type { Body, Box, RaycastVehicle } from '../../simulation/physics.js'
@@ -16,7 +17,7 @@ export interface Vehicle {
   drivetrain: DrivetrainState
   prop: number
   definition: VehicleDefinition
-  flight: { altitude: number; yaw: number } | null
+  flight: FlightState | null
   rampClosed: boolean
   rampAngle: number
   rampTarget: number

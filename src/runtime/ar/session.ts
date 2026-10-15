@@ -3,6 +3,7 @@ import { GameXR } from '../xr.js'
 
 /** AR view of the same XR runtime. No application content or physics world is created. */
 export class GameAR extends GameXR {
+  private poseTracked = false
   constructor(
     private readonly arRenderer: THREE.WebGLRenderer,
     private readonly arCamera: THREE.PerspectiveCamera,
@@ -28,12 +29,13 @@ export class GameAR extends GameXR {
     }
   }
   override get visible(): boolean {
-    return super.visible && this.session.referenceReady
+    return super.visible && this.session.referenceReady && this.poseTracked
   }
   override update(frame: XRFrame): void {
     super.update(frame)
     const space = this.arRenderer.xr.getReferenceSpace()
     const pose = space && frame.getViewerPose(space)
+    this.poseTracked = !!pose
     if (!pose) return
     const p = pose.transform.position,
       q = pose.transform.orientation

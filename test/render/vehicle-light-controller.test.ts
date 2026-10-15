@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { Mesh, MeshStandardMaterial } from 'three'
+import { Mesh, MeshStandardMaterial, Group, PointLight } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { VehicleLightController } from '../../src/render/vehicle-presentation/light-controller.js'
 import { AuthoredVehicleLights } from '../../src/render/vehicle-presentation/authored-lights.js'
@@ -80,4 +80,17 @@ it('drives real tractor and trailer lenses independently by side, with no rear f
     )
     lights.dispose()
   }
+})
+
+it('keeps authored cabin lamps off when exterior lights are enabled', () => {
+  const root = new Group()
+  root.userData = { role: 'vehicle-light', channel: 'Cabin', onIntensity: 5 }
+  const bulb = new PointLight()
+  root.add(bulb)
+  const controller = new VehicleLightController()
+  controller.toggleLights()
+  const lights = new AuthoredVehicleLights(root)
+  lights.apply({ powered: true, braking: false, reversing: false }, 0, controller)
+  expect(bulb.intensity).toBe(0)
+  lights.dispose()
 })

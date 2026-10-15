@@ -921,7 +921,7 @@ export class World {
     constraint.joint = null
   }
   /** Sweep a tracked volume through the existing physics scene (no render-mesh raycasts). */
-  sweepSphere(from: Vec3, to: Vec3, radius: number) {
+  sweepSphere(from: Vec3, to: Vec3, radius: number, ignoreBody?: Body) {
     const delta = to.vsub(from)
     if (delta.lengthSquared() < 1e-12) return null
     const hit = this.raw.castShape(
@@ -933,6 +933,9 @@ export class World {
       1,
       false,
       R().QueryFilterFlags.EXCLUDE_SENSORS,
+      undefined,
+      undefined,
+      ignoreBody?.raw ?? undefined,
     )
     if (!hit) return null
     return {

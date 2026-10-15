@@ -54,7 +54,7 @@ Ejemplo ejecutable: `game/ar-rc.html` + `game/ar-rc-demo.ts`.
 - `scale=1`: tamaño real.
 
 Esa página no crea armas, balones, maqueta, pantalla de ajustes ni menú general. Usa las manos
-procedurales del runtime. El vehículo se carga tras entrar en AR, cuando hay
+procedurales del runtime y el botón de salir. El vehículo se carga tras entrar en AR, cuando hay
 pose válida del visor. No se cargan los otros vehículos por ofrecer variantes mediante URL.
 
 La composición esencial es:
@@ -300,20 +300,105 @@ GameXR ya no crea la barra de botones ni el contador flotante unido a la cabeza.
 El monitor mantiene los controles y se abre/cierra con X. `onStats` sigue
 entregando estadísticas al anfitrión sin crear geometría ni textura HUD.
 
-## Estado de entrega y pendientes (15 de octubre de 2026)
+### Cambios de origen al volver de grabar
 
-La demo general y las demos mínimas consumen módulos reutilizables del engine.
-Se incluyen los últimos cambios compartidos de XR/AR: agarre y lanzamiento con una
-o dos manos, calibración V4 del volante, monitor como interfaz, láser táctil e
-impactos originales, audio y vehículos a escala con Simulation/SceneView.
-El soporte genérico de mecanismos hidráulicos y sus entradas puede ser utilizado
-por aplicaciones; el modelo/preset BMW y el toro/palets de euskadi.online no se publican aquí.
+Los eventos WebXR `reset` ya no solicitan un centrado basado en la cabeza. El
+runtime conserva el mundo aplicando `inverse(reset.transform) * originOffset`:
+la transformación del evento describe el origen nuevo en las coordenadas antiguas
+([contrato WebXR](https://immersive-web.github.io/webxr/#xrreferencespaceevent-interface)).
+En AR solo se compensa el `reset` de unbounded; local-floor aporta la altura inicial,
+pero su propio reset no debe recentrar otra vez el mundo. Pausar para abrir la cámara
+no recalcula el cero. El centrado inicial espera una sesión visible.
 
-Incidencia pendiente reportada en Quest: el suelo y los planos de habitación pueden
-aparecer desplazados hacia abajo y girados. Falta reproducir y revisar el ciclo de
-recentrado/cambio de referencia; este PR no afirma haber corregido esa desalineación.
-La detección de planos/mallas depende de los datos que entrega el casco.
+Se cubren con pruebas traslaciones, altura, rotaciones, avisos duplicados entre
+referencias, interrupciones y limpieza al salir. Falta confirmar el ciclo de grabación
+en Quest. Si el navegador entrega un reset sin transformación, se informa de la
+limitación; no se inventa una corrección usando la posición actual de la cabeza.
 
-Queda medir y optimizar carga de mapa, geometría, efectos y entidades simultáneas
-para mantener el objetivo inicial de 30 FPS de aplicación. La validación automática
-no sustituye estas mediciones en Quest ni garantiza ese rendimiento.
+### Opciones de visualización de manos
+
+El último botón del menú principal abre **Opciones**. **Mostrar manos: Sí/No**
+guarda la preferencia en los ajustes XR y oculta solo los modelos visuales.
+El seguimiento, la pose del índice para tocar el monitor y los agarres siguen
+actualizándose; pistolas y demás objetos permanecen visibles. En AR permite ver
+las manos reales a través del passthrough. La opción se puede volver a activar
+con el rayo o tocando el mismo monitor.
+
+El mismo menú **Opciones** ofrece **Mapa 1:100**, **Mapa 1:500** y **Mapa 1:1000**.
+La demo guarda la selección y usa `ARModel.setScale(denominator)` para aplicarla
+antes o después de cargar la maqueta, sin descargar otra vez sus celdas. La raíz
+mantiene su posición en el suelo y la navegación conserva pasos de 100 metros de
+mapa, convertidos a la escala seleccionada. La escala R/C es independiente.
+
+### Radiocontrol y papelera trasera del monitor
+
+La demo agrupa S3 bestia, VFR, camión con remolque y el BMW local en la pantalla
+**Radiocontrol**, junto a escala y control real. El BMW sigue siendo contenido de
+aplicación; no se añade a los presets de ARVehicles. El S3 utiliza `Simulation.setEngineMode`
+y la pintura usa `SceneView.setVehiclePaint`, con un color aleatorio al cargar.
+B del mando derecho se convierte en la entrada `brake` (freno de mano) de Simulation;
+los frenos de servicio mantienen sus entradas analógicas independientes.
+
+El monitor aporta un sólido a los mundos físicos existentes. Por delante los objetos
+colisionan; por detrás `XRDisposalPortal` consulta un barrido de esfera contra caja de
+Rapier antes del paso de física. Es un disparador direccional finito, no otro integrador.
+ARBalls retira el cuerpo y su malla; ARVehicles llama a su limpieza de conjunto (tractor,
+remolque, controles, marcas y emisores). Los cargadores sueltos usan su cuerpo de engine
+y la misma prueba; el inventario retira el objeto y XRItemContacts libera el cuerpo.
+Al ocultar el monitor se desactivan tanto el sólido como la papelera. Las colisiones
+suplementarias no desactivan el suelo de respaldo mientras falta el escaneo de habitación.
+
+El emblema del S3 se corrige en ambos GLB de volante mediante
+`scripts/fix-s3-steering-badge.mjs`, conservando el triángulo original y colocándolo
+frente al conductor, centrado en el núcleo y cromado como los emblemas exteriores. PC, VR y AR cargan los mismos assets.
+
+### Seguimiento de manos experimental
+
+`GameXR` ofrece en Opciones «Manos sin mandos (experimental)», desactivado por defecto y persistido con la calidad. Tras activarlo hay que salir y volver a entrar: `XRSessionController` solicita entonces la característica opcional WebXR `hand-tracking`. Los mandos siguen disponibles si el dispositivo no proporciona manos.
+
+`XRTrackedHand` convierte articulaciones nativas en el mismo contrato `GrabHand` y squeeze que consume el inventario de engine. Abrir la mano habilita el agarre; cerrar medio, anular y meñique lo mantiene y abrirlos lo libera. Una pérdida de seguimiento libera el gesto y exige volver a abrir. No sintetiza disparos. El índice real permite tocar el monitor; la pinza izquierda pulgar/índice con palma abierta alterna el menú. No dibuja guantes sobre las manos naturales. Es una primera prueba de coger y soltar, pendiente de calibración física en Quest; disparo y recarga gestuales quedan pendientes.
+
+En AR, `XRLoadout.physicalPistols` mantiene la pistola en el mundo al soltarla fuera de su funda. El mismo `XRObjectGrab` proporciona velocidad lineal y angular; `XRItemContacts` crea su cuerpo en el mundo de engine. Recogerla elimina el cuerpo y soltarla a menos de 16 cm de su funda la enfunda. El comportamiento de las demos VR no cambia. Los cargadores y pistolas sueltos participan en la consulta de disparos: el impacto aplica un impulso con torque al cuerpo existente, sin añadir marcas sobre el objeto.
+
+La interacción compartida de `XRLoadout` permite recoger por la corredera conservando el punto de agarre, y usar la segunda mano junto a la empuñadura como apoyo (reducción de retroceso existente). Si otra mano sostiene el arma, agarrar la corredera inicia su recorrido desde el punto tocado. El índice libre acciona `SafetyLeverPivot` y `SlideReleasePivot` con histéresis de contacto; usa `Sidearm.setSafety` y `handleMagazine('release')`, y solo libera una corredera ya bloqueada. No introduce otra simulación del arma.
+
+B (derecha) o Y (izquierda), botón WebXR 5 de la mano que sostiene el arma, extrae el cargador real mediante `takeMagazine` una vez por pulsación. Conserva su contenido y cae con el movimiento del arma. En AR, los objetos sostenidos tienen cuerpos cinemáticos en el mismo mundo Rapier que el inventario suelto; al soltarlos vuelven a dinámicos. Las consultas de contacto excluyen el cuerpo propio. Los cargadores pueden caer y descansar sobre un arma sostenida, con restitución moderada para los rebotes.
+
+### Maqueta de la frontera / Zaisa
+
+La demo AR usa como centro `15/16223/11997`, correspondiente al arranque publicado por Euskadi Online (43.342291, -1.759511). `ARModel.loadNeighborhood()` solicita secuencialmente sus ocho vecinas y conserva como máximo nueve celdas. El recuento visible informa de cargas incompletas. A 15 de octubre de 2026 Atlas responde 403 para `16224/11996`; las otras ocho celdas publican versión 4.
+
+El cargador de maquetas pasa el paquete por `validateAtlasZ15Package` y `adaptAtlasManifest`, igual que engine: usa `terrain.lidar` unificado en versiones modernas, asfalto publicado y soportes de puentes, además de edificios y proyección de techos. Ya no oculta la capa de carreteras. La celda central se comprobó en navegador: 7 mallas visibles, 5 con textura, 1.264.871 triángulos. No implica validación del rendimiento de nueve celdas en Quest.
+
+Actualización de la prueba: centro desplazado a `16223/11998`, con filas 11997–11999 y columnas 16222–16224. Las nueve publican v4 y la zona incluye el arranque de Euskadi Online. La maqueta y el R/C pueden coexistir. `ARModel.collisionSurfaces` expone mallas sólidas visibles sin drapes fotográficos ni faldones; se pasan al contrato de superficies de `ARRC`/`XRScaledVehicles`, que transforma ambas escalas a metros nativos antes de la simulación. Opciones permite Auto (habitación + mapa), Malla habitación, Planos habitación o Solo mapa. Los modos y escalas de presentación no sustituyen la física de vehículos.
+
+La carga 3×3 es una prueba de capacidad. El objetivo de conducción continua es mantener cuatro celdas residentes y precargar según posición/dirección, midiendo también memoria transitoria, decodificación, subida a GPU y creación de colisiones; este objetivo no se considera validado por cargar nueve celdas en escritorio.
+
+La prueba se limita ahora a cuatro celdas (2×2). `loadNeighborhood` serializa peticiones concurrentes y libera las celdas que salen de la ventana antes de decodificar las siguientes; también puede retirar la celda inicial, manteniendo el origen y la cota vertical comunes. La ventana sigue el desplazamiento de la maqueta con la seta. No se ha implementado aún seguimiento predictivo del vehículo ni recorte por el contorno del suelo de la habitación; recortar visualmente no elimina por sí solo geometría ni colisiones.
+
+El agarre de pistola distingue mango (`handle`) de agarre libre (`free`). Solo el mango se alinea con el montaje calibrado y permite disparar. La mano auxiliar estabiliza el retroceso sin modificar la postura del mango. Al soltar la mano principal, una mano que sujeta delante o la corredera recibe la pistola conservando su pose; al coger de nuevo el mango se recalibra la pose y la anterior mano pasa a apoyo. El mismo flujo permite recoger por el mango una pistola en caída.
+
+### Four visible quarters, four resident Z15 cells
+
+`splitMapQuarters` partitions static Atlas geometry along the two cell midlines. It clips crossing triangles and interpolates their vertex attributes (including UVs), preserves material groups and compacts each quarter's vertices. This is real geometry partitioning, not shader-only clipping. Missing normals are generated. Work yields periodically while preparing a cell.
+
+`ARModel` activates a 2×2 quarter window: its area equals one Z15, potentially assembled from four different cells. Only visible quarters enter `collisionSurfaces`. Up to four full Z15 cells remain resident; the spare cells are selected towards travel, loaded serially and evicted before replacement. This is a bounded directional cache, not an additional full ring beyond the four-cell budget. The demo follows the R/C vehicle and supports manual map translation. Textures are still shared at whole-cell resolution; decoded geometry/texture memory and the cost of preparing the next cell remain limitations to measure on Quest.
+
+Validation: nine tests cover partition area, UV continuity, missing normals, selection and eviction. The live Atlas start cell loaded in Chrome after partition: 1,270,505 triangles versus 1,264,871 before partition (about 0.45% seam overhead when all its quarters are shown). This does not establish Quest FPS or prove that four decoded cells fit the headset's memory budget.
+
+### Agarre de funda y cartuchos manipulables
+
+`XRLoadout` siempre extrae la pistola de la funda al montaje calibrado del mango.
+En una pistola suelta se conserva el agarre libre de corredera/punta; cerca del
+`GripSocket` tiene prioridad el agarre alineado.
+
+Los cartuchos vivos pertenecen a `XRLoadout.cartridges`: se pueden recoger tras
+expulsarlos o coger la bala superior de un cargador sostenido con la otra mano.
+Se usa el botón de agarre. Acercar el cartucho a la ventana de expulsión con la
+corredera abierta llama a `Sidearm.seatCartridge()` y al estado común de firearm.
+Solo se consume el objeto cuando la recámara acepta la bala; al cerrar no se
+alimenta otra del cargador. Funciona también sin cargador. En AR los cartuchos
+usan `XRItemContacts` y el mismo mundo físico que el resto del inventario; la
+expulsión conserva el lanzamiento de `CasingMotion`. Los casquillos vacíos
+siguen siendo efectos visuales, no munición. Hay un máximo de 24 cartuchos
+sueltos, además de los sostenidos.

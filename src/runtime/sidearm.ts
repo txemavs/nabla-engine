@@ -1,3 +1,4 @@
+import { assetUrlForQuality, type AssetQuality } from '../render/entity/asset-quality.js'
 import type { MagazineEntity } from '../simulation/weapons/magazine.js'
 import {
   normalizeWeaponWheel,
@@ -23,6 +24,7 @@ import {
   swapFreshMagazine,
   releaseSlide,
   moveSlide,
+  seatCartridge,
   takeMagazine,
   seatMagazine,
   freshFirearm,
@@ -201,7 +203,11 @@ export class Sidearm {
   /** Settles once the assembled model has replaced the placeholder block (or failed to load). */
   readonly ready: Promise<void>
 
-  constructor(_viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]) {
+  constructor(
+    _viewport: HTMLElement,
+    preset: WeaponPreset | undefined = weaponPresets()[0],
+    readonly assetQuality: AssetQuality = 'full',
+  ) {
     this.preset = preset
     this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
@@ -227,7 +233,10 @@ export class Sidearm {
     }
     let loading: Promise<unknown> = Promise.resolve()
     if (preset?.model) {
-      const model = preset.model
+      const model = assetUrlForQuality(
+        { url: preset.model, lowUrl: preset.modelLow },
+        this.assetQuality,
+      )
       loading = Promise.all([assets.instantiate(model), preset.rig ? loadRig(preset.rig) : null])
         .then(([object, rig]) => {
           if (this.disposed) return disposeObject(object)
@@ -1151,6 +1160,14 @@ export class Sidearm {
     quaternion.premultiply(inverse)
     direction.applyQuaternion(inverse)
     return { position, quaternion, direction }
+  }
+
+  seatCartridge(): boolean {
+    return seatCartridge(this.state)
+  }
+
+  worldChamber(): THREE.Vector3 | null {
+    return ejectionPort(this.model)?.position ?? null
   }
 
   cartridgeClone(): THREE.Object3D | null {

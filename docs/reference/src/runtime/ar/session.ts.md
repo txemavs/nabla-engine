@@ -11,7 +11,7 @@
 
 ## GameAR.constructor
 
-[Implementation, line 6](../../../../../src/runtime/ar/session.ts#L6)
+[Implementation, line 7](../../../../../src/runtime/ar/session.ts#L7)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -25,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameAR.enterAR
 
-[Implementation, line 15](../../../../../src/runtime/ar/session.ts#L15)
+[Implementation, line 16](../../../../../src/runtime/ar/session.ts#L16)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -48,7 +48,7 @@ Explicit throws in this body:
 
 ## GameAR.visible
 
-[Implementation, line 30](../../../../../src/runtime/ar/session.ts#L30)
+[Implementation, line 31](../../../../../src/runtime/ar/session.ts#L31)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -58,7 +58,7 @@ visible(): boolean
 
 ## GameAR.update
 
-[Implementation, line 33](../../../../../src/runtime/ar/session.ts#L33)
+[Implementation, line 34](../../../../../src/runtime/ar/session.ts#L34)
 
 AR view of the same XR runtime. No application content or physics world is created.
 

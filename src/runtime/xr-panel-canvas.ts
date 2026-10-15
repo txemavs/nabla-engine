@@ -1,7 +1,20 @@
+import { interfaceTheme as theme } from './interface-theme.js'
 import * as THREE from 'three'
 
-export type XRPanelPage = 'main' | 'quality' | 'development' | 'board' | 'target'
+export type XRPanelPage =
+  | 'main'
+  | 'options'
+  | 'radio'
+  | 'quality'
+  | 'development'
+  | 'board'
+  | 'target'
+  | 'map'
+  | 'environment'
+  | 'experimental'
 export interface XRPanelAction {
+  /** Stable key for host-defined menu ordering, independent of the displayed label. */
+  id?: string
   label: string
   run: () => void
 }
@@ -77,30 +90,51 @@ export class XRPanelCanvas {
     if (key === this.last) return
     this.last = key
     const c = this.canvas.getContext('2d')!
-    c.fillStyle = '#102632'
+    c.fillStyle = theme.surface
     c.fillRect(0, 0, 1024, 640)
     c.textAlign = 'left'
-    c.font = 'bold 30px Arial'
-    c.fillStyle = '#eefaff'
+    c.font = `${theme.textSize}px Arial`
+    c.fillStyle = theme.ink
     c.fillText(page === 'main' ? 'MENÚ PRINCIPAL' : '‹ Volver', 28, 48)
     c.textAlign = 'center'
-    c.fillText(page === 'board' ? 'PIZARRA' : page === 'target' ? 'DIANA · 1–10' : 'NABLA', 630, 48)
-    c.fillStyle = '#326078'
+    c.fillText(
+      page === 'board'
+        ? 'PIZARRA'
+        : page === 'target'
+          ? 'DIANA · 1–10'
+          : page === 'options'
+            ? 'OPCIONES'
+            : page === 'radio'
+              ? 'RADIOCONTROL'
+              : page === 'map'
+                ? 'MAPA'
+                : page === 'environment'
+                  ? 'ENTORNO'
+                  : page === 'experimental'
+                    ? 'BETAFLIGHT · EXPERIMENTAL'
+                    : 'NABLA',
+      630,
+      48,
+    )
+    c.fillStyle = theme.button
     c.fillRect(944, 12, 64, 56)
-    c.fillStyle = '#eefaff'
+    c.fillStyle = theme.ink
     c.fillText('X', 976, 49)
-    if (page === 'main') {
+    if (['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes(page)) {
       actions.forEach((action, i) => {
         const x = 24 + (i % 3) * 328,
           y = 94 + Math.floor(i / 3) * 90
         const down = this.pressed === i
-        c.fillStyle = '#08171e'
-        c.fillRect(x, y + 6, 312, 76)
-        c.fillStyle = down ? '#173749' : '#244b60'
-        c.fillRect(x + (down ? 3 : 0), y + (down ? 5 : 0), down ? 306 : 312, 76)
-        c.fillStyle = '#eefaff'
-        c.font = '25px Arial'
-        c.fillText(action.label, x + 156, y + 47 + (down ? 5 : 0), 294)
+        c.fillStyle = down ? theme.selected : theme.button
+        c.beginPath()
+        c.roundRect(x, y, 312, 76, theme.radius)
+        c.fill()
+        c.strokeStyle = down ? theme.accent : theme.line
+        c.lineWidth = 1
+        c.stroke()
+        c.fillStyle = theme.ink
+        c.font = `${theme.textSize}px Arial`
+        c.fillText(action.label, x + 156, y + 47, 294)
       })
       c.font = '18px Arial'
       c.fillText(status, 512, 600, 970)
@@ -130,7 +164,7 @@ export class XRPanelCanvas {
                   ? '#44a5d4'
                   : i <= 8
                     ? '#202630'
-                    : '#eefaff'
+                    : theme.ink
           c.fill()
           c.strokeStyle = '#6f7882'
           c.lineWidth = 1
@@ -146,7 +180,7 @@ export class XRPanelCanvas {
           c.fill()
         }
       }
-      c.fillStyle = '#b8cdd7'
+      c.fillStyle = theme.muted
       c.font = '19px Arial'
       c.fillText(
         page === 'board'

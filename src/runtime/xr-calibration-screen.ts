@@ -1,3 +1,5 @@
+import { xrMonitorThemeStyles } from './interface-theme.js'
+import { XRDisposalPortal } from './xr-disposal-portal.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import { XRUiClick } from './xr-ui-click.js'
 import { XRPanelCanvas, type XRPanelAction, type XRPanelPage } from './xr-panel-canvas.js'
@@ -23,6 +25,12 @@ export class XRCalibrationScreen {
   qualityMenu?: XRQualityMenu
   development = false
   mainMenu?: () => XRPanelAction[]
+  mainMenuOrder?: readonly string[]
+  optionsMenu?: () => XRPanelAction[]
+  radioMenu?: () => XRPanelAction[]
+  mapMenu?: () => XRPanelAction[]
+  environmentMenu?: () => XRPanelAction[]
+  experimentalMenu?: () => XRPanelAction[]
   mainStatus: () => string = () => ''
   private page: XRPanelPage = 'main'
   private canvasPanel?: XRPanelCanvas
@@ -32,20 +40,34 @@ export class XRCalibrationScreen {
     this.page = 'main'
     this.show()
   }
-  private navigate(page: XRPanelPage): void {
+  navigate(page: XRPanelPage): void {
     this.page = page
     this.development = page === 'development'
     this.expanded = false
     this.canvasPanel?.endStrokes()
   }
   private actions(): XRPanelAction[] {
-    return [
+    if (this.page === 'experimental') return this.experimentalMenu?.() ?? []
+    if (this.page === 'map') return this.mapMenu?.() ?? []
+    if (this.page === 'environment') return this.environmentMenu?.() ?? []
+    if (this.page === 'radio') return this.radioMenu?.() ?? []
+    if (this.page === 'options') return this.optionsMenu?.() ?? []
+    const actions: XRPanelAction[] = [
       ...(this.mainMenu?.() ?? []),
-      { label: 'Calidad', run: () => this.navigate('quality') },
-      { label: 'Desarrollo', run: () => this.navigate('development') },
-      { label: 'Pizarra', run: () => this.navigate('board') },
-      { label: 'Diana 1–10', run: () => this.navigate('target') },
+      ...(this.radioMenu
+        ? [{ id: 'radio', label: 'Radiocontrol', run: () => this.navigate('radio') }]
+        : []),
+      { id: 'quality', label: 'Calidad', run: () => this.navigate('quality') },
+      { id: 'development', label: 'Desarrollo', run: () => this.navigate('development') },
+      { id: 'board', label: 'Pizarra', run: () => this.navigate('board') },
+      { id: 'target', label: 'Diana 1–10', run: () => this.navigate('target') },
+      { id: 'options', label: 'Opciones', run: () => this.navigate('options') },
     ]
+    if (!this.mainMenuOrder) return actions
+    const rank = new Map(this.mainMenuOrder.map((id, index) => [id, index]))
+    return actions.sort(
+      (a, b) => (rank.get(a.id ?? '') ?? Infinity) - (rank.get(b.id ?? '') ?? Infinity),
+    )
   }
   get targets(): THREE.Mesh[] {
     return this.root.visible && (this.page === 'target' || this.page === 'board') ? [this.face] : []
@@ -59,6 +81,7 @@ export class XRCalibrationScreen {
   readonly root = new THREE.Group()
   readonly monitor = new HtmlMonitor('/monitors/xr-calibration.html', 1024, 640, {
     intervalMs: 100,
+    styleText: xrMonitorThemeStyles,
   })
   readonly face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
@@ -90,13 +113,22 @@ export class XRCalibrationScreen {
   private ids: XRCalibrationObject[]
   private raycaster = new THREE.Raycaster()
 
+  readonly solid = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, 0.03),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  )
+  readonly disposal = new XRDisposalPortal(this.face, width, height)
+  get collisionSurfaces(): THREE.Mesh[] {
+    return this.root.visible ? [this.solid] : []
+  }
   constructor(
     scene: THREE.Scene,
     readonly calibration: XRCalibration,
   ) {
     this.ids = Object.keys(calibration.editableObjects) as XRCalibrationObject[]
     this.root.name = 'XR calibration touchscreen'
-    this.root.add(this.face)
+    this.solid.userData.xrSupplementalCollision = true
+    this.root.add(this.face, this.solid)
     this.root.visible = false
     scene.add(this.root)
     void assets
@@ -163,7 +195,18 @@ export class XRCalibrationScreen {
     this.previousOrigin.copy(origin)
     this.root.visible = true
     this.root.updateWorldMatrix(true, true)
-    const canvasPage = this.mainMenu && ['main', 'board', 'target'].includes(this.page)
+    const canvasPage =
+      this.mainMenu &&
+      [
+        'main',
+        'options',
+        'radio',
+        'board',
+        'target',
+        'map',
+        'environment',
+        'experimental',
+      ].includes(this.page)
     if (canvasPage) {
       this.canvasPanel ??= new XRPanelCanvas()
       this.face.material.map = this.canvasPanel.texture
@@ -201,7 +244,7 @@ export class XRCalibrationScreen {
     const values: Record<string, string | number> = {
       title: this.mainMenu ? '‹ Volver' : '‹ CALIDAD',
       section: this.mainMenu ? 'DESARROLLO' : 'Desarrollo ›',
-      footerRight: 'Traer pantalla aquí',
+      footerRight: '',
       footerLeft: 'Restablecer objeto',
       object: this.expanded ? 'Selecciona un objeto' : this.calibration.objects[id],
       hint: this.expanded
@@ -228,7 +271,26 @@ export class XRCalibrationScreen {
   }
 
   /** Pixel regions match the trusted HTML template; no arbitrary page scripts are executed. */
-  activate(x: number, y: number): void {
+  activate(x: number, y: number, hand?: THREE.Object3D): void {
+    if (this.mainMenu && this.page === 'main' && x < 400 && y < 76) {
+      this.click()
+      if (hand) {
+        const position = hand
+          .getWorldPosition(new THREE.Vector3())
+          .add(
+            new THREE.Vector3(0, height / 2, -0.06).applyQuaternion(
+              this.root.getWorldQuaternion(new THREE.Quaternion()),
+            ),
+          )
+        this.frameGrab.reset()
+        this.root.position.copy(
+          this.root.parent ? this.root.parent.worldToLocal(position) : position,
+        )
+        this.root.updateWorldMatrix(true, true)
+        this.placed = true
+      } else this.show(true)
+      return
+    }
     if (this.mainMenu) {
       if (x >= 936 && y < 76) {
         this.click()
@@ -243,7 +305,7 @@ export class XRCalibrationScreen {
           this.canvasPanel?.clear(this.page)
         return
       }
-      if (this.page === 'main') {
+      if (['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes(this.page)) {
         if (x >= 24 && x < 1008 && y >= 94 && y < 544) {
           const i = Math.floor((y - 94) / 90) * 3 + Math.floor((x - 24) / 328)
           this.canvasPanel?.press(i)
@@ -263,7 +325,7 @@ export class XRCalibrationScreen {
       button = `[data-value="option${Math.floor((y - 172) / 45) * 2 + Number(x >= 512)}"]`
     else if (y >= 172 && y < 532 && ((x >= 400 && x < 496) || (x >= 864 && x < 960)))
       button = `.row:has([data-value="label-${keys[rowIndex]}"]) .${x < 496 ? 'minus' : 'plus'}`
-    else if (y >= 550 && y < 608)
+    else if (y >= 550 && y < 608 && (!this.development || x < 650))
       button = `[data-value="${x < 310 ? 'footerLeft' : x < 650 ? 'step' : 'footerRight'}"]`
     if (button) {
       this.monitor.press(button)
@@ -322,7 +384,6 @@ export class XRCalibrationScreen {
     } else if (y >= 550 && y < 608) {
       if (x < 310) this.calibration.reset(this.ids[this.selected])
       else if (x < 650) this.coarse = !this.coarse
-      else this.show(true)
     }
   }
 
@@ -439,7 +500,12 @@ export class XRCalibrationScreen {
       }
       marker.position.copy(point)
       marker.visible = true
-      if (fire) this.activate((point.x / width + 0.5) * 1024, (0.5 - point.y / height) * 640)
+      if (fire)
+        this.activate(
+          (point.x / width + 0.5) * 1024,
+          (0.5 - point.y / height) * 640,
+          pointer.grip ?? aim,
+        )
       this.captured.add(source)
       if (!this.requested) break
     }
@@ -447,6 +513,8 @@ export class XRCalibrationScreen {
     this.triggers = triggers
   }
   dispose(): void {
+    this.solid.geometry.dispose()
+    this.solid.material.dispose()
     this.disposed = true
     this.clickSound.dispose()
     this.root.removeFromParent()

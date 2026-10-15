@@ -83,6 +83,7 @@ const presetSchema = z
     slide: z.string().min(1).max(200).optional(),
     /** Assembled GLB with Frame / Slide / Trigger / Magazine nodes and a MuzzleSocket. */
     model: z.string().min(1).max(200).optional(),
+    modelLow: z.string().min(1).max(200).optional(),
     /** Presentation rig JSON (part and socket names, artistic travel) for `model`. */
     rig: z.string().min(1).max(200).optional(),
     scale: z.number().finite().positive().max(10),

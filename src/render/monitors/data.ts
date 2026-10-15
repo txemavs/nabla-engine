@@ -4,6 +4,8 @@ export interface MonitorData {
   bars: Record<string, number>
 }
 export interface MonitorOptions {
+  /** Trusted inline host CSS, appended after the template styles. */
+  styleText?: string
   /** Base refresh interval; template data-update-ms is used when omitted. */
   intervalMs?: number
   adaptive?: boolean

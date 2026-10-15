@@ -267,8 +267,169 @@ manifests and models. Loading exposes provider errors through progress and the
 startup rejection. The four-tile synthetic example makes no external requests.
 
 `npm run build:game` produces `game-dist/`; deploy the whole directory.
+
+The same release includes `/headset.html` (Nabla HeadSet launcher), `/xr.html`
+(VR), `/ar.html` (AR), `/xr-demo.html` and `/ar-rc.html`. Euskadi Online's
+publisher must copy these alongside `index.html`, the generated `assets/`,
+`packs/`, rigs and other runtime resources. Do not filter the deployment down
+to the desktop entry. The post-build step checks that all these pages and their
+compiled entry scripts exist. Serve real HTML files before any SPA fallback.
+
+These pages use the site's HTTPS origin; no local Vite server or separate
+headset hosting is required. Publishing the npm engine library alone does not
+publish the demo pages: the host deployment must include `game-dist/` too.
+Production map endpoints must also be reachable from the host: Vite's local
+`/terrain` folder and `/atlas-live` development proxy are not deployed services.
+AR already selects the direct Atlas URL in production. Configure any terrain
+routes used by XR for the production host before offering those map presets.
+
 `npm run build:fixture` regenerates the deterministic example. Run
 `node scripts/runtime-smoke.mjs` against the game; `NABLA_GAME_URL` selects the
 host and `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser.
 Also verify a clean sibling application installed from `npm pack` output, so
 ancestor dependencies and source-tree aliases cannot hide packaging problems.
+
+### Shared interface theme (HeadSet and monitors)
+
+`src/runtime/interface-theme.ts` is the shared source for the accepted Agency-style
+palette: surface `#1e1e1e`, controls `#252525`, accent `#2196f3`, 2 px corners,
+20 px text, 36 px minimum control height and no press displacement.
+
+- HeadSet, AR and XR HTML entries install it through `game/interface-theme.ts`.
+- Ship and container CSS3D panels and the settings HUD append the same theme through
+  `vehicleMonitorStyleText()`; transform and interaction layout remain intact.
+- The AR/VR main menu canvas reads `interfaceTheme` directly. Its hit regions remain
+  at their original size; pressed buttons change colour without moving.
+- The calibration/quality HTML monitor receives `xrMonitorThemeStyles` through
+  `MonitorOptions.styleText`. `HtmlMonitor` appends that trusted inline CSS to its
+  rasterised document, so no external stylesheet fetch or per-frame CSS work is needed.
+
+36 px is a minimum for ordinary page controls, not a replacement for the authored
+world-space contact regions. Gauge graphics and physics are independent of the theme.
+
+### Unified HeadSet entry
+
+`headset.html` is titled **Nabla Engine** and has VR/AR tabs. VR builds the existing
+`xr.html` URL from the place and vehicle selectors. Selecting AR lazily prepares
+`game/ar.ts` in the same document, reusing its controls from the AR HTML template.
+There is no iframe, second AR implementation, automatic navigation or synthetic click.
+The visible Enter button is bound by the existing AR application, so `requestSession`
+retains the real click's user activation. Preparation must finish before enabling Enter.
+`configureARHost` reports session changes to hide/restore the launcher and suppresses
+non-immersive render frames while embedded. Re-selecting the tab reuses the same runtime.
+Standalone `ar.html` remains available for development.
+
+### VR framed menu
+
+Explicit VR entries (`xr.html` or `?xr`) use the engine's shared
+`XRCalibrationScreen`. Controller X toggles the framed, grabbable monitor;
+Quality, Options, Development, nearby Z15 loading, destination selection and exit
+live there. FPS and terrain progress appear in the monitor. The browser only
+shows grey Monitor and Enter VR buttons at the top right. Touch driving controls
+are disabled for VR entries; physical in-world steering remains unchanged.
+`bindXRQuality(runtime, [], false)` installs the same quality actions without
+mounting a separate browser panel. Desktop Euskadi Online keeps its existing UI.
+
+### Experimental drone
+
+The AR monitor includes **Betaflight · experimental**, the Agency quadcopter
+controller running in the shared Engine room world. See
+[experimental-betaflight.md](experimental-betaflight.md) for provenance, controls,
+physics composition and current limitations.
+
+### Two-hand bow
+
+AR's monitor can add the user-supplied recurve bow. Reusable draw rules are
+exported by `@nabla/engine/weapons/bow`, and the optional XR adapter by
+`@nabla/engine/xr/bow`. See [xr-bow.md](xr-bow.md) for controls, shared physics,
+model binding and resource licensing.
+
+### Basketball hoop and room contacts
+
+AR's **Canasta** uses the same `XRStationPlacement` as driving controls and the
+existing room balls, with a pinned hoop and an enceste counter. R/C vehicle
+physical shapes now also push loose props in that shared world. See
+[xr-hoop.md](xr-hoop.md) for composition, controls and scaling limitations.
+
+### AR vehicle hits, detached trailers and brass audio
+
+Picking a hitched trailer calls `XRScaledVehicles.beginGrab`, which releases the
+existing Simulation hitch before relocation. Only the connected hitch assembly
+moves or inherits the throw velocity; a detached tractor stays where it was.
+`ARRC.targets` supplies visible vehicle meshes to the shared weapon ray query.
+`ARRC.hit` delegates pane removal and fragments to SceneView's `brokenGlass` and
+`destruction`, and body damage/impulse to Simulation. Vehicle roots keep their
+room scale; fragment origins convert back to simulation metres.
+Authored `Cabin` lights remain off independently of exterior position lights.
+AR shell bounces now call the existing `VehicleAudio.casing` with the world
+contact position and speed reported by `CasingMotion`, capped at three voices
+per update. Resting brass emits no contact events or repeated sound.
+
+### R/C F14 and shared aircraft presentation
+
+`f14` is a normal vehicle preset, usable by Simulation and SceneView in desktop,
+VR or AR. `vehicle.aircraft` selects jet audio and slow/fast speed tuning in the
+existing `stepFlight` controller. `Simulation.setFlightSpeedMode(id, mode)`
+changes the regime without teleporting or resetting velocities; telemetry
+provides `flightSpeedMode` and `flightControls` to the common aircraft rig.
+Legacy planes retain their existing propeller and flight defaults.
+
+AR's **Radiocontrol → F14 Tomcat** uses the regular scaled vehicle host, grip,
+throw, surface collisions and disposal portal. Left stick: up for thrust,
+horizontal for rudder. Right stick: pitch and roll. B toggles slow/fast; the
+monitor also exposes the current flight mode. X remains the monitor button.
+Slow deploys the wings; fast sweeps them back. Differential stabilators follow
+pitch/roll, and two emissive exhausts follow Engine's spool telemetry. This uses
+asset metadata and the ordinary presenter; AR does not animate its own copy.
+At 1:100 the 19.1 m aircraft is 19.1 cm long and travels at scaled speed.
+
+### AR room origin through system menus and tracking interruptions
+
+The shared XR session controller requests optional WebXR `anchors` in AR and
+creates one session anchor at the calibrated room origin. Each tracked frame
+locates that anchor in the native unbounded space and installs it as the common
+render reference. This keeps room meshes, placed monitors/equipment and physics
+in one coordinate system even when the headset changes its native origin.
+Known `reset` transforms remain the fallback when anchors are unavailable. An
+AR head recenter does not redefine an already established room origin.
+
+During system menus, headset removal or missing viewer/anchor poses, the AR host
+pauses placement, grabbing and physics updates. It resumes with zero elapsed
+time when tracking returns; a tracking gap is not treated as a hand release.
+The anchor is deleted at session end, including late asynchronous creation.
+This preserves placement within an active session; restoring after session end
+or page reload would additionally require persistent anchors and saved content.
+See the [WebXR Anchors specification](https://immersive-web.github.io/anchors/).
+
+### AR forklift and physical pallets
+
+**Radiocontrol → Toro · tres palancas** loads the `forklift-rc` preset through
+the same Simulation/SceneView as all R/C vehicles. Real controls now default on
+for ground R/C vehicles (aircraft retain stick controls). Steering and trigger
+throttle/reverse work as before. A separate station copies the model's three
+lever groups beside the wheel, with spherical grip knobs: grip and pull/push
+for lift, mast tilt and side shift. `XRForklift` supplies the existing
+`Simulation.setForkliftInput` axes; the levers are never children of wheel spin.
+The driving station has independent `ar-rc-forklift` calibration and the usual
+body follow/grabbable placement/black pin button.
+
+**Palé suelto** and **Palé + caja de 1 m** create bounded dynamic Engine box
+entities from `catalog/props/pallet.ts`, at the active R/C scale. Their compound
+plank colliders retain fork-entry gaps. They join the vehicle's own Simulation,
+so load weight, forklift contacts, scanned room surfaces and gravity are solved
+in the same world. Pickup/one or two hand placement/throw uses the existing
+XRObjectGrab with generic `relocateEntities`/`releaseEntities`; original vehicle
+methods delegate to those same operations. No scripted pallet attachment or
+private lift solver is used. The shared `addPlaced` contract now accepts
+standalone dynamic boxes as well as static scenery; other restrictions remain.
+
+Up to 12 pallets are retained. The monitor's disposal portal removes individual
+pallets; clearing the environment removes their bodies and presentation along
+with the vehicle. Loaded pallets can tip or slip if the forks are poorly placed.
+
+The R/C forklift's **AR · Volante toro** and **AR · Palancas toro** calibration
+entries have independent XYZ and angles. The lever console is a sibling of the
+wheel beneath the shared station anchor; wheel tilt does not affect lever
+position/orientation. Both still follow the same body anchor and pin/grab as one
+station. Existing stored wheel adjustments retain their meaning for the wheel;
+the lever console starts from its original, unrotated layout.

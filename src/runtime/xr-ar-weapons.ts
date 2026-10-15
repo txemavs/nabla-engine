@@ -1,6 +1,6 @@
+import type { XRDisposalTest } from './xr-disposal-portal.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
 import { Casings } from '../render/entity/casings.js'
-import { DroppedMagazines } from '../render/entity/magazines.js'
 import type { Vec3Tuple } from '../entity/schema.js'
 import { Vec3, type World } from '../simulation/physics.js'
 import { XRItemContacts } from './xr-item-contacts.js'
@@ -16,7 +16,11 @@ import type { GrabHand } from './xr-grab.js'
 
 /** Small mixed-reality host for the same carried weapons used by the game. */
 export class XRARWeapons {
-  onHit?: (object: THREE.Object3D, point: THREE.Vector3, direction: THREE.Vector3) => boolean | void
+  onHit?: (
+    object: THREE.Object3D,
+    point: THREE.Vector3,
+    direction: THREE.Vector3,
+  ) => boolean | void | { handled: boolean; glass?: boolean; metal?: boolean }
   physicsWorld: () => World | null = () => null
   readonly loadout: XRLoadout
   readonly ready: Promise<void>
@@ -26,26 +30,35 @@ export class XRARWeapons {
   private readonly sparks = new ShotSparks()
   private casingMotion: CasingMotion | null = null
   private casingMeshes: Casings | null = null
-  private cartridgeMotion: CasingMotion | null = null
-  private cartridgeMeshes: DroppedMagazines | null = null
   private readonly origin = new THREE.Vector3()
   private readonly ray = new THREE.Raycaster()
 
+  disposalTest?: XRDisposalTest
   constructor(
     private readonly scene: THREE.Scene,
     private readonly camera: THREE.PerspectiveCamera,
     private readonly xr: GameXR,
     viewport: HTMLElement,
   ) {
-    const weapons = [new Sidearm(viewport), new Sidearm(viewport)]
+    const weapons = [
+      new Sidearm(viewport, undefined, 'low'),
+      new Sidearm(viewport, undefined, 'low'),
+    ]
     this.contacts.onContact = (point) => this.audio.weaponSound('prop-impact', point.toArray())
     this.loadout = new XRLoadout(scene, weapons, xr.calibration)
+    this.loadout.physicalPistols = true
+    this.loadout.discardDropped = (root, dt) =>
+      !!this.disposalTest && this.contacts.entersDisposal(root, this.disposalTest, dt)
     this.loadout.droppedPhysics = (root, velocity, angularVelocity) =>
       this.contacts.drop(root, velocity, this.physicsWorld(), angularVelocity)
     this.ready = Promise.all(weapons.map((w) => w.ready)).then(() => undefined)
     scene.add(this.sparks.root)
   }
 
+  /** Pause audio without discarding placed objects or active grips. */
+  setAudioActive(active: boolean): void {
+    this.audio.setSuspended(!active)
+  }
   unlock(): void {
     this.audio.unlock()
   }
@@ -57,9 +70,7 @@ export class XRARWeapons {
     this.sparks.root.visible = false
     this.impacts.clear()
     this.casingMotion?.reset()
-    this.cartridgeMotion?.reset()
     this.casingMeshes?.sync([])
-    this.cartridgeMeshes?.sync([])
   }
 
   tip(source: XRInputSource): THREE.Vector3 | null {
@@ -81,6 +92,7 @@ export class XRARWeapons {
     this.sparks.root.visible = this.xr.visible
     this.impacts.setLimit(this.xr.quality.impactLimit)
     this.sparks.enabled = this.xr.quality.sparks
+    this.loadout.showVest = this.xr.quality.showVest
     const events = this.loadout.update(
       hands.filter((h) => this.loadout.occupied(h) || !this.xr.calibrationOwns(h.source)),
       this.camera,
@@ -95,9 +107,12 @@ export class XRARWeapons {
           from.y >= 0 && from.y <= distance ? new THREE.Vector3(from.x, 0, from.z) : null),
       (weapon) => this.audio.weaponSound('slide-back', weapon.worldMuzzle()?.toArray()),
     )
-    this.contacts.retainDropped(
-      this.loadout.magazines.filter((m) => !m.holder && !m.pocket).map((m) => m.root),
-    )
+    this.contacts.retainDropped([
+      ...this.loadout.cartridges.map((c) => c.root),
+      ...this.loadout.magazines.filter((m) => !m.pocket).map((m) => m.root),
+      ...this.loadout.pistols.filter((p) => p.dropped || p.holder).map((p) => p.holdMount),
+    ])
+    targets = [...targets, ...this.contacts.targets]
     const collide = (weapon: Sidearm) => {
       const points = ['GripSocket', 'MuzzleSocket']
         .map((name) => weapon.model.getObjectByName(name)?.getWorldPosition(new THREE.Vector3()))
@@ -126,6 +141,7 @@ export class XRARWeapons {
       else this.contacts.forget(weapon.model)
       const down =
         this.xr.visible &&
+        pistol.gripMode === 'handle' &&
         !!pistol.holder?.source?.gamepad?.buttons[0]?.pressed &&
         !this.loadout.slideHeld(pistol) &&
         !this.xr.calibrationOwns(pistol.holder?.source ?? null)
@@ -145,12 +161,19 @@ export class XRARWeapons {
             for (const target of targets) target.updateWorldMatrix(true, true)
             const hit = this.ray.intersectObjects(targets, false)[0]
             if (hit) {
-              const handled = this.onHit?.(hit.object, hit.point, this.ray.ray.direction)
+              const response =
+                this.contacts.hit(hit.object, hit.point, this.ray.ray.direction) ||
+                this.onHit?.(hit.object, hit.point, this.ray.ray.direction)
+              const handled = typeof response === 'object' ? response.handled : !!response
+              const glass = typeof response === 'object' && !!response.glass
+              if (glass) this.audio.destruction(hit.point.toArray(), true)
+              else if (typeof response === 'object' && response.metal)
+                this.audio.metalImpact(hit.point.toArray())
               const normal = (
                 hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1)
               ).applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld))
               if (normal.dot(this.ray.ray.direction) > 0) normal.negate()
-              this.sparks.add(hit.point.toArray(), now, normal.toArray())
+              if (!glass) this.sparks.add(hit.point.toArray(), now, normal.toArray())
               if (!handled)
                 this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
             }
@@ -168,6 +191,10 @@ export class XRARWeapons {
       }
       weapon.syncMuzzleLight(now, this.scene, this.camera, false)
     }
+    for (const p of this.loadout.pistols)
+      if (p.holder) this.contacts.trackHeld(p.holdMount, this.physicsWorld())
+    for (const m of [...this.loadout.magazines, ...this.loadout.cartridges])
+      if (m.holder) this.contacts.trackHeld(m.root, this.physicsWorld())
     this.sparks.update(now)
     this.loadout.updateLasers(now, this.camera.fov, (origin, direction, range) => {
       this.ray.set(origin, direction)
@@ -185,13 +212,14 @@ export class XRARWeapons {
         n = hit.normal
       return { point: [p.x, p.y, p.z] as Vec3Tuple, normal: [n.x, n.y, n.z] as Vec3Tuple }
     }
-    for (const [motion, meshes] of [
-      [this.casingMotion, this.casingMeshes],
-      [this.cartridgeMotion, this.cartridgeMeshes],
-    ] as const) {
+    for (const [motion, meshes] of [[this.casingMotion, this.casingMeshes]] as const) {
       if (!motion || !meshes) continue
       motion.setLimit(this.xr.quality.casingLimit)
-      if (this.xr.visible) motion.update(dt, cast)
+      if (this.xr.visible) {
+        motion.update(dt, cast)
+        for (const impact of motion.impacts.slice(0, 3))
+          this.audio.casing(impact.speed, impact.position)
+      }
       meshes.sync(motion.poses())
     }
   }
@@ -201,18 +229,25 @@ export class XRARWeapons {
     const spec = weapon.preset?.casing
     const pose = weapon.ejectionPose(false, this.camera.fov)
     if (!spec || !pose) return
-    if (cartridge && !this.cartridgeMeshes) {
-      const clone = weapon.cartridgeClone()
-      if (!clone) return
-      this.cartridgeMeshes = new DroppedMagazines(clone, 24, false)
-      this.cartridgeMotion = new CasingMotion(spec)
-      this.scene.add(this.cartridgeMeshes.root)
-    } else if (!cartridge && !this.casingMeshes) {
+    if (cartridge) {
+      const item = this.loadout.addCartridge(weapon, pose.position)
+      const launch = new CasingMotion(spec).eject(
+        pose.position.toArray(),
+        pose.right.toArray(),
+        pose.up.toArray(),
+      )
+      if (item && launch) {
+        item.velocity.fromArray(launch.velocity)
+        item.angularVelocity.fromArray(launch.spin)
+      }
+      return
+    }
+    if (!this.casingMeshes) {
       this.casingMeshes = new Casings(spec.lengthM, spec.rimDiameterM)
       this.casingMotion = new CasingMotion(spec)
       this.scene.add(this.casingMeshes.root)
     }
-    const motion = cartridge ? this.cartridgeMotion : this.casingMotion
+    const motion = this.casingMotion
     motion!.setLimit(this.xr.quality.casingLimit)
     motion!.eject(pose.position.toArray(), pose.right.toArray(), pose.up.toArray())
   }
@@ -230,8 +265,6 @@ export class XRARWeapons {
     this.contacts.dispose()
     this.casingMeshes?.dispose()
     this.casingMeshes?.root.removeFromParent()
-    this.cartridgeMeshes?.dispose()
-    this.cartridgeMeshes?.root.removeFromParent()
     this.loadout.dispose()
     for (const pistol of this.loadout.pistols) pistol.weapon.dispose()
     this.impacts.dispose()

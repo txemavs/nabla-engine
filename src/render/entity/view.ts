@@ -74,6 +74,7 @@ import {
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
 import { mountPropeller } from './propeller.js'
+import { mountAircraft, type AircraftRig } from './aircraft.js'
 import { RoadBatches } from '../planet/road-batches.js'
 import { LandcoverBatches } from '../planet/landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
@@ -210,6 +211,7 @@ export class SceneView {
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
   private readonly odometers = new Map<string, number>()
+  private readonly aircraft = new Map<string, AircraftRig>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -711,7 +713,7 @@ export class SceneView {
   }
   /**
    * Install scenery placed while running: standalone portals (Stargate frame), sprites, lamps and
-   * static boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
+   * standalone static/dynamic boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
    */
   addPlaced(added: Entity[]): void {
     assertPlaceable(added, new Map(this.document.entities.map((e) => [e.id, e])))
@@ -780,6 +782,7 @@ export class SceneView {
       this.carMirrors,
       this.instruments,
       this.propellers,
+      this.aircraft,
       this.shipHuds,
       this.helmScreens,
       this.touchScreens,
@@ -1332,7 +1335,9 @@ export class SceneView {
         this.beacons.set(e.id, equipment.beacons)
         this.surfaceTextures.push(...equipment.beacons.textures)
       }
-      if (e.vehicle?.plane) {
+      const aircraft = mountAircraft(model)
+      if (aircraft) this.aircraft.set(e.id, aircraft)
+      if (e.vehicle?.plane && e.vehicle.aircraft?.propulsion !== 'jet') {
         const propeller = mountPropeller(model)
         if (propeller) this.propellers.set(e.id, propeller)
       }
@@ -1771,6 +1776,7 @@ export class SceneView {
         sim.vehicleInfo(id).steer,
         this.steeringPivots.get(id),
       )
+    for (const [id, aircraft] of this.aircraft) aircraft.update(sim.vehicleInfo(id), elapsed)
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
     for (const [id, equipment] of this.beacons)

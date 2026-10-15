@@ -1,58 +1,53 @@
-import { bindXRQuality, bindXRCalibration } from '@nabla/engine/xr/ui'
+import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
-/** Both online terrain and test.html use the Engine's immersive session. */
+/** Mount immersive controls only for an explicit XR entry; desktop keeps its own UI. */
 export function bindVR(runtime: GameRuntime): void {
+  const immersiveEntry =
+    location.pathname === '/xr.html' ||
+    location.pathname === '/xr-demo.html' ||
+    new URLSearchParams(location.search).has('xr')
+  if (!immersiveEntry) return
+
   if (new URLSearchParams(location.search).has('xr'))
     void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
       console.warn('No se pudieron cargar los guantes; se mantienen las manos básicas.', error)
     })
-  bindXRCalibration(runtime)
   runtime.xr.enableCalibrationScreen()
-  bindXRQuality(
-    runtime,
-    ['xr-calibration', 'xr-destinations']
-      .map((id) => document.getElementById(id))
-      .filter((element): element is HTMLElement => element !== null),
-  )
-  if (new URLSearchParams(location.search).has('xr')) {
-    runtime.xr.enableStats()
-    const output = document.createElement('output')
-    output.id = 'xr-stats'
-    output.style.cssText =
-      'position:fixed;left:12px;bottom:12px;z-index:9999;white-space:pre-line;background:#102632e8;color:#eefaff;padding:10px;border-radius:8px;font:14px monospace;pointer-events:none'
-    output.textContent = '— FPS'
-    document.body.append(output)
-    runtime.xr.onStats = (text) => {
-      output.textContent = text
-    }
+  bindXRQuality(runtime, [], false)
+  const screen = runtime.xr.calibrationScreen!
+  const style = document.createElement('style')
+  style.textContent = `
+    body.nabla-vr :is(#display-settings,#controls-hint,#xr-destinations,
+      #game-hud,.nabla-game-hud,.game-toolbar,.touch-driving,.touch-flight,.touch-walk) { display:none !important; }
+    #vr-toolbar { position:fixed;top:12px;right:12px;z-index:10005;display:flex;gap:8px; }
+    #vr-toolbar button { background:#252525;color:#eee;border:1px solid #444;
+      border-radius:2px;min-height:36px;padding:8px 14px;font:20px system-ui;cursor:pointer; }
+    #vr-toolbar button:disabled { opacity:.5;cursor:default; }
+  `
+  document.head.append(style)
+  document.body.classList.add('nabla-vr')
+  const toolbar = document.createElement('nav')
+  toolbar.id = 'vr-toolbar'
+  toolbar.setAttribute('aria-label', 'Realidad virtual')
+  document.body.append(toolbar)
+  let terrainStatus = '',
+    fps = '— FPS'
+  runtime.xr.enableStats()
+  runtime.xr.onStats = (text) => {
+    fps = text
   }
-  const terrain = document.createElement('button')
-  terrain.id = 'load-nearest-z15'
-  terrain.textContent = '+'
-  terrain.title = 'Añadir Z15 cercano'
-  terrain.setAttribute('aria-label', terrain.title)
-  terrain.style.cssText =
-    'position:fixed;right:16px;top:68px;z-index:10002;padding:12px 18px;background:#16445b;color:white;border:1px solid #79bad4;border-radius:8px;cursor:pointer'
-  const status = document.createElement('output')
-  status.id = 'terrain-load-status'
-  status.setAttribute('role', 'status')
-  status.style.cssText =
-    'position:fixed;right:16px;top:120px;max-width:320px;z-index:10002;background:#102632e8;color:white;padding:6px;border-radius:6px;font:14px sans-serif;pointer-events:none'
-  status.hidden = true
-  document.body.append(terrain, status)
+  screen.mainStatus = () =>
+    [fps, terrainStatus, 'X: abrir/cerrar · Agarra el marco para colocarlo']
+      .filter(Boolean)
+      .join(' · ')
   let busy = false
   const progress = (text: string) => {
-    if (status.textContent === text) return
-    status.hidden = true
-    terrain.title = text
-    status.textContent = text
-    runtime.xr.setTerrainStatus(text)
+    terrainStatus = text
   }
   const loadTerrain = async (): Promise<void> => {
     if (busy) return
     busy = true
-    terrain.disabled = true
     try {
       const terrainBase = new URLSearchParams(location.search).get('terrain') || '/terrain'
       const base =
@@ -62,36 +57,65 @@ export function bindVR(runtime: GameRuntime): void {
       progress(error instanceof Error ? error.message : String(error))
     } finally {
       busy = false
-      terrain.disabled = false
     }
   }
-  terrain.onclick = () => {
-    void loadTerrain()
+  const leave = async () => {
+    await runtime.xr.exit()
   }
-  runtime.xr.enableTerrainButton(loadTerrain)
-  runtime.xr.enableExitButton()
-  const exit = document.createElement('button')
-  exit.id = 'exit-vr'
-  exit.textContent = 'X'
-  exit.title = 'Salir de VR'
-  exit.setAttribute('aria-label', exit.title)
-  exit.style.cssText =
-    'position:fixed;right:16px;top:16px;z-index:10002;padding:12px 18px;background:#843526;color:white;border:1px solid #ffb4a0;border-radius:8px;cursor:pointer'
-  exit.onclick = () => {
-    void runtime.xr.exit().catch((error: unknown) => {
-      const message = document.getElementById('game-message')
-      if (message) message.textContent = error instanceof Error ? error.message : String(error)
-    })
-  }
-  document.body.append(exit)
+  screen.mainMenu = () => [
+    {
+      id: 'terrain',
+      label: busy ? 'Cargando Z15…' : 'Añadir Z15 cercano',
+      run: () => {
+        void loadTerrain()
+      },
+    },
+    {
+      id: 'places',
+      label: 'Elegir lugar y vehículo',
+      run: () => {
+        void leave()
+          .then(() => location.assign('/headset.html'))
+          .catch((error) => {
+            terrainStatus = String(error)
+          })
+      },
+    },
+    {
+      id: 'exit',
+      label: 'Salir de VR',
+      run: () => {
+        void leave().catch((error) => {
+          terrainStatus = String(error)
+        })
+      },
+    },
+  ]
+  screen.mainMenuOrder = [
+    'quality',
+    'options',
+    'development',
+    'terrain',
+    'places',
+    'board',
+    'target',
+    'exit',
+  ]
+  screen.navigate('main')
+  const menu = document.createElement('button')
+  menu.id = 'vr-monitor'
+  menu.textContent = 'Monitor · X'
+  menu.onclick = () => runtime.xr.toggleMenu()
+  toolbar.append(menu)
+  const errorStatus = document.createElement('output')
+  errorStatus.setAttribute('role', 'status')
+  toolbar.append(errorStatus)
   const button = document.createElement('button')
   button.id = 'enter-vr'
   button.textContent = 'Entrar en VR'
-  button.style.cssText =
-    'position:fixed;right:16px;bottom:16px;z-index:10000;padding:12px 18px;background:#123448;color:white;border:1px solid #79bad4;border-radius:8px;cursor:pointer'
   button.title =
-    'Stick izquierdo: moverse/dirección · Derecho: giro a pasos · A: entrar/salir · B: saltar/frenar · X: menú Calidad/Desarrollo · Y: recuperar. Dos pistolas en fundas laterales: mantén agarre para coger; gatillo para disparar. Cargador normal en pecho izquierdo, largo en derecho. Usa agarre para sacar, insertar o tirar cargadores y mover la corredera. Volante: acercar la mano, mantener agarre y girar; B frena.'
-  document.body.append(button)
+    'Stick izquierdo: moverse/dirección · Derecho: giro a pasos · A: entrar/salir · B: saltar/frenar · X: monitor principal · Y: recuperar. Dos pistolas en fundas laterales: mantén agarre para coger; gatillo para disparar. Cargador normal en pecho izquierdo, largo en derecho. Usa agarre para sacar, insertar o tirar cargadores y mover la corredera. Volante: acercar la mano, mantener agarre y girar; B frena.'
+  toolbar.append(button)
   button.disabled = true
   if (!isSecureContext || !navigator.xr) {
     button.textContent = 'VR requiere HTTPS y WebXR'
@@ -112,8 +136,7 @@ export function bindVR(runtime: GameRuntime): void {
     void runtime.xr
       .enter()
       .catch((error: unknown) => {
-        const message = document.getElementById('game-message')
-        if (message) message.textContent = error instanceof Error ? error.message : String(error)
+        errorStatus.textContent = error instanceof Error ? error.message : String(error)
       })
       .finally(() => {
         button.disabled = false

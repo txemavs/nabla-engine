@@ -78,6 +78,7 @@ export class HtmlMonitor {
         style.textContent = [...doc.querySelectorAll('style')]
           .map((node) => node.textContent)
           .join('\n')
+        style.textContent += '\n' + (this.options.styleText ?? '')
         this.wrapper.append(style, this.template)
         this.bindings = [
           ...this.template.querySelectorAll<HTMLElement>('[data-value], [data-bar]'),

@@ -1,5 +1,6 @@
 import { Object3D, Vector3 } from 'three'
-import type { GrabHand } from './xr-grab.js'
+import type { GrabHand as FullGrabHand } from './xr-grab.js'
+type GrabHand = Pick<FullGrabHand, 'grip' | 'source'>
 import type { ForkliftInput } from '../simulation/forklift.js'
 /** Three spring-return hydraulic levers, held with grip and pulled/pushed in chassis space. */
 export class XRForklift {
@@ -23,7 +24,7 @@ export class XRForklift {
       const lever = object.getObjectByName('forklift-lever-' + i)
       if (!lever) continue
       let held = this.held.get(i)
-      if (held && (!hands.includes(held.hand) || !squeeze(held.hand))) {
+      if (held && (!hands.some((h) => h.grip === held!.hand.grip) || !squeeze(held.hand))) {
         this.held.delete(i)
         held = undefined
       }

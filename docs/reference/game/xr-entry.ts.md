@@ -4,17 +4,16 @@
 
 [Source](../../../game/xr-entry.ts)
 
-XR uses the same host and runtime as test.html and Euskadi. No second simulation.
-
 ## Module dependencies
 
+- `@nabla/engine/vehicles`
 
-## callback@44
+## callback@56
 
-[Implementation, line 44](../../../game/xr-entry.ts#L44)
+[Implementation, line 56](../../../game/xr-entry.ts#L56)
 
 ```ts
-callback@44(key): inferred by TypeScript; see implementation
+callback@56(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -1,3 +1,7 @@
+import { palletEntity } from '../../catalog/props/pallet.js'
+import { XRScaledBodyContacts } from '../xr-scaled-body-contacts.js'
+import type { World } from '../../simulation/physics.js'
+import type { XRDisposalTest } from '../xr-disposal-portal.js'
 import { XRObjectGrab } from '../xr-object-grab.js'
 import { VehicleEffects } from '../vehicle-effects.js'
 import type { AssetQuality } from '../../render/entity/asset-quality.js'
@@ -20,6 +24,10 @@ type Car = {
   marks: TireMarks
 }
 export class ARRC {
+  private readonly roomContacts: XRScaledBodyContacts
+  beforeRoomStep(dt: number): void {
+    this.roomContacts.beforeStep(dt)
+  }
   readonly controls: ARRCControls
   private readonly effects: VehicleEffects
   private camera?: THREE.Camera
@@ -31,6 +39,7 @@ export class ARRC {
   setAudioActive(active: boolean): void {
     this.effects.audio.setSuspended(!active)
   }
+  disposalTest?: XRDisposalTest
   kind = ''
   get simulation() {
     return this.physics?.simulation
@@ -45,6 +54,13 @@ export class ARRC {
   private surfaces: THREE.Mesh[] = []
   private controlSources = new Map<THREE.Group, XRInputSource | null>()
   private held = new Set<THREE.Group>()
+  private speedButtonDown = false
+  toggleFlightSpeed(): void {
+    if (!this.physics || this.kind !== 'f14') return
+    const id = this.physics.entities[0].id
+    const mode = this.physics.simulation.vehicleInfo(id).flightSpeedMode
+    this.physics.simulation.setFlightSpeedMode(id, mode === 'slow' ? 'fast' : 'slow')
+  }
   private generation = 0
   private ray = new THREE.Raycaster()
   constructor(
@@ -53,12 +69,56 @@ export class ARRC {
     private readonly options: {
       simulation?: ConstructorParameters<typeof Simulation>[1]
       assetQuality?: AssetQuality
+      roomWorld?: () => World | null
     } = {},
   ) {
+    this.roomContacts = new XRScaledBodyContacts(options.roomWorld ?? (() => null))
     this.controls = new ARRCControls(scene, calibration)
     this.effects = new VehicleEffects(scene)
     this.effects.smoke.root.visible = false
     this.effects.marks.root.visible = false
+  }
+  get targets(): THREE.Mesh[] {
+    const targets: THREE.Mesh[] = []
+    for (const car of this.cars)
+      car.root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh) || object.name === 'shot-impact') return
+        for (let node: THREE.Object3D | null = object; node; node = node.parent)
+          if (!node.visible) return
+        targets.push(object)
+      })
+    return targets
+  }
+  hit(
+    object: THREE.Object3D,
+    point: THREE.Vector3,
+    direction: THREE.Vector3,
+  ): { handled: boolean; glass: boolean; metal: boolean } | null {
+    if (!this.view || !this.physics) return null
+    let car: Car | undefined
+    for (let node: THREE.Object3D | null = object; node && !car; node = node.parent)
+      car = this.cars.find((c) => c.root === node)
+    if (!car) return null
+    const origin = point.clone().addScaledVector(direction, -Math.max(0.001, this.scale * 0.05))
+    const glass = this.view.brokenGlass.hit(
+      [car.root],
+      origin,
+      direction,
+      Math.max(0.005, this.scale * 0.2),
+    )
+    if (glass) {
+      this.view.destruction.glass(glass.clone().divideScalar(this.scale), direction)
+      return { handled: true, glass: true, metal: false }
+    }
+    const vehicle = !!this.physics.entities.find((e) => e.id === car!.id)?.vehicle
+    if (vehicle) this.physics.simulation.damageVehicle(car.id, 12)
+    this.physics.simulation.shoot(
+      origin.clone().divideScalar(this.scale).toArray(),
+      direction.toArray(),
+      Math.max(0.005, this.scale * 0.5) / this.scale,
+      12,
+    )
+    return { handled: false, glass: false, metal: vehicle }
   }
   owns(grip: THREE.Group): boolean {
     return (
@@ -67,7 +127,7 @@ export class ARRC {
     )
   }
   async load(
-    kind: 's3' | 'vfr' | 'truck',
+    kind: 's3' | 'vfr' | 'truck' | 'f14' | 'forklift',
     denominator: number,
     camera: THREE.Camera,
     authoredEntities?: readonly Entity[],
@@ -90,7 +150,20 @@ export class ARRC {
       position.y = support?.point.y ?? 0
       const entities = authoredEntities
         ? structuredClone([...authoredEntities])
-        : [presetVehicle(kind === 'vfr' ? 'vfr800' : kind === 's3' ? 'car' : 'white-truck', 'rc-0')]
+        : [
+            presetVehicle(
+              kind === 'vfr'
+                ? 'vfr800'
+                : kind === 's3'
+                  ? 'car'
+                  : kind === 'f14'
+                    ? 'f14'
+                    : kind === 'forklift'
+                      ? 'forklift-rc'
+                      : 'white-truck',
+              'rc-0',
+            ),
+          ]
       const vehicle = entities[0]
       const initial = structuredClone(vehicle.transform)
       vehicle.transform.position = position
@@ -182,13 +255,73 @@ export class ARRC {
         })
         this.controls.spin.add(copy)
       }
-      this.controls.kind = kind
+      this.controls.enabled = kind !== 'f14'
+      if (kind === 'forklift') {
+        const source = view.objects.get(vehicle.id)!
+        for (let i = 0; i < 3; i++) {
+          const lever = source.getObjectByName('forklift-lever-' + i)
+          if (!lever) continue
+          const copy = lever.clone(true)
+          copy.traverse((node) => {
+            if (node instanceof THREE.Mesh) {
+              node.userData.sharedAssetGeometry = true
+              node.material = Array.isArray(node.material)
+                ? node.material.map((m) => m.clone())
+                : node.material.clone()
+            }
+          })
+          copy.position.sub(new THREE.Vector3(-0.277, 1.39, -0.264))
+          this.controls.equipment.add(copy)
+        }
+      }
+      this.controls.kind = kind === 'f14' ? '' : kind
       this.controls.place(camera)
       this.sync()
     } catch (error) {
       this.clear()
       throw error
     }
+  }
+  private propSerial = 0
+  addPallet(withBox = false): boolean {
+    if (!this.physics || !this.view || !this.camera) return false
+    const props = this.physics.entities.filter((e) => !e.vehicle)
+    if (props.length >= 12) this.removeProp(props[0].id)
+    const vehicle = this.physics.pose(this.physics.entities[0].id)
+    const position = new THREE.Vector3(...vehicle.position).add(
+      new THREE.Vector3(
+        ((this.propSerial % 3) - 1) * 1.5 * this.scale,
+        0,
+        -4 * this.scale,
+      ).applyQuaternion(new THREE.Quaternion(...vehicle.rotation)),
+    )
+    const ground = this.ground(position, 10, this.surfaces)
+    position.y = (ground?.point.y ?? 0) + 0.01 * this.scale
+    const entity = palletEntity(
+      'ar-pallet-' + this.propSerial++,
+      withBox,
+      position.divideScalar(this.scale).toArray(),
+    )
+    entity.transform.rotation = vehicle.rotation
+    this.physics.simulation.addPlaced([entity])
+    this.physics.entities.push(entity)
+    this.view.addPlaced([entity])
+    const marks = new TireMarks(1, 1)
+    this.cars.push({ id: entity.id, root: this.view.objects.get(entity.id)!, holder: null, marks })
+    this.sync()
+    return true
+  }
+  private removeProp(id: string): void {
+    if (!this.physics || !this.view) return
+    const car = this.cars.find((c) => c.id === id)
+    car?.marks.dispose()
+    this.cars = this.cars.filter((c) => c.id !== id)
+    this.physics.simulation.removePlaced([id])
+    this.view.removePlaced([id])
+    this.physics.entities.splice(
+      this.physics.entities.findIndex((e) => e.id === id),
+      1,
+    )
   }
   private ground(point: THREE.Vector3, distance: number, surfaces: THREE.Mesh[]) {
     point = point.clone().add(new THREE.Vector3(0, 0.003, 0))
@@ -211,6 +344,9 @@ export class ARRC {
     this.surfaces = surfaces
     this.physics?.updateSurfaces(surfaces)
     this.controlSources = new Map(hands.map((h) => [h.grip, h.source]))
+    const handbrake = hands.some(
+      (h) => h.source?.handedness === 'right' && !!h.source.gamepad?.buttons[5]?.pressed,
+    )
     const real = this.controls.update(
       hands.filter((h) => !this.objectGrab.hands.includes(h.grip)),
       dt,
@@ -229,11 +365,20 @@ export class ARRC {
       )
         continue
       const p = hand.grip.getWorldPosition(new THREE.Vector3())
-      const car = this.cars.find(
-        (c) => new THREE.Box3().setFromObject(c.root).distanceToPoint(p) < 0.06,
-      )
+      const car = this.cars
+        .map((c) => ({ car: c, bounds: new THREE.Box3().setFromObject(c.root) }))
+        .filter((c) => c.bounds.distanceToPoint(p) < 0.06)
+        .sort(
+          (a, b) =>
+            a.bounds.distanceToPoint(p) - b.bounds.distanceToPoint(p) ||
+            a.bounds.getCenter(new THREE.Vector3()).distanceToSquared(p) -
+              b.bounds.getCenter(new THREE.Vector3()).distanceToSquared(p),
+        )[0]?.car
       if (!car) continue
-      if (!this.grabbedId) this.grabbedId = car.id
+      if (!this.grabbedId) {
+        this.physics?.beginGrab(car.id)
+        this.grabbedId = car.id
+      }
       grips.push(hand.grip)
     }
     const grabbed = this.cars.find((c) => c.id === this.grabbedId)
@@ -259,13 +404,47 @@ export class ARRC {
       const value = pad?.axes[index] ?? 0
       return Math.abs(value) > 0.15 ? value : 0
     }
-    const throttle = this.controls.enabled ? real.throttle : -axis(left, 3),
-      steer = this.controls.enabled ? real.steering : axis(left, 2) || axis(right, 2),
+    const flying = this.kind === 'f14'
+    const speedButton = flying && !!right?.buttons[5]?.pressed
+    if (speedButton && !this.speedButtonDown) this.toggleFlightSpeed()
+    this.speedButtonDown = speedButton
+    const throttle = flying
+        ? -axis(right, 3)
+        : this.controls.enabled
+          ? real.throttle
+          : -axis(left, 3),
+      steer = flying
+        ? axis(right, 2)
+        : this.controls.enabled
+          ? real.steering
+          : axis(left, 2) || axis(right, 2),
       brake = this.controls.enabled ? real.brake : Math.max(0, axis(right, 3))
     const holdingAssembly = this.cars.some((c) => c.holder)
+    if (!holdingAssembly && this.disposalTest && this.physics) {
+      for (const car of this.cars) {
+        const bounds = new THREE.Box3().setFromObject(car.root)
+        const centre = bounds.getCenter(new THREE.Vector3())
+        const velocity = this.physics.simulation.entityVelocity(car.id)
+        if (!velocity) continue
+        const to = centre
+          .clone()
+          .addScaledVector(new THREE.Vector3(...velocity), this.scale * Math.min(dt, 0.05))
+        if (this.disposalTest(centre, to, bounds.getSize(new THREE.Vector3()).length() / 2)) {
+          if (this.physics.entities.find((e) => e.id === car.id)?.vehicle) {
+            this.clear()
+            return
+          }
+          this.removeProp(car.id)
+        }
+      }
+    }
     if (!holdingAssembly)
       this.physics?.step(dt, {
         throttle,
+        forklift: real.forklift,
+        lift: flying ? Math.max(0, -axis(left, 3)) : undefined,
+        turn: flying ? axis(left, 2) : undefined,
+        handbrake: !flying && handbrake,
         steering: steer,
         brake,
         frontBrake: this.controls.enabled ? real.frontBrake : brake,
@@ -281,6 +460,18 @@ export class ARRC {
       car.marks.root.position.multiplyScalar(this.scale)
     }
     this.sync()
+    this.view?.destruction.update(dt, false)
+    if (this.physics)
+      this.roomContacts.sync(
+        this.physics.entities.flatMap((entity) =>
+          this.physics!.simulation.entityCollisionParts(entity.id).map((part) => ({
+            ...part,
+            key: `${entity.id}:${part.key}`,
+          })),
+        ),
+        this.scale,
+        dt,
+      )
     if (this.physics && this.camera) {
       const eye = this.camera.getWorldPosition(new THREE.Vector3())
       const rotation = this.camera.getWorldQuaternion(new THREE.Quaternion())
@@ -320,14 +511,17 @@ export class ARRC {
     this.controlSources.clear()
   }
   clear(): void {
+    this.roomContacts.clear()
     this.generation++
     this.objectGrab.reset()
     this.grabbedId = null
+    this.speedButtonDown = false
     this.effects.updateAudio(null, { version: 1, name: 'AR', entities: [] }, new THREE.Vector3())
     this.controls.reset()
     this.controls.kind = ''
     this.controls.root.visible = false
-    for (const child of [...this.controls.spin.children]) this.disposeRoot(child)
+    for (const child of [...this.controls.spin.children, ...this.controls.equipment.children])
+      this.disposeRoot(child)
     for (const c of this.cars) {
       c.marks.dispose()
       c.marks.root.removeFromParent()

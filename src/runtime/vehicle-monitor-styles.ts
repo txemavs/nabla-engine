@@ -1,3 +1,5 @@
+import { monitorThemeStyles } from './interface-theme.js'
+
 /** Engine-owned CSS3D instrument styles, installed per monitor layer. */
 export const vehicleMonitorStyles = `.portal-console {
   /* Clipping here flattens 3D descendants and breaks native button hit testing. */
@@ -288,7 +290,7 @@ export const vehicleMonitorBaseStyles = `
 
 /** Combined CSS shared by ship interior monitors and the game settings HUD. */
 export function vehicleMonitorStyleText(): string {
-  return vehicleMonitorStyles + vehicleMonitorBaseStyles
+  return vehicleMonitorStyles + vehicleMonitorBaseStyles + monitorThemeStyles
 }
 
 export const VEHICLE_MONITOR_STYLE_ID = 'nabla-vehicle-monitor-styles'

@@ -177,3 +177,38 @@ it('keeps distinct surface colors through geometry updates and disposes their ma
   expect(dispose).toHaveBeenCalledOnce()
   room.dispose()
 })
+
+it('retains scanned geometry while a system overlay temporarily hides tracking data', () => {
+  const room = setup()
+  const plane = {
+    planeSpace: {},
+    lastChangedTime: 1,
+    polygon: [
+      { x: 0, y: 0, z: 0 },
+      { x: 1, y: 0, z: 0 },
+      { x: 0, y: 0, z: 1 },
+    ],
+  }
+  const frame = {
+    detectedPlanes: new Set([plane]),
+    getPose: () => ({
+      transform: { matrix: new THREE.Matrix4().makeTranslation(1, 0, 2).elements },
+    }),
+  }
+  const space = {} as XRReferenceSpace
+  room.update(frame as unknown as XRFrame, space, true)
+  const mesh = room.root.children[0] as THREE.Mesh
+  const dispose = vi.spyOn(mesh.geometry, 'dispose')
+  room.update(
+    { detectedPlanes: new Set(), getPose: () => null } as unknown as XRFrame,
+    space,
+    false,
+  )
+  expect(room.root.visible).toBe(false)
+  expect(room.root.children[0]).toBe(mesh)
+  expect(dispose).not.toHaveBeenCalled()
+  room.update(frame as unknown as XRFrame, space, true)
+  expect(room.root.visible).toBe(true)
+  expect(room.targets[0]).toBe(mesh)
+  room.dispose()
+})

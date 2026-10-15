@@ -6,6 +6,8 @@
 
 ## Module dependencies
 
+- `./map-quarters.js`
+- `../../planet/atlas-z15.js`
 - `three`
 - `../../render/planet/drape.js`
 - `../../planet/tiles.js`
@@ -13,27 +15,27 @@
 
 ## atlasModelPaths
 
-[Implementation, line 12](../../../../../src/runtime/ar/model.ts#L12)
+[Implementation, line 18](../../../../../src/runtime/ar/model.ts#L18)
 
 ```ts
-atlasModelPaths(manifest: { files?: Record<string, { path?: string }> roadCandidates?: { layers?: Record<string, { path?: string }> } }): string[]
+atlasModelPaths(manifest: { files?: Record<string, { path?: string }> roads?: { files?: Record<string, { path?: string }> } roadCandidates?: { layers?: Record<string, { path?: string }> } }): string[]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
 
-## atlasModelPaths.callback@23
+## atlasModelPaths.callback@31
 
-[Implementation, line 23](../../../../../src/runtime/ar/model.ts#L23)
+[Implementation, line 31](../../../../../src/runtime/ar/model.ts#L31)
 
 ```ts
-callback@23(p): p is string
+callback@31(p): p is string
 ```
 
 ## miniature
 
-[Implementation, line 27](../../../../../src/runtime/ar/model.ts#L27)
+[Implementation, line 35](../../../../../src/runtime/ar/model.ts#L35)
 
 ```ts
 miniature(content: THREE.Object3D, terrain = false): THREE.Group
@@ -52,12 +54,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.add`
 - `root.scale.setScalar`
 
-## miniature.callback@31
+## miniature.callback@39
 
-[Implementation, line 31](../../../../../src/runtime/ar/model.ts#L31)
+[Implementation, line 39](../../../../../src/runtime/ar/model.ts#L39)
 
 ```ts
-callback@31(object): inferred by TypeScript; see implementation
+callback@39(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -69,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## disposeModel
 
-[Implementation, line 47](../../../../../src/runtime/ar/model.ts#L47)
+[Implementation, line 55](../../../../../src/runtime/ar/model.ts#L55)
 
 ```ts
 disposeModel(root: THREE.Object3D): void
@@ -84,12 +86,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.traverse`
 - `textures.forEach`
 
-## disposeModel.callback@51
+## disposeModel.callback@59
 
-[Implementation, line 51](../../../../../src/runtime/ar/model.ts#L51)
+[Implementation, line 59](../../../../../src/runtime/ar/model.ts#L59)
 
 ```ts
-callback@51(o): inferred by TypeScript; see implementation
+callback@59(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -100,61 +102,170 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `materials.add`
 - `textures.add`
 
-## disposeModel.callback@59
+## disposeModel.callback@67
 
-[Implementation, line 59](../../../../../src/runtime/ar/model.ts#L59)
+[Implementation, line 67](../../../../../src/runtime/ar/model.ts#L67)
 
 ```ts
-callback@59(g): inferred by TypeScript; see implementation
+callback@67(g): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `g.dispose`
 
-## disposeModel.callback@60
+## disposeModel.callback@68
 
-[Implementation, line 60](../../../../../src/runtime/ar/model.ts#L60)
+[Implementation, line 68](../../../../../src/runtime/ar/model.ts#L68)
 
 ```ts
-callback@60(m): inferred by TypeScript; see implementation
+callback@68(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `m.dispose`
 
-## disposeModel.callback@61
+## disposeModel.callback@69
 
-[Implementation, line 61](../../../../../src/runtime/ar/model.ts#L61)
+[Implementation, line 69](../../../../../src/runtime/ar/model.ts#L69)
 
 ```ts
-callback@61(t): inferred by TypeScript; see implementation
+callback@69(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t.dispose`
 
-## ARModel.constructor
+## ARModel.collisionSurfaces
 
 [Implementation, line 75](../../../../../src/runtime/ar/model.ts#L75)
+
+Visible solid map geometry, excluding purely photographic overlays and skirts.
+
+```ts
+collisionSurfaces(): THREE.Mesh[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.root?.traverseVisible`
+
+## ARModel.collisionSurfaces.callback@77
+
+[Implementation, line 77](../../../../../src/runtime/ar/model.ts#L77)
+
+```ts
+callback@77(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `/^skirt(?:_|$)/i.test`
+- `meshes.push`
+
+## ARModel.loadedCellCount
+
+[Implementation, line 89](../../../../../src/runtime/ar/model.ts#L89)
+
+```ts
+loadedCellCount(): number
+```
+
+## ARModel.mapCells
+
+[Implementation, line 93](../../../../../src/runtime/ar/model.ts#L93)
+
+Snapshot for host map browsers; never exposes the scene graph or cache.
+
+```ts
+mapCells(): { current: string; loaded: string[]; pending: string[] } | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `planetTileFrame`
+- `this.cells.keys`
+
+## ARModel.navigateCell
+
+[Implementation, line 101](../../../../../src/runtime/ar/model.ts#L101)
+
+Centre a Z15 at the existing miniature anchor, reusing the four-cell cache.
+
+```ts
+navigateCell(x: number, y: number): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sign`
+- `Number.isInteger`
+- `RangeError`
+- `THREE.Vector2`
+- `THREE.Vector3`
+- `new THREE.Vector3(delta.x / this.denominator, 0, delta.y / this.denominator).applyQuaternion`
+- `next.clone`
+- `next.clone().sub`
+- `planetTileFrame`
+- `this.loadNeighborhood`
+- `this.pan.copy`
+- `this.root.position.add`
+- `this.selectQuarters`
+
+Explicit throws in this body:
+
+- `new RangeError('Invalid Z15 coordinates')`
+
+## ARModel.scaleDenominator
+
+[Implementation, line 121](../../../../../src/runtime/ar/model.ts#L121)
+
+```ts
+scaleDenominator(): number
+```
+
+## ARModel.setScale
+
+[Implementation, line 125](../../../../../src/runtime/ar/model.ts#L125)
+
+Change presentation scale without reloading cells or altering map metres.
+
+```ts
+setScale(denominator: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `RangeError`
+- `this.root?.scale.setScalar`
+
+Explicit throws in this body:
+
+- `new RangeError('Map scale denominator must be positive and finite')`
+
+## ARModel.constructor
+
+[Implementation, line 144](../../../../../src/runtime/ar/model.ts#L144)
 
 ```ts
 constructor(private scene: THREE.Scene, private readonly resolveUrl: (url: string) => string = (url) => url): instance
 ```
 
-## ARModel.constructor.callback@77
+## ARModel.constructor.callback@146
 
-[Implementation, line 77](../../../../../src/runtime/ar/model.ts#L77)
+[Implementation, line 146](../../../../../src/runtime/ar/model.ts#L146)
 
 ```ts
-callback@77(url): inferred by TypeScript; see implementation
+callback@146(url): inferred by TypeScript; see implementation
 ```
 
 ## ARModel.load
 
-[Implementation, line 79](../../../../../src/runtime/ar/model.ts#L79)
+[Implementation, line 148](../../../../../src/runtime/ar/model.ts#L148)
 
 ```ts
 load(source: string | File): Promise<void>
@@ -175,6 +286,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshStandardMaterial`
 - `THREE.TextureLoader`
 - `URL`
+- `adaptAtlasManifest`
 - `atlasModelPaths`
 - `bakedDrapeLayers`
 - `buildDrapes`
@@ -192,74 +304,65 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `meshes.map`
 - `miniature`
 - `new THREE.TextureLoader().loadAsync`
-- `packageResponse.json`
 - `photoFrameTransform`
 - `pkg.files.find`
 - `planetTileFrame`
 - `response.json`
+- `root.scale.setScalar`
 - `source.arrayBuffer`
+- `splitMapQuarters`
 - `texture.offset.set`
 - `texture.repeat.set`
 - `this.cells.clear`
+- `this.cells.set`
 - `this.pan.set`
 - `this.pending.clear`
 - `this.resolveUrl`
 - `this.scene.add`
+- `this.selectQuarters`
+- `validateAtlasZ15Package`
 
 Explicit throws in this body:
 
 - `new Error(\`No se pudo cargar la celda (${response.status})\`)`
-- `new Error('No se pudo cargar el paquete de techos de Atlas')`
+- `new Error(\`No se pudo cargar el paquete Atlas (${response.status})\`)`
 - `new Error('La celda no contiene GLB')`
 - `error`
 
-## ARModel.load.callback@93
+## ARModel.load.callback@175
 
-[Implementation, line 93](../../../../../src/runtime/ar/model.ts#L93)
+[Implementation, line 175](../../../../../src/runtime/ar/model.ts#L175)
 
 ```ts
-callback@93(o): inferred by TypeScript; see implementation
+callback@175(f: { role: string }): inferred by TypeScript; see implementation
 ```
 
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
+## ARModel.load.callback@176
 
-- `/^Roads(?:_|$)/.test`
-- `['Roads', 'RoadInspect'].includes`
-
-## ARModel.load.callback@111
-
-[Implementation, line 111](../../../../../src/runtime/ar/model.ts#L111)
+[Implementation, line 176](../../../../../src/runtime/ar/model.ts#L176)
 
 ```ts
-callback@111(f: { role: string }): inferred by TypeScript; see implementation
+callback@176(f: { role: string }): inferred by TypeScript; see implementation
 ```
 
-## ARModel.load.callback@112
+## ARModel.load.callback@180
 
-[Implementation, line 112](../../../../../src/runtime/ar/model.ts#L112)
-
-```ts
-callback@112(f: { role: string }): inferred by TypeScript; see implementation
-```
-
-## ARModel.load.callback@116
-
-[Implementation, line 116](../../../../../src/runtime/ar/model.ts#L116)
+[Implementation, line 180](../../../../../src/runtime/ar/model.ts#L180)
 
 ```ts
-callback@116(o): inferred by TypeScript; see implementation
+callback@180(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `meshes.push`
 
-## ARModel.load.callback@120
+## ARModel.load.callback@184
 
-[Implementation, line 120](../../../../../src/runtime/ar/model.ts#L120)
+[Implementation, line 184](../../../../../src/runtime/ar/model.ts#L184)
 
 ```ts
-callback@120(m): inferred by TypeScript; see implementation
+callback@184(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -267,20 +370,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(Array.isArray(m.material) ? m.material : [m.material]).some`
 - `Array.isArray`
 
-## ARModel.load.callback@120.callback@124
+## ARModel.load.callback@184.callback@188
 
-[Implementation, line 124](../../../../../src/runtime/ar/model.ts#L124)
+[Implementation, line 188](../../../../../src/runtime/ar/model.ts#L188)
 
 ```ts
-callback@124(mat): inferred by TypeScript; see implementation
+callback@188(mat): inferred by TypeScript; see implementation
 ```
 
-## ARModel.load.callback@129
+## ARModel.load.callback@193
 
-[Implementation, line 129](../../../../../src/runtime/ar/model.ts#L129)
+[Implementation, line 193](../../../../../src/runtime/ar/model.ts#L193)
 
 ```ts
-callback@129(m): inferred by TypeScript; see implementation
+callback@193(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -288,12 +391,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `m.geometry.clone`
 - `m.geometry.clone().applyMatrix4`
 
-## ARModel.load.callback@133
+## ARModel.load.callback@197
 
-[Implementation, line 133](../../../../../src/runtime/ar/model.ts#L133)
+[Implementation, line 197](../../../../../src/runtime/ar/model.ts#L197)
 
 ```ts
-callback@133(m, i): DrapeSource
+callback@197(m, i): DrapeSource
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -301,12 +404,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `g.computeVertexNormals`
 - `g.getAttribute`
 
-## ARModel.load.callback@147
+## ARModel.load.callback@211
 
-[Implementation, line 147](../../../../../src/runtime/ar/model.ts#L147)
+[Implementation, line 211](../../../../../src/runtime/ar/model.ts#L211)
 
 ```ts
-callback@147(g): inferred by TypeScript; see implementation
+callback@211(g): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -315,7 +418,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARModel.stick
 
-[Implementation, line 212](../../../../../src/runtime/ar/model.ts#L212)
+[Implementation, line 286](../../../../../src/runtime/ar/model.ts#L286)
 
 ```ts
 stick(x: number, z: number): void
@@ -327,16 +430,143 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.sign`
 - `THREE.Vector3`
-- `new THREE.Vector3(dx * 0.01, 0, dz * 0.01).applyQuaternion`
-- `this.ensureCell`
+- `new THREE.Vector3(dx / this.denominator, 0, dz / this.denominator).applyQuaternion`
+- `this.loadNeighborhood`
 - `this.root.position.add`
+- `this.selectQuarters`
+
+## ARModel.quarterWindow
+
+[Implementation, line 311](../../../../../src/runtime/ar/model.ts#L311)
+
+```ts
+quarterWindow(): { x: number; y: number }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `planetTileFrame`
+
+## ARModel.follow
+
+[Implementation, line 320](../../../../../src/runtime/ar/model.ts#L320)
+
+Follow a vehicle or viewer in world space; only request work when crossing a quarter.
+
+```ts
+follow(world: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.sign`
+- `THREE.Vector2`
+- `this.loadNeighborhood`
+- `this.quarterWindow`
+- `this.root.worldToLocal`
+- `this.selectQuarters`
+- `world.clone`
+
+## ARModel.selectQuarters
+
+[Implementation, line 334](../../../../../src/runtime/ar/model.ts#L334)
+
+```ts
+selectQuarters(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `cell.traverse`
+- `key.split`
+- `key.split('/').map`
+- `this.quarterWindow`
+
+## ARModel.selectQuarters.callback@339
+
+[Implementation, line 339](../../../../../src/runtime/ar/model.ts#L339)
+
+```ts
+callback@339(o): inferred by TypeScript; see implementation
+```
+
+## ARModel.visibleQuarterCount
+
+[Implementation, line 350](../../../../../src/runtime/ar/model.ts#L350)
+
+```ts
+visibleQuarterCount(): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.root?.traverseVisible`
+
+## ARModel.visibleQuarterCount.callback@352
+
+[Implementation, line 352](../../../../../src/runtime/ar/model.ts#L352)
+
+```ts
+callback@352(o): inferred by TypeScript; see implementation
+```
+
+## ARModel.loadNeighborhood
+
+[Implementation, line 358](../../../../../src/runtime/ar/model.ts#L358)
+
+Four resident cells, with a single sequential loader and eviction before decoding.
+
+```ts
+loadNeighborhood(): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `desired.every`
+- `this.loadNeighborhood`
+- `this.quarterWindow`
+- `this.selectQuarters`
+- `work`
+
+## ARModel.loadNeighborhood.callback@369
+
+[Implementation, line 369](../../../../../src/runtime/ar/model.ts#L369)
+
+```ts
+callback@369(key): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.cells.has`
+
+## ARModel.loadNeighborhood.work
+
+[Implementation, line 373](../../../../../src/runtime/ar/model.ts#L373)
+
+```ts
+work(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `desired.includes`
+- `disposeModel`
+- `key.split`
+- `key.split('/').map`
+- `this.cells.delete`
+- `this.ensureCell`
+- `this.onStatus`
 
 ## ARModel.ensureCell
 
-[Implementation, line 229](../../../../../src/runtime/ar/model.ts#L229)
+[Implementation, line 396](../../../../../src/runtime/ar/model.ts#L396)
 
 ```ts
-ensureCell(): Promise<void>
+ensureCell(requestX?: number, requestY?: number): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -349,25 +579,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cell.removeFromParent`
 - `cell.scale.set`
 - `content.position.set`
-- `disposeModel`
 - `planetTileFrame`
 - `root.add`
 - `temporary.dispose`
 - `temporary.load`
-- `this.cells.delete`
-- `this.cells.get`
 - `this.cells.has`
-- `this.cells.keys`
-- `this.cells.keys().next`
 - `this.cells.set`
 - `this.onStatus`
 - `this.pending.add`
 - `this.pending.delete`
 - `this.pending.has`
+- `this.selectQuarters`
 
 ## ARModel.place
 
-[Implementation, line 270](../../../../../src/runtime/ar/model.ts#L270)
+[Implementation, line 432](../../../../../src/runtime/ar/model.ts#L432)
 
 ```ts
 place(camera: THREE.Camera): void
@@ -387,7 +613,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARModel.update
 
-[Implementation, line 285](../../../../../src/runtime/ar/model.ts#L285)
+[Implementation, line 448](../../../../../src/runtime/ar/model.ts#L448)
 
 ```ts
 update(dt: number): void
@@ -400,7 +626,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARModel.dispose
 
-[Implementation, line 292](../../../../../src/runtime/ar/model.ts#L292)
+[Implementation, line 455](../../../../../src/runtime/ar/model.ts#L455)
 
 ```ts
 dispose(): void

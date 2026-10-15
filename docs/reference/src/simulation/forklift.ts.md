@@ -9,9 +9,17 @@
 - `./physics.js`
 - `../entity/vehicle/vehicle.js`
 
-## ForkliftMechanism.constructor
+## ForkliftMechanism.geometry
 
 [Implementation, line 10](../../../../src/simulation/forklift.ts#L10)
+
+```ts
+geometry(): inferred by TypeScript; see implementation
+```
+
+## ForkliftMechanism.constructor
+
+[Implementation, line 31](../../../../src/simulation/forklift.ts#L31)
 
 ```ts
 constructor(readonly vehicle: Vehicle): instance
@@ -21,13 +29,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Box`
 - `Vec3`
+- `new Vec3(...collider.size).scale`
 - `this.shapes.push`
 - `this.update`
 - `vehicle.body.addShape`
 
 ## ForkliftMechanism.update
 
-[Implementation, line 23](../../../../src/simulation/forklift.ts#L23)
+[Implementation, line 39](../../../../src/simulation/forklift.ts#L39)
 
 ```ts
 update(input: ForkliftInput, dt: number): void
@@ -44,11 +53,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `load.position.distanceTo`
 - `load.wakeUp`
 - `new Quaternion().setFromAxisAngle`
-- `points.forEach`
+- `this.geometry.colliders.forEach`
 
 ## ForkliftMechanism.update.clamp
 
-[Implementation, line 24](../../../../src/simulation/forklift.ts#L24)
+[Implementation, line 40](../../../../src/simulation/forklift.ts#L40)
 
 ```ts
 clamp(v: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -61,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ForkliftMechanism.update.axis
 
-[Implementation, line 25](../../../../src/simulation/forklift.ts#L25)
+[Implementation, line 41](../../../../src/simulation/forklift.ts#L41)
 
 ```ts
 axis(i: number): inferred by TypeScript; see implementation
@@ -72,27 +81,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `clamp`
 
-## ForkliftMechanism.update.callback@36
+## ForkliftMechanism.update.callback@47
 
-[Implementation, line 36](../../../../src/simulation/forklift.ts#L36)
+[Implementation, line 47](../../../../src/simulation/forklift.ts#L47)
 
 ```ts
-callback@36(point, j): inferred by TypeScript; see implementation
+callback@47(collider, j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Quaternion`
 - `Vec3`
 - `body.shapeOffsets[index].copy`
 - `body.shapeOrientations[index].copy`
 - `body.shapes.indexOf`
 - `body.updateShapeTransform`
+- `rotation.mult`
 - `rotation.vmult`
+- `rotation.vmult(local).vadd`
 
-## ForkliftMechanism.update.callback@45
+## ForkliftMechanism.update.callback@58
 
-[Implementation, line 45](../../../../src/simulation/forklift.ts#L45)
+[Implementation, line 58](../../../../src/simulation/forklift.ts#L58)
 
 ```ts
-callback@45(v): inferred by TypeScript; see implementation
+callback@58(v): inferred by TypeScript; see implementation
 ```

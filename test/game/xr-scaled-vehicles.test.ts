@@ -175,3 +175,30 @@ it('converts room throw velocity to vehicle units without changing angular speed
     run.dispose()
   }
 })
+
+it('detaches a picked trailer and leaves its tractor in place', async () => {
+  const truck = presetVehicle('white-truck', 'truck', [0, 1.6, 0])
+  const trailer = presetVehicle('white-trailer', 'trailer')
+  trailer.vehicle!.tow = {
+    vehicleId: truck.id,
+    hitch: truck.vehicle!.hitch!,
+    anchor: trailer.vehicle!.towAnchor!,
+  }
+  const run = await XRScaledVehicles.create([truck, trailer], 0.01, {
+    ignition: false,
+    vehicleDamage: false,
+  })
+  try {
+    expect(run.simulation.vehicleList().find((v) => v.id === 'trailer')?.towedBy).toBe('truck')
+    const before = run.pose('truck')
+    run.beginGrab('trailer')
+    expect(run.simulation.vehicleList().find((v) => v.id === 'trailer')?.towedBy).toBeFalsy()
+    run.moveAssembly('trailer', new THREE.Vector3(1, 2, 3), new THREE.Quaternion())
+    expect(run.pose('trailer').position).toEqual([1, 2, 3])
+    expect(run.pose('truck')).toEqual(before)
+    run.releaseAssembly('trailer', new THREE.Vector3(1, 0, 0), new THREE.Vector3())
+    expect(run.pose('truck')).toEqual(before)
+  } finally {
+    run.dispose()
+  }
+})

@@ -242,29 +242,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.surfaces.get`
 - `this.surfaces.set`
 
-## ARRoom.update.callback@147
+## ARRoom.update.callback@148
 
-[Implementation, line 147](../../../../../src/runtime/ar/room.ts#L147)
+[Implementation, line 148](../../../../../src/runtime/ar/room.ts#L148)
 
 ```ts
-callback@147(p): inferred by TypeScript; see implementation
+callback@148(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector2`
 
-## ARRoom.update.callback@151
+## ARRoom.update.callback@152
 
-[Implementation, line 151](../../../../../src/runtime/ar/room.ts#L151)
+[Implementation, line 152](../../../../../src/runtime/ar/room.ts#L152)
 
 ```ts
-callback@151(p): inferred by TypeScript; see implementation
+callback@152(p): inferred by TypeScript; see implementation
 ```
 
 ## ARRoom.reset
 
-[Implementation, line 194](../../../../../src/runtime/ar/room.ts#L194)
+[Implementation, line 195](../../../../../src/runtime/ar/room.ts#L195)
 
 Room tracking and debug surfaces. No menu, vehicles or application content is created.
 
@@ -282,7 +282,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRoom.dispose
 
-[Implementation, line 204](../../../../../src/runtime/ar/room.ts#L204)
+[Implementation, line 205](../../../../../src/runtime/ar/room.ts#L205)
 
 Room tracking and debug surfaces. No menu, vehicles or application content is created.
 

@@ -17,9 +17,13 @@ export interface CarriedPistol {
   holster: THREE.Group
   adjustment: THREE.Group
   holder: GrabHand | null
+  gripMode: 'handle' | 'free'
   triggerDown: boolean
   holdMount: THREE.Group
   grab: XRObjectGrab
+  dropped: boolean
+  velocity: THREE.Vector3
+  angularVelocity: THREE.Vector3
 }
 interface MagazineItem {
   entity: MagazineEntity
@@ -31,6 +35,7 @@ interface MagazineItem {
   grab: XRObjectGrab
   previous: THREE.Vector3
 }
+type CartridgeItem = Omit<MagazineItem, 'entity'>
 interface MagazinePull {
   pistol: CarriedPistol
   hand: GrabHand
@@ -47,6 +52,10 @@ interface SlideHold {
 /** Body inventory and exclusive, hold-to-grab hand ownership. Magazine entities never respawn. */
 export class XRLoadout {
   /** Host may delegate loose inventory to the same engine physics world as the room. */
+  physicalPistols = false
+  showVest = true
+  private readonly vestMeshes: THREE.Mesh[] = []
+  discardDropped?: (root: THREE.Object3D, dt: number) => boolean
   droppedPhysics?: (
     root: THREE.Object3D,
     velocity: THREE.Vector3,
@@ -55,10 +64,13 @@ export class XRLoadout {
   readonly body = new THREE.Group()
   readonly loose = new THREE.Group()
   private readonly lasers: ShotLaser[] = []
+  private readonly ejectButtons = new Set<CarriedPistol>()
+  private readonly leverTouches = new Set<THREE.Object3D>()
   private readonly laserTouches = new Set<CarriedPistol>()
   readonly pistols: CarriedPistol[]
   readonly pockets: THREE.Group[] = []
   readonly magazines: MagazineItem[] = []
+  readonly cartridges: CartridgeItem[] = []
   private readonly bodyAnchor = new XRBodyAnchor()
   private slides: SlideHold[] = []
   private pulls: MagazinePull[] = []
@@ -81,6 +93,7 @@ export class XRLoadout {
       holster.rotation.x = Math.PI
       this.body.add(holster)
       const pouch = new THREE.Mesh(this.geometry, this.material)
+      this.vestMeshes.push(pouch)
       pouch.position.copy(holster.position).add(new THREE.Vector3(0, -0.05, 0.025))
       holster.attach(pouch)
       const adjustment = new THREE.Group()
@@ -92,8 +105,12 @@ export class XRLoadout {
         holster,
         adjustment,
         holder: null,
+        gripMode: 'handle' as const,
         triggerDown: false,
         holdMount,
+        dropped: false,
+        velocity: new THREE.Vector3(),
+        angularVelocity: new THREE.Vector3(),
         grab: new XRObjectGrab(),
       }
     })
@@ -108,6 +125,7 @@ export class XRLoadout {
       this.body.add(pocket)
       this.pockets.push(pocket)
       const pouch = new THREE.Mesh(this.geometry, this.material)
+      this.vestMeshes.push(pouch)
       pouch.position.copy(pocket.position).add(new THREE.Vector3(0, -0.04, 0.025))
       pocket.attach(pouch)
     }
@@ -117,7 +135,7 @@ export class XRLoadout {
   occupied(hand: GrabHand): boolean {
     return (
       this.pistols.some((p) => p.holder === hand) ||
-      this.magazines.some((m) => m.grab.hands.includes(hand.grip)) ||
+      [...this.magazines, ...this.cartridges].some((m) => m.grab.hands.includes(hand.grip)) ||
       this.slides.some((s) => s.hand === hand) ||
       this.pulls.some((p) => p.hand === hand) ||
       [...this.supports.values()].includes(hand)
@@ -131,7 +149,7 @@ export class XRLoadout {
   }
   mount(pistol: CarriedPistol): THREE.Group {
     // The holstered pose never travels into a hand: each hand has its own calibrated mount.
-    return pistol.holder ? pistol.holdMount : pistol.adjustment
+    return pistol.holder || pistol.dropped ? pistol.holdMount : pistol.adjustment
   }
 
   /** Same engine sight and weapon state as desktop; only the scene-query adapter differs. */
@@ -187,6 +205,8 @@ export class XRLoadout {
   suspend(now: number): void {
     this.bodyAnchor.reset()
     this.laserTouches.clear()
+    this.leverTouches.clear()
+    this.ejectButtons.clear()
     for (const laser of this.lasers) laser.enabled = false
     for (const slide of this.slides) slide.pistol.weapon.moveSlide(0, now)
     this.slides = []
@@ -201,7 +221,7 @@ export class XRLoadout {
       pistol.weapon.visible = false
       pistol.weapon.model.visible = false
     }
-    for (const item of this.magazines) {
+    for (const item of [...this.magazines, ...this.cartridges]) {
       if (item.holder) {
         this.loose.attach(item.root)
         item.holder = null
@@ -249,6 +269,31 @@ export class XRLoadout {
     return item
   }
 
+  addCartridge(weapon: Sidearm, point: THREE.Vector3): CartridgeItem | null {
+    const model = weapon.cartridgeClone()
+    if (!model) return null
+    const root = new THREE.Group()
+    root.add(model)
+    this.loose.add(root)
+    root.position.copy(this.loose.worldToLocal(point.clone()))
+    const item: CartridgeItem = {
+      root,
+      holder: null,
+      pocket: null,
+      velocity: new THREE.Vector3(),
+      angularVelocity: new THREE.Vector3(),
+      grab: new XRObjectGrab(),
+      previous: new THREE.Vector3(),
+    }
+    this.cartridges.push(item)
+    const loose = this.cartridges.filter((c) => !c.holder)
+    for (const old of loose.slice(0, Math.max(0, loose.length - 24))) {
+      old.root.removeFromParent()
+      this.cartridges.splice(this.cartridges.indexOf(old), 1)
+    }
+    return item
+  }
+
   update(
     hands: readonly GrabHand[],
     camera: THREE.Camera,
@@ -263,8 +308,9 @@ export class XRLoadout {
     const events = new Map(this.pistols.map((p) => [p.weapon, [] as FirearmEvent[]]))
     const emit = (p: CarriedPistol, e: FirearmEvent) => events.get(p.weapon)!.push(e)
     const shift = this.origin.clone().sub(origin)
-    for (const m of this.magazines) if (!m.holder && !m.pocket) m.root.position.add(shift)
-    for (const m of this.magazines) m.grab.shiftOrigin(shift)
+    for (const m of [...this.magazines, ...this.cartridges])
+      if (!m.holder && !m.pocket) m.root.position.add(shift)
+    for (const m of [...this.magazines, ...this.cartridges]) m.grab.shiftOrigin(shift)
     for (const p of this.pistols) p.grab.shiftOrigin(shift)
     this.origin.copy(origin)
     if (!enabled) {
@@ -272,6 +318,7 @@ export class XRLoadout {
       return events
     }
     this.body.visible = this.loose.visible = true
+    for (const mesh of this.vestMeshes) mesh.visible = this.showVest
     this.bodyAnchor.update(this.body, camera, dt)
     this.pistols.forEach((p, i) => {
       this.calibration.apply(p.holster, i === 0 ? 'holster-0' : 'holster-1')
@@ -302,6 +349,11 @@ export class XRLoadout {
       if (p.holder && (!hands.includes(p.holder) || !squeezed(p.holder))) p.holder = null
     for (const s of [...this.slides]) {
       if (!s.pistol.holder || !hands.includes(s.hand) || !squeezed(s.hand)) {
+        if (!s.pistol.holder && hands.includes(s.hand) && squeezed(s.hand)) {
+          s.pistol.holder = s.hand
+          s.pistol.gripMode = 'free'
+          s.pistol.grab.update(s.pistol.holdMount, [s.hand.grip], 0)
+        }
         emit(s.pistol, s.pistol.weapon.moveSlide(0, now))
         this.slides.splice(this.slides.indexOf(s), 1)
       }
@@ -333,7 +385,11 @@ export class XRLoadout {
     }
     for (const [p, hand] of this.supports) {
       if (!p.holder || !hands.includes(hand) || !squeezed(hand)) {
-        if (!p.holder && hands.includes(hand) && squeezed(hand)) p.holder = hand
+        if (!p.holder && hands.includes(hand) && squeezed(hand)) {
+          p.holder = hand
+          p.gripMode = 'free'
+          p.grab.update(p.holdMount, [hand.grip], 0)
+        }
         this.supports.delete(p)
       }
     }
@@ -369,6 +425,33 @@ export class XRLoadout {
       m.holder = hand
       m.previous.copy(position(m.root.children[0]))
       emit(p, { ...event, droppedMagazine: undefined })
+    }
+    for (const p of this.pistols) {
+      const down = !!p.holder?.source?.gamepad?.buttons[5]?.pressed
+      if (down && !this.ejectButtons.has(p) && p.weapon.state.magazineSeated) {
+        const pose = p.weapon.worldMagazineDropView(),
+          entity = p.weapon.state.magazineEntity
+        const item = pose && entity ? this.item(p.weapon, entity) : null
+        if (item && pose) {
+          const event = p.weapon.takeMagazine()
+          if (event.magazineDropped) {
+            item.root.position.copy(
+              this.loose.worldToLocal(pose.position.clone().addScaledVector(pose.direction, 0.1)),
+            )
+            item.root.quaternion
+              .copy(pose.quaternion)
+              .premultiply(this.loose.getWorldQuaternion(new THREE.Quaternion()).invert())
+            item.velocity.copy(p.grab.velocity).addScaledVector(pose.direction, 0.25)
+            item.angularVelocity.copy(p.grab.angularVelocity)
+            emit(p, { ...event, droppedMagazine: undefined })
+          } else {
+            item.root.removeFromParent()
+            this.magazines.splice(this.magazines.indexOf(item), 1)
+          }
+        }
+      }
+      if (down) this.ejectButtons.add(p)
+      else this.ejectButtons.delete(p)
     }
     // Seat only after moving along the magazine well toward the weapon, while gripping.
     for (const m of this.magazines) {
@@ -419,13 +502,60 @@ export class XRLoadout {
         }
       }
     }
+    for (const c of [...this.cartridges]) {
+      if (c.holder) {
+        const grips = hands.includes(c.holder) && squeezed(c.holder) ? [c.holder.grip] : []
+        c.grab.update(c.root, grips, dt)
+        c.velocity.copy(c.grab.velocity)
+        c.angularVelocity.copy(c.grab.angularVelocity)
+        if (!grips.length) c.holder = null
+        else {
+          const target = this.pistols.find((p) => {
+            const chamber = p.weapon.worldChamber?.()
+            return p.holder !== c.holder && chamber && chamber.distanceTo(position(c.root)) < 0.035
+          })
+          if (target?.weapon.seatCartridge()) {
+            c.root.removeFromParent()
+            this.cartridges.splice(this.cartridges.indexOf(c), 1)
+            continue
+          }
+        }
+      }
+    }
     for (const h of hands) {
       if (!squeezed(h) || this.held.has(h.source!) || this.occupied(h)) continue
       const handPosition = position(h.grip)
-      const candidates: { distance: number; grab: () => void }[] = []
-      const candidate = (point: THREE.Vector3, radius: number, grab: () => void) => {
+      const candidates: { distance: number; priority: number; grab: () => void }[] = []
+      const candidate = (point: THREE.Vector3, radius: number, grab: () => void, priority = 0) => {
         const distance = point.distanceTo(handPosition)
-        if (distance <= radius) candidates.push({ distance, grab })
+        if (distance <= radius) candidates.push({ distance, priority, grab })
+      }
+      for (const c of this.cartridges)
+        if (!c.holder)
+          candidate(position(c.root), 0.035, () => {
+            c.grab.update(c.root, [h.grip], 0)
+            c.holder = h
+          })
+      // A round can be taken from a magazine held by the other hand.
+      for (const m of this.magazines) {
+        const top = m.root.getObjectByName('MagazineTopRound')
+        if (top && m.holder && m.holder !== h && m.entity.rounds > 0)
+          candidate(
+            new THREE.Box3().setFromObject(top).getCenter(new THREE.Vector3()),
+            0.025,
+            () => {
+              const c = this.addCartridge(
+                this.pistols[0].weapon,
+                new THREE.Box3().setFromObject(top).getCenter(new THREE.Vector3()),
+              )
+              if (!c) return
+              m.entity.rounds--
+              top.visible = m.entity.rounds > 0
+              c.grab.update(c.root, [h.grip], 0)
+              c.holder = h
+            },
+            1,
+          )
       }
       for (const m of this.magazines)
         if (!m.grab.hands.includes(h.grip) && m.grab.hands.length < 2)
@@ -439,10 +569,70 @@ export class XRLoadout {
           })
       for (const p of this.pistols) {
         if (!p.holder) {
+          if (!p.dropped) {
+            candidate(
+              new THREE.Box3()
+                .setFromObject(p.weapon.model)
+                .clampPoint(handPosition, new THREE.Vector3()),
+              0.09,
+              () => {
+                p.grab.reset()
+                p.gripMode = 'handle'
+                p.holder = h
+                p.dropped = false
+              },
+            )
+            continue
+          }
           const socket = p.weapon.model.getObjectByName('GripSocket')
           if (socket)
-            candidate(position(socket), 0.16, () => {
+            candidate(
+              position(socket),
+              0.16,
+              () => {
+                // The handle always seats in the calibrated hand pose, even after a throw.
+                p.grab.reset()
+                p.gripMode = 'handle'
+                p.holder = h
+                p.dropped = false
+              },
+              position(socket).distanceTo(handPosition) < 0.045 ? 1 : 0,
+            )
+          const slide = p.weapon.trackedSlide
+          if (slide)
+            candidate(
+              new THREE.Box3()
+                .setFromObject(slide.object)
+                .clampPoint(handPosition, new THREE.Vector3()),
+              0.055,
+              () => {
+                if (!p.dropped) {
+                  p.holdMount.position.copy(position(p.adjustment))
+                  this.loose.worldToLocal(p.holdMount.position)
+                  p.holdMount.quaternion
+                    .copy(p.adjustment.getWorldQuaternion(new THREE.Quaternion()))
+                    .premultiply(this.loose.getWorldQuaternion(new THREE.Quaternion()).invert())
+                }
+                p.grab.update(p.holdMount, [h.grip], 0)
+                p.gripMode = 'free'
+                p.holder = h
+                p.dropped = false
+              },
+            )
+          const front = p.weapon.worldMuzzle?.()
+          if (front)
+            candidate(front, 0.09, () => {
+              if (!p.dropped) {
+                p.holdMount.position.copy(position(p.adjustment))
+                this.loose.worldToLocal(p.holdMount.position)
+                p.holdMount.quaternion
+                  .copy(p.adjustment.getWorldQuaternion(new THREE.Quaternion()))
+                  .premultiply(this.loose.getWorldQuaternion(new THREE.Quaternion()).invert())
+              }
+              p.grab.update(p.holdMount, [h.grip], 0)
+              p.gripMode = 'free'
               p.holder = h
+              p.dropped = false
             })
           continue
         }
@@ -469,10 +659,20 @@ export class XRLoadout {
         }
         const gripSocket = p.weapon.model.getObjectByName('GripSocket')
         if (gripSocket)
-          candidate(position(gripSocket), 0.07, () => {
-            p.holder = h
-            this.supports.delete(p)
-          })
+          candidate(
+            position(gripSocket),
+            0.07,
+            () => {
+              if (p.gripMode === 'free') {
+                const previous = p.holder!
+                p.holder = h
+                p.gripMode = 'handle'
+                p.grab.reset()
+                this.supports.set(p, previous)
+              } else if (!this.supports.has(p)) this.supports.set(p, h)
+            },
+            position(gripSocket).distanceTo(handPosition) < 0.045 ? 1 : 0,
+          )
         const muzzle = p.weapon.worldMuzzle?.()
         if (muzzle && !this.supports.has(p))
           candidate(muzzle, 0.12, () => {
@@ -496,7 +696,7 @@ export class XRLoadout {
           })
         }
       }
-      candidates.sort((a, b) => a.distance - b.distance)[0]?.grab()
+      candidates.sort((a, b) => b.priority - a.priority || a.distance - b.distance)[0]?.grab()
     }
     for (const s of this.slides) {
       const slide = s.pistol.weapon.trackedSlide!
@@ -511,8 +711,14 @@ export class XRLoadout {
       m.root.removeFromParent()
       this.magazines.splice(this.magazines.indexOf(m), 1)
     }
-    for (const m of this.magazines)
+    for (const m of [...this.magazines, ...this.cartridges])
       if (!m.holder && !m.pocket) {
+        if (this.discardDropped?.(m.root, dt)) {
+          m.root.removeFromParent()
+          if ('entity' in m) this.magazines.splice(this.magazines.indexOf(m as MagazineItem), 1)
+          else this.cartridges.splice(this.cartridges.indexOf(m), 1)
+          continue
+        }
         if (this.droppedPhysics?.(m.root, m.velocity, m.angularVelocity)) continue
         const step = Math.min(dt, 0.05)
         m.velocity.y -= 9.81 * step
@@ -548,11 +754,47 @@ export class XRLoadout {
             .premultiply(this.loose.getWorldQuaternion(new THREE.Quaternion()).invert())
             .normalize()
         }
-        const support = this.supports.get(p)
-        p.grab.update(p.holdMount, [p.holder.grip, ...(support ? [support.grip] : [])], dt)
+        // The calibrated handle owns aiming; the support hand stabilizes recoil only.
+        p.grab.update(p.holdMount, [p.holder.grip], dt)
+      } else if (this.physicalPistols) {
+        if (p.grab.hands.length) {
+          const tracked = p.grab.hands.every((grip) => hands.some((h) => h.grip === grip))
+          p.grab.update(p.holdMount, [], tracked ? dt : 0.2)
+          p.velocity.copy(p.grab.velocity)
+          p.angularVelocity.copy(p.grab.angularVelocity)
+          p.dropped = position(p.holdMount).distanceTo(position(p.holster)) > 0.16
+          p.weapon.release()
+          p.triggerDown = false
+        }
+        if (p.dropped) this.droppedPhysics?.(p.holdMount, p.velocity, p.angularVelocity)
       } else p.grab.reset()
       p.weapon.trackedSupport = this.supported(p)
       p.weapon.syncTracked(this.mount(p), now, height)
+    }
+    for (const p of this.pistols) {
+      for (const name of ['SafetyLeverPivot', 'SlideReleasePivot']) {
+        const lever = p.weapon.model.getObjectByName(name)
+        if (!lever) continue
+        const radius = this.leverTouches.has(lever) ? 0.035 : 0.018
+        const touching =
+          !!p.holder &&
+          hands.some(
+            (h) =>
+              h !== p.holder &&
+              !squeezed(h) &&
+              !this.occupied(h) &&
+              h.visual &&
+              position(h.visual.indexTip).distanceTo(position(lever)) < radius,
+          )
+        if (touching) {
+          if (!this.leverTouches.has(lever)) {
+            if (name === 'SafetyLeverPivot') p.weapon.setSafety(!p.weapon.safe)
+            else if (p.weapon.state.slideLocked && !this.slideHeld(p))
+              emit(p, p.weapon.handleMagazine('release', now))
+          }
+          this.leverTouches.add(lever)
+        } else this.leverTouches.delete(lever)
+      }
     }
     this.touchLasers(hands)
     this.held = new Set(hands.filter(squeezed).map((h) => h.source!))

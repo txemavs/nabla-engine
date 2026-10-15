@@ -15,7 +15,7 @@
 Main quality controls, shared by the desktop menu and the immersive touchscreen.
 
 ```ts
-bindXRQuality(runtime: GameRuntime, developmentElements: readonly HTMLElement[] = []): void
+bindXRQuality(runtime: GameRuntime, developmentElements: readonly HTMLElement[] = [], mountBrowserPanel = true): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRQuality.values
 
-[Implementation, line 44](../../../../../src/runtime/xr/quality-ui.ts#L44)
+[Implementation, line 45](../../../../../src/runtime/xr/quality-ui.ts#L45)
 
 ```ts
 values(): inferred by TypeScript; see implementation
@@ -48,17 +48,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `profiles.find`
 
-## bindXRQuality.values.callback@45
+## bindXRQuality.values.callback@46
 
-[Implementation, line 45](../../../../../src/runtime/xr/quality-ui.ts#L45)
+[Implementation, line 46](../../../../../src/runtime/xr/quality-ui.ts#L46)
 
 ```ts
-callback@45(p): inferred by TypeScript; see implementation
+callback@46(p): inferred by TypeScript; see implementation
 ```
 
 ## bindXRQuality.refresh
 
-[Implementation, line 57](../../../../../src/runtime/xr/quality-ui.ts#L57)
+[Implementation, line 58](../../../../../src/runtime/xr/quality-ui.ts#L58)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -70,17 +70,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `values`
 - `values().forEach`
 
-## bindXRQuality.refresh.callback@58
+## bindXRQuality.refresh.callback@59
 
-[Implementation, line 58](../../../../../src/runtime/xr/quality-ui.ts#L58)
+[Implementation, line 59](../../../../../src/runtime/xr/quality-ui.ts#L59)
 
 ```ts
-callback@58(v, i): inferred by TypeScript; see implementation
+callback@59(v, i): inferred by TypeScript; see implementation
 ```
 
 ## bindXRQuality.applyLive
 
-[Implementation, line 61](../../../../../src/runtime/xr/quality-ui.ts#L61)
+[Implementation, line 62](../../../../../src/runtime/xr/quality-ui.ts#L62)
 
 ```ts
 applyLive(): inferred by TypeScript; see implementation
@@ -96,7 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRQuality.rows
 
-[Implementation, line 69](../../../../../src/runtime/xr/quality-ui.ts#L69)
+[Implementation, line 70](../../../../../src/runtime/xr/quality-ui.ts#L70)
 
 ```ts
 rows(): inferred by TypeScript; see implementation
@@ -106,12 +106,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `labels.map`
 
-## bindXRQuality.rows.callback@69
+## bindXRQuality.rows.callback@70
 
-[Implementation, line 69](../../../../../src/runtime/xr/quality-ui.ts#L69)
+[Implementation, line 70](../../../../../src/runtime/xr/quality-ui.ts#L70)
 
 ```ts
-callback@69(label, i): inferred by TypeScript; see implementation
+callback@70(label, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -120,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRQuality.status
 
-[Implementation, line 70](../../../../../src/runtime/xr/quality-ui.ts#L70)
+[Implementation, line 71](../../../../../src/runtime/xr/quality-ui.ts#L71)
 
 ```ts
 status(): inferred by TypeScript; see implementation
@@ -128,7 +128,7 @@ status(): inferred by TypeScript; see implementation
 
 ## bindXRQuality.change
 
-[Implementation, line 76](../../../../../src/runtime/xr/quality-ui.ts#L76)
+[Implementation, line 77](../../../../../src/runtime/xr/quality-ui.ts#L77)
 
 ```ts
 change(row: number, dir: number): inferred by TypeScript; see implementation
@@ -144,25 +144,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `steps.findIndex`
 - `steps.indexOf`
 
-## bindXRQuality.change.callback@83
+## bindXRQuality.change.callback@84
 
-[Implementation, line 83](../../../../../src/runtime/xr/quality-ui.ts#L83)
+[Implementation, line 84](../../../../../src/runtime/xr/quality-ui.ts#L84)
 
 ```ts
-callback@83(p): inferred by TypeScript; see implementation
+callback@84(p): inferred by TypeScript; see implementation
 ```
 
-## bindXRQuality.change.callback@108
+## bindXRQuality.change.callback@109
 
-[Implementation, line 108](../../../../../src/runtime/xr/quality-ui.ts#L108)
+[Implementation, line 109](../../../../../src/runtime/xr/quality-ui.ts#L109)
 
 ```ts
-callback@108(n): inferred by TypeScript; see implementation
+callback@109(n): inferred by TypeScript; see implementation
 ```
 
 ## bindXRQuality.road
 
-[Implementation, line 115](../../../../../src/runtime/xr/quality-ui.ts#L115)
+[Implementation, line 116](../../../../../src/runtime/xr/quality-ui.ts#L116)
 
 ```ts
 road(): inferred by TypeScript; see implementation
@@ -175,7 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRQuality.apply
 
-[Implementation, line 130](../../../../../src/runtime/xr/quality-ui.ts#L130)
+[Implementation, line 131](../../../../../src/runtime/xr/quality-ui.ts#L131)
 
 ```ts
 apply(): inferred by TypeScript; see implementation
@@ -185,12 +185,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `refresh`
 
-## bindXRQuality.apply.callback@134
+## bindXRQuality.apply.callback@135
 
-[Implementation, line 134](../../../../../src/runtime/xr/quality-ui.ts#L134)
+[Implementation, line 135](../../../../../src/runtime/xr/quality-ui.ts#L135)
 
 ```ts
-callback@134(): inferred by TypeScript; see implementation
+callback@135(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -200,29 +200,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `url.searchParams.set`
 - `xr.exit`
 
-## bindXRQuality.apply.callback@139
+## bindXRQuality.apply.callback@140
 
-[Implementation, line 139](../../../../../src/runtime/xr/quality-ui.ts#L139)
+[Implementation, line 140](../../../../../src/runtime/xr/quality-ui.ts#L140)
 
 ```ts
-callback@139(error): inferred by TypeScript; see implementation
+callback@140(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
-
-## bindXRQuality.callback@158
-
-[Implementation, line 158](../../../../../src/runtime/xr/quality-ui.ts#L158)
-
-```ts
-callback@158(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `menu.change`
 
 ## bindXRQuality.callback@159
 
@@ -230,6 +218,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ```ts
 callback@159(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `menu.change`
+
+## bindXRQuality.callback@160
+
+[Implementation, line 160](../../../../../src/runtime/xr/quality-ui.ts#L160)
+
+```ts
+callback@160(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

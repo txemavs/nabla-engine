@@ -1468,10 +1468,11 @@ export class GameRuntime {
     if (this.sidearm) {
       this.xrLoadout ??= new XRLoadout(
         this.scene,
-        [this.sidearm, new Sidearm(this.options.canvas.parentElement!, this.sidearm.preset!)],
+        [this.sidearm, this.createSidearm(this.sidearm.preset!)],
         this.xr.calibration,
       )
       const loadout = this.xrLoadout
+      loadout.showVest = this.xr.quality.showVest
       const height = this.renderer.getDrawingBufferSize(new THREE.Vector2()).y
       const events = loadout.update(
         this.xr.grabHands.filter(
@@ -1506,6 +1507,7 @@ export class GameRuntime {
         weapon.setSmokeEnabled(this.smokeOn)
         const down =
           weapon.visible &&
+          pistol.gripMode === 'handle' &&
           !!pistol.holder?.source?.gamepad?.buttons[0]?.pressed &&
           !loadout.slideHeld(pistol) &&
           !this.xr.calibrationOwns(pistol.holder?.source ?? null)
@@ -3333,7 +3335,7 @@ export class GameRuntime {
       this.inventory.take('test-start-sidearm', position)
     }
     this.ownedWeaponId = preset.id
-    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!, preset)
+    this.sidearm ??= this.createSidearm(preset)
     this.weaponDrawn = true
     this.sidearm.visible = true
     this.sidearm.setAiming(false)
@@ -3570,7 +3572,7 @@ export class GameRuntime {
   }
   /** Keep the aimed model visible while its settings are adjusted with a free mouse. */
   setSidearmAimPreview(enabled: boolean): void {
-    if (enabled) this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    if (enabled) this.sidearm ??= this.createSidearm()
     this.sidearmAimPreview = enabled
     if (!enabled) {
       this.weaponPosePreview = null
@@ -3831,7 +3833,7 @@ export class GameRuntime {
     signal.throwIfAborted()
     // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
     // first draw shows the pistol instead of the placeholder block while it loads.
-    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    this.sidearm ??= this.createSidearm()
     await within(this.sidearm.warm(this.renderer), 20_000)
     signal.throwIfAborted()
     // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
@@ -4256,6 +4258,13 @@ export class GameRuntime {
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
   }
+  private createSidearm(preset?: ConstructorParameters<typeof Sidearm>[1]): Sidearm {
+    return new Sidearm(
+      this.options.canvas.parentElement!,
+      preset,
+      this.options.assetQuality ?? assetQualityForDevice(this.quality.preset, navigator.userAgent),
+    )
+  }
   private ejectionPose(eyes: boolean, sidearm = this.sidearm) {
     const pose = sidearm?.ejectionPose(eyes, this.camera.fov)
     if (pose && eyes) {
@@ -4270,6 +4279,21 @@ export class GameRuntime {
   private ejectCartridge(_sim: Simulation, eyes: boolean, sidearm = this.sidearm): void {
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
+    if (this.xr.active && this.xrLoadout) {
+      const pose = this.ejectionPose(eyes, sidearm)
+      if (!pose) return
+      const item = this.xrLoadout.addCartridge(sidearm, pose.position)
+      const launch = new CasingMotion(casing).eject(
+        pose.position.toArray(),
+        pose.right.toArray(),
+        pose.up.toArray(),
+      )
+      if (item && launch) {
+        item.velocity.fromArray(launch.velocity)
+        item.angularVelocity.fromArray(launch.spin)
+      }
+      return
+    }
     if (!this.cartridgeMeshes) {
       const clone = sidearm.cartridgeClone()
       if (!clone) return
@@ -4570,8 +4594,7 @@ export class GameRuntime {
         this.ownedWeaponId = item.itemId
         if (this.sidearm?.preset?.id !== item.itemId) {
           this.sidearm?.dispose()
-          this.sidearm = new Sidearm(
-            this.options.canvas.parentElement!,
+          this.sidearm = this.createSidearm(
             weaponPresets().find((preset) => preset.id === item.itemId),
           )
         }
@@ -4590,8 +4613,7 @@ export class GameRuntime {
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false
-      if (this.weaponDrawn && !this.sidearm)
-        this.sidearm = new Sidearm(this.options.canvas.parentElement!)
+      if (this.weaponDrawn && !this.sidearm) this.sidearm = this.createSidearm()
       this.sidearm?.setAiming(false)
       this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
       if (this.weaponLight)

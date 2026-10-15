@@ -110,3 +110,46 @@ it('starts a dropped object with its measured spin and translation', async () =>
   contacts.dispose()
   world.raw.free()
 })
+
+it('wakes a loose item with a shot impulse and stops targeting it after pickup', async () => {
+  await initPhysics()
+  const world = new World({ gravity: new Vec3() })
+  const root = new THREE.Group()
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.025))
+  root.add(mesh)
+  const contacts = new XRItemContacts()
+  contacts.drop(root, new THREE.Vector3(), world)
+  expect(contacts.targets).toContain(mesh)
+  expect(contacts.hit(mesh, new THREE.Vector3(0, 0.04, 0), new THREE.Vector3(1, 0, 0))).toBe(true)
+  expect(world.bodies[0].velocity.x).toBeGreaterThan(0)
+  expect(world.bodies[0].velocity.y).toBeGreaterThan(0)
+  expect(world.bodies[0].angularVelocity.z).not.toBe(0)
+  contacts.retainDropped([])
+  expect(contacts.hit(mesh, new THREE.Vector3(), new THREE.Vector3(1, 0, 0))).toBe(false)
+  expect(contacts.targets).toHaveLength(0)
+  world.raw.free()
+})
+
+it('a dropped magazine lands on a held weapon in the same world', async () => {
+  await initPhysics()
+  const world = new World(),
+    contacts = new XRItemContacts()
+  const held = new THREE.Group(),
+    loose = new THREE.Group()
+  held.position.y = 0.5
+  held.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.2)))
+  loose.position.y = 0.8
+  loose.add(new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.025)))
+  contacts.trackHeld(held, world)
+  contacts.drop(loose, new THREE.Vector3(), world)
+  for (let i = 0; i < 180; i++) {
+    contacts.trackHeld(held, world)
+    world.step(1 / 90)
+    contacts.drop(loose, new THREE.Vector3(), world)
+  }
+  expect(loose.position.y).toBeGreaterThan(0.53)
+  expect(loose.position.y).toBeLessThan(0.57)
+  expect(contacts.targets).not.toContain(held.children[0])
+  contacts.dispose()
+  world.raw.free()
+})

@@ -54,7 +54,7 @@ Eject one casing from `origin` to the shooter's right (`right`), a little up (`u
 spec speed plus a small spread, on top of the shooter's own `carry` velocity.
 
 ```ts
-eject(origin: Vec3Tuple, right: Vec3Tuple, up: Vec3Tuple, carry: Vec3Tuple = [0, 0, 0], random = Math.random): void
+eject(origin: Vec3Tuple, right: Vec3Tuple, up: Vec3Tuple, carry: Vec3Tuple = [0, 0, 0], random = Math.random): { velocity: Vec3Tuple; spin: Vec3Tuple } | undefined
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,7 +87,7 @@ callback@94(i): inferred by TypeScript; see implementation
 
 ## CasingMotion.release
 
-[Implementation, line 111](../../../../../src/simulation/weapons/casings.ts#L111)
+[Implementation, line 113](../../../../../src/simulation/weapons/casings.ts#L113)
 
 Let one body go from `origin` with an explicit `velocity` (m/s). Same bounce, rest and
 lifetime as an ejection. `orientation` is xyzw. Used for a magazine that drops out of the
@@ -104,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CasingMotion.update
 
-[Implementation, line 134](../../../../../src/simulation/weapons/casings.ts#L134)
+[Implementation, line 136](../../../../../src/simulation/weapons/casings.ts#L136)
 
 Advance every casing by `dt` seconds against the world (`cast`).
 
@@ -125,44 +125,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.bounces.push`
 - `this.impacts.push`
 
-## CasingMotion.update.callback@155
+## CasingMotion.update.callback@157
 
-[Implementation, line 155](../../../../../src/simulation/weapons/casings.ts#L155)
+[Implementation, line 157](../../../../../src/simulation/weapons/casings.ts#L157)
 
 ```ts
-callback@155(m): inferred by TypeScript; see implementation
+callback@157(m): inferred by TypeScript; see implementation
 ```
 
-## CasingMotion.update.callback@158
+## CasingMotion.update.callback@160
 
-[Implementation, line 158](../../../../../src/simulation/weapons/casings.ts#L158)
+[Implementation, line 160](../../../../../src/simulation/weapons/casings.ts#L160)
 
 ```ts
-callback@158(i): inferred by TypeScript; see implementation
+callback@160(i): inferred by TypeScript; see implementation
 ```
 
-## CasingMotion.update.callback@167
+## CasingMotion.update.callback@169
 
-[Implementation, line 167](../../../../../src/simulation/weapons/casings.ts#L167)
+[Implementation, line 169](../../../../../src/simulation/weapons/casings.ts#L169)
 
 ```ts
-callback@167(i): inferred by TypeScript; see implementation
+callback@169(i): inferred by TypeScript; see implementation
 ```
 
-## CasingMotion.update.callback@173
+## CasingMotion.update.callback@175
 
-[Implementation, line 173](../../../../../src/simulation/weapons/casings.ts#L173)
-
-```ts
-callback@173(i): inferred by TypeScript; see implementation
-```
-
-## CasingMotion.update.callback@182
-
-[Implementation, line 182](../../../../../src/simulation/weapons/casings.ts#L182)
+[Implementation, line 175](../../../../../src/simulation/weapons/casings.ts#L175)
 
 ```ts
-callback@182(i): inferred by TypeScript; see implementation
+callback@175(i): inferred by TypeScript; see implementation
 ```
 
 ## CasingMotion.update.callback@184
@@ -170,12 +162,20 @@ callback@182(i): inferred by TypeScript; see implementation
 [Implementation, line 184](../../../../../src/simulation/weapons/casings.ts#L184)
 
 ```ts
-callback@184(w): inferred by TypeScript; see implementation
+callback@184(i): inferred by TypeScript; see implementation
+```
+
+## CasingMotion.update.callback@186
+
+[Implementation, line 186](../../../../../src/simulation/weapons/casings.ts#L186)
+
+```ts
+callback@186(w): inferred by TypeScript; see implementation
 ```
 
 ## CasingMotion.poses
 
-[Implementation, line 189](../../../../../src/simulation/weapons/casings.ts#L189)
+[Implementation, line 191](../../../../../src/simulation/weapons/casings.ts#L191)
 
 ```ts
 poses(): CasingPose[]
@@ -185,17 +185,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.casings.map`
 
-## CasingMotion.poses.callback@190
+## CasingMotion.poses.callback@192
 
-[Implementation, line 190](../../../../../src/simulation/weapons/casings.ts#L190)
+[Implementation, line 192](../../../../../src/simulation/weapons/casings.ts#L192)
 
 ```ts
-callback@190(casing): inferred by TypeScript; see implementation
+callback@192(casing): inferred by TypeScript; see implementation
 ```
 
 ## CasingMotion.reset
 
-[Implementation, line 199](../../../../../src/simulation/weapons/casings.ts#L199)
+[Implementation, line 201](../../../../../src/simulation/weapons/casings.ts#L201)
 
 ```ts
 reset(): void

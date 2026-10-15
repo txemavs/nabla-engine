@@ -4,6 +4,7 @@ import type { GameRuntime } from '../browser.js'
 export function bindXRQuality(
   runtime: GameRuntime,
   developmentElements: readonly HTMLElement[] = [],
+  mountBrowserPanel = true,
 ): void {
   runtime.xr.enableCalibrationScreen()
   const xr = runtime.xr
@@ -178,7 +179,7 @@ export function bindXRQuality(
     development.append(element)
   }
   panel.append(development)
-  document.body.append(panel)
+  if (mountBrowserPanel) document.body.append(panel)
   xr.calibrationScreen!.qualityMenu = menu
   applyLive()
 }

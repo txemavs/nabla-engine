@@ -213,3 +213,17 @@ it('rebases the accepted 180 degree wheel zero without changing other adjustment
     vi.unstubAllGlobals()
   }
 })
+
+it('retains readable adjustments when persisting a migration is denied', () => {
+  vi.stubGlobal('localStorage', {
+    getItem: () => JSON.stringify({ 'hand-left': { y: 6 } }),
+    setItem: () => {
+      throw new Error('Storage denied')
+    },
+  })
+  try {
+    expect(new XRCalibration().get('hand-left').y).toBe(6)
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})

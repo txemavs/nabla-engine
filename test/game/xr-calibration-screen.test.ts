@@ -214,3 +214,34 @@ it('keeps the moved monitor pose when hidden and reopened, but can explicitly re
   expect(screen.root.position.x).toBeCloseTo(0)
   screen.dispose()
 })
+
+it('brings the main menu within reach of the clicking hand and leaves it placed', () => {
+  const { screen, camera } = setup()
+  screen.mainMenu = () => []
+  screen.navigate('main')
+  const hand = new THREE.Group()
+  hand.position.set(0.4, 1.1, -0.3)
+  hand.updateMatrixWorld(true)
+  screen.activate(100, 35, hand)
+  const placed = screen.root.getWorldPosition(new THREE.Vector3())
+  expect(placed.distanceTo(hand.position)).toBeLessThan(0.7)
+  screen.navigate('development')
+  camera.position.x += 2
+  screen.sync(camera, new THREE.Vector3(), true, 100)
+  expect(screen.root.getWorldPosition(new THREE.Vector3()).distanceTo(placed)).toBeLessThan(1e-6)
+  screen.dispose()
+})
+
+it('routes experimental monitor actions and returns to the main menu', () => {
+  const { screen } = setup()
+  const run = vi.fn()
+  screen.mainMenu = () => []
+  screen.experimentalMenu = () => [{ label: 'Añadir dron', run }]
+  screen.navigate('experimental')
+  screen.activate(100, 120)
+  expect(run).toHaveBeenCalledOnce()
+  screen.activate(100, 35)
+  screen.activate(100, 120) // Main menu quality button must not run the experiment.
+  expect(run).toHaveBeenCalledOnce()
+  screen.dispose()
+})

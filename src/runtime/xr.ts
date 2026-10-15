@@ -1,3 +1,4 @@
+import { XRTrackedHand } from './xr-tracked-hands.js'
 import { readXRQuality, saveXRQuality, type XRQualitySettings } from './xr-quality.js'
 import { XRCalibrationScreen } from './xr-calibration-screen.js'
 import { XRCalibration } from './xr-calibration.js'
@@ -14,6 +15,20 @@ export class GameXR {
   enableCalibrationScreen(): void {
     if (this.calibrationScreen) return
     this.calibrationScreen = new XRCalibrationScreen(this.scene, this.calibration)
+    this.calibrationScreen.optionsMenu = () => [
+      {
+        label: `Manos sin mandos (experimental): ${this.quality.handTracking ? 'Sí' : 'No'} · reentrar`,
+        run: () => this.setQuality({ handTracking: !this.quality.handTracking }),
+      },
+      {
+        label: `Mostrar manos: ${this.quality.showHands ? 'Sí' : 'No'}`,
+        run: () => this.setQuality({ showHands: !this.quality.showHands }),
+      },
+      {
+        label: `Mostrar cuadros del chaleco: ${this.quality.showVest ? 'Sí' : 'No'}`,
+        run: () => this.setQuality({ showVest: !this.quality.showVest }),
+      },
+    ]
   }
 
   showCalibrationScreen(): void {
@@ -108,15 +123,18 @@ export class GameXR {
     mount: THREE.Group
     source: XRInputSource | null
   }[] = []
+  private readonly naturalHands: XRTrackedHand[] = []
   private tracked: XRInputSource[] = []
   get sources(): readonly XRInputSource[] {
     return this.tracked
   }
   get grabHands() {
-    return this.hands.filter((hand) => !!hand.source && this.tracked.includes(hand.source))
+    return [...this.hands, ...this.naturalHands].filter(
+      (hand) => !!hand.source && this.tracked.includes(hand.source),
+    )
   }
   get rightHand() {
-    return this.hands.find(
+    return [...this.hands, ...this.naturalHands].find(
       (hand) => hand.source?.handedness === 'right' && this.tracked.includes(hand.source),
     )
   }
@@ -134,6 +152,10 @@ export class GameXR {
     report: (error: unknown) => void,
   ) {
     scene.add(this.rig)
+    this.naturalHands.push(
+      new XRTrackedHand('left', this.rig),
+      new XRTrackedHand('right', this.rig),
+    )
     renderer.xr.enabled = true
     renderer.xr.setReferenceSpaceType('local-floor')
     renderer.xr.setFramebufferScaleFactor(this.quality.scale)
@@ -142,6 +164,7 @@ export class GameXR {
       renderer.xr,
       (active) => {
         this.input.reset()
+        for (const hand of this.naturalHands) hand.reset()
         this.stats.reset()
         this.calibrationScreen?.suspend()
         this.height = null
@@ -203,7 +226,7 @@ export class GameXR {
   ): Promise<void> {
     if (!system) return Promise.reject(new Error('WebXR requiere HTTPS y un navegador compatible'))
     this.renderer.xr.setFramebufferScaleFactor(this.quality.scale)
-    return this.session.enter(system, mode)
+    return this.session.enter(system, mode, this.quality.handTracking)
   }
   exit(): Promise<void> {
     return this.session.exit()
@@ -221,6 +244,7 @@ export class GameXR {
       this.visible && space
         ? [...(this.renderer.xr.getSession()?.inputSources ?? [])].filter(
             (source) =>
+              !source.hand &&
               !!source.gripSpace &&
               !!frame.getPose(source.gripSpace, space) &&
               !!frame.getPose(source.targetRaySpace, space),
@@ -228,11 +252,23 @@ export class GameXR {
         : []
     for (const hand of this.hands) {
       hand.visual.update(hand.source, !!hand.source && this.tracked.includes(hand.source))
+      // Keep finger poses and tracking alive for touch/grab; hide only the visual model.
+      if (!this.quality.showHands) hand.visual.root.visible = false
       const side = hand.source?.handedness
       if (side === 'left' || side === 'right') {
         this.calibration.apply(hand.visual.root, `hand-${side}`)
         this.calibration.apply(hand.mount, `grip-${side}`)
       }
+    }
+    for (const hand of this.naturalHands) {
+      const source =
+        this.visible && this.quality.handTracking
+          ? [...(this.renderer.xr.getSession()?.inputSources ?? [])].find(
+              (s) => !!s.hand && s.handedness === hand.side,
+            )
+          : undefined
+      if (hand.update(frame, space, source)) this.toggleMenu()
+      if (hand.source) this.tracked.push(hand.source)
     }
     const pose = space && frame.getViewerPose(space)
     if (pose) {

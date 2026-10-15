@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../../simulation/vehicles/flight.js`
 - `../../simulation/vehicles/drivetrain.js`
 - `../../simulation/vehicles/two-wheeled/contracts.js`
 - `../../simulation/physics.js`
@@ -14,7 +15,7 @@
 
 ## isTwoWheeled
 
-[Implementation, line 33](../../../../../src/entity/vehicle/vehicle.ts#L33)
+[Implementation, line 34](../../../../../src/entity/vehicle/vehicle.ts#L34)
 
 True for a single-track vehicle (motorcycle) driven by the two-wheeled controller.
 
@@ -28,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hubWheelRadius
 
-[Implementation, line 40](../../../../../src/entity/vehicle/vehicle.ts#L40)
+[Implementation, line 41](../../../../../src/entity/vehicle/vehicle.ts#L41)
 
 Tyre radius of hub `index`: two-wheelers have their own rear radius; others share one.
 
@@ -38,7 +39,7 @@ hubWheelRadius(definition: Pick<VehicleDefinition, 'twoWheeled' | 'wheelRadius'>
 
 ## wheelContactY
 
-[Implementation, line 50](../../../../../src/entity/vehicle/vehicle.ts#L50)
+[Implementation, line 51](../../../../../src/entity/vehicle/vehicle.ts#L51)
 
 Lowest tyre contact below the chassis origin (hub centre minus its tyre radius), metres.
 
@@ -51,12 +52,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `definition.hubs.map`
 
-## wheelContactY.callback@53
+## wheelContactY.callback@54
 
-[Implementation, line 53](../../../../../src/entity/vehicle/vehicle.ts#L53)
+[Implementation, line 54](../../../../../src/entity/vehicle/vehicle.ts#L54)
 
 ```ts
-callback@53(hub, i): inferred by TypeScript; see implementation
+callback@54(hub, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -65,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## validateVehicle
 
-[Implementation, line 62](../../../../../src/entity/vehicle/vehicle.ts#L62)
+[Implementation, line 63](../../../../../src/entity/vehicle/vehicle.ts#L63)
 
 ```ts
 validateVehicle(entity: Entity): void
@@ -98,14 +99,6 @@ Explicit throws in this body:
 - `new Error('Vehicles must be dynamic roots')`
 - `new Error('Vehicle is too small')`
 
-## validateVehicle.callback@104
-
-[Implementation, line 104](../../../../../src/entity/vehicle/vehicle.ts#L104)
-
-```ts
-callback@104(n, i): inferred by TypeScript; see implementation
-```
-
 ## validateVehicle.callback@105
 
 [Implementation, line 105](../../../../../src/entity/vehicle/vehicle.ts#L105)
@@ -114,25 +107,33 @@ callback@104(n, i): inferred by TypeScript; see implementation
 callback@105(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@108
+## validateVehicle.callback@106
 
-[Implementation, line 108](../../../../../src/entity/vehicle/vehicle.ts#L108)
+[Implementation, line 106](../../../../../src/entity/vehicle/vehicle.ts#L106)
 
 ```ts
-callback@108(v, i): inferred by TypeScript; see implementation
+callback@106(n, i): inferred by TypeScript; see implementation
 ```
 
-## validateVehicle.callback@114
+## validateVehicle.callback@109
 
-[Implementation, line 114](../../../../../src/entity/vehicle/vehicle.ts#L114)
+[Implementation, line 109](../../../../../src/entity/vehicle/vehicle.ts#L109)
 
 ```ts
-callback@114(value, i): inferred by TypeScript; see implementation
+callback@109(v, i): inferred by TypeScript; see implementation
+```
+
+## validateVehicle.callback@115
+
+[Implementation, line 115](../../../../../src/entity/vehicle/vehicle.ts#L115)
+
+```ts
+callback@115(value, i): inferred by TypeScript; see implementation
 ```
 
 ## vehicleDefinition
 
-[Implementation, line 118](../../../../../src/entity/vehicle/vehicle.ts#L118)
+[Implementation, line 119](../../../../../src/entity/vehicle/vehicle.ts#L119)
 
 Defaults for procedural cars. Asset names are not physics configuration.
 

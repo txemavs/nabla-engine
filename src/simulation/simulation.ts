@@ -89,6 +89,15 @@ import {
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 
 /** R reset options; see `Simulation.recoverVehicle`. */
+/** Read-only physical shapes for scaled contact adapters; never render mesh bounds. */
+export interface EntityCollisionPart {
+  key: string
+  transform: Transform
+  shape: { kind: 'box'; halfExtents: Vec3Tuple } | { kind: 'sphere'; radius: number }
+  friction: number
+  restitution: number
+}
+
 export interface RecoverVehicleOptions {
   /** Move to the nearest road centreline before uprighting (default false). */
   snapToRoad?: boolean
@@ -576,7 +585,7 @@ export class Simulation {
   }
   /**
    * Add placed scenery to a running simulation: standalone portals, sprites, lamps and static
-   * boxes (the game add menu and host `placeEntities`). Portals may be linked within the batch;
+   * boxes, including standalone dynamic props (the game add menu and host `placeEntities`). Portals may be linked within the batch;
    * links to existing mouths are made afterwards with `configurePortal`.
    */
   addPlaced(added: Entity[]): void {
@@ -939,6 +948,10 @@ export class Simulation {
   }
   /** Reposition a held assembly atomically; the host pauses stepping while manipulating it. */
   relocateVehicles(poses: { id: string; transform: Transform }[]): void {
+    this.relocateEntities(poses)
+  }
+  /** Relocate ordinary dynamic props and vehicles through their shared Engine bodies. */
+  relocateEntities(poses: { id: string; transform: Transform }[]): void {
     // Validate the whole assembly before moving any body. Teleports must preserve the
     // unit-quaternion invariant even while ordinary physics stepping is paused.
     const normalized = poses.map(({ id, transform }) => {
@@ -958,31 +971,84 @@ export class Simulation {
       }
     })
     for (const { id, transform } of normalized) {
+      const body = this.bodies.get(id)
       const vehicle = this.vehicles.get(id)
-      if (!vehicle) continue
-      vehicle.body.position.set(...transform.position)
-      vehicle.body.quaternion.set(...transform.rotation)
-      vehicle.body.previousPosition.copy(vehicle.body.position)
-      vehicle.body.previousQuaternion.copy(vehicle.body.quaternion)
-      vehicle.body.velocity.setZero()
-      vehicle.body.angularVelocity.setZero()
-      vehicle.body.wakeUp()
-      if (vehicle.twoWheeled) resetTwoWheeled(vehicle.twoWheeled)
+      if (!body || body.mass <= 0) continue
+      body.position.set(...transform.position)
+      body.quaternion.set(...transform.rotation)
+      body.previousPosition.copy(body.position)
+      body.previousQuaternion.copy(body.quaternion)
+      body.velocity.setZero()
+      body.angularVelocity.setZero()
+      body.wakeUp()
+      if (vehicle?.twoWheeled) resetTwoWheeled(vehicle.twoWheeled)
     }
     this.previousWheels.clear()
   }
   /** Release a manipulated rigid assembly into the ordinary physics world. */
   releaseVehicles(motion: { id: string; velocity: Vec3Tuple; angularVelocity: Vec3Tuple }[]): void {
+    this.releaseEntities(motion)
+  }
+  releaseEntities(motion: { id: string; velocity: Vec3Tuple; angularVelocity: Vec3Tuple }[]): void {
     for (const entry of motion)
       if (![...entry.velocity, ...entry.angularVelocity].every(Number.isFinite))
         throw new Error(`Invalid vehicle release: ${entry.id}`)
     for (const entry of motion) {
-      const body = this.vehicles.get(entry.id)?.body
+      const body = this.bodies.get(entry.id)
       if (!body) continue
       body.velocity.set(...entry.velocity)
       body.angularVelocity.set(...entry.angularVelocity)
       body.wakeUp()
     }
+  }
+  /** Linear velocity in simulation metres/second, shared by scaled XR adapters. */
+  entityVelocity(id: string): Vec3Tuple {
+    const body = this.bodies.get(id)
+    return body ? vec(body.velocity) : [0, 0, 0]
+  }
+  /** Physical chassis/equipment shapes and the raycast tyres' spherical envelopes.
+   * This lets a differently scaled view share contacts with room props without
+   * changing its drivetrain, gravity, suspension, or full-size simulation rules.
+   */
+  entityCollisionParts(id: string): EntityCollisionPart[] {
+    const body = this.bodies.get(id)
+    if (!body) return []
+    const parts: EntityCollisionPart[] = []
+    for (let i = 0; i < body.shapes.length; i++) {
+      const shape = body.shapes[i]
+      if (!shape.collisionResponse || body.colliders[i]?.isEnabled() === false) continue
+      const definition: EntityCollisionPart['shape'] | null =
+        shape instanceof Box
+          ? { kind: 'box', halfExtents: vec(shape.halfExtents) }
+          : shape instanceof Sphere
+            ? { kind: 'sphere', radius: shape.radius }
+            : null
+      if (!definition) continue
+      const position = body.quaternion.vmult(body.shapeOffsets[i]).vadd(body.position)
+      const rotation = body.quaternion.clone().mult(body.shapeOrientations[i])
+      parts.push({
+        key: `shape-${i}`,
+        shape: definition,
+        transform: {
+          position: vec(position),
+          rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
+        },
+        friction: body.material.friction,
+        restitution: body.material.restitution,
+      })
+    }
+    const vehicle = this.vehicles.get(id)
+    if (vehicle)
+      this.wheelTransforms(id).forEach((transform, i) => {
+        parts.push({
+          key: `wheel-${i}`,
+          shape: { kind: 'sphere', radius: vehicle.raycast.wheelInfos[i].radius },
+          transform,
+          friction: 0.7,
+          restitution: 0.05,
+        })
+      })
+    return parts
   }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
@@ -2096,6 +2162,13 @@ export class Simulation {
     trailer.body.angularVelocity.setZero()
     trailer.body.wakeUp()
   }
+  /** Change the shared plane speed regime without resetting pose or velocity. */
+  setFlightSpeedMode(id: string, mode: 'slow' | 'fast'): boolean {
+    const vehicle = this.vehicles.get(id)
+    if (!vehicle?.flight || !vehicle.definition.aircraft) return false
+    vehicle.flight.speedMode = mode
+    return true
+  }
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (!v?.definition.flight) return 'Ponte al mando de la nave para cambiar de modo'
@@ -2453,6 +2526,8 @@ export class Simulation {
     altitude: number
     cruiseSpeed: number
     flightMode: boolean
+    flightSpeedMode: 'slow' | 'fast'
+    flightControls: { pitch: number; roll: number; yaw: number }
     helm: Vehicle['helm']
     canFly: boolean
     targetAltitude: number | null
@@ -2527,6 +2602,11 @@ export class Simulation {
       altitude: this.height(v.body),
       cruiseSpeed: v.cruiseSpeed,
       flightMode: Boolean(v.flight),
+      flightSpeedMode: v.flight?.speedMode ?? 'slow',
+      flightControls:
+        id === this.vehicleId && v.flight && v.helm !== 'off'
+          ? { pitch: this.input.forward, roll: this.input.right, yaw: this.input.turn ?? 0 }
+          : { pitch: 0, roll: 0, yaw: 0 },
       helm: v.helm,
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,

@@ -15,5 +15,6 @@ Optional immersive adapters; the existing runtime owns the simulation.
 - `../xr-motorcycle.js`
 - `../xr-grab.js`
 - `../xr-object-grab.js`
+- `../xr-tracked-hands.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

@@ -8,6 +8,7 @@ import {
   takeMagazine,
   seatMagazine,
   moveSlide,
+  seatCartridge,
 } from '../../src/simulation/weapons/firearm.js'
 
 const spec = {
@@ -33,6 +34,9 @@ function weapon(): Sidearm {
     trackedMagazine: magazine,
     trackedSlide: { object: slide, axis: new THREE.Vector3(0, 0, 1), travel: 0.02 },
     magazineClone: () => magazine.clone(),
+    cartridgeClone: () => new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.02, 0.009)),
+    worldChamber: () => slide.getWorldPosition(new THREE.Vector3()),
+    seatCartridge: () => seatCartridge(state),
     syncTracked(parent: THREE.Group) {
       parent.add(model)
       model.position.set(0, 0, 0)
@@ -366,5 +370,290 @@ it('draws the native laser at its authored socket and clips it to the hit withou
   expect(laser.children[1].position.toArray()).toEqual([1, 2, -2])
   loadout.suspend(1010)
   expect(laser.visible).toBe(false)
+  loadout.dispose()
+})
+
+it('AR pistols remain loose until picked up and released at their holster', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera()
+  camera.position.y = 1.65
+  scene.add(camera)
+  const loadout = new XRLoadout(scene, [weapon()]),
+    h = hand()
+  scene.add(h.grip)
+  loadout.physicalPistols = true
+  let drops = 0
+  loadout.droppedPhysics = () => {
+    drops++
+    return true
+  }
+  let now = 0
+  const tick = () =>
+    loadout.update(
+      [h],
+      camera,
+      new THREE.Vector3(),
+      (now += 16),
+      0.016,
+      true,
+      1024,
+      () => null,
+      () => {},
+    )
+  tick()
+  const p = loadout.pistols[0]
+  h.grip.position.copy(p.holster.getWorldPosition(new THREE.Vector3()))
+  squeeze(h, true)
+  tick()
+  expect(p.holder).toBe(h)
+  h.grip.position.x += 0.5
+  tick()
+  squeeze(h, false)
+  tick()
+  expect(p.dropped).toBe(true)
+  expect(loadout.mount(p)).toBe(p.holdMount)
+  expect(drops).toBeGreaterThan(0)
+  h.grip.position.copy(p.holdMount.getWorldPosition(new THREE.Vector3()))
+  h.mount.rotation.set(0.3, -0.7, 0.2)
+  squeeze(h, true)
+  tick()
+  expect(p.holder).toBe(h)
+  expect(p.dropped).toBe(false)
+  expect(
+    p.holdMount
+      .getWorldQuaternion(new THREE.Quaternion())
+      .angleTo(h.mount.getWorldQuaternion(new THREE.Quaternion())),
+  ).toBeLessThan(1e-6)
+  expect(
+    p.holdMount
+      .getWorldPosition(new THREE.Vector3())
+      .distanceTo(h.mount.getWorldPosition(new THREE.Vector3())),
+  ).toBeLessThan(1e-6)
+  h.grip.position.copy(p.holster.getWorldPosition(new THREE.Vector3()))
+  tick()
+  squeeze(h, false)
+  tick()
+  expect(p.dropped).toBe(false)
+  expect(loadout.mount(p)).toBe(p.adjustment)
+  loadout.dispose()
+})
+
+it('touching the safety toggles once until the fingertip separates', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    w = weapon()
+  camera.position.y = 1.65
+  scene.add(camera)
+  let safe = false,
+    changes = 0
+  w.setSafety = (value: boolean) => {
+    safe = value
+    changes++
+  }
+  Object.defineProperty(w, 'safe', { get: () => safe })
+  const lever = new THREE.Group()
+  lever.name = 'SafetyLeverPivot'
+  lever.position.x = 0.03
+  w.model.add(lever)
+  const loadout = new XRLoadout(scene, [w]),
+    h = hand(),
+    other = hand()
+  other.visual = { indexTip: new THREE.Object3D() }
+  scene.add(h.grip, other.grip, other.visual.indexTip)
+  other.grip.position.x = 3
+  other.visual.indexTip.position.x = 3
+  let now = 0
+  const tick = () =>
+    loadout.update(
+      [h, other],
+      camera,
+      new THREE.Vector3(),
+      (now += 16),
+      0.016,
+      true,
+      1024,
+      () => null,
+      () => {},
+    )
+  tick()
+  h.grip.position.copy(loadout.pistols[0].holster.getWorldPosition(new THREE.Vector3()))
+  squeeze(h, true)
+  tick()
+  other.visual.indexTip.position.copy(lever.getWorldPosition(new THREE.Vector3()))
+  tick()
+  tick()
+  expect(safe).toBe(true)
+  expect(changes).toBe(1)
+  other.visual.indexTip.position.x += 0.1
+  tick()
+  other.visual.indexTip.position.copy(lever.getWorldPosition(new THREE.Vector3()))
+  tick()
+  expect(safe).toBe(false)
+  expect(changes).toBe(2)
+  loadout.dispose()
+})
+
+it('B/Y drops the actual magazine once while the button stays down', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    h = hand()
+  camera.position.y = 1.65
+  scene.add(camera, h.grip)
+  const loadout = new XRLoadout(scene, [weapon()])
+  let now = 0
+  const tick = () =>
+    loadout.update(
+      [h],
+      camera,
+      new THREE.Vector3(),
+      (now += 16),
+      0.016,
+      true,
+      1024,
+      () => null,
+      () => {},
+    )
+  tick()
+  h.grip.position.copy(loadout.pistols[0].holster.getWorldPosition(new THREE.Vector3()))
+  squeeze(h, true)
+  tick()
+  const buttons = h.source!.gamepad!.buttons as GamepadButton[]
+  buttons[5] = { pressed: true, touched: true, value: 1 }
+  tick()
+  tick()
+  expect(loadout.pistols[0].weapon.state.magazineSeated).toBe(false)
+  expect(loadout.magazines.filter((m) => !m.holder && !m.pocket)).toHaveLength(1)
+  loadout.dispose()
+})
+
+it('keeps the front hold on transfer and seats the handle when the other hand returns', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    w = weapon()
+  camera.position.y = 1.65
+  const front = new THREE.Group()
+  front.position.z = -0.2
+  w.model.add(front)
+  w.worldMuzzle = () => front.getWorldPosition(new THREE.Vector3())
+  const a = hand(),
+    b = hand(),
+    loadout = new XRLoadout(scene, [w])
+  scene.add(camera, a.grip, b.grip)
+  b.grip.position.x = 3
+  loadout.physicalPistols = true
+  let now = 0
+  const tick = () =>
+    loadout.update(
+      [a, b],
+      camera,
+      new THREE.Vector3(),
+      (now += 16),
+      0.016,
+      true,
+      1000,
+      () => null,
+      () => {},
+    )
+  tick()
+  const p = loadout.pistols[0]
+  a.grip.position.copy(p.holster.getWorldPosition(new THREE.Vector3()))
+  squeeze(a, true)
+  tick()
+  a.grip.position.x += 0.4
+  tick()
+  b.grip.position.copy(w.worldMuzzle()!)
+  squeeze(b, true)
+  tick()
+  const before = p.holdMount.getWorldQuaternion(new THREE.Quaternion())
+  squeeze(a, false)
+  tick()
+  expect(p.holder).toBe(b)
+  expect(p.gripMode).toBe('free')
+  expect(p.holdMount.getWorldQuaternion(new THREE.Quaternion()).angleTo(before)).toBeLessThan(1e-6)
+  a.grip.position.copy(w.model.getObjectByName('GripSocket')!.getWorldPosition(new THREE.Vector3()))
+  a.mount.rotation.set(0.2, 0.6, -0.3)
+  squeeze(a, true)
+  tick()
+  expect(p.holder).toBe(a)
+  expect(p.gripMode).toBe('handle')
+  expect(
+    p.holdMount
+      .getWorldQuaternion(new THREE.Quaternion())
+      .angleTo(a.mount.getWorldQuaternion(new THREE.Quaternion())),
+  ).toBeLessThan(1e-6)
+  expect(loadout.supported(p)).toBe(true)
+  loadout.dispose()
+})
+
+it('always draws from the holster into the calibrated handle even when grabbing the slide', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    h = hand(),
+    w = weapon()
+  scene.add(camera, h.grip)
+  const loadout = new XRLoadout(scene, [w])
+  const tick = () =>
+    loadout.update(
+      [h],
+      camera,
+      new THREE.Vector3(),
+      1000,
+      0.016,
+      true,
+      100,
+      () => null,
+      () => {},
+    )
+  tick()
+  h.grip.position.copy(w.trackedSlide!.object.getWorldPosition(new THREE.Vector3()))
+  h.mount.rotation.set(0.3, -0.5, 0.2)
+  squeeze(h, true)
+  tick()
+  const p = loadout.pistols[0]
+  expect(p.gripMode).toBe('handle')
+  expect(p.holder).toBe(h)
+  expect(
+    p.holdMount
+      .getWorldQuaternion(new THREE.Quaternion())
+      .angleTo(h.mount.getWorldQuaternion(new THREE.Quaternion())),
+  ).toBeLessThan(1e-6)
+  loadout.dispose()
+})
+
+it('grabs a live round and consumes it once when inserted into an open chamber', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    h = hand(),
+    w = weapon()
+  scene.add(camera, h.grip)
+  const loadout = new XRLoadout(scene, [w])
+  const tick = () =>
+    loadout.update(
+      [h],
+      camera,
+      new THREE.Vector3(),
+      1000,
+      0.016,
+      true,
+      100,
+      () => null,
+      () => {},
+    )
+  tick()
+  w.moveSlide(1, 1000)
+  const c = loadout.addCartridge(w, new THREE.Vector3(2, 1, 0))!
+  h.grip.position.copy(c.root.position)
+  squeeze(h, true)
+  tick()
+  expect(c.holder).toBe(h)
+  h.grip.position.copy(w.worldChamber()!)
+  tick()
+  expect(w.state.chamber).toBe(1)
+  expect(loadout.cartridges).toHaveLength(0)
+  const rounds = w.state.magazine
+  w.moveSlide(0, 1016)
+  expect(w.state.magazine).toBe(rounds)
+  expect(w.state.chamber).toBe(1)
+  expect(w.seatCartridge()).toBe(false)
   loadout.dispose()
 })

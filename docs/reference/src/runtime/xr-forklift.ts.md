@@ -12,7 +12,7 @@
 
 ## XRForklift.owns
 
-[Implementation, line 8](../../../../src/runtime/xr-forklift.ts#L8)
+[Implementation, line 9](../../../../src/runtime/xr-forklift.ts#L9)
 
 Three spring-return hydraulic levers, held with grip and pulled/pushed in chassis space.
 
@@ -25,17 +25,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.held.values()].some`
 - `this.held.values`
 
-## XRForklift.owns.callback@9
+## XRForklift.owns.callback@10
 
-[Implementation, line 9](../../../../src/runtime/xr-forklift.ts#L9)
+[Implementation, line 10](../../../../src/runtime/xr-forklift.ts#L10)
 
 ```ts
-callback@9(v): inferred by TypeScript; see implementation
+callback@10(v): inferred by TypeScript; see implementation
 ```
 
 ## XRForklift.update
 
-[Implementation, line 11](../../../../src/runtime/xr-forklift.ts#L11)
+[Implementation, line 12](../../../../src/runtime/xr-forklift.ts#L12)
 
 Three spring-return hydraulic levers, held with grip and pulled/pushed in chassis space.
 
@@ -50,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Vector3`
 - `hands.find`
-- `hands.includes`
+- `hands.some`
 - `lever.localToWorld`
 - `new Vector3().fromArray`
 - `object.getObjectByName`
@@ -64,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRForklift.update.position
 
-[Implementation, line 19](../../../../src/runtime/xr-forklift.ts#L19)
+[Implementation, line 20](../../../../src/runtime/xr-forklift.ts#L20)
 
 ```ts
 position(h: GrabHand): inferred by TypeScript; see implementation
@@ -78,18 +78,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRForklift.update.squeeze
 
-[Implementation, line 20](../../../../src/runtime/xr-forklift.ts#L20)
+[Implementation, line 21](../../../../src/runtime/xr-forklift.ts#L21)
 
 ```ts
 squeeze(h: GrabHand): inferred by TypeScript; see implementation
 ```
 
-## XRForklift.update.callback@35
+## XRForklift.update.callback@27
 
-[Implementation, line 35](../../../../src/runtime/xr-forklift.ts#L35)
+[Implementation, line 27](../../../../src/runtime/xr-forklift.ts#L27)
 
 ```ts
-callback@35(h): inferred by TypeScript; see implementation
+callback@27(h): inferred by TypeScript; see implementation
+```
+
+## XRForklift.update.callback@36
+
+[Implementation, line 36](../../../../src/runtime/xr-forklift.ts#L36)
+
+```ts
+callback@36(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

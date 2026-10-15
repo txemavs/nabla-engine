@@ -68,6 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.geometry.getAttribute`
 - `mesh.matrixWorld.elements.join`
 - `mesh.updateWorldMatrix`
+- `meshes.some`
 - `seen.add`
 - `seen.has`
 - `this.simulation.setExternalCollisionMesh`
@@ -84,25 +85,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@56(_, i): inferred by TypeScript; see implementation
 ```
 
+## XRScaledVehicles.updateSurfaces.callback@65
+
+[Implementation, line 65](../../../../src/runtime/xr-scaled-vehicles.ts#L65)
+
+```ts
+callback@65(m): inferred by TypeScript; see implementation
+```
+
 ## XRScaledVehicles.step
 
-[Implementation, line 77](../../../../src/runtime/xr-scaled-vehicles.ts#L77)
+[Implementation, line 78](../../../../src/runtime/xr-scaled-vehicles.ts#L78)
 
 Run the ordinary vehicle simulation at full size; only the XR boundary changes units.
 
 ```ts
-step(dt: number, input: { throttle: number steering: number brake: number frontBrake?: number rearBrake?: number }): void
+step(dt: number, input: { throttle: number steering: number brake: number handbrake?: boolean frontBrake?: number rearBrake?: number /** Existing Engine flight axes: propulsion and rudder. */ lift?: number forklift?: [number, number, number] turn?: number }): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `idleInput`
+- `this.simulation.setForkliftInput`
 - `this.simulation.setInput`
 - `this.simulation.step`
 
 ## XRScaledVehicles.pose
 
-[Implementation, line 97](../../../../src/runtime/xr-scaled-vehicles.ts#L97)
+[Implementation, line 106](../../../../src/runtime/xr-scaled-vehicles.ts#L106)
 
 Run the ordinary vehicle simulation at full size; only the XR boundary changes units.
 
@@ -115,17 +125,58 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pose.position.map`
 - `this.simulation.entityTransform`
 
-## XRScaledVehicles.pose.callback@100
+## XRScaledVehicles.pose.callback@109
 
-[Implementation, line 100](../../../../src/runtime/xr-scaled-vehicles.ts#L100)
+[Implementation, line 109](../../../../src/runtime/xr-scaled-vehicles.ts#L109)
 
 ```ts
-callback@100(v): inferred by TypeScript; see implementation
+callback@109(v): inferred by TypeScript; see implementation
 ```
+
+## XRScaledVehicles.beginGrab
+
+[Implementation, line 114](../../../../src/runtime/xr-scaled-vehicles.ts#L114)
+
+Picking a hitched trailer releases the ordinary Engine hitch first.
+
+```ts
+beginGrab(id: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.simulation.unhitchTrailer`
+- `this.simulation.vehicleList`
+- `this.simulation.vehicleList().find`
+
+## XRScaledVehicles.beginGrab.callback@115
+
+[Implementation, line 115](../../../../src/runtime/xr-scaled-vehicles.ts#L115)
+
+```ts
+callback@115(vehicle): inferred by TypeScript; see implementation
+```
+
+## XRScaledVehicles.assemblyIds
+
+[Implementation, line 118](../../../../src/runtime/xr-scaled-vehicles.ts#L118)
+
+Run the ordinary vehicle simulation at full size; only the XR boundary changes units.
+
+```ts
+assemblyIds(id: string): Set<string>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Set`
+- `ids.add`
+- `ids.has`
+- `this.simulation.vehicleList`
 
 ## XRScaledVehicles.moveAssembly
 
-[Implementation, line 105](../../../../src/runtime/xr-scaled-vehicles.ts#L105)
+[Implementation, line 140](../../../../src/runtime/xr-scaled-vehicles.ts#L140)
 
 Move all attached bodies together, preserving the real hitch geometry.
 
@@ -143,16 +194,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `targetRotation.clone`
 - `targetRotation.clone().multiply`
 - `targetRotation.clone().multiply(inverse).normalize`
-- `this.entities.map`
 - `this.pose`
-- `this.simulation.relocateVehicles`
+- `this.simulation.relocateEntities`
 
-## XRScaledVehicles.moveAssembly.callback@113
+## XRScaledVehicles.moveAssembly.callback@149
 
-[Implementation, line 113](../../../../src/runtime/xr-scaled-vehicles.ts#L113)
+[Implementation, line 149](../../../../src/runtime/xr-scaled-vehicles.ts#L149)
 
 ```ts
-callback@113(entity): inferred by TypeScript; see implementation
+callback@149(entity): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.assemblyIds`
+- `this.assemblyIds(id).has`
+
+## XRScaledVehicles.moveAssembly.callback@150
+
+[Implementation, line 150](../../../../src/runtime/xr-scaled-vehicles.ts#L150)
+
+```ts
+callback@150(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -170,7 +233,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRScaledVehicles.releaseAssembly
 
-[Implementation, line 137](../../../../src/runtime/xr-scaled-vehicles.ts#L137)
+[Implementation, line 174](../../../../src/runtime/xr-scaled-vehicles.ts#L174)
 
 Preserve release motion in real metres; angular speed is independent of model scale.
 
@@ -181,25 +244,33 @@ releaseAssembly(id: string, velocity: THREE.Vector3, angularVelocity: THREE.Vect
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector3`
-- `this.entities.map`
 - `this.pose`
-- `this.simulation.releaseVehicles`
+- `this.simulation.releaseEntities`
 
-## XRScaledVehicles.releaseAssembly.callback@140
+## XRScaledVehicles.releaseAssembly.callback@178
 
-[Implementation, line 140](../../../../src/runtime/xr-scaled-vehicles.ts#L140)
+[Implementation, line 178](../../../../src/runtime/xr-scaled-vehicles.ts#L178)
 
 ```ts
-callback@140(entity): inferred by TypeScript; see implementation
+callback@178(entity): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.assemblyIds`
+- `this.assemblyIds(id).has`
+
+## XRScaledVehicles.releaseAssembly.callback@179
+
+[Implementation, line 179](../../../../src/runtime/xr-scaled-vehicles.ts#L179)
+
+```ts
+callback@179(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector3`
-- `angularVelocity.clone`
-- `angularVelocity.clone().cross`
-- `angularVelocity.clone().cross(offset).add`
-- `angularVelocity.clone().cross(offset).add(velocity).divideScalar`
 - `angularVelocity.toArray`
 - `linear.toArray`
 - `new THREE.Vector3(...this.pose(entity.id).position).sub`
@@ -207,7 +278,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRScaledVehicles.contacts
 
-[Implementation, line 151](../../../../src/runtime/xr-scaled-vehicles.ts#L151)
+[Implementation, line 194](../../../../src/runtime/xr-scaled-vehicles.ts#L194)
 
 Run the ordinary vehicle simulation at full size; only the XR boundary changes units.
 
@@ -220,17 +291,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.simulation.wheelContactInfo`
 - `this.simulation.wheelContactInfo(id).map`
 
-## XRScaledVehicles.contacts.callback@152
+## XRScaledVehicles.contacts.callback@195
 
-[Implementation, line 152](../../../../src/runtime/xr-scaled-vehicles.ts#L152)
+[Implementation, line 195](../../../../src/runtime/xr-scaled-vehicles.ts#L195)
 
 ```ts
-callback@152(c): inferred by TypeScript; see implementation
+callback@195(c): inferred by TypeScript; see implementation
 ```
 
 ## XRScaledVehicles.dispose
 
-[Implementation, line 158](../../../../src/runtime/xr-scaled-vehicles.ts#L158)
+[Implementation, line 201](../../../../src/runtime/xr-scaled-vehicles.ts#L201)
 
 Run the ordinary vehicle simulation at full size; only the XR boundary changes units.
 

@@ -31,3 +31,15 @@ Regression tests cover the real GLB, poses, ammunition transfer and dropped
 magazine rendering, plus the existing casing and spatial-audio behavior.
 
 Camera, controls and all reviewed pose offsets: [gameplay tuning](../../../../docs/gameplay-tuning.md).
+
+## Shared low-quality variants
+
+Generate with `node scripts/prepare-pistol-low.mjs`. The original GLB is untouched. `modelLow` is selected through engine's `assetUrlForQuality`; low desktop profiles and Quest use the same model, and AR explicitly requests `low`.
+
+- Assembled pistol: 22,947 → 14,101 triangles (38.5% reduction). Normal-aware simplification preserves broad surfaces; sights, controls and trigger retain extra detail. Raised grip badges are removed. All rig nodes and transforms remain.
+- Magazine including its visible top cartridge: 2,454 → 1,019 triangles (58.5% reduction). The extended magazine reuses this geometry through the existing capacity posing.
+- Cartridge: 320 → 165 triangles (48.4% reduction).
+
+The runtime clones magazines and cartridges from the selected assembled weapon, keeping animation and gameplay shared. Standalone preview GLBs are `hk-compact-magazine-low.glb` and `hk-compact-cartridge-low.glb`. The pistol deliberately retains more than half its geometry to avoid damaging its appearance. Procedural ejected brass already uses six radial segments and is unchanged.
+
+The shared production preset uses `hk-compact-low.glb` in every quality tier (desktop, VR and AR). The original GLB remains the authoring source only. `scripts/prepare-pistol-low.mjs` preserves rig anchors, closes the magazine floorplate, validates watertight cartridges, and smooths curved frame/guard patches while fixing boundary and sharp-edge vertices. No extra triangles are added by curve smoothing.

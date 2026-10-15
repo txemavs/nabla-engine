@@ -4,12 +4,21 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 export interface FlightState {
   altitude: number
   yaw: number
+  speedMode?: 'slow' | 'fast'
 }
 export interface FlightRuntime {
   body: Body
   flight: FlightState | null
   helm: 'off' | 'auto' | 'car' | 'drone' | 'plane' | 'space'
-  definition: { plane?: boolean }
+  definition: {
+    plane?: boolean
+    aircraft?: {
+      propulsion: 'propeller' | 'jet'
+      slowSpeedMs: number
+      fastSpeedMs: number
+      accelerationMs2: number
+    }
+  }
   /** Cruise target, km/h. */
   cruiseSpeed: number
 }
@@ -110,7 +119,17 @@ export function stepFlight(
     if (v.definition.plane) {
       const wing = body.quaternion.vmult(new Vec3(0, 1, 0))
       const wings = clamp(air / 28, 0, 1)
-      const thrust = lift > 0 ? clamp(68 - along, 0, 8) : 0
+      const aircraft = v.definition.aircraft
+      const speed = aircraft
+        ? flight.speedMode === 'fast'
+          ? aircraft.fastSpeedMs
+          : aircraft.slowSpeedMs
+        : 68
+      const thrust =
+        lift > 0
+          ? clamp(speed - along, 0, aircraft?.accelerationMs2 ?? 8) *
+            (aircraft ? clamp(lift, 0, 1) : 1)
+          : 0
       const drag = 0.0011 * along * Math.abs(along)
       const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
       // Nose above the flight path is positive. The old sign rewarded diving.

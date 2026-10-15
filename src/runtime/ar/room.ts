@@ -121,6 +121,7 @@ export class ARRoom {
   update(frame: XRFrame, space: XRReferenceSpace, visible: boolean): void {
     this.root.visible = visible
     this.material.visible = this.showing
+    if (!visible) return // A system overlay may temporarily supply no detected surfaces.
     const room = frame as RoomFrame
     const planes = room.detectedPlanes ?? new Set<Plane>()
     const meshes = room.detectedMeshes ?? new Set<Mesh>()
