@@ -226,6 +226,10 @@
     "./xr/ui": {
       "types": "./dist/runtime/xr/ui.d.ts",
       "import": "./dist/runtime/xr/ui.js"
+    },
+    "./runtime/online": {
+      "types": "./dist/runtime/online-presence.d.ts",
+      "import": "./dist/runtime/online-presence.js"
     }
   },
   "imports": {

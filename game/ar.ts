@@ -1,3 +1,4 @@
+import { OnlinePresence } from '@nabla/engine/runtime/online'
 import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
@@ -344,6 +345,7 @@ screen.mainMenu = () => [
     run: () => roomAction(1),
   },
 ]
+const online = new OnlinePresence({ scene, camera, xr, room: true })
 const freeEnvironment = () => {
   hoop.clear()
   bowGeneration++
@@ -702,6 +704,7 @@ renderer.setAnimationLoop((time, frame) => {
     }
     menuPressed = pressed
   }
+  online.update(time)
   renderer.render(scene, camera)
 })
 enter.onclick = () => {
@@ -750,6 +753,7 @@ addEventListener(
     weapons.dispose()
     balls.dispose()
     room.dispose()
+    online.dispose()
     xr.dispose()
     renderer.dispose()
   },
