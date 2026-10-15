@@ -32,3 +32,44 @@ Visual kinematics live in the engine: `bindMotorcycleRig(root)` in `src/render/v
 Which preset values are Honda data and which are placeholders is listed in [docs/motorcycles.md](../../../../docs/motorcycles.md). Every placeholder is marked TODO(unverified) in the engine config; none of them is Honda data.
 
 Reference dimensions do not guarantee every reconstructed body contour: rear bodywork was widened for clearance, mirrors exceed the brochure width, and shock attachment points are estimated. These artistic changes do not change the factory specification sheet.
+
+## Variante Quest low poly
+
+`vfr800fi-1999-quest.glb` es una copia simplificada independiente: **878.204 bytes**
+(0,878 MB), **29.262 triángulos**, frente a 3.506.348 bytes y 142.689 triángulos
+del original. Conserva los 68 nodos y la articulación de dirección, ruedas y suspensión.
+Los 86 grupos de material siguen separados; el ahorro de geometría no elimina ese coste.
+
+Se reduce especialmente el detalle de llantas y discos; carenado y cuadro reciben
+más presupuesto. El cristal usa transparencia sencilla, sin transmisión ni volumen,
+y se elimina clearcoat para evitar trabajo adicional en Quest. El GLB no requiere
+Draco ni extensiones de compresión. Incluye su textura.
+
+Regenerar con `node scripts/prepare-motorcycle-quest.mjs` y
+`npm run rigs:generate`. El script exige menos de 1.000.000 bytes.
+Preset `vfr800-quest`, con la misma física y sonido V4. Prueba:
+`/xr.html?example=flat&solo=1&vehicle=vfr800-quest&quality=minimal`.
+Los FPS finales se deben medir en las Quest.
+
+Ribetes rojos eliminados como geometría independiente. Radios conservados; neumáticos con mayor detalle de contorno.
+
+La lente de la luz trasera y sus cierres conservan toda su geometría original para evitar huecos.
+
+Colín y asiento conservan también la geometría original para mantener sus uniones y simetría.
+
+### Selección automática en el motor
+
+El preset normal `vfr800` declara `visual.body.lowUrl`. GameRuntime elige la
+variante baja en Quest (OculusBrowser) y con calidad minimal, mobile o low;
+balanced, high y ultra en escritorio usan la original. La física, identificador
+y ajustes del vehículo son comunes. El preset `vfr800-quest` queda oculto del
+catálogo normal y disponible como prueba explícita.
+
+Otros modelos pueden declarar `lowUrl` en cuerpo, ruedas, volante o accesorios;
+deben conservar escala, ejes y anclajes. Si no existe variante, se carga `url`.
+Los hosts propios pueden pasar `assetQuality: 'low' | 'full'` a SceneView o
+GameRuntime. La elección se hace al crear el runtime, también para precargas.
+
+Rueda delantera, discos y guardabarros reciben más detalle; sus bordes se bloquean durante la simplificación para evitar huecos.
+
+El guardabarros delantero conserva toda su forma original, incluida la punta.

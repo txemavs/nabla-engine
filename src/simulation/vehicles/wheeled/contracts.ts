@@ -230,6 +230,7 @@ export interface WheeledInput {
    * Two-wheelers: front lever held separately from the throttle (S together with W while Shift
    * is held), 0..1. Other vehicles ignore it.
    */
+  pedal?: number
   lever?: number
 }
 export const idleWheeledInput = (): WheeledInput => ({

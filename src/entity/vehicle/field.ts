@@ -4,6 +4,11 @@ import { boxCollider, finite, rotation, transform, vector } from '../coords.js'
 const assetPart = z
   .object({
     url: z.string().regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.glb$/),
+    /** Optional lightweight GLB with identical transforms and rig anchors. */
+    lowUrl: z
+      .string()
+      .regex(/^\/(?!\/)[a-zA-Z0-9_./-]+\.glb$/)
+      .optional(),
     transform,
   })
   .strict()

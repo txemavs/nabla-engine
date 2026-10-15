@@ -1,8 +1,9 @@
+import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { assignVehicleColor } from './vehicle-colors.js'
-import { hasVehiclePreset } from '@nabla/engine/vehicles'
+import { hasVehiclePreset, presetEntities } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
@@ -74,6 +75,7 @@ function showCells(): void {
 }
 try {
   const params = new URLSearchParams(location.search)
+  const solo = params.get('solo') === '1'
   const config = await startFromIndex(parseTerrainConfig())
   bootLog(`config ready (${config.vehicles.length} host vehicles)`)
   startBase = config.base
@@ -83,8 +85,21 @@ try {
     ...config.scene,
     latitude: config.start!.latitude,
     longitude: config.start!.longitude,
-    includeDemoFleet: config.vehicles.length === 0,
+    includeDemoFleet: !solo && config.vehicles.length === 0,
   })
+  if (
+    !solo &&
+    config.vehicles.length === 0 &&
+    !scene.entities.some((entity) => entity.vehicle?.twoWheeled)
+  ) {
+    const motorcycle = presetEntities('vfr800', 'demo-vfr800', [4, 0, 0])
+    motorcycle[0].transform.rotation = [
+      ...scene.entities.find((entity) => entity.id === 'player-vehicle')!.transform.rotation,
+    ]
+    scene.entities.push(...motorcycle)
+  }
+  if (solo)
+    scene.entities = scene.entities.filter((entity) => entity.id !== 'player-vehicle-trailer')
   for (const entity of scene.entities)
     if (entity.id !== 'player-vehicle' || !(config.scene as { color?: string }).color)
       assignVehicleColor(entity)
@@ -134,12 +149,15 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
     scene,
-    preloadVehicles: menuPreloadVehicles(boot.preloadVehicles),
-    accidentReplacementVehicles: menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
+    preloadVehicles: solo ? [] : menuPreloadVehicles(boot.preloadVehicles),
+    accidentReplacementVehicles: solo ? [] : menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
     sea: true,
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.
-    performance: { preset: params.get('quality') ?? 'custom' },
+    performance: {
+      preset: params.get('quality') ?? 'custom',
+      ...(params.has('xr') ? { buildings: 1 } : {}),
+    },
     tiles: {
       baseUrl: config.base,
       mode: 'static',
@@ -193,7 +211,7 @@ try {
   // Host vehicles are placed inside play(), before the reveal: their models, lights and
   // programs load behind the intro instead of during the start descent.
   const geography = scene.geography
-  if (geography && config.vehicles.length)
+  if (!solo && geography && config.vehicles.length)
     runtime.beforeReveal(async () => {
       bootLog(`installHostVehicles start (${config.vehicles.length})`)
       await installHostVehicles(runtime!, geography, config.vehicles)
@@ -201,6 +219,8 @@ try {
     })
   bootLog('play() start')
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
+  if (params.has('xr')) runtime.equipTestSidearm()
+  bindVR(runtime)
   bootLog('play() done (ground + physics)')
   if (scene.geography && config.portals?.length) {
     bootLog(`installHostPortals start (${config.portals?.length})`)

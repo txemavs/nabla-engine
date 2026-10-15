@@ -23,6 +23,10 @@ npm run dev
 ```
 
 Open the [flat planetary driving example](http://localhost:5174/?example=flat).
+The [Engine VR integration](docs/quest-first-demo.md) adds `runtime.xr` to the shared
+browser runtime. `/xr.html` runs the test fleet; the same VR button is available
+in `test.html` and the Euskadi terrain host. The pointing/HK calibration demo
+remains at `/xr-demo.html`.
 Four bundled Z15 tiles surround `(0, 0)` at sea level. Models, Earth texture and
 branding are bundled. The editor now lives in
 [nabla-studio](https://github.com/txemavs/nabla-studio), which consumes Engine as a

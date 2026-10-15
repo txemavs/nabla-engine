@@ -583,7 +583,7 @@ export function stepTwoWheeledVehicle(
     )
     if (frontContact || rearContact) v.body.applyForce(forward.scale(v.body.mass * push))
   }
-  state.pedal = active && input.handbrake ? 1 : 0
+  state.pedal = active ? Math.max(input.handbrake ? 1 : 0, clamp(input.pedal ?? 0, 0, 1)) : 0
   const brakes = stepCombinedBrakes(
     state.brakeLink,
     state.lever,

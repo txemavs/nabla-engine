@@ -1,3 +1,4 @@
+import type { MagazineEntity } from '../simulation/weapons/magazine.js'
 import {
   normalizeWeaponWheel,
   weaponWheelOffset,
@@ -22,6 +23,8 @@ import {
   swapFreshMagazine,
   releaseSlide,
   moveSlide,
+  takeMagazine,
+  seatMagazine,
   freshFirearm,
   rounds,
   trigger,
@@ -148,6 +151,20 @@ export class Sidearm {
   private variantId: HKVariantId = 'sa-da-combined-left'
   private safetyOn = false
   private worldPresentation: THREE.Group | null = null
+  /** The assembled model is attached to a tracked grip instead of a desktop view rig. */
+  private trackedGrip = false
+  get tracked(): boolean {
+    return this.trackedGrip
+  }
+  set tracked(value: boolean) {
+    if (this.trackedGrip && !value && this.model.parent !== this.viewRig)
+      this.viewRig.add(this.model)
+    this.trackedGrip = value
+  }
+  private get worldRoot(): THREE.Group | null {
+    return this.tracked ? this.model : this.worldPresentation
+  }
+
   private tuning: SidearmTuning = { ...sidearmTuningDefaults }
   private readonly smoke = new MuzzleSmoke()
   private worldSmoke: MuzzleSmoke | null = null
@@ -410,6 +427,7 @@ export class Sidearm {
     this.worldPresentation?.removeFromParent()
     this.worldPresentation?.clear()
     this.worldPresentation = null
+    this.model.removeFromParent()
     disposeObject(this.model)
     this.model.clear()
     this.scene.clear()
@@ -417,7 +435,7 @@ export class Sidearm {
 
   set visible(value: boolean) {
     this.enabled = value && !this.disposed
-    if (this.worldPresentation) this.worldPresentation.visible = this.visible
+    if (this.worldPresentation) this.worldPresentation.visible = this.visible && !this.tracked
     if (!this.enabled) {
       this.worldPresentation?.removeFromParent()
       this.aiming = false
@@ -529,13 +547,13 @@ export class Sidearm {
     firstPerson: boolean,
   ): THREE.Group | null {
     if (this.broken || !this.assembledModel) return null
-    const source = firstPerson ? this.model : this.worldPresentation
+    const source = firstPerson ? this.model : this.worldRoot
     if (!source) return null
     source.updateWorldMatrix(true, true)
     const body = source.clone(true)
     // Clone only the physical assembly. Hidden laser lines and live smoke still
     // contribute to Box3 bounds and would give debris metres of invisible support.
-    const assembly = firstPerson ? this.assembledModel : source.children[0]
+    const assembly = firstPerson || this.tracked ? this.assembledModel : source.children[0]
     if (source !== assembly) {
       for (let i = source.children.length - 1; i >= 0; i--)
         if (source.children[i] !== assembly) body.children[i].removeFromParent()
@@ -621,6 +639,30 @@ export class Sidearm {
     return event
   }
 
+  get trackedMagazine(): THREE.Object3D | null {
+    return this.magazine?.object ?? null
+  }
+
+  takeMagazine(): FirearmEvent {
+    return takeMagazine(this.state)
+  }
+
+  seatMagazine(magazine: MagazineEntity): FirearmEvent {
+    const event = seatMagazine(this.state, magazine)
+    if (event.magazineSeated) this.setFireMode(magazine.capacity > 13 ? 'burst30' : 'semi')
+    return event
+  }
+
+  get trackedSlide() {
+    return this.slide
+      ? {
+          object: this.slide.object,
+          axis: axis(this.rig.presentation.slide.axis),
+          travel: this.rig.presentation.slide.travel,
+        }
+      : null
+  }
+
   moveSlide(travel: number, now: number): FirearmEvent {
     if (this.state.reload !== 'none') return trigger(this.state, this.firearm, false, now)
     const event = moveSlide(this.state, this.firearm, travel, now)
@@ -696,7 +738,7 @@ export class Sidearm {
 
   /** Eye-relative in first person, world-space in third person. */
   ejectionPose(firstPerson: boolean, worldFov: number) {
-    const root = firstPerson ? this.model : this.worldPresentation
+    const root = firstPerson ? this.model : this.worldRoot
     if (!root) return null
     const pose = ejectionPort(root)
     if (!pose || !firstPerson) return pose
@@ -736,6 +778,7 @@ export class Sidearm {
     )
     this.laserLine.visible = false
     if (!firstPerson) return
+    if (this.model.parent !== this.viewRig) this.viewRig.add(this.model)
     this.camera.aspect = aspect
     this.camera.fov = THREE.MathUtils.lerp(HIP_POSE.fov, ADS_POSE.fov, this.aimBlend)
     this.camera.updateProjectionMatrix()
@@ -790,6 +833,45 @@ export class Sidearm {
       renderer.shadowMap.autoUpdate = shadowUpdate
       renderer.shadowMap.needsUpdate = shadowNeedsUpdate
     }
+  }
+
+  /** Present in a host-owned tracked grip, in the main scene and without a camera pass.
+   * Call update(now) separately. The host owns tracking, visibility and input release.
+   */
+  syncTracked(parent: THREE.Object3D, now: number, height = 1024): void {
+    this.tracked = true
+    if (this.worldPresentation) this.worldPresentation.visible = false
+    if (this.model.parent !== parent) parent.add(this.model)
+    this.model.visible = this.visible
+    if (!this.visible) return
+    this.pose(now)
+    // Desktop inspection/reload offsets must never move a tracked hand.
+    this.model.position.set(0, 0, 0)
+    this.model.quaternion.identity()
+    const age = Math.max(0, now - this.state.lastShotMs)
+    const kick = Math.exp(-age / 90) * Math.min(1, age / 15)
+    this.model.rotateX((((this.preset?.recoil?.riseDeg ?? 3) * Math.PI) / 180) * kick)
+    this.model.updateWorldMatrix(true, true)
+    const grip = this.model.getObjectByName('GripSocket')
+    if (grip) {
+      const local = this.model.worldToLocal(grip.getWorldPosition(new THREE.Vector3()))
+      this.model.position.copy(local).applyQuaternion(this.model.quaternion).negate()
+    }
+    this.flash.position.set(
+      this.flashAt[0] + this.flashTuning.x / 1000,
+      this.flashAt[1] + this.flashTuning.y / 1000,
+      this.flashAt[2] - 0.015 + this.flashTuning.z / 1000,
+    )
+    this.flash.visible = this.visible && this.flashIntensity(now) > 0
+    ;(this.flash.material as THREE.MeshBasicMaterial).opacity = Math.min(
+      1,
+      (0.55 * this.flashTuning.intensity) / 100,
+    )
+    this.laserLine.visible = false
+    this.muzzleLight.intensity = 0
+    this.smoke.root.visible = this.smokeEnabled
+    this.smoke.update(now, height)
+    this.model.updateWorldMatrix(true, true)
   }
 
   /** Shared assembled asset on the avatar, including slide, trigger and magazine motion. */
@@ -903,24 +985,20 @@ export class Sidearm {
       if (position)
         light.position
           .copy(position)
-          .add(
-            offset.applyQuaternion(
-              this.worldPresentation!.getWorldQuaternion(new THREE.Quaternion()),
-            ),
-          )
+          .add(offset.applyQuaternion(this.worldRoot!.getWorldQuaternion(new THREE.Quaternion())))
       else light.intensity = 0
     }
     const direction = new THREE.Vector3(0, 0, -1)
     if (firstPerson)
       direction.applyQuaternion(this.model.quaternion).applyQuaternion(camera.quaternion)
-    else if (this.worldPresentation)
-      direction.applyQuaternion(this.worldPresentation.getWorldQuaternion(new THREE.Quaternion()))
+    else if (this.worldRoot)
+      direction.applyQuaternion(this.worldRoot.getWorldQuaternion(new THREE.Quaternion()))
     light.target.position.copy(light.position).add(direction)
     light.target.updateMatrixWorld(true)
   }
 
   worldMuzzle(): THREE.Vector3 | null {
-    const world = this.worldPresentation
+    const world = this.worldRoot
     const socket = world?.getObjectByName('MuzzleSocket')
     if (world?.visible && socket) return socket.getWorldPosition(new THREE.Vector3())
     return world?.visible ? world.localToWorld(new THREE.Vector3(...this.flashAt)) : null
@@ -937,7 +1015,7 @@ export class Sidearm {
       this.viewPose(now)
       this.alignViewAim(worldFov)
     }
-    const root = firstPerson ? this.model : this.worldPresentation
+    const root = firstPerson ? this.model : this.worldRoot
     const muzzle = socketName === 'Barrel' ? root?.getObjectByName('MuzzleSocket') : undefined
     const socket = socketName === 'Barrel' ? (muzzle ?? root) : root?.getObjectByName(socketName)
     if (!socket) return null
@@ -961,8 +1039,8 @@ export class Sidearm {
   }
 
   worldMagazineDropView(): ReturnType<Sidearm['magazineDropView']> {
-    const object = this.worldPresentation?.getObjectByName(this.rig.parts.magazine)
-    if (!object || !this.worldPresentation?.visible) return null
+    const object = this.worldRoot?.getObjectByName(this.rig.parts.magazine)
+    if (!object || !this.worldRoot?.visible) return null
     object.updateWorldMatrix(true, false)
     return {
       position: object.getWorldPosition(new THREE.Vector3()),

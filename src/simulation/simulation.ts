@@ -874,6 +874,7 @@ export class Simulation {
       lift: clamp(input.lift ?? 0, -1, 1),
       turn: clamp(input.turn ?? 0, -1, 1),
       riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
+      rearBrake: Number.isFinite(input.rearBrake) ? clamp(input.rearBrake!, 0, 1) : 0,
       riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
     this.jumpPending ||= input.jump && this.footStance === 'standing'
@@ -956,6 +957,7 @@ export class Simulation {
       launch: this.input.sprint,
       rider: { right: this.input.riderRight ?? 0, forward: this.input.riderForward ?? 0 },
       lever: this.input.frontBrake ?? 0,
+      pedal: this.input.rearBrake ?? 0,
     }
   }
   /**

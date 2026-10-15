@@ -190,6 +190,22 @@ export const generatedVehicleRigs: Record<
     headRotation: [0, 0, 0, 1],
     hitch: [0, 0, 1.7667454481124878],
   },
+  'vfr800-quest': {
+    source: '/library/motorcycles/vfr800fi-1999/vfr800fi-1999-quest.glb',
+    sha256: '34dc31bb22c3fff6d04f68fcfa958faf0626d80d46108b27f81f52a8b1fa38a1',
+    hubs: [
+      [0.00395999988541007, -0.2501000046730042, -0.7200000286102295],
+      [0.0037400000728666782, -0.23509998917579655, 0.7200000286102295],
+    ],
+    wheelRotations: [
+      [0, 0, 0, 1],
+      [0, 0, 0, 1],
+    ],
+    steering: { position: [0, 0.3639766693115234, -0.4399999976158142], rotation: [0, 0, 0, 1] },
+    driver: [0, 0.2975810289382934, 0.3668181896209717],
+    headOffset: [0, 0.5116530656814575, -0.09090909361839294],
+    headRotation: [0, 0, 0, 1],
+  },
   vfr800: {
     source: '/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb',
     sha256: '15c44dd4427693521278682acca255cfdf8918905c70ea81803db00586226ab6',

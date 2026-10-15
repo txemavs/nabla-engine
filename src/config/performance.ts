@@ -106,6 +106,26 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
 }
 
 export const performancePresets = {
+  road: {
+    label: 'Carretera · Quest',
+    settings: {
+      vehicleShadows: 0,
+      mirrors: 0,
+      dof: 0,
+      roads: 2000,
+      buildings: 0,
+      distance: 4000,
+      fog: 2000,
+      relief: 2,
+      collisions: 400,
+      resolution: 1,
+      shadows: 0,
+    },
+    cache: 100,
+    concurrent: 2,
+    ahead: 30,
+    tiles: 64,
+  },
   minimal: {
     label: 'Mínimo',
     settings: {

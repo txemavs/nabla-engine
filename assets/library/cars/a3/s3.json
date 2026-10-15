@@ -37,7 +37,12 @@
       }
     },
     "mirrorTilt": 4,
-    "mirrorAim": { "right": { "yaw": -10, "tilt": 1.5 } },
+    "mirrorAim": {
+      "right": {
+        "yaw": -10,
+        "tilt": 1.5
+      }
+    },
     "clusterOffset": [0, 0.01, 0],
     "colliders": [
       {
@@ -114,17 +119,20 @@
       "transform": {
         "position": [0, -0.55, 0],
         "rotation": [0, 1, 0, 6.123233995736766e-17]
-      }
+      },
+      "lowUrl": "/library/cars/a3/s3.body-low.glb"
     },
     "wheel": {
       "url": "/library/cars/a3/a3.wheel.glb",
       "transform": {
         "position": [0, 0, 0],
         "rotation": [0, 0, 0, 1]
-      }
+      },
+      "lowUrl": "/library/cars/a3/s3.wheel-low.glb"
     },
     "steering": {
-      "url": "/library/cars/a3/s3.steering.glb"
+      "url": "/library/cars/a3/s3.steering.glb",
+      "lowUrl": "/library/cars/a3/s3.steering-low.glb"
     }
   },
   "rig": "glb"

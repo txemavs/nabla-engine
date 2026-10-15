@@ -195,3 +195,7 @@ export {
   type PlanetSettingsRuntime,
   type PlanetVisualConfig,
 } from './planet-settings-panel.js'
+
+export { GameXR } from './xr.js'
+export { XRGameInput } from './xr-input.js'
+export { XRSessionController } from './xr-session.js'

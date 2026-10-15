@@ -95,11 +95,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sin`
 - `Math.sqrt`
 - `Math.tan`
+- `PerspectiveCamera`
 - `Vector3`
 - `axis.cross`
 - `axis.cross(direction).normalize`
 - `bulletEnergy`
-- `camera.clone`
 - `destination.toArray`
 - `direction.clone`
 - `direction.clone().cross`

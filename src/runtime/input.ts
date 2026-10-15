@@ -72,6 +72,7 @@ export function finiteInput(input: PlayerInput): PlayerInput {
     yaw: safe(input.yaw),
     riderRight: safe(input.riderRight),
     riderForward: safe(input.riderForward),
+    rearBrake: Math.min(1, Math.max(0, safe(input.rearBrake))),
     frontBrake: Math.min(1, Math.max(0, safe(input.frontBrake))),
   }
 }

@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      [data-monitor] {
+        position: relative;
+        width: 1024px;
+        height: 640px;
+        overflow: hidden;
+        background: #102632;
+        color: #eefaff;
+        font:
+          28px Arial,
+          sans-serif;
+      }
+      .header {
+        position: absolute;
+        left: 32px;
+        top: 20px;
+        font-size: 32px;
+        font-weight: bold;
+      }
+      .close {
+        position: absolute;
+        left: 944px;
+        top: 12px;
+        width: 64px;
+        height: 56px;
+        background: #843526;
+        border-radius: 8px;
+        text-align: center;
+        line-height: 56px;
+      }
+      .hint {
+        position: absolute;
+        left: 32px;
+        top: 62px;
+        font-size: 19px;
+        color: #b8cdd7;
+      }
+      .selector {
+        position: absolute;
+        top: 96px;
+        left: 96px;
+        width: 832px;
+        height: 56px;
+        background: #244b60;
+        text-align: center;
+        line-height: 56px;
+        border-radius: 8px;
+        font-size: 27px;
+      }
+      .prev,
+      .next {
+        position: absolute;
+        top: 96px;
+        width: 64px;
+        height: 56px;
+        background: #326078;
+        text-align: center;
+        line-height: 56px;
+        border-radius: 8px;
+      }
+      .prev {
+        left: 24px;
+      }
+      .next {
+        left: 936px;
+      }
+      .row {
+        position: absolute;
+        left: 32px;
+        width: 928px;
+        height: 52px;
+        background: #173749;
+        border-radius: 8px;
+      }
+      .label {
+        position: absolute;
+        left: 16px;
+        top: 11px;
+      }
+      .minus,
+      .plus {
+        position: absolute;
+        top: 0;
+        width: 96px;
+        height: 52px;
+        text-align: center;
+        line-height: 52px;
+        background: #326078;
+        border-radius: 8px;
+        font-size: 36px;
+      }
+      .minus {
+        left: 368px;
+      }
+      .plus {
+        left: 832px;
+      }
+      .value {
+        position: absolute;
+        left: 480px;
+        top: 10px;
+        width: 320px;
+        text-align: center;
+      }
+      .footer {
+        position: absolute;
+        top: 550px;
+        height: 58px;
+        background: #244b60;
+        text-align: center;
+        line-height: 58px;
+        border-radius: 8px;
+        font-size: 23px;
+      }
+      .status {
+        position: absolute;
+        left: 24px;
+        top: 614px;
+        font-size: 17px;
+        color: #b8cdd7;
+      }
+      .dropdown {
+        position: absolute;
+        left: 0;
+        top: 172px;
+        height: 360px;
+        overflow: hidden;
+        background: #102632;
+      }
+      .options {
+        position: absolute;
+        left: 24px;
+        top: 0;
+        width: 976px;
+        display: grid;
+        grid-template-columns: 488px 488px;
+        grid-auto-rows: 45px;
+      }
+      .option {
+        height: 39px;
+        margin: 3px 4px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #326078;
+        font-size: 22px;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-monitor="xr-calibration" data-update-ms="100">
+      <div class="header" data-value="title">CALIDAD</div>
+      <div style="position: absolute; left: 470px; top: 22px; font-size: 25px">Desarrollo ›</div>
+      <div class="close">X</div>
+      <div class="hint" data-value="hint"></div>
+      <div class="prev">‹</div>
+      <div class="selector" data-value="object"></div>
+      <div class="next">›</div>
+      <div class="row" style="top: 172px">
+        <span class="label" data-value="label-x">Posición X</span><span class="minus">−</span
+        ><span class="value" data-value="x"></span><span class="plus">+</span>
+      </div>
+      <div class="row" style="top: 232px">
+        <span class="label" data-value="label-y">Posición Y</span><span class="minus">−</span
+        ><span class="value" data-value="y"></span><span class="plus">+</span>
+      </div>
+      <div class="row" style="top: 292px">
+        <span class="label" data-value="label-z">Posición Z</span><span class="minus">−</span
+        ><span class="value" data-value="z"></span><span class="plus">+</span>
+      </div>
+      <div class="row" style="top: 352px">
+        <span class="label" data-value="label-rx">Giro X</span><span class="minus">−</span
+        ><span class="value" data-value="rx"></span><span class="plus">+</span>
+      </div>
+      <div class="row" style="top: 412px">
+        <span class="label" data-value="label-ry">Giro Y</span><span class="minus">−</span
+        ><span class="value" data-value="ry"></span><span class="plus">+</span>
+      </div>
+      <div class="row" style="top: 472px">
+        <span class="label" data-value="label-rz">Giro Z</span><span class="minus">−</span
+        ><span class="value" data-value="rz"></span><span class="plus">+</span>
+      </div>
+      <div class="dropdown" data-bar="dropdown">
+        <div class="options">
+          <div class="option" data-value="option0"></div>
+          <div class="option" data-value="option1"></div>
+          <div class="option" data-value="option2"></div>
+          <div class="option" data-value="option3"></div>
+          <div class="option" data-value="option4"></div>
+          <div class="option" data-value="option5"></div>
+          <div class="option" data-value="option6"></div>
+          <div class="option" data-value="option7"></div>
+          <div class="option" data-value="option8"></div>
+          <div class="option" data-value="option9"></div>
+          <div class="option" data-value="option10"></div>
+          <div class="option" data-value="option11"></div>
+          <div class="option" data-value="option12"></div>
+          <div class="option" data-value="option13"></div>
+          <div class="option" data-value="option14"></div>
+          <div class="option" data-value="option15"></div>
+        </div>
+      </div>
+      <div class="footer" style="left: 24px; width: 280px" data-value="footerLeft">
+        Restablecer objeto
+      </div>
+      <div class="footer" style="left: 320px; width: 320px" data-value="step"></div>
+      <div class="footer" style="left: 656px; width: 344px">Traer pantalla aquí</div>
+      <div class="status" data-value="status"></div>
+    </div>
+  </body>
+</html>

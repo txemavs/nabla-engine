@@ -204,3 +204,31 @@ rounds(state: FirearmState): number
 ```ts
 empty(): FirearmEvent
 ```
+
+## takeMagazine
+
+[Implementation, line 376](../../../../../src/simulation/weapons/firearm.ts#L376)
+
+Transfer the actual magazine to a hand; chambered ammunition stays in the weapon.
+
+```ts
+takeMagazine(state: FirearmState): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `empty`
+
+## seatMagazine
+
+[Implementation, line 387](../../../../../src/simulation/weapons/firearm.ts#L387)
+
+Seat an existing item without replenishing it or operating the slide.
+
+```ts
+seatMagazine(state: FirearmState, magazine: MagazineEntity): FirearmEvent
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `empty`

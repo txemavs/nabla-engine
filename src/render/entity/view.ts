@@ -1,3 +1,4 @@
+import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
   VehiclePresentationResolver,
   BeaconEquipment,
@@ -126,6 +127,8 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export interface SceneViewOptions {
+  /** Geometry variant selected before any assets load; defaults to full. */
+  assetQuality?: AssetQuality
   driverPoseOffset?: (model: string) => DriverPoseAdjustment
   vehiclePresentation?: VehiclePresentationResolver
   /** Stock A3 mount recipe. Null/omitted disables instruments in the bare renderer. */
@@ -328,6 +331,28 @@ export class SceneView {
     return this.wheels.get(id) ?? []
   }
 
+  motorcycleGrab(id: string) {
+    const root = this.objects.get(id)
+    const bar = root?.getObjectByName('Steering_Pivot')
+    const binding = this.motorcycleRigs.get(id)
+    if (!bar?.parent || !binding) return null
+    return {
+      frame: bar.parent,
+      bar,
+      axis: new THREE.Vector3(...binding.rig.steeringAxis).normalize(),
+      pivot: bar.position.clone(),
+      left: new THREE.Vector3(-0.275, 0.01, 0.105),
+      right: new THREE.Vector3(0.275, 0.01, 0.105),
+      steerLimit: binding.rig.steerLimit,
+    }
+  }
+  steeringGrab(id: string) {
+    const spin = this.steering.get(id)
+    const axis = this.steeringAxes.get(id)
+    return spin && axis
+      ? { spin, axis, pivot: this.steeringPivots.get(id) ?? new THREE.Vector3() }
+      : null
+  }
   steeringWheelModel(id: string): string | undefined {
     return this.steeringAdjust.get(id)?.model
   }
@@ -1137,20 +1162,23 @@ export class SceneView {
     prepare?: (model: THREE.Group) => void,
   ): void {
     this.loading.push(
-      assets.instantiate(part.url).then((model) => {
-        if (this.disposed) {
-          disposeObject(model)
-          return
-        }
-        applyPose(model, part.transform)
-        parent.add(model)
-        prepare?.(model)
-        if (this.materialSetup) this.registerMaterials(model, this.materialSetup)
-        if (fallback) {
-          fallback.removeFromParent()
-          disposeObject(fallback)
-        }
-      }),
+      assets
+        .instantiate(assetUrlForQuality(part, this.options.assetQuality ?? 'full'))
+        .then((model) => {
+          model.userData.assetUrl = assetUrlForQuality(part, this.options.assetQuality ?? 'full')
+          if (this.disposed) {
+            disposeObject(model)
+            return
+          }
+          applyPose(model, part.transform)
+          parent.add(model)
+          prepare?.(model)
+          if (this.materialSetup) this.registerMaterials(model, this.materialSetup)
+          if (fallback) {
+            fallback.removeFromParent()
+            disposeObject(fallback)
+          }
+        }),
     )
   }
   /**
@@ -1368,6 +1396,7 @@ export class SceneView {
         spin,
         {
           url: visual.steering.url,
+          lowUrl: visual.steering.lowUrl,
           transform: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
         },
         undefined,

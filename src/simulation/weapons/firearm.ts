@@ -371,3 +371,24 @@ const empty = (): FirearmEvent => ({
   slideReleased: false,
   dry: false,
 })
+
+/** Transfer the actual magazine to a hand; chambered ammunition stays in the weapon. */
+export function takeMagazine(state: FirearmState): FirearmEvent {
+  const event = empty()
+  if (state.reload !== 'none' || !state.magazineSeated || !state.magazineEntity) return event
+  event.magazineDropped = true
+  event.droppedMagazine = state.magazineEntity
+  state.magazineEntity = null
+  state.magazineSeated = false
+  return event
+}
+
+/** Seat an existing item without replenishing it or operating the slide. */
+export function seatMagazine(state: FirearmState, magazine: MagazineEntity): FirearmEvent {
+  const event = empty()
+  if (state.reload !== 'none' || state.magazineSeated || state.magazineEntity) return event
+  state.magazineEntity = magazine
+  state.magazineSeated = true
+  event.magazineSeated = true
+  return event
+}
