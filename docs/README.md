@@ -33,6 +33,10 @@ preserves the edit/play contract and a single physics owner.
 
 - [World cache operations](world-cache-operations.md): deployed cache layers, preparation queue, regeneration, publishing, backups and troubleshooting.
 
+## Online sessions
+
+- [Online sessions: PC and Quest presence](online-sessions.md): create a game, list every active game, join and share head/controller poses.
+
 ## Composable engine modules
 
 - [XR reutilizable y Nabla HeadSet](xr-module.md): auditoría de xr.html, API compartida y entrada VR/AR con selector Test/Z15.
