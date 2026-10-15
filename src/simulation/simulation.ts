@@ -1,3 +1,4 @@
+import { ForkliftMechanism, type ForkliftInput } from './forklift.js'
 import { explosionTuning } from '../config/gameplay-tuning.js'
 import { TowOverload } from './tow-overload.js'
 import { VehicleDamage } from './vehicle-damage.js'
@@ -67,6 +68,7 @@ import {
   HingeConstraint,
   Quaternion,
   Sphere,
+  Trimesh,
   Vec3,
   World,
 } from './physics.js'
@@ -87,6 +89,15 @@ import {
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 
 /** R reset options; see `Simulation.recoverVehicle`. */
+/** Read-only physical shapes for scaled contact adapters; never render mesh bounds. */
+export interface EntityCollisionPart {
+  key: string
+  transform: Transform
+  shape: { kind: 'box'; halfExtents: Vec3Tuple } | { kind: 'sphere'; radius: number }
+  friction: number
+  restitution: number
+}
+
 export interface RecoverVehicleOptions {
   /** Move to the nearest road centreline before uprighting (default false). */
   snapToRoad?: boolean
@@ -247,6 +258,18 @@ export class Simulation {
     return this.planetCollisions.ready
   }
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
+  private readonly forklifts = new WeakMap<Vehicle, ForkliftMechanism>()
+  private forkliftInput: ForkliftInput = [0, 0, 0]
+  setForkliftInput(input: ForkliftInput): void {
+    this.forkliftInput = input.map((v) =>
+      Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0,
+    ) as ForkliftInput
+  }
+  forkliftPose(id: string) {
+    const v = this.vehicles.get(id)
+    const m = v && this.forklifts.get(v)
+    return m ? { lift: m.lift, tilt: m.tilt, side: m.side } : null
+  }
   private readonly bodies = new Map<string, Body>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
@@ -562,7 +585,7 @@ export class Simulation {
   }
   /**
    * Add placed scenery to a running simulation: standalone portals, sprites, lamps and static
-   * boxes (the game add menu and host `placeEntities`). Portals may be linked within the batch;
+   * boxes, including standalone dynamic props (the game add menu and host `placeEntities`). Portals may be linked within the batch;
    * links to existing mouths are made afterwards with `configurePortal`.
    */
   addPlaced(added: Entity[]): void {
@@ -909,6 +932,124 @@ export class Simulation {
       this.vehicleId ? this.vehicles.get(this.vehicleId)!.body : this.playerBody,
     ).position
   }
+  /** Host-provided collision surfaces (for example an XR room), in simulation metres. */
+  private externalSurfaces = new Map<string, Body>()
+  setExternalCollisionMesh(id: string, vertices: Float32Array | null, indices?: Uint32Array): void {
+    const previous = this.externalSurfaces.get(id)
+    if (previous) {
+      this.world.removeBody(previous)
+      this.externalSurfaces.delete(id)
+    }
+    if (!vertices || !indices) return
+    const body = new Body({ mass: 0 })
+    body.addShape(new Trimesh(vertices, indices))
+    this.world.addBody(body)
+    this.externalSurfaces.set(id, body)
+  }
+  /** Reposition a held assembly atomically; the host pauses stepping while manipulating it. */
+  relocateVehicles(poses: { id: string; transform: Transform }[]): void {
+    this.relocateEntities(poses)
+  }
+  /** Relocate ordinary dynamic props and vehicles through their shared Engine bodies. */
+  relocateEntities(poses: { id: string; transform: Transform }[]): void {
+    // Validate the whole assembly before moving any body. Teleports must preserve the
+    // unit-quaternion invariant even while ordinary physics stepping is paused.
+    const normalized = poses.map(({ id, transform }) => {
+      const length = Math.hypot(...transform.rotation)
+      if (
+        ![...transform.position, ...transform.rotation].every(Number.isFinite) ||
+        !Number.isFinite(length) ||
+        length < 1e-12
+      )
+        throw new Error(`Invalid vehicle relocation: ${id}`)
+      return {
+        id,
+        transform: {
+          position: transform.position,
+          rotation: transform.rotation.map((value) => value / length) as Transform['rotation'],
+        },
+      }
+    })
+    for (const { id, transform } of normalized) {
+      const body = this.bodies.get(id)
+      const vehicle = this.vehicles.get(id)
+      if (!body || body.mass <= 0) continue
+      body.position.set(...transform.position)
+      body.quaternion.set(...transform.rotation)
+      body.previousPosition.copy(body.position)
+      body.previousQuaternion.copy(body.quaternion)
+      body.velocity.setZero()
+      body.angularVelocity.setZero()
+      body.wakeUp()
+      if (vehicle?.twoWheeled) resetTwoWheeled(vehicle.twoWheeled)
+    }
+    this.previousWheels.clear()
+  }
+  /** Release a manipulated rigid assembly into the ordinary physics world. */
+  releaseVehicles(motion: { id: string; velocity: Vec3Tuple; angularVelocity: Vec3Tuple }[]): void {
+    this.releaseEntities(motion)
+  }
+  releaseEntities(motion: { id: string; velocity: Vec3Tuple; angularVelocity: Vec3Tuple }[]): void {
+    for (const entry of motion)
+      if (![...entry.velocity, ...entry.angularVelocity].every(Number.isFinite))
+        throw new Error(`Invalid vehicle release: ${entry.id}`)
+    for (const entry of motion) {
+      const body = this.bodies.get(entry.id)
+      if (!body) continue
+      body.velocity.set(...entry.velocity)
+      body.angularVelocity.set(...entry.angularVelocity)
+      body.wakeUp()
+    }
+  }
+  /** Linear velocity in simulation metres/second, shared by scaled XR adapters. */
+  entityVelocity(id: string): Vec3Tuple {
+    const body = this.bodies.get(id)
+    return body ? vec(body.velocity) : [0, 0, 0]
+  }
+  /** Physical chassis/equipment shapes and the raycast tyres' spherical envelopes.
+   * This lets a differently scaled view share contacts with room props without
+   * changing its drivetrain, gravity, suspension, or full-size simulation rules.
+   */
+  entityCollisionParts(id: string): EntityCollisionPart[] {
+    const body = this.bodies.get(id)
+    if (!body) return []
+    const parts: EntityCollisionPart[] = []
+    for (let i = 0; i < body.shapes.length; i++) {
+      const shape = body.shapes[i]
+      if (!shape.collisionResponse || body.colliders[i]?.isEnabled() === false) continue
+      const definition: EntityCollisionPart['shape'] | null =
+        shape instanceof Box
+          ? { kind: 'box', halfExtents: vec(shape.halfExtents) }
+          : shape instanceof Sphere
+            ? { kind: 'sphere', radius: shape.radius }
+            : null
+      if (!definition) continue
+      const position = body.quaternion.vmult(body.shapeOffsets[i]).vadd(body.position)
+      const rotation = body.quaternion.clone().mult(body.shapeOrientations[i])
+      parts.push({
+        key: `shape-${i}`,
+        shape: definition,
+        transform: {
+          position: vec(position),
+          rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
+        },
+        friction: body.material.friction,
+        restitution: body.material.restitution,
+      })
+    }
+    const vehicle = this.vehicles.get(id)
+    if (vehicle)
+      this.wheelTransforms(id).forEach((transform, i) => {
+        parts.push({
+          key: `wheel-${i}`,
+          shape: { kind: 'sphere', radius: vehicle.raycast.wheelInfos[i].radius },
+          transform,
+          friction: 0.7,
+          restitution: 0.05,
+        })
+      })
+    return parts
+  }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
     if (body) return interpolated ? this.displayedPose(body) : pose(body)
@@ -1084,6 +1225,17 @@ export class Simulation {
       if (this.ticks % mapCollisionDefaults.activationIntervalTicks === 0)
         this.updateMapCollisions()
       for (const vehicle of this.vehicles.values()) {
+        if (vehicle.definition.forklift) {
+          let mechanism = this.forklifts.get(vehicle)
+          if (!mechanism) {
+            mechanism = new ForkliftMechanism(vehicle)
+            this.forklifts.set(vehicle, mechanism)
+          }
+          mechanism.update(
+            this.player.vehicleId === vehicle.entity.id ? this.forkliftInput : [0, 0, 0],
+            FIXED_STEP,
+          )
+        }
         this.updateRamp(vehicle, FIXED_STEP)
         if (vehicle.definition.garage?.ramp?.loadAngle !== undefined && vehicle.rampClosed)
           for (const [id, car] of this.vehicles)
@@ -2010,6 +2162,13 @@ export class Simulation {
     trailer.body.angularVelocity.setZero()
     trailer.body.wakeUp()
   }
+  /** Change the shared plane speed regime without resetting pose or velocity. */
+  setFlightSpeedMode(id: string, mode: 'slow' | 'fast'): boolean {
+    const vehicle = this.vehicles.get(id)
+    if (!vehicle?.flight || !vehicle.definition.aircraft) return false
+    vehicle.flight.speedMode = mode
+    return true
+  }
   setHelmMode(mode: Vehicle['helm']): string {
     const v = this.vehicleId ? this.vehicles.get(this.vehicleId) : undefined
     if (!v?.definition.flight) return 'Ponte al mando de la nave para cambiar de modo'
@@ -2367,6 +2526,8 @@ export class Simulation {
     altitude: number
     cruiseSpeed: number
     flightMode: boolean
+    flightSpeedMode: 'slow' | 'fast'
+    flightControls: { pitch: number; roll: number; yaw: number }
     helm: Vehicle['helm']
     canFly: boolean
     targetAltitude: number | null
@@ -2441,6 +2602,11 @@ export class Simulation {
       altitude: this.height(v.body),
       cruiseSpeed: v.cruiseSpeed,
       flightMode: Boolean(v.flight),
+      flightSpeedMode: v.flight?.speedMode ?? 'slow',
+      flightControls:
+        id === this.vehicleId && v.flight && v.helm !== 'off'
+          ? { pitch: this.input.forward, roll: this.input.right, yaw: this.input.turn ?? 0 }
+          : { pitch: 0, roll: 0, yaw: 0 },
       helm: v.helm,
       canFly: Boolean(v.definition.flight),
       targetAltitude: v.flight?.altitude ?? null,
@@ -2764,6 +2930,7 @@ export class Simulation {
     this.bodies.clear()
     this.mapCollision.clear()
     this.portalTraversal.clear()
+    this.externalSurfaces.clear()
     this.world.raw.free()
     this.disposed = true
   }

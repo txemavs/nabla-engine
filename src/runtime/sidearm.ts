@@ -1,3 +1,4 @@
+import { assetUrlForQuality, type AssetQuality } from '../render/entity/asset-quality.js'
 import type { MagazineEntity } from '../simulation/weapons/magazine.js'
 import {
   normalizeWeaponWheel,
@@ -23,6 +24,7 @@ import {
   swapFreshMagazine,
   releaseSlide,
   moveSlide,
+  seatCartridge,
   takeMagazine,
   seatMagazine,
   freshFirearm,
@@ -201,7 +203,11 @@ export class Sidearm {
   /** Settles once the assembled model has replaced the placeholder block (or failed to load). */
   readonly ready: Promise<void>
 
-  constructor(_viewport: HTMLElement, preset: WeaponPreset | undefined = weaponPresets()[0]) {
+  constructor(
+    _viewport: HTMLElement,
+    preset: WeaponPreset | undefined = weaponPresets()[0],
+    readonly assetQuality: AssetQuality = 'full',
+  ) {
     this.preset = preset
     this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
@@ -227,7 +233,10 @@ export class Sidearm {
     }
     let loading: Promise<unknown> = Promise.resolve()
     if (preset?.model) {
-      const model = preset.model
+      const model = assetUrlForQuality(
+        { url: preset.model, lowUrl: preset.modelLow },
+        this.assetQuality,
+      )
       loading = Promise.all([assets.instantiate(model), preset.rig ? loadRig(preset.rig) : null])
         .then(([object, rig]) => {
           if (this.disposed) return disposeObject(object)
@@ -838,6 +847,7 @@ export class Sidearm {
   /** Present in a host-owned tracked grip, in the main scene and without a camera pass.
    * Call update(now) separately. The host owns tracking, visibility and input release.
    */
+  trackedSupport = false
   syncTracked(parent: THREE.Object3D, now: number, height = 1024): void {
     this.tracked = true
     if (this.worldPresentation) this.worldPresentation.visible = false
@@ -850,7 +860,11 @@ export class Sidearm {
     this.model.quaternion.identity()
     const age = Math.max(0, now - this.state.lastShotMs)
     const kick = Math.exp(-age / 90) * Math.min(1, age / 15)
-    this.model.rotateX((((this.preset?.recoil?.riseDeg ?? 3) * Math.PI) / 180) * kick)
+    this.model.rotateX(
+      (((this.preset?.recoil?.riseDeg ?? 3) * Math.PI) / 180) *
+        kick *
+        (this.trackedSupport ? 0.4 : 1),
+    )
     this.model.updateWorldMatrix(true, true)
     const grip = this.model.getObjectByName('GripSocket')
     if (grip) {
@@ -1146,6 +1160,14 @@ export class Sidearm {
     quaternion.premultiply(inverse)
     direction.applyQuaternion(inverse)
     return { position, quaternion, direction }
+  }
+
+  seatCartridge(): boolean {
+    return seatCartridge(this.state)
+  }
+
+  worldChamber(): THREE.Vector3 | null {
+    return ejectionPort(this.model)?.position ?? null
   }
 
   cartridgeClone(): THREE.Object3D | null {

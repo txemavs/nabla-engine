@@ -128,29 +128,81 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@79(node): inferred by TypeScript; see implementation
 ```
 
-## HtmlMonitor.constructor.callback@66.callback@84
+## HtmlMonitor.constructor.callback@66.callback@85
 
-[Implementation, line 84](../../../../../src/render/monitors/html-monitor.ts#L84)
+[Implementation, line 85](../../../../../src/render/monitors/html-monitor.ts#L85)
 
 ```ts
-callback@84(node): inferred by TypeScript; see implementation
+callback@85(node): inferred by TypeScript; see implementation
 ```
 
-## HtmlMonitor.constructor.callback@91
+## HtmlMonitor.constructor.callback@92
 
-[Implementation, line 91](../../../../../src/render/monitors/html-monitor.ts#L91)
+[Implementation, line 92](../../../../../src/render/monitors/html-monitor.ts#L92)
 
 ```ts
-callback@91(error): inferred by TypeScript; see implementation
+callback@92(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `console.warn`
 
+## HtmlMonitor.press
+
+[Implementation, line 97](../../../../../src/render/monitors/html-monitor.ts#L97)
+
+Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
+Scripts are never executed. Inline styles/fonts only; external resources are not supported.
+
+```ts
+press(selector: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clearTimeout`
+- `setTimeout`
+- `this.template.querySelector`
+- `this.template.querySelector(selector)?.classList.add`
+- `this.template.querySelectorAll`
+- `this.template.querySelectorAll('.pressed').forEach`
+
+## HtmlMonitor.press.callback@100
+
+[Implementation, line 100](../../../../../src/render/monitors/html-monitor.ts#L100)
+
+```ts
+callback@100(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `node.classList.remove`
+
+## HtmlMonitor.press.callback@104
+
+[Implementation, line 104](../../../../../src/render/monitors/html-monitor.ts#L104)
+
+```ts
+callback@104(): inferred by TypeScript; see implementation
+```
+
+## HtmlMonitor.press.callback@104.callback@107
+
+[Implementation, line 107](../../../../../src/render/monitors/html-monitor.ts#L107)
+
+```ts
+callback@107(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `node.classList.remove`
+
 ## HtmlMonitor.update
 
-[Implementation, line 95](../../../../../src/render/monitors/html-monitor.ts#L95)
+[Implementation, line 112](../../../../../src/render/monitors/html-monitor.ts#L112)
 
 Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
 Scripts are never executed. Inline styles/fonts only; external resources are not supported.
@@ -171,12 +223,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.serializer.serializeToString`
 
-## HtmlMonitor.update.callback@133
+## HtmlMonitor.update.callback@150
 
-[Implementation, line 133](../../../../../src/render/monitors/html-monitor.ts#L133)
+[Implementation, line 150](../../../../../src/render/monitors/html-monitor.ts#L150)
 
 ```ts
-callback@133(): inferred by TypeScript; see implementation
+callback@150(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -186,17 +238,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `this.canvas.getContext`
 
-## HtmlMonitor.update.callback@145
+## HtmlMonitor.update.callback@162
 
-[Implementation, line 145](../../../../../src/render/monitors/html-monitor.ts#L145)
+[Implementation, line 162](../../../../../src/render/monitors/html-monitor.ts#L162)
 
 ```ts
-callback@145(): inferred by TypeScript; see implementation
+callback@162(): inferred by TypeScript; see implementation
 ```
 
 ## HtmlMonitor.dispose
 
-[Implementation, line 152](../../../../../src/render/monitors/html-monitor.ts#L152)
+[Implementation, line 169](../../../../../src/render/monitors/html-monitor.ts#L169)
 
 Trusted local HTML/CSS templates, rasterised on demand into a depth-tested WebGL surface.
 Scripts are never executed. Inline styles/fonts only; external resources are not supported.
@@ -207,5 +259,6 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `clearTimeout`
 - `this.abort.abort`
 - `this.texture.dispose`

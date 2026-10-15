@@ -27,7 +27,7 @@ Document limits stay in `scene/document.ts`. The transform graph is `scene/graph
 
 ## createEntity
 
-[Implementation, line 100](../../../../src/entity/schema.ts#L100)
+[Implementation, line 101](../../../../src/entity/schema.ts#L101)
 
 ```ts
 createEntity(id: string, kind: Entity['kind'], position: Vec3Tuple = [0, 0, 0]): Entity
@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isMapBuilding
 
-[Implementation, line 136](../../../../src/entity/schema.ts#L136)
+[Implementation, line 137](../../../../src/entity/schema.ts#L137)
 
 Authored road solids retain OSM provenance but are not optional map buildings.
 

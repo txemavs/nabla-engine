@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nabla · Realidad mixta</title>
+    <style>
+      body {
+        margin: 0;
+        background: #182532;
+        color: #f1f7fc;
+        font: 17px system-ui;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100dvh;
+      }
+      #panel {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        box-sizing: border-box;
+        width: min(460px, calc(100vw - 40px));
+        max-height: calc(100dvh - 40px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        padding: 20px;
+        background: #182532ed;
+        border: 1px solid #8dd1de;
+        border-radius: 14px;
+      }
+      .actions {
+        position: sticky;
+        top: -20px;
+        background: #182532;
+        padding: 12px 0;
+        z-index: 1;
+      }
+      details {
+        margin: 14px 0;
+      }
+      summary {
+        cursor: pointer;
+        padding: 8px 0;
+      }
+      input,
+      select {
+        max-width: 100%;
+        box-sizing: border-box;
+        font: inherit;
+      }
+      h1 {
+        font-size: 24px;
+        margin-top: 0;
+      }
+      button,
+      a {
+        font: inherit;
+        padding: 12px;
+        display: inline-block;
+        color: inherit;
+      }
+      button {
+        background: #205b6c;
+        border: 1px solid #8dd1de;
+        border-radius: 8px;
+      }
+      button:disabled {
+        opacity: 0.5;
+      }
+      p {
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="viewport"></canvas>
+    <section id="panel">
+      <a href="/headset.html" style="color: #9bdeff">← Nabla HeadSet</a>
+      <h1>Realidad mixta</h1>
+      <div class="actions">
+        <button id="enter" disabled>Entrar en realidad mixta</button
+        ><a href="/xr.html">Volver a VR</a>
+      </div>
+      <p id="status" role="status">Comprobando compatibilidad…</p>
+      <details id="models">
+        <summary>Añadir GLB · maqueta 1:100</summary>
+        <p>
+          Por defecto: inicio de Euskadi Online, Z15 16211/12003 (Atlas actual: terreno, edificios,
+          carreteras y puentes). Cae siempre al suelo, sin apoyarse en mesas. Un metro del modelo
+          equivale a un centímetro en AR.
+        </p>
+        <label
+          >Modelo
+          <select id="model-source">
+            <option value="default">Inicio de Euskadi Online</option>
+            <option value="vfr">VFR low poly · R/C</option>
+            <option value="bmw">BMW</option>
+            <option value="forklift">Toro · R/C</option>
+            <option value="f14">F14 Tomcat · R/C</option>
+            <option value="s3">S3 bestia · R/C</option>
+            <option value="truck">Camión con remolque · R/C</option>
+            <option value="url">Otro GLB por URL</option>
+            <option value="file">Archivo GLB</option>
+          </select></label
+        >
+        <p>
+          <input id="model-url" type="url" placeholder="https://…/modelo.glb" hidden /><input
+            id="model-file"
+            type="file"
+            accept=".glb"
+            hidden
+          />
+        </p>
+        <button id="model-load">Cargar modelo</button>
+        <details>
+          <summary>Desarrollo</summary>
+          <label
+            >Escala modelos R/C
+            <select id="rc-scale">
+              <option value="100">1:100</option>
+              <option value="24">1:24</option>
+              <option value="18">1:18</option>
+              <option value="10">1:10</option>
+              <option value="8">1:8</option>
+              <option value="1">1:1 · Tamaño real</option>
+            </select></label
+          >
+          <p>
+            Se aplica al cargar el vehículo. Seta izquierda: gas y dirección. Derecha: dirección y
+            freno hacia abajo. Agarre: coger y soltar. Derrapes sobre las superficies detectadas.
+          </p>
+        </details>
+        <p id="model-status" role="status"></p>
+        <p>
+          Seta izquierda: pasos de 100 m y carga de celdas vecinas desde Atlas. En AR: X → Añadir
+          GLB carga el seleccionado o trae la maqueta delante de ti. Para elegir un archivo, sal de
+          AR y usa este menú.
+        </p>
+      </details>
+      <details>
+        <summary>Controles y ayuda</summary>
+        <p>Tu habitación, nuestras manos, dos pistolas y una pantalla azul con marco.</p>
+        <p>
+          Agarra un borde del marco para moverlo y girarlo. X abre o cierra el menú principal.
+          Puedes tocarla con el índice o apuntar y pulsar el gatillo.
+        </p>
+        <p>
+          Pulsa A en el mando derecho para sacar un balón (máximo 12). Dispara para impulsarlo:
+          rebota contra las superficies escaneadas. También puedes sacarlo desde el panel con X.
+        </p>
+        <p>
+          Coge una pistola de cada funda con el agarre y dispara con el gatillo. Los cargadores del
+          pecho se reponen; puedes extraerlos, insertarlos y mover la corredera con la otra mano.
+          Usa el modo Diana para puntuar tus disparos del 1 al 10, o Pizarra para dibujar con el
+          dedo o la punta del arma. Tras escanear, los disparos dejan marcas en las superficies de
+          la habitación.
+        </p>
+        <p>
+          Dentro de AR, apunta con una mano libre al botón «Escanear habitación» y pulsa el gatillo.
+          Acepta el acceso al entorno. «Mostrar superficies» permite comprobar el escaneo; los
+          cargadores caen sobre suelo y muebles detectados. Calidad y Desarrollo tienen sus propias
+          pantallas con botón Volver.
+        </p>
+      </details>
+    </section>
+    <script type="module" src="./ar.ts"></script>
+    <script type="module" src="./interface-theme.ts"></script>
+  </body>
+</html>

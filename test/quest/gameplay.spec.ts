@@ -384,6 +384,7 @@ test('XR frame uses real game physics and returns to desktop after an emulated s
 
 for (const [vehicle, name] of [
   ['car', 'S3'],
+  ['bmw', 'BMW'],
   ['vfr800', 'Honda'],
   ['vfr800-quest', 'Honda'],
   ['white-truck', 'Camión'],
@@ -400,7 +401,7 @@ for (const [vehicle, name] of [
     expect(vehicles).toHaveLength(1)
     expect(vehicles[0]).toContain(name)
     await expect(page.locator('#game-canvas')).toHaveAttribute('data-vehicle', 'player-vehicle')
-    await expect(page.locator('#xr-vehicle-tests a')).toHaveCount(10)
+    await expect(page.locator('#xr-vehicle-tests a')).toHaveCount(18)
   })
 }
 
@@ -455,4 +456,31 @@ test('VR calibration persists independent transforms and shares their exact valu
   await expect(page.locator('#xr-adjust-rx')).toHaveValue('0')
   await page.locator('#xr-calibration-object').selectOption('hand-right')
   await expect(page.locator('#xr-adjust-rz')).toHaveValue('-14')
+})
+
+test('BMW load trial places ten cars with working steering and no cockpit monitors', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto(
+    '/xr.html?example=flat&solo=1&vehicle=bmw&copies=10&quality=minimal&diagnostics=1',
+  )
+  await page.locator('#enter-vr').waitFor({ timeout: 60000 })
+  const result = await page.evaluate(() => {
+    const r = (window as any).nablaRuntime
+    return {
+      names: r.game.simulation.vehicleList().map((v: any) => v.entity.name),
+      steering: !!r.view.steeringGrab('player-vehicle'),
+      instruments: r.view.instruments.size,
+      triangles: r.renderer.info.render.triangles,
+    }
+  })
+  expect(result.names).toHaveLength(10)
+  expect(result.names.every((name: string) => name.includes('BMW'))).toBe(true)
+  expect(result.steering).toBe(true)
+  expect(result.instruments).toBe(0)
+  expect(result.triangles).toBeGreaterThan(10000)
+  expect(errors).toEqual([])
+  await page.screenshot({ path: 'test-results/bmw-ten-cars.png' })
 })

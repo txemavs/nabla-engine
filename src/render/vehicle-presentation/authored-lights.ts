@@ -20,6 +20,7 @@ import {
 /** Translate the GLB contract once at load time; rendering uses common channels. */
 function channel(value?: string): VehicleLightChannel {
   const channels: Record<string, VehicleLightChannel> = {
+    Cabin: 'cabin',
     Tail_Stop: 'tail-stop',
     Reverse: 'reverse',
     Indicator: 'signal',

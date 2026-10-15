@@ -1,21 +1,26 @@
 import * as THREE from 'three'
 
 export const xrCalibrationObjects = {
-  'hand-left': 'Mano izquierda',
+  'hand-left': 'Mano',
   'hand-right': 'Mano derecha',
-  'grip-left': 'Pistola en mano izquierda',
+  'grip-left': 'Pistola',
   'grip-right': 'Pistola en mano derecha',
-  'pistol-0': 'Pistola en funda izquierda',
+  'pistol-0': 'Pistola en funda',
   'pistol-1': 'Pistola en funda derecha',
-  'holster-0': 'Funda izquierda',
+  'holster-0': 'Funda',
   'holster-1': 'Funda derecha',
   'magazine-normal': 'Cargador normal (objeto)',
   'magazine-long': 'Cargador largo (objeto)',
-  'pocket-0': 'Cargador normal · pecho izquierdo',
-  'pocket-1': 'Cargador largo · pecho derecho',
+  'pocket-0': 'Cargadores · pecho',
+  'pocket-1': 'Cargador largo · pecho',
   'bike-controls': 'Moto · gas, dirección y frenos',
-  'bike-left': 'Moto · puño izquierdo',
+  'bike-left': 'Manillar',
   'bike-right': 'Moto · puño derecho',
+  'ar-rc-s3': 'AR · Puesto S3',
+  'ar-rc-truck': 'AR · Puesto camión',
+  'ar-rc-forklift': 'AR · Volante toro',
+  'ar-rc-forklift-levers': 'AR · Palancas toro',
+  'ar-rc-bike': 'AR · Puesto moto',
 } as const
 export type XRCalibrationObject = keyof typeof xrCalibrationObjects
 export type XRPoseAdjustment = {
@@ -27,6 +32,9 @@ export type XRPoseAdjustment = {
   rz: number
 }
 const mirrorPairs: [XRCalibrationObject, XRCalibrationObject][] = [
+  ['hand-right', 'hand-left'],
+  ['pocket-1', 'pocket-0'],
+  ['bike-right', 'bike-left'],
   ['grip-left', 'grip-right'],
   ['pistol-0', 'pistol-1'],
   ['holster-0', 'holster-1'],
@@ -41,10 +49,12 @@ const mirrored = (p: XRPoseAdjustment): XRPoseAdjustment => ({
 })
 const bikeDefaults: XRPoseAdjustment = { x: 45, y: 3, z: 30, rx: 100, ry: 100, rz: 1 }
 const zero = (): XRPoseAdjustment => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 })
-// V2 starts a fresh adjustment layer; retain V1 storage for recovery, never apply it twice.
-const storageKey = 'nabla.xr.calibration.v2'
-export const xrCalibrationBaseline = '2026-10-14-user-zero'
+// V4 bakes the reversed wheel zero; retain older storage for recovery.
+const storageKey = 'nabla.xr.calibration.v4'
+export const xrCalibrationBaseline = '2026-10-15-wheel-zero'
 const defaults: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> = {
+  'ar-rc-s3': { ry: 180 },
+  'ar-rc-truck': { ry: 180 },
   'hand-right': { x: 1, rx: -45, rz: -70 },
   'hand-left': { x: -1, rx: -45, rz: 70 },
   'pistol-0': { rx: 90 },
@@ -55,6 +65,20 @@ const defaults: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> 
   'pocket-1': { z: 25 },
   // In hand, the supplied grip -90° and the former shared pistol +90° cancel.
   // Keeping that composed pose here lets holstered adjustments become independent.
+}
+// Compose the accepted V2 adjustments after the previous baseline rotation.
+const baselineAdjustments: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> = {
+  'ar-rc-truck': { rx: 20, rz: 180 },
+  'hand-left': { x: 1, z: 0.5, rx: 3, ry: 23, rz: 4 },
+  'hand-right': { x: -1, z: 0.5, rx: 3, ry: -23, rz: -4 },
+  'grip-left': { x: 1.5, rx: 6, ry: -12, rz: -6 },
+  'grip-right': { x: -1.5, rx: 6, ry: 12, rz: 6 },
+  'pistol-0': {},
+  'pistol-1': {},
+  'holster-0': { y: -2.5, z: 5 },
+  'holster-1': { y: -2.5, z: 5 },
+  'pocket-0': { x: 8 },
+  'pocket-1': { x: -8 },
 }
 const rotation = (p: XRPoseAdjustment) =>
   new THREE.Quaternion().setFromEuler(
@@ -76,9 +100,45 @@ export class XRCalibration {
   >()
   constructor() {
     try {
-      const stored = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
+      const saved = localStorage.getItem(storageKey)
+      const previous = localStorage.getItem('nabla.xr.calibration.v3')
+      const stored = saved
+        ? JSON.parse(saved)
+        : previous
+          ? JSON.parse(previous)
+          : Object.fromEntries(
+              Object.entries(
+                JSON.parse(localStorage.getItem('nabla.xr.calibration.v2') ?? '{}'),
+              ).filter(([id]) => !(id in baselineAdjustments)),
+            )
+      // Rebase the old wheel Euler pose exactly, preserving position and other angles.
+      if (!saved)
+        for (const id of ['ar-rc-s3', 'ar-rc-truck']) {
+          const old = stored[id]
+          if (!old || !Number.isFinite(old.ry) || old.ry === 0) continue
+          const q = rotation({ ...zero(), ...old })
+          q.premultiply(rotation({ ...zero(), ry: -180 }))
+          const e = new THREE.Euler().setFromQuaternion(q, 'XYZ')
+          stored[id] = {
+            ...old,
+            rx: THREE.MathUtils.radToDeg(e.x),
+            ry: THREE.MathUtils.radToDeg(e.y),
+            rz: THREE.MathUtils.radToDeg(e.z),
+          }
+        }
+      // Accepted truck posture is the new zero; keep position and the other angle.
+      if (localStorage.getItem('nabla.xr.truck-zero') !== 'x20-z180') {
+        if (stored['ar-rc-truck'])
+          stored['ar-rc-truck'] = { ...stored['ar-rc-truck'], rx: 0, rz: 0 }
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(stored))
+          localStorage.setItem('nabla.xr.truck-zero', 'x20-z180')
+        } catch {
+          // A read-only store must not discard the adjustments already read.
+        }
+      }
       for (const id of Object.keys(xrCalibrationObjects) as XRCalibrationObject[]) {
-        // Prefer the saved right side when an older pair disagrees.
+        // Prefer the saved left hand; pistol pairs keep the saved right side.
         const pair = mirrorPairs.find((pair) => pair.includes(id))
         if (pair && id === pair[0] && stored[pair[1]]) continue
         if (stored[id]) this.set(id, stored[id], false)
@@ -105,6 +165,17 @@ export class XRCalibration {
           ry: { label: 'Giro Y', unit: '°', step: 1 },
           rz: { label: 'Giro Z', unit: '°', step: 1 },
         }
+  }
+  /** One menu entry per symmetric pair; edits retain the existing per-side storage. */
+  get editableObjects() {
+    return Object.fromEntries(
+      Object.entries(xrCalibrationObjects).filter(
+        ([id]) =>
+          !['hand-right', 'grip-right', 'pistol-1', 'holster-1', 'bike-right', 'pocket-1'].includes(
+            id,
+          ),
+      ),
+    )
   }
   get objects() {
     return xrCalibrationObjects
@@ -145,7 +216,7 @@ export class XRCalibration {
   export(): string {
     return JSON.stringify(
       {
-        version: 2,
+        version: 4,
         baseline: xrCalibrationBaseline,
         units: { position: 'cm', rotation: 'degrees' },
         poses: this.poses,
@@ -162,11 +233,22 @@ export class XRCalibration {
       this.bases.set(object, base)
     }
     const baked = { ...zero(), ...defaults[id] }
+    const accepted = { ...zero(), ...baselineAdjustments[id] }
     const p = this.get(id)
     object.position
       .copy(base.position)
-      .add(new THREE.Vector3(baked.x + p.x, baked.y + p.y, baked.z + p.z).multiplyScalar(0.01))
-    object.quaternion.copy(base.rotation).multiply(rotation(baked)).multiply(rotation(p))
+      .add(
+        new THREE.Vector3(
+          baked.x + accepted.x + p.x,
+          baked.y + accepted.y + p.y,
+          baked.z + accepted.z + p.z,
+        ).multiplyScalar(0.01),
+      )
+    object.quaternion
+      .copy(base.rotation)
+      .multiply(rotation(baked))
+      .multiply(rotation(accepted))
+      .multiply(rotation(p))
     object.updateMatrix()
   }
 }

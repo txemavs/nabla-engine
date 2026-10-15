@@ -11,7 +11,7 @@
 
 ## ShotSparks.constructor
 
-[Implementation, line 42](../../../../../src/render/entity/shot-sparks.ts#L42)
+[Implementation, line 43](../../../../../src/render/entity/shot-sparks.ts#L43)
 
 Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
@@ -27,17 +27,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.setDrawRange`
 - `this.root.add`
 
-## ShotSparks.constructor.callback@50
+## ShotSparks.constructor.callback@51
 
-[Implementation, line 50](../../../../../src/render/entity/shot-sparks.ts#L50)
+[Implementation, line 51](../../../../../src/render/entity/shot-sparks.ts#L51)
 
 ```ts
-callback@50(): inferred by TypeScript; see implementation
+callback@51(): inferred by TypeScript; see implementation
 ```
 
 ## ShotSparks.add
 
-[Implementation, line 53](../../../../../src/render/entity/shot-sparks.ts#L53)
+[Implementation, line 54](../../../../../src/render/entity/shot-sparks.ts#L54)
 
 Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
@@ -65,7 +65,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.update
 
-[Implementation, line 81](../../../../../src/render/entity/shot-sparks.ts#L81)
+[Implementation, line 83](../../../../../src/render/entity/shot-sparks.ts#L83)
 
 Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
@@ -78,20 +78,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `this.bursts.filter`
 - `this.bursts.push`
+- `this.clear`
 - `this.geometry.computeBoundingSphere`
 - `this.geometry.setDrawRange`
 
-## ShotSparks.update.callback@83
+## ShotSparks.update.callback@89
 
-[Implementation, line 83](../../../../../src/render/entity/shot-sparks.ts#L83)
+[Implementation, line 89](../../../../../src/render/entity/shot-sparks.ts#L89)
 
 ```ts
-callback@83(b): inferred by TypeScript; see implementation
+callback@89(b): inferred by TypeScript; see implementation
 ```
 
 ## ShotSparks.clear
 
-[Implementation, line 105](../../../../../src/render/entity/shot-sparks.ts#L105)
+[Implementation, line 111](../../../../../src/render/entity/shot-sparks.ts#L111)
 
 Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 
@@ -105,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.dispose
 
-[Implementation, line 111](../../../../../src/render/entity/shot-sparks.ts#L111)
+[Implementation, line 117](../../../../../src/render/entity/shot-sparks.ts#L117)
 
 Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
 

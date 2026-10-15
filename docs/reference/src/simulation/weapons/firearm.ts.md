@@ -15,9 +15,19 @@ round is kept.
 - `./magazine.js`
 - `../../config/gameplay-tuning.js`
 
-## moveSlide
+## seatCartridge
 
 [Implementation, line 71](../../../../../src/simulation/weapons/firearm.ts#L71)
+
+Insert one loose live round through an open chamber. Consumed by the caller only on success.
+
+```ts
+seatCartridge(state: FirearmState): boolean
+```
+
+## moveSlide
+
+[Implementation, line 79](../../../../../src/simulation/weapons/firearm.ts#L79)
 
 Continuous viewer slide manipulation, sharing the same ammunition state.
 
@@ -33,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## freshFirearm
 
-[Implementation, line 98](../../../../../src/simulation/weapons/firearm.ts#L98)
+[Implementation, line 106](../../../../../src/simulation/weapons/firearm.ts#L106)
 
 ```ts
 freshFirearm(spec: FirearmSpec): FirearmState
@@ -44,12 +54,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.from`
 - `createMagazine`
 
-## freshFirearm.callback@101
+## freshFirearm.callback@109
 
-[Implementation, line 101](../../../../../src/simulation/weapons/firearm.ts#L101)
+[Implementation, line 109](../../../../../src/simulation/weapons/firearm.ts#L109)
 
 ```ts
-callback@101(): inferred by TypeScript; see implementation
+callback@109(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -58,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## freshFirearm.magazine
 
-[Implementation, line 107](../../../../../src/simulation/weapons/firearm.ts#L107)
+[Implementation, line 115](../../../../../src/simulation/weapons/firearm.ts#L115)
 
 ```ts
 magazine(): inferred by TypeScript; see implementation
@@ -66,7 +76,7 @@ magazine(): inferred by TypeScript; see implementation
 
 ## freshFirearm.magazine
 
-[Implementation, line 110](../../../../../src/simulation/weapons/firearm.ts#L110)
+[Implementation, line 118](../../../../../src/simulation/weapons/firearm.ts#L118)
 
 ```ts
 magazine(value: number): inferred by TypeScript; see implementation
@@ -80,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## beginReload
 
-[Implementation, line 133](../../../../../src/simulation/weapons/firearm.ts#L133)
+[Implementation, line 141](../../../../../src/simulation/weapons/firearm.ts#L141)
 
 A reload request at `now` (ms). Nothing when one is running or the pistol is full.
 
@@ -95,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## insertFreshMagazine
 
-[Implementation, line 154](../../../../../src/simulation/weapons/firearm.ts#L154)
+[Implementation, line 162](../../../../../src/simulation/weapons/firearm.ts#L162)
 
 Insert a newly supplied item; the game's unlimited reserve creates a distinct full magazine.
 
@@ -111,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## swapFreshMagazine
 
-[Implementation, line 166](../../../../../src/simulation/weapons/firearm.ts#L166)
+[Implementation, line 174](../../../../../src/simulation/weapons/firearm.ts#L174)
 
 Replace an item from the unlimited supply; leave slide release to the player.
 
@@ -127,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## releaseSlide
 
-[Implementation, line 184](../../../../../src/simulation/weapons/firearm.ts#L184)
+[Implementation, line 192](../../../../../src/simulation/weapons/firearm.ts#L192)
 
 Release the catch only. This does not rack the slide or eject a chambered cartridge.
 
@@ -141,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## beginReloadAction
 
-[Implementation, line 200](../../../../../src/simulation/weapons/firearm.ts#L200)
+[Implementation, line 208](../../../../../src/simulation/weapons/firearm.ts#L208)
 
 Independently operated magazine and slide actions for the interactive viewer.
 
@@ -156,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## trigger
 
-[Implementation, line 236](../../../../../src/simulation/weapons/firearm.ts#L236)
+[Implementation, line 244](../../../../../src/simulation/weapons/firearm.ts#L244)
 
 One trigger sample (pressed or released) at `now` (ms). A shot needs a fresh press (the trigger
 reset after the last one), the slide in battery with the cycle finished, and a chambered round.
@@ -171,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## advanceFirearm
 
-[Implementation, line 278](../../../../../src/simulation/weapons/firearm.ts#L278)
+[Implementation, line 286](../../../../../src/simulation/weapons/firearm.ts#L286)
 
 Advance the slide and an in-progress reload to `now` (ms).
 
@@ -189,7 +199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rounds
 
-[Implementation, line 361](../../../../../src/simulation/weapons/firearm.ts#L361)
+[Implementation, line 369](../../../../../src/simulation/weapons/firearm.ts#L369)
 
 Rounds on board: the chamber plus the seated magazine.
 
@@ -199,7 +209,7 @@ rounds(state: FirearmState): number
 
 ## empty
 
-[Implementation, line 365](../../../../../src/simulation/weapons/firearm.ts#L365)
+[Implementation, line 373](../../../../../src/simulation/weapons/firearm.ts#L373)
 
 ```ts
 empty(): FirearmEvent
@@ -207,7 +217,7 @@ empty(): FirearmEvent
 
 ## takeMagazine
 
-[Implementation, line 376](../../../../../src/simulation/weapons/firearm.ts#L376)
+[Implementation, line 384](../../../../../src/simulation/weapons/firearm.ts#L384)
 
 Transfer the actual magazine to a hand; chambered ammunition stays in the weapon.
 
@@ -221,7 +231,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## seatMagazine
 
-[Implementation, line 387](../../../../../src/simulation/weapons/firearm.ts#L387)
+[Implementation, line 395](../../../../../src/simulation/weapons/firearm.ts#L395)
 
 Seat an existing item without replenishing it or operating the slide.
 

@@ -67,6 +67,14 @@ export interface FirearmEvent {
   manualSlideLocked?: boolean
 }
 
+/** Insert one loose live round through an open chamber. Consumed by the caller only on success. */
+export function seatCartridge(state: FirearmState): boolean {
+  if (state.reload !== 'none' || state.chamber !== 0 || (!state.slideLocked && state.slide < 0.75))
+    return false
+  state.chamber = 1
+  return true
+}
+
 /** Continuous viewer slide manipulation, sharing the same ammunition state. */
 export function moveSlide(
   state: FirearmState,
@@ -83,7 +91,7 @@ export function moveSlide(
     state.manualRackBack = true
   }
   if (state.slide <= 0.01 && state.manualRackBack) {
-    if (state.magazineSeated && state.magazine > 0) {
+    if (state.chamber === 0 && state.magazineSeated && state.magazine > 0) {
       state.magazine--
       state.chamber = 1
     }
@@ -261,7 +269,7 @@ export function trigger(
   state.lastShotMs = now
   // A shot runs the slide: the reload clock must not read it as a fresh release.
   state.slideReleaseMs = -Infinity
-  if (state.magazineSeated && state.magazine > 0) {
+  if (state.chamber === 0 && state.magazineSeated && state.magazine > 0) {
     state.magazine -= 1
     state.chamber = 1
   } else if (state.magazineSeated) {

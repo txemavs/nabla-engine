@@ -12,7 +12,7 @@
 
 ## squeeze
 
-[Implementation, line 16](../../../../src/runtime/xr-motorcycle.ts#L16)
+[Implementation, line 17](../../../../src/runtime/xr-motorcycle.ts#L17)
 
 ```ts
 squeeze(h: GrabHand): inferred by TypeScript; see implementation
@@ -20,17 +20,17 @@ squeeze(h: GrabHand): inferred by TypeScript; see implementation
 
 ## XRMotorcycle.constructor
 
-[Implementation, line 24](../../../../src/runtime/xr-motorcycle.ts#L24)
+[Implementation, line 25](../../../../src/runtime/xr-motorcycle.ts#L25)
 
 Physical handlebar steering and a right wrist throttle; all motion is chassis-relative.
 
 ```ts
-constructor(private readonly calibration: XRCalibration): instance
+constructor(private readonly calibration: Pick<XRCalibration, 'get' | 'apply' | 'motorcycleStatus'>): instance
 ```
 
 ## XRMotorcycle.reset
 
-[Implementation, line 25](../../../../src/runtime/xr-motorcycle.ts#L25)
+[Implementation, line 28](../../../../src/runtime/xr-motorcycle.ts#L28)
 
 Physical handlebar steering and a right wrist throttle; all motion is chassis-relative.
 
@@ -44,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRMotorcycle.owns
 
-[Implementation, line 29](../../../../src/runtime/xr-motorcycle.ts#L29)
+[Implementation, line 32](../../../../src/runtime/xr-motorcycle.ts#L32)
 
 Physical handlebar steering and a right wrist throttle; all motion is chassis-relative.
 
@@ -57,17 +57,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.holders.values()].some`
 - `this.holders.values`
 
-## XRMotorcycle.owns.callback@30
+## XRMotorcycle.owns.callback@33
 
-[Implementation, line 30](../../../../src/runtime/xr-motorcycle.ts#L30)
+[Implementation, line 33](../../../../src/runtime/xr-motorcycle.ts#L33)
 
 ```ts
-callback@30(h): inferred by TypeScript; see implementation
+callback@33(h): inferred by TypeScript; see implementation
 ```
 
 ## XRMotorcycle.update
 
-[Implementation, line 32](../../../../src/runtime/xr-motorcycle.ts#L32)
+[Implementation, line 35](../../../../src/runtime/xr-motorcycle.ts#L35)
 
 Physical handlebar steering and a right wrist throttle; all motion is chassis-relative.
 
@@ -131,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRMotorcycle.update.rotation
 
-[Implementation, line 46](../../../../src/runtime/xr-motorcycle.ts#L46)
+[Implementation, line 49](../../../../src/runtime/xr-motorcycle.ts#L49)
 
 ```ts
 rotation(h: GrabHand): inferred by TypeScript; see implementation
@@ -146,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRMotorcycle.update.point
 
-[Implementation, line 48](../../../../src/runtime/xr-motorcycle.ts#L48)
+[Implementation, line 51](../../../../src/runtime/xr-motorcycle.ts#L51)
 
 ```ts
 point(h: GrabHand): inferred by TypeScript; see implementation
@@ -158,18 +158,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `h.grip.getWorldPosition`
 - `rig.frame.worldToLocal`
 
-## XRMotorcycle.update.callback@52
+## XRMotorcycle.update.callback@55
 
-[Implementation, line 52](../../../../src/runtime/xr-motorcycle.ts#L52)
+[Implementation, line 55](../../../../src/runtime/xr-motorcycle.ts#L55)
 
 ```ts
-callback@52(h): inferred by TypeScript; see implementation
+callback@55(h): inferred by TypeScript; see implementation
 ```
 
-## XRMotorcycle.update.callback@95
+## XRMotorcycle.update.callback@98
 
-[Implementation, line 95](../../../../src/runtime/xr-motorcycle.ts#L95)
+[Implementation, line 98](../../../../src/runtime/xr-motorcycle.ts#L98)
 
 ```ts
-callback@95(a, b): inferred by TypeScript; see implementation
+callback@98(a, b): inferred by TypeScript; see implementation
 ```

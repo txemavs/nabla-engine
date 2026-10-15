@@ -13,7 +13,7 @@
 
 ## squeezed
 
-[Implementation, line 11](../../../../src/runtime/xr-grab.ts#L11)
+[Implementation, line 12](../../../../src/runtime/xr-grab.ts#L12)
 
 ```ts
 squeezed(hand: GrabHand): inferred by TypeScript; see implementation
@@ -21,7 +21,7 @@ squeezed(hand: GrabHand): inferred by TypeScript; see implementation
 
 ## position
 
-[Implementation, line 14](../../../../src/runtime/xr-grab.ts#L14)
+[Implementation, line 15](../../../../src/runtime/xr-grab.ts#L15)
 
 ```ts
 position(object: THREE.Object3D): inferred by TypeScript; see implementation
@@ -34,7 +34,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nearby
 
-[Implementation, line 15](../../../../src/runtime/xr-grab.ts#L15)
+[Implementation, line 16](../../../../src/runtime/xr-grab.ts#L16)
 
 ```ts
 nearby(object: THREE.Object3D, hand: GrabHand, radius: number): inferred by TypeScript; see implementation
@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.constructor
 
-[Implementation, line 36](../../../../src/runtime/xr-grab.ts#L36)
+[Implementation, line 37](../../../../src/runtime/xr-grab.ts#L37)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -63,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.reset
 
-[Implementation, line 40](../../../../src/runtime/xr-grab.ts#L40)
+[Implementation, line 41](../../../../src/runtime/xr-grab.ts#L41)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -77,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.dispose
 
-[Implementation, line 47](../../../../src/runtime/xr-grab.ts#L47)
+[Implementation, line 48](../../../../src/runtime/xr-grab.ts#L48)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -92,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.wheel
 
-[Implementation, line 52](../../../../src/runtime/xr-grab.ts#L52)
+[Implementation, line 53](../../../../src/runtime/xr-grab.ts#L53)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -123,12 +123,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vector`
 - `wheel.axis.dot`
 
-## XRGrab.wheel.callback@72
+## XRGrab.wheel.callback@73
 
-[Implementation, line 72](../../../../src/runtime/xr-grab.ts#L72)
+[Implementation, line 73](../../../../src/runtime/xr-grab.ts#L73)
 
 ```ts
-callback@72(h): inferred by TypeScript; see implementation
+callback@73(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -138,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.wheel.vector
 
-[Implementation, line 78](../../../../src/runtime/xr-grab.ts#L78)
+[Implementation, line 79](../../../../src/runtime/xr-grab.ts#L79)
 
 ```ts
 vector(hand: GrabHand): inferred by TypeScript; see implementation
@@ -153,12 +153,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.addScaledVector(wheel.axis, -v.dot(wheel.axis)).normalize`
 - `v.dot`
 
-## XRGrab.wheel.callback@83
+## XRGrab.wheel.callback@84
 
-[Implementation, line 83](../../../../src/runtime/xr-grab.ts#L83)
+[Implementation, line 84](../../../../src/runtime/xr-grab.ts#L84)
 
 ```ts
-callback@83(h): inferred by TypeScript; see implementation
+callback@84(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -168,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.pistol
 
-[Implementation, line 103](../../../../src/runtime/xr-grab.ts#L103)
+[Implementation, line 104](../../../../src/runtime/xr-grab.ts#L104)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -215,7 +215,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGrab.pistol.fresh
 
-[Implementation, line 146](../../../../src/runtime/xr-grab.ts#L146)
+[Implementation, line 147](../../../../src/runtime/xr-grab.ts#L147)
 
 ```ts
 fresh(h: GrabHand): inferred by TypeScript; see implementation
@@ -226,12 +226,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `squeezed`
 - `this.held.has`
 
-## XRGrab.pistol.callback@150
+## XRGrab.pistol.callback@151
 
-[Implementation, line 150](../../../../src/runtime/xr-grab.ts#L150)
+[Implementation, line 151](../../../../src/runtime/xr-grab.ts#L151)
 
 ```ts
-callback@150(h): inferred by TypeScript; see implementation
+callback@151(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -240,12 +240,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position`
 - `position(h.grip).distanceTo`
 
-## XRGrab.pistol.callback@168
+## XRGrab.pistol.callback@169
 
-[Implementation, line 168](../../../../src/runtime/xr-grab.ts#L168)
+[Implementation, line 169](../../../../src/runtime/xr-grab.ts#L169)
 
 ```ts
-callback@168(h): inferred by TypeScript; see implementation
+callback@169(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -253,17 +253,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `fresh`
 - `nearby`
 
-## XRGrab.pistol.callback@193
+## XRGrab.pistol.callback@194
 
-[Implementation, line 193](../../../../src/runtime/xr-grab.ts#L193)
+[Implementation, line 194](../../../../src/runtime/xr-grab.ts#L194)
 
 ```ts
-callback@193(h): inferred by TypeScript; see implementation
+callback@194(h): inferred by TypeScript; see implementation
 ```
 
 ## XRGrab.slideHeld
 
-[Implementation, line 196](../../../../src/runtime/xr-grab.ts#L196)
+[Implementation, line 197](../../../../src/runtime/xr-grab.ts#L197)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 
@@ -273,7 +273,7 @@ slideHeld(): boolean
 
 ## XRGrab.mount
 
-[Implementation, line 199](../../../../src/runtime/xr-grab.ts#L199)
+[Implementation, line 200](../../../../src/runtime/xr-grab.ts#L200)
 
 Physical hold-to-grab controls. All coordinates here are render-world, never headset pitch.
 

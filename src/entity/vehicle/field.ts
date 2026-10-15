@@ -305,6 +305,12 @@ export const vehicleField = z
     ]),
     /** Unpowered trailer, excluded from player boarding. */
     passive: z.boolean().optional(),
+    forklift: z.boolean().optional(),
+    forkliftGeometry: z
+      .object({ pivot: vector, colliders: z.array(boxCollider).min(1).max(8) })
+      .strict()
+      .optional(),
+    rearSteering: z.boolean().optional(),
     /** Chassis-local towing mount, extracted from the body's tow.hitch anchor. */
     hitch: vector.optional(),
     /** Trailer-side kingpin extracted from the tow.anchor node. */
@@ -503,6 +509,16 @@ export const vehicleField = z
     flight: z.boolean().optional(),
     /** Light airplane: plane-helm uses wing lift instead of the carrier's cruise. */
     plane: z.boolean().optional(),
+    /** Optional tuning of the shared plane controller; omitted preserves the light plane. */
+    aircraft: z
+      .object({
+        propulsion: z.enum(['propeller', 'jet']),
+        slowSpeedMs: finite.min(15).max(1000),
+        fastSpeedMs: finite.min(15).max(1000),
+        accelerationMs2: finite.min(1).max(100),
+      })
+      .strict()
+      .optional(),
     boat: z.boolean().optional(),
     interior: z.object({ min: vector, max: vector, exit: vector }).strict().optional(),
     garage: z

@@ -24,5 +24,6 @@ Rendering services for editor and viewer hosts composing their own viewport.
 - `./planet/tile-asset.js`
 - `./planet/tile-layers.js`
 - `./entity/asset-quality.js`
+- `./entity/aircraft.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

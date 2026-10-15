@@ -305,7 +305,10 @@ export function stepWheeledVehicle(
   if (v.drivetrain.ignition === 'cranking') v.drivetrain.rpm = ignitionRpm(v.drivetrain)
   holdInPark(v, forward, speed, dt)
   for (let i = 0; i < 4; i++) {
-    v.raycast.setSteeringValue(i < 2 ? v.steer : 0, i)
+    v.raycast.setSteeringValue(
+      v.definition.rearSteering ? (i >= 2 ? -v.steer : 0) : i < 2 ? v.steer : 0,
+      i,
+    )
     const rearShare = v.drivetrain.burnout
       ? 1
       : (active && input.handbrake) || aggressiveLaunch

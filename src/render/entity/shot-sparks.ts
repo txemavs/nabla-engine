@@ -23,6 +23,7 @@ type Burst = {
 
 /** Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). */
 export class ShotSparks {
+  enabled = true
   readonly root = new THREE.Group()
   private readonly geometry = new THREE.BufferGeometry()
   private readonly material = new THREE.PointsMaterial({
@@ -51,6 +52,7 @@ export class ShotSparks {
   }
 
   add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void {
+    if (!this.enabled) return
     if (this.disposed || !Number.isFinite(now)) return
     if (this.bursts.length === MAX_BURSTS) this.bursts.shift()
     const n = normal ? new THREE.Vector3(...normal).normalize() : new THREE.Vector3(0, 1, 0)
@@ -79,6 +81,10 @@ export class ShotSparks {
   }
 
   update(now: number): void {
+    if (!this.enabled) {
+      this.clear()
+      return
+    }
     if (this.disposed) return
     const live = this.bursts.filter((b) => now - b.birth <= LIFE_MS)
     this.bursts.length = 0

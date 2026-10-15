@@ -17,6 +17,7 @@ export type VehicleLightChannel =
   | 'low'
   | 'high'
   | 'fog'
+  | 'cabin'
 
 /**
  * Driving-light switch position: `off` (apagadas), `position` (posición: front and rear position
@@ -95,6 +96,7 @@ export class VehicleLightController {
       case 'high':
         return Number(this.drivingMode === 'low' && this.highBeam)
       case 'fog':
+      case 'cabin':
         return 0
       default:
         return Number(this.enabled)

@@ -1,5 +1,6 @@
 import { audioBus } from './mixer.js'
 export type WeaponSound =
+  | 'prop-impact'
   | 'hammer'
   | 'dry'
   | 'dry-cocked'
@@ -12,6 +13,7 @@ export type WeaponSound =
   | 'safety'
   | 'trigger-reset'
 export const handlingProfiles = {
+  'prop-impact': [650, 0.025, 0.025],
   hammer: [2800, 0.07, 0.018],
   dry: [2400, 0.055, 0.015],
   'dry-cocked': [2800, 0.07, 0.018],

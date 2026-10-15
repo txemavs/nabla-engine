@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => {
           game: 'game/index.html',
           test: 'game/test.html',
           quest: 'game/xr.html',
+          headset: 'game/headset.html',
+          mixedReality: 'game/ar.html',
+          mixedRealityRC: 'game/ar-rc.html',
           questDemo: 'game/xr-demo.html',
         },
       },
@@ -41,21 +44,28 @@ export default defineConfig(({ mode }) => {
       port: 5174,
       strictPort: true,
       watch: { usePolling: true, interval: 300 },
-      proxy: env.NABLA_STUDIO_UPSTREAM
-        ? Object.fromEntries(
-            ['/world-cache', '/prepare', '/prepared', '/z'].map((path) => [
-              path,
-              { target: env.NABLA_STUDIO_UPSTREAM, changeOrigin: true },
-            ]),
-          )
-        : env.NABLA_CACHE_UPSTREAM
-          ? {
-              '/world-cache': {
-                target: env.NABLA_CACHE_UPSTREAM,
-                rewrite: (path: string) => path.replace(/^\/world-cache/, ''),
-              },
-            }
-          : undefined,
+      proxy: {
+        '/atlas-live/euskadi/terraform/': {
+          target: 'https://atlas.chained.world',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/atlas-live/, ''),
+        },
+        ...(env.NABLA_STUDIO_UPSTREAM
+          ? Object.fromEntries(
+              ['/world-cache', '/prepare', '/prepared', '/z'].map((path) => [
+                path,
+                { target: env.NABLA_STUDIO_UPSTREAM, changeOrigin: true },
+              ]),
+            )
+          : env.NABLA_CACHE_UPSTREAM
+            ? {
+                '/world-cache': {
+                  target: env.NABLA_CACHE_UPSTREAM,
+                  rewrite: (path: string) => path.replace(/^\/world-cache/, ''),
+                },
+              }
+            : {}),
+      },
     },
   }
 })

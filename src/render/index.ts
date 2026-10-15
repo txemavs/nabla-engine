@@ -39,3 +39,10 @@ export {
   assetUrlForQuality,
   type AssetQuality,
 } from './entity/asset-quality.js'
+
+export {
+  AircraftRig,
+  mountAircraft,
+  type AircraftRigDefinition,
+  type AircraftPose,
+} from './entity/aircraft.js'

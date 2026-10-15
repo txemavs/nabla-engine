@@ -48,5 +48,10 @@
 - `./xr.js`
 - `./xr-input.js`
 - `./xr-session.js`
+- `./xr-ar-weapons.js`
+- `./xr-scaled-vehicles.js`
+- `./xr-rc-controls.js`
+- `./xr-room-physics.js`
+- `./xr-object-grab.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

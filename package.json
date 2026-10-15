@@ -182,6 +182,50 @@
     "./config/driver-pose": {
       "types": "./dist/config/driver-pose.d.ts",
       "import": "./dist/config/driver-pose.js"
+    },
+    "./experimental/betaflight": {
+      "types": "./dist/experimental/betaflight/index.d.ts",
+      "import": "./dist/experimental/betaflight/index.js"
+    },
+    "./ar": {
+      "types": "./dist/runtime/ar/index.d.ts",
+      "import": "./dist/runtime/ar/index.js"
+    },
+    "./ar/models": {
+      "types": "./dist/runtime/ar/model.d.ts",
+      "import": "./dist/runtime/ar/model.js"
+    },
+    "./xr/placement": {
+      "types": "./dist/runtime/xr-station-placement.d.ts",
+      "import": "./dist/runtime/xr-station-placement.js"
+    },
+    "./xr/hoop": {
+      "types": "./dist/runtime/xr-hoop.d.ts",
+      "import": "./dist/runtime/xr-hoop.js"
+    },
+    "./sports/hoop": {
+      "types": "./dist/simulation/sports/hoop.d.ts",
+      "import": "./dist/simulation/sports/hoop.js"
+    },
+    "./xr/bow": {
+      "types": "./dist/runtime/xr-bow.d.ts",
+      "import": "./dist/runtime/xr-bow.js"
+    },
+    "./weapons/bow": {
+      "types": "./dist/simulation/weapons/bow.d.ts",
+      "import": "./dist/simulation/weapons/bow.js"
+    },
+    "./ar/weapons": {
+      "types": "./dist/runtime/xr-ar-weapons.d.ts",
+      "import": "./dist/runtime/xr-ar-weapons.js"
+    },
+    "./xr": {
+      "types": "./dist/runtime/xr/index.d.ts",
+      "import": "./dist/runtime/xr/index.js"
+    },
+    "./xr/ui": {
+      "types": "./dist/runtime/xr/ui.d.ts",
+      "import": "./dist/runtime/xr/ui.js"
     }
   },
   "imports": {

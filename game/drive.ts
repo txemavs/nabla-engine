@@ -1,3 +1,4 @@
+import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -153,6 +154,27 @@ try {
       )
     }
   }
+  if (flat && (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc')) {
+    for (let i = 0; i < 6; i++) {
+      const pallet = createEntity('pallet-' + i, 'box', [
+        ((i % 3) - 1) * 2,
+        0.04,
+        -4 - Math.floor(i / 3) * 2,
+      ])
+      pallet.name = 'Palet'
+      pallet.motion = 'dynamic'
+      pallet.mass = 25
+      pallet.size = [1.16, 0.145, 1.2]
+      pallet.colliders = palletSpec.colliders as NonNullable<typeof pallet.colliders>
+      pallet.visual = {
+        body: {
+          url: '/library/cars/forklift-rc/pallet.glb',
+          transform: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+        },
+      }
+      scene.entities.push(pallet)
+    }
+  }
   const noTerrainTest = ['/test.html', '/xr.html'].includes(location.pathname)
 
   if (noTerrainTest) {
@@ -208,7 +230,10 @@ try {
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
     hud: true,
-    touchControls: 'always',
+    touchControls:
+      new URLSearchParams(location.search).has('xr') || location.pathname === '/xr.html'
+        ? false
+        : 'always',
     display: readDisplaySettings(),
     onResolutionScale: (state) =>
       document
@@ -284,6 +309,14 @@ try {
   void runBootPhase(runtime, loading, boot)
   await runtime.play(!solo && noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
   bindVR(runtime)
+  if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
+    const help = document.createElement('p')
+    help.textContent =
+      'Toro: verde altura (I/K), azul inclinación (J/L), rojo lateral (U/O). En VR: mantener agarre y tirar/empujar la palanca.'
+    help.style.cssText =
+      'position:fixed;bottom:70px;left:12px;max-width:420px;background:#102632e8;color:white;padding:10px;pointer-events:none'
+    document.body.append(help)
+  }
   if (noTerrainTest && (!solo || new URLSearchParams(location.search).has('xr')))
     runtime.equipTestSidearm()
   if (!solo && scene.geography && config.vehicles.length)

@@ -74,6 +74,7 @@ import {
 import type { CarInstruments } from './car-instruments.js'
 import type { CarInstrumentDefinition } from './car-instrument-definition.js'
 import { mountPropeller } from './propeller.js'
+import { mountAircraft, type AircraftRig } from './aircraft.js'
 import { RoadBatches } from '../planet/road-batches.js'
 import { LandcoverBatches } from '../planet/landcover-batches.js'
 import { carrierInterior } from './carrier-interior.js'
@@ -210,6 +211,7 @@ export class SceneView {
   private readonly reflections = new Map<string, ReflectionEnvironment>()
   /** Distance covered while the cluster is shown, km: odometer since load, and the trip. */
   private readonly odometers = new Map<string, number>()
+  private readonly aircraft = new Map<string, AircraftRig>()
   private readonly propellers = new Map<string, THREE.Object3D>()
   readonly shipHuds = new Map<string, ShipHud>()
   readonly helmScreens = new Map<string, THREE.Mesh>()
@@ -711,7 +713,7 @@ export class SceneView {
   }
   /**
    * Install scenery placed while running: standalone portals (Stargate frame), sprites, lamps and
-   * static boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
+   * standalone static/dynamic boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
    */
   addPlaced(added: Entity[]): void {
     assertPlaceable(added, new Map(this.document.entities.map((e) => [e.id, e])))
@@ -780,6 +782,7 @@ export class SceneView {
       this.carMirrors,
       this.instruments,
       this.propellers,
+      this.aircraft,
       this.shipHuds,
       this.helmScreens,
       this.touchScreens,
@@ -1079,7 +1082,10 @@ export class SceneView {
 
         group.add(surface)
       }
-      if (e.kind === 'box' && !e.light) group.add(box(e.size, e.color))
+      if (e.kind === 'box' && !e.light) {
+        if (e.visual) this.addAsset(group, e.visual.body)
+        else group.add(box(e.size, e.color))
+      }
       if (e.light) this.streetlights.add(e, group)
       if (e.kind === 'vehicle') {
         if (e.vehicle?.headOffset) this.headOffsets.set(e.id, e.vehicle.headOffset)
@@ -1329,7 +1335,9 @@ export class SceneView {
         this.beacons.set(e.id, equipment.beacons)
         this.surfaceTextures.push(...equipment.beacons.textures)
       }
-      if (e.vehicle?.plane) {
+      const aircraft = mountAircraft(model)
+      if (aircraft) this.aircraft.set(e.id, aircraft)
+      if (e.vehicle?.plane && e.vehicle.aircraft?.propulsion !== 'jet') {
         const propeller = mountPropeller(model)
         if (propeller) this.propellers.set(e.id, propeller)
       }
@@ -1592,14 +1600,22 @@ export class SceneView {
         if (object) object.visible = !playing
       }
   }
-  sync(sim: Simulation, elapsed = 1 / 60, cockpit = false, headYaw = 0, headPitch = 0.05): void {
+  /** Disable interpolation for externally positioned bodies (for example, an XR hand grab). */
+  sync(
+    sim: Simulation,
+    elapsed = 1 / 60,
+    cockpit = false,
+    headYaw = 0,
+    headPitch = 0.05,
+    interpolate = true,
+  ): void {
     if (sim.playerEjection || sim.playerBikeRecovery?.phase === 'rising') cockpit = false
     this.simulated = true
     for (const e of this.document.entities) {
       if (e.terrain || (e.source && e.motion !== 'dynamic' && !e.portal)) continue
       const object = this.objects.get(e.id)
       if (!object) continue
-      applyPose(object, sim.entityTransform(e.id, true))
+      applyPose(object, sim.entityTransform(e.id, interpolate))
       if (e.portal) {
         e.portal = sim.portalState(e.id)
         const surface = this.portals.get(e.id)!
@@ -1613,8 +1629,21 @@ export class SceneView {
         light.material.color.set(e.portal.mode === 'open' ? '#5bacff' : '#354254')
       }
     }
+    for (const [id, object] of this.objects) {
+      const pose = sim.forkliftPose(id)
+      if (!pose) continue
+      const mast = object.getObjectByName('forklift-mast'),
+        carriage = object.getObjectByName('forklift-carriage')
+      const inner = object.getObjectByName('forklift-inner-mast')
+      if (inner) inner.position.y = pose.lift * 0.5
+      if (mast) mast.rotation.x = pose.tilt
+      if (carriage) {
+        carriage.position.y = pose.lift
+        carriage.position.x = pose.side
+      }
+    }
     for (const [id, wheels] of this.wheels) {
-      const poses = sim.wheelTransforms(id, true)
+      const poses = sim.wheelTransforms(id, interpolate)
       poses.forEach((p, i) => {
         // Wheel snapshots are in world space; render beneath an identity root.
         this.root.add(wheels[i])
@@ -1747,6 +1776,7 @@ export class SceneView {
         sim.vehicleInfo(id).steer,
         this.steeringPivots.get(id),
       )
+    for (const [id, aircraft] of this.aircraft) aircraft.update(sim.vehicleInfo(id), elapsed)
     for (const [id, propeller] of this.propellers)
       propeller.rotation.z += sim.vehicleInfo(id).engine * 78 * Math.min(elapsed, 0.05)
     for (const [id, equipment] of this.beacons)

@@ -1,3 +1,4 @@
+import { hasVehiclePreset } from '@nabla/engine/vehicles'
 /** XR uses the same host and runtime as test.html and Euskadi. No second simulation. */
 const params = new URLSearchParams(location.search)
 const destinations = document.querySelector<HTMLDetailsElement>('#xr-destinations')!
@@ -7,9 +8,11 @@ if (params.get('tile') === '16224/11998')
 const tests = document.querySelector('#xr-vehicle-tests')!
 for (const [vehicle, label] of [
   ['car', 'Coche'],
+  ...(hasVehiclePreset('bmw') ? [['bmw', 'BMW low poly']] : []),
   ['vfr800', 'Moto · automática'],
   ['vfr800-quest', 'Moto low poly · Quest'],
   ['white-truck', 'Camión sin remolque'],
+  ['forklift-rc', 'Toro y palets'],
   ['carrier', 'Nave'],
 ]) {
   const row = document.createElement('div')
@@ -33,9 +36,22 @@ for (const [vehicle, label] of [
   }
   tests.append(row)
 }
+const fleet = document.createElement('div')
+fleet.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px'
+for (const copies of hasVehiclePreset('bmw') ? [1, 5, 10, 20] : []) {
+  const link = document.createElement('a')
+  link.href = `/xr.html?example=flat&solo=1&vehicle=bmw&copies=${copies}&quality=minimal&diagnostics=1`
+  link.textContent = `${copies} BMW · pista`
+  fleet.append(link)
+}
+tests.append(fleet)
+const ar = document.createElement('a')
+ar.href = '/ar.html'
+ar.textContent = 'Realidad mixta · prueba de habitación'
+tests.append(ar)
 if (params.get('solo') === '1')
   destinations.querySelector('summary')!.textContent =
-    `Prueba individual: ${({ car: 'Coche', vfr800: 'Moto', 'vfr800-quest': 'Moto Quest', 'white-truck': 'Camión', carrier: 'Nave' } as Record<string, string>)[params.get('vehicle') ?? 'car'] ?? 'Vehículo'} · ${params.has('terrain') ? 'Zaisa' : 'pista'}`
+    `Prueba individual: ${({ car: 'Coche', bmw: 'BMW', vfr800: 'Moto', 'vfr800-quest': 'Moto Quest', 'white-truck': 'Camión', carrier: 'Nave' } as Record<string, string>)[params.get('vehicle') ?? 'car'] ?? 'Vehículo'} · ${params.has('terrain') ? 'Zaisa' : 'pista'}`
 params.set('xr', '1')
 if (![...params.keys()].some((key) => ['terrain', 'tiles', 'api', 'static'].includes(key)))
   params.set('example', 'flat')

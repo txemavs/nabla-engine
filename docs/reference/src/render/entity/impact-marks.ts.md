@@ -55,9 +55,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.DataTexture`
 - `impactMarkPixels`
 
+## ImpactMarks.setLimit
+
+[Implementation, line 88](../../../../../src/render/entity/impact-marks.ts#L88)
+
+Bounded shot marks. Entity hits parent into the hit object's local frame so they
+ride with vehicles; world hits (buildings and other static colliders without an
+entity id) parent under a scene root that shares the floating-origin shift.
+
+```ts
+setLimit(limit: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `this.marks.shift`
+- `this.marks.shift()!.removeFromParent`
+
 ## ImpactMarks.count
 
-[Implementation, line 87](../../../../../src/render/entity/impact-marks.ts#L87)
+[Implementation, line 94](../../../../../src/render/entity/impact-marks.ts#L94)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -69,7 +90,7 @@ count(): number
 
 ## ImpactMarks.warmupObject
 
-[Implementation, line 92](../../../../../src/render/entity/impact-marks.ts#L92)
+[Implementation, line 99](../../../../../src/render/entity/impact-marks.ts#L99)
 
 Shared GPU resources, without creating a live impact or consuming a pool entry.
 
@@ -83,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.take
 
-[Implementation, line 96](../../../../../src/render/entity/impact-marks.ts#L96)
+[Implementation, line 103](../../../../../src/render/entity/impact-marks.ts#L103)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -103,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.place
 
-[Implementation, line 110](../../../../../src/render/entity/impact-marks.ts#L110)
+[Implementation, line 117](../../../../../src/render/entity/impact-marks.ts#L117)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -127,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.addSurface
 
-[Implementation, line 121](../../../../../src/render/entity/impact-marks.ts#L121)
+[Implementation, line 128](../../../../../src/render/entity/impact-marks.ts#L128)
 
 Exact rendered surface hit, anchored in the moving mesh's local frame.
 
@@ -148,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.add
 
-[Implementation, line 133](../../../../../src/render/entity/impact-marks.ts#L133)
+[Implementation, line 141](../../../../../src/render/entity/impact-marks.ts#L141)
 
 Mark on a scene entity (car, prop, authored mesh) in that entity's local frame.
 
@@ -176,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.addWorld
 
-[Implementation, line 156](../../../../../src/render/entity/impact-marks.ts#L156)
+[Implementation, line 165](../../../../../src/render/entity/impact-marks.ts#L165)
 
 Mark on static world geometry (planet buildings, ground colliders, …).
 `root` must share the floating-origin shift with the hit meshes (e.g. `SceneView.root`
@@ -197,7 +218,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.removeFor
 
-[Implementation, line 165](../../../../../src/render/entity/impact-marks.ts#L165)
+[Implementation, line 175](../../../../../src/render/entity/impact-marks.ts#L175)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -211,12 +232,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.marks.filter`
 
-## ImpactMarks.removeFor.callback@166
+## ImpactMarks.removeFor.callback@176
 
-[Implementation, line 166](../../../../../src/render/entity/impact-marks.ts#L166)
+[Implementation, line 176](../../../../../src/render/entity/impact-marks.ts#L176)
 
 ```ts
-callback@166(mark): inferred by TypeScript; see implementation
+callback@176(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -225,7 +246,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.clear
 
-[Implementation, line 175](../../../../../src/render/entity/impact-marks.ts#L175)
+[Implementation, line 185](../../../../../src/render/entity/impact-marks.ts#L185)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an
@@ -241,7 +262,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.dispose
 
-[Implementation, line 180](../../../../../src/render/entity/impact-marks.ts#L180)
+[Implementation, line 190](../../../../../src/render/entity/impact-marks.ts#L190)
 
 Bounded shot marks. Entity hits parent into the hit object's local frame so they
 ride with vehicles; world hits (buildings and other static colliders without an

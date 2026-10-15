@@ -920,6 +920,31 @@ export class World {
     this.constraints.delete(constraint)
     constraint.joint = null
   }
+  /** Sweep a tracked volume through the existing physics scene (no render-mesh raycasts). */
+  sweepSphere(from: Vec3, to: Vec3, radius: number, ignoreBody?: Body) {
+    const delta = to.vsub(from)
+    if (delta.lengthSquared() < 1e-12) return null
+    const hit = this.raw.castShape(
+      from.vsub(this.origin),
+      { x: 0, y: 0, z: 0, w: 1 },
+      delta,
+      new (R().Ball)(radius),
+      0,
+      1,
+      false,
+      R().QueryFilterFlags.EXCLUDE_SENSORS,
+      undefined,
+      undefined,
+      ignoreBody?.raw ?? undefined,
+    )
+    if (!hit) return null
+    return {
+      fraction: hit.time_of_impact,
+      collider: hit.collider.handle,
+      normal: new Vec3(hit.normal1.x, hit.normal1.y, hit.normal1.z),
+      point: new Vec3(hit.witness1.x, hit.witness1.y, hit.witness1.z).vadd(this.origin),
+    }
+  }
   intersectsCuboid(center: Vec3, half: Vec3, ignoreBody?: Body): boolean {
     let hit = false
     this.raw.intersectionsWithShape(

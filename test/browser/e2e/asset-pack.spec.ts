@@ -1,9 +1,24 @@
 import { test, expect } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+
+const bytesPerSecond = 1_000_000
+const latencyMs = 30
 
 test.beforeAll(() => execFileSync(process.execPath, ['scripts/pack-assets.mjs']))
 
 test('packed GLBs preserve scenes and avoid range downloads on a warm visit', async ({ page }) => {
+  // Raw and cold passes intentionally transfer the entire growing catalog at 1 MB/s.
+  // Keep content/cache assertions unchanged; allow transfer, decoding and runner overhead.
+  const manifest = JSON.parse(readFileSync('assets/packs/index.json', 'utf8')) as {
+    size: number
+    entries: Record<string, { decodedLength: number }>
+  }
+  const entries = Object.values(manifest.entries)
+  const transferBytes = manifest.size + entries.reduce((sum, entry) => sum + entry.decodedLength, 0)
+  test.setTimeout(
+    60_000 + (2_000 * transferBytes) / bytesPerSecond + 2 * entries.length * latencyMs,
+  )
   await page.route('**/pack-check', (route) =>
     route.fulfill({
       contentType: 'text/html',
@@ -15,9 +30,9 @@ test('packed GLBs preserve scenes and avoid range downloads on a warm visit', as
   await cdp.send('Network.enable')
   await cdp.send('Network.emulateNetworkConditions', {
     offline: false,
-    latency: 30,
-    downloadThroughput: 1_000_000,
-    uploadThroughput: 1_000_000,
+    latency: latencyMs,
+    downloadThroughput: bytesPerSecond,
+    uploadThroughput: bytesPerSecond,
   })
   const result = await page.evaluate(
     async (root) => {

@@ -42,10 +42,12 @@ it('lands to the right, bounces once and disappears after its lifetime', () => {
   expect(pose.position[1]).toBeLessThan(0.02)
   // It comes to rest on the ground and stays there.
   for (let i = 0; i < 120; i++) motion.update(1 / 60, ground)
+  expect(motion.impacts).toEqual([])
   const resting = motion.poses()[0].position.slice()
   expect(resting[1]).toBeLessThan(0.02)
   motion.update(1 / 60, ground)
   expect(motion.poses()[0].position[0]).toBeCloseTo(resting[0], 3)
+  expect(motion.impacts).toEqual([])
   for (let i = 0; i < Math.ceil(casing.lifetimeS * 60); i++) motion.update(1 / 60, ground)
   expect(motion.count).toBe(0)
 })
@@ -88,4 +90,20 @@ it('a dropped magazine falls, rests, and the pool keeps only the newest', () => 
   for (let i = 0; i < 20; i++) motion.release([i, 1, 0], [0, -1, 0])
   expect(motion.count).toBe(8)
   expect(motion.poses()[0].position[0]).toBeGreaterThan(10)
+})
+
+it('limits live casings and avoids collision work when disabled', () => {
+  const motion = new CasingMotion(spec())
+  for (let i = 0; i < 8; i++) motion.eject([i, 1, 0], [1, 0, 0], [0, 1, 0])
+  motion.setLimit(2)
+  expect(motion.count).toBe(2)
+  motion.setLimit(0)
+  motion.eject([0, 1, 0], [1, 0, 0], [0, 1, 0])
+  let casts = 0
+  motion.update(0.016, () => {
+    casts++
+    return null
+  })
+  expect(motion.count).toBe(0)
+  expect(casts).toBe(0)
 })

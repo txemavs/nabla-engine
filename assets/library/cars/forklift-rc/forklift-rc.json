@@ -1,0 +1,110 @@
+{
+  "id": "forklift-rc",
+  "label": "Toro low poly · R/C",
+  "clearance": 0.06,
+  "placement": [0, 0.02, 0],
+  "order": 7,
+  "name": "Toro R/C",
+  "color": "#cc3325",
+  "size": [1.4, 2.35, 3.82],
+  "mass": 2800,
+  "vehicle": {
+    "forklift": true,
+    "rearSteering": true,
+    "controls": "road",
+    "colliders": [
+      {
+        "size": [1.1, 0.65, 2.45],
+        "transform": {
+          "position": [0, 0.65, 0.3],
+          "rotation": [0, 0, 0, 1]
+        }
+      }
+    ],
+    "hubs": [
+      [-0.598, 0.377, -0.658],
+      [0.598, 0.377, -0.658],
+      [-0.598, 0.377, 1.093],
+      [0.598, 0.377, 1.093]
+    ],
+    "wheelRadius": 0.377,
+    "suspensionRest": 0.08,
+    "suspensionTravel": 0.06,
+    "stiffness": 100,
+    "engineForce": 5500,
+    "brakeForce": 100,
+    "drivenWheels": "front",
+    "driver": [0, 1.1, 0.25],
+    "headOffset": [0, 0.65, 0],
+    "cameraDistance": 7,
+    "powertrain": {
+      "powerCv": 40,
+      "torqueNm": 180,
+      "ratios": [5, 2.5],
+      "finalDrive": 5,
+      "grip": 4,
+      "idleRpm": 800,
+      "maxRpm": 3500,
+      "maxSpeedKmh": 18
+    },
+    "audio": {
+      "engine": {
+        "voice": "diesel",
+        "cylinders": 4,
+        "volume": 0.18,
+        "jake": false,
+        "airBrake": false
+      }
+    },
+    "forkliftGeometry": {
+      "pivot": [0, 0.1, -1.1],
+      "colliders": [
+        {
+          "size": [0.098, 0.05, 1.02],
+          "transform": {
+            "position": [-0.303, -0.058, -0.623],
+            "rotation": [0, 0, 0, 1]
+          }
+        },
+        {
+          "size": [0.098, 0.05, 1.02],
+          "transform": {
+            "position": [0.303, -0.058, -0.623],
+            "rotation": [0, 0, 0, 1]
+          }
+        },
+        {
+          "size": [1.13, 0.75, 0.044],
+          "transform": {
+            "position": [0.005, 0.31, -0.119],
+            "rotation": [0, 0, 0, 1]
+          }
+        }
+      ]
+    }
+  },
+  "visual": {
+    "body": {
+      "url": "/library/cars/forklift-rc/body.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "wheel": {
+      "url": "/library/cars/forklift-rc/wheel.glb",
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0, 1]
+      }
+    },
+    "steering": {
+      "url": "/library/cars/forklift-rc/steering.glb",
+      "transform": {
+        "position": [-0.277, 1.39, -0.264],
+        "rotation": [0, 0, 0, 1]
+      },
+      "axis": [0, 0.7, 0.7]
+    }
+  }
+}

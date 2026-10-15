@@ -1,3 +1,4 @@
+import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
@@ -543,6 +544,7 @@ export class GameRuntime {
   private aimLean = 0
   private weaponDrawn = false
   private fireRequested = false
+  private readonly xrForklift = new XRForklift()
   private xrMotorcycle: XRMotorcycle | null = null
   private xrLoadout: XRLoadout | null = null
   private xrGrab!: XRGrab
@@ -1285,7 +1287,15 @@ export class GameRuntime {
     if (!enabled) this.releaseInput()
     const vehicle = sim.player.vehicleId
     const info = vehicle ? sim.vehicleInfo(vehicle) : null
-    this.xr.reservedInput = (source) => this.xrMotorcycle?.owns(source) ?? false
+    this.xr.reservedInput = (source) =>
+      (this.xrMotorcycle?.owns(source) ?? false) ||
+      this.xrForklift.owns(source) ||
+      this.xr.grabHands.some(
+        (hand) =>
+          hand.source === source &&
+          !!this.xrLoadout?.occupied(hand) &&
+          !this.xrLoadout.pistols.some((pistol) => pistol.holder?.source === source),
+      )
     this.xr.interactCalibration(enabled, (source) => {
       const pistol = this.xrLoadout?.pistols.find((p) => p.holder?.source === source)
       return pistol?.weapon.worldMuzzle() ?? null
@@ -1343,7 +1353,10 @@ export class GameRuntime {
     this.xrMotorcycle ??= new XRMotorcycle(this.xr.calibration)
     const motorcycleInput = this.xrMotorcycle.update(
       this.xr.grabHands.filter(
-        (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+        (hand) =>
+          !this.xrLoadout?.occupied(hand) &&
+          !this.xr.calibrationOwns(hand.source) &&
+          !this.xrForklift.owns(hand.source),
       ),
       bike ? this.view.motorcycleGrab(sim.player.vehicleId!) : null,
       info?.steer ?? 0,
@@ -1354,10 +1367,25 @@ export class GameRuntime {
       controls.touch.right = 0
       controls.touch.brake = false
     }
+    const forklift =
+      vehicle && this.document.entities.find((e) => e.id === vehicle)?.vehicle?.forklift
+    sim.setForkliftInput(
+      this.xrForklift.update(
+        enabled
+          ? this.xr.grabHands.filter(
+              (h) => !this.xrLoadout?.occupied(h) && !this.xr.calibrationOwns(h.source),
+            )
+          : [],
+        forklift ? (this.view.objects.get(vehicle!) ?? null) : null,
+      ),
+    )
     const wheelInput = this.xrGrab.wheel(
       enabled
         ? this.xr.grabHands.filter(
-            (hand) => !this.xrLoadout?.occupied(hand) && !this.xr.calibrationOwns(hand.source),
+            (hand) =>
+              !this.xrLoadout?.occupied(hand) &&
+              !this.xr.calibrationOwns(hand.source) &&
+              !this.xrForklift.owns(hand.source),
           )
         : [],
       vehicle ? this.view.steeringGrab(vehicle) : null,
@@ -1421,6 +1449,9 @@ export class GameRuntime {
     )
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
+    this.view.impacts.setLimit(this.xr.quality.impactLimit)
+    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
+    this.view.sparks.enabled = this.xr.quality.sparks
     this.view.sparks.update(time)
     this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
       const hit = sim.shoot(
@@ -1437,16 +1468,19 @@ export class GameRuntime {
     if (this.sidearm) {
       this.xrLoadout ??= new XRLoadout(
         this.scene,
-        [this.sidearm, new Sidearm(this.options.canvas.parentElement!, this.sidearm.preset!)],
+        [this.sidearm, this.createSidearm(this.sidearm.preset!)],
         this.xr.calibration,
       )
       const loadout = this.xrLoadout
+      loadout.showVest = this.xr.quality.showVest
       const height = this.renderer.getDrawingBufferSize(new THREE.Vector2()).y
       const events = loadout.update(
         this.xr.grabHands.filter(
           (hand) =>
             loadout.occupied(hand) ||
-            (!this.xr.calibrationOwns(hand.source) && !this.xrMotorcycle?.owns(hand.source)),
+            (!this.xr.calibrationOwns(hand.source) &&
+              !this.xrMotorcycle?.owns(hand.source) &&
+              !this.xrForklift.owns(hand.source)),
         ),
         this.camera,
         this.origin,
@@ -1473,6 +1507,7 @@ export class GameRuntime {
         weapon.setSmokeEnabled(this.smokeOn)
         const down =
           weapon.visible &&
+          pistol.gripMode === 'handle' &&
           !!pistol.holder?.source?.gamepad?.buttons[0]?.pressed &&
           !loadout.slideHeld(pistol) &&
           !this.xr.calibrationOwns(pistol.holder?.source ?? null)
@@ -1495,6 +1530,15 @@ export class GameRuntime {
       }
       this.fireRequested = this.triggerReleased = this.triggerDown = false
       this.updateSidearmLaser(sim, time, true)
+      loadout.updateLasers(time, this.camera.fov, (origin, direction, range) => {
+        const hit = sim.shoot(
+          origin.clone().add(this.origin).toArray(),
+          direction.toArray(),
+          range,
+          0,
+        )
+        return hit ? new THREE.Vector3(...hit.point).sub(this.origin) : null
+      })
     }
     this.renderer.info.reset()
     const shadowEnabled = this.renderer.shadowMap.enabled
@@ -1512,11 +1556,17 @@ export class GameRuntime {
       this.shadows.update(this.camera, this.origin)
       this.renderer.shadowMap.needsUpdate = true
     }
+    const hiddenWheels =
+      this.xr.quality.hideOwnWheels && sim.player.vehicleId
+        ? (this.view.wheels.get(sim.player.vehicleId) ?? []).filter((wheel) => wheel.visible)
+        : []
+    for (const wheel of hiddenWheels) wheel.visible = false
     const sparkVisible = this.view.sparks.root.visible
-    this.view.sparks.root.visible = this.xr.quality.effects && sparkVisible
+    this.view.sparks.root.visible = this.xr.quality.sparks && sparkVisible
     try {
       this.renderer.render(this.scene, this.camera)
     } finally {
+      for (const wheel of hiddenWheels) wheel.visible = true
       this.view.sparks.root.visible = sparkVisible
       this.sun.visible = this.quality.shadows === 0
       this.renderer.shadowMap.enabled = shadowEnabled
@@ -1651,6 +1701,15 @@ export class GameRuntime {
       this.cameraActivity()
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
+    const hydraulicKey = (positive: string, negative: string) =>
+      this.hasInput()
+        ? Number(this.keys.values.has(positive)) - Number(this.keys.values.has(negative))
+        : 0
+    sim.setForkliftInput([
+      hydraulicKey('KeyI', 'KeyK'),
+      hydraulicKey('KeyJ', 'KeyL'),
+      hydraulicKey('KeyO', 'KeyU'),
+    ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
       this.lightSensorSeconds += dt
@@ -1779,6 +1838,9 @@ export class GameRuntime {
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
     this.view.scrapeSparks(sim, time)
+    this.view.impacts.setLimit(this.xr.quality.impactLimit)
+    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
+    this.view.sparks.enabled = this.xr.quality.sparks
     this.view.sparks.update(time)
     const replacement = playing ? this.accidentReplacement?.step(dt) : null
     if (replacement && this.world) {
@@ -3273,7 +3335,7 @@ export class GameRuntime {
       this.inventory.take('test-start-sidearm', position)
     }
     this.ownedWeaponId = preset.id
-    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!, preset)
+    this.sidearm ??= this.createSidearm(preset)
     this.weaponDrawn = true
     this.sidearm.visible = true
     this.sidearm.setAiming(false)
@@ -3510,7 +3572,7 @@ export class GameRuntime {
   }
   /** Keep the aimed model visible while its settings are adjusted with a free mouse. */
   setSidearmAimPreview(enabled: boolean): void {
-    if (enabled) this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    if (enabled) this.sidearm ??= this.createSidearm()
     this.sidearmAimPreview = enabled
     if (!enabled) {
       this.weaponPosePreview = null
@@ -3771,7 +3833,7 @@ export class GameRuntime {
     signal.throwIfAborted()
     // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
     // first draw shows the pistol instead of the placeholder block while it loads.
-    this.sidearm ??= new Sidearm(this.options.canvas.parentElement!)
+    this.sidearm ??= this.createSidearm()
     await within(this.sidearm.warm(this.renderer), 20_000)
     signal.throwIfAborted()
     // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
@@ -4196,6 +4258,13 @@ export class GameRuntime {
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
   }
+  private createSidearm(preset?: ConstructorParameters<typeof Sidearm>[1]): Sidearm {
+    return new Sidearm(
+      this.options.canvas.parentElement!,
+      preset,
+      this.options.assetQuality ?? assetQualityForDevice(this.quality.preset, navigator.userAgent),
+    )
+  }
   private ejectionPose(eyes: boolean, sidearm = this.sidearm) {
     const pose = sidearm?.ejectionPose(eyes, this.camera.fov)
     if (pose && eyes) {
@@ -4210,6 +4279,21 @@ export class GameRuntime {
   private ejectCartridge(_sim: Simulation, eyes: boolean, sidearm = this.sidearm): void {
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
+    if (this.xr.active && this.xrLoadout) {
+      const pose = this.ejectionPose(eyes, sidearm)
+      if (!pose) return
+      const item = this.xrLoadout.addCartridge(sidearm, pose.position)
+      const launch = new CasingMotion(casing).eject(
+        pose.position.toArray(),
+        pose.right.toArray(),
+        pose.up.toArray(),
+      )
+      if (item && launch) {
+        item.velocity.fromArray(launch.velocity)
+        item.angularVelocity.fromArray(launch.spin)
+      }
+      return
+    }
     if (!this.cartridgeMeshes) {
       const clone = sidearm.cartridgeClone()
       if (!clone) return
@@ -4233,6 +4317,7 @@ export class GameRuntime {
     this.ensureCasingMeshes()
     const pose = this.ejectionPose(eyes, sidearm)
     if (!pose) return
+    this.casingMotion.setLimit(this.xr.quality.casingLimit)
     this.casingMotion.eject(
       pose.position.toArray() as Vec3Tuple,
       pose.right.toArray() as Vec3Tuple,
@@ -4302,7 +4387,7 @@ export class GameRuntime {
         this.weaponLight.target.position.copy(torch.target)
       }
     }
-    if (!this.sidearm?.laserEnabled || !this.weaponDrawn || !this.sidearm.visible) {
+    if (tracked || !this.sidearm?.laserEnabled || !this.weaponDrawn || !this.sidearm.visible) {
       this.view.laser.enabled = false
       return
     }
@@ -4509,8 +4594,7 @@ export class GameRuntime {
         this.ownedWeaponId = item.itemId
         if (this.sidearm?.preset?.id !== item.itemId) {
           this.sidearm?.dispose()
-          this.sidearm = new Sidearm(
-            this.options.canvas.parentElement!,
+          this.sidearm = this.createSidearm(
             weaponPresets().find((preset) => preset.id === item.itemId),
           )
         }
@@ -4529,8 +4613,7 @@ export class GameRuntime {
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
       this.triggerDown = false
-      if (this.weaponDrawn && !this.sidearm)
-        this.sidearm = new Sidearm(this.options.canvas.parentElement!)
+      if (this.weaponDrawn && !this.sidearm) this.sidearm = this.createSidearm()
       this.sidearm?.setAiming(false)
       this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
       if (this.weaponLight)

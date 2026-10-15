@@ -140,7 +140,10 @@ try {
     startCameras: boot.startCameras,
     music: boot.music,
     hud: true,
-    touchControls: 'always',
+    touchControls:
+      new URLSearchParams(location.search).has('xr') || location.pathname === '/xr.html'
+        ? false
+        : 'always',
     display: readDisplaySettings(),
     onResolutionScale: (state) =>
       document

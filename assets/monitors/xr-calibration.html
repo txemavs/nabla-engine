@@ -152,12 +152,29 @@
         font-size: 22px;
         white-space: nowrap;
       }
+      .pressed {
+        transform: translateY(4px) scale(0.97);
+        background: #142d3b !important;
+        box-shadow: inset 0 4px 8px #0009;
+      }
+      .header,
+      .development {
+        border-radius: 8px;
+        padding: 2px 8px;
+        background: #244b60;
+      }
     </style>
   </head>
   <body>
     <div data-monitor="xr-calibration" data-update-ms="100">
       <div class="header" data-value="title">CALIDAD</div>
-      <div style="position: absolute; left: 470px; top: 22px; font-size: 25px">Desarrollo ›</div>
+      <div
+        class="development"
+        data-value="section"
+        style="position: absolute; left: 470px; top: 22px; font-size: 25px"
+      >
+        Desarrollo ›
+      </div>
       <div class="close">X</div>
       <div class="hint" data-value="hint"></div>
       <div class="prev">‹</div>
@@ -211,7 +228,9 @@
         Restablecer objeto
       </div>
       <div class="footer" style="left: 320px; width: 320px" data-value="step"></div>
-      <div class="footer" style="left: 656px; width: 344px">Traer pantalla aquí</div>
+      <div class="footer" style="left: 656px; width: 344px" data-value="footerRight">
+        Traer pantalla aquí
+      </div>
       <div class="status" data-value="status"></div>
     </div>
   </body>

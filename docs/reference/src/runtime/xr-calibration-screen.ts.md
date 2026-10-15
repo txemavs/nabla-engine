@@ -6,15 +6,206 @@
 
 ## Module dependencies
 
+- `./interface-theme.js`
+- `./xr-disposal-portal.js`
+- `./xr-object-grab.js`
+- `./xr-ui-click.js`
+- `./xr-panel-canvas.js`
 - `./xr-quality.js`
 - `three`
 - `../render/monitors/html-monitor.js`
 - `../render/entity/assets.js`
 - `./xr-calibration.js`
 
+## XRCalibrationScreen.mainStatus
+
+[Implementation, line 34](../../../../src/runtime/xr-calibration-screen.ts#L34)
+
+```ts
+mainStatus(): inferred by TypeScript; see implementation
+```
+
+## XRCalibrationScreen.openMain
+
+[Implementation, line 39](../../../../src/runtime/xr-calibration-screen.ts#L39)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+openMain(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.show`
+
+## XRCalibrationScreen.navigate
+
+[Implementation, line 43](../../../../src/runtime/xr-calibration-screen.ts#L43)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+navigate(page: XRPanelPage): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.canvasPanel?.endStrokes`
+
+## XRCalibrationScreen.actions
+
+[Implementation, line 49](../../../../src/runtime/xr-calibration-screen.ts#L49)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+actions(): XRPanelAction[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `actions.sort`
+- `this.environmentMenu`
+- `this.experimentalMenu`
+- `this.mainMenu`
+- `this.mainMenuOrder.map`
+- `this.mapMenu`
+- `this.optionsMenu`
+- `this.radioMenu`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 58](../../../../src/runtime/xr-calibration-screen.ts#L58)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 60](../../../../src/runtime/xr-calibration-screen.ts#L60)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 61](../../../../src/runtime/xr-calibration-screen.ts#L61)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 62](../../../../src/runtime/xr-calibration-screen.ts#L62)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 63](../../../../src/runtime/xr-calibration-screen.ts#L63)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.run
+
+[Implementation, line 64](../../../../src/runtime/xr-calibration-screen.ts#L64)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.navigate`
+
+## XRCalibrationScreen.actions.callback@67
+
+[Implementation, line 67](../../../../src/runtime/xr-calibration-screen.ts#L67)
+
+```ts
+callback@67(id, index): inferred by TypeScript; see implementation
+```
+
+## XRCalibrationScreen.actions.callback@69
+
+[Implementation, line 69](../../../../src/runtime/xr-calibration-screen.ts#L69)
+
+```ts
+callback@69(a, b): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `rank.get`
+
+## XRCalibrationScreen.targets
+
+[Implementation, line 72](../../../../src/runtime/xr-calibration-screen.ts#L72)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+targets(): THREE.Mesh[]
+```
+
+## XRCalibrationScreen.hit
+
+[Implementation, line 75](../../../../src/runtime/xr-calibration-screen.ts#L75)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+hit(object: THREE.Object3D, point: THREE.Vector3): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `point.clone`
+- `this.canvasPanel?.shot`
+- `this.face.worldToLocal`
+
+## XRCalibrationScreen.collisionSurfaces
+
+[Implementation, line 121](../../../../src/runtime/xr-calibration-screen.ts#L121)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+collisionSurfaces(): THREE.Mesh[]
+```
+
 ## XRCalibrationScreen.constructor
 
-[Implementation, line 53](../../../../src/runtime/xr-calibration-screen.ts#L53)
+[Implementation, line 124](../../../../src/runtime/xr-calibration-screen.ts#L124)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -28,12 +219,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scene.add`
 - `this.root.add`
 
-## XRCalibrationScreen.constructor.callback@64
+## XRCalibrationScreen.constructor.callback@136
 
-[Implementation, line 64](../../../../src/runtime/xr-calibration-screen.ts#L64)
+[Implementation, line 136](../../../../src/runtime/xr-calibration-screen.ts#L136)
 
 ```ts
-callback@64(frame): inferred by TypeScript; see implementation
+callback@136(frame): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -42,12 +233,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `frame.scale.set`
 - `this.root.add`
 
-## XRCalibrationScreen.constructor.callback@74
+## XRCalibrationScreen.constructor.callback@148
 
-[Implementation, line 74](../../../../src/runtime/xr-calibration-screen.ts#L74)
+[Implementation, line 148](../../../../src/runtime/xr-calibration-screen.ts#L148)
 
 ```ts
-callback@74(error): inferred by TypeScript; see implementation
+callback@148(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -56,7 +247,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibrationScreen.isOpen
 
-[Implementation, line 76](../../../../src/runtime/xr-calibration-screen.ts#L76)
+[Implementation, line 150](../../../../src/runtime/xr-calibration-screen.ts#L150)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -66,17 +257,17 @@ isOpen(): boolean
 
 ## XRCalibrationScreen.show
 
-[Implementation, line 79](../../../../src/runtime/xr-calibration-screen.ts#L79)
+[Implementation, line 153](../../../../src/runtime/xr-calibration-screen.ts#L153)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
 ```ts
-show(): void
+show(reposition = false): void
 ```
 
 ## XRCalibrationScreen.hide
 
-[Implementation, line 83](../../../../src/runtime/xr-calibration-screen.ts#L83)
+[Implementation, line 157](../../../../src/runtime/xr-calibration-screen.ts#L157)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -90,7 +281,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibrationScreen.release
 
-[Implementation, line 87](../../../../src/runtime/xr-calibration-screen.ts#L87)
+[Implementation, line 161](../../../../src/runtime/xr-calibration-screen.ts#L161)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -100,14 +291,17 @@ release(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.canvasPanel?.endStrokes`
 - `this.contacts.clear`
+- `this.frameGrab.reset`
+- `this.gripDown.clear`
 - `this.markers.values`
 - `this.rays.values`
 - `this.triggers.clear`
 
 ## XRCalibrationScreen.suspend
 
-[Implementation, line 94](../../../../src/runtime/xr-calibration-screen.ts#L94)
+[Implementation, line 171](../../../../src/runtime/xr-calibration-screen.ts#L171)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -123,7 +317,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibrationScreen.sync
 
-[Implementation, line 101](../../../../src/runtime/xr-calibration-screen.ts#L101)
+[Implementation, line 178](../../../../src/runtime/xr-calibration-screen.ts#L178)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -134,63 +328,176 @@ sync(camera: THREE.Camera, origin: THREE.Vector3, visible: boolean, now: number)
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.atan2`
+- `Math.ceil`
 - `Number`
 - `THREE.Quaternion`
 - `THREE.Vector3`
+- `XRPanelCanvas`
 - `camera.getWorldPosition`
 - `camera.getWorldQuaternion`
 - `forward.normalize`
+- `keys.forEach`
 - `new THREE.Vector3(0, 0, -1).applyQuaternion`
 - `pose[key].toFixed`
+- `this.actions`
 - `this.calibration.fields`
 - `this.calibration.get`
+- `this.canvasPanel.draw`
+- `this.mainStatus`
 - `this.monitor.update`
 - `this.previousOrigin.clone`
 - `this.previousOrigin.clone().sub`
 - `this.previousOrigin.copy`
 - `this.qualityMenu.rows`
-- `this.qualityMenu.rows().forEach`
 - `this.qualityMenu.status`
 - `this.release`
 - `this.root.position.add`
 - `this.root.rotation.set`
 - `this.root.updateWorldMatrix`
 
-## XRCalibrationScreen.sync.callback@130
+## XRCalibrationScreen.sync.callback@228
 
-[Implementation, line 130](../../../../src/runtime/xr-calibration-screen.ts#L130)
+[Implementation, line 228](../../../../src/runtime/xr-calibration-screen.ts#L228)
 
 ```ts
-callback@130(row, i): inferred by TypeScript; see implementation
+callback@228(key): inferred by TypeScript; see implementation
+```
+
+## XRCalibrationScreen.sync.callback@235
+
+[Implementation, line 235](../../../../src/runtime/xr-calibration-screen.ts#L235)
+
+```ts
+callback@235(row, i): inferred by TypeScript; see implementation
 ```
 
 ## XRCalibrationScreen.activate
 
-[Implementation, line 167](../../../../src/runtime/xr-calibration-screen.ts#L167)
+[Implementation, line 274](../../../../src/runtime/xr-calibration-screen.ts#L274)
 
 Pixel regions match the trusted HTML template; no arbitrary page scripts are executed.
 
 ```ts
-activate(x: number, y: number): void
+activate(x: number, y: number, hand?: THREE.Object3D): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.ceil`
 - `Math.floor`
 - `Number`
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes`
+- `new THREE.Vector3(0, height / 2, -0.06).applyQuaternion`
+- `this.actions`
+- `this.actions()[i]?.run`
 - `this.calibration.fields`
 - `this.calibration.get`
 - `this.calibration.reset`
 - `this.calibration.set`
+- `this.canvasPanel?.clear`
+- `this.canvasPanel?.press`
+- `this.click`
+- `this.frameGrab.reset`
 - `this.hide`
+- `this.monitor.press`
+- `this.navigate`
 - `this.qualityMenu.apply`
 - `this.qualityMenu.change`
 - `this.qualityMenu.road`
+- `this.qualityMenu.rows`
+- `this.root.getWorldQuaternion`
+- `this.root.parent.worldToLocal`
+- `this.root.position.copy`
+- `this.root.updateWorldMatrix`
 - `this.show`
+
+## XRCalibrationScreen.click
+
+[Implementation, line 390](../../../../src/runtime/xr-calibration-screen.ts#L390)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+click(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clickSound.play`
+
+## XRCalibrationScreen.grabFrame
+
+[Implementation, line 394](../../../../src/runtime/xr-calibration-screen.ts#L394)
+
+A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
+
+```ts
+grabFrame(pointers: readonly CalibrationPointer[]): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Set`
+- `THREE.Vector3`
+- `down`
+- `grips.includes`
+- `grips.push`
+- `p.grip.getWorldPosition`
+- `pointers.filter`
+- `pointers.filter(down).map`
+- `this.captured.add`
+- `this.frameGrab.hands.filter`
+- `this.frameGrab.hands.includes`
+- `this.frameGrab.update`
+- `this.gripDown.has`
+- `this.root.worldToLocal`
+
+## XRCalibrationScreen.grabFrame.down
+
+[Implementation, line 395](../../../../src/runtime/xr-calibration-screen.ts#L395)
+
+```ts
+down(p: CalibrationPointer): inferred by TypeScript; see implementation
+```
+
+## XRCalibrationScreen.grabFrame.callback@397
+
+[Implementation, line 397](../../../../src/runtime/xr-calibration-screen.ts#L397)
+
+```ts
+callback@397(grip): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pointers.some`
+
+## XRCalibrationScreen.grabFrame.callback@397.callback@398
+
+[Implementation, line 398](../../../../src/runtime/xr-calibration-screen.ts#L398)
+
+```ts
+callback@398(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `down`
+
+## XRCalibrationScreen.grabFrame.callback@421
+
+[Implementation, line 421](../../../../src/runtime/xr-calibration-screen.ts#L421)
+
+```ts
+callback@421(p): inferred by TypeScript; see implementation
+```
 
 ## XRCalibrationScreen.interact
 
-[Implementation, line 222](../../../../src/runtime/xr-calibration-screen.ts#L222)
+[Implementation, line 424](../../../../src/runtime/xr-calibration-screen.ts#L424)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -213,15 +520,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hit.point.clone`
 - `marker.position.copy`
 - `new THREE.Vector3(0, 0, -1).applyQuaternion`
+- `pointers.map`
 - `pointers.some`
 - `ray.geometry.setFromPoints`
 - `this.activate`
+- `this.canvasPanel?.endStroke`
+- `this.canvasPanel?.retainSources`
+- `this.canvasPanel?.stroke`
 - `this.captured.add`
 - `this.captured.clear`
 - `this.contacts.clear`
 - `this.contacts.has`
 - `this.face.add`
 - `this.face.worldToLocal`
+- `this.frameGrab.hands.includes`
+- `this.grabFrame`
 - `this.markers.get`
 - `this.markers.set`
 - `this.markers.values`
@@ -238,17 +551,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tip.clone`
 - `triggers.add`
 
-## XRCalibrationScreen.interact.callback@225
+## XRCalibrationScreen.interact.callback@427
 
-[Implementation, line 225](../../../../src/runtime/xr-calibration-screen.ts#L225)
+[Implementation, line 427](../../../../src/runtime/xr-calibration-screen.ts#L427)
 
 ```ts
-callback@225(p): inferred by TypeScript; see implementation
+callback@427(p): inferred by TypeScript; see implementation
+```
+
+## XRCalibrationScreen.interact.callback@438
+
+[Implementation, line 438](../../../../src/runtime/xr-calibration-screen.ts#L438)
+
+```ts
+callback@438(p): inferred by TypeScript; see implementation
 ```
 
 ## XRCalibrationScreen.dispose
 
-[Implementation, line 296](../../../../src/runtime/xr-calibration-screen.ts#L296)
+[Implementation, line 515](../../../../src/runtime/xr-calibration-screen.ts#L515)
 
 A real HTML monitor texture in the stock portal frame, with explicit XR hit regions.
 
@@ -262,6 +583,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `marker.removeFromParent`
 - `ray.geometry.dispose`
 - `ray.removeFromParent`
+- `this.canvasPanel?.dispose`
+- `this.clickSound.dispose`
 - `this.markerGeometry.dispose`
 - `this.markerMaterial.dispose`
 - `this.markers.values`
@@ -269,3 +592,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.rayMaterial.dispose`
 - `this.rays.values`
 - `this.root.removeFromParent`
+- `this.solid.geometry.dispose`
+- `this.solid.material.dispose`
