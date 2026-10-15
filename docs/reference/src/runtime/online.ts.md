@@ -13,7 +13,7 @@ remain client observations and must never be treated as authoritative hits.
 
 ## OnlineClient.changed
 
-[Implementation, line 69](../../../../src/runtime/online.ts#L69)
+[Implementation, line 87](../../../../src/runtime/online.ts#L87)
 
 ```ts
 changed(): inferred by TypeScript; see implementation
@@ -21,7 +21,7 @@ changed(): inferred by TypeScript; see implementation
 
 ## OnlineClient.joined
 
-[Implementation, line 70](../../../../src/runtime/online.ts#L70)
+[Implementation, line 88](../../../../src/runtime/online.ts#L88)
 
 ```ts
 joined(): inferred by TypeScript; see implementation
@@ -29,7 +29,7 @@ joined(): inferred by TypeScript; see implementation
 
 ## OnlineClient.constructor
 
-[Implementation, line 78](../../../../src/runtime/online.ts#L78)
+[Implementation, line 96](../../../../src/runtime/online.ts#L96)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -37,12 +37,12 @@ Network-only client. No automatic connection, DOM, renderer or simulation.
 constructor(private readonly url: string, private readonly open: (url: string) => OnlineSocket = (address) => new WebSocket(address)): instance
 ```
 
-## OnlineClient.constructor.callback@80
+## OnlineClient.constructor.callback@98
 
-[Implementation, line 80](../../../../src/runtime/online.ts#L80)
+[Implementation, line 98](../../../../src/runtime/online.ts#L98)
 
 ```ts
-callback@80(address): inferred by TypeScript; see implementation
+callback@98(address): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.connect
 
-[Implementation, line 84](../../../../src/runtime/online.ts#L84)
+[Implementation, line 102](../../../../src/runtime/online.ts#L102)
 
 Explicitly connect to the lobby. Repeated calls share the existing socket.
 
@@ -64,24 +64,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.changed`
 - `this.open`
 
-## OnlineClient.connect.callback@91
+## OnlineClient.connect.callback@109
 
-[Implementation, line 91](../../../../src/runtime/online.ts#L91)
+[Implementation, line 109](../../../../src/runtime/online.ts#L109)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@109(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.changed`
 
-## OnlineClient.connect.callback@96
+## OnlineClient.connect.callback@114
 
-[Implementation, line 96](../../../../src/runtime/online.ts#L96)
+[Implementation, line 114](../../../../src/runtime/online.ts#L114)
 
 ```ts
-callback@96(event): inferred by TypeScript; see implementation
+callback@114(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -94,20 +94,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.clearSession`
 - `this.joined`
 
-## OnlineClient.connect.callback@96.callback@105
+## OnlineClient.connect.callback@114.callback@127
 
-[Implementation, line 105](../../../../src/runtime/online.ts#L105)
+[Implementation, line 127](../../../../src/runtime/online.ts#L127)
 
 ```ts
-callback@105(g): inferred by TypeScript; see implementation
+callback@127(g): inferred by TypeScript; see implementation
 ```
 
-## OnlineClient.connect.callback@131
+## OnlineClient.connect.callback@153
 
-[Implementation, line 131](../../../../src/runtime/online.ts#L131)
+[Implementation, line 153](../../../../src/runtime/online.ts#L153)
 
 ```ts
-callback@131(): inferred by TypeScript; see implementation
+callback@153(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -115,12 +115,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.changed`
 - `this.clearSession`
 
-## OnlineClient.connect.callback@139
+## OnlineClient.connect.callback@161
 
-[Implementation, line 139](../../../../src/runtime/online.ts#L139)
+[Implementation, line 161](../../../../src/runtime/online.ts#L161)
 
 ```ts
-callback@139(): inferred by TypeScript; see implementation
+callback@161(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -129,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.create
 
-[Implementation, line 151](../../../../src/runtime/online.ts#L151)
+[Implementation, line 173](../../../../src/runtime/online.ts#L173)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -148,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.join
 
-[Implementation, line 158](../../../../src/runtime/online.ts#L158)
+[Implementation, line 184](../../../../src/runtime/online.ts#L184)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -164,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.leave
 
-[Implementation, line 162](../../../../src/runtime/online.ts#L162)
+[Implementation, line 188](../../../../src/runtime/online.ts#L188)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -178,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.command
 
-[Implementation, line 166](../../../../src/runtime/online.ts#L166)
+[Implementation, line 192](../../../../src/runtime/online.ts#L192)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -194,7 +194,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.track
 
-[Implementation, line 178](../../../../src/runtime/online.ts#L178)
+[Implementation, line 204](../../../../src/runtime/online.ts#L204)
 
 Drop obsolete tracking updates under backpressure; membership messages are reliable.
 
@@ -209,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlineClient.clearSession
 
-[Implementation, line 184](../../../../src/runtime/online.ts#L184)
+[Implementation, line 215](../../../../src/runtime/online.ts#L215)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 
@@ -219,7 +219,7 @@ clearSession(): void
 
 ## OnlineClient.dispose
 
-[Implementation, line 192](../../../../src/runtime/online.ts#L192)
+[Implementation, line 223](../../../../src/runtime/online.ts#L223)
 
 Network-only client. No automatic connection, DOM, renderer or simulation.
 

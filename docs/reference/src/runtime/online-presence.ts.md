@@ -40,66 +40,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.refresh`
 - `this.status.setAttribute`
 
-## OnlinePresence.constructor.callback@58
+## OnlinePresence.constructor.callback@63
 
-[Implementation, line 58](../../../../src/runtime/online-presence.ts#L58)
+[Implementation, line 63](../../../../src/runtime/online-presence.ts#L63)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@63(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.refresh`
 
-## OnlinePresence.constructor.callback@59
+## OnlinePresence.constructor.callback@64
 
-[Implementation, line 59](../../../../src/runtime/online-presence.ts#L59)
+[Implementation, line 64](../../../../src/runtime/online-presence.ts#L64)
 
 ```ts
-callback@59(): inferred by TypeScript; see implementation
+callback@64(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.clearAvatars`
 - `this.recenter`
-
-## OnlinePresence.constructor.callback@78
-
-[Implementation, line 78](../../../../src/runtime/online-presence.ts#L78)
-
-```ts
-callback@78(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.client.connect`
-
-## OnlinePresence.constructor.callback@79
-
-[Implementation, line 79](../../../../src/runtime/online-presence.ts#L79)
-
-```ts
-callback@79(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.create`
-
-## OnlinePresence.constructor.callback@80
-
-[Implementation, line 80](../../../../src/runtime/online-presence.ts#L80)
-
-```ts
-callback@80(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.client.leave`
 
 ## OnlinePresence.constructor.callback@84
 
@@ -113,9 +77,45 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.client.connect`
 
+## OnlinePresence.constructor.callback@85
+
+[Implementation, line 85](../../../../src/runtime/online-presence.ts#L85)
+
+```ts
+callback@85(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.create`
+
+## OnlinePresence.constructor.callback@86
+
+[Implementation, line 86](../../../../src/runtime/online-presence.ts#L86)
+
+```ts
+callback@86(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.client.leave`
+
+## OnlinePresence.constructor.callback@91
+
+[Implementation, line 91](../../../../src/runtime/online-presence.ts#L91)
+
+```ts
+callback@91(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.client.connect`
+
 ## OnlinePresence.button
 
-[Implementation, line 92](../../../../src/runtime/online-presence.ts#L92)
+[Implementation, line 99](../../../../src/runtime/online-presence.ts#L99)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -128,12 +128,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.createElement`
 - `parent.append`
 
-## OnlinePresence.button.callback@97
+## OnlinePresence.button.callback@105
 
-[Implementation, line 97](../../../../src/runtime/online-presence.ts#L97)
+[Implementation, line 105](../../../../src/runtime/online-presence.ts#L105)
 
 ```ts
-callback@97(event): inferred by TypeScript; see implementation
+callback@105(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -143,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.location
 
-[Implementation, line 104](../../../../src/runtime/online-presence.ts#L104)
+[Implementation, line 112](../../../../src/runtime/online-presence.ts#L112)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -158,11 +158,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `geography.longitude.toFixed`
 - `localToGeo`
 - `position.toArray`
-- `this.options.camera.getWorldPosition`
 
 ## OnlinePresence.create
 
-[Implementation, line 118](../../../../src/runtime/online-presence.ts#L118)
+[Implementation, line 131](../../../../src/runtime/online-presence.ts#L131)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -177,7 +176,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.recenter
 
-[Implementation, line 124](../../../../src/runtime/online-presence.ts#L124)
+[Implementation, line 137](../../../../src/runtime/online-presence.ts#L137)
 
 Set the participant's local floor/yaw mapping once, never on every tracking reset.
 
@@ -193,14 +192,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.getWorldPosition`
 - `camera.getWorldQuaternion`
 - `new THREE.Euler().setFromQuaternion`
-- `this.anchor.copy`
 - `this.heading.setFromAxisAngle`
 - `this.inverse.copy`
 - `this.inverse.copy(this.heading).invert`
 
 ## OnlinePresence.sample
 
-[Implementation, line 136](../../../../src/runtime/online-presence.ts#L136)
+[Implementation, line 150](../../../../src/runtime/online-presence.ts#L150)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -212,17 +210,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.Quaternion`
 - `THREE.Vector3`
-- `object.getWorldPosition`
 - `object.getWorldQuaternion`
 - `position.toArray`
 - `rotation.toArray`
-- `this.inverse.clone`
-- `this.inverse.clone().multiply`
-- `this.inverse.clone().multiply(object.getWorldQuaternion(new THREE.Quaternion())).normalize`
 
 ## OnlinePresence.refresh
 
-[Implementation, line 145](../../../../src/runtime/online-presence.ts#L145)
+[Implementation, line 164](../../../../src/runtime/online-presence.ts#L164)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -236,12 +230,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.clearAvatars`
 - `this.rows.replaceChildren`
 
-## OnlinePresence.refresh.callback@152
+## OnlinePresence.refresh.callback@172
 
-[Implementation, line 152](../../../../src/runtime/online-presence.ts#L152)
+[Implementation, line 172](../../../../src/runtime/online-presence.ts#L172)
 
 ```ts
-callback@152(): inferred by TypeScript; see implementation
+callback@172(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -250,7 +244,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.menu
 
-[Implementation, line 158](../../../../src/runtime/online-presence.ts#L158)
+[Implementation, line 180](../../../../src/runtime/online-presence.ts#L180)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -269,7 +263,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.menu.run
 
-[Implementation, line 160](../../../../src/runtime/online-presence.ts#L160)
+[Implementation, line 185](../../../../src/runtime/online-presence.ts#L185)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -281,7 +275,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.menu.run
 
-[Implementation, line 170](../../../../src/runtime/online-presence.ts#L170)
+[Implementation, line 198](../../../../src/runtime/online-presence.ts#L198)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -289,7 +283,7 @@ run(): inferred by TypeScript; see implementation
 
 ## OnlinePresence.menu.run
 
-[Implementation, line 172](../../../../src/runtime/online-presence.ts#L172)
+[Implementation, line 206](../../../../src/runtime/online-presence.ts#L206)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -302,7 +296,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.menu.run
 
-[Implementation, line 173](../../../../src/runtime/online-presence.ts#L173)
+[Implementation, line 210](../../../../src/runtime/online-presence.ts#L210)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -312,17 +306,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.client.connect`
 
-## OnlinePresence.menu.callback@174
+## OnlinePresence.menu.callback@212
 
-[Implementation, line 174](../../../../src/runtime/online-presence.ts#L174)
+[Implementation, line 212](../../../../src/runtime/online-presence.ts#L212)
 
 ```ts
-callback@174(game): inferred by TypeScript; see implementation
+callback@212(game): inferred by TypeScript; see implementation
 ```
 
-## OnlinePresence.menu.callback@174.run
+## OnlinePresence.menu.callback@212.run
 
-[Implementation, line 176](../../../../src/runtime/online-presence.ts#L176)
+[Implementation, line 214](../../../../src/runtime/online-presence.ts#L214)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -334,7 +328,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.menu.run
 
-[Implementation, line 179](../../../../src/runtime/online-presence.ts#L179)
+[Implementation, line 220](../../../../src/runtime/online-presence.ts#L220)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -342,7 +336,7 @@ run(): inferred by TypeScript; see implementation
 
 ## OnlinePresence.update
 
-[Implementation, line 184](../../../../src/runtime/online-presence.ts#L184)
+[Implementation, line 230](../../../../src/runtime/online-presence.ts#L230)
 
 Called by the existing host frame after tracking/camera updates and before render.
 
@@ -379,65 +373,65 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.options.scene.add`
 - `this.sample`
 
-## OnlinePresence.update.callback@192
+## OnlinePresence.update.callback@238
 
-[Implementation, line 192](../../../../src/runtime/online-presence.ts#L192)
+[Implementation, line 238](../../../../src/runtime/online-presence.ts#L238)
 
 ```ts
-callback@192(): inferred by TypeScript; see implementation
+callback@238(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.menu`
 
-## OnlinePresence.update.callback@193
+## OnlinePresence.update.callback@239
 
-[Implementation, line 193](../../../../src/runtime/online-presence.ts#L193)
+[Implementation, line 239](../../../../src/runtime/online-presence.ts#L239)
 
 ```ts
-callback@193(): inferred by TypeScript; see implementation
+callback@239(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.oldStatus`
 
-## OnlinePresence.update.callback@203
+## OnlinePresence.update.callback@250
 
-[Implementation, line 203](../../../../src/runtime/online-presence.ts#L203)
+[Implementation, line 250](../../../../src/runtime/online-presence.ts#L250)
 
 ```ts
-callback@203(h): inferred by TypeScript; see implementation
+callback@250(h): inferred by TypeScript; see implementation
 ```
 
-## OnlinePresence.update.callback@204
+## OnlinePresence.update.callback@251
 
-[Implementation, line 204](../../../../src/runtime/online-presence.ts#L204)
+[Implementation, line 251](../../../../src/runtime/online-presence.ts#L251)
 
 ```ts
-callback@204(h): inferred by TypeScript; see implementation
+callback@251(h): inferred by TypeScript; see implementation
 ```
 
-## OnlinePresence.update.callback@205
+## OnlinePresence.update.callback@254
 
-[Implementation, line 205](../../../../src/runtime/online-presence.ts#L205)
+[Implementation, line 254](../../../../src/runtime/online-presence.ts#L254)
 
 ```ts
-callback@205(h): inferred by TypeScript; see implementation
+callback@254(h): inferred by TypeScript; see implementation
 ```
 
-## OnlinePresence.update.callback@206
+## OnlinePresence.update.callback@255
 
-[Implementation, line 206](../../../../src/runtime/online-presence.ts#L206)
+[Implementation, line 255](../../../../src/runtime/online-presence.ts#L255)
 
 ```ts
-callback@206(h): inferred by TypeScript; see implementation
+callback@255(h): inferred by TypeScript; see implementation
 ```
 
 ## OnlinePresence.clearAvatars
 
-[Implementation, line 255](../../../../src/runtime/online-presence.ts#L255)
+[Implementation, line 309](../../../../src/runtime/online-presence.ts#L309)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
@@ -453,7 +447,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## OnlinePresence.dispose
 
-[Implementation, line 260](../../../../src/runtime/online-presence.ts#L260)
+[Implementation, line 314](../../../../src/runtime/online-presence.ts#L314)
 
 Browser UI and remote visuals; no extra animation loop or physics world.
 
