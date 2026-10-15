@@ -1,5 +1,5 @@
 import { createEntity, type Entity, type Vec3Tuple } from '../../entity/schema.js'
-import palletSpec from '../../../assets/library/cars/forklift-rc/pallet.specs.json'
+import palletSpec from '../../../assets/library/cars/forklift-rc/pallet.specs.json' with { type: 'json' }
 /** Ordinary dynamic Engine boxes: separate planks preserve the fork entry openings. */
 export function palletEntity(id: string, withBox = false, position: Vec3Tuple = [0, 0, 0]): Entity {
   const entity = createEntity(id, 'box', position)
