@@ -6,7 +6,10 @@ import { z } from 'zod'
 
 const vector = z.tuple([z.number().finite(), z.number().finite(), z.number().finite()])
 const rotation = z.tuple([
-  z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite(),
+  z.number().finite(),
+  z.number().finite(),
+  z.number().finite(),
+  z.number().finite(),
 ])
 export const onlinePoseSchema = z.object({
   position: vector,
@@ -16,11 +19,13 @@ export const onlinePlaceSchema = z.object({
   kind: z.enum(['room', 'world']),
   label: z.string().min(1).max(100),
   origin: vector,
-  geography: z.object({
-    latitude: z.number().min(-90).max(90),
-    longitude: z.number().min(-180).max(180),
-    altitude: z.number().finite(),
-  }).nullable(),
+  geography: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+      altitude: z.number().finite(),
+    })
+    .nullable(),
 })
 export const onlineGameSchema = z.object({
   id: z.string().max(64),
@@ -40,10 +45,15 @@ const memberSchema = z.object({
 const messageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('lobby'), games: z.array(onlineGameSchema) }),
   z.object({
-    type: z.literal('joined'), game: onlineGameSchema, playerId: z.string(), spawn: vector,
+    type: z.literal('joined'),
+    game: onlineGameSchema,
+    playerId: z.string(),
+    spawn: vector,
   }),
   z.object({
-    type: z.literal('snapshot'), gameId: z.string(), tick: z.number().int(),
+    type: z.literal('snapshot'),
+    gameId: z.string(),
+    tick: z.number().int(),
     members: z.array(memberSchema),
   }),
   z.object({ type: z.literal('left') }),
@@ -54,8 +64,16 @@ export type OnlinePlace = z.infer<typeof onlinePlaceSchema>
 export type OnlineGame = z.infer<typeof onlineGameSchema>
 export type OnlineMember = z.infer<typeof memberSchema>
 export type OnlineTracking = Pick<OnlineMember, 'tracking' | 'head' | 'left' | 'right'>
-export type OnlineSocket = Pick<WebSocket,
-  'readyState' | 'bufferedAmount' | 'send' | 'close' | 'onopen' | 'onmessage' | 'onclose' | 'onerror'
+export type OnlineSocket = Pick<
+  WebSocket,
+  | 'readyState'
+  | 'bufferedAmount'
+  | 'send'
+  | 'close'
+  | 'onopen'
+  | 'onmessage'
+  | 'onclose'
+  | 'onerror'
 >
 
 /** Network-only client. No automatic connection, DOM, renderer or simulation. */
@@ -96,7 +114,11 @@ export class OnlineClient {
       socket.onmessage = (event) => {
         if (this.socket !== socket || typeof event.data !== 'string') return
         let raw: unknown
-        try { raw = JSON.parse(event.data) } catch { return }
+        try {
+          raw = JSON.parse(event.data)
+        } catch {
+          return
+        }
         const parsed = messageSchema.safeParse(raw)
         if (!parsed.success) return
         const message = parsed.data
@@ -151,8 +173,12 @@ export class OnlineClient {
   create(name: string, playerName: string, place: OnlinePlace): void {
     const parsed = onlinePlaceSchema.safeParse(place)
     if (!parsed.success) return
-    this.command({ type: 'create', name: name.trim().slice(0, 80) || 'Partida',
-      playerName: playerName.trim().slice(0, 40) || 'Jugador', place: parsed.data })
+    this.command({
+      type: 'create',
+      name: name.trim().slice(0, 80) || 'Partida',
+      playerName: playerName.trim().slice(0, 40) || 'Jugador',
+      place: parsed.data,
+    })
   }
 
   join(id: string, playerName: string): void {
@@ -176,8 +202,13 @@ export class OnlineClient {
 
   /** Drop obsolete tracking updates under backpressure; membership messages are reliable. */
   track(pose: OnlineTracking): void {
-    if (!this.game || !this.socket || this.socket.readyState !== 1 ||
-      this.socket.bufferedAmount > 16384) return
+    if (
+      !this.game ||
+      !this.socket ||
+      this.socket.readyState !== 1 ||
+      this.socket.bufferedAmount > 16384
+    )
+      return
     this.socket.send(JSON.stringify({ v: 1, type: 'pose', seq: ++this.sequence, ...pose }))
   }
 

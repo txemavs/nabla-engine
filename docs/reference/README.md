@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **473 modules; 5404 executable function definitions**.
+Coverage: **475 modules; 5453 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -354,6 +354,8 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/runtime/messages.ts](src/runtime/messages.ts.md) | 3 |
 | [src/runtime/mirror-adjustment.ts](src/runtime/mirror-adjustment.ts.md) | 8 |
 | [src/runtime/nearest-z15.ts](src/runtime/nearest-z15.ts.md) | 2 |
+| [src/runtime/online-presence.ts](src/runtime/online-presence.ts.md) | 32 |
+| [src/runtime/online.ts](src/runtime/online.ts.md) | 17 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |

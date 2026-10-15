@@ -4,16 +4,27 @@ import { OnlineClient, type OnlineSocket } from '../../src/runtime/online.js'
 function fixture() {
   const sent: Record<string, unknown>[] = []
   const socket = {
-    readyState: 1, bufferedAmount: 0,
+    readyState: 1,
+    bufferedAmount: 0,
     send: (data: string) => sent.push(JSON.parse(data)),
-    close: () => { socket.readyState = 3 },
-    onopen: null, onmessage: null, onclose: null, onerror: null,
+    close: () => {
+      socket.readyState = 3
+    },
+    onopen: null,
+    onmessage: null,
+    onclose: null,
+    onerror: null,
   } as unknown as OnlineSocket
   const client = new OnlineClient('ws://localhost/online/ws', () => socket)
   const receive = (data: unknown) =>
     socket.onmessage?.call(socket as WebSocket, { data: JSON.stringify(data) } as MessageEvent)
   client.connect()
-  const place = { kind: 'room' as const, label: 'Habitación', origin: [0, 0, 0] as [number, number, number], geography: null }
+  const place = {
+    kind: 'room' as const,
+    label: 'Habitación',
+    origin: [0, 0, 0] as [number, number, number],
+    geography: null,
+  }
   const game = { id: 'a', host: 'me', name: 'Partida', count: 1, place }
   return { client, socket, sent, receive, place, game }
 }
@@ -37,11 +48,23 @@ describe('online presence protocol', () => {
   it('ignores malformed, stale and cross-session snapshots', () => {
     const f = fixture()
     f.receive({ type: 'joined', game: f.game, playerId: 'me', spawn: [0, 0, 0] })
-    const member = { id: 'other', name: 'Other', tracking: false, head: null, left: null, right: null }
+    const member = {
+      id: 'other',
+      name: 'Other',
+      tracking: false,
+      head: null,
+      left: null,
+      right: null,
+    }
     f.receive({ type: 'snapshot', gameId: 'a', tick: 2, members: [member] })
     f.receive({ type: 'snapshot', gameId: 'a', tick: 1, members: [] })
     f.receive({ type: 'snapshot', gameId: 'b', tick: 10, members: [] })
-    f.receive({ type: 'snapshot', gameId: 'a', tick: 3, members: [{ ...member, head: { position: [0], rotation: [] } }] })
+    f.receive({
+      type: 'snapshot',
+      gameId: 'a',
+      tick: 3,
+      members: [{ ...member, head: { position: [0], rotation: [] } }],
+    })
     expect(f.client.members).toEqual([member])
     f.client.join('b', 'Yo')
     f.receive({ type: 'joined', game: { ...f.game, id: 'b' }, playerId: 'me', spawn: [2, 0, 2] })
