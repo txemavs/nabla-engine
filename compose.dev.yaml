@@ -2,6 +2,10 @@ name: nabla-development
 include:
   - compose.planet.yaml
 services:
+  online:
+    build: ./services/online
+    environment:
+      NABLA_ONLINE_ORIGINS: '${NABLA_ONLINE_ORIGINS:-}'
   setup:
     image: python:3.12-alpine
     volumes:
@@ -21,6 +25,7 @@ services:
         condition: service_completed_successfully
     command: [sh, -c, 'npm ci --ignore-scripts && npm run build && npm run dev -- --host 0.0.0.0']
     environment:
+      NABLA_ONLINE_UPSTREAM: http://online:8789
       npm_config_cache: /npm-cache
       VITE_WORLD_PREPARE_API: /prepare
       VITE_WORLD_PREPARED_URL: /prepared

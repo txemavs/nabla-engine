@@ -1,3 +1,4 @@
+import { OnlinePresence } from './online-presence.js'
 import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
@@ -447,6 +448,7 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 }
 
 export class GameRuntime {
+  private online: OnlinePresence | null = null
   readonly xr: GameXR
   readonly game = new SharedGameRuntime()
   readonly session = this.game.session
@@ -1017,6 +1019,13 @@ export class GameRuntime {
       },
       (error) => this.options.onError?.(error),
     )
+    this.online = new OnlinePresence({
+      scene: this.scene,
+      camera: this.camera,
+      xr: this.xr,
+      origin: this.origin,
+      geography: this.document.geography,
+    })
     this.loop.setMaxFps(this.display.maxFps)
     this.originalTabIndex = options.canvas.getAttribute('tabindex')
     options.canvas.tabIndex = 0
@@ -1228,6 +1237,7 @@ export class GameRuntime {
     this.stop()
     this.disposed = true
     this.renderer.setAnimationLoop(null)
+    this.online?.dispose()
     this.xr.dispose()
     this.lifetime.abort()
     this.observer.disconnect()
@@ -1564,6 +1574,7 @@ export class GameRuntime {
     const sparkVisible = this.view.sparks.root.visible
     this.view.sparks.root.visible = this.xr.quality.sparks && sparkVisible
     try {
+      this.online?.update(time)
       this.renderer.render(this.scene, this.camera)
     } finally {
       for (const wheel of hiddenWheels) wheel.visible = true
@@ -2118,6 +2129,7 @@ export class GameRuntime {
     this.applyLightTuning()
     if (this.sidearm) this.sidearm.flashTuning = this.flashSettings
     this.sidearm?.syncMuzzleLight(time, this.scene, this.camera, eyes || this.sidearmAimPreview)
+    this.online?.update(time)
     try {
       this.pipeline.render({
         externalViews: this.worldContent

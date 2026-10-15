@@ -25,7 +25,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install Pillow
+      - run: python -m pip install Pillow -r services/online/requirements.txt
+      - name: Test online lobby and WebSocket presence
+        run: python -m unittest discover -s services/online
       - name: Test cache and baked delivery
         run: CACHE_DIR="$RUNNER_TEMP/nabla-cache-tests" python3 -m unittest discover -s services/world-cache
       - run: npx playwright install --with-deps chromium

@@ -45,6 +45,10 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       watch: { usePolling: true, interval: 300 },
       proxy: {
+        '/online': {
+          target: env.NABLA_ONLINE_UPSTREAM || 'http://127.0.0.1:8789',
+          ws: true,
+        },
         '/atlas-live/euskadi/terraform/': {
           target: 'https://atlas.chained.world',
           changeOrigin: true,
