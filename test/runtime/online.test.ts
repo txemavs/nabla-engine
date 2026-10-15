@@ -8,7 +8,7 @@ function fixture() {
     bufferedAmount: 0,
     send: (data: string) => sent.push(JSON.parse(data)),
     close: () => {
-      socket.readyState = 3
+      Object.assign(socket, { readyState: 3 })
     },
     onopen: null,
     onmessage: null,
