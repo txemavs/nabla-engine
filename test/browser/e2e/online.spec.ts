@@ -1,12 +1,17 @@
 import { test, expect } from '@playwright/test'
 
-test('online is opt-in, creates and lists games, and presents remote tracking', async ({ page }) => {
+test('online is opt-in, creates and lists games, and presents remote tracking', async ({
+  page,
+}) => {
   const messages: Record<string, unknown>[] = []
   const place = { kind: 'room', label: 'Habitación', origin: [0, 0, 0], geography: null }
   const game = { id: 'room', host: 'local', name: 'Mi partida', count: 1, place }
-  await page.route('**/online-test', (route) => route.fulfill({
-    contentType: 'text/html', body: '<!doctype html><body></body>',
-  }))
+  await page.route('**/online-test', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><body></body>',
+    }),
+  )
   await page.routeWebSocket('**/online/ws', (socket) => {
     socket.send(JSON.stringify({ type: 'lobby', games: [game] }))
     socket.onMessage((raw) => {
@@ -14,11 +19,23 @@ test('online is opt-in, creates and lists games, and presents remote tracking', 
       messages.push(message)
       if (message.type === 'create') {
         socket.send(JSON.stringify({ type: 'joined', game, playerId: 'local', spawn: [0, 0, 0] }))
-        socket.send(JSON.stringify({ type: 'snapshot', gameId: 'room', tick: 1, members: [
-          { id: 'remote', name: 'Quest', tracking: true,
-            head: { position: [0, 1.7, -2], rotation: [0, 0, 0, 1] },
-            left: null, right: null },
-        ] }))
+        socket.send(
+          JSON.stringify({
+            type: 'snapshot',
+            gameId: 'room',
+            tick: 1,
+            members: [
+              {
+                id: 'remote',
+                name: 'Quest',
+                tracking: true,
+                head: { position: [0, 1.7, -2], rotation: [0, 0, 0, 1] },
+                left: null,
+                right: null,
+              },
+            ],
+          }),
+        )
       } else if (message.type === 'leave') {
         socket.send(JSON.stringify({ type: 'left' }))
       }
@@ -45,9 +62,14 @@ test('online is opt-in, creates and lists games, and presents remote tracking', 
   await expect(page.getByRole('status')).toHaveText('En partida: Mi partida')
   await expect.poll(() => messages.some((message) => message.type === 'create')).toBe(true)
   const result = await page.evaluate(() => {
-    const { presence, scene } = (window as unknown as {
-      onlineTest: { presence: { update(t: number): void }, scene: { children: { visible: boolean }[] } }
-    }).onlineTest
+    const { presence, scene } = (
+      window as unknown as {
+        onlineTest: {
+          presence: { update(t: number): void }
+          scene: { children: { visible: boolean }[] }
+        }
+      }
+    ).onlineTest
     presence.update(performance.now())
     return { avatars: scene.children.length, visible: scene.children[0]?.visible }
   })
@@ -55,9 +77,11 @@ test('online is opt-in, creates and lists games, and presents remote tracking', 
   await page.getByRole('button', { name: 'Salir de la partida', exact: true }).click()
   await expect(page.getByRole('status')).toHaveText('Online')
   const remaining = await page.evaluate(() => {
-    const { presence, scene } = (window as unknown as {
-      onlineTest: { presence: { dispose(): void }, scene: { children: unknown[] } }
-    }).onlineTest
+    const { presence, scene } = (
+      window as unknown as {
+        onlineTest: { presence: { dispose(): void }; scene: { children: unknown[] } }
+      }
+    ).onlineTest
     const count = scene.children.length
     presence.dispose()
     return count
