@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../config/input-bindings.js`
 - `../render/planet/cache.js`
 - `three`
 - `three/addons/controls/OrbitControls.js`
@@ -17,7 +18,7 @@
 
 ## checkPoint
 
-[Implementation, line 60](../../../../src/viewer/index.ts#L60)
+[Implementation, line 61](../../../../src/viewer/index.ts#L61)
 
 ```ts
 checkPoint(point: GeoPoint): inferred by TypeScript; see implementation
@@ -35,7 +36,7 @@ Explicit throws in this body:
 
 ## geographicAssetTransform
 
-[Implementation, line 69](../../../../src/viewer/index.ts#L69)
+[Implementation, line 70](../../../../src/viewer/index.ts#L70)
 
 Transform a local east/up/south asset into a shared spherical Engine frame.
 
@@ -56,7 +57,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## release
 
-[Implementation, line 78](../../../../src/viewer/index.ts#L78)
+[Implementation, line 79](../../../../src/viewer/index.ts#L79)
 
 ```ts
 release(root: THREE.Object3D): inferred by TypeScript; see implementation
@@ -72,12 +73,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.traverse`
 - `texture.dispose`
 
-## release.callback@82
+## release.callback@83
 
-[Implementation, line 82](../../../../src/viewer/index.ts#L82)
+[Implementation, line 83](../../../../src/viewer/index.ts#L83)
 
 ```ts
-callback@82(object): inferred by TypeScript; see implementation
+callback@83(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,7 +91,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer
 
-[Implementation, line 101](../../../../src/viewer/index.ts#L101)
+[Implementation, line 102](../../../../src/viewer/index.ts#L102)
 
 Browser-only, framework-independent GLB inspector. No world-cache, workers or online basemap.
 
@@ -135,7 +136,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setMouseSensitivity
 
-[Implementation, line 129](../../../../src/viewer/index.ts#L129)
+[Implementation, line 130](../../../../src/viewer/index.ts#L130)
 
 ```ts
 setMouseSensitivity(value: number): inferred by TypeScript; see implementation
@@ -150,17 +151,17 @@ Explicit throws in this body:
 
 - `new Error('Mouse sensitivity must be between 0.1 and 2')`
 
-## createGeographicViewer.callback@145
+## createGeographicViewer.callback@146
 
-[Implementation, line 145](../../../../src/viewer/index.ts#L145)
+[Implementation, line 146](../../../../src/viewer/index.ts#L146)
 
 ```ts
-callback@145(): inferred by TypeScript; see implementation
+callback@146(): inferred by TypeScript; see implementation
 ```
 
 ## createGeographicViewer.getCamera
 
-[Implementation, line 163](../../../../src/viewer/index.ts#L163)
+[Implementation, line 164](../../../../src/viewer/index.ts#L164)
 
 ```ts
 getCamera(): GeographicCamera
@@ -180,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setCamera
 
-[Implementation, line 175](../../../../src/viewer/index.ts#L175)
+[Implementation, line 176](../../../../src/viewer/index.ts#L176)
 
 ```ts
 setCamera(value: GeographicCamera): inferred by TypeScript; see implementation
@@ -213,7 +214,7 @@ Explicit throws in this body:
 
 ## createGeographicViewer.resize
 
-[Implementation, line 194](../../../../src/viewer/index.ts#L194)
+[Implementation, line 195](../../../../src/viewer/index.ts#L195)
 
 ```ts
 resize(): inferred by TypeScript; see implementation
@@ -227,7 +228,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.clearSurface
 
-[Implementation, line 206](../../../../src/viewer/index.ts#L206)
+[Implementation, line 207](../../../../src/viewer/index.ts#L207)
 
 ```ts
 clearSurface(id: string): inferred by TypeScript; see implementation
@@ -242,7 +243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setSurfaceImage
 
-[Implementation, line 213](../../../../src/viewer/index.ts#L213)
+[Implementation, line 214](../../../../src/viewer/index.ts#L214)
 
 ```ts
 setSurfaceImage(id: string, image: HTMLCanvasElement | null): inferred by TypeScript; see implementation
@@ -258,12 +259,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `renderer.capabilities.getMaxAnisotropy`
 - `surfaceOverrides.set`
 
-## createGeographicViewer.setSurfaceImage.callback@222
+## createGeographicViewer.setSurfaceImage.callback@223
 
-[Implementation, line 222](../../../../src/viewer/index.ts#L222)
+[Implementation, line 223](../../../../src/viewer/index.ts#L223)
 
 ```ts
-callback@222(object): inferred by TypeScript; see implementation
+callback@223(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -273,12 +274,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.geometry.getAttribute`
 - `restore.push`
 
-## createGeographicViewer.setSurfaceImage.callback@222.callback@225
+## createGeographicViewer.setSurfaceImage.callback@223.callback@226
 
-[Implementation, line 225](../../../../src/viewer/index.ts#L225)
+[Implementation, line 226](../../../../src/viewer/index.ts#L226)
 
 ```ts
-callback@225(material): inferred by TypeScript; see implementation
+callback@226(material): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -286,12 +287,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(copy as THREE.MeshStandardMaterial).color.set`
 - `material.clone`
 
-## createGeographicViewer.setSurfaceImage.callback@222.callback@235
+## createGeographicViewer.setSurfaceImage.callback@223.callback@236
 
-[Implementation, line 235](../../../../src/viewer/index.ts#L235)
+[Implementation, line 236](../../../../src/viewer/index.ts#L236)
 
 ```ts
-callback@235(): inferred by TypeScript; see implementation
+callback@236(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -300,7 +301,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.removeGlb
 
-[Implementation, line 242](../../../../src/viewer/index.ts#L242)
+[Implementation, line 243](../../../../src/viewer/index.ts#L243)
 
 ```ts
 removeGlb(id: string): inferred by TypeScript; see implementation
@@ -319,7 +320,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setEnvironment
 
-[Implementation, line 251](../../../../src/viewer/index.ts#L251)
+[Implementation, line 252](../../../../src/viewer/index.ts#L252)
 
 ```ts
 setEnvironment(value: ViewerEnvironment): inferred by TypeScript; see implementation
@@ -343,7 +344,7 @@ Explicit throws in this body:
 
 ## createGeographicViewer.frame
 
-[Implementation, line 282](../../../../src/viewer/index.ts#L282)
+[Implementation, line 283](../../../../src/viewer/index.ts#L283)
 
 ```ts
 frame(ids?: string[]): inferred by TypeScript; see implementation
@@ -373,7 +374,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.loadGlb
 
-[Implementation, line 303](../../../../src/viewer/index.ts#L303)
+[Implementation, line 304](../../../../src/viewer/index.ts#L304)
 
 ```ts
 loadGlb(asset: GeographicAsset): inferred by TypeScript; see implementation
@@ -420,12 +421,12 @@ Explicit throws in this body:
 - `new Error(\`GLB request failed (${response.status})\`)`
 - `error`
 
-## createGeographicViewer.loadGlb.callback@355
+## createGeographicViewer.loadGlb.callback@356
 
-[Implementation, line 355](../../../../src/viewer/index.ts#L355)
+[Implementation, line 356](../../../../src/viewer/index.ts#L356)
 
 ```ts
-callback@355(object): inferred by TypeScript; see implementation
+callback@356(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -435,7 +436,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.nearestHit
 
-[Implementation, line 383](../../../../src/viewer/index.ts#L383)
+[Implementation, line 384](../../../../src/viewer/index.ts#L384)
 
 ```ts
 nearestHit(): inferred by TypeScript; see implementation
@@ -446,12 +447,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `assets.entries`
 - `ray.intersectObjects`
 
-## createGeographicViewer.nearestHit.callback@385
+## createGeographicViewer.nearestHit.callback@386
 
-[Implementation, line 385](../../../../src/viewer/index.ts#L385)
+[Implementation, line 386](../../../../src/viewer/index.ts#L386)
 
 ```ts
-callback@385([id, a]): inferred by TypeScript; see implementation
+callback@386([id, a]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -459,17 +460,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `assetBounds.get`
 - `ray.ray.intersectsBox`
 
-## createGeographicViewer.nearestHit.callback@386
+## createGeographicViewer.nearestHit.callback@387
 
-[Implementation, line 386](../../../../src/viewer/index.ts#L386)
+[Implementation, line 387](../../../../src/viewer/index.ts#L387)
 
 ```ts
-callback@386([, a]): inferred by TypeScript; see implementation
+callback@387([, a]): inferred by TypeScript; see implementation
 ```
 
 ## createGeographicViewer.translate
 
-[Implementation, line 389](../../../../src/viewer/index.ts#L389)
+[Implementation, line 390](../../../../src/viewer/index.ts#L390)
 
 ```ts
 translate(delta: THREE.Vector3): inferred by TypeScript; see implementation
@@ -491,7 +492,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.upDirection
 
-[Implementation, line 402](../../../../src/viewer/index.ts#L402)
+[Implementation, line 403](../../../../src/viewer/index.ts#L403)
 
 ```ts
 upDirection(): inferred by TypeScript; see implementation
@@ -506,7 +507,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.groundHit
 
-[Implementation, line 407](../../../../src/viewer/index.ts#L407)
+[Implementation, line 408](../../../../src/viewer/index.ts#L408)
 
 ```ts
 groundHit(): inferred by TypeScript; see implementation
@@ -521,7 +522,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.ground
 
-[Implementation, line 412](../../../../src/viewer/index.ts#L412)
+[Implementation, line 413](../../../../src/viewer/index.ts#L413)
 
 ```ts
 ground(): inferred by TypeScript; see implementation
@@ -546,7 +547,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.speed
 
-[Implementation, line 428](../../../../src/viewer/index.ts#L428)
+[Implementation, line 429](../../../../src/viewer/index.ts#L429)
 
 ```ts
 speed(): inferred by TypeScript; see implementation
@@ -557,17 +558,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.abs`
 - `Math.max`
 - `THREE.MathUtils.clamp`
+- `actionHeld`
 - `getCamera`
 - `groundHit`
-- `keys.has`
 - `performance.now`
 
-## createGeographicViewer.callback@441
+## createGeographicViewer.callback@442
 
-[Implementation, line 441](../../../../src/viewer/index.ts#L441)
+[Implementation, line 442](../../../../src/viewer/index.ts#L442)
 
 ```ts
-callback@441(event): inferred by TypeScript; see implementation
+callback@442(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -577,12 +578,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `event.preventDefault`
 - `event.stopImmediatePropagation`
 
-## createGeographicViewer.callback@454
+## createGeographicViewer.callback@455
 
-[Implementation, line 454](../../../../src/viewer/index.ts#L454)
+[Implementation, line 455](../../../../src/viewer/index.ts#L455)
 
 ```ts
-callback@454(event): inferred by TypeScript; see implementation
+callback@455(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -593,68 +594,68 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.endLook
 
-[Implementation, line 471](../../../../src/viewer/index.ts#L471)
+[Implementation, line 472](../../../../src/viewer/index.ts#L472)
 
 ```ts
 endLook(): inferred by TypeScript; see implementation
 ```
 
-## createGeographicViewer.callback@479
+## createGeographicViewer.callback@480
 
-[Implementation, line 479](../../../../src/viewer/index.ts#L479)
+[Implementation, line 480](../../../../src/viewer/index.ts#L480)
 
 ```ts
-callback@479(): inferred by TypeScript; see implementation
+callback@480(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `canvas.focus`
 
-## createGeographicViewer.callback@482
+## createGeographicViewer.callback@483
 
-[Implementation, line 482](../../../../src/viewer/index.ts#L482)
+[Implementation, line 483](../../../../src/viewer/index.ts#L483)
 
 ```ts
-callback@482(event): inferred by TypeScript; see implementation
+callback@483(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'].includes`
+- `bindingForKey`
 - `event.preventDefault`
 - `keys.add`
 
-## createGeographicViewer.callback@495
+## createGeographicViewer.callback@492
 
-[Implementation, line 495](../../../../src/viewer/index.ts#L495)
+[Implementation, line 492](../../../../src/viewer/index.ts#L492)
 
 ```ts
-callback@495(event): inferred by TypeScript; see implementation
+callback@492(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `keys.delete`
 
-## createGeographicViewer.callback@496
+## createGeographicViewer.callback@493
 
-[Implementation, line 496](../../../../src/viewer/index.ts#L496)
+[Implementation, line 493](../../../../src/viewer/index.ts#L493)
 
 ```ts
-callback@496(): inferred by TypeScript; see implementation
+callback@493(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `keys.clear`
 
-## createGeographicViewer.callback@497
+## createGeographicViewer.callback@494
 
-[Implementation, line 497](../../../../src/viewer/index.ts#L497)
+[Implementation, line 494](../../../../src/viewer/index.ts#L494)
 
 ```ts
-callback@497(): inferred by TypeScript; see implementation
+callback@494(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -663,7 +664,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.navigate
 
-[Implementation, line 499](../../../../src/viewer/index.ts#L499)
+[Implementation, line 496](../../../../src/viewer/index.ts#L496)
 
 ```ts
 navigate(): inferred by TypeScript; see implementation
@@ -672,8 +673,8 @@ navigate(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.min`
-- `Number`
 - `THREE.Vector3`
+- `actionAxis`
 - `camera.getWorldDirection`
 - `direction.clone`
 - `direction.clone().cross`
@@ -683,7 +684,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `direction.set`
 - `direction.set(0, 0, -1).projectOnPlane`
 - `getCamera`
-- `keys.has`
 - `localFrame`
 - `localFrame(origin).invert`
 - `movement.lengthSq`
@@ -695,7 +695,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.tick
 
-[Implementation, line 527](../../../../src/viewer/index.ts#L527)
+[Implementation, line 524](../../../../src/viewer/index.ts#L524)
 
 ```ts
 tick(): inferred by TypeScript; see implementation
@@ -723,7 +723,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setVisible
 
-[Implementation, line 573](../../../../src/viewer/index.ts#L573)
+[Implementation, line 570](../../../../src/viewer/index.ts#L570)
 
 ```ts
 setVisible(id, visible): inferred by TypeScript; see implementation
@@ -735,7 +735,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.setActive
 
-[Implementation, line 584](../../../../src/viewer/index.ts#L584)
+[Implementation, line 581](../../../../src/viewer/index.ts#L581)
 
 ```ts
 setActive(value): inferred by TypeScript; see implementation
@@ -752,7 +752,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGeographicViewer.dispose
 
-[Implementation, line 595](../../../../src/viewer/index.ts#L595)
+[Implementation, line 592](../../../../src/viewer/index.ts#L592)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation

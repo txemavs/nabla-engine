@@ -30,21 +30,32 @@ export class MonitorMenu {
       this.title = parent.title
     } else this.open = false
   }
+  /** Legacy navigation adapter for independent hosts. Engine routes its catalog through dispatch. */
   key(key: string): { handled: boolean; action?: MonitorAction } {
+    const legacy: Record<string, string> = {
+      ArrowUp: 'menu.up',
+      ArrowDown: 'menu.down',
+      Enter: 'menu.accept',
+      Escape: 'menu.back',
+    }
+    return this.dispatch(legacy[key])
+  }
+  /** Device-independent menu navigation; this module deliberately has no dependencies. */
+  dispatch(action: string | undefined): { handled: boolean; action?: MonitorAction } {
     if (!this.open) return { handled: false }
-    if (key === 'Escape') {
+    if (action === 'menu.back') {
       this.back()
       return { handled: true }
     }
-    if (key === 'ArrowUp' || key === 'ArrowDown') {
-      const direction = key === 'ArrowDown' ? 1 : -1
+    if (action === 'menu.up' || action === 'menu.down') {
+      const direction = action === 'menu.down' ? 1 : -1
       for (let i = 0; i < this.items.length; i++) {
         this.selected = (this.selected + direction + this.items.length) % this.items.length
         if (!this.items[this.selected].disabled) break
       }
       return { handled: true }
     }
-    if (key === 'Enter') {
+    if (action === 'menu.accept') {
       const item = this.items[this.selected]
       if (item && !item.disabled) {
         if (item.back) this.back()

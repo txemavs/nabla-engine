@@ -137,3 +137,9 @@ Future hosts can accept actions such as `ship.helm` or `portal.selectDestination
 these are integration examples, not implemented commands. Existing ship and portal
 screens are not migrated automatically. The S3 instrument cluster also uses layers; the old HTML panel is retained as
 `assets/monitors/html-panel.example.html`. See [the editing guide](../../../docs/monitors.md).
+
+The Engine runtime now resolves keyboard navigation through its shared input
+catalog and calls `MonitorMenu.dispatch('menu.up' | 'menu.down' | 'menu.accept' |
+'menu.back')`. `key(code)` remains a legacy compatibility adapter for standalone
+consumers; the menu module remains dependency-free and does not import gameplay
+configuration.

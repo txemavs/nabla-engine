@@ -1,3 +1,4 @@
+import { movementKeyCodes } from '../config/input-bindings.js'
 /** Keyboard state with a bounded lifetime for a lost keyup (embedded browsers/focus changes). */
 export class HeldKeys {
   readonly values = new Set<string>()
@@ -41,9 +42,7 @@ export class HeldKeys {
    */
   expire(now: number): void {
     if (this.owner === null || now - this.lastActivity <= 1500) return
-    const lost = [...this.seen.keys()].filter((code) =>
-      /^(Key[WASD]|Arrow(Up|Down|Left|Right)|Space)$/.test(code),
-    )
+    const lost = [...this.seen.keys()].filter((code) => movementKeyCodes.has(code))
     for (const code of lost) this.release(code)
     if (lost.length) this.expirations++
     // Whatever remains (non-movement keys) is no longer a verifiable repeat stream.

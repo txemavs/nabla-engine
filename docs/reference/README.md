@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **473 modules; 5404 executable function definitions**.
+Coverage: **475 modules; 5434 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -21,6 +21,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
 | [game/boot.ts](game/boot.ts.md) | 6 |
 | [game/config.ts](game/config.ts.md) | 5 |
+| [game/control-hints.ts](game/control-hints.ts.md) | 1 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 14 |
 | [game/drive.ts](game/drive.ts.md) | 17 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
@@ -118,6 +119,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/config/driver-pose.ts](src/config/driver-pose.ts.md) | 6 |
 | [src/config/gameplay-tuning.ts](src/config/gameplay-tuning.ts.md) | 0 |
 | [src/config/index.ts](src/config/index.ts.md) | 0 |
+| [src/config/input-bindings.ts](src/config/input-bindings.ts.md) | 23 |
 | [src/config/lighting.ts](src/config/lighting.ts.md) | 0 |
 | [src/config/performance.ts](src/config/performance.ts.md) | 6 |
 | [src/config/shadows.ts](src/config/shadows.ts.md) | 3 |
@@ -258,7 +260,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/render/monitors/html-monitor.ts](src/render/monitors/html-monitor.ts.md) | 18 |
 | [src/render/monitors/index.ts](src/render/monitors/index.ts.md) | 0 |
 | [src/render/monitors/layered-monitor.ts](src/render/monitors/layered-monitor.ts.md) | 21 |
-| [src/render/monitors/menu.ts](src/render/monitors/menu.ts.md) | 6 |
+| [src/render/monitors/menu.ts](src/render/monitors/menu.ts.md) | 7 |
 | [src/render/planet/artistic-clouds.ts](src/render/planet/artistic-clouds.ts.md) | 11 |
 | [src/render/planet/asphalt-mask.ts](src/render/planet/asphalt-mask.ts.md) | 3 |
 | [src/render/planet/baked.ts](src/render/planet/baked.ts.md) | 5 |
@@ -328,7 +330,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/runtime/ar/session.ts](src/runtime/ar/session.ts.md) | 4 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 53 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 387 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 389 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -338,7 +340,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 18 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 13 |
 | [src/runtime/game-toolbar.ts](src/runtime/game-toolbar.ts.md) | 16 |
-| [src/runtime/game.ts](src/runtime/game.ts.md) | 21 |
+| [src/runtime/game.ts](src/runtime/game.ts.md) | 22 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 5 |
@@ -346,7 +348,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
-| [src/runtime/input.ts](src/runtime/input.ts.md) | 10 |
+| [src/runtime/input.ts](src/runtime/input.ts.md) | 11 |
 | [src/runtime/interface-theme.ts](src/runtime/interface-theme.ts.md) | 0 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 3 |
@@ -376,7 +378,7 @@ Coverage: **473 modules; 5404 executable function definitions**.
 | [src/runtime/touch-icons.ts](src/runtime/touch-icons.ts.md) | 1 |
 | [src/runtime/touch-walk.ts](src/runtime/touch-walk.ts.md) | 18 |
 | [src/runtime/vehicle-effects.ts](src/runtime/vehicle-effects.ts.md) | 11 |
-| [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 3 |
+| [src/runtime/vehicle-menu.ts](src/runtime/vehicle-menu.ts.md) | 4 |
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 2 |
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 11 |

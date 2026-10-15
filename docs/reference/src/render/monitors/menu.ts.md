@@ -39,10 +39,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMenu.key
 
-[Implementation, line 33](../../../../../src/render/monitors/menu.ts#L33)
+[Implementation, line 34](../../../../../src/render/monitors/menu.ts#L34)
+
+Legacy navigation adapter for independent hosts. Engine routes its catalog through dispatch.
 
 ```ts
 key(key: string): { handled: boolean; action?: MonitorAction }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.dispatch`
+
+## MonitorMenu.dispatch
+
+[Implementation, line 44](../../../../../src/render/monitors/menu.ts#L44)
+
+Device-independent menu navigation; this module deliberately has no dependencies.
+
+```ts
+dispatch(action: string | undefined): { handled: boolean; action?: MonitorAction }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -52,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMenu.lines
 
-[Implementation, line 62](../../../../../src/render/monitors/menu.ts#L62)
+[Implementation, line 73](../../../../../src/render/monitors/menu.ts#L73)
 
 ```ts
 lines(): Record<string, string>
@@ -63,10 +79,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.fromEntries`
 - `this.items.map`
 
-## MonitorMenu.lines.callback@64
+## MonitorMenu.lines.callback@75
 
-[Implementation, line 64](../../../../../src/render/monitors/menu.ts#L64)
+[Implementation, line 75](../../../../../src/render/monitors/menu.ts#L75)
 
 ```ts
-callback@64(item, i): inferred by TypeScript; see implementation
+callback@75(item, i): inferred by TypeScript; see implementation
 ```

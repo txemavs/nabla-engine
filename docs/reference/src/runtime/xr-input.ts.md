@@ -6,11 +6,12 @@
 
 ## Module dependencies
 
+- `../config/input-bindings.js`
 - `./input.js`
 
 ## XRGameInput.reset
 
-[Implementation, line 8](../../../../src/runtime/xr-input.ts#L8)
+[Implementation, line 9](../../../../src/runtime/xr-input.ts#L9)
 
 XR standard mapping: trigger, squeeze, touchpad, stick, primary, secondary.
 
@@ -24,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGameInput.read
 
-[Implementation, line 14](../../../../src/runtime/xr-input.ts#L14)
+[Implementation, line 15](../../../../src/runtime/xr-input.ts#L15)
 
 Resolve by handedness, never controller enumeration order. Actions fire on rising edges.
 
@@ -48,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGameInput.read.axis
 
-[Implementation, line 26](../../../../src/runtime/xr-input.ts#L26)
+[Implementation, line 27](../../../../src/runtime/xr-input.ts#L27)
 
 ```ts
 axis(hand: XRHandedness, index: number): inferred by TypeScript; see implementation
@@ -61,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGameInput.read.button
 
-[Implementation, line 27](../../../../src/runtime/xr-input.ts#L27)
+[Implementation, line 28](../../../../src/runtime/xr-input.ts#L28)
 
 ```ts
 button(hand: XRHandedness, index: number): inferred by TypeScript; see implementation
@@ -73,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRGameInput.read.value
 
-[Implementation, line 29](../../../../src/runtime/xr-input.ts#L29)
+[Implementation, line 30](../../../../src/runtime/xr-input.ts#L30)
 
 ```ts
 value(hand: XRHandedness, index: number): inferred by TypeScript; see implementation

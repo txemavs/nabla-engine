@@ -1,3 +1,4 @@
+import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
@@ -37,13 +38,6 @@ import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
-
-/** Spanish controls for the terrain example (the original hint is shared with the flat demo). */
-const CONTROLS =
-  '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Conducir · <kbd>Espacio</kbd> Freno · ' +
-  '<kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> Luces · <kbd>G</kbd> GPS · <kbd>E</kbd> Entrar/salir · ' +
-  '<kbd>V</kbd> Vuelo · <kbd>F</kbd> Acoplar · <kbd>T</kbd> Transferir · <kbd>R</kbd> Recuperar · ' +
-  '<kbd>Tab</kbd> Arma · <kbd>U</kbd><kbd>O</kbd><kbd>I</kbd><kbd>L</kbd> Peso del piloto (moto)'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()
@@ -116,7 +110,6 @@ try {
   const boot = readBootConfig()
   const loading = new LoadingScreen(boot.splash)
   loading.setTiles(config.tile ? [config.tile] : [])
-  document.getElementById('controls-hint')!.innerHTML = CONTROLS
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   const layerDefaults = bootHiddenLayers(boot)
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
@@ -190,6 +183,8 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
+      if (runtime)
+        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showCells()
       showLocation(frame.location)

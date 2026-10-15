@@ -207,3 +207,13 @@ export { ARRCControls } from './xr-rc-controls.js'
 export { ARBalls } from './xr-room-physics.js'
 
 export { XRObjectGrab } from './xr-object-grab.js'
+
+export {
+  inputBindings,
+  keyboardAction,
+  controlsFor,
+  controlsHint,
+  type InputAction,
+  type InputContext,
+  type InputMode,
+} from '../config/input-bindings.js'

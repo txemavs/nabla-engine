@@ -1,3 +1,5 @@
+import { showControlHints } from './control-hints.js'
+import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
@@ -292,6 +294,8 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
+      if (runtime)
+        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showLocation(frame.location)
     },
@@ -312,7 +316,15 @@ try {
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
     const help = document.createElement('p')
     help.textContent =
-      'Toro: verde altura (I/K), azul inclinación (J/L), rojo lateral (U/O). En VR: mantener agarre y tirar/empujar la palanca.'
+      controlsHint({ mode: 'forklift' }, [
+        'forklift.liftUp',
+        'forklift.liftDown',
+        'forklift.tiltUp',
+        'forklift.tiltDown',
+        'forklift.sideLeft',
+        'forklift.sideRight',
+        'forklift.menu',
+      ]) + '. En VR: mantener agarre y tirar/empujar la palanca.'
     help.style.cssText =
       'position:fixed;bottom:70px;left:12px;max-width:420px;background:#102632e8;color:white;padding:10px;pointer-events:none'
     document.body.append(help)

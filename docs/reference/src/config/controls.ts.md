@@ -8,5 +8,6 @@ Input tuning shared by keyboard/gamepad mixing and browser mouse look.
 
 ## Module dependencies
 
+- `./input-bindings.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

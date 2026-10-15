@@ -1,3 +1,4 @@
+import { keyboardAction } from '@nabla/engine/config/controls'
 /** Where the player is, as latitude/longitude, and a way to go to any coordinates (menu section "Posición"). */
 import { formatLatLon, parseLatLon, type LatLon } from '@nabla/engine/planet/lat-lon'
 import { menuSection } from './menu.js'
@@ -135,7 +136,7 @@ export function bindPosition(
   }
   go.addEventListener('click', submit)
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') submit()
+    if (keyboardAction(event.code, { mode: 'road', menu: true }) === 'menu.accept') submit()
     event.stopPropagation()
   })
 }

@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../config/input-bindings.js`
 - `../config/controls.js`
 - `../simulation/vehicles/keyboard-steering.js`
 - `../simulation/simulation.js`
@@ -14,7 +15,7 @@
 
 ## availableGamepads
 
-[Implementation, line 13](../../../../src/runtime/input.ts#L13)
+[Implementation, line 20](../../../../src/runtime/input.ts#L20)
 
 ```ts
 availableGamepads(): (Gamepad | null)[]
@@ -26,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## deadzone
 
-[Implementation, line 28](../../../../src/runtime/input.ts#L28)
+[Implementation, line 35](../../../../src/runtime/input.ts#L35)
 
 Remove the configured dead band and rescale the remaining signed range; non-finite input becomes zero.
 
@@ -43,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes
 
-[Implementation, line 39](../../../../src/runtime/input.ts#L39)
+[Implementation, line 46](../../../../src/runtime/input.ts#L46)
 
 Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle.
 
@@ -58,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gamepadAxes.axis
 
-[Implementation, line 40](../../../../src/runtime/input.ts#L40)
+[Implementation, line 47](../../../../src/runtime/input.ts#L47)
 
 ```ts
 axis(i: number): inferred by TypeScript; see implementation
@@ -70,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteInput
 
-[Implementation, line 64](../../../../src/runtime/input.ts#L64)
+[Implementation, line 71](../../../../src/runtime/input.ts#L71)
 
 A single non-finite axis (a faulty gamepad, a touch source) would make `Simulation.setInput`
 throw and stop the frame loop, freezing every control. Treat it as released instead.
@@ -87,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteInput.safe
 
-[Implementation, line 65](../../../../src/runtime/input.ts#L65)
+[Implementation, line 72](../../../../src/runtime/input.ts#L72)
 
 ```ts
 safe(value: number | undefined): inferred by TypeScript; see implementation
@@ -99,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.reset
 
-[Implementation, line 84](../../../../src/runtime/input.ts#L84)
+[Implementation, line 91](../../../../src/runtime/input.ts#L91)
 
 Forget keyboard steering interpolation after focus loss or a session boundary.
 
@@ -113,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read
 
-[Implementation, line 93](../../../../src/runtime/input.ts#L93)
+[Implementation, line 100](../../../../src/runtime/input.ts#L100)
 
 Combine keyboard, gamepad, touch and monitor commands into one physics input.
 Elapsed time is seconds and yaw is radians. Disabled/menu input resets steering;
@@ -129,34 +130,47 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number`
+- `actionChordHeld`
 - `axis`
 - `document.entities.find`
 - `finiteInput`
 - `gamepadAxes`
+- `held`
 - `idleInput`
+- `inputMode`
 - `isRoadTouchDriving`
-- `keys.has`
 - `sim.vehicleInfo`
 - `this.reset`
 - `this.steering.update`
 
-## GameInput.read.axis
+## GameInput.read.callback@119
 
-[Implementation, line 107](../../../../src/runtime/input.ts#L107)
+[Implementation, line 119](../../../../src/runtime/input.ts#L119)
 
 ```ts
-axis(positive: string, negative: string): inferred by TypeScript; see implementation
+callback@119(e): inferred by TypeScript; see implementation
+```
+
+## GameInput.read.held
+
+[Implementation, line 121](../../../../src/runtime/input.ts#L121)
+
+```ts
+held(action: Parameters<typeof actionHeld>[1]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Number`
-- `keys.has`
+- `actionHeld`
 
-## GameInput.read.callback@117
+## GameInput.read.axis
 
-[Implementation, line 117](../../../../src/runtime/input.ts#L117)
+[Implementation, line 122](../../../../src/runtime/input.ts#L122)
 
 ```ts
-callback@117(e): inferred by TypeScript; see implementation
+axis(positive: Parameters<typeof actionAxis>[1], negative: Parameters<typeof actionAxis>[2]): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `actionAxis`

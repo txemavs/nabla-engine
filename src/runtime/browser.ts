@@ -1,3 +1,16 @@
+import {
+  actionHeld,
+  inputMode,
+  actionCompletesChord,
+  actionAxis,
+  bindingForKey,
+  inputBindings,
+  contextualAction,
+  legacyInputAction,
+  gamepadActionButtons,
+  controlsHint,
+  type InputContext,
+} from '../config/input-bindings.js'
 import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
@@ -891,10 +904,10 @@ export class GameRuntime {
         options.canvas.focus()
         this.effects.audio.unlock()
       },
-      interact: () => this.action('KeyE'),
+      interact: () => this.action('interact'),
       camera: () => this.cycleCamera(),
       respawn: () => {
-        const message = this.game.action('KeyR')
+        const message = this.game.dispatch('recover')
         if (message) this.options.onMessage?.(message)
       },
     }
@@ -1317,7 +1330,7 @@ export class GameRuntime {
       controls.touch.forward = freeTrigger('right') - freeTrigger('left')
     }
     for (const code of controls.actions) {
-      if (code === 'XRMenu') this.xr.toggleMenu()
+      if (code === 'xr.menu') this.xr.toggleMenu()
       else this.action(code)
     }
     // Keep a stable body heading. Head orientation belongs exclusively to WebXR.
@@ -1701,14 +1714,15 @@ export class GameRuntime {
       this.cameraActivity()
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
-    const hydraulicKey = (positive: string, negative: string) =>
-      this.hasInput()
-        ? Number(this.keys.values.has(positive)) - Number(this.keys.values.has(negative))
-        : 0
+    const hydraulicContext = this.controlContext
+    const hydraulicAxis = (
+      positive: Parameters<typeof actionAxis>[1],
+      negative: Parameters<typeof actionAxis>[2],
+    ) => (this.hasInput() ? actionAxis(this.keys.values, positive, negative, hydraulicContext) : 0)
     sim.setForkliftInput([
-      hydraulicKey('KeyI', 'KeyK'),
-      hydraulicKey('KeyJ', 'KeyL'),
-      hydraulicKey('KeyO', 'KeyU'),
+      hydraulicAxis('forklift.liftUp', 'forklift.liftDown'),
+      hydraulicAxis('forklift.tiltUp', 'forklift.tiltDown'),
+      hydraulicAxis('forklift.sideRight', 'forklift.sideLeft'),
     ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
@@ -1804,7 +1818,7 @@ export class GameRuntime {
     const canLean =
       eyes && !player.vehicleId && this.weaponDrawn && !!this.sidearm?.isAiming && this.hasInput()
     const leanTarget = canLean
-      ? Number(this.keys.values.has('KeyE')) - Number(this.keys.values.has('KeyQ'))
+      ? actionAxis(this.keys.values, 'lean.right', 'lean.left', this.controlContext)
       : 0
     this.aimLean += (leanTarget - this.aimLean) * (1 - Math.exp(-14 * Math.min(dt, 0.1)))
     if (!eyes || player.vehicleId) this.aimLean = 0
@@ -2032,7 +2046,18 @@ export class GameRuntime {
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
-        ? 'E exit · V camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
+        ? controlsHint(this.controlContext, [
+            'interact',
+            'camera',
+            'lights',
+            'gps',
+            'highBeam',
+            'signal.left',
+            'signal.right',
+            'debug.wheels',
+            'vehicle.menu',
+            'forklift.menu',
+          ])
         : nearbyPickup
           ? this.text('E pick up {0}', nearbyPickup.name)
           : 'WASD move · Space jump · E enter · V camera · C crouch · C+Space prone',
@@ -4136,7 +4161,9 @@ export class GameRuntime {
     advancePools = true,
   ): void {
     sidearm.setSteadyHeld(
-      ['KeyW', 'KeyA', 'KeyS', 'KeyD'].every((key) => this.keys.values.has(key)),
+      (['move.forward', 'move.left', 'move.back', 'move.right'] as const).every((action) =>
+        actionHeld(this.keys.values, action, this.controlContext),
+      ),
     )
     const weaponPosition = (
       eyes
@@ -4422,7 +4449,8 @@ export class GameRuntime {
     const action = sidearmButtonAction(button, down)
     if (
       action === 'fire' &&
-      (this.keys.values.has('KeyZ') || this.safetyClickHeld) &&
+      (actionHeld(this.keys.values, 'weapon.inspect', this.controlContext) ||
+        this.safetyClickHeld) &&
       this.sidearm
     ) {
       if (!this.safetyClickHeld) {
@@ -4534,10 +4562,10 @@ export class GameRuntime {
     }
   }
   private cycleCamera(): void {
-    // C during the start sequence hands the camera to the player (a held engine starts).
+    // The camera action during the start sequence hands the view to the player (a held engine starts).
     const sim = this.session.simulation
     if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
-    const message = this.game.action('KeyV')
+    const message = this.game.dispatch('camera')
     if (message) this.options.onMessage?.(message)
   }
   private pollGamepad(): Gamepad | null {
@@ -4550,34 +4578,47 @@ export class GameRuntime {
     this.previousPad = pad?.index ?? null
     if (!pad) return null
     const pressed = (index: number) => !!pad.buttons[index]?.pressed && !this.previousButtons[index]
-    if (pressed(0)) this.action('KeyE')
-    if (pressed(1)) this.cycleCamera()
-    if (pressed(2)) this.action('KeyF')
-    if (pressed(3)) this.action('KeyC')
-    if (pressed(4)) this.action('KeyR')
+    for (const [button, action] of gamepadActionButtons) {
+      if (!pressed(button)) continue
+      if (action === 'camera') this.cycleCamera()
+      else this.action(action)
+    }
     this.previousButtons = pad.buttons.map((button) => button.pressed)
     return pad
   }
-  private action(code: string): void {
+  get controlContext(): InputContext {
+    const sim = this.session.simulation
+    const id = sim?.player.vehicleId
+    const vehicle = id
+      ? this.document.entities.find((entity) => entity.id === id)?.vehicle
+      : undefined
+    return {
+      mode: inputMode(!!id, !!(id && sim?.vehicleInfo(id).flightMode), vehicle),
+      weapon: this.weaponDrawn,
+      aiming: !!this.sidearm?.isAiming,
+      menu: !!(id && this.view.vehicleMenu(id)?.open),
+    }
+  }
+  private action(value: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    const context = this.controlContext
+    const raw = legacyInputAction(value) ?? bindingForKey(value, context)
+    if (!raw || (context.menu && !raw.startsWith('menu.'))) return
+    const action = contextualAction(raw, context)
     if (
-      (code === 'KeyQ' || code === 'KeyE') &&
+      (action === 'lean.left' || action === 'lean.right' || action === 'interact') &&
       !sim.player.vehicleId &&
       this.weaponDrawn &&
       this.sidearm?.isAiming
     )
       return
-    if (
-      !sim.player.vehicleId &&
-      ((code === 'Space' && this.keys.values.has('KeyC')) ||
-        (code === 'KeyC' && this.keys.values.has('Space')))
-    ) {
+    if (!sim.player.vehicleId && actionCompletesChord(this.keys.values, 'prone', action, context)) {
       sim.setStance('prone')
-      this.options.onMessage?.('Cuerpo a tierra · C para levantarse')
+      this.options.onMessage?.('Cuerpo a tierra · ' + controlsHint({ mode: 'walk' }, ['stance']))
       return
     }
-    if (code === 'KeyE') {
+    if (action === 'interact') {
       const nearby = this.nearbyPickup(sim)
       const item =
         nearby &&
@@ -4600,15 +4641,17 @@ export class GameRuntime {
         }
         this.weaponDrawn = true
         this.sidearm.visible = true
-        this.options.onMessage?.(this.text('Picked up {0} · Tab holster', item.name))
+        this.options.onMessage?.(
+          this.text('Picked up {0}', item.name) + ' · ' + controlsHint(context, ['holster']),
+        )
         return
       }
     }
-    if (code === 'F9') {
+    if (action === 'debug.wheels') {
       this.wheelDebug.toggle()
       return
     }
-    if (code === 'Tab') {
+    if (action === 'holster') {
       if (!this.weaponOwned) return
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
@@ -4626,23 +4669,41 @@ export class GameRuntime {
     if (
       this.xr.active &&
       this.weaponDrawn &&
-      ['KeyR', 'KeyF', 'KeyM', 'KeyX', 'KeyZ'].includes(code)
+      [
+        'weapon.magazine',
+        'weapon.slide',
+        'weapon.auto',
+        'weapon.chamber',
+        'weapon.inspect',
+      ].includes(action)
     )
       return
-    if ((code === 'KeyR' || code === 'KeyF') && this.weaponDrawn) {
+    if ((action === 'weapon.magazine' || action === 'weapon.slide') && this.weaponDrawn) {
       if (this.sidearm?.state.reload !== 'none') return
       this.magazineAction =
-        code === 'KeyF' ? 'release' : this.sidearm?.state.magazineSeated ? 'drop' : 'insert'
+        action === 'weapon.slide'
+          ? 'release'
+          : this.sidearm?.state.magazineSeated
+            ? 'drop'
+            : 'insert'
       return
     }
-    if ((code === 'KeyZ' || code === 'KeyX') && this.weaponDrawn && this.sidearm) {
-      this.sidearm.inspect(performance.now(), code === 'KeyX')
-      if (code === 'KeyX')
+    if (
+      (action === 'weapon.inspect' || action === 'weapon.chamber') &&
+      this.weaponDrawn &&
+      this.sidearm
+    ) {
+      this.sidearm.inspect(performance.now(), action === 'weapon.chamber')
+      if (action === 'weapon.chamber')
         this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
       return
     }
-    if ((code === 'KeyG' || code === 'KeyH') && this.weaponDrawn && this.sidearm) {
-      if (code === 'KeyG') {
+    if (
+      (action === 'weapon.laser' || action === 'weapon.light') &&
+      this.weaponDrawn &&
+      this.sidearm
+    ) {
+      if (action === 'weapon.laser') {
         const on = this.sidearm.toggleLaser()
         this.view.laser.enabled = on
         this.options.onMessage?.(on ? this.text('Laser on') : this.text('Laser off'))
@@ -4655,28 +4716,28 @@ export class GameRuntime {
     }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
     // the pistol) M keeps its game meaning (helm mode / its notice).
-    if (code === 'KeyM' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
+    if (action === 'weapon.auto' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
       this.magazineAction = 'automatic'
       this.triggerDown = false
       return
     }
-    if (code === 'KeyN') this.gallery.reset()
-    let message = this.game.action(code)
-    if ((code === 'KeyZ' || code === 'KeyX') && sim.player.vehicleId) {
-      this.view.signal(sim.player.vehicleId, code === 'KeyZ' ? -1 : 1)
-      message = this.text('Indicators: Z left · X right · press again to cancel')
+    if (action === 'gallery.reset') this.gallery.reset()
+    let message = this.game.dispatch(action)
+    if ((action === 'signal.left' || action === 'signal.right') && sim.player.vehicleId) {
+      this.view.signal(sim.player.vehicleId, action === 'signal.left' ? -1 : 1)
+      message = controlsHint(context, ['signal.left', 'signal.right'])
     }
-    if (code === 'KeyH') {
+    if (action === 'lights') {
       if (sim.player.vehicleId) {
         const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
         if (mode !== null) message = this.text(lightModeNotice[mode])
       }
     }
-    if (code === 'KeyG' && sim.player.vehicleId) {
+    if (action === 'gps' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
       if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
     }
-    if (code === 'KeyK' && sim.player.vehicleId) {
+    if (action === 'highBeam' && sim.player.vehicleId) {
       const high = this.view.toggleVehicleHighBeam(sim.player.vehicleId)
       if (high !== null)
         message = high ? this.text('High beams selected') : this.text('Low beams selected')
@@ -4828,14 +4889,13 @@ export class GameRuntime {
       'keydown',
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
+        if (event.ctrlKey || event.metaKey || event.altKey) return
         // Escape while unlocked asks for the free mouse; any other key while the game should
         // own the pointer (first keypress after loading, or a refused lock) captures it.
-        if (event.code === 'Escape') this.pointerFree = true
+        if (bindingForKey(event.code, this.controlContext) === 'pointer.release')
+          this.pointerFree = true
         else if (!this.pointerFree && !event.repeat) this.capturePointer()
-        if (
-          ['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)
-        )
-          event.preventDefault()
+        if (bindingForKey(event.code, this.controlContext) !== undefined) event.preventDefault()
         const id = this.session.simulation?.player.vehicleId
         if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
           const result = vehicleMenuKey(
@@ -4893,10 +4953,11 @@ export class GameRuntime {
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) {
-          if (event.code === 'KeyF' && this.weaponDrawn && this.sidearm)
+          const action = bindingForKey(event.code, this.controlContext)
+          if (action === 'weapon.slide' && this.weaponDrawn && this.sidearm)
             this.sidearm.state.manualRackHeld =
               this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
-          this.action(event.code)
+          if (action) this.action(action)
         }
       },
       options,
@@ -4905,10 +4966,14 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
-        if (event.code === 'KeyF' && this.sidearm) this.sidearm.state.manualRackHeld = false
-        if (event.code === 'KeyZ' || event.code === 'KeyX') {
+        if (inputBindings['weapon.slide'].keys.includes(event.code) && this.sidearm)
+          this.sidearm.state.manualRackHeld = false
+        if (
+          inputBindings['weapon.inspect'].keys.includes(event.code) ||
+          inputBindings['weapon.chamber'].keys.includes(event.code)
+        ) {
           this.sidearm?.stopInspect(performance.now())
-          if (event.code === 'KeyX' && this.weaponDrawn)
+          if (inputBindings['weapon.chamber'].keys.includes(event.code) && this.weaponDrawn)
             this.effects.audio.weaponSound('slide-forward', this.camera.position.toArray())
         }
       },

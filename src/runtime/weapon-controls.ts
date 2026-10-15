@@ -1,3 +1,4 @@
+import { controlsHint } from '../config/input-bindings.js'
 import { GameToolbar } from './game-toolbar.js'
 /** On-screen weapon controls, available with mouse and touch. */
 export class WeaponControls {
@@ -20,8 +21,8 @@ export class WeaponControls {
     }
     for (const [label, code] of [
       ['Apuntar', 'aim'],
-      ['Cargador · R', 'KeyR'],
-      ['Corredera · F', 'KeyF'],
+      [controlsHint({ mode: 'walk', weapon: true }, ['weapon.magazine']), 'weapon.magazine'],
+      [controlsHint({ mode: 'walk', weapon: true }, ['weapon.slide']), 'weapon.slide'],
     ]) {
       const button = document.createElement('button')
       button.type = 'button'
@@ -30,7 +31,7 @@ export class WeaponControls {
       const icon =
         code === 'aim'
           ? '<circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/>'
-          : code === 'KeyR'
+          : code === 'weapon.magazine'
             ? '<path d="M8 3h8v17H8zM10 7h4m-4 4h4m-4 4h4"/>'
             : '<path d="M4 8h16v7H4zM8 4L4 8l4 4m8 0l4 4-4 4"/>'
       button.innerHTML =

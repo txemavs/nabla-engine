@@ -347,3 +347,58 @@ touch ring around the on-screen steering wheel; set it `true` (or pass `true` as
 the `TouchDriving` constructor flag) to restore the Studio twist overlay without
 bringing the deleted code back. F9 toggles the Engine wheel diagnostic overlay;
 markers are allocated on demand for every axle.
+
+## Actions and bindings
+
+`src/config/input-bindings.ts`, exported by `@nabla/engine/config/controls`
+(and `@nabla/engine/config`), is the single keyboard catalog. Each declaration has
+an action ID, label, physical `KeyboardEvent.code` aliases, `hold`/`press` kind and
+scopes. `inputChords` declares prone and launch combinations. Standard controller
+button actions and mouse fire/aim buttons live alongside the catalog; analog
+axis layouts remain in their device adapters.
+
+Resolution order is menu → aiming → weapon on foot → weapon → locomotion mode →
+vehicle → game. A higher-priority held action consumes the key too: E while aiming
+leans instead of entering a vehicle, and J on the forklift tilts instead of opening
+its menu. The forklift uses **P for its menu**, keeps I/K, J/L, O/U hydraulics, and
+does not bind K to high beams. Other vehicles retain J for their menu. Duplicate
+keys inside a scope fail catalog initialization; cross-scope overrides follow the
+explicit resolution order. Ctrl/Meta/Alt browser shortcuts are not gameplay input.
+
+`GameInput` reads the resolved holds and mixes them with controller/touch axes into
+`PlayerInput`. `GameRuntime.dispatch('interact')`, `dispatch('camera')`, etc. are the
+preferred device-independent action entry. `action('KeyE')` remains a compatibility
+adapter for existing hosts. The browser and generic XR/gamepad adapters dispatch
+semantic IDs; they do not synthesize keyboard events. Physical controller input
+for specialized AR tools remains owned by those tool adapters.
+
+Use `controlsFor(context)` to enumerate effective controls or `controlsHint(context)`
+to render help. `GameRuntime` from `/runtime/browser` exposes `controlContext` for
+hosts. The stock game refreshes its help only when that context changes; it does
+not keep a second hand-written key list. Camera is **V**; C is posture on foot or
+a supported ground/flight transition. Updating a binding updates the resolver and
+help together. A binding change requires rebuilding; a user remapping UI is not
+introduced by this change.
+
+```ts
+import { controlsFor } from '@nabla/engine/config/controls'
+
+const bikeControls = controlsFor({ mode: 'bike' })
+const aimingControls = controlsFor({ mode: 'walk', weapon: true, aiming: true })
+// Headless/shared game coordinator:
+game.dispatch('recover')
+```
+
+Simulation still receives the same `PlayerInput`, entities and vehicle parameters.
+This refactor does not change drivetrain, flight or weapon physics. Held movement
+aliases count as one action (W + ArrowUp is one forward request).
+
+The standalone `MonitorMenu` stays dependency-free: Engine resolves its catalog
+and calls `menu.dispatch('menu.accept')`, etc. The old `menu.key('Enter')` adapter
+is retained only for compatibility with independent consumers, not used as a
+second binding source by the game.
+
+Run `npm run controls:list` for the current complete table, or
+`npm run --silent controls:list -- --json` for the same resolved controls as JSON. Both
+rebuild and read the actual catalog; there is no manually maintained key list.
+The menu's close toggle stays available while its gameplay holds are blocked.

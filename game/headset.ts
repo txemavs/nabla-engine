@@ -1,3 +1,4 @@
+import { keyboardAction } from '@nabla/engine/config/controls'
 /** One launcher. The AR demo is prepared only when its tab is selected, then
  * its existing Enter handler requests WebXR directly from the user's click.
  */
@@ -66,10 +67,17 @@ for (const mode of ['vr', 'ar'] as const) {
   const tab = document.getElementById(`tab-${mode}`)!
   tab.onclick = () => selectTab(mode)
   tab.onkeydown = (event) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    const action = keyboardAction(event.code, { mode: 'launcher' })
+    if (!action) return
     event.preventDefault()
     const next =
-      event.key === 'Home' ? 'vr' : event.key === 'End' ? 'ar' : mode === 'vr' ? 'ar' : 'vr'
+      action === 'launcher.first'
+        ? 'vr'
+        : action === 'launcher.last'
+          ? 'ar'
+          : mode === 'vr'
+            ? 'ar'
+            : 'vr'
     selectTab(next)
     document.getElementById(`tab-${next}`)!.focus()
   }

@@ -1,3 +1,4 @@
+import { keyboardAction } from '@nabla/engine/config/controls'
 /**
  * Compact in-game settings: a small HUD icon opens a GTA Online–style tabbed
  * window styled with the shared ship-monitor stylesheet. Plain HTML/CSS/JS.
@@ -1053,7 +1054,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     selectTab(btn.dataset.tab as TabId)
   })
   doc.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !win.hidden) {
+    if (keyboardAction(event.code, { mode: 'road', menu: true }) === 'menu.back' && !win.hidden) {
       event.preventDefault()
       close()
     }

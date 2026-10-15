@@ -1,3 +1,4 @@
+import { keyboardAction, controlsHint, type InputContext } from '../config/input-bindings.js'
 import type { SceneDocument } from '../scene/document.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import type { SceneView } from '../presentation/scene-view.js'
@@ -20,16 +21,25 @@ export function vehicleMenuKey(
   music?: (action: string) => string,
   trailer?: (action: string) => string,
 ): { handled: boolean; opened?: boolean } {
-  if (code === 'KeyJ') {
+  const entity = document.entities.find((entity) => entity.id === id)
+  const context: InputContext = {
+    mode: entity?.vehicle?.forklift ? 'forklift' : entity?.vehicle?.twoWheeled ? 'bike' : 'road',
+  }
+  const binding = keyboardAction(code, context)
+  if (binding === 'vehicle.menu' || binding === 'forklift.menu') {
     if (repeat) return { handled: true }
     const opened = view.toggleVehicleMenu(id)
     if (opened !== null)
-      report(opened ? text('Vehicle menu · arrows and Enter · J to close') : text('Menu closed'))
-    return { handled: true, opened: opened ?? undefined }
+      report(
+        opened
+          ? text('Vehicle menu') + ' · ' + controlsHint({ mode: context.mode, menu: true })
+          : text('Menu closed'),
+      )
+    return { handled: opened !== null, opened: opened ?? undefined }
   }
   const menu = view.vehicleMenu(id)
   if (!menu?.open) return { handled: false }
-  const result = menu.key(code)
+  const result = menu.dispatch(keyboardAction(code, { mode: context.mode, menu: true }))
   const action = result.action
   if (action?.type === 'vehicle.mirror') {
     const vehicle = document.entities.find((e) => e.id === id)?.vehicle

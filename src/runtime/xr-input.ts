@@ -1,3 +1,4 @@
+import { xrActionButtons, type InputAction } from '../config/input-bindings.js'
 import { deadzone } from './input.js'
 
 /** XR standard mapping: trigger, squeeze, touchpad, stick, primary, secondary. */
@@ -31,15 +32,8 @@ export class XRGameInput {
       return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
     }
     const next = new Set<string>()
-    const actions: string[] = []
-    for (const [hand, index, action] of [
-      ['right', 4, 'KeyE'], // A: board / leave / pick up
-      ['right', 5, 'Space'], // B: jump / handbrake
-      ['left', 4, 'XRMenu'], // X: open / close the main quality menu
-      ['right', 3, 'Tab'], // stick: draw / holster
-      ['left', 3, 'KeyC'], // stick: crouch / flight mode
-      ['left', 5, 'KeyR'], // Y: recover
-    ] as const) {
+    const actions: InputAction[] = []
+    for (const [hand, index, action] of xrActionButtons) {
       const key = `${hand}:${index}`
       if (button(hand, index)) {
         next.add(key)
