@@ -217,3 +217,12 @@ export {
   type InputContext,
   type InputMode,
 } from '../config/input-bindings.js'
+
+export * from './usb/controllers.js'
+export * from './usb/settings-panel.js'
+export * from './usb/feedback.js'
+
+export * from './usb/wizard.js'
+export * from './usb/wizard-panel.js'
+
+export * from './settings-backup.js'

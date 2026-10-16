@@ -1,3 +1,4 @@
+import { adjustFlightThrottle } from '../xr-input.js'
 import { palletEntity } from '../../catalog/props/pallet.js'
 import { XRScaledBodyContacts } from '../xr-scaled-body-contacts.js'
 import type { World } from '../../simulation/physics.js'
@@ -55,6 +56,7 @@ export class ARRC {
   private controlSources = new Map<THREE.Group, XRInputSource | null>()
   private held = new Set<THREE.Group>()
   private speedButtonDown = false
+  private flightThrottle = 0
   toggleFlightSpeed(): void {
     if (!this.physics || this.kind !== 'f14') return
     const id = this.physics.entities[0].id
@@ -126,6 +128,40 @@ export class ARRC {
       this.objectGrab.hands.includes(grip)
     )
   }
+  /** Room-scale limits use the authored dimensions, including a coupled trailer. */
+  scaleAllowed(kind: string, denominator: number, authored?: readonly Entity[]): boolean {
+    if (!Number.isFinite(denominator) || denominator <= 0) return false
+    const preset =
+      kind === 'vfr'
+        ? 'vfr800'
+        : kind === 's3'
+          ? 'car'
+          : kind === 'truck'
+            ? 'white-truck'
+            : kind === 'forklift'
+              ? 'forklift-rc'
+              : kind
+    const entities = authored?.length ? authored : [presetVehicle(preset, 'size-check')]
+    const bounds = new THREE.Box3()
+    const base = new THREE.Vector3(...entities[0].transform.position)
+    for (const entity of entities) {
+      const center = new THREE.Vector3(...entity.transform.position).sub(base)
+      const box = new THREE.Box3().setFromCenterAndSize(center, new THREE.Vector3(...entity.size))
+      bounds.union(box)
+    }
+    if (kind === 'truck' && !authored) {
+      const trailer = presetVehicle('white-trailer', 'size-trailer')
+      const center = new THREE.Vector3(...entities[0].vehicle!.hitch!).sub(
+        new THREE.Vector3(...trailer.vehicle!.towAnchor!),
+      )
+      bounds.union(
+        new THREE.Box3().setFromCenterAndSize(center, new THREE.Vector3(...trailer.size)),
+      )
+    }
+    const size = bounds.getSize(new THREE.Vector3())
+    const length = Math.max(size.x, size.y, size.z) / denominator
+    return length >= 0.02 && length <= 5
+  }
   async load(
     kind: 's3' | 'vfr' | 'truck' | 'f14' | 'forklift',
     denominator: number,
@@ -135,6 +171,8 @@ export class ARRC {
     if (!Number.isFinite(denominator) || denominator <= 0) throw new Error('Invalid model scale')
     if (authoredEntities && !authoredEntities.length)
       throw new Error('At least one vehicle is required')
+    if (!this.scaleAllowed(kind, denominator, authoredEntities))
+      throw new Error('El vehículo debe medir entre 2 cm y 5 m. Elige otra escala.')
     this.clear()
     const generation = this.generation
     try {
@@ -271,6 +309,8 @@ export class ARRC {
             }
           })
           copy.position.sub(new THREE.Vector3(-0.277, 1.39, -0.264))
+          // Bring the console 8 cm toward the wheel, independently of wheel rotation.
+          copy.position.x -= 0.08
           this.controls.equipment.add(copy)
         }
       }
@@ -405,6 +445,7 @@ export class ARRC {
       return Math.abs(value) > 0.15 ? value : 0
     }
     const flying = this.kind === 'f14'
+    if (flying) this.flightThrottle = adjustFlightThrottle(this.flightThrottle, axis(left, 3), dt)
     const speedButton = flying && !!right?.buttons[5]?.pressed
     if (speedButton && !this.speedButtonDown) this.toggleFlightSpeed()
     this.speedButtonDown = speedButton
@@ -442,7 +483,7 @@ export class ARRC {
       this.physics?.step(dt, {
         throttle,
         forklift: real.forklift,
-        lift: flying ? Math.max(0, -axis(left, 3)) : undefined,
+        lift: flying ? this.flightThrottle : undefined,
         turn: flying ? axis(left, 2) : undefined,
         handbrake: !flying && handbrake,
         steering: steer,
@@ -516,6 +557,7 @@ export class ARRC {
     this.objectGrab.reset()
     this.grabbedId = null
     this.speedButtonDown = false
+    this.flightThrottle = 0
     this.effects.updateAudio(null, { version: 1, name: 'AR', entities: [] }, new THREE.Vector3())
     this.controls.reset()
     this.controls.kind = ''

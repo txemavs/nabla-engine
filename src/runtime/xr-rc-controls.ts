@@ -15,6 +15,7 @@ export class ARRCControls {
   private camera?: THREE.Camera
   readonly root = new THREE.Group()
   readonly spin = new THREE.Group()
+  private readonly placementHandle = new THREE.Group()
   readonly equipment = new THREE.Group()
   private readonly hydraulics = new XRForklift()
   enabled = true
@@ -56,9 +57,10 @@ export class ARRCControls {
     this.pinButton.rotation.x = Math.PI / 2
     this.pinButton.name = 'Fijar / llevar al pecho'
     this.placement = new XRStationPlacement(this.body, this.pinButton, this.pinBase)
-    this.root.add(this.spin, this.pinBase, this.pinButton)
+    this.root.add(this.spin)
+    this.placementHandle.add(this.pinBase, this.pinButton)
     this.root.visible = false
-    this.body.add(this.root, this.equipment)
+    this.body.add(this.root, this.equipment, this.placementHandle)
     scene.add(this.body)
   }
   place(camera: THREE.Camera): void {
@@ -89,6 +91,10 @@ export class ARRCControls {
     // Both follow/pin with the same station, but wheel calibration cannot rotate
     // the lever console. Its own zero preserves the original unrotated layout.
     this.calibration.apply(this.equipment, 'ar-rc-forklift-levers')
+    // Calibration may reverse the wheel by 180°. The placement grip belongs
+    // below the station, facing the user, rather than in the wheel's model axes.
+    this.placementHandle.position.copy(this.root.position)
+    this.placementHandle.updateWorldMatrix(true, true)
     this.root.updateWorldMatrix(true, true)
     this.equipment.updateWorldMatrix(true, true)
   }
@@ -129,6 +135,7 @@ export class ARRCControls {
   update(hands: readonly GrabHand[], dt = 1 / 60) {
     this.followBody(dt)
     this.root.visible = this.enabled && !!this.kind
+    this.placementHandle.visible = this.root.visible
     this.equipment.visible = this.enabled && this.kind === 'forklift'
     const result = {
       throttle: 0,

@@ -4,13 +4,15 @@
 
 [Source](../../../game/headset.ts)
 
+Two self-contained entry cards. Supported AR is prepared in advance so
+the Enter handler keeps the original user activation for WebXR.
+
 ## Module dependencies
 
-- `@nabla/engine/config/controls`
 
 ## update
 
-[Implementation, line 11](../../../game/headset.ts#L11)
+[Implementation, line 9](../../../game/headset.ts#L9)
 
 ```ts
 update(): inferred by TypeScript; see implementation
@@ -24,18 +26,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## prepareAR
 
-[Implementation, line 31](../../../game/headset.ts#L31)
+[Implementation, line 29](../../../game/headset.ts#L29)
 
 ```ts
 prepareAR(): Promise<void>
 ```
 
-## prepareAR.callback@32
+## prepareAR.callback@30
 
-[Implementation, line 32](../../../game/headset.ts#L32)
+[Implementation, line 30](../../../game/headset.ts#L30)
 
 ```ts
-callback@32(): inferred by TypeScript; see implementation
+callback@30(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -51,69 +53,67 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `panel.querySelector('#status')?.remove`
 - `template.querySelector`
 
-## prepareAR.callback@32.callback@45
+## prepareAR.callback@30.callback@43
 
-[Implementation, line 45](../../../game/headset.ts#L45)
+[Implementation, line 43](../../../game/headset.ts#L43)
 
 ```ts
-callback@45(active): inferred by TypeScript; see implementation
+callback@43(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `enter.focus`
 
-## prepareAR.callback@51
+## prepareAR.callback@50
 
-[Implementation, line 51](../../../game/headset.ts#L51)
+[Implementation, line 50](../../../game/headset.ts#L50)
 
 ```ts
-callback@51(error): inferred by TypeScript; see implementation
+callback@50(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## selectTab
+## callback@55
 
-[Implementation, line 56](../../../game/headset.ts#L56)
+[Implementation, line 55](../../../game/headset.ts#L55)
 
 ```ts
-selectTab(mode: 'vr' | 'ar'): inferred by TypeScript; see implementation
+callback@55(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `String`
-- `document.getElementById`
-- `prepareAR`
-- `tab.setAttribute`
-
-## callback@68
-
-[Implementation, line 68](../../../game/headset.ts#L68)
-
-```ts
-callback@68(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `selectTab`
-
-## callback@69
-
-[Implementation, line 69](../../../game/headset.ts#L69)
-
-```ts
-callback@69(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `document.getElementById`
-- `document.getElementById(\`tab-${next}\`)!.focus`
 - `event.preventDefault`
-- `keyboardAction`
-- `selectTab`
+- `ride.getAttribute`
+
+## checkSupport
+
+[Implementation, line 58](../../../game/headset.ts#L58)
+
+```ts
+checkSupport(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise.all`
+- `String`
+- `prepareAR`
+- `ride.setAttribute`
+- `supported`
+
+## checkSupport.supported
+
+[Implementation, line 59](../../../game/headset.ts#L59)
+
+```ts
+supported(mode: XRSessionMode): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `navigator.xr.isSessionSupported`

@@ -125,12 +125,23 @@ export function stepFlight(
           ? aircraft.fastSpeedMs
           : aircraft.slowSpeedMs
         : 68
-      const thrust =
-        lift > 0
-          ? clamp(speed - along, 0, aircraft?.accelerationMs2 ?? 8) *
-            (aircraft ? clamp(lift, 0, 1) : 1)
+      const gas = clamp(lift, 0, 1)
+      // The authored mode is the full-throttle terminal airspeed, in engine metres/second.
+      // Constant thrust and quadratic aerodynamic drag approach it smoothly; compensate only
+      // the rigid body's artificial damping, which is not an aircraft's air resistance.
+      const drag = aircraft
+        ? clamp(
+            (aircraft.accelerationMs2 / (speed * speed)) * along * Math.abs(along),
+            -aircraft.accelerationMs2 * 1.5,
+            aircraft.accelerationMs2 * 1.5,
+          )
+        : 0.0011 * along * Math.abs(along)
+      const thrust = aircraft
+        ? aircraft.accelerationMs2 * gas
+        : lift > 0
+          ? clamp(speed - along, 0, 8)
           : 0
-      const drag = 0.0011 * along * Math.abs(along)
+      const damping = aircraft ? -Math.log(1 - body.linearDamping) * along : 0
       const flightDir = body.velocity.length() > 4 ? body.velocity.clone().normalize() : nose
       // Nose above the flight path is positive. The old sign rewarded diving.
       const aoa = clamp(-wing.dot(flightDir), -0.45, 0.5)
@@ -138,7 +149,7 @@ export function stepFlight(
       body.applyForce(
         wing
           .scale(liftAccel)
-          .vadd(nose.scale(thrust - drag))
+          .vadd(nose.scale(thrust - drag + damping))
           .scale(body.mass),
       )
     } else {

@@ -58,7 +58,7 @@ def has_ready_context(output, key):
         return False
     _, z, x, y = key.split('/')
     z, x, y = int(z), int(x), int(y)
-    for other in (13, 14, 15):
+    for other in (12, 13, 14, 15):
         if other < z:
             scale = 2 ** (z-other)
             if ready_manifest(output, f'z/{other}/{x//scale}/{y//scale}'):

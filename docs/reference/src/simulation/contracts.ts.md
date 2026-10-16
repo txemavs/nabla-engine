@@ -12,7 +12,7 @@ Device-independent input and copied player snapshots. Distances are metres; yaw 
 
 ## idleInput
 
-[Implementation, line 17](../../../../src/simulation/contracts.ts#L17)
+[Implementation, line 21](../../../../src/simulation/contracts.ts#L21)
 
 ```ts
 idleInput(): PlayerInput

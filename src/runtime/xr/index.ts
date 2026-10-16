@@ -9,3 +9,5 @@ export { XRGrab, type GrabHand } from '../xr-grab.js'
 export { XRObjectGrab } from '../xr-object-grab.js'
 
 export { XRTrackedHand } from '../xr-tracked-hands.js'
+
+export { XRMenuGesture } from '../xr-menu-gesture.js'

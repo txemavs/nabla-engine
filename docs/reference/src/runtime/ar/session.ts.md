@@ -73,4 +73,3 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.arCamera.position.set`
 - `this.arCamera.quaternion.set`
 - `this.arCamera.updateWorldMatrix`
-- `this.arRenderer.xr.getReferenceSpace`

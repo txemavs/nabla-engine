@@ -10,7 +10,7 @@
 
 ## cloudDecks
 
-[Implementation, line 180](../../../../../src/render/planet/artistic-clouds.ts#L180)
+[Implementation, line 181](../../../../../src/render/planet/artistic-clouds.ts#L181)
 
 Mid-latitude étages, metres above sea level. Low 1 km, middle 4 km, cirrus 9 km.
 Storm drops the base and grows the low deck into a cumulonimbus toward the tropopause.
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shareUniforms
 
-[Implementation, line 208](../../../../../src/render/planet/artistic-clouds.ts#L208)
+[Implementation, line 209](../../../../../src/render/planet/artistic-clouds.ts#L209)
 
 ```ts
 shareUniforms(material: ShaderMaterial, sun: Vector3, shared: Shared): inferred by TypeScript; see implementation
@@ -34,7 +34,7 @@ shareUniforms(material: ShaderMaterial, sun: Vector3, shared: Shared): inferred 
 
 ## writeDecks
 
-[Implementation, line 225](../../../../../src/render/planet/artistic-clouds.ts#L225)
+[Implementation, line 226](../../../../../src/render/planet/artistic-clouds.ts#L226)
 
 ```ts
 writeDecks(shared: Shared): inferred by TypeScript; see implementation
@@ -46,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## patchGroundCloudShadow
 
-[Implementation, line 267](../../../../../src/render/planet/artistic-clouds.ts#L267)
+[Implementation, line 268](../../../../../src/render/planet/artistic-clouds.ts#L268)
 
 One cumulus sample. Materials that already pay for lighting pick this up.
 
@@ -61,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## screenTriangle
 
-[Implementation, line 323](../../../../../src/render/planet/artistic-clouds.ts#L323)
+[Implementation, line 324](../../../../../src/render/planet/artistic-clouds.ts#L324)
 
 ```ts
 screenTriangle(): BufferGeometry
@@ -76,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createArtisticClouds
 
-[Implementation, line 331](../../../../../src/render/planet/artistic-clouds.ts#L331)
+[Implementation, line 332](../../../../../src/render/planet/artistic-clouds.ts#L332)
 
 Local sheets, drawn after the world so they sit on the terrain.
 
@@ -94,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createArtisticClouds.setWeather
 
-[Implementation, line 389](../../../../../src/render/planet/artistic-clouds.ts#L389)
+[Implementation, line 390](../../../../../src/render/planet/artistic-clouds.ts#L390)
 
 ```ts
 setWeather(amount: number, storm: number): inferred by TypeScript; see implementation
@@ -106,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createGlobeClouds
 
-[Implementation, line 447](../../../../../src/render/planet/artistic-clouds.ts#L447)
+[Implementation, line 448](../../../../../src/render/planet/artistic-clouds.ts#L448)
 
 Skin on the globe. Front faces only, so it appears once the camera is outside it.
 
@@ -122,26 +122,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shadeEarthWithClouds
 
-[Implementation, line 475](../../../../../src/render/planet/artistic-clouds.ts#L475)
+[Implementation, line 476](../../../../../src/render/planet/artistic-clouds.ts#L476)
 
 Same noise as the globe skin, shifted toward the sun, darkening the earth underneath.
 
 ```ts
-shadeEarthWithClouds(material: MeshLambertMaterial, sunDirection: Vector3, coverage: { value: number }, dayHours: { value: number }, amount: { value: number }): inferred by TypeScript; see implementation
+shadeEarthWithClouds(material: MeshLambertMaterial, sunDirection: Vector3, coverage: { value: number }, dayHours: { value: number }, amount: { value: number }, nightMap: { value: Texture | null } = { value: null }): inferred by TypeScript; see implementation
 ```
 
-## shadeEarthWithClouds.callback@482
+## shadeEarthWithClouds.callback@484
 
-[Implementation, line 482](../../../../../src/render/planet/artistic-clouds.ts#L482)
+[Implementation, line 484](../../../../../src/render/planet/artistic-clouds.ts#L484)
 
 ```ts
-callback@482(): inferred by TypeScript; see implementation
+callback@484(): inferred by TypeScript; see implementation
 ```
 
-## shadeEarthWithClouds.callback@483
+## shadeEarthWithClouds.callback@485
 
-[Implementation, line 483](../../../../../src/render/planet/artistic-clouds.ts#L483)
+[Implementation, line 485](../../../../../src/render/planet/artistic-clouds.ts#L485)
 
 ```ts
-callback@483(shader): inferred by TypeScript; see implementation
+callback@485(shader): inferred by TypeScript; see implementation
 ```

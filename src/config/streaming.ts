@@ -16,6 +16,8 @@ export const streamingDefaults = Object.freeze({
   blockingInstallBudgetMs: 12,
   /** Poll interval while play() blocks on waitForGround (ms). */
   blockingPollMs: 16,
+  /** Flight keeps exact Z15 support near ground or when descending into this height within look-ahead. */
+  flightFineHeight: 1000,
   /** Distance from scene origin before rebasing render coordinates, metres. */
   floatingOriginDistance: 10_000,
 })

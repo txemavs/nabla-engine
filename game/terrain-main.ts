@@ -116,6 +116,7 @@ try {
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
     locale: 'es',
+    startupTerrain: 'nearby',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
@@ -158,6 +159,14 @@ try {
       baseUrl: config.base,
       mode: 'static',
       horizon: false,
+      meshMinZoom:
+        params.get('meshMinZoom') === '12'
+          ? 12
+          : params.get('meshMinZoom') === '13'
+            ? 13
+            : params.get('meshMinZoom') === '14'
+              ? 14
+              : 15,
       // No index file: the engine asks for the tiles it needs; a tile the host lacks is a hole, recorded here.
       missing: new MissingTiles({
         key: `nabla.terrain.missing:${config.base}`,

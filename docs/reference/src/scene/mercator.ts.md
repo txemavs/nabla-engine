@@ -286,10 +286,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 174](../../../../src/scene/mercator.ts#L174)
 
-z15 GLBs inside the draw distance. Coarser zooms are photographs of those meshes.
+Ground uses Z15; flight can refine published Z12–Z15 mesh coverage within one budget.
 
 ```ts
-planMapZooms(options: { latitude: number longitude: number heightAboveGround: number viewDistance: number maxTiles?: number adaptive?: boolean }): MapZoomPlan
+planMapZooms(options: { latitude: number longitude: number heightAboveGround: number viewDistance: number maxTiles?: number adaptive?: boolean /** Coarsest mesh level actually published by the source. */ minZoom?: 12 | 13 | 14 | 15 /** Coarse coverage ahead of a flying player; fine detail stays near the current position. */ lookAhead?: { latitude: number; longitude: number } }): MapZoomPlan
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -301,6 +301,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.tan`
 - `Number.isFinite`
 - `Number.isInteger`
+- `[12, 13, 14, 15].includes`
 - `adaptiveMapPlan`
 - `candidates.push`
 - `candidates.slice`
@@ -315,7 +316,7 @@ Explicit throws in this body:
 
 ## planMapZooms.distance
 
-[Implementation, line 206](../../../../src/scene/mercator.ts#L206)
+[Implementation, line 213](../../../../src/scene/mercator.ts#L213)
 
 ```ts
 distance(tile: MapTile): inferred by TypeScript; see implementation
@@ -328,12 +329,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 
-## planMapZooms.callback@220
+## planMapZooms.callback@227
 
-[Implementation, line 220](../../../../src/scene/mercator.ts#L220)
+[Implementation, line 227](../../../../src/scene/mercator.ts#L227)
 
 ```ts
-callback@220(a, b): inferred by TypeScript; see implementation
+callback@227(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -342,7 +343,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readyMapCover
 
-[Implementation, line 230](../../../../src/scene/mercator.ts#L230)
+[Implementation, line 237](../../../../src/scene/mercator.ts#L237)
 
 Atomic parent replacement. Never display a parent and descendants together.
 
@@ -358,7 +359,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readyMapCover.visit
 
-[Implementation, line 232](../../../../src/scene/mercator.ts#L232)
+[Implementation, line 239](../../../../src/scene/mercator.ts#L239)
 
 ```ts
 visit(tile: MapTile): MapTile[] | undefined
@@ -374,12 +375,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `ready.has`
 
-## readyMapCover.visit.callback@234
+## readyMapCover.visit.callback@241
 
-[Implementation, line 234](../../../../src/scene/mercator.ts#L234)
+[Implementation, line 241](../../../../src/scene/mercator.ts#L241)
 
 ```ts
-callback@234(child): inferred by TypeScript; see implementation
+callback@241(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -387,20 +388,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `wanted.has`
 
-## readyMapCover.visit.callback@236
+## readyMapCover.visit.callback@243
 
-[Implementation, line 236](../../../../src/scene/mercator.ts#L236)
+[Implementation, line 243](../../../../src/scene/mercator.ts#L243)
 
 ```ts
-callback@236(cover): inferred by TypeScript; see implementation
+callback@243(cover): inferred by TypeScript; see implementation
 ```
 
-## readyMapCover.callback@240
+## readyMapCover.callback@247
 
-[Implementation, line 240](../../../../src/scene/mercator.ts#L240)
+[Implementation, line 247](../../../../src/scene/mercator.ts#L247)
 
 ```ts
-callback@240(root): inferred by TypeScript; see implementation
+callback@247(root): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -409,7 +410,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## planetReadyCover
 
-[Implementation, line 244](../../../../src/scene/mercator.ts#L244)
+[Implementation, line 251](../../../../src/scene/mercator.ts#L251)
 
 Progressive first paint, but an existing parent remains until every child is complete.
 
@@ -425,7 +426,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## planetReadyCover.visit
 
-[Implementation, line 246](../../../../src/scene/mercator.ts#L246)
+[Implementation, line 253](../../../../src/scene/mercator.ts#L253)
 
 ```ts
 visit(tile: MapTile): { tiles: MapTile[]; complete: boolean }
@@ -441,12 +442,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `ready.has`
 
-## planetReadyCover.visit.callback@249
+## planetReadyCover.visit.callback@256
 
-[Implementation, line 249](../../../../src/scene/mercator.ts#L249)
+[Implementation, line 256](../../../../src/scene/mercator.ts#L256)
 
 ```ts
-callback@249(c): inferred by TypeScript; see implementation
+callback@256(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -454,36 +455,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `wanted.has`
 
-## planetReadyCover.visit.callback@250
+## planetReadyCover.visit.callback@257
 
-[Implementation, line 250](../../../../src/scene/mercator.ts#L250)
+[Implementation, line 257](../../../../src/scene/mercator.ts#L257)
 
 ```ts
-callback@250(c): inferred by TypeScript; see implementation
+callback@257(c): inferred by TypeScript; see implementation
 ```
 
-## planetReadyCover.visit.callback@251
+## planetReadyCover.visit.callback@258
 
-[Implementation, line 251](../../../../src/scene/mercator.ts#L251)
+[Implementation, line 258](../../../../src/scene/mercator.ts#L258)
 
 ```ts
-callback@251(c): inferred by TypeScript; see implementation
+callback@258(c): inferred by TypeScript; see implementation
 ```
 
-## planetReadyCover.visit.callback@253
+## planetReadyCover.visit.callback@260
 
-[Implementation, line 253](../../../../src/scene/mercator.ts#L253)
+[Implementation, line 260](../../../../src/scene/mercator.ts#L260)
 
 ```ts
-callback@253(c): inferred by TypeScript; see implementation
+callback@260(c): inferred by TypeScript; see implementation
 ```
 
-## planetReadyCover.callback@255
+## planetReadyCover.callback@262
 
-[Implementation, line 255](../../../../src/scene/mercator.ts#L255)
+[Implementation, line 262](../../../../src/scene/mercator.ts#L262)
 
 ```ts
-callback@255(t): inferred by TypeScript; see implementation
+callback@262(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -492,12 +493,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## adaptiveMapPlan
 
-[Implementation, line 259](../../../../src/scene/mercator.ts#L259)
+[Implementation, line 266](../../../../src/scene/mercator.ts#L266)
 
 Mixed visual coverage. Ancestors remain requested until complete children can replace them.
 
 ```ts
-adaptiveMapPlan(latitude: number, longitude: number, height: number, distance: number, budget: number): MapZoomPlan
+adaptiveMapPlan(latitude: number, longitude: number, height: number, distance: number, budget: number, minZoom: 12 | 13 | 14, lookAhead?: { latitude: number; longitude: number }): MapZoomPlan
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -506,23 +507,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.floor`
 - `Math.max`
 - `Math.min`
+- `Set`
 - `candidates.push`
 - `candidates.slice`
 - `candidates.sort`
+- `distanceFrom`
 - `groundDistance`
 - `leaves.indexOf`
 - `leaves.splice`
 - `mapTileAt`
 - `mapTileChildren`
 - `mapTileGroundWidth`
+- `mapTileId`
 - `requests.push`
+- `seen.add`
+- `seen.has`
 
-## adaptiveMapPlan.groundDistance
+## adaptiveMapPlan.distanceFrom
 
-[Implementation, line 271](../../../../src/scene/mercator.ts#L271)
+[Implementation, line 280](../../../../src/scene/mercator.ts#L280)
 
 ```ts
-groundDistance(tile: MapTile): inferred by TypeScript; see implementation
+distanceFrom(tile: MapTile, at = { latitude, longitude }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -535,24 +541,50 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileBounds`
 - `mapTileGroundWidth`
 
-## adaptiveMapPlan.callback@289
+## adaptiveMapPlan.groundDistance
 
-[Implementation, line 289](../../../../src/scene/mercator.ts#L289)
+[Implementation, line 292](../../../../src/scene/mercator.ts#L292)
 
 ```ts
-callback@289(a, b): inferred by TypeScript; see implementation
+groundDistance(tile: MapTile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `groundDistance`
+- `distanceFrom`
 
-## adaptiveMapPlan.callback@297
+## adaptiveMapPlan.priority
 
-[Implementation, line 297](../../../../src/scene/mercator.ts#L297)
+[Implementation, line 314](../../../../src/scene/mercator.ts#L314)
 
 ```ts
-callback@297(tile): inferred by TypeScript; see implementation
+priority(tile: MapTile): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `distanceFrom`
+- `groundDistance`
+
+## adaptiveMapPlan.callback@319
+
+[Implementation, line 319](../../../../src/scene/mercator.ts#L319)
+
+```ts
+callback@319(a, b): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `priority`
+
+## adaptiveMapPlan.callback@327
+
+[Implementation, line 327](../../../../src/scene/mercator.ts#L327)
+
+```ts
+callback@327(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -561,12 +593,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `groundDistance`
 
-## adaptiveMapPlan.callback@302
+## adaptiveMapPlan.callback@336
 
-[Implementation, line 302](../../../../src/scene/mercator.ts#L302)
+[Implementation, line 336](../../../../src/scene/mercator.ts#L336)
 
 ```ts
-callback@302(a, b): inferred by TypeScript; see implementation
+callback@336(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

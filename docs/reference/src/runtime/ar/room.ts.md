@@ -216,6 +216,8 @@ update(frame: XRFrame, space: XRReferenceSpace, visible: boolean): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `(entry.object.material as THREE.Material).dispose`
+- `Array.from`
+- `Array.from(pose.transform.matrix).every`
 - `Float32Array`
 - `Set`
 - `THREE.BufferAttribute`
@@ -262,9 +264,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@152(p): inferred by TypeScript; see implementation
 ```
 
+## ARRoom.trackingSnapshot
+
+[Implementation, line 197](../../../../../src/runtime/ar/room.ts#L197)
+
+Tracking transforms only; no room geometry or camera imagery is copied.
+
+```ts
+trackingSnapshot(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `[...this.surfaces].slice`
+- `[...this.surfaces].slice(0, 32).map`
+
+## ARRoom.trackingSnapshot.callback@201
+
+[Implementation, line 201](../../../../../src/runtime/ar/room.ts#L201)
+
+```ts
+callback@201([surface, entry]): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entry.object.matrix.toArray`
+
 ## ARRoom.reset
 
-[Implementation, line 195](../../../../../src/runtime/ar/room.ts#L195)
+[Implementation, line 210](../../../../../src/runtime/ar/room.ts#L210)
 
 Room tracking and debug surfaces. No menu, vehicles or application content is created.
 
@@ -282,7 +311,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRoom.dispose
 
-[Implementation, line 205](../../../../../src/runtime/ar/room.ts#L205)
+[Implementation, line 220](../../../../../src/runtime/ar/room.ts#L220)
 
 Room tracking and debug surfaces. No menu, vehicles or application content is created.
 

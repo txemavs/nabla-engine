@@ -84,6 +84,16 @@ export const inputBindings = {
   helm: press('Modo de gobierno de nave', ['KeyM'], ['vehicle']),
   transmission: press('Automático / Normal-Bestia', ['KeyB'], ['vehicle']),
   recover: press('Recuperar vehículo', ['KeyR'], ['game']),
+  'gear.selectR': press('Cambio H · Marcha atrás', [], ['vehicle']),
+  'gear.selectN': press('Cambio H · Punto muerto', [], ['vehicle']),
+  'gear.select1': press('Cambio H · Marcha 1', [], ['vehicle']),
+  'gear.select2': press('Cambio H · Marcha 2', [], ['vehicle']),
+  'gear.select3': press('Cambio H · Marcha 3', [], ['vehicle']),
+  'gear.select4': press('Cambio H · Marcha 4', [], ['vehicle']),
+  'gear.select5': press('Cambio H · Marcha 5', [], ['vehicle']),
+  'gear.select6': press('Cambio H · Marcha 6', [], ['vehicle']),
+  'gear.select7': press('Cambio H · Marcha 7', [], ['vehicle']),
+  'gear.select8': press('Cambio H · Marcha 8', [], ['vehicle']),
   'gear.up': press('Subir marcha', ['PageUp'], ['vehicle']),
   'gear.down': press('Bajar marcha', ['PageDown'], ['vehicle']),
   transfer: press('Transferir puesto de conducción', ['KeyT'], ['vehicle']),
@@ -187,6 +197,12 @@ export function contextualAction(action: InputAction, context: InputContext): In
   return overrides[action] ?? action
 }
 /** Compatibility adapter for existing hosts; new hosts should pass semantic action IDs. */
+/** Semantic adapters may bind actions with no default keyboard shortcut. */
+export function inputActionAvailable(action: InputAction, context: InputContext): boolean {
+  return (inputBindings[action].scopes as readonly Scope[]).some((scope) =>
+    scopes(context).includes(scope),
+  )
+}
 export function legacyInputAction(value: string): InputAction | undefined {
   if (Object.hasOwn(inputBindings, value)) return value as InputAction
   // No active weapon/menu: preserve the historical public game.action(KeyE) contract.
@@ -290,4 +306,24 @@ export function inputMode(
         : vehicle?.forklift
           ? 'forklift'
           : 'road'
+}
+
+/** Keyboard intents for HTML tab lists and focus containment; independent of gameplay actions. */
+export function menuNavigationKey(
+  code: string,
+): 'previous' | 'next' | 'first' | 'last' | 'focus' | undefined {
+  switch (code) {
+    case 'ArrowLeft':
+      return 'previous'
+    case 'ArrowRight':
+      return 'next'
+    case 'Home':
+      return 'first'
+    case 'End':
+      return 'last'
+    case 'Tab':
+      return 'focus'
+    default:
+      return undefined
+  }
 }

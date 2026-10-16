@@ -6,12 +6,27 @@
 
 ## Module dependencies
 
+- `../scene/circuit-plan.js`
 - `../entity/schema.js`
 - `../scene/document.js`
 
+## createFlatTestGround
+
+[Implementation, line 16](../../../../src/examples/flat-tile.ts#L16)
+
+Reuse the engine circuit image at its surveyed scale; terrain owns collisions.
+
+```ts
+createFlatTestGround(): Entity
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `circuitEntities`
+
 ## createFlatTestScene
 
-[Implementation, line 15](../../../../src/examples/flat-tile.ts#L15)
+[Implementation, line 25](../../../../src/examples/flat-tile.ts#L25)
 
 Four adjoining tiles surround the spawn at (0,0), on the planet at sea level.
 
@@ -22,5 +37,6 @@ createFlatTestScene(vehicle?: Entity): SceneDocument
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `createEntity`
+- `createFlatTestGround`
 - `entities.push`
 - `structuredClone`

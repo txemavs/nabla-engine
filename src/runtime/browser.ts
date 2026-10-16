@@ -1,3 +1,6 @@
+import { UsbFeedback } from './usb/feedback.js'
+import { UsbControllers, idleUsbFrame, usbDeviceKey } from './usb/controllers.js'
+import type { UsbFrame, UsbStorage } from './usb/controllers.js'
 import {
   actionHeld,
   inputMode,
@@ -339,6 +342,7 @@ export interface VehiclePlacement {
 
 export interface GameRuntimeOptions {
   /** Override automatic low-profile/Quest geometry selection. Requires a new runtime. */
+  usb?: { storage?: UsbStorage | null }
   assetQuality?: AssetQuality
   /** Fixed initial pickup location; projected onto the ground, takes precedence over a vehicle. */
   weaponPickupLocation?: GeoPoint
@@ -363,6 +367,10 @@ export interface GameRuntimeOptions {
   acceptsInput?: () => boolean
   scene: SceneDocument
   /** Vehicle assemblies prepared during the intro, before gameplay is revealed. Empty by default. */
+  /** 'spawn' starts with usable ground and streams the surroundings while playing.
+   * 'nearby' waits for the spawn Z15 and its three nearest neighbours.
+   * 'area' is an explicit opt-in for finite demonstrations that need full coverage before reveal. */
+  startupTerrain?: 'spawn' | 'nearby' | 'area'
   preloadVehicles?: readonly (readonly Entity[])[]
   /** Spawn one of these prepared assemblies on a road behind the player 2 s after an occupied-vehicle impact explosion. */
   accidentReplacementVehicles?: readonly (readonly Entity[])[]
@@ -482,7 +490,8 @@ export class GameRuntime {
   private probing: Promise<unknown> | null = null
   private attract: {
     loop: FrameLoop
-    started: number
+    elapsed: number
+    camera: THREE.PerspectiveCamera
     last: number | null
     options: Required<AttractOptions>
   } | null = null
@@ -625,6 +634,9 @@ export class GameRuntime {
   private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
   private lastTime: number | null = null
+  readonly usbControllers: UsbControllers
+  readonly usbFeedback = new UsbFeedback()
+  private usbFrame: UsbFrame = idleUsbFrame()
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
@@ -682,6 +694,7 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.usbControllers = new UsbControllers(options.usb?.storage)
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
       this.actionCamOn =
@@ -1046,6 +1059,10 @@ export class GameRuntime {
     const controller = new AbortController()
     this.loading = controller
     this.options.canvas.dataset.loadingStage = 'terrain'
+    this.world?.setStartupMode(
+      this.options.startupTerrain !== 'area',
+      this.options.startupTerrain === 'nearby' ? 4 : 1,
+    )
     const document = structuredClone(this.document)
     try {
       if (this.world) {
@@ -1055,7 +1072,9 @@ export class GameRuntime {
             this.world!.activeTiles.map((tile) => tile.key),
           )
         // A finite example loads its declared coverage before the player can cross a seam.
-        for (const tile of this.options.tiles?.tiles ?? []) {
+        for (const tile of this.options.startupTerrain === 'area'
+          ? (this.options.tiles?.tiles ?? [])
+          : []) {
           await waitForGround(
             this.world,
             geoToLocal(this.document.geography!, mapTileSample(tile, 1, 1, 2)),
@@ -1073,6 +1092,17 @@ export class GameRuntime {
           signal: controller.signal,
           onProgress: progress,
         })
+        if (this.options.startupTerrain === 'nearby') {
+          // These checks share the frozen four-cell plan and reject missing terrain rather than
+          // revealing a scene with fewer cells or silently proceeding after an area timeout.
+          for (const tile of this.world.startupTiles) {
+            await waitForGround(
+              this.world,
+              geoToLocal(this.document.geography!, mapTileSample(tile, 1, 1, 2)),
+              { signal: controller.signal, onProgress: progress },
+            )
+          }
+        }
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
         if (this.options.restParkedOnGround) {
           const authored = new Map(
@@ -1135,6 +1165,7 @@ export class GameRuntime {
       // The scene clock starts at its authored time (e.g. 10:00) at reveal, not at construction.
       const clock = this.document.sky
       if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+      this.world?.setStartupMode(false)
       this.options.canvas.dataset.reveal = 'play'
       this.toolbar.setVisible(true)
       this.stopAttract()
@@ -1147,7 +1178,10 @@ export class GameRuntime {
       if (this.loading === controller) this.stop()
       throw error
     } finally {
-      if (this.loading === controller) this.loading = null
+      if (this.loading === controller) {
+        this.world?.setStartupMode(false)
+        this.loading = null
+      }
     }
   }
 
@@ -1236,6 +1270,8 @@ export class GameRuntime {
   }
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
+    this.usbFeedback.dispose()
+    this.usbControllers.reset()
     if (this.disposed) return
     this.stopAttract()
     this.stop()
@@ -1686,6 +1722,7 @@ export class GameRuntime {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
+      usb: this.usbFrame,
       touch: {
         forward: Math.max(
           -1,
@@ -1720,9 +1757,12 @@ export class GameRuntime {
       negative: Parameters<typeof actionAxis>[2],
     ) => (this.hasInput() ? actionAxis(this.keys.values, positive, negative, hydraulicContext) : 0)
     sim.setForkliftInput([
-      hydraulicAxis('forklift.liftUp', 'forklift.liftDown'),
-      hydraulicAxis('forklift.tiltUp', 'forklift.tiltDown'),
-      hydraulicAxis('forklift.sideRight', 'forklift.sideLeft'),
+      hydraulicAxis('forklift.liftUp', 'forklift.liftDown') +
+        (this.usbFrame.axes.hydraulicLift ?? 0),
+      hydraulicAxis('forklift.tiltUp', 'forklift.tiltDown') +
+        (this.usbFrame.axes.hydraulicTilt ?? 0),
+      hydraulicAxis('forklift.sideRight', 'forklift.sideLeft') +
+        (this.usbFrame.axes.hydraulicSide ?? 0),
     ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
@@ -1750,6 +1790,11 @@ export class GameRuntime {
     this.environment.ocean.setLevel(water.level)
     const physicsStart = measuring ? performance.now() : 0
     const crossing = this.game.step(dt, input, water.level, time)
+    this.usbFeedback.update(
+      vehicleId ? sim.vehicleFeedback(vehicleId) : null,
+      availableGamepads(),
+      this.hasInput() && !this.controlContext.menu,
+    )
     const physicsMs = measuring ? performance.now() - physicsStart : 0
     if (crossing)
       this.options.onMessage?.(
@@ -3151,6 +3196,11 @@ export class GameRuntime {
     }
   }
 
+  /** Read-only tile states for menus and maps; the existing streamer remains authoritative. */
+  get terrainTiles() {
+    return this.world?.diagnostics.tiles.filter((tile) => tile.kind === 'mesh') ?? []
+  }
+
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
   get cellStats(): {
     loaded: number
@@ -3759,7 +3809,7 @@ export class GameRuntime {
             requestAnimationFrame((time) => {
               if (this.disposed) return resolve(0)
               const start = performance.now()
-              for (let pass = 0; pass < 3; pass++) this.renderAttractFrame(time)
+              for (let pass = 0; pass < 3; pass++) this.renderAttractFrame()
               // One-pixel readback waits for the queued GPU work: a CPU+GPU proxy, not a GPU timer.
               gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
               const work = performance.now() - start
@@ -3890,15 +3940,23 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
-      await waitForArea(this.world, spawn, {
-        signal,
-        pending: () => this.view.pendingMapInstalls,
-        flush: () =>
-          this.view.flushMapInstall(
-            streamingDefaults.mapInstallBudgetMs * 3,
-            streamingDefaults.mapInstallCount * 4,
-          ),
-      })
+      if (this.options.startupTerrain === 'area') {
+        await waitForArea(this.world, spawn, {
+          signal,
+          pending: () => this.view.pendingMapInstalls,
+          flush: () =>
+            this.view.flushMapInstall(
+              streamingDefaults.mapInstallBudgetMs * 3,
+              streamingDefaults.mapInstallCount * 4,
+            ),
+        })
+      } else {
+        await waitForGround(this.world, spawn, { signal })
+        this.view.flushMapInstall(
+          streamingDefaults.mapInstallBudgetMs,
+          streamingDefaults.mapInstallCount,
+        )
+      }
       this.world.renderUpdate(this.origin, !!this.quality.buildings, sim)
     }
     signal.throwIfAborted()
@@ -4009,7 +4067,9 @@ export class GameRuntime {
         if (!attract || this.disposed) return
         const frameMs = attract.last === null ? 0 : time - attract.last
         attract.last = time
-        this.renderAttractFrame(time)
+        // Loading, tab suspension or a busy GPU must not fast-forward the orbit on resume.
+        attract.elapsed += Math.min(50, Math.max(0, frameMs))
+        this.renderAttractFrame()
         this.observeResolution(frameMs, time)
       } catch (error) {
         this.stopAttract()
@@ -4017,7 +4077,13 @@ export class GameRuntime {
       }
     })
     loop.setMaxFps(this.display.maxFps)
-    this.attract = { loop, started: performance.now(), last: null, options: resolved }
+    this.attract = {
+      loop,
+      elapsed: 0,
+      camera: this.camera.clone(),
+      last: null,
+      options: resolved,
+    }
     this.options.canvas.dataset.bootMode = 'attract'
     loop.start()
   }
@@ -4033,13 +4099,17 @@ export class GameRuntime {
   get attracting(): boolean {
     return !!this.attract
   }
-  private renderAttractFrame(time: number): void {
+  private renderAttractFrame(): void {
     if (!this.document.geography) return
     const options = this.attract?.options ?? { altitude: 18_000_000, orbitSeconds: 120, tilt: 0.45 }
-    const started = this.attract?.started ?? 0
+    // Warmup changes the gameplay camera's FOV/pose across async waits. The intro owns its
+    // projection so those preparations cannot zoom the globe in and out between frames.
+    const camera = this.attract?.camera ?? this.camera.clone()
+    camera.aspect = this.camera.aspect
+    camera.updateProjectionMatrix()
     const centre = new THREE.Vector3(0, -(EARTH_RADIUS + this.document.geography.altitude), 0)
     const angle = options.orbitSeconds
-      ? (((time - started) / 1000) * Math.PI * 2) / options.orbitSeconds
+      ? (((this.attract?.elapsed ?? 0) / 1000) * Math.PI * 2) / options.orbitSeconds
       : 0
     const distance = EARTH_RADIUS + options.altitude
     const eye = new THREE.Vector3(
@@ -4049,10 +4119,10 @@ export class GameRuntime {
     )
       .multiplyScalar(distance)
       .add(centre)
-    this.camera.up.set(0, 1, 0)
-    this.camera.position.copy(eye)
-    this.camera.lookAt(centre)
-    this.camera.updateMatrixWorld()
+    camera.up.set(0, 1, 0)
+    camera.position.copy(eye)
+    camera.lookAt(centre)
+    camera.updateMatrixWorld()
     this.environment.updateSky(
       this.sky,
       eye,
@@ -4060,11 +4130,11 @@ export class GameRuntime {
       this.attract?.options.clock ?? { mode: 'live' },
       this.quality.fog,
     )
-    this.sky.setViewAspect(this.camera.aspect)
+    this.sky.setViewAspect(camera.aspect)
     const autoClear = this.renderer.autoClear
     this.renderer.autoClear = true
     try {
-      this.sky.render(this.renderer, this.camera, eye)
+      this.sky.render(this.renderer, camera, eye)
     } finally {
       this.renderer.autoClear = autoClear
     }
@@ -4130,6 +4200,9 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    this.usbControllers.reset()
+    this.usbFrame = idleUsbFrame()
+    this.usbFeedback.stop()
     if (this.sidearm) this.sidearm.state.manualRackHeld = false
     this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
@@ -4569,11 +4642,22 @@ export class GameRuntime {
     if (message) this.options.onMessage?.(message)
   }
   private pollGamepad(): Gamepad | null {
-    if (!this.hasInput()) {
+    const pads = availableGamepads()
+    this.usbFrame = this.usbControllers.read(pads, this.controlContext, this.hasInput())
+    for (const action of this.usbFrame.pressed) {
+      if (action === 'camera') this.cycleCamera()
+      else this.action(action)
+    }
+    if (!this.hasInput() || this.usbControllers.configuring) {
       this.previousButtons = []
       return null
     }
-    const pad = availableGamepads().find((p) => p?.connected && p.mapping === 'standard') ?? null
+    const mapped = this.usbControllers.mappedDevices(
+      this.controlContext.mode === 'flight' ? 'flight' : 'road',
+    )
+    const pad =
+      pads.find((p) => p?.connected && p.mapping === 'standard' && !mapped.has(usbDeviceKey(p))) ??
+      null
     if (pad?.index !== this.previousPad) this.previousButtons = []
     this.previousPad = pad?.index ?? null
     if (!pad) return null

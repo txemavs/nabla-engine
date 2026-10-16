@@ -1,3 +1,4 @@
+import { circuitEntities } from '../scene/circuit-plan.js'
 import { createEntity, type Entity } from '../entity/schema.js'
 import type { SceneDocument } from '../scene/document.js'
 
@@ -11,10 +12,19 @@ export const FLAT_TEST_TILES = Object.freeze([
 export const FLAT_TEST_ORIGIN = Object.freeze({ latitude: 0, longitude: 0, altitude: 0 })
 export const FLAT_TEST_BASE = '/examples/flat-z15'
 
+/** Reuse the engine circuit image at its surveyed scale; terrain owns collisions. */
+export function createFlatTestGround(): Entity {
+  const ground = circuitEntities()[0]
+  ground.id = 'flat-test-circuit'
+  ground.parentId = null
+  ground.motion = 'none'
+  return ground
+}
+
 /** Four adjoining tiles surround the spawn at (0,0), on the planet at sea level. */
 export function createFlatTestScene(vehicle?: Entity): SceneDocument {
   const spawn = createEntity('spawn', 'spawn', [0, 2, 0])
-  const entities = [spawn]
+  const entities = [spawn, createFlatTestGround()]
   if (vehicle) {
     const copy = structuredClone(vehicle)
     copy.transform.position = [0, 2, 0]

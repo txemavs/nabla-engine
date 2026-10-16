@@ -4,6 +4,7 @@ import type { SceneDocument } from '../scene/document.js'
 import type { Vec3Tuple } from '../entity/schema.js'
 
 export interface GameplayWorldStream {
+  setStreamMode?(mode: 'ground' | 'flight'): void
   update(position: Vec3Tuple, velocity: Vec3Tuple, protectedPositions: Vec3Tuple[]): void
 }
 /** Shared terrain request cadence and support under vehicles/portals during play. */
@@ -25,7 +26,11 @@ export class GameplayStreaming {
    */
   update(
     world: GameplayWorldStream,
-    sim: { player: { position: Vec3Tuple }; entityTransform(id: string): { position: Vec3Tuple } },
+    sim: {
+      player: { position: Vec3Tuple; vehicleId?: string | null }
+      entityTransform(id: string): { position: Vec3Tuple }
+      vehicleInfo?(id: string): { flightMode: boolean }
+    },
     document: SceneDocument,
     time: number,
   ): boolean {
@@ -36,6 +41,8 @@ export class GameplayStreaming {
       time - this.sample.at <= streamingDefaults.sampleIntervalMs
     )
       return false
+    const id = sim.player.vehicleId
+    world.setStreamMode?.(id && sim.vehicleInfo?.(id).flightMode ? 'flight' : 'ground')
     const position: Vec3Tuple = [...sim.player.position]
     const elapsed = this.sample ? (time - this.sample.at) / 1000 : 0
     const velocity = position.map((value, axis) =>

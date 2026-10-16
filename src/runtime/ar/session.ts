@@ -32,11 +32,12 @@ export class GameAR extends GameXR {
     return super.visible && this.session.referenceReady && this.poseTracked
   }
   override update(frame: XRFrame): void {
+    const wasReady = this.session.referenceReady
     super.update(frame)
-    const space = this.arRenderer.xr.getReferenceSpace()
+    const space = this.referenceSpace
     const pose = space && frame.getViewerPose(space)
-    this.poseTracked = !!pose
-    if (!pose) return
+    this.poseTracked = wasReady && !!pose && !pose.emulatedPosition
+    if (!this.poseTracked || !pose) return
     const p = pose.transform.position,
       q = pose.transform.orientation
     this.arCamera.position.set(p.x, p.y, p.z)

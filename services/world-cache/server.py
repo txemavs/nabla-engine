@@ -172,7 +172,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.respond(200, path.read_bytes(), 'image/jpeg')
             return
-        cell_file = re.fullmatch(r'/z/(13|14|15)/(\d+)/(\d+)/([A-Za-z0-9._-]+)', self.path.split('?', 1)[0])
+        cell_file = re.fullmatch(r'/z/(12|13|14|15)/(\d+)/(\d+)/([A-Za-z0-9._-]+)', self.path.split('?', 1)[0])
         if cell_file:
             z, x, y, name = cell_file.groups()
             path = PREPARE_ROOT / 'z' / z / x / y / name
@@ -230,7 +230,7 @@ class Handler(BaseHTTPRequestHandler):
                 from world.planet.prepare import tile_bounds
                 tile_bounds(tile)
             except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-                self.respond(400, b'{"error":"Expected one z/13|14|15/x/y cell"}')
+                self.respond(400, b'{"error":"Expected one z/12|13|14|15/x/y cell"}')
                 return
             if not PREPARE_QUEUE:
                 self.respond(403, b'{"error":"Generation is off"}')

@@ -657,3 +657,46 @@ it('grabs a live round and consumes it once when inserted into an open chamber',
   expect(w.seatCartridge()).toBe(false)
   loadout.dispose()
 })
+
+it('updates a held handle immediately when its calibrated mount changes, without moving holstered poses', () => {
+  const scene = new THREE.Scene(),
+    camera = new THREE.PerspectiveCamera(),
+    h = hand()
+  scene.add(camera, h.grip)
+  const loadout = new XRLoadout(scene, [weapon()])
+  const tick = () =>
+    loadout.update(
+      [h],
+      camera,
+      new THREE.Vector3(),
+      1000,
+      0.016,
+      true,
+      100,
+      () => null,
+      () => {},
+    )
+  loadout.calibration.apply(h.mount, 'grip-left')
+  tick()
+  h.grip.position.copy(loadout.pistols[0].holster.getWorldPosition(new THREE.Vector3()))
+  squeeze(h, true)
+  tick()
+  const p = loadout.pistols[0]
+  const before = p.holdMount.getWorldPosition(new THREE.Vector3())
+  loadout.calibration.set('grip-left', { x: 4, ry: 15 }, false)
+  loadout.calibration.apply(h.mount, 'grip-left')
+  tick()
+  expect(p.holdMount.getWorldPosition(new THREE.Vector3()).distanceTo(before)).toBeCloseTo(0.04)
+  expect(
+    p.holdMount
+      .getWorldPosition(new THREE.Vector3())
+      .distanceTo(h.mount.getWorldPosition(new THREE.Vector3())),
+  ).toBeCloseTo(0)
+  expect(
+    p.holdMount
+      .getWorldQuaternion(new THREE.Quaternion())
+      .angleTo(h.mount.getWorldQuaternion(new THREE.Quaternion())),
+  ).toBeCloseTo(0)
+  expect(loadout.calibration.get('pistol-0').x).toBe(0)
+  loadout.dispose()
+})

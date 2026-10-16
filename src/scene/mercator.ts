@@ -11,7 +11,7 @@ export interface MapTile {
   y: number
 }
 export const MAP_TILE_MATRIX = 'WebMercatorQuad'
-export const MAP_ZOOMS = [15, 14, 13] as const
+export const MAP_ZOOMS = [15, 14, 13, 12] as const
 export const MERCATOR_LIMIT = 85.0511287798066
 const radius = 6378137
 const circumference = 2 * Math.PI * radius
@@ -166,11 +166,11 @@ export function mapTileGroundWidth(latitude: number, z: number): number {
 export interface MapZoomPlan {
   roots: MapTile[]
   leaves: MapTile[]
-  /** Zoom 15 only. Zoom 14 and 13 are photos, not meshes. */
+  /** Mesh requests, including ancestors retained during atomic LOD replacement. */
   requests: MapTile[]
   budgetLimited: boolean
 }
-/** z15 GLBs inside the draw distance. Coarser zooms are photographs of those meshes. */
+/** Ground uses Z15; flight can refine published Z12–Z15 mesh coverage within one budget. */
 export function planMapZooms(options: {
   latitude: number
   longitude: number
@@ -178,6 +178,10 @@ export function planMapZooms(options: {
   viewDistance: number
   maxTiles?: number
   adaptive?: boolean
+  /** Coarsest mesh level actually published by the source. */
+  minZoom?: 12 | 13 | 14 | 15
+  /** Coarse coverage ahead of a flying player; fine detail stays near the current position. */
+  lookAhead?: { latitude: number; longitude: number }
 }): MapZoomPlan {
   const { latitude, longitude, viewDistance } = options
   const budget = options.maxTiles ?? 96
@@ -187,16 +191,19 @@ export function planMapZooms(options: {
     viewDistance <= 0 ||
     !Number.isInteger(budget) ||
     budget < 1 ||
-    budget > 512
+    budget > 512 ||
+    (options.minZoom !== undefined && ![12, 13, 14, 15].includes(options.minZoom))
   )
     throw Error('Invalid map streaming budget')
-  if (options.adaptive)
+  if (options.adaptive && options.minZoom !== 15)
     return adaptiveMapPlan(
       options.latitude,
       options.longitude,
       options.heightAboveGround,
       viewDistance,
       budget,
+      options.minZoom ?? 12,
+      options.lookAhead,
     )
   const center = mapTileAt(latitude, longitude, 15)
   const width = mapTileGroundWidth(latitude, 15)
@@ -262,31 +269,54 @@ function adaptiveMapPlan(
   height: number,
   distance: number,
   budget: number,
+  minZoom: 12 | 13 | 14,
+  lookAhead?: { latitude: number; longitude: number },
 ): MapZoomPlan {
-  const center = mapTileAt(latitude, longitude, 13),
-    width = mapTileGroundWidth(latitude, 13),
-    n = 2 ** 13
+  const center = mapTileAt(latitude, longitude, minZoom),
+    width = mapTileGroundWidth(latitude, minZoom),
+    n = 2 ** minZoom
   const candidates: MapTile[] = []
   const span = Math.min(24, Math.ceil(distance / width) + 1)
-  const groundDistance = (tile: MapTile) => {
+  const distanceFrom = (tile: MapTile, at = { latitude, longitude }) => {
     const b = mapTileBounds(tile),
       lon = (b.west + b.east) / 2,
       lat = (b.north + b.south) / 2
     const dx =
-      ((Math.min(Math.abs(lon - longitude), 360 - Math.abs(lon - longitude)) * Math.PI) / 180) *
+      ((Math.min(Math.abs(lon - at.longitude), 360 - Math.abs(lon - at.longitude)) * Math.PI) /
+        180) *
       radius *
-      Math.cos((latitude * Math.PI) / 180)
-    const dy = (((lat - latitude) * Math.PI) / 180) * radius
+      Math.cos((at.latitude * Math.PI) / 180)
+    const dy = (((lat - at.latitude) * Math.PI) / 180) * radius
     return Math.max(0, Math.hypot(dx, dy) - mapTileGroundWidth(latitude, tile.z) * 0.71)
   }
-  for (let dy = -span; dy <= span; dy++)
-    for (let dx = -span; dx <= span; dx++) {
-      const y = center.y + dy
-      if (y < 0 || y >= n) continue
-      const tile = { z: 13, x: (center.x + dx + n) % n, y }
-      if (groundDistance(tile) <= distance) candidates.push(tile)
-    }
-  candidates.sort((a, b) => groundDistance(a) - groundDistance(b))
+  const groundDistance = (tile: MapTile) => distanceFrom(tile)
+  const centers = [
+    center,
+    ...(lookAhead ? [mapTileAt(lookAhead.latitude, lookAhead.longitude, minZoom)] : []),
+  ]
+  const seen = new Set<string>()
+  for (const focus of centers)
+    for (let dy = -span; dy <= span; dy++)
+      for (let dx = -span; dx <= span; dx++) {
+        const y = focus.y + dy
+        if (y < 0 || y >= n) continue
+        const tile = { z: minZoom, x: (focus.x + dx + n) % n, y }
+        const id = mapTileId(tile)
+        if (
+          !seen.has(id) &&
+          (groundDistance(tile) <= distance ||
+            (lookAhead && distanceFrom(tile, lookAhead) <= distance))
+        ) {
+          seen.add(id)
+          candidates.push(tile)
+        }
+      }
+  const priority = (tile: MapTile) =>
+    Math.min(
+      groundDistance(tile),
+      lookAhead ? distanceFrom(tile, lookAhead) + width * 0.5 : Infinity,
+    )
+  candidates.sort((a, b) => priority(a) - priority(b) || a.y - b.y || a.x - b.x)
   const roots = candidates.slice(0, Math.max(1, Math.floor(budget / 3)))
   const requests = [...roots],
     leaves = [...roots]
@@ -297,7 +327,11 @@ function adaptiveMapPlan(
         (tile) =>
           tile.z < 15 &&
           Math.hypot(groundDistance(tile), height) <
-            (tile.z === 13 ? Math.max(near * 2, distance * 0.65) : near),
+            (tile.z === 12
+              ? Math.max(near * 4, distance * 0.95)
+              : tile.z === 13
+                ? Math.max(near * 2, distance * 0.65)
+                : near),
       )
       .sort((a, b) => groundDistance(a) - groundDistance(b))[0]
     if (!next) break

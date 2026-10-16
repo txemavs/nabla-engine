@@ -320,7 +320,7 @@ callback@229(wheel): inferred by TypeScript; see implementation
 
 ## stepWheeledVehicle.driven
 
-[Implementation, line 246](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L246)
+[Implementation, line 247](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L247)
 
 ```ts
 driven(i: number): inferred by TypeScript; see implementation
@@ -330,25 +330,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `isDriven`
 
-## stepWheeledVehicle.callback@281
+## stepWheeledVehicle.callback@283
 
-[Implementation, line 281](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L281)
+[Implementation, line 283](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L283)
 
 ```ts
-callback@281(w): inferred by TypeScript; see implementation
+callback@283(w): inferred by TypeScript; see implementation
 ```
 
-## stepWheeledVehicle.callback@289
+## stepWheeledVehicle.callback@293
 
-[Implementation, line 289](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L289)
+[Implementation, line 293](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L293)
 
 ```ts
-callback@289(wheel): inferred by TypeScript; see implementation
+callback@293(wheel): inferred by TypeScript; see implementation
 ```
 
 ## enterWheeledVehicle
 
-[Implementation, line 356](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L356)
+[Implementation, line 376](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L376)
 
 A driver gets in (spawned in the seat, entered with E, or took over the controls): the
 selector goes to P, the full service brake holds the vehicle, and, when `ignition` is true,
@@ -366,7 +366,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shiftWheeledVehicle
 
-[Implementation, line 362](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L362)
+[Implementation, line 382](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L382)
 
 Gear requests return domain results; UI messages belong to the facade/host.
 
@@ -384,7 +384,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## automaticWheeledTransmission
 
-[Implementation, line 373](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L373)
+[Implementation, line 393](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L393)
 
 ```ts
 automaticWheeledTransmission(v: WheeledVehicle): boolean
@@ -392,7 +392,7 @@ automaticWheeledTransmission(v: WheeledVehicle): boolean
 
 ## setWheeledEngineMode
 
-[Implementation, line 382](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L382)
+[Implementation, line 402](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L402)
 
 Select an engine mode on a car with `powertrain.modes` (the selector's D = normal, S = beast).
 Returns false when the vehicle has a single engine or lacks that mode.
@@ -407,7 +407,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wheeledTelemetry
 
-[Implementation, line 388](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L388)
+[Implementation, line 408](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L408)
 
 ```ts
 wheeledTelemetry(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheeledTelemetry
@@ -426,7 +426,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tuple
 
-[Implementation, line 427](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L427)
+[Implementation, line 450](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L450)
 
 ```ts
 tuple(v: Vec3): WheelVector
@@ -434,7 +434,7 @@ tuple(v: Vec3): WheelVector
 
 ## wheelContacts
 
-[Implementation, line 428](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L428)
+[Implementation, line 451](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L451)
 
 ```ts
 wheelContacts(v: WheeledVehicle, input: WheeledInput, active: boolean, tireEffects = true): WheelContactSnapshot[]
@@ -447,18 +447,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wheelContacts.rear
 
-[Implementation, line 436](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L436)
+[Implementation, line 459](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L459)
 
 ```ts
 rear(i: number): inferred by TypeScript; see implementation
 ```
 
-## wheelContacts.callback@437
+## wheelContacts.callback@460
 
-[Implementation, line 437](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L437)
+[Implementation, line 460](../../../../../../src/simulation/vehicles/wheeled/runtime.ts#L460)
 
 ```ts
-callback@437(wheel, i): inferred by TypeScript; see implementation
+callback@460(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

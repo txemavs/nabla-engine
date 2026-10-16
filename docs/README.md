@@ -60,3 +60,7 @@ preserves the edit/play contract and a single physics owner.
 - [Planet visual settings (game HUD)](planet-visual-settings.md): global object poses, local working frames and destination-specific portal environments.
 
 - [Gameplay tuning: weapon angles, FOV and effects](gameplay-tuning.md)
+
+- [Arranque progresivo y streaming de vuelo](terrain-streaming.md): cobertura inicial, niveles Z12–Z15 y publicación de LOD.
+
+- [Mandos USB, volantes, pedales, joysticks y feedback](usb-controllers.md)

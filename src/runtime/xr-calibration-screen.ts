@@ -2,7 +2,12 @@ import { xrMonitorThemeStyles } from './interface-theme.js'
 import { XRDisposalPortal } from './xr-disposal-portal.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import { XRUiClick } from './xr-ui-click.js'
-import { XRPanelCanvas, type XRPanelAction, type XRPanelPage } from './xr-panel-canvas.js'
+import {
+  radioActionAt,
+  XRPanelCanvas,
+  type XRPanelAction,
+  type XRPanelPage,
+} from './xr-panel-canvas.js'
 import type { XRQualityMenu } from './xr-quality.js'
 import * as THREE from 'three'
 import { HtmlMonitor } from '../render/monitors/html-monitor.js'
@@ -303,6 +308,15 @@ export class XRCalibrationScreen {
         if (x < 400) this.navigate('main')
         else if (x >= 780 && x < 936 && (this.page === 'board' || this.page === 'target'))
           this.canvasPanel?.clear(this.page)
+        return
+      }
+      if (this.page === 'radio' && this.actions()[1]?.preview) {
+        const i = radioActionAt(x, y)
+        if (i >= 0 && this.actions()[i]) {
+          this.canvasPanel?.press(i)
+          this.click()
+          this.actions()[i].run()
+        }
         return
       }
       if (['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes(this.page)) {

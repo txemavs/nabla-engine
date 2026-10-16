@@ -1,180 +1,59 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#121212" />
-    <title>Nabla Engine</title>
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-      }
-      main {
-        max-width: 860px;
-        margin: auto;
-        padding: 48px 24px;
-      }
-      h1 {
-        margin: 0 0 32px;
-        font-size: clamp(32px, 6vw, 48px);
-        font-weight: 400;
-      }
-      nav {
-        display: flex;
-        border-bottom: 1px solid #444;
-        margin-bottom: 0;
-        gap: 0;
-      }
-      nav button {
-        min-width: 100px;
-        border: 0 !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-        border-bottom: 2px solid transparent !important;
-      }
-      nav button[aria-selected='true'] {
-        border-bottom-color: #2196f3 !important;
-        color: #8dcaff !important;
-      }
-      section {
-        padding: 28px;
-        border-top: 0 !important;
-      }
-      h2 {
-        margin: 0 0 16px;
-        font-size: 26px;
-      }
-      p {
-        line-height: 1.55;
-        color: #bbb;
-      }
-      label {
-        display: block;
-        margin: 20px 0 8px;
-      }
-      select {
-        width: 100%;
-      }
-      .selectors {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-      }
-      .launch {
-        display: block;
-        width: 100%;
-        padding: 8px 16px;
-        margin-top: 28px;
-        text-align: center;
-        text-decoration: none;
-      }
-      .secondary {
-        display: block;
-        margin-top: 24px;
-        font-size: 14px;
-        color: #aaa;
-      }
-      .applications {
-        margin: 20px 0;
-        padding-left: 24px;
-        line-height: 1.8;
-      }
-      #status {
-        font-size: 15px;
-        min-height: 24px;
-      }
-      .ar-storage {
-        display: none !important;
-      }
-      #viewport {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100dvh;
-        pointer-events: none;
-      }
-      [hidden] {
-        display: none !important;
-      }
-      @media (max-width: 560px) {
-        main {
-          padding: 24px 16px;
-        }
-        section {
-          padding: 20px;
-        }
-        .selectors {
-          grid-template-columns: 1fr;
-          gap: 0;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main id="headset-launcher">
-      <h1>Nabla Engine</h1>
-      <nav role="tablist" aria-label="Modo de inmersión">
-        <button id="tab-vr" role="tab" aria-selected="true" aria-controls="vr-panel">VR</button
-        ><button
-          id="tab-ar"
-          role="tab"
-          aria-selected="false"
-          aria-controls="ar-panel"
-          tabindex="-1"
-        >
-          AR
-        </button>
-      </nav>
-      <section id="vr-panel" role="tabpanel" aria-labelledby="tab-vr">
-        <h2>Realidad virtual</h2>
-        <p>
-          Inmersión dentro del mundo 3D, con capacidad limitada por la potencia de las gafas. Para
-          jugar a Euskadi Online completo necesitas un PC.
-        </p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#121212" />
+  <title>Nabla Engine</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(1060px, 100%); min-height: 100dvh; margin: auto; padding: 28px; display: grid; align-content: center; gap: 24px; }
+    h1 { margin: 0; text-align: center; font-size: 22px; font-weight: 400; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .mode { aspect-ratio: 1; padding: 28px; display: flex; flex-direction: column; min-width: 0; }
+    .mode header { text-align: center; }
+    .mode-code { margin: 0; font-size: 48px; line-height: 1.1; font-weight: 400; }
+    h2 { margin: 8px 0 0; font-size: 22px; }
+    .description { margin: auto 0; text-align: center; color: #bbb; font-size: 18px; line-height: 1.6; }
+    .selectors { margin: auto 0; display: grid; gap: 14px; }
+    label { display: block; font-size: 16px; margin-bottom: 5px; }
+    select { width: 100%; }
+    #headset-launcher .mode .launch { width: 100%; display: block; text-align: center; padding: 10px; margin-top: 20px; background: #252525; border-color: #444; text-decoration: none; }
+    .launch[aria-disabled='true'] { opacity: .45; cursor: default; }
+    #status { margin: 8px 0 0; font-size: 14px; text-align: center; }
+    #status:empty { display: none; }
+    .ar-storage { display: none !important; }
+    #viewport { position: fixed; inset: 0; width: 100vw; height: 100dvh; pointer-events: none; }
+    [hidden] { display: none !important; }
+    @media (max-width: 760px) {
+      main { padding: 20px; }
+      .modes { grid-template-columns: 1fr; width: min(480px, 100%); margin: auto; gap: 20px; }
+      .mode { aspect-ratio: auto; min-height: 420px; width: 100%; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main id="headset-launcher">
+    <h1>Nabla Engine</h1>
+    <div class="modes">
+      <section id="vr-panel" class="mode" aria-labelledby="vr-title">
+        <header><p class="mode-code">VR</p><h2 id="vr-title">Realidad virtual</h2></header>
         <div class="selectors">
-          <div>
-            <label for="xr-place">¿Dónde quieres ir?</label
-            ><select id="xr-place">
-              <option value="test">Pista de pruebas</option>
-              <option value="z15">Zaisa · Irún</option>
-            </select>
-          </div>
-          <div>
-            <label for="xr-vehicle">Elige vehículo</label
-            ><select id="xr-vehicle">
-              <option value="vfr800">Moto · VFR 800</option>
-              <option value="car">Coche · S3</option>
-              <option value="white-truck">Camión</option>
-              <option value="bmw">BMW</option>
-            </select>
-          </div>
+          <div><label for="xr-place">¿Dónde quieres ir?</label><select id="xr-place"><option value="test">Pista de pruebas</option><option value="z15">Zaisa · Irún</option></select></div>
+          <div><label for="xr-vehicle">Elige vehículo</label><select id="xr-vehicle"><option value="vfr800">Moto · VFR 800</option><option value="car">Coche · S3</option><option value="white-truck">Camión</option><option value="bmw">BMW</option></select></div>
         </div>
-        <a
-          class="launch"
-          id="ride-xr"
-          href="/xr.html?xr=1&amp;example=flat&amp;solo=1&amp;vehicle=vfr800&amp;quality=minimal"
-          >Entrar en realidad virtual</a
-        >
-        <a class="secondary" href="/xr.html">Ver todas las pruebas de desarrollo</a>
+        <a class="launch" id="ride-xr" aria-disabled="true" href="/xr.html?xr=1&amp;example=flat&amp;solo=1&amp;vehicle=vfr800&amp;quality=minimal">Comprobando compatibilidad…</a>
       </section>
-      <section id="ar-panel" role="tabpanel" aria-labelledby="tab-ar" hidden>
-        <h2>Realidad aumentada</h2>
-        <p>
-          Este modo tiene un presupuesto de geometría limitado: comparte recursos con el seguimiento
-          y la comprensión del entorno. Aun así, tenemos varias aplicaciones interesantes:
-        </p>
-        <ul class="applications">
-          <li>Simuladores de radiocontrol</li>
-          <li>Visualización del mapa 3D</li>
-        </ul>
-        <button class="launch" id="enter" disabled>Preparando realidad aumentada…</button>
-        <p id="status" role="status">Selecciona AR para preparar el entorno.</p>
+      <section id="ar-panel" class="mode" aria-labelledby="ar-title">
+        <header><p class="mode-code">AR</p><h2 id="ar-title">Realidad aumentada</h2></header>
+        <p class="description">Simulación de máquinas y visualización de maquetas en tu espacio.<br />Escenas con pocos triángulos.</p>
+        <button class="launch" id="enter" disabled>Comprobando compatibilidad…</button>
+        <p id="status" role="status"></p>
       </section>
-    </main>
-    <script type="module" src="./headset.ts"></script>
-    <script type="module" src="./interface-theme.ts"></script>
-  </body>
+    </div>
+  </main>
+  <script type="module" src="./headset.ts"></script>
+  <script type="module" src="./interface-theme.ts"></script>
+</body>
 </html>

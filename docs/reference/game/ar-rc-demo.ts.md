@@ -48,7 +48,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `frame.getViewerPose`
 - `renderer.render`
-- `renderer.xr.getReferenceSpace`
 - `room.update`
 - `vehicle.setAudioActive`
 - `vehicle.update`

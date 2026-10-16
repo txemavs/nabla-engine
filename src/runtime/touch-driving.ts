@@ -257,7 +257,7 @@ export class TouchDriving {
       gas,
       'gas',
       (e) => this.applyGas(e),
-      () => this.setPad({ throttle: 0 }),
+      () => this.setPad({ throttle: 0, turbo: false }),
     )
 
     stack.append(this.lever, this.turbo, gas)
@@ -387,9 +387,8 @@ export class TouchDriving {
   }
 
   private applyGas(e: PointerEvent) {
-    this.setPad({
-      throttle: driveSliderThrottle(unitFromEvent(e, e.currentTarget as HTMLElement, 'y')),
-    })
+    const ny = unitFromEvent(e, e.currentTarget as HTMLElement, 'y')
+    this.setPad({ throttle: driveSliderThrottle(ny), turbo: ny <= -0.95 })
   }
 
   private applySteer(e: PointerEvent) {
@@ -447,7 +446,10 @@ export class TouchDriving {
           ? this.pad.steer
           : clampUnit(axes.right ?? 0),
       brake: captured.has('handbrake') ? this.pad.handbrake : !!(axes.brake || this.pad.handbrake),
-      sprint: captured.has('turbo') ? this.pad.turbo : !!(axes.sprint || this.pad.turbo),
+      sprint:
+        captured.has('gas') || captured.has('turbo')
+          ? this.pad.turbo
+          : !!(axes.sprint || this.pad.turbo),
     })
   }
 

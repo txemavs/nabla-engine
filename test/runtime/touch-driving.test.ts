@@ -271,6 +271,27 @@ describe('TouchDriving Studio rig', () => {
     hud.dispose()
   })
 
+  it('engages turbo only at the upper throttle stop and clears it when moving away or releasing', () => {
+    const root = host()
+    const hud = new TouchDriving(root as unknown as HTMLElement, { interact() {}, camera() {} }, 'always')
+    hud.setActive(true)
+    hud.setDriving(true)
+    const gas = pick(root, '[data-drive="gas"]')
+    Object.assign(gas, { box: { left: 0, top: 0, width: 48, height: 160 } })
+    fire(gas, 'pointerdown', 24, 16)
+    expect(hud.input().sprint).toBe(false)
+    fire(gas, 'pointermove', 24, 0)
+    expect(hud.input().forward).toBe(1)
+    expect(hud.input().sprint).toBe(true)
+    fire(gas, 'pointermove', 24, 24)
+    expect(hud.input().sprint).toBe(false)
+    fire(gas, 'pointermove', 24, 0)
+    fire(gas, 'pointerup', 24, 0)
+    expect(hud.input().forward).toBe(0)
+    expect(hud.input().sprint).toBe(false)
+    hud.dispose()
+  })
+
   it('releases the handbrake when the lever is dropped below the latch', () => {
     const root = host()
     const hud = new TouchDriving(

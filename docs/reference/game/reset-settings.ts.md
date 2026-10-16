@@ -4,14 +4,15 @@
 
 [Source](../../../game/reset-settings.ts)
 
-Only persisted game preferences; terrain data and unrelated origin storage survive.
-
 ## Module dependencies
 
+- `../src/runtime/settings-backup.js`
 
 ## resetGameSettings
 
-[Implementation, line 30](../../../game/reset-settings.ts#L30)
+[Implementation, line 3](../../../game/reset-settings.ts#L3)
+
+Legacy API: clear game preferences while retaining physical controller calibration.
 
 ```ts
 resetGameSettings(storage: Storage): void
@@ -20,6 +21,6 @@ resetGameSettings(storage: Storage): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Object.keys`
-- `key.startsWith`
-- `keys.has`
+- `isCalibrationKey`
+- `isPreferenceKey`
 - `storage.removeItem`

@@ -41,6 +41,9 @@ it('defaults to real controls and routes each grabbed lever to the shared hydrau
   expect(controls.enabled).toBe(true)
   controls.kind = 'forklift'
   controls.place(new T.PerspectiveCamera())
+  // The wheel faces the driver; the independent hydraulic console keeps its authored pose.
+  expect(new T.Vector3(0, 0, 1).applyQuaternion(controls.root.quaternion).z).toBeCloseTo(-1)
+  expect(new T.Vector3(0, 0, 1).applyQuaternion(controls.equipment.quaternion).z).toBeCloseTo(1)
   const hand = (i: number) => {
     const lever = new T.Group()
     lever.name = 'forklift-lever-' + i

@@ -15,5 +15,6 @@ Opt-in AR adapters. Importing the module does not instantiate or load demo conte
 - `../xr-rc-controls.js`
 - `../xr-room-physics.js`
 - `../xr-object-grab.js`
+- `../xr-menu-gesture.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

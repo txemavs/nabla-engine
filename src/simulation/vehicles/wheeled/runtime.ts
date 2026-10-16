@@ -242,7 +242,8 @@ export function stepWheeledVehicle(
   v.steer += clamp(target - v.steer, -dt * 1.8, dt * 1.8)
   const forward = v.body.quaternion.vmult(new Vec3(0, 0, -1))
   const speed = v.body.velocity.dot(forward)
-  const opposing = active && input.throttle * speed < -0.8
+  const commandThrottle = input.selectedGear === -1 ? -Math.abs(input.throttle) : input.throttle
+  const opposing = active && commandThrottle * speed < -0.8
   const driven = (i: number) => isDriven(v.definition.drivenWheels, i)
   const tune = v.definition.powertrain
   // Start-up sequence after entering: P is kept and the pedals do nothing until it ends.
@@ -262,7 +263,7 @@ export function stepWheeledVehicle(
     !input.handbrake &&
     speed > -0.8
   const throttle =
-    active && powered && !opposing && !starting ? (aggressiveLaunch ? 1 : input.throttle) : 0
+    active && powered && !opposing && !starting ? (aggressiveLaunch ? 1 : commandThrottle) : 0
   if (tune) {
     stepDrivetrain(
       v.drivetrain,
@@ -273,6 +274,7 @@ export function stepWheeledVehicle(
       active && input.handbrake,
       dt,
       aggressiveLaunch,
+      input.selectedGear,
     )
     if (
       powered &&
@@ -280,7 +282,9 @@ export function stepWheeledVehicle(
       v.drivetrain.shiftRemaining === 0 &&
       v.raycast.wheelInfos.some((w) => w.isInContact)
     ) {
-      const retention = engineBrakingForce(v.drivetrain, tune, v.definition.wheelRadius, speed)
+      const retention =
+        engineBrakingForce(v.drivetrain, tune, v.definition.wheelRadius, speed) *
+        (1 - Math.min(1, Math.max(0, Number.isFinite(input.clutch) ? input.clutch! : 0)))
       v.body.applyForce(forward.scale(clamp(retention, -v.body.mass * 2.5, v.body.mass * 2.5)))
     }
     // Aerodynamic drag in the direction of travel; zero extra force on parked cars.
@@ -317,7 +321,10 @@ export function stepWheeledVehicle(
     const share =
       v.definition.drivenWheels === 'all' ? (i < 2 ? 1 - rearShare : rearShare) / 2 : 0.5
     v.raycast.applyEngineForce(
-      driven(i) ? (tune ? v.drivetrain.force * share : v.drivetrain.force) : 0,
+      driven(i)
+        ? (tune ? v.drivetrain.force * share : v.drivetrain.force) *
+            (1 - Math.min(1, Math.max(0, Number.isFinite(input.clutch) ? input.clutch! : 0)))
+        : 0,
       i,
     )
     if (tune) {
@@ -340,7 +347,20 @@ export function stepWheeledVehicle(
           ? v.definition.brakeForce
           : 0
     v.raycast.setBrake(
-      tune && v.drivetrain.burnout ? (i < 2 ? v.definition.brakeForce * 4 : 0) : brake,
+      tune && v.drivetrain.burnout
+        ? i < 2
+          ? v.definition.brakeForce * 4
+          : 0
+        : Math.max(
+            brake,
+            active
+              ? v.definition.brakeForce *
+                  Math.min(
+                    1,
+                    Math.max(0, Number.isFinite(input.serviceBrake) ? input.serviceBrake! : 0),
+                  )
+              : 0,
+          ),
       i,
     )
   }
@@ -404,7 +424,10 @@ export function wheeledTelemetry(
     engineLoad: v.drivetrain.load,
     braking:
       active &&
-      (input.handbrake || input.throttle * signedSpeed < -0.8 || v.drivetrain.changingDirection),
+      (input.handbrake ||
+        (input.serviceBrake ?? 0) > 0.01 ||
+        input.throttle * signedSpeed < -0.8 ||
+        v.drivetrain.changingDirection),
     reversing: active && v.drivetrain.gear < 0,
     shiftCount: v.drivetrain.shiftCount,
     clackCount: v.drivetrain.clackCount,

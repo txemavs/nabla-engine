@@ -6,6 +6,7 @@ import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   createFlatTestScene,
+  createFlatTestGround,
   FLAT_TEST_BASE,
   FLAT_TEST_TILES,
 } from '@nabla/engine/examples/flat-tile'
@@ -74,6 +75,7 @@ try {
   if (flat && !solo) {
     const fleet = ['car', 'white-truck', 'carrier']
     scene.entities = [
+      createFlatTestGround(),
       createEntity('spawn', 'spawn', [-4, 2, 0]),
       ...fleet.flatMap((preset, index) =>
         presetEntities(preset, preset === config.vehicle ? vehicle.id : `demo-${preset}`, [
@@ -141,6 +143,7 @@ try {
   }
   if (solo)
     scene.entities = [
+      ...(flat ? [createFlatTestGround()] : []),
       createEntity('spawn', 'spawn', [-4, 2, -4]),
       ...presetEntities(config.vehicle, vehicle.id, [0, 2, 0]),
     ]

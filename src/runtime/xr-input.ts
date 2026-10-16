@@ -65,3 +65,11 @@ export class XRGameInput {
     }
   }
 }
+
+/** A centred RC stick holds the engine throttle; forward/back changes its setting. */
+export function adjustFlightThrottle(value: number, stick: number, dt: number): number {
+  const current = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+  if (!Number.isFinite(stick) || !Number.isFinite(dt) || dt <= 0) return current
+  const axis = deadzone(stick)
+  return Math.max(0, Math.min(1, current - axis * Math.min(dt, 0.1) * 0.8))
+}

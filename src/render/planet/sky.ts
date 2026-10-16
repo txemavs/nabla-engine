@@ -138,6 +138,7 @@ export class GeographicView {
   private active = 0
   private failed = 0
   private key = ''
+  private readonly earthNightMap: { value: THREE.Texture | null } = { value: null }
   private earthTexture?: THREE.Texture
   private moonTexture?: THREE.Texture
   /** False until earth.jpg is applied (or textures are disabled). */
@@ -201,6 +202,7 @@ export class GeographicView {
       this.globe.coverage,
       this.globe.dayHours,
       this.globe.amount,
+      this.earthNightMap,
     )
     this.air = createAirGlow(this.sunDirection, earthRadius + 0.14)
     this.flare = createLensFlare(this.sunDirection)
@@ -213,7 +215,7 @@ export class GeographicView {
     this.space.add(this.night.root)
     const rotation = this.origin ? localFrame(this.origin).invert() : new THREE.Quaternion()
     this.space.add(this.daylight, this.backdrop, this.clouds.mesh, this.globe.mesh, this.air)
-    if (options.textures !== false)
+    if (options.textures !== false) {
       new THREE.TextureLoader().load(
         new URL('../../../assets/geography/moon.jpg', import.meta.url).href,
         (texture) => {
@@ -233,6 +235,7 @@ export class GeographicView {
         undefined,
         () => this.changed(),
       )
+    }
     this.syncClouds()
     this.backdrop.renderOrder = -100
     this.earth.quaternion.copy(rotation)
@@ -240,7 +243,7 @@ export class GeographicView {
     this.globe.mesh.position.copy(this.earth.position)
     this.globe.mesh.quaternion.copy(rotation)
     this.air.position.copy(this.earth.position)
-    if (options.textures !== false)
+    if (options.textures !== false) {
       new THREE.TextureLoader().load(
         new URL('../../../assets/geography/earth.jpg', import.meta.url).href,
         (texture) => {
@@ -255,7 +258,22 @@ export class GeographicView {
         undefined,
         () => this.changed(),
       )
-    else this.revealEarth()
+      // Optional emission arrives independently: a failed night download cannot block boot.
+      new THREE.TextureLoader().load(
+        new URL('../../../assets/geography/earth-night.jpg', import.meta.url).href,
+        (texture) => {
+          if (this.disposed) {
+            texture.dispose()
+            return
+          }
+          texture.colorSpace = THREE.SRGBColorSpace
+          this.earthNightMap.value = texture
+          this.changed()
+        },
+        undefined,
+        () => this.changed(),
+      )
+    } else this.revealEarth()
   }
   /**
    * Swap the black placeholder for the textured planet (when a map is provided) and allow the
@@ -579,6 +597,7 @@ export class GeographicView {
     this.artistic.deck.geometry.dispose()
     this.artistic.deck.material.dispose()
     this.earthTexture?.dispose()
+    this.earthNightMap.value?.dispose()
     this.moonTexture?.dispose()
     this.space.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points || o instanceof THREE.Line) {

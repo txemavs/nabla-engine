@@ -212,3 +212,40 @@ it('retains scanned geometry while a system overlay temporarily hides tracking d
   expect(room.targets[0]).toBe(mesh)
   room.dispose()
 })
+
+it('never stores estimated surface positions as the recovered room floor', () => {
+  const room = setup()
+  const plane = {
+    planeSpace: {},
+    lastChangedTime: 1,
+    polygon: [
+      { x: 0, y: 0, z: 0 },
+      { x: 1, y: 0, z: 0 },
+      { x: 0, y: 0, z: 1 },
+    ],
+  }
+  let estimated = false
+  const frame = {
+    detectedPlanes: new Set([plane]),
+    getPose: () => ({
+      emulatedPosition: estimated,
+      transform: {
+        matrix: new THREE.Matrix4().makeTranslation(0, estimated ? -1.5 : 0, 0).toArray(),
+      },
+    }),
+  }
+  const tick = () => room.update(frame as unknown as XRFrame, {} as XRReferenceSpace, true)
+  tick()
+  const surface = room.targets[0]
+  const geometry = surface.geometry
+  estimated = true
+  tick()
+  expect(room.targets).toHaveLength(0)
+  expect(surface.matrix.elements[13]).toBe(0)
+  estimated = false
+  tick()
+  expect(room.targets).toEqual([surface])
+  expect(surface.geometry).toBe(geometry)
+  expect(surface.matrix.elements[13]).toBe(0)
+  room.dispose()
+})

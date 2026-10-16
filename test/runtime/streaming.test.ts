@@ -59,3 +59,20 @@ it('restarts without predicting movement from the previous world or clock', () =
   expect(world.update.mock.calls[2][1]).toEqual([0, 0, 0])
   expect(stream.update(world, sim, doc, NaN)).toBe(false)
 })
+
+it('switches the same world streamer between flight and ground using live simulation state', () => {
+  const { doc, sim, world, stream } = fixture()
+  const setStreamMode = vi.fn()
+  let flightMode = true
+  const player = { ...sim.player, vehicleId: 'vehicle' as string | null }
+  const live = { ...sim, player, vehicleInfo: () => ({ flightMode }) }
+  const target = { ...world, setStreamMode }
+  stream.update(target, live, doc, 1000)
+  expect(setStreamMode).toHaveBeenLastCalledWith('flight')
+  flightMode = false
+  stream.update(target, live, doc, 2000)
+  expect(setStreamMode).toHaveBeenLastCalledWith('ground')
+  player.vehicleId = null
+  stream.update(target, live, doc, 3000)
+  expect(setStreamMode).toHaveBeenLastCalledWith('ground')
+})

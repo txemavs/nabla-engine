@@ -11,7 +11,7 @@
 
 ## targetScore
 
-[Implementation, line 21](../../../../src/runtime/xr-panel-canvas.ts#L21)
+[Implementation, line 23](../../../../src/runtime/xr-panel-canvas.ts#L23)
 
 ```ts
 targetScore(x: number, y: number): number
@@ -23,9 +23,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `Math.max`
 
+## radioActionAt
+
+[Implementation, line 29](../../../../src/runtime/xr-panel-canvas.ts#L29)
+
+The same layout coordinates drive drawing and pointer activation.
+
+```ts
+radioActionAt(x: number, y: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+
 ## XRPanelCanvas.constructor
 
-[Implementation, line 37](../../../../src/runtime/xr-panel-canvas.ts#L37)
+[Implementation, line 51](../../../../src/runtime/xr-panel-canvas.ts#L51)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -39,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.press
 
-[Implementation, line 43](../../../../src/runtime/xr-panel-canvas.ts#L43)
+[Implementation, line 57](../../../../src/runtime/xr-panel-canvas.ts#L57)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -53,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.clear
 
-[Implementation, line 47](../../../../src/runtime/xr-panel-canvas.ts#L47)
+[Implementation, line 61](../../../../src/runtime/xr-panel-canvas.ts#L61)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -67,7 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.endStroke
 
-[Implementation, line 53](../../../../src/runtime/xr-panel-canvas.ts#L53)
+[Implementation, line 67](../../../../src/runtime/xr-panel-canvas.ts#L67)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -81,7 +95,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.retainSources
 
-[Implementation, line 56](../../../../src/runtime/xr-panel-canvas.ts#L56)
+[Implementation, line 70](../../../../src/runtime/xr-panel-canvas.ts#L70)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -97,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.endStrokes
 
-[Implementation, line 60](../../../../src/runtime/xr-panel-canvas.ts#L60)
+[Implementation, line 74](../../../../src/runtime/xr-panel-canvas.ts#L74)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -111,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.stroke
 
-[Implementation, line 63](../../../../src/runtime/xr-panel-canvas.ts#L63)
+[Implementation, line 77](../../../../src/runtime/xr-panel-canvas.ts#L77)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -129,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.shot
 
-[Implementation, line 74](../../../../src/runtime/xr-panel-canvas.ts#L74)
+[Implementation, line 88](../../../../src/runtime/xr-panel-canvas.ts#L88)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -145,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRPanelCanvas.draw
 
-[Implementation, line 81](../../../../src/runtime/xr-panel-canvas.ts#L81)
+[Implementation, line 95](../../../../src/runtime/xr-panel-canvas.ts#L95)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -155,13 +169,16 @@ draw(page: XRPanelPage, actions: XRPanelAction[], status: string): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Image`
 - `JSON.stringify`
+- `Math.min`
 - `String`
 - `['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes`
 - `actions.forEach`
 - `actions.map`
 - `c.arc`
 - `c.beginPath`
+- `c.drawImage`
 - `c.fill`
 - `c.fillRect`
 - `c.fillText`
@@ -172,21 +189,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.canvas.getContext`
 - `this.hits.at`
 - `this.hits.reduce`
+- `this.images.get`
+- `this.images.set`
 
-## XRPanelCanvas.draw.callback@85
+## XRPanelCanvas.draw.callback@99
 
-[Implementation, line 85](../../../../src/runtime/xr-panel-canvas.ts#L85)
+[Implementation, line 99](../../../../src/runtime/xr-panel-canvas.ts#L99)
 
 ```ts
-callback@85(a): inferred by TypeScript; see implementation
+callback@99(a): inferred by TypeScript; see implementation
 ```
 
-## XRPanelCanvas.draw.callback@124
+## XRPanelCanvas.draw.callback@144
 
-[Implementation, line 124](../../../../src/runtime/xr-panel-canvas.ts#L124)
+[Implementation, line 144](../../../../src/runtime/xr-panel-canvas.ts#L144)
 
 ```ts
-callback@124(action, i): inferred by TypeScript; see implementation
+callback@144(): inferred by TypeScript; see implementation
+```
+
+## XRPanelCanvas.draw.callback@157
+
+[Implementation, line 157](../../../../src/runtime/xr-panel-canvas.ts#L157)
+
+```ts
+callback@157(action, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -198,17 +225,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `c.roundRect`
 - `c.stroke`
 
-## XRPanelCanvas.draw.callback@188
+## XRPanelCanvas.draw.callback@225
 
-[Implementation, line 188](../../../../src/runtime/xr-panel-canvas.ts#L188)
+[Implementation, line 225](../../../../src/runtime/xr-panel-canvas.ts#L225)
 
 ```ts
-callback@188(sum, h): inferred by TypeScript; see implementation
+callback@225(sum, h): inferred by TypeScript; see implementation
 ```
 
 ## XRPanelCanvas.dispose
 
-[Implementation, line 195](../../../../src/runtime/xr-panel-canvas.ts#L195)
+[Implementation, line 232](../../../../src/runtime/xr-panel-canvas.ts#L232)
 
 Small, bounded drawing surface for the shared XR framed display.
 
@@ -218,4 +245,6 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.images.clear`
+- `this.images.values`
 - `this.texture.dispose`

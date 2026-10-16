@@ -7,6 +7,7 @@ import {
   ShaderMaterial,
   SphereGeometry,
   Vector3,
+  type Texture,
 } from 'three'
 
 const NOISE = `
@@ -478,23 +479,30 @@ export function shadeEarthWithClouds(
   coverage: { value: number },
   dayHours: { value: number },
   amount: { value: number },
+  nightMap: { value: Texture | null } = { value: null },
 ) {
-  material.customProgramCacheKey = () => 'earth-cloud-shadow'
+  material.customProgramCacheKey = () => 'earth-cloud-shadow-night-lights-v1'
   material.onBeforeCompile = (shader) => {
+    shader.uniforms.nablaNightMap = nightMap
     shader.uniforms.nablaCloudSun = { value: sunDirection }
     shader.uniforms.nablaCloudCoverage = coverage
     shader.uniforms.nablaCloudHours = dayHours
     shader.uniforms.nablaCloudAmount = amount
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 cloudLocal;')
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 cloudLocal;\nvarying vec2 earthUv;',
+      )
       .replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\ncloudLocal = normalize(position);',
+        '#include <begin_vertex>\ncloudLocal = normalize(position);\nearthUv = uv;',
       )
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>
+        uniform sampler2D nablaNightMap;
+        varying vec2 earthUv;
         uniform vec3 nablaCloudSun;
         uniform float nablaCloudCoverage;
         uniform float nablaCloudHours;
@@ -516,7 +524,14 @@ export function shadeEarthWithClouds(
         float thresh = mix(0.92, 0.18, nablaCloudAmount);
         float cloud = smoothstep(thresh, thresh + 0.16, f);
         float shadow = cloud * smoothstep(0.0, 0.2, mu) * nablaCloudCoverage;
-        outgoingLight *= mix(1.0, 0.42, shadow);`,
+        outgoingLight *= mix(1.0, 0.42, shadow);
+        // Black Marble contains a blue terrain backdrop. Extract warm city emission rather
+        // than illuminating the ocean, ice and uninhabited land. The sampler is sRGB-decoded.
+        vec3 nightColor = texture2D(nablaNightMap, earthUv).rgb;
+        float city = max(nightColor.r - nightColor.b, 0.0);
+        float night = 1.0 - smoothstep(-0.16, 0.06, mu);
+        float veil = 1.0 - cloud * nablaCloudCoverage * 0.5;
+        outgoingLight += vec3(1.0, 0.78, 0.42) * city * 2.5 * night * veil;`,
       )
   }
 }

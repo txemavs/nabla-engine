@@ -233,7 +233,7 @@ isDriven(axle: WheeledDefinition['drivenWheels'], wheel: number): boolean
 Fixed-step, deliberately forgiving DSG-style clutch; no dependency on asset names or Studio.
 
 ```ts
-stepDrivetrain(state: DrivetrainState, baseSpec: PowertrainDefinition, radius: number, speed: number, throttle: number, handbrake: boolean, dt: number, aggressiveLaunch = false): void
+stepDrivetrain(state: DrivetrainState, baseSpec: PowertrainDefinition, radius: number, speed: number, throttle: number, handbrake: boolean, dt: number, aggressiveLaunch = false, selectedGear?: number): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -251,11 +251,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `gearForSpeed`
 - `gearboxTuning`
 - `selectDriveDirection`
+- `selectManualGear`
 - `selectNeutralOrPark`
 
 ## applySpeedLimiter
 
-[Implementation, line 428](../../../../../src/simulation/vehicles/drivetrain.ts#L428)
+[Implementation, line 431](../../../../../src/simulation/vehicles/drivetrain.ts#L431)
 
 Soft speed limiter, ignition-cut style: at the limit the drive (and the engine load the audio
 hears) drops to zero until the speed has fallen `hysteresisKmh` below it, then comes back.
@@ -266,7 +267,7 @@ applySpeedLimiter(state: DrivetrainState, spec: PowertrainDefinition, speed: num
 
 ## shiftGear
 
-[Implementation, line 449](../../../../../src/simulation/vehicles/drivetrain.ts#L449)
+[Implementation, line 452](../../../../../src/simulation/vehicles/drivetrain.ts#L452)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
@@ -282,7 +283,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineBrakingForce
 
-[Implementation, line 473](../../../../../src/simulation/vehicles/drivetrain.ts#L473)
+[Implementation, line 476](../../../../../src/simulation/vehicles/drivetrain.ts#L476)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 
@@ -296,3 +297,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Math.sign`
+
+## selectManualGear
+
+[Implementation, line 492](../../../../../src/simulation/vehicles/drivetrain.ts#L492)
+
+H-pattern shares the same over-rev and direction protection as the drivetrain.
+
+```ts
+selectManualGear(state: DrivetrainState, spec: PowertrainDefinition, radius: number, speed: number, gear: number): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Number.isInteger`
+- `Object.assign`
+- `gearboxTuning`
+- `isStarting`

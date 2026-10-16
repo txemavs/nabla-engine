@@ -91,7 +91,7 @@ def coverage(cells):
         return None
     return {
         'tiles': len(cells),
-        'byZoom': {str(z): sum(1 for cell in cells if cell['z'] == z) for z in (13, 14, 15)},
+        'byZoom': {str(z): sum(1 for cell in cells if cell['z'] == z) for z in (12, 13, 14, 15)},
         'south': min(cell['south'] for cell in cells),
         'west': min(cell['west'] for cell in cells),
         'north': max(cell['north'] for cell in cells),

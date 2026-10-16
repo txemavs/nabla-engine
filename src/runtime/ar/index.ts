@@ -7,3 +7,5 @@ export { ARRCControls } from '../xr-rc-controls.js'
 export { ARBalls, ARBalls as ARRoomPhysics } from '../xr-room-physics.js'
 
 export { XRObjectGrab } from '../xr-object-grab.js'
+
+export { XRMenuGesture } from '../xr-menu-gesture.js'

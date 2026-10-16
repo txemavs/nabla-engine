@@ -86,3 +86,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Number.isFinite`
 - `hands.get`
+
+## adjustFlightThrottle
+
+[Implementation, line 70](../../../../src/runtime/xr-input.ts#L70)
+
+A centred RC stick holds the engine throttle; forward/back changes its setting.
+
+```ts
+adjustFlightThrottle(value: number, stick: number, dt: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `deadzone`
