@@ -165,8 +165,9 @@ export class ARDrone {
       !sources.some((s) => s.handedness === 'right' && !!s.gamepad)
     )
       this.setArmed(false)
-    const lightButton = !!sources.find((s) => s.handedness === 'left')?.gamepad?.buttons?.[this.lightButtonIndex]
-      ?.pressed
+    const lightButton = !!sources.find((s) => s.handedness === 'left')?.gamepad?.buttons?.[
+      this.lightButtonIndex
+    ]?.pressed
     if (lightButton && !this.lightButtonDown && this.spotlight) this.toggleSpotlight()
     this.lightButtonDown = lightButton
     const climb = -axis('left', 1)

@@ -4,8 +4,8 @@ import { mapTileAt, mapTileId, type MapTile } from '../../scene/mercator.js'
 export function startupTerrainTiles(latitude: number, longitude: number): MapTile[] {
   const center = mapTileAt(latitude, longitude, 15)
   const n = 2 ** center.z
-  const px = (((longitude + 180) % 360 + 360) % 360) / 360 * n
-  const py = (1 - Math.asinh(Math.tan(latitude * Math.PI / 180)) / Math.PI) / 2 * n
+  const px = (((((longitude + 180) % 360) + 360) % 360) / 360) * n
+  const py = ((1 - Math.asinh(Math.tan((latitude * Math.PI) / 180)) / Math.PI) / 2) * n
   const neighbours: { tile: MapTile; distance: number; middle: number }[] = []
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
@@ -21,6 +21,11 @@ export function startupTerrainTiles(latitude: number, longitude: number): MapTil
       })
     }
   }
-  neighbours.sort((a, b) => a.distance - b.distance || a.middle - b.middle || mapTileId(a.tile).localeCompare(mapTileId(b.tile)))
+  neighbours.sort(
+    (a, b) =>
+      a.distance - b.distance ||
+      a.middle - b.middle ||
+      mapTileId(a.tile).localeCompare(mapTileId(b.tile)),
+  )
   return [center, ...neighbours.slice(0, 3).map(({ tile }) => tile)]
 }

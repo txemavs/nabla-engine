@@ -21,7 +21,7 @@ reset(): void
 
 ## XRMenuGesture.update
 
-[Implementation, line 6](../../../../src/runtime/xr-menu-gesture.ts#L6)
+[Implementation, line 9](../../../../src/runtime/xr-menu-gesture.ts#L9)
 
 Short X toggles on release; a two-second hold recalls once without toggling afterward.
 

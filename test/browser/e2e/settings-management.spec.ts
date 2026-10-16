@@ -35,36 +35,30 @@ test('settings files are previewed before import, export excludes unrelated data
   expect(backup.local['nabla.terrain.cache']).toBeUndefined()
   expect(backup.query).toEqual({ quality: 'mobile' })
   const invalid = { ...backup, local: { token: 'bad' } }
-  await page
-    .getByLabel('Archivo JSON de ajustes')
-    .setInputFiles({
-      name: 'invalid.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(invalid)),
-    })
+  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(invalid)),
+  })
   await expect(page.getByRole('status')).toContainText('No se ha importado nada')
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
   const imported = { ...backup, local: { 'nabla.cameraFov': '30' } }
-  await page
-    .getByLabel('Archivo JSON de ajustes')
-    .setInputFiles({
-      name: 'settings.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(imported)),
-    })
+  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+    name: 'settings.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(imported)),
+  })
   await expect(
     page.getByRole('button', { name: 'Aplicar ajustes y recargar', exact: true }),
   ).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
   await page.getByRole('button', { name: 'Cancelar importación', exact: true }).click()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
-  await page
-    .getByLabel('Archivo JSON de ajustes')
-    .setInputFiles({
-      name: 'settings.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(imported)),
-    })
+  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+    name: 'settings.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(imported)),
+  })
   await page.getByRole('button', { name: 'Aplicar ajustes y recargar', exact: true }).click()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('30')
   expect(await page.evaluate(() => localStorage.getItem('nabla.usb.controllers.v1'))).toBeTruthy()

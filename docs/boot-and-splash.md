@@ -182,7 +182,6 @@ day texture and cloud shadows. This adds one texture sample, no extra sphere or 
 call. Night-map loading is optional and does not gate startup; missing night imagery
 leaves the existing day globe intact. See `assets/README.md` for image provenance.
 
-
 Engine overlays (touch rigs) exist before play; hide them during attract with
 `body:has(canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight) { display: none }`
 as the demo page does.

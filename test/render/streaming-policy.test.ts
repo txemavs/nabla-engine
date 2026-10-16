@@ -154,15 +154,17 @@ it('nearby startup freezes exactly four Z15 cells while ground checks visit neig
     w.update([0, 0, 0], [277.78, 0, 0])
     const expected = startupTerrainTiles(origin.latitude, origin.longitude)
     expect(w.startupTiles).toEqual(expected)
-    expect(w.diagnostics.tiles.map(t => mapTileId(t.tile))).toEqual(expected.map(mapTileId))
+    expect(w.diagnostics.tiles.map((t) => mapTileId(t.tile))).toEqual(expected.map(mapTileId))
     const neighbour = geoToLocal(origin, mapTileSample(expected[2]!, 1, 1, 2))
     w.update(neighbour, [0, 0, 0])
     expect(w.startupTiles).toEqual(expected)
-    expect(w.diagnostics.tiles.map(t => mapTileId(t.tile))).toEqual(expected.map(mapTileId))
+    expect(w.diagnostics.tiles.map((t) => mapTileId(t.tile))).toEqual(expected.map(mapTileId))
     w.setStartupMode(false)
     w.update([0, 0, 0], [0, 0, 0])
     expect(w.diagnostics.tiles.length).toBeGreaterThan(4)
-  } finally { w.dispose() }
+  } finally {
+    w.dispose()
+  }
 })
 
 it('selects the closest three neighbours by position and wraps across the antimeridian', async () => {
@@ -170,11 +172,21 @@ it('selects the closest three neighbours by position and wraps across the antime
   const { mapTileBounds } = await import('../../src/scene/mercator.js')
   const center = mapTileAt(origin.latitude, origin.longitude, 15)
   const bounds = mapTileBounds(center)
-  const tiles = startupTerrainTiles(bounds.north - (bounds.north - bounds.south) * 0.01, bounds.west + (bounds.east - bounds.west) * 0.01)
-  expect(new Set(tiles.map(mapTileId))).toEqual(new Set([
-    center, { ...center, x: center.x - 1 }, { ...center, y: center.y - 1 }, { ...center, x: center.x - 1, y: center.y - 1 },
-  ].map(mapTileId)))
+  const tiles = startupTerrainTiles(
+    bounds.north - (bounds.north - bounds.south) * 0.01,
+    bounds.west + (bounds.east - bounds.west) * 0.01,
+  )
+  expect(new Set(tiles.map(mapTileId))).toEqual(
+    new Set(
+      [
+        center,
+        { ...center, x: center.x - 1 },
+        { ...center, y: center.y - 1 },
+        { ...center, x: center.x - 1, y: center.y - 1 },
+      ].map(mapTileId),
+    ),
+  )
   const wrapped = startupTerrainTiles(0.001, -179.99999)
   expect(new Set(wrapped.map(mapTileId)).size).toBe(4)
-  expect(wrapped.some(t => t.x === 32767)).toBe(true)
+  expect(wrapped.some((t) => t.x === 32767)).toBe(true)
 })

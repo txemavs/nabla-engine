@@ -273,7 +273,11 @@ describe('TouchDriving Studio rig', () => {
 
   it('engages turbo only at the upper throttle stop and clears it when moving away or releasing', () => {
     const root = host()
-    const hud = new TouchDriving(root as unknown as HTMLElement, { interact() {}, camera() {} }, 'always')
+    const hud = new TouchDriving(
+      root as unknown as HTMLElement,
+      { interact() {}, camera() {} },
+      'always',
+    )
     hud.setActive(true)
     hud.setDriving(true)
     const gas = pick(root, '[data-drive="gas"]')

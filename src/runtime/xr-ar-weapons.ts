@@ -47,7 +47,8 @@ export class XRARWeapons {
     ]
     this.contacts.onContact = (point) => this.audio.weaponSound('prop-impact', point.toArray())
     this.loadout = new XRLoadout(scene, weapons, xr.calibration)
-    for (const p of this.loadout.allPistols.slice(Math.max(0, initialPistols))) this.loadout.removePistol(p)
+    for (const p of this.loadout.allPistols.slice(Math.max(0, initialPistols)))
+      this.loadout.removePistol(p)
     this.loadout.physicalPistols = true
     this.loadout.discardDropped = (root, dt) =>
       !!this.disposalTest && this.contacts.entersDisposal(root, this.disposalTest, dt)

@@ -29,12 +29,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `neighbours.slice(0, 3).map`
 - `neighbours.sort`
 
-## startupTerrainTiles.callback@24
+## startupTerrainTiles.callback@25
 
-[Implementation, line 24](../../../../../src/render/planet/startup-tiles.ts#L24)
+[Implementation, line 25](../../../../../src/render/planet/startup-tiles.ts#L25)
 
 ```ts
-callback@24(a, b): inferred by TypeScript; see implementation
+callback@25(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -42,10 +42,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mapTileId`
 - `mapTileId(a.tile).localeCompare`
 
-## startupTerrainTiles.callback@25
+## startupTerrainTiles.callback@30
 
-[Implementation, line 25](../../../../../src/render/planet/startup-tiles.ts#L25)
+[Implementation, line 30](../../../../../src/render/planet/startup-tiles.ts#L30)
 
 ```ts
-callback@25({ tile }): inferred by TypeScript; see implementation
+callback@30({ tile }): inferred by TypeScript; see implementation
 ```

@@ -69,9 +69,11 @@ export class XRLoadout {
   private readonly laserTouches = new Set<CarriedPistol>()
   readonly allPistols: CarriedPistol[]
   private readonly absent = new Set<CarriedPistol>()
-  get pistols(): CarriedPistol[] { return this.allPistols.filter(p => !this.absent.has(p)) }
+  get pistols(): CarriedPistol[] {
+    return this.allPistols.filter((p) => !this.absent.has(p))
+  }
   addPistol(): boolean {
-    const p = this.allPistols.find(p => this.absent.has(p))
+    const p = this.allPistols.find((p) => this.absent.has(p))
     if (!p) return false
     this.absent.delete(p)
     p.weapon.reset()
@@ -88,8 +90,8 @@ export class XRLoadout {
     p.weapon.visible = p.weapon.model.visible = false
     p.holster.visible = p.adjustment.visible = p.holdMount.visible = false
     this.supports.delete(p)
-    this.slides = this.slides.filter(s => s.pistol !== p)
-    this.pulls = this.pulls.filter(s => s.pistol !== p)
+    this.slides = this.slides.filter((s) => s.pistol !== p)
+    this.pulls = this.pulls.filter((s) => s.pistol !== p)
     this.lasers[this.allPistols.indexOf(p)].enabled = false
     if (!this.pistols.length) this.body.visible = false
   }
@@ -186,7 +188,8 @@ export class XRLoadout {
     for (const [index, pistol] of this.allPistols.entries()) {
       const weapon = pistol.weapon,
         laser = this.lasers[index]
-      laser.enabled = !this.absent.has(pistol) && !!pistol.holder && weapon.visible && weapon.laserEnabled
+      laser.enabled =
+        !this.absent.has(pistol) && !!pistol.holder && weapon.visible && weapon.laserEnabled
       if (!laser.enabled) continue
       const ray = weapon.accessoryRay(now, false, fov, 'RedLaserSocket')
       if (!ray) {

@@ -655,7 +655,9 @@ export class PlanetWorld {
   private startupCount: 1 | 4 = 1
   private startupSelection: MapTile[] = []
   /** Fixed reveal footprint; neighbour ground checks must not move it away from the spawn. */
-  get startupTiles(): readonly MapTile[] { return this.startupSelection }
+  get startupTiles(): readonly MapTile[] {
+    return this.startupSelection
+  }
   /** Restrict loading during reveal to the terrain actually required by blocking ground checks. */
   setStartupMode(enabled: boolean, count: 1 | 4 = 1): void {
     if (enabled === this.startup && count === this.startupCount) return
@@ -897,9 +899,8 @@ export class PlanetWorld {
     const center = mapTileAt(gps.latitude, gps.longitude, 15)
     this.focus = center
     if (this.startup && !this.startupSelection.length)
-      this.startupSelection = this.startupCount === 4
-        ? startupTerrainTiles(gps.latitude, gps.longitude)
-        : [center]
+      this.startupSelection =
+        this.startupCount === 4 ? startupTerrainTiles(gps.latitude, gps.longitude) : [center]
     const advertisedZoom =
       this.sourceOptions.meshMinZoom ?? (this.discoveryMode === 'static' ? 15 : 13)
     const minZoom = this.missing.has(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
@@ -951,7 +952,12 @@ export class PlanetWorld {
     if (!this.plan || planKey !== this.planKey) {
       this.planKey = planKey
       this.plan = this.startup
-        ? { roots: this.startupSelection, leaves: this.startupSelection, requests: this.startupSelection, budgetLimited: false }
+        ? {
+            roots: this.startupSelection,
+            leaves: this.startupSelection,
+            requests: this.startupSelection,
+            budgetLimited: false,
+          }
         : planMapZooms({
             latitude: gps.latitude,
             longitude: gps.longitude,

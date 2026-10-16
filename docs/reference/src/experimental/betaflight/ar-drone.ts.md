@@ -270,7 +270,7 @@ callback@168(s): inferred by TypeScript; see implementation
 
 ## ARDrone.beforeStep
 
-[Implementation, line 184](../../../../../src/experimental/betaflight/ar-drone.ts#L184)
+[Implementation, line 185](../../../../../src/experimental/betaflight/ar-drone.ts#L185)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -285,7 +285,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.sync
 
-[Implementation, line 187](../../../../../src/experimental/betaflight/ar-drone.ts#L187)
+[Implementation, line 188](../../../../../src/experimental/betaflight/ar-drone.ts#L188)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -306,25 +306,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.quaternion.copy`
 - `this.rotors.forEach`
 
-## ARDrone.sync.callback@192
+## ARDrone.sync.callback@193
 
-[Implementation, line 192](../../../../../src/experimental/betaflight/ar-drone.ts#L192)
+[Implementation, line 193](../../../../../src/experimental/betaflight/ar-drone.ts#L193)
 
 ```ts
-callback@192(sum, value): inferred by TypeScript; see implementation
+callback@193(sum, value): inferred by TypeScript; see implementation
 ```
 
-## ARDrone.sync.callback@195
+## ARDrone.sync.callback@196
 
-[Implementation, line 195](../../../../../src/experimental/betaflight/ar-drone.ts#L195)
+[Implementation, line 196](../../../../../src/experimental/betaflight/ar-drone.ts#L196)
 
 ```ts
-callback@195(rotor, i): inferred by TypeScript; see implementation
+callback@196(rotor, i): inferred by TypeScript; see implementation
 ```
 
 ## ARDrone.clear
 
-[Implementation, line 205](../../../../../src/experimental/betaflight/ar-drone.ts#L205)
+[Implementation, line 206](../../../../../src/experimental/betaflight/ar-drone.ts#L206)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.

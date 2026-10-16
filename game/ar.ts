@@ -330,10 +330,18 @@ const addBow = async () => {
   }
 }
 screen.mainMenu = () => [
-  { id: 'pistol', label: 'Pistola', run: () => {
-    const added = weapons.loadout.addPistol()
-    room.setMessage(added ? 'Pistola añadida a la funda. Cógela con agarre.' : 'Ya tienes las dos pistolas. Puedes recogerlas o retirarlas en la papelera.')
-  } },
+  {
+    id: 'pistol',
+    label: 'Pistola',
+    run: () => {
+      const added = weapons.loadout.addPistol()
+      room.setMessage(
+        added
+          ? 'Pistola añadida a la funda. Cógela con agarre.'
+          : 'Ya tienes las dos pistolas. Puedes recogerlas o retirarlas en la papelera.',
+      )
+    },
+  },
   {
     id: 'hoop',
     label: 'Canasta',
@@ -796,9 +804,7 @@ renderer.setAnimationLoop((time, frame) => {
       },
     )
     const pressed = hands.some(
-      (h) =>
-        h.source?.handedness === 'left' &&
-        h.source.gamepad?.buttons[4]?.pressed,
+      (h) => h.source?.handedness === 'left' && h.source.gamepad?.buttons[4]?.pressed,
     )
     const menuAction = menuGesture.update(pressed, time)
     if (menuAction === 'recall') {

@@ -57,8 +57,11 @@ ride.addEventListener('click', (event) => {
 })
 async function checkSupport() {
   const supported = async (mode: XRSessionMode) => {
-    try { return isSecureContext && !!navigator.xr && await navigator.xr.isSessionSupported(mode) }
-    catch { return false }
+    try {
+      return isSecureContext && !!navigator.xr && (await navigator.xr.isSessionSupported(mode))
+    } catch {
+      return false
+    }
   }
   const [vr, ar] = await Promise.all([supported('immersive-vr'), supported('immersive-ar')])
   ride.setAttribute('aria-disabled', String(!vr))

@@ -49,17 +49,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bounds.getSize`
 - `bounds.getSize(new THREE.Vector3()).length`
 - `camera.lookAt`
-- `camera.position.copy`
-- `camera.position.copy(center).add`
 - `camera.updateMatrixWorld`
 - `camera.updateProjectionMatrix`
 - `document.body.replaceChildren`
 - `entities.push`
 - `gl.readPixels`
 - `light.position.set`
-- `new THREE.Vector3(-1, .65, -1.4).normalize`
-- `new THREE.Vector3(-1, .65, -1.4).normalize().multiplyScalar`
-- `new THREE.Vector3(x,y,z).applyMatrix4`
+- `new THREE.Vector3(-1, 0.65, -1.4).normalize`
+- `new THREE.Vector3(-1, 0.65, -1.4).normalize().multiplyScalar`
+- `new THREE.Vector3(x, y, z).applyMatrix4`
 - `presetVehicle`
 - `projected.expandByPoint`
 - `projected.getCenter`
