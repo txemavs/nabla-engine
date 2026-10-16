@@ -1,3 +1,4 @@
+import { atlasTreeInstances, loadAtlasInstances } from './instances.js'
 import { planetChart } from './chart.js'
 import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -212,6 +213,17 @@ self.onmessage = async (
     }
     const collisionStarted = performance.now()
     const chunks = planetCollisionChunks(meshes)
+    if (!vegetation.length && manifest.instances) {
+      const file = manifest.instances
+      try {
+        const json = await loadAtlasInstances(directory + file.path, file, controller.signal)
+        vegetation = atlasTreeInstances(json, chunks)
+        bytesTotal += file.bytes
+      } catch (error) {
+        controller.signal.throwIfAborted()
+        console.warn('Atlas vegetation unavailable', manifest.id, String(error))
+      }
+    }
     const chart = planetChart(meshes)
     timings.collision = performance.now() - collisionStarted
     controller.signal.throwIfAborted()

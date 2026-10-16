@@ -5,6 +5,7 @@ import {
   LinearFilter,
   Mesh,
   MeshBasicMaterial,
+  MeshLambertMaterial,
   PlaneGeometry,
   SRGBColorSpace,
   Texture,
@@ -16,7 +17,12 @@ import type { MonitorData, MonitorOptions } from './data.js'
 type Rect = { id: string; x: number; y: number; width: number; height: number }
 export type MonitorLayer = Rect &
   (
-    | { kind: 'image'; url: string }
+    | {
+        kind: 'image'
+        url: string
+        /** Scene-lit printed surface, or self-lit display (default). */ lighting?:
+          'scene' | 'unlit'
+      }
     | { kind: 'panel'; color: string }
     | {
         kind: 'needle'
@@ -59,7 +65,7 @@ export class LayeredMonitor {
   private readonly textures = new Set<Texture>()
   private disposed = false
   private secondary?: boolean
-  private readonly meshes: Mesh<BufferGeometry, MeshBasicMaterial>[] = []
+  private readonly meshes: Mesh<BufferGeometry, MeshBasicMaterial | MeshLambertMaterial>[] = []
   constructor(readonly definition: MonitorDefinition) {
     const { width, height, layers } = definition
     if (![width, height].every((v) => Number.isFinite(v) && v > 0))
@@ -120,16 +126,23 @@ export class LayeredMonitor {
       return texture
     }
     const atlases = new Map<string, CanvasTexture>()
-    const make = (w: number, h: number, color: string, map?: Texture) => {
+    const make = (w: number, h: number, color: string, map?: Texture, sceneLit = false) => {
       const mesh = new Mesh(
         new PlaneGeometry(w, h),
-        new MeshBasicMaterial({
-          color,
-          map: map ?? null,
-          transparent: true,
-          depthWrite: false,
-          toneMapped: false,
-        }),
+        sceneLit
+          ? new MeshLambertMaterial({
+              color,
+              map: map ?? null,
+              transparent: true,
+              depthWrite: false,
+            })
+          : new MeshBasicMaterial({
+              color,
+              map: map ?? null,
+              transparent: true,
+              depthWrite: false,
+              toneMapped: false,
+            }),
       )
       this.meshes.push(mesh)
       return mesh
@@ -233,6 +246,7 @@ export class LayeredMonitor {
         layer.height,
         layer.kind === 'panel' || layer.kind === 'bar' ? layer.color : '#ffffff',
         texture,
+        layer.kind === 'image' && layer.lighting === 'scene',
       )
       mesh.renderOrder = order + 1
       group.add(mesh)

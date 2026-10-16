@@ -32,5 +32,7 @@ describe('demo display URL', () => {
     })
     expect(wantsAutoResolution('?scale=auto')).toBe(true)
     expect(wantsAutoResolution('?scale=0.75')).toBe(false)
+    for (const scale of [0.25, 0.5, 1, 1.5, 2, 3, 4, 5])
+      expect(readDisplaySettings('?scale=' + scale).resolutionScale).toBe(scale)
   })
 })

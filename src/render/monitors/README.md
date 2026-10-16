@@ -143,3 +143,8 @@ catalog and calls `MonitorMenu.dispatch('menu.up' | 'menu.down' | 'menu.accept' 
 'menu.back')`. `key(code)` remains a legacy compatibility adapter for standalone
 consumers; the menu module remains dependency-free and does not import gameplay
 configuration.
+
+Image layers may set `lighting: 'scene'` for non-emissive printed surfaces, such as
+instrument rings. These use a scene-lit Lambert material and preserve texture
+alpha. The default `lighting: 'unlit'` keeps existing displays self-lit; text and
+needles are unchanged. Layer alignment and positioning use the same coordinates.

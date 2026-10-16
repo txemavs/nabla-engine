@@ -116,7 +116,9 @@ try {
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
     locale: 'es',
-    startupTerrain: 'nearby',
+    // Desktop prepares its visible streaming footprint before gameplay begins.
+    startupTerrain: params.has('xr') || location.pathname === '/xr.html' ? 'nearby' : 'area',
+    fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
@@ -158,6 +160,7 @@ try {
     tiles: {
       baseUrl: config.base,
       mode: 'static',
+      meshMaxZoom: params.get('meshMaxZoom') === '16' ? 16 : 15,
       horizon: false,
       meshMinZoom:
         params.get('meshMinZoom') === '12'

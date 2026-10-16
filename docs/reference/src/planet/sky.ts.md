@@ -175,9 +175,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `at.toISOString`
 - `skyTime`
 
+## shiftSkyClockMinutes
+
+[Implementation, line 89](../../../../src/planet/sky.ts#L89)
+
+Move the displayed local calendar clock by minutes, including midnight/month/year crossings.
+
+```ts
+shiftSkyClockMinutes(clock: SkyClock | undefined, minutes: number, now = Date.now()): SkyClock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date.now`
+- `Error`
+- `Math.round`
+- `Number.isFinite`
+- `at.getMinutes`
+- `at.setMinutes`
+- `at.toISOString`
+- `skyTime`
+
+Explicit throws in this body:
+
+- `new Error('Invalid clock minute offset')`
+
 ## atmosphere
 
-[Implementation, line 90](../../../../src/planet/sky.ts#L90)
+[Implementation, line 101](../../../../src/planet/sky.ts#L101)
 
 ```ts
 atmosphere(height: number, sunElevation: number, visibility = 220): inferred by TypeScript; see implementation
@@ -192,7 +217,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mapFogRange
 
-[Implementation, line 110](../../../../src/planet/sky.ts#L110)
+[Implementation, line 121](../../../../src/planet/sky.ts#L121)
 
 Camera distance. Altitude must not push the fade out.
 

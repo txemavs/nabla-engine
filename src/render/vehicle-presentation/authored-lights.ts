@@ -7,6 +7,7 @@ import {
   MeshStandardMaterial,
   PointLight,
   SpotLight,
+  Vector3,
   type Object3D,
 } from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
@@ -104,7 +105,7 @@ export class AuthoredVehicleLights {
             material.emissiveIntensity = 0
           }
       }
-      if (!(node instanceof Light)) return
+      if (!(node instanceof Light) || this.lamps.some((lamp) => lamp.light === node)) return
       let owner: Object3D | null = node
       while (owner && owner.userData.role !== 'vehicle-light') owner = owner.parent
       if (!owner) return
@@ -116,6 +117,32 @@ export class AuthoredVehicleLights {
       const intensity = beam ? authored * lightingDefaults.headlightIntensityScale : authored
       if (beam && node instanceof SpotLight)
         node.penumbra = Math.min(1, node.penumbra + lightingDefaults.headlightPenumbraBoost)
+      // Configure the beam once in vehicle space, independently of GLB lamp axes.
+      if (
+        node instanceof SpotLight &&
+        (lampChannel === 'high' || (lampChannel === 'low' && owner.userData.side === 'R')) &&
+        !node.userData.nablaBeamAimAdjusted
+      ) {
+        model.updateWorldMatrix(true, true)
+        const origin = model.worldToLocal(node.getWorldPosition(new Vector3()))
+        const target = model.worldToLocal(node.target.getWorldPosition(new Vector3()))
+        const direction = target.clone().sub(origin)
+        const length = direction.length()
+        const horizontal = Math.hypot(direction.x, direction.z)
+        if (length > 0 && horizontal > 1e-6) {
+          const elevation =
+            lampChannel === 'high' ? 0 : Math.atan2(direction.y, horizontal) + Math.PI / 360
+          direction.x *= (Math.cos(elevation) * length) / horizontal
+          direction.z *= (Math.cos(elevation) * length) / horizontal
+          direction.y = Math.sin(elevation) * length
+          target.copy(origin).add(direction)
+          model.localToWorld(target)
+          if (node.target.parent) node.target.parent.worldToLocal(target)
+          node.target.position.copy(target)
+          node.userData.nablaBeamAimAdjusted = true
+        }
+        if (lampChannel === 'high') node.angle = lightingDefaults.lowBeamOuterCone
+      }
       this.lamps.push({
         light: node,
         intensity,

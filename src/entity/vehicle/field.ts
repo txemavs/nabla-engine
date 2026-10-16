@@ -282,6 +282,7 @@ const engineVoiceField = z
     warble: finite.min(0).max(0.5).optional(),
     /** Inline voice: turbo whistle and blow-off multipliers, 0..2. */
     turboWhistle: finite.min(0).max(2).optional(),
+    intakeNoise: finite.min(0).max(2).optional(),
     blowOff: finite.min(0).max(2).optional(),
     /** Inline voice: chance (0..1) of a soft overrun burble on a high-rpm lift. Default 0. */
     burble: finite.min(0).max(1).optional(),

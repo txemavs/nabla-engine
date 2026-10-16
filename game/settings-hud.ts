@@ -73,6 +73,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-options-driver', 'dev'],
   ['settings-truck-exhaust', 'dev'],
   ['settings-light', 'dev'],
+  ['settings-experimental-light-shadows', 'dev'],
   ['settings-config-planet', 'dev'],
   ['terrain-source', 'dev'],
   ['terrain-cache', 'dev'],
@@ -361,6 +362,110 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       ...tail,
     )
     performanceGroup.hidden = true
+  }
+
+  if (quality && runtime.fieldLightLimit !== undefined) {
+    const lightProfile = new URLSearchParams(location.search).get('quality') ?? 'custom'
+    const storageKey = `nabla.field-light-limit-v2:${lightProfile}`
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved !== null && saved.trim() !== '') runtime.setFieldLightLimit(Number(saved))
+    } catch {
+      /* Storage is optional. */
+    }
+    const label = doc.createElement('label')
+    label.textContent = 'Farolas cercanas con luz '
+    const input = doc.createElement('input')
+    input.id = 'field-light-limit'
+    input.type = 'range'
+    input.min = '0'
+    input.max = '24'
+    input.step = '1'
+    input.value = String(runtime.fieldLightLimit)
+    input.setAttribute('aria-label', 'Farolas cercanas con luz')
+    const value = doc.createElement('output')
+    value.textContent = input.value
+    const apply = doc.createElement('button')
+    apply.type = 'button'
+    apply.textContent = 'Aplicar farolas'
+    apply.disabled = true
+    const warning = doc.createElement('p')
+    warning.textContent =
+      'Aplicar cambia el número de luces y recompila shaders: la imagen puede congelarse unos segundos.'
+    input.addEventListener('input', () => {
+      value.textContent = input.value
+      apply.disabled = Number(input.value) === runtime.fieldLightLimit
+    })
+    apply.addEventListener('click', async () => {
+      const requested = Number(input.value)
+      apply.disabled = true
+      input.disabled = true
+      apply.textContent = 'Aplicando…'
+      // Paint the warning/status before the next render compiles the new light layout.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+      try {
+        runtime.setFieldLightLimit(requested)
+        value.textContent = input.value = String(runtime.fieldLightLimit)
+        try {
+          localStorage.setItem(storageKey, value.textContent)
+        } catch {
+          /* Optional storage. */
+        }
+      } finally {
+        input.disabled = false
+        apply.textContent = 'Aplicar farolas'
+        apply.disabled = Number(input.value) === runtime.fieldLightLimit
+      }
+    })
+    label.append(input, value)
+    quality.append(label, warning, apply)
+    // Experimental opt-in for this session only; never restore an expensive saved setting.
+    runtime.setFieldLightShadows(false)
+    try {
+      localStorage.removeItem('nabla.field-light-shadows')
+    } catch {
+      /* optional storage */
+    }
+    const shadows = doc.createElement('input')
+    shadows.type = 'checkbox'
+    shadows.id = 'field-light-shadows'
+    shadows.checked = runtime.fieldLightShadows
+    shadows.addEventListener('change', () => runtime.setFieldLightShadows(shadows.checked))
+    const shadowLabel = doc.createElement('label')
+    shadowLabel.append(shadows, ' Sombras de farolas · experimental')
+    shadowLabel.title =
+      'Requiere las sombras generales activadas. Solo las farolas cercanas proyectan sombras.'
+    const experimental = fieldset(
+      'settings-experimental-light-shadows',
+      'Sombras de farolas · experimental',
+    )
+    experimental.append(shadowLabel)
+    place(experimental)
+  }
+
+  if (quality) {
+    const label = doc.createElement('label')
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'headlamp-shadows'
+    const key = 'nabla.headlamp-shadows-v2'
+    try {
+      const saved = localStorage.getItem(key)
+      if (saved !== null) runtime.setHeadlampShadows(saved === 'true')
+    } catch {
+      /* optional storage */
+    }
+    input.checked = runtime.headlampShadows
+    input.addEventListener('change', () => {
+      runtime.setHeadlampShadows(input.checked)
+      try {
+        localStorage.setItem(key, String(input.checked))
+      } catch {
+        /* optional storage */
+      }
+    })
+    label.append(input, ' Sombras de la linterna')
+    quality.append(label)
   }
 
   let cameraOptions = byId('camera-extras')

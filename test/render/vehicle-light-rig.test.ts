@@ -93,3 +93,25 @@ it('keeps the visible light count stable on a real tractor when binding another 
   second.dispose()
   rig.dispose()
 })
+
+it('uses a spare downward spotlight for the red road wash and clears it on exit', () => {
+  const rig = new VehicleLightRig()
+  const car = new Group()
+  car.position.set(3, 1, 4)
+  const count = rig.lights.length
+  rig.capture([], [])
+  rig.groundGlow(car)
+  const light = rig.lights.find((light) => light.intensity > 0) as SpotLight
+  expect(light).toBeDefined()
+  expect(light).not.toBe(rig.pedestrianLight)
+  expect(light.castShadow).toBe(false)
+  expect(light.position.y).toBeCloseTo(1)
+  expect(light.position.z).toBeCloseTo(5.8)
+  expect(light.target.position.z).toBeGreaterThan(light.position.z)
+  expect(light.target.position.y).toBeLessThan(light.position.y)
+  expect(light.color.r).toBeGreaterThan(light.color.g)
+  expect(rig.lights).toHaveLength(count)
+  rig.capture([], [])
+  expect(light.intensity).toBe(0)
+  rig.dispose()
+})

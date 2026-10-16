@@ -61,30 +61,32 @@ export interface PresentationWarmup {
   }
   settings: Pick<GameCameraSettings, 'firstPersonFov' | 'chaseFov'>
   signal?: AbortSignal
+  onProgress?: (detail: string) => Promise<void>
 }
 
-/** Best-effort GPU warmup. Failures must not stop play. */
+/** Complete GPU preparation before play; propagate errors rather than claiming readiness. */
 export async function warmGamePresentation(target: PresentationWarmup): Promise<void> {
   const { renderer, scene, camera, view, settings, signal } = target
   const fov = camera.fov
   try {
     signal?.throwIfAborted()
+    await target.onProgress?.('Compilando shaders: vista exterior')
     camera.fov = settings.chaseFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     signal?.throwIfAborted()
+    await target.onProgress?.('Compilando shaders: cabina')
     camera.fov = settings.firstPersonFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     const now = performance.now()
     for (const id of view.mirroredVehicles) {
       signal?.throwIfAborted()
+      await target.onProgress?.('Preparando espejos: ' + id)
       view.renderMirrors(renderer as WebGLRenderer, scene, camera, id, now)
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
     }
     view.renderMirrors(renderer as WebGLRenderer, scene, camera, null, now)
-  } catch {
-    /* Warmup is optional; the next visible frame still compiles what remains. */
   } finally {
     camera.fov = fov
     camera.updateProjectionMatrix()

@@ -18,7 +18,7 @@
 
 ## GameRenderPipeline.dispose
 
-[Implementation, line 48](../../../../src/runtime/render-pipeline.ts#L48)
+[Implementation, line 50](../../../../src/runtime/render-pipeline.ts#L50)
 
 Release owned postprocessing resources; scene, renderer and monitors remain host-owned.
 
@@ -32,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRenderPipeline.render
 
-[Implementation, line 57](../../../../src/runtime/render-pipeline.ts#L57)
+[Implementation, line 59](../../../../src/runtime/render-pipeline.ts#L59)
 
 Render auxiliary views before the main scene and optional depth of field.
 Restore render target, auto-clear and overlay visibility even when a pass throws.
@@ -50,6 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `flare.removeFromParent`
 - `frame.beforeMain`
 - `frame.cull`
+- `frame.lights.map`
 - `frame.shadows.update`
 - `missingShadowMap`
 - `monitors.finish`
@@ -71,28 +72,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.portals.values`
 - `view.renderMirrors`
 
-## GameRenderPipeline.render.callback@61
+## GameRenderPipeline.render.callback@63
 
-[Implementation, line 61](../../../../src/runtime/render-pipeline.ts#L61)
+[Implementation, line 63](../../../../src/runtime/render-pipeline.ts#L63)
 
 ```ts
-callback@61(object): inferred by TypeScript; see implementation
+callback@63(object): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@73
+## GameRenderPipeline.render.callback@74
 
-[Implementation, line 73](../../../../src/runtime/render-pipeline.ts#L73)
+[Implementation, line 74](../../../../src/runtime/render-pipeline.ts#L74)
 
 ```ts
-callback@73(surface): inferred by TypeScript; see implementation
+callback@74(light): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@86
+## GameRenderPipeline.render.callback@87
 
-[Implementation, line 86](../../../../src/runtime/render-pipeline.ts#L86)
+[Implementation, line 87](../../../../src/runtime/render-pipeline.ts#L87)
 
 ```ts
-callback@86(reflection): inferred by TypeScript; see implementation
+callback@87(surface): inferred by TypeScript; see implementation
+```
+
+## GameRenderPipeline.render.callback@100
+
+[Implementation, line 100](../../../../src/runtime/render-pipeline.ts#L100)
+
+```ts
+callback@100(reflection): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -101,12 +110,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `reflection.position.clone().add`
 - `sky.render`
 
-## GameRenderPipeline.render.callback@100
+## GameRenderPipeline.render.callback@114
 
-[Implementation, line 100](../../../../src/runtime/render-pipeline.ts#L100)
+[Implementation, line 114](../../../../src/runtime/render-pipeline.ts#L114)
 
 ```ts
-callback@100(remote): inferred by TypeScript; see implementation
+callback@114(remote): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +133,7 @@ Explicit throws in this body:
 
 ## GameRenderPipeline.blankShadowMaps
 
-[Implementation, line 185](../../../../src/runtime/render-pipeline.ts#L185)
+[Implementation, line 204](../../../../src/runtime/render-pipeline.ts#L204)
 
 Clear every shadow map to its far depth (fully lit); the current render target is kept.
 
@@ -140,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## missingShadowMap
 
-[Implementation, line 203](../../../../src/runtime/render-pipeline.ts#L203)
+[Implementation, line 222](../../../../src/runtime/render-pipeline.ts#L222)
 
 A shadow-casting light whose map the renderer has not created yet.
 
@@ -152,10 +161,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `lights.some`
 
-## missingShadowMap.callback@204
+## missingShadowMap.callback@223
 
-[Implementation, line 204](../../../../src/runtime/render-pipeline.ts#L204)
+[Implementation, line 223](../../../../src/runtime/render-pipeline.ts#L223)
 
 ```ts
-callback@204(light): inferred by TypeScript; see implementation
+callback@223(light): inferred by TypeScript; see implementation
 ```

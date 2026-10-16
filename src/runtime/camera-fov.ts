@@ -11,7 +11,7 @@ export const cameraFovStorageKey = 'nabla.cameraFov'
 export const cameraFovStep = cameraFovTuning.step
 /** Allowed offset range, degrees. */
 export const cameraFovRange = Object.freeze({ min: cameraFovTuning.min, max: cameraFovTuning.max })
-/** Offset before the player picks one (Txema 2026-10-10: +15°). */
+/** Offset before the player picks one: 0°, preserving the authored camera angle. */
 export const cameraFovDefault = cameraFovTuning.default
 
 export type CameraFovStorage = Pick<Storage, 'getItem' | 'setItem'>

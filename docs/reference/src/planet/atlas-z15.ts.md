@@ -26,7 +26,8 @@ module adds only what the loader cannot know:
     is its `terrain.lidar` file (the Atlas unified terrain: LiDAR relief with the roads and the
     tunnel openings built in), used whatever `relief` asks; `files.terrain` is only the v1 engine
     terrain kept for older engines.
-  every other role (masks, classes, instances, roofs, licences) is
+  role instances -> verified scenery sidecar (trees)
+  every other role (masks, classes, roofs, licences) is
   listed but not consumed by the engine yet; see docs/terrain-folder.md.
 
 Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetches.
@@ -38,7 +39,7 @@ Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetch
 
 ## isAtlasFileName
 
-[Implementation, line 97](../../../../src/planet/atlas-z15.ts#L97)
+[Implementation, line 99](../../../../src/planet/atlas-z15.ts#L99)
 
 True for a safe file name inside the cell directory (no separators, no dot files).
 
@@ -53,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasPackageRef
 
-[Implementation, line 102](../../../../src/planet/atlas-z15.ts#L102)
+[Implementation, line 104](../../../../src/planet/atlas-z15.ts#L104)
 
 Validate the `z15Package` pointer an Atlas manifest carries. Undefined for a plain engine tile.
 
@@ -74,7 +75,7 @@ Explicit throws in this body:
 
 ## validateAtlasZ15Package
 
-[Implementation, line 120](../../../../src/planet/atlas-z15.ts#L120)
+[Implementation, line 122](../../../../src/planet/atlas-z15.ts#L122)
 
 Strictly validate a parsed `nabla-z15-package/1` document against the tile it was fetched for.
 
@@ -102,7 +103,7 @@ Explicit throws in this body:
 
 ## atlasFile
 
-[Implementation, line 156](../../../../src/planet/atlas-z15.ts#L156)
+[Implementation, line 158](../../../../src/planet/atlas-z15.ts#L158)
 
 First file of a role, or undefined.
 
@@ -114,17 +115,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pkg.files.find`
 
-## atlasFile.callback@157
+## atlasFile.callback@159
 
-[Implementation, line 157](../../../../src/planet/atlas-z15.ts#L157)
+[Implementation, line 159](../../../../src/planet/atlas-z15.ts#L159)
 
 ```ts
-callback@157(f): inferred by TypeScript; see implementation
+callback@159(f): inferred by TypeScript; see implementation
 ```
 
 ## atlasRoadFile
 
-[Implementation, line 160](../../../../src/planet/atlas-z15.ts#L160)
+[Implementation, line 162](../../../../src/planet/atlas-z15.ts#L162)
 
 ```ts
 atlasRoadFile(pkg: AtlasZ15Package, kind: PlanetCandidateRoadKind): AtlasZ15File | undefined
@@ -136,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## candidateFromAtlas
 
-[Implementation, line 171](../../../../src/planet/atlas-z15.ts#L171)
+[Implementation, line 173](../../../../src/planet/atlas-z15.ts#L173)
 
 ```ts
 candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile
@@ -144,7 +145,7 @@ candidateFromAtlas(file: AtlasZ15File): PlanetCandidateRoadFile
 
 ## roadsFromPackage
 
-[Implementation, line 181](../../../../src/planet/atlas-z15.ts#L181)
+[Implementation, line 183](../../../../src/planet/atlas-z15.ts#L183)
 
 ```ts
 roadsFromPackage(pkg: AtlasZ15Package): PlanetCandidateRoads | undefined
@@ -157,7 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mergeCandidateRoads
 
-[Implementation, line 203](../../../../src/planet/atlas-z15.ts#L203)
+[Implementation, line 205](../../../../src/planet/atlas-z15.ts#L205)
 
 Merge the roads named by manifest.json with the roads named by the package index, per layer.
 manifest.json is switched last by the publisher, so its file wins; a package file that
@@ -174,7 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## adaptAtlasManifest
 
-[Implementation, line 238](../../../../src/planet/atlas-z15.ts#L238)
+[Implementation, line 240](../../../../src/planet/atlas-z15.ts#L240)
 
 Build the manifest the standard loader consumes. The input is not mutated.
 The engine terrain/buildings listed by the package must be the very files the manifest
@@ -204,7 +205,7 @@ Explicit throws in this body:
 
 ## atlasCompatibilityNotes
 
-[Implementation, line 327](../../../../src/planet/atlas-z15.ts#L327)
+[Implementation, line 337](../../../../src/planet/atlas-z15.ts#L337)
 
 Human-readable differences between an Atlas cell and what the engine produces itself.
 
@@ -220,20 +221,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pkg.files.map`
 - `unused.join`
 
-## atlasCompatibilityNotes.callback@340
+## atlasCompatibilityNotes.callback@350
 
-[Implementation, line 340](../../../../src/planet/atlas-z15.ts#L340)
+[Implementation, line 350](../../../../src/planet/atlas-z15.ts#L350)
 
 ```ts
-callback@340(f): inferred by TypeScript; see implementation
+callback@350(f): inferred by TypeScript; see implementation
 ```
 
-## atlasCompatibilityNotes.callback@341
+## atlasCompatibilityNotes.callback@351
 
-[Implementation, line 341](../../../../src/planet/atlas-z15.ts#L341)
+[Implementation, line 351](../../../../src/planet/atlas-z15.ts#L351)
 
 ```ts
-callback@341(r): inferred by TypeScript; see implementation
+callback@351(r): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -242,7 +243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasPackageUrl
 
-[Implementation, line 348](../../../../src/planet/atlas-z15.ts#L348)
+[Implementation, line 358](../../../../src/planet/atlas-z15.ts#L358)
 
 URL of the package JSON, next to manifest.json.
 
@@ -257,7 +258,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## atlasFileUrl
 
-[Implementation, line 352](../../../../src/planet/atlas-z15.ts#L352)
+[Implementation, line 362](../../../../src/planet/atlas-z15.ts#L362)
 
 URL of a file inside the cell directory.
 
@@ -278,7 +279,7 @@ Explicit throws in this body:
 
 ## atlasPhotoFor
 
-[Implementation, line 362](../../../../src/planet/atlas-z15.ts#L362)
+[Implementation, line 372](../../../../src/planet/atlas-z15.ts#L372)
 
 Photo quality for one cell: the wanted quality near the player, the small `lo` photo farther away
 (16x fewer pixels to download, decode and keep on the GPU). `PlanetWorld` upgrades a `lo` cell to
@@ -291,4 +292,6 @@ atlasPhotoFor(wanted: NonNullable<AtlasZ15Options['photo']>, tile: MapTile, focu
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
+- `Math.floor`
 - `Math.max`
+- `Math.min`

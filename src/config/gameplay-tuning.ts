@@ -102,7 +102,7 @@ export const sidearmTuningRanges = {
   angle: [-30, 8, 0.01],
 } as const
 
-export const cameraFovTuning = { min: -15, max: 25, step: 5, default: 15 }
+export const cameraFovTuning = { min: -15, max: 25, step: 5, default: 0 }
 export const normalViewTuning = {
   enabled: true,
   extraFovDegrees: 12,

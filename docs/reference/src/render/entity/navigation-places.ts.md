@@ -156,7 +156,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.request.yieldTask
 
-[Implementation, line 118](../../../../../src/render/entity/navigation-places.ts#L118)
+[Implementation, line 120](../../../../../src/render/entity/navigation-places.ts#L120)
 
 ```ts
 yieldTask(): inferred by TypeScript; see implementation
@@ -166,24 +166,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Promise`
 
-## NavigationPlaceLookup.request.yieldTask.callback@118
+## NavigationPlaceLookup.request.yieldTask.callback@120
 
-[Implementation, line 118](../../../../../src/render/entity/navigation-places.ts#L118)
+[Implementation, line 120](../../../../../src/render/entity/navigation-places.ts#L120)
 
 ```ts
-callback@118(resolve): inferred by TypeScript; see implementation
+callback@120(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `setTimeout`
 
-## NavigationPlaceLookup.request.callback@119
+## NavigationPlaceLookup.request.callback@121
 
-[Implementation, line 119](../../../../../src/render/entity/navigation-places.ts#L119)
+[Implementation, line 121](../../../../../src/render/entity/navigation-places.ts#L121)
 
 ```ts
-callback@119(): inferred by TypeScript; see implementation
+callback@121(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -199,20 +199,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `segmentDistance`
 - `yieldTask`
 
-## NavigationPlaceLookup.request.callback@175
+## NavigationPlaceLookup.request.callback@177
 
-[Implementation, line 175](../../../../../src/render/entity/navigation-places.ts#L175)
+[Implementation, line 177](../../../../../src/render/entity/navigation-places.ts#L177)
 
 ```ts
-callback@175(): inferred by TypeScript; see implementation
+callback@177(): inferred by TypeScript; see implementation
 ```
 
-## NavigationPlaceLookup.request.callback@178
+## NavigationPlaceLookup.request.callback@180
 
-[Implementation, line 178](../../../../../src/render/entity/navigation-places.ts#L178)
+[Implementation, line 180](../../../../../src/render/entity/navigation-places.ts#L180)
 
 ```ts
-callback@178(): inferred by TypeScript; see implementation
+callback@180(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -221,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.reset
 
-[Implementation, line 185](../../../../../src/render/entity/navigation-places.ts#L185)
+[Implementation, line 187](../../../../../src/render/entity/navigation-places.ts#L187)
 
 Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
 

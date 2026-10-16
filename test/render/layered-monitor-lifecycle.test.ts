@@ -86,3 +86,42 @@ it('does not rasterize queued data if hidden during preparation', async () => {
   expect(mock.surfaces[0].update).not.toHaveBeenCalled()
   monitor.dispose()
 })
+
+it('lights printed dial surfaces with the scene while keeping indicators self-lit', async () => {
+  const { Texture, TextureLoader, Mesh, MeshLambertMaterial, MeshBasicMaterial } =
+    await import('three')
+  const load = vi.spyOn(TextureLoader.prototype, 'load').mockImplementation((_url, ready) => {
+    const texture = new Texture<HTMLImageElement>()
+    queueMicrotask(() => ready?.(texture))
+    return texture
+  })
+  try {
+    const monitor = new LayeredMonitor({
+      width: 100,
+      height: 100,
+      layers: [
+        {
+          id: 'rim',
+          kind: 'image',
+          url: '/rim.svg',
+          lighting: 'scene',
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+        },
+        { id: 'numbers', kind: 'image', url: '/numbers.svg', x: 0, y: 0, width: 100, height: 100 },
+      ],
+    })
+    await monitor.ready
+    const rim = monitor.root.children[0].children[0] as InstanceType<typeof Mesh>
+    const numbers = monitor.root.children[1].children[0] as InstanceType<typeof Mesh>
+    expect(rim.material).toBeInstanceOf(MeshLambertMaterial)
+    expect((rim.material as InstanceType<typeof MeshLambertMaterial>).emissive.getHex()).toBe(0)
+    expect(numbers.material).toBeInstanceOf(MeshBasicMaterial)
+    expect((rim.material as InstanceType<typeof MeshLambertMaterial>).transparent).toBe(true)
+    monitor.dispose()
+  } finally {
+    load.mockRestore()
+  }
+})

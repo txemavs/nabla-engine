@@ -243,7 +243,7 @@ file names only) and returns a manifest the unchanged loader worker consumes.
 | `roads.asphalt` / `roads.supports` / `road.*.candidate` | `manifest.roads` or Atlas `#49` `roadCandidates.layers`; loaded, rendered and used when present. `drivable` / `engineLoad` are not skip gates                                                                                           |
 | `roads.collision` / `road.collision.candidate`          | inspect-only; loaded only with `&inspectRoads=collision` / `inspectRoadCollision: true`                                                                                                                                                 |
 | `osm.snapshot` (`osm-*.json.gz`)                        | `manifest.osmSnapshot`; in-car GPS street names + vector roads. Offline package only; never Overpass at runtime                                                                                                                         |
-| instances, masks, classes, roofs, roof-ids, far         | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                                                                                                             |
+| masks, classes, roofs, roof-ids, far                    | listed (`atlasCompatibilityNotes`) but **not consumed yet**                                                                                                                                                                             |
 
 ### Incompatibilities found (cells 16211, 16212 and all 33 manifests)
 
@@ -341,3 +341,44 @@ volumes:
 
 Verify with `curl -I http://<host>:8703/` (200) and
 `curl -I http://<host>:8703/terrain/z/15/16211/12003/manifest.json`.
+
+Atlas `instances` sidecars supply trees when the terrain GLB has no embedded vegetation (including LiDAR terrain). The loader verifies their size and SHA-256, snaps trees to the loaded non-building collision triangles in its worker, and reuses the existing instanced foliage renderer and trunk collisions. Invalid or unsupported instances are skipped; a missing sidecar does not prevent the terrain from loading.
+
+When a geographic host enables `fieldLights` with Atlas tiles, the existing `FieldLighting` presenter reads `street_lamp` instances from the same verified sidecar and snaps poles to loaded ground. It does not query the live OSM map API for Atlas scenery. An explicit host `fieldLights.source` still overrides this source. Trees and lights share the byte-budgeted sidecar cache.
+
+## Z16 migration
+
+See [Z16 delivery migration](z16-transition.md) for the opt-in Engine configuration,
+coverage guarantees, Atlas contract handoff and remaining production gates. Z15
+remains the default.
+
+## Nearby street-light budget
+
+Geographic lamps reuse a pool of twelve spotlights by default, reassigned to the
+nearest grounded lamp positions at night. Distant emissive lenses do not allocate
+lights. `FieldLightOptions.maxBeams` and `GameRuntime.setFieldLightLimit` accept
+0–24; zero removes the pool. The desktop quality options expose and persist the
+limit and an independent lamp-shadow toggle (off by default). Shadow rendering
+also requires the general quality profile to enable shadows. Only active nearby
+beams cast shadows; lamp geometry and simulation are unchanged by the budget.
+
+### Shader warmup while the intro is running
+
+BrowserRuntime installs Engine's `installShaderWarmup` on its renderer. It compiles
+with Three.js, snapshots the requested programs and waits for those programs only.
+Intro and mirror renders may change a material's current program while this wait
+is pending. A destroyed program is skipped before querying WebGL; otherwise the
+parallel-compile extension can keep polling a deleted handle indefinitely. Each
+wait is bounded to 15 seconds and rejects on context loss, so optional warmup
+callers can release their temporary scenes through their existing cleanup paths.
+
+The optional startup-view sweep also has an eight-second budget, checked between
+completed views. A synchronous driver compile can exceed that budget for one view;
+remaining views are then left to normal rendering. This avoids serially warming
+all descent heights before entry, without abandoning an asynchronous operation
+that could later change the live camera or render target.
+
+Hosts with an ENTER screen can call `runtime.holdPreparation(enterPromise)` before
+preparation starts. This holds the expensive vehicle/effect/shader stages while the
+attract globe runs; terrain streaming can continue. Resolve this gate on ENTER,
+separately from `holdReveal` (which waits for credits to end). Waiting is abortable.

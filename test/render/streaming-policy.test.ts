@@ -4,7 +4,7 @@ import { mapTileAt, mapTileId } from '../../src/scene/mercator.js'
 
 const origin = { latitude: 43.34, longitude: -1.76, altitude: 50 }
 afterEach(() => vi.unstubAllGlobals())
-function world(meshMinZoom?: 12 | 13 | 14 | 15) {
+function world(meshMinZoom?: 12 | 13 | 14 | 15, meshMaxZoom?: 15 | 16) {
   class Worker {
     onmessage?: unknown
     postMessage() {}
@@ -19,7 +19,7 @@ function world(meshMinZoom?: 12 | 13 | 14 | 15) {
     'https://tiles.example',
     '/prepare',
     'static',
-    { horizon: false, meshMinZoom },
+    { horizon: false, meshMinZoom, meshMaxZoom },
   )
 }
 it('startup requests only usable spawn terrain, then restores the existing coverage budget', () => {
@@ -189,4 +189,80 @@ it('selects the closest three neighbours by position and wraps across the antime
   const wrapped = startupTerrainTiles(0.001, -179.99999)
   expect(new Set(wrapped.map(mapTileId)).size).toBe(4)
   expect(wrapped.some((t) => t.x === 32767)).toBe(true)
+})
+
+it('Z16 startup requests one Z15 fallback and its four actual children', async () => {
+  const { mapTileChildren } = await import('../../src/scene/mercator.js')
+  const w = world(15, 16)
+  try {
+    w.setStartupMode(true, 4)
+    w.update([0, 0, 0], [0, 0, 0])
+    const parent = mapTileAt(origin.latitude, origin.longitude, 15)
+    const children = mapTileChildren(parent)
+    expect(w.startupTiles).toEqual(children)
+    expect(w.diagnostics.tiles.map((t) => mapTileId(t.tile))).toEqual(
+      [parent, ...children].map(mapTileId),
+    )
+    w.setStartupMode(false)
+    w.update([0, 0, 0], [10, 0, 0])
+    expect(new Set(w.diagnostics.tiles.map((t) => t.tile.z))).toEqual(new Set([15, 16]))
+    expect(w.diagnostics.tiles.length).toBeLessThanOrEqual(64)
+  } finally {
+    w.dispose()
+  }
+})
+
+it('installed Z16 cells and pins retain the Z15 collider until the quartet is ready', async () => {
+  const { Group, Vector3 } = await import('three')
+  const { mapTileChildren } = await import('../../src/scene/mercator.js')
+  const parent = mapTileAt(origin.latitude, origin.longitude, 15)
+  const children = mapTileChildren(parent)
+  const w = world(15, 16)
+  const state = w as unknown as {
+    ready: Map<string, unknown>
+    resident: Map<string, unknown>
+    pinned: Map<string, typeof parent>
+    visible: string[]
+    cover: () => void
+  }
+  try {
+    w.setStartupMode(true, 4)
+    w.update([0, 0, 0], [0, 0, 0])
+    const setPlanetTiles = vi.fn()
+    const simulation = { setPlanetTiles } as unknown as Parameters<typeof w.renderUpdate>[2]
+    for (const tile of [parent, ...children]) {
+      const key = mapTileId(tile)
+      state.ready.set(key, { tile })
+      state.resident.set(key, { group: new Group(), bytes: 0, collision: { key } })
+      if (tile.z === 16) state.pinned.set(key, tile)
+      state.cover()
+      expect(state.visible).toEqual(
+        tile === children[3] ? children.map(mapTileId) : [mapTileId(parent)],
+      )
+      w.renderUpdate(new Vector3(), true, simulation)
+      expect(setPlanetTiles.mock.lastCall?.[0].map((c: { key: string }) => c.key)).toEqual(
+        state.visible,
+      )
+    }
+  } finally {
+    state.resident.clear()
+    state.ready.clear()
+    w.dispose()
+  }
+})
+
+it('a missing Z16 child does not abort ground loading while its fallback is pending', () => {
+  const w = world(15, 16)
+  const state = w as unknown as {
+    missing: { record: (tile: ReturnType<typeof mapTileAt>, status: number) => void }
+  }
+  try {
+    const child = mapTileAt(origin.latitude, origin.longitude, 16)
+    state.missing.record(child, 404)
+    expect(w.missingTileAt([0, 0, 0])).toBeUndefined()
+    state.missing.record(mapTileAt(origin.latitude, origin.longitude, 15), 404)
+    expect(w.missingTileAt([0, 0, 0])).toEqual(child)
+  } finally {
+    w.dispose()
+  }
 })

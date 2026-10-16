@@ -47,9 +47,9 @@ callback@26(object): inferred by TypeScript; see implementation
 
 ## warmGamePresentation
 
-[Implementation, line 67](../../../../src/runtime/presentation-warmup.ts#L67)
+[Implementation, line 68](../../../../src/runtime/presentation-warmup.ts#L68)
 
-Best-effort GPU warmup. Failures must not stop play.
+Complete GPU preparation before play; propagate errors rather than claiming readiness.
 
 ```ts
 warmGamePresentation(target: PresentationWarmup): Promise<void>
@@ -62,14 +62,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `renderer.compileAsync`
 - `signal?.throwIfAborted`
+- `target.onProgress`
 - `view.renderMirrors`
 
-## warmGamePresentation.callback@83
+## warmGamePresentation.callback@87
 
-[Implementation, line 83](../../../../src/runtime/presentation-warmup.ts#L83)
+[Implementation, line 87](../../../../src/runtime/presentation-warmup.ts#L87)
 
 ```ts
-callback@83(resolve): inferred by TypeScript; see implementation
+callback@87(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -78,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## uploadSceneTextures
 
-[Implementation, line 110](../../../../src/runtime/presentation-warmup.ts#L110)
+[Implementation, line 112](../../../../src/runtime/presentation-warmup.ts#L112)
 
 Upload every texture in `scene` (hidden objects included) before it is first drawn, a few
 milliseconds per frame, so the first gameplay frames (a descent over freshly streamed tiles)
@@ -97,12 +98,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scene.traverse`
 - `signal?.throwIfAborted`
 
-## uploadSceneTextures.callback@117
+## uploadSceneTextures.callback@119
 
-[Implementation, line 117](../../../../src/runtime/presentation-warmup.ts#L117)
+[Implementation, line 119](../../../../src/runtime/presentation-warmup.ts#L119)
 
 ```ts
-callback@117(object): inferred by TypeScript; see implementation
+callback@119(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -110,12 +111,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `textures.add`
 
-## uploadSceneTextures.callback@140
+## uploadSceneTextures.callback@142
 
-[Implementation, line 140](../../../../src/runtime/presentation-warmup.ts#L140)
+[Implementation, line 142](../../../../src/runtime/presentation-warmup.ts#L142)
 
 ```ts
-callback@140(resolve): inferred by TypeScript; see implementation
+callback@142(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

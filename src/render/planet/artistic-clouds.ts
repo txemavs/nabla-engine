@@ -481,7 +481,7 @@ export function shadeEarthWithClouds(
   amount: { value: number },
   nightMap: { value: Texture | null } = { value: null },
 ) {
-  material.customProgramCacheKey = () => 'earth-cloud-shadow-night-lights-v1'
+  material.customProgramCacheKey = () => 'earth-cloud-shadow-night-lights-v2'
   material.onBeforeCompile = (shader) => {
     shader.uniforms.nablaNightMap = nightMap
     shader.uniforms.nablaCloudSun = { value: sunDirection }
@@ -531,7 +531,8 @@ export function shadeEarthWithClouds(
         float city = max(nightColor.r - nightColor.b, 0.0);
         float night = 1.0 - smoothstep(-0.16, 0.06, mu);
         float veil = 1.0 - cloud * nablaCloudCoverage * 0.5;
-        outgoingLight += vec3(1.0, 0.78, 0.42) * city * 2.5 * night * veil;`,
+        // Softer, neutral city lights on the globe: 60% of the previous emission gain.
+        outgoingLight += vec3(1.0, 0.92, 0.8) * city * 1.5 * night * veil;`,
       )
   }
 }

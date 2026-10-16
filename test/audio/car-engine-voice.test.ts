@@ -171,6 +171,22 @@ describe('inline voice in the powertrain', () => {
     expect(peak(loud.context)).toBeGreaterThan(0)
   })
 
+  it('keeps the S3 whistle and engine while silencing continuous intake air', () => {
+    const engine = resolveVehicleSound(car().audio, 'normal').engine
+    expect(engine.intakeNoise).toBe(0)
+    const { powertrain } = play(engine)
+    for (let i = 1; i <= 40; i++) powertrain.update(i * 0.05, true, 3000, 1, true, engine)
+    const voices = powertrain as unknown as {
+      turbo: { air: Node; whistleLevel: Node }
+      inline: { intake: Node }
+    }
+    expect(voices.inline.intake.gain.targets.at(-1)?.value).toBe(0)
+    expect(voices.turbo.air.gain.targets.at(-1)?.value).toBe(0)
+    expect(voices.turbo.whistleLevel.gain.targets.at(-1)?.value).toBeGreaterThan(0)
+    expect(powertrain.activeVoice).toBe('inline')
+    expect(resolveEngineVoice({ voice: 'inline' }).intakeNoise).toBe(1)
+  })
+
   it('burbles occasionally on a high-rpm lift, never on the throttle or in Normal', () => {
     const d = overrunBurbleDefaults
     const context = new Context()

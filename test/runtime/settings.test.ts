@@ -25,7 +25,7 @@ it('sanitizes persisted or host-supplied quality without trusting prototype keys
 })
 it('shares named mobile budgets and preserves explicitly disabled render effects', () => {
   const p = normalizePerformance({ ...performancePresets.mobile.settings, preset: 'mobile' })
-  expect(p.shadows).toBe(0)
+  expect(p.shadows).toBe(512)
   expect(p.mirrors).toBe(0)
   expect(p.buildings).toBe(0)
   expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 12 })
@@ -63,4 +63,12 @@ it('uses artistic clouds only on Ultra; every other quality tier stays on cheap 
   for (const preset of ['minimal', 'mobile', 'low', 'balanced', 'high', 'custom', '']) {
     expect(cloudStyleForPerformancePreset(preset)).toBe('low')
   }
+})
+
+it('keeps sun shadows in every named profile except minimal', () => {
+  for (const [name, profile] of Object.entries(performancePresets)) {
+    if (name === 'minimal') expect(profile.settings.shadows).toBe(0)
+    else expect(profile.settings.shadows).toBeGreaterThanOrEqual(512)
+  }
+  expect(normalizePerformance({ shadows: 0 }).shadows).toBe(0)
 })

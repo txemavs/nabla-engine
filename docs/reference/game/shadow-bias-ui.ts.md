@@ -143,12 +143,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 showToggle(): inferred by TypeScript; see implementation
 ```
 
-## bindShadowBiasControl.callback@94
+## bindShadowBiasControl.callback@104
 
-[Implementation, line 94](../../../game/shadow-bias-ui.ts#L94)
+[Implementation, line 104](../../../game/shadow-bias-ui.ts#L104)
 
 ```ts
-callback@94(): inferred by TypeScript; see implementation
+callback@104(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -159,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindShadowBiasControl.sync
 
-[Implementation, line 122](../../../game/shadow-bias-ui.ts#L122)
+[Implementation, line 132](../../../game/shadow-bias-ui.ts#L132)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -171,12 +171,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `percent`
 
-## bindShadowBiasControl.callback@126
+## bindShadowBiasControl.callback@136
 
-[Implementation, line 126](../../../game/shadow-bias-ui.ts#L126)
+[Implementation, line 136](../../../game/shadow-bias-ui.ts#L136)
 
 ```ts
-callback@126(): inferred by TypeScript; see implementation
+callback@136(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -185,24 +185,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `percent`
 - `runtime.setShadowBias`
 
-## bindShadowBiasControl.callback@130
+## bindShadowBiasControl.callback@140
 
-[Implementation, line 130](../../../game/shadow-bias-ui.ts#L130)
+[Implementation, line 140](../../../game/shadow-bias-ui.ts#L140)
 
 ```ts
-callback@130(): inferred by TypeScript; see implementation
+callback@140(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `saveShadowBias`
 
-## bindShadowBiasControl.callback@131
+## bindShadowBiasControl.callback@141
 
-[Implementation, line 131](../../../game/shadow-bias-ui.ts#L131)
+[Implementation, line 141](../../../game/shadow-bias-ui.ts#L141)
 
 ```ts
-callback@131(): inferred by TypeScript; see implementation
+callback@141(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

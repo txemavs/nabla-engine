@@ -45,6 +45,8 @@ export interface EngineVoiceOptions {
   /** Inline-5: pulse-strength spread for the warble, 0..0.5. Default 0.12. */
   warble?: number
   /** Inline: turbo whistle and blow-off multipliers, 0..2. Defaults 0.5 and 0.12. */
+  /** Continuous intake/turbo air noise multiplier; 0 keeps only the tonal whistle. */
+  intakeNoise?: number
   turboWhistle?: number
   blowOff?: number
   /** Inline: chance (0..1) of a soft overrun burble when the throttle closes at high rpm. */
@@ -65,6 +67,8 @@ export interface ResolvedEngineVoice {
   /** Inline: pulse strength per firing (warble). */
   weights?: number[]
   /** Turbo whistle and blow-off multipliers (inline only; others use 1). */
+  /** Continuous intake/turbo air noise multiplier; 0 keeps only the tonal whistle. */
+  intakeNoise?: number
   turboWhistle?: number
   blowOff?: number
   /** Inline: overrun burble chance per high-rpm lift, 0..1 (0 = never). */
@@ -111,6 +115,7 @@ export function resolveEngineVoice(engine?: EngineVoiceOptions | null): Resolved
       volume: volumeOf(engine.volume),
       weights: inlinePulseWeights(cylinders, engine.warble ?? d.warble),
       turboWhistle: volumeOf(engine.turboWhistle ?? d.turboWhistle),
+      intakeNoise: volumeOf(engine.intakeNoise),
       blowOff: volumeOf(engine.blowOff ?? d.blowOff),
       burble: Math.min(1, Math.max(0, engine.burble ?? 0)),
     }

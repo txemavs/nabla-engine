@@ -10,10 +10,10 @@ export const autoResolutionScaleRange = Object.freeze({ min: 0.5, max: 1 })
  * Inclusive clamps for an explicit host/manual scale. Above 1 supersamples (renders more pixels
  * than the preset's pixel ratio); the runtime also caps the final pixel ratio ({@link maxPixelRatio}).
  */
-export const manualResolutionScaleRange = Object.freeze({ min: 0.25, max: 2 })
+export const manualResolutionScaleRange = Object.freeze({ min: 0.25, max: 5 })
 
 /** Upper bound for the final drawing-buffer pixel ratio (preset ratio × scale), to bound GPU memory. */
-export const maxPixelRatio = 3
+export const maxPixelRatio = 10
 
 /** Where auto mode starts when the host gives no scale. */
 export const autoResolutionScaleStart = 0.5
@@ -46,7 +46,7 @@ export interface DisplaySettings {
   maxFps: number
   /**
    * Drawing-buffer multiplier relative to the selected quality profile.
-   * In `manual` mode this is the host-fixed value (0.25..2).
+   * In `manual` mode this is the host-fixed value (0.25..5).
    * In `auto` mode this is the live adapted value, starting at 0.5 and clamped to 0.5..1.
    * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 1.3, Alta 1.15 … Mínima 0.4).
    */

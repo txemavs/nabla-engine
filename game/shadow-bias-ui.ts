@@ -74,7 +74,7 @@ export function bindShadowBiasControl(
   bootValue: number | undefined,
   storage = browserStorage(),
 ): void {
-  const group = menuSection('quality-shadows', 'Sombras')
+  const group = menuSection('quality-shadows', 'Sombras del sol')
   // Migrate the old preference once; the runtime persists the canonical light tuning.
   const toggleLabel = document.createElement('label')
   const toggle = document.createElement('input')
@@ -82,8 +82,18 @@ export function bindShadowBiasControl(
   toggle.id = 'shadows-enabled'
   const toggleText = document.createElement('span')
   const showToggle = () => {
-    toggle.checked = runtime.shadowsEnabled
-    toggleText.textContent = runtime.shadowsEnabled ? 'Sombras: activadas' : 'Sombras: desactivadas'
+    const resolution = runtime.sunShadowResolution
+    const available = resolution !== 0
+    toggle.disabled = !available
+    toggle.checked = available && runtime.shadowsEnabled
+    toggleText.textContent =
+      resolution === undefined
+        ? 'Sombras del sol: recarga la página para actualizar el motor'
+        : !available
+          ? 'Sombras del sol: desactivadas por el perfil de calidad'
+          : runtime.shadowsEnabled
+            ? `Sombras del sol: activadas · ${runtime.sunShadowResolution} px`
+            : 'Sombras del sol: desactivadas'
   }
   runtime.setShadowsEnabled(resolveShadowsEnabled(storage))
   try {

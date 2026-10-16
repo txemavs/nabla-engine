@@ -12,7 +12,7 @@
 
 ## curvedScreen
 
-[Implementation, line 23](../../../../../src/render/entity/avatar.ts#L23)
+[Implementation, line 24](../../../../../src/render/entity/avatar.ts#L24)
 
 Spherical patch with continuous UVs; the border softly rounds towards each side.
 
@@ -37,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createMonitorAvatar
 
-[Implementation, line 45](../../../../../src/render/entity/avatar.ts#L45)
+[Implementation, line 46](../../../../../src/render/entity/avatar.ts#L46)
 
 Floating helmet-monitor: spherical satin plastic, a discreet lower lip, a sliding visor and an original blue pixel face.
 
@@ -117,7 +117,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createMonitorAvatar.add
 
-[Implementation, line 62](../../../../../src/render/entity/avatar.ts#L62)
+[Implementation, line 63](../../../../../src/render/entity/avatar.ts#L63)
 
 ```ts
 add(name: string, geometry: THREE.BufferGeometry, material: THREE.Material, position: [number, number, number], parent: THREE.Group = root): inferred by TypeScript; see implementation
@@ -129,12 +129,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.position.set`
 - `parent.add`
 
-## createMonitorAvatar.callback@80
+## createMonitorAvatar.callback@81
 
-[Implementation, line 80](../../../../../src/render/entity/avatar.ts#L80)
+[Implementation, line 81](../../../../../src/render/entity/avatar.ts#L81)
 
 ```ts
-callback@80(shader): inferred by TypeScript; see implementation
+callback@81(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -144,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createMonitorAvatar.borderPoint
 
-[Implementation, line 111](../../../../../src/render/entity/avatar.ts#L111)
+[Implementation, line 112](../../../../../src/render/entity/avatar.ts#L112)
 
 ```ts
 borderPoint(rawX: number, rawY: number): inferred by TypeScript; see implementation
@@ -157,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createMonitorAvatar.borderY
 
-[Implementation, line 116](../../../../../src/render/entity/avatar.ts#L116)
+[Implementation, line 117](../../../../../src/render/entity/avatar.ts#L117)
 
 ```ts
 borderY(x: number): inferred by TypeScript; see implementation
@@ -168,20 +168,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.sqrt`
 
-## createMonitorAvatar.callback@154
+## createMonitorAvatar.callback@155
 
-[Implementation, line 154](../../../../../src/render/entity/avatar.ts#L154)
+[Implementation, line 155](../../../../../src/render/entity/avatar.ts#L155)
 
 ```ts
-callback@154(): inferred by TypeScript; see implementation
+callback@155(): inferred by TypeScript; see implementation
 ```
 
-## createMonitorAvatar.callback@162
+## createMonitorAvatar.callback@163
 
-[Implementation, line 162](../../../../../src/render/entity/avatar.ts#L162)
+[Implementation, line 163](../../../../../src/render/entity/avatar.ts#L163)
 
 ```ts
-callback@162(shader): inferred by TypeScript; see implementation
+callback@163(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -189,36 +189,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `shader.fragmentShader.replace`
 - `shader.vertexShader.replace`
 
-## createMonitorAvatar.callback@179
+## createMonitorAvatar.callback@180
 
-[Implementation, line 179](../../../../../src/render/entity/avatar.ts#L179)
+[Implementation, line 180](../../../../../src/render/entity/avatar.ts#L180)
 
 ```ts
-callback@179(shader): inferred by TypeScript; see implementation
+callback@180(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `shader.fragmentShader.replace`
 
-## createMonitorAvatar.callback@197
+## createMonitorAvatar.callback@198
 
-[Implementation, line 197](../../../../../src/render/entity/avatar.ts#L197)
+[Implementation, line 198](../../../../../src/render/entity/avatar.ts#L198)
 
 ```ts
-callback@197(p): inferred by TypeScript; see implementation
+callback@198(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector2`
 
-## createMonitorAvatar.callback@205
+## createMonitorAvatar.callback@206
 
-[Implementation, line 205](../../../../../src/render/entity/avatar.ts#L205)
+[Implementation, line 206](../../../../../src/render/entity/avatar.ts#L206)
 
 ```ts
-callback@205(shader, renderer): inferred by TypeScript; see implementation
+callback@206(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -226,12 +226,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `foam.onBeforeCompile`
 - `shader.fragmentShader.replace`
 
-## createMonitorAvatar.callback@228
+## createMonitorAvatar.callback@230
 
-[Implementation, line 228](../../../../../src/render/entity/avatar.ts#L228)
+[Implementation, line 230](../../../../../src/render/entity/avatar.ts#L230)
 
 ```ts
-callback@228(shader): inferred by TypeScript; see implementation
+callback@230(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -240,7 +240,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createMonitorAvatar.visorPoint
 
-[Implementation, line 272](../../../../../src/render/entity/avatar.ts#L272)
+[Implementation, line 277](../../../../../src/render/entity/avatar.ts#L277)
 
 ```ts
 visorPoint(u: number, v: number): inferred by TypeScript; see implementation
@@ -254,12 +254,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sqrt`
 - `THREE.Vector3`
 
-## createMonitorAvatar.callback@334
+## createMonitorAvatar.callback@339
 
-[Implementation, line 334](../../../../../src/render/entity/avatar.ts#L334)
+[Implementation, line 339](../../../../../src/render/entity/avatar.ts#L339)
 
 ```ts
-callback@334(_, i): inferred by TypeScript; see implementation
+callback@339(_, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -268,7 +268,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setMonitorHelmetColor
 
-[Implementation, line 380](../../../../../src/render/entity/avatar.ts#L380)
+[Implementation, line 386](../../../../../src/render/entity/avatar.ts#L386)
 
 Set a player's helmet paint independently of the face, trim and smoked glasses.
 
@@ -283,7 +283,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setMonitorSunglasses
 
-[Implementation, line 385](../../../../../src/render/entity/avatar.ts#L385)
+[Implementation, line 391](../../../../../src/render/entity/avatar.ts#L391)
 
 Slide the concentric outer sun visor; the fixed pixel display never rotates with it.
 
@@ -297,7 +297,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setMonitorVisorPosition
 
-[Implementation, line 391](../../../../../src/render/entity/avatar.ts#L391)
+[Implementation, line 397](../../../../../src/render/entity/avatar.ts#L397)
 
 Set visor travel from lowered (0) to fully retracted (1), always on the same sphere.
 
@@ -313,7 +313,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setMonitorVisorTint
 
-[Implementation, line 398](../../../../../src/render/entity/avatar.ts#L398)
+[Implementation, line 404](../../../../../src/render/entity/avatar.ts#L404)
 
 Regulate the plastic visor from clear (0) to black sunglasses (1).
 
@@ -329,9 +329,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `monitor.tint.color.set`
 - `monitors.get`
 
+## setMonitorFaceLight
+
+[Implementation, line 413](../../../../../src/render/entity/avatar.ts#L413)
+
+Turn the existing display white without replacing its texture or compiling another shader.
+
+```ts
+setMonitorFaceLight(model: THREE.Group, enabled: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `monitors.get`
+
 ## setMonitorPortrait
 
-[Implementation, line 409](../../../../../src/render/entity/avatar.ts#L409)
+[Implementation, line 421](../../../../../src/render/entity/avatar.ts#L421)
 
 Display a caller-owned photo/video texture on the curved face; null restores blue pixels.
 The caller configures its texture (including sRGB) and retains disposal ownership.
@@ -346,7 +360,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateMonitorAvatar
 
-[Implementation, line 418](../../../../../src/render/entity/avatar.ts#L418)
+[Implementation, line 430](../../../../../src/render/entity/avatar.ts#L430)
 
 Advance reusable face pixels and smooth the glasses hinge without changing the driver pose.
 
@@ -366,7 +380,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## disposeMonitorAvatar
 
-[Implementation, line 436](../../../../../src/render/entity/avatar.ts#L436)
+[Implementation, line 448](../../../../../src/render/entity/avatar.ts#L448)
 
 The SceneView owns this texture; normal object disposal owns all meshes and materials.
 
@@ -382,7 +396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMotion.reset
 
-[Implementation, line 446](../../../../../src/render/entity/avatar.ts#L446)
+[Implementation, line 458](../../../../../src/render/entity/avatar.ts#L458)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 
@@ -396,7 +410,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MonitorMotion.update
 
-[Implementation, line 450](../../../../../src/render/entity/avatar.ts#L450)
+[Implementation, line 462](../../../../../src/render/entity/avatar.ts#L462)
 
 Presentation only: the existing player collider remains the sole locomotion body.
 

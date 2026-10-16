@@ -112,3 +112,35 @@ it('cloned GLB beams keep their local direction through vehicle translation and 
     expect((second.children[0] as SpotLight).intensity).not.toBe(0)
   }
 })
+
+it('keeps dipped left aim, subtly raises right and opens high beams without a narrow cone', () => {
+  const model = new Group()
+  model.rotation.y = 0.7
+  model.position.set(3, 2, 5)
+  const lamps = ['L', 'R', 'high'].map((side) => {
+    const lamp = new SpotLight()
+    lamp.angle = 0.38
+    lamp.target.position.set(0, -Math.sin(0.035), -Math.cos(0.035))
+    lamp.add(lamp.target)
+    lamp.userData = {
+      role: 'vehicle-light',
+      channel: side === 'high' ? 'HighBeam' : 'LowBeam',
+      side,
+      onIntensity: 10,
+    }
+    model.add(lamp)
+    return lamp
+  })
+  const control = new AuthoredVehicleLights(model)
+  const elevations = lamps.map((lamp) => {
+    model.updateWorldMatrix(true, true)
+    const from = model.worldToLocal(lamp.getWorldPosition(new Vector3()))
+    const to = model.worldToLocal(lamp.target.getWorldPosition(new Vector3())).sub(from)
+    return Math.atan2(to.y, Math.hypot(to.x, to.z))
+  })
+  expect(elevations[0]).toBeCloseTo(-0.035)
+  expect(elevations[1] - elevations[0]).toBeCloseTo(Math.PI / 360)
+  expect(elevations[2]).toBeCloseTo(0)
+  expect(lamps[2].angle).toBe(lightingDefaults.lowBeamOuterCone)
+  control.dispose()
+})

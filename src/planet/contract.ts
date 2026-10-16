@@ -160,6 +160,8 @@ export interface PlanetManifest {
    * Set only by the Atlas adapter; used by the in-car GPS for named streets.
    */
   osmSnapshot?: PlanetLayerFile
+  /** Verified Atlas scenery sidecar (trees, signs and street furniture). */
+  instances?: PlanetLayerFile
 }
 /** Pointer to the `nabla-z15-package/1` JSON that lists every file of an Atlas cell. */
 export interface PlanetZ15PackageRef {
@@ -523,6 +525,7 @@ export function planetTileRevision(manifest: PlanetManifest): string {
     ':' +
     manifest.files['buildings-osm'].sha256 +
     (manifest.photo ? ':' + manifest.photo.sha256 : '') +
+    (manifest.instances ? ':instances:' + manifest.instances.sha256 : '') +
     (roads ? ':' + planetRoadRevision(roads) : '')
   )
 }

@@ -24,6 +24,8 @@ export interface GameRenderFrame {
   time: number
   mirrorVehicle: string | null
   shadowsEnabled: boolean
+  /** Local lights can update shadows independently of the sun/cascade switch. */
+  localShadowUpdate?: boolean
   depthOfField?: boolean
   tunnelFocus?: number
   skyVisible?: boolean
@@ -67,6 +69,18 @@ export class GameRenderPipeline {
     const allocate = shadowsOff && missingShadowMap(frame.lights)
     if (allocate) renderer.shadowMap.needsUpdate = true
     else if (shadowsOff && !this.shadowMapsBlank) this.blankShadowMaps(frame)
+    const pausedSun =
+      shadowsOff && !allocate && frame.localShadowUpdate
+        ? frame.lights.map((light) => ({
+            shadow: light.shadow,
+            auto: light.shadow.autoUpdate,
+            needs: light.shadow.needsUpdate,
+          }))
+        : []
+    for (const { shadow } of pausedSun) {
+      shadow.autoUpdate = false
+      shadow.needsUpdate = false
+    }
     try {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
@@ -140,7 +154,8 @@ export class GameRenderPipeline {
       }
       frame.shadows.update(camera, origin)
       monitors.prepare(camera)
-      renderer.shadowMap.needsUpdate = frame.shadowsEnabled || missingShadowMap(frame.lights)
+      renderer.shadowMap.needsUpdate =
+        frame.shadowsEnabled || !!frame.localShadowUpdate || missingShadowMap(frame.lights)
       const flare = sky.lensFlare
       const flareVisible = flare?.visible ?? false
       if (focus && flare) flare.visible = false
@@ -175,6 +190,10 @@ export class GameRenderPipeline {
         }
       }
     } finally {
+      for (const { shadow, auto, needs } of pausedSun) {
+        shadow.autoUpdate = auto
+        shadow.needsUpdate = needs
+      }
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible
       renderer.setRenderTarget(target)

@@ -54,3 +54,9 @@ mirrors and screenshots work with the existing renderer.
 
 The first converted monitor is the S3 speedometer. The GPS and carrier displays
 still use their existing canvas renderers; they have not been migrated by this change.
+
+The S3 uses two aligned layers: `s3-cluster-surface.svg` contains the printed dial
+faces and rings (scene-lit, no emission); `s3-cluster-lit.svg` contains illuminated
+markings and the centre display. Needles and telemetry remain separate self-lit
+layers. The exterior is transparent, including the upper corners. The combined
+`s3-cluster.svg` is retained for the HTML preview.

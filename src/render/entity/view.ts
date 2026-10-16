@@ -95,6 +95,7 @@ import {
   MonitorMotion,
   updateMonitorAvatar,
   setMonitorSunglasses,
+  setMonitorFaceLight,
   disposeMonitorAvatar,
 } from './avatar.js'
 import { createPortalSurface, type PortalSurface } from '../portal/portals.js'
@@ -517,6 +518,12 @@ export class SceneView {
   private disposed = false
   private pendingMapMeshes: Entity[] = []
   private readonly mapInstallEye = new THREE.Vector3()
+  get headLightMount(): THREE.Object3D {
+    return this.monitor
+  }
+  setHeadLight(enabled: boolean): void {
+    setMonitorFaceLight(this.monitor, enabled)
+  }
   readonly avatar = new THREE.Group()
   private readonly monitor = createMonitorAvatar()
   private readonly monitorMotion = new MonitorMotion()
@@ -2028,6 +2035,14 @@ export class SceneView {
     const group = vehicleId ? this.objects.get(vehicleId) : undefined
     group?.updateWorldMatrix(true, true)
     this.vehicleLights.capture(authored?.spots ?? [], [...(authored?.points ?? []), ...courtesy])
+    if (
+      vehicleId &&
+      group &&
+      this.night &&
+      this.carLights.has(vehicleId) &&
+      !this.motorcycleRigs.has(vehicleId)
+    )
+      this.vehicleLights.groundGlow(group)
   }
   dispose(): void {
     this.brokenGlass.clear()

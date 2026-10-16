@@ -127,8 +127,8 @@ export async function waitForGround(
 /**
  * Wait until every cell the stream plans around `position` has arrived (or failed / is a known
  * hole), e.g. the landscape seen during a start descent. `pending` adds other install queues
- * (map meshes) that must drain too. Resolves true when settled, false at the stall limit (no
- * progress for `stallMs`) or the hard cap; never throws for slowness.
+ * (map meshes) that must drain too. By default wait until settled or aborted. A caller may
+ * explicitly opt into stall/cap limits; false then means incomplete, never ready.
  */
 export async function waitForArea(
   world: GroundProvider & { readonly cellStats?: { pending: number } },
@@ -144,8 +144,8 @@ export async function waitForArea(
     onProgress?: (pending: number) => void
   } = {},
 ): Promise<boolean> {
-  const stall = options.stallMs ?? 15000
-  const cap = options.capMs ?? 60000
+  const stall = options.stallMs ?? Infinity
+  const cap = options.capMs ?? Infinity
   const budget = options.installBudgetMs ?? streamingDefaults.blockingInstallBudgetMs
   const begun = performance.now()
   let progressAt = begun
