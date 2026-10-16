@@ -272,7 +272,8 @@
     "prebuild:game": "npm run assets:pack",
     "prebuild:demo": "npm run assets:pack",
     "postbuild:game": "node scripts/finalize-game-assets.mjs",
-    "postbuild:demo": "node scripts/finalize-game-assets.mjs"
+    "postbuild:demo": "node scripts/finalize-game-assets.mjs",
+    "controls:list": "npm run build --silent && node scripts/list-controls.mjs"
   },
   "keywords": [
     "3d",

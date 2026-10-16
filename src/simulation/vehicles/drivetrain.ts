@@ -348,6 +348,7 @@ export function stepDrivetrain(
   handbrake: boolean,
   dt: number,
   aggressiveLaunch = false,
+  selectedGear?: number,
 ): void {
   const spec = effectivePowertrain(baseSpec, state.mode)
   // Reverse is a separate ratio, never an index in the forward gear array.
@@ -366,9 +367,11 @@ export function stepDrivetrain(
       ? Math.max(0, Math.min(1, (15 - Math.abs(speed)) / 10))
       : 0
   const gearbox = gearboxTuning(spec)
-  selectNeutralOrPark(state, speed, throttle, handbrake, dt, gearbox)
+  if (selectedGear !== undefined) selectManualGear(state, spec, radius, speed, selectedGear)
+  else selectNeutralOrPark(state, speed, throttle, handbrake, dt, gearbox)
   const fromNeutral = state.gear === 0
-  const changingDirection = selectDriveDirection(state, speed, throttle, dt, gearbox)
+  const changingDirection =
+    selectedGear === undefined ? selectDriveDirection(state, speed, throttle, dt, gearbox) : false
   // Leaving N while rolling engages the gear that suits the road speed, not first.
   if (fromNeutral && state.gear === 1)
     state.gear = gearForSpeed(spec, radius, speed, gearbox.upshiftRpm)
@@ -483,4 +486,36 @@ export function engineBrakingForce(
     ((-Math.sign(speed) * torque * ratio * spec.finalDrive * 0.85) / radius) *
     Math.min(1, Math.abs(speed) / 2)
   )
+}
+
+/** H-pattern shares the same over-rev and direction protection as the drivetrain. */
+export function selectManualGear(
+  state: DrivetrainState,
+  spec: PowertrainDefinition,
+  radius: number,
+  speed: number,
+  gear: number,
+): boolean {
+  if (!Number.isInteger(gear) || gear < -1 || gear > spec.ratios.length || isStarting(state))
+    return false
+  if (gear === state.gear && !state.parked) {
+    state.manual = true
+    return true
+  }
+  if (state.shiftRemaining > 0) return false
+  if ((gear < 0 && speed > 0.8) || (gear > 0 && speed < -0.8)) return false
+  const ratio = gear === -1 ? (spec.reverseRatio ?? 3.2) : gear === 0 ? 0 : spec.ratios[gear - 1]
+  const rpm = (Math.abs(speed) / (2 * Math.PI * radius)) * 60 * ratio * spec.finalDrive
+  const tuning = gearboxTuning(spec)
+  if (rpm > tuning.overrevRpm) return false
+  Object.assign(state, {
+    manual: true,
+    parked: false,
+    gear,
+    shiftRemaining: tuning.seconds,
+    cooldown: tuning.cooldownSeconds,
+  })
+  state.shiftCount++
+  state.clackCount++
+  return true
 }

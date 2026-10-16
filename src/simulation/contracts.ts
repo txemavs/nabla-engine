@@ -6,6 +6,10 @@ export interface PlayerInput {
   yaw: number // radians; yaw=0 faces -Z, positive turns left
   sprint: boolean
   jump: boolean // request; consumed once on the next simulation tick
+  /** Independent proportional service brake and clutch; USB and other adapters share these. */
+  serviceBrake?: number
+  clutch?: number
+  selectedGear?: number
   brake: boolean
   lift?: number // -1 descend, +1 ascend; neutral holds altitude
   turn?: number // -1 left, +1 right; independent of camera yaw
@@ -29,4 +33,12 @@ export interface PlayerSnapshot {
   vehicleId: string | null
   interiorId: string | null
   speed: number // metres per second
+}
+
+/** Shared physics feedback, in engine units; adapters decide how to render it. */
+export interface VehicleFeedback {
+  steeringTorqueNm: number
+  suspensionLoad: number
+  tireSlip: number
+  grounded: boolean
 }

@@ -897,6 +897,14 @@ export class Simulation {
       lift: clamp(input.lift ?? 0, -1, 1),
       turn: clamp(input.turn ?? 0, -1, 1),
       riderRight: Number.isFinite(input.riderRight) ? clamp(input.riderRight!, -1, 1) : 0,
+      serviceBrake: Number.isFinite(input.serviceBrake) ? clamp(input.serviceBrake!, 0, 1) : 0,
+      clutch: Number.isFinite(input.clutch) ? clamp(input.clutch!, 0, 1) : 0,
+      selectedGear:
+        Number.isInteger(input.selectedGear) &&
+        input.selectedGear! >= -1 &&
+        input.selectedGear! <= 10
+          ? input.selectedGear
+          : undefined,
       rearBrake: Number.isFinite(input.rearBrake) ? clamp(input.rearBrake!, 0, 1) : 0,
       riderForward: Number.isFinite(input.riderForward) ? clamp(input.riderForward!, -1, 1) : 0,
     }
@@ -1094,6 +1102,9 @@ export class Simulation {
     return {
       throttle: this.input.forward,
       steering: this.input.right,
+      serviceBrake: this.input.serviceBrake,
+      clutch: this.input.clutch,
+      selectedGear: this.input.selectedGear,
       handbrake: this.input.brake,
       launch: this.input.sprint,
       rider: { right: this.input.riderRight ?? 0, forward: this.input.riderForward ?? 0 },
@@ -1170,6 +1181,30 @@ export class Simulation {
           )
         : null,
     )
+  }
+  /** Contact-derived FFB. Pneumatic trail is an approximation, not a vendor-specific effect. */
+  vehicleFeedback(id: string): import('./contracts.js').VehicleFeedback | null {
+    const v = this.vehicles.get(id)
+    if (!v || v.flight || v.definition.boat || v.twoWheeled) return null
+    const controller = v.raycast.controller
+    const front = v.definition.rearSteering ? [2, 3] : [0, 1]
+    let torque = 0,
+      load = 0
+    let grounded = false
+    for (let i = 0; i < v.raycast.wheelInfos.length; i++) {
+      if (!controller?.wheelIsInContact(i)) continue
+      grounded = true
+      load += controller.wheelSuspensionForce(i) ?? 0
+      if (front.includes(i))
+        torque -= (((controller.wheelSideImpulse(i) ?? 0) / FIXED_STEP) * 0.06) / 15
+    }
+    const ground = wheeledTelemetry(v, this.wheeledInput(), id === this.vehicleId)
+    return {
+      steeringTorqueNm: Number.isFinite(torque) ? torque : 0,
+      suspensionLoad: load / Math.max(1, v.body.mass * simulationDefaults.gravity),
+      tireSlip: ground.tireSlip,
+      grounded,
+    }
   }
   /** Per-wheel absolute-world contact snapshots for any tyre effect or diagnostic. */
   wheelContactInfo(

@@ -39,8 +39,8 @@ initial occupied vehicle. Unknown presets report an error.
 `&engineMode=normal|beast` (or `bestia`) sets the start engine mode of cars that have modes (the
 S3; default `normal`, D). See docs/monitors.md, «Engine modes».
 
-Controls: WASD, Space to brake/jump, C for cameras, E to enter/exit, R for recovery,
-H for vehicle lights, G for the car's retractable GPS, K for high/low beams, V for supported flight, F for trailer hitch / carrier dock and T for control transfer. On-screen
+Controls: WASD, Space to brake/jump, V for cameras, E to enter/exit, R for recovery,
+H for vehicle lights, G for the car's retractable GPS, K for high/low beams, C for supported flight, F for trailer hitch / carrier dock and T for control transfer. On-screen
 steer/pedal pads, brake, enter/exit and camera match Studio's tactile driving HUD
 and mix with the keyboard and a standard gamepad. Click the canvas
 to focus and enable audio; drag to look. Standard gamepad axes use Engine's shared mixer.
@@ -433,3 +433,11 @@ wheel beneath the shared station anchor; wheel tilt does not affect lever
 position/orientation. Both still follow the same body anchor and pin/grab as one
 station. Existing stored wheel adjustments retain their meaning for the wheel;
 the lever console starts from its original, unrotated layout.
+
+### Shared controls catalog
+
+Keyboard bindings, contextual priority and help are defined in
+`src/config/input-bindings.ts`; see [configuration](configuration.md#actions-and-bindings).
+The forklift uses P for its equipment menu so J/L can control mast tilt and K
+can lower its forks. Other vehicles keep J. The game help follows the current
+locomotion, weapon, aim and menu context instead of duplicating bindings in HTML.

@@ -23,7 +23,7 @@ describe('Engine XR gameplay controls', () => {
     const input = new XRGameInput()
     const sources = [hand('right', [0, 0, 1, 0], [4]), hand('left', [0, 0, 0, -1])]
     expect(input.read(sources, false, false, true)).toMatchObject({
-      actions: ['KeyE'],
+      actions: ['interact'],
       snap: -Math.PI / 6,
       touch: { forward: 1, right: 0 },
     })
@@ -32,7 +32,7 @@ describe('Engine XR gameplay controls', () => {
       actions: [],
       touch: { forward: 0, right: 0 },
     })
-    expect(input.read(sources, false, false, true).actions).toEqual(['KeyE'])
+    expect(input.read(sources, false, false, true).actions).toEqual(['interact'])
   })
   it('shares throttle, steering, brake and flight axes with the simulation', () => {
     const input = new XRGameInput()
@@ -69,8 +69,8 @@ it('reserves squeeze buttons for physical grabbing', () => {
 it('X toggles the main menu once per press and no longer hitches the vehicle', () => {
   const input = new XRGameInput(),
     left = hand('left', [0, 0, 0, 0], [4])
-  expect(input.read([left], false, true, true).actions).toEqual(['XRMenu'])
+  expect(input.read([left], false, true, true).actions).toEqual(['xr.menu'])
   expect(input.read([left], false, true, true).actions).toEqual([])
   input.read([], false, true, true)
-  expect(input.read([left], false, true, true).actions).toEqual(['XRMenu'])
+  expect(input.read([left], false, true, true).actions).toEqual(['xr.menu'])
 })

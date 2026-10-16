@@ -48,7 +48,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.constructor
 
-[Implementation, line 173](../../../../../src/render/planet/sky.ts#L173)
+[Implementation, line 174](../../../../../src/render/planet/sky.ts#L174)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -89,20 +89,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.sunDisc.value.set`
 - `this.syncClouds`
 
-## GeographicView.constructor.callback@179
+## GeographicView.constructor.callback@180
 
-[Implementation, line 179](../../../../../src/render/planet/sky.ts#L179)
+[Implementation, line 180](../../../../../src/render/planet/sky.ts#L180)
 
 ```ts
-callback@179(e): inferred by TypeScript; see implementation
+callback@180(e): inferred by TypeScript; see implementation
 ```
 
-## GeographicView.constructor.callback@219
+## GeographicView.constructor.callback@221
 
-[Implementation, line 219](../../../../../src/render/planet/sky.ts#L219)
+[Implementation, line 221](../../../../../src/render/planet/sky.ts#L221)
 
 ```ts
-callback@219(texture): inferred by TypeScript; see implementation
+callback@221(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -111,24 +111,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `texture.dispose`
 - `this.changed`
 
-## GeographicView.constructor.callback@234
+## GeographicView.constructor.callback@236
 
-[Implementation, line 234](../../../../../src/render/planet/sky.ts#L234)
+[Implementation, line 236](../../../../../src/render/planet/sky.ts#L236)
 
 ```ts
-callback@234(): inferred by TypeScript; see implementation
+callback@236(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.changed`
 
-## GeographicView.constructor.callback@246
+## GeographicView.constructor.callback@249
 
-[Implementation, line 246](../../../../../src/render/planet/sky.ts#L246)
+[Implementation, line 249](../../../../../src/render/planet/sky.ts#L249)
 
 ```ts
-callback@246(texture): inferred by TypeScript; see implementation
+callback@249(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -136,12 +136,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `texture.dispose`
 - `this.revealEarth`
 
-## GeographicView.constructor.callback@256
+## GeographicView.constructor.callback@259
 
-[Implementation, line 256](../../../../../src/render/planet/sky.ts#L256)
+[Implementation, line 259](../../../../../src/render/planet/sky.ts#L259)
 
 ```ts
-callback@256(): inferred by TypeScript; see implementation
+callback@259(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.changed`
+
+## GeographicView.constructor.callback@264
+
+[Implementation, line 264](../../../../../src/render/planet/sky.ts#L264)
+
+```ts
+callback@264(texture): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `texture.dispose`
+- `this.changed`
+
+## GeographicView.constructor.callback@274
+
+[Implementation, line 274](../../../../../src/render/planet/sky.ts#L274)
+
+```ts
+callback@274(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -150,7 +175,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.revealEarth
 
-[Implementation, line 264](../../../../../src/render/planet/sky.ts#L264)
+[Implementation, line 282](../../../../../src/render/planet/sky.ts#L282)
 
 Swap the black placeholder for the textured planet (when a map is provided) and allow the
 sun disc / flare / daylight. Keeps the black ball if textures were disabled or failed.
@@ -167,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.syncSunPresentation
 
-[Implementation, line 277](../../../../../src/render/planet/sky.ts#L277)
+[Implementation, line 295](../../../../../src/render/planet/sky.ts#L295)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -181,7 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.enabled
 
-[Implementation, line 282](../../../../../src/render/planet/sky.ts#L282)
+[Implementation, line 300](../../../../../src/render/planet/sky.ts#L300)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -195,7 +220,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.status
 
-[Implementation, line 285](../../../../../src/render/planet/sky.ts#L285)
+[Implementation, line 303](../../../../../src/render/planet/sky.ts#L303)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -205,7 +230,7 @@ status(): string
 
 ## GeographicView.update
 
-[Implementation, line 295](../../../../../src/render/planet/sky.ts#L295)
+[Implementation, line 313](../../../../../src/render/planet/sky.ts#L313)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -269,17 +294,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wanted.add`
 - `wanted.has`
 
-## GeographicView.update.callback@387
+## GeographicView.update.callback@405
 
-[Implementation, line 387](../../../../../src/render/planet/sky.ts#L387)
+[Implementation, line 405](../../../../../src/render/planet/sky.ts#L405)
 
 ```ts
-callback@387(t): inferred by TypeScript; see implementation
+callback@405(t): inferred by TypeScript; see implementation
 ```
 
 ## GeographicView.addTile
 
-[Implementation, line 392](../../../../../src/render/planet/sky.ts#L392)
+[Implementation, line 410](../../../../../src/render/planet/sky.ts#L410)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -307,7 +332,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.loadNext
 
-[Implementation, line 417](../../../../../src/render/planet/sky.ts#L417)
+[Implementation, line 435](../../../../../src/render/planet/sky.ts#L435)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -324,24 +349,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.cache.values`
 
-## GeographicView.loadNext.callback@429
+## GeographicView.loadNext.callback@447
 
-[Implementation, line 429](../../../../../src/render/planet/sky.ts#L429)
+[Implementation, line 447](../../../../../src/render/planet/sky.ts#L447)
 
 ```ts
-callback@429(): inferred by TypeScript; see implementation
+callback@447(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `tile.controller!.abort`
 
-## GeographicView.loadNext.callback@431
+## GeographicView.loadNext.callback@449
 
-[Implementation, line 431](../../../../../src/render/planet/sky.ts#L431)
+[Implementation, line 449](../../../../../src/render/planet/sky.ts#L449)
 
 ```ts
-callback@431(r): inferred by TypeScript; see implementation
+callback@449(r): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -353,24 +378,24 @@ Explicit throws in this body:
 
 - `new Error('Map image unavailable')`
 
-## GeographicView.loadNext.callback@435
+## GeographicView.loadNext.callback@453
 
-[Implementation, line 435](../../../../../src/render/planet/sky.ts#L435)
+[Implementation, line 453](../../../../../src/render/planet/sky.ts#L453)
 
 ```ts
-callback@435(blob): inferred by TypeScript; see implementation
+callback@453(blob): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `createImageBitmap`
 
-## GeographicView.loadNext.callback@436
+## GeographicView.loadNext.callback@454
 
-[Implementation, line 436](../../../../../src/render/planet/sky.ts#L436)
+[Implementation, line 454](../../../../../src/render/planet/sky.ts#L454)
 
 ```ts
-callback@436(bitmap): inferred by TypeScript; see implementation
+callback@454(bitmap): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -379,24 +404,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bitmap.close`
 - `texture.addEventListener`
 
-## GeographicView.loadNext.callback@436.callback@444
+## GeographicView.loadNext.callback@454.callback@462
 
-[Implementation, line 444](../../../../../src/render/planet/sky.ts#L444)
+[Implementation, line 462](../../../../../src/render/planet/sky.ts#L462)
 
 ```ts
-callback@444(): inferred by TypeScript; see implementation
+callback@462(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `bitmap.close`
 
-## GeographicView.loadNext.callback@450
+## GeographicView.loadNext.callback@468
 
-[Implementation, line 450](../../../../../src/render/planet/sky.ts#L450)
+[Implementation, line 468](../../../../../src/render/planet/sky.ts#L468)
 
 ```ts
-callback@450(): inferred by TypeScript; see implementation
+callback@468(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -404,12 +429,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Date.now`
 - `Math.min`
 
-## GeographicView.loadNext.callback@458
+## GeographicView.loadNext.callback@476
 
-[Implementation, line 458](../../../../../src/render/planet/sky.ts#L458)
+[Implementation, line 476](../../../../../src/render/planet/sky.ts#L476)
 
 ```ts
-callback@458(): inferred by TypeScript; see implementation
+callback@476(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -420,7 +445,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.setCloudStyle
 
-[Implementation, line 467](../../../../../src/render/planet/sky.ts#L467)
+[Implementation, line 485](../../../../../src/render/planet/sky.ts#L485)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -434,7 +459,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.setCloudWeather
 
-[Implementation, line 471](../../../../../src/render/planet/sky.ts#L471)
+[Implementation, line 489](../../../../../src/render/planet/sky.ts#L489)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -448,7 +473,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.setMoonSize
 
-[Implementation, line 476](../../../../../src/render/planet/sky.ts#L476)
+[Implementation, line 494](../../../../../src/render/planet/sky.ts#L494)
 
 Horizon magnification. High in the sky, and out in space, the moon stays at real size.
 
@@ -464,7 +489,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.applyMoonScale
 
-[Implementation, line 480](../../../../../src/render/planet/sky.ts#L480)
+[Implementation, line 498](../../../../../src/render/planet/sky.ts#L498)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -479,7 +504,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.animatingClouds
 
-[Implementation, line 485](../../../../../src/render/planet/sky.ts#L485)
+[Implementation, line 503](../../../../../src/render/planet/sky.ts#L503)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -489,7 +514,7 @@ animatingClouds(): inferred by TypeScript; see implementation
 
 ## GeographicView.syncClouds
 
-[Implementation, line 488](../../../../../src/render/planet/sky.ts#L488)
+[Implementation, line 506](../../../../../src/render/planet/sky.ts#L506)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -499,7 +524,7 @@ syncClouds(): inferred by TypeScript; see implementation
 
 ## GeographicView.setLayers
 
-[Implementation, line 494](../../../../../src/render/planet/sky.ts#L494)
+[Implementation, line 512](../../../../../src/render/planet/sky.ts#L512)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -514,7 +539,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.render
 
-[Implementation, line 511](../../../../../src/render/planet/sky.ts#L511)
+[Implementation, line 529](../../../../../src/render/planet/sky.ts#L529)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -537,7 +562,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.renderClouds
 
-[Implementation, line 533](../../../../../src/render/planet/sky.ts#L533)
+[Implementation, line 551](../../../../../src/render/planet/sky.ts#L551)
 
 After the world, so the sheets composite over terrain and sea.
 
@@ -551,7 +576,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.aimMoon
 
-[Implementation, line 540](../../../../../src/render/planet/sky.ts#L540)
+[Implementation, line 558](../../../../../src/render/planet/sky.ts#L558)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -579,7 +604,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.lensFlare
 
-[Implementation, line 554](../../../../../src/render/planet/sky.ts#L554)
+[Implementation, line 572](../../../../../src/render/planet/sky.ts#L572)
 
 Fullscreen pass. Parent it to the world scene so it composites with the city.
 
@@ -589,7 +614,7 @@ lensFlare(): inferred by TypeScript; see implementation
 
 ## GeographicView.lensFlareAmount
 
-[Implementation, line 557](../../../../../src/render/planet/sky.ts#L557)
+[Implementation, line 575](../../../../../src/render/planet/sky.ts#L575)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -599,7 +624,7 @@ lensFlareAmount(): inferred by TypeScript; see implementation
 
 ## GeographicView.setLensFlareAmount
 
-[Implementation, line 561](../../../../../src/render/planet/sky.ts#L561)
+[Implementation, line 579](../../../../../src/render/planet/sky.ts#L579)
 
 0-1 multiplier on the additive sun flare pass.
 
@@ -614,7 +639,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GeographicView.setViewAspect
 
-[Implementation, line 564](../../../../../src/render/planet/sky.ts#L564)
+[Implementation, line 582](../../../../../src/render/planet/sky.ts#L582)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -624,7 +649,7 @@ setViewAspect(aspect: number): inferred by TypeScript; see implementation
 
 ## GeographicView.dispose
 
-[Implementation, line 567](../../../../../src/render/planet/sky.ts#L567)
+[Implementation, line 585](../../../../../src/render/planet/sky.ts#L585)
 
 Planetary background in million-metre units; map tiles use camera-relative local metres.
 
@@ -638,6 +663,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.artistic.deck.material.dispose`
 - `this.cache.clear`
 - `this.cache.values`
+- `this.earthNightMap.value?.dispose`
 - `this.earthTexture?.dispose`
 - `this.flare.dispose`
 - `this.flare.mesh.removeFromParent`
@@ -649,12 +675,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tile.mesh.material.dispose`
 - `tile.texture?.dispose`
 
-## GeographicView.dispose.callback@583
+## GeographicView.dispose.callback@602
 
-[Implementation, line 583](../../../../../src/render/planet/sky.ts#L583)
+[Implementation, line 602](../../../../../src/render/planet/sky.ts#L602)
 
 ```ts
-callback@583(o): inferred by TypeScript; see implementation
+callback@602(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

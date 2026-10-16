@@ -24,7 +24,7 @@ squeeze(h: GrabHand): inferred by TypeScript; see implementation
 
 ## ARRCControls.fixed
 
-[Implementation, line 21](../../../../src/runtime/xr-rc-controls.ts#L21)
+[Implementation, line 22](../../../../src/runtime/xr-rc-controls.ts#L22)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -34,7 +34,7 @@ fixed(): boolean
 
 ## ARRCControls.fixed
 
-[Implementation, line 24](../../../../src/runtime/xr-rc-controls.ts#L24)
+[Implementation, line 25](../../../../src/runtime/xr-rc-controls.ts#L25)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -44,7 +44,7 @@ fixed(value: boolean): inferred by TypeScript; see implementation
 
 ## ARRCControls.stationGrab
 
-[Implementation, line 36](../../../../src/runtime/xr-rc-controls.ts#L36)
+[Implementation, line 37](../../../../src/runtime/xr-rc-controls.ts#L37)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -54,7 +54,7 @@ stationGrab(): inferred by TypeScript; see implementation
 
 ## ARRCControls.buttonHands
 
-[Implementation, line 39](../../../../src/runtime/xr-rc-controls.ts#L39)
+[Implementation, line 40](../../../../src/runtime/xr-rc-controls.ts#L40)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -64,7 +64,7 @@ buttonHands(): inferred by TypeScript; see implementation
 
 ## ARRCControls.constructor
 
-[Implementation, line 46](../../../../src/runtime/xr-rc-controls.ts#L46)
+[Implementation, line 47](../../../../src/runtime/xr-rc-controls.ts#L47)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -81,11 +81,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.body.add`
 - `this.pinBase.position.set`
 - `this.pinButton.position.set`
+- `this.placementHandle.add`
 - `this.root.add`
 
 ## ARRCControls.place
 
-[Implementation, line 64](../../../../src/runtime/xr-rc-controls.ts#L64)
+[Implementation, line 66](../../../../src/runtime/xr-rc-controls.ts#L66)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -104,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRCControls.followBody
 
-[Implementation, line 76](../../../../src/runtime/xr-rc-controls.ts#L76)
+[Implementation, line 78](../../../../src/runtime/xr-rc-controls.ts#L78)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -117,11 +118,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.calibration.apply`
 - `this.equipment.updateWorldMatrix`
 - `this.placement.follow`
+- `this.placementHandle.position.copy`
+- `this.placementHandle.updateWorldMatrix`
 - `this.root.updateWorldMatrix`
 
 ## ARRCControls.reset
 
-[Implementation, line 95](../../../../src/runtime/xr-rc-controls.ts#L95)
+[Implementation, line 101](../../../../src/runtime/xr-rc-controls.ts#L101)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -139,7 +142,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRCControls.owns
 
-[Implementation, line 103](../../../../src/runtime/xr-rc-controls.ts#L103)
+[Implementation, line 109](../../../../src/runtime/xr-rc-controls.ts#L109)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -157,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRCControls.updatePin
 
-[Implementation, line 113](../../../../src/runtime/xr-rc-controls.ts#L113)
+[Implementation, line 119](../../../../src/runtime/xr-rc-controls.ts#L119)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -169,12 +172,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.placement.update`
 
-## ARRCControls.updatePin.callback@117
+## ARRCControls.updatePin.callback@123
 
-[Implementation, line 117](../../../../src/runtime/xr-rc-controls.ts#L117)
+[Implementation, line 123](../../../../src/runtime/xr-rc-controls.ts#L123)
 
 ```ts
-callback@117(hand): inferred by TypeScript; see implementation
+callback@123(hand): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -184,7 +187,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRCControls.dispose
 
-[Implementation, line 120](../../../../src/runtime/xr-rc-controls.ts#L120)
+[Implementation, line 126](../../../../src/runtime/xr-rc-controls.ts#L126)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -204,7 +207,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRCControls.update
 
-[Implementation, line 129](../../../../src/runtime/xr-rc-controls.ts#L129)
+[Implementation, line 135](../../../../src/runtime/xr-rc-controls.ts#L135)
 
 Full-size body-following controls with independent AR station calibration.
 
@@ -241,19 +244,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.worldToLocal`
 - `this.updatePin`
 
-## ARRCControls.update.callback@147
-
-[Implementation, line 147](../../../../src/runtime/xr-rc-controls.ts#L147)
-
-```ts
-callback@147(hand): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.buttonHands.has`
-- `this.stationGrab.hands.includes`
-
 ## ARRCControls.update.callback@154
 
 [Implementation, line 154](../../../../src/runtime/xr-rc-controls.ts#L154)
@@ -264,24 +254,37 @@ callback@154(hand): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.hydraulics.owns`
+- `this.buttonHands.has`
+- `this.stationGrab.hands.includes`
 
-## ARRCControls.update.callback@182
+## ARRCControls.update.callback@161
 
-[Implementation, line 182](../../../../src/runtime/xr-rc-controls.ts#L182)
+[Implementation, line 161](../../../../src/runtime/xr-rc-controls.ts#L161)
 
 ```ts
-callback@182(h): inferred by TypeScript; see implementation
+callback@161(hand): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.hydraulics.owns`
+
+## ARRCControls.update.callback@189
+
+[Implementation, line 189](../../../../src/runtime/xr-rc-controls.ts#L189)
+
+```ts
+callback@189(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `squeeze`
 
-## ARRCControls.update.callback@207
+## ARRCControls.update.callback@214
 
-[Implementation, line 207](../../../../src/runtime/xr-rc-controls.ts#L207)
+[Implementation, line 214](../../../../src/runtime/xr-rc-controls.ts#L214)
 
 ```ts
-callback@207(a, b): inferred by TypeScript; see implementation
+callback@214(a, b): inferred by TypeScript; see implementation
 ```

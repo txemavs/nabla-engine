@@ -4,14 +4,13 @@
 
 [Source](../../../../src/runtime/held-keys.ts)
 
-Keyboard state with a bounded lifetime for a lost keyup (embedded browsers/focus changes).
-
 ## Module dependencies
 
+- `../config/input-bindings.js`
 
 ## HeldKeys.press
 
-[Implementation, line 15](../../../../src/runtime/held-keys.ts#L15)
+[Implementation, line 16](../../../../src/runtime/held-keys.ts#L16)
 
 Record a physical KeyboardEvent.code at a millisecond timestamp; ignore orphan repeats.
 
@@ -27,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.release
 
-[Implementation, line 24](../../../../src/runtime/held-keys.ts#L24)
+[Implementation, line 25](../../../../src/runtime/held-keys.ts#L25)
 
 Release one key from both the exposed chord and its expiry tracking.
 
@@ -42,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.clear
 
-[Implementation, line 32](../../../../src/runtime/held-keys.ts#L32)
+[Implementation, line 33](../../../../src/runtime/held-keys.ts#L33)
 
 Release the complete chord after blur, pause or other loss of input ownership.
 
@@ -57,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.expire
 
-[Implementation, line 42](../../../../src/runtime/held-keys.ts#L42)
+[Implementation, line 43](../../../../src/runtime/held-keys.ts#L43)
 
 Release movement keys after 1500 ms without a keydown or repeat from the newest held key,
 recovering from a lost keyup. A key held while another key was tapped and released keeps
@@ -73,14 +72,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.release`
 - `this.seen.keys`
 
-## HeldKeys.expire.callback@44
+## HeldKeys.expire.callback@45
 
-[Implementation, line 44](../../../../src/runtime/held-keys.ts#L44)
+[Implementation, line 45](../../../../src/runtime/held-keys.ts#L45)
 
 ```ts
-callback@44(code): inferred by TypeScript; see implementation
+callback@45(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `/^(Key[WASD]|Arrow(Up|Down|Left|Right)|Space)$/.test`
+- `movementKeyCodes.has`

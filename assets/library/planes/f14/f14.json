@@ -63,9 +63,9 @@
     "cameraDistance": 25,
     "aircraft": {
       "propulsion": "jet",
-      "slowSpeedMs": 68,
-      "fastSpeedMs": 140,
-      "accelerationMs2": 20
+      "slowSpeedMs": 120,
+      "fastSpeedMs": 600,
+      "accelerationMs2": 40
     },
     "driver": [0, 0.1, -5.5]
   },

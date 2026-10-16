@@ -252,3 +252,12 @@ The reference photo is not embedded or redistributed as a texture.
 ## Honda VFR800FI 1999
 
 `library/motorcycles/vfr800fi-1999/` contains a black 1999 VFR800FI model. Cleaned up by hand by Txema Vicente over several hours, then substantially reworked by Codex under his direction using data from the Honda manual, starting from a low-quality base mesh; almost none of the original geometry remains. The base mesh was the user-supplied `interceptor.glb`. It was optimized and visually approved on 2026-10-08. The base mesh SHA-256 and the prepared GLB integrity are recorded in `asset.json`, which records this provenance as stated by Txema Vicente; no license name is recorded for the artwork. This preparation retains the wheel spoke designs, simplifies geometry, authors materials and separates mechanical pivots. The technical JSON links Honda brochure/service-manual sources and marks intermediate power-curve samples as simulation estimates. The asset requires future motorcycle support in Engine.
+
+## Earth city lights
+
+`geography/earth-night.jpg` is NASA Earth Observatory's unchanged 3600 × 1800
+[Black Marble 2016 color map](https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/),
+from Suomi NPP / VIIRS observations. Credit: NASA Earth Observatory.
+Downloaded from [NASA's original JPEG](https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144898/BlackMarble_2016_01deg.jpg).
+The globe shader extracts city emission and fades it across the sun terminator;
+the blue terrain backdrop is not used as emission. This is a composite, not live lights.

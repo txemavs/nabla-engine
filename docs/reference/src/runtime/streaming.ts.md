@@ -14,7 +14,7 @@ Coordinate terrain requests from live gameplay positions, in the current world f
 
 ## GameplayStreaming.position
 
-[Implementation, line 13](../../../../src/runtime/streaming.ts#L13)
+[Implementation, line 14](../../../../src/runtime/streaming.ts#L14)
 
 Return a defensive copy of the last sampled position, in metres.
 
@@ -24,7 +24,7 @@ position(): Vec3Tuple | null
 
 ## GameplayStreaming.reset
 
-[Implementation, line 17](../../../../src/runtime/streaming.ts#L17)
+[Implementation, line 18](../../../../src/runtime/streaming.ts#L18)
 
 Discard velocity history before replay, origin changes or a different clock.
 
@@ -34,7 +34,7 @@ reset(): void
 
 ## GameplayStreaming.update
 
-[Implementation, line 26](../../../../src/runtime/streaming.ts#L26)
+[Implementation, line 27](../../../../src/runtime/streaming.ts#L27)
 
 Request terrain at intervals greater than the configured sample period, protecting vehicles and portal endpoints.
 Time is a monotonic timestamp in milliseconds; velocity is estimated in metres/second.
@@ -42,37 +42,39 @@ Ignore non-finite timestamps. A backward timestamp restarts sampling with zero v
 Return whether a request was submitted; store copies so physics cannot mutate history.
 
 ```ts
-update(world: GameplayWorldStream, sim: { player: { position: Vec3Tuple }; entityTransform(id: string): { position: Vec3Tuple } }, document: SceneDocument, time: number): boolean
+update(world: GameplayWorldStream, sim: { player: { position: Vec3Tuple; vehicleId?: string | null } entityTransform(id: string): { position: Vec3Tuple } vehicleInfo?(id: string): { flightMode: boolean } }, document: SceneDocument, time: number): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
 - `position.map`
+- `sim.vehicleInfo`
+- `world.setStreamMode`
 - `world.update`
 
-## GameplayStreaming.update.callback@41
+## GameplayStreaming.update.callback@48
 
-[Implementation, line 41](../../../../src/runtime/streaming.ts#L41)
+[Implementation, line 48](../../../../src/runtime/streaming.ts#L48)
 
 ```ts
-callback@41(value, axis): inferred by TypeScript; see implementation
+callback@48(value, axis): inferred by TypeScript; see implementation
 ```
 
-## GameplayStreaming.update.callback@45
+## GameplayStreaming.update.callback@52
 
-[Implementation, line 45](../../../../src/runtime/streaming.ts#L45)
+[Implementation, line 52](../../../../src/runtime/streaming.ts#L52)
 
 ```ts
-callback@45(entity): inferred by TypeScript; see implementation
+callback@52(entity): inferred by TypeScript; see implementation
 ```
 
-## GameplayStreaming.update.callback@46
+## GameplayStreaming.update.callback@53
 
-[Implementation, line 46](../../../../src/runtime/streaming.ts#L46)
+[Implementation, line 53](../../../../src/runtime/streaming.ts#L53)
 
 ```ts
-callback@46(entity): inferred by TypeScript; see implementation
+callback@53(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

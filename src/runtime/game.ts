@@ -1,3 +1,4 @@
+import { legacyInputAction, type InputAction } from '../config/input-bindings.js'
 /**
  * Coordinate device-independent gameplay for editor and browser hosts.
  * Physics uses seconds and metres; camera entrance timestamps use milliseconds.
@@ -236,11 +237,16 @@ export class GameRuntime {
     if (!this.simulation) throw new Error('Camera requires a running game')
     return updateGameCamera(this.simulation, view, camera, this.cameraState, now, dt, prepare)
   }
-  /** Device-independent gameplay actions; presentation-only actions stay with the view. */
-  action(code: string): string | undefined {
+  /** Compatibility with existing hosts using key codes; prefer dispatch with an InputAction. */
+  action(value: string): string | undefined {
+    const action = legacyInputAction(value)
+    return action ? this.dispatch(action) : undefined
+  }
+  /** Preferred entry for keyboard, XR and other hosts: no physical key codes. */
+  dispatch(action: InputAction): string | undefined {
     const sim = this.simulation
     if (!sim || this.state !== 'playing') return
-    if (code === 'KeyE') {
+    if (action === 'interact') {
       const previous = sim.player.vehicleId
       const message = sim.interact({
         snapToRoad: this.recover.snapToRoad,
@@ -255,31 +261,31 @@ export class GameRuntime {
       }
       return message
     }
-    if (code === 'KeyV') {
+    if (action === 'camera') {
       const seated = !!sim.player.vehicleId
       const view = cycleGameCamera(this.cameraState, seated)
       return this.text(cameraNotice[view === 'chase' && !seated ? 'third-person' : view])
     }
-    if (code === 'KeyC') {
+    if (action === 'stance') {
       if (sim.player.vehicleId) return sim.toggleFlight()
       sim.setStance(sim.stance === 'standing' ? 'crouching' : 'standing')
       return sim.stance === 'standing' ? 'De pie' : 'Agachado'
     }
-    if (code === 'KeyF') return sim.toggleHitch() ?? sim.toggleDock()
-    if (code === 'KeyM') return sim.cycleHelmMode()
-    if (code === 'KeyB') return sim.automaticTransmission()
-    if (code === 'KeyR')
+    if (action === 'hitch') return sim.toggleHitch() ?? sim.toggleDock()
+    if (action === 'helm') return sim.cycleHelmMode()
+    if (action === 'transmission') return sim.automaticTransmission()
+    if (action === 'recover')
       return sim.recoverVehicle({
         snapToRoad: this.recover.snapToRoad,
         roads: this.recover.snapToRoad ? this.recover.roads?.() : undefined,
       })
-    if (code === 'PageUp' || code === 'PageDown')
-      return sim.shiftVehicle(code === 'PageUp' ? 1 : -1)
-    if (code === 'KeyT') {
+    if (action === 'gear.up' || action === 'gear.down')
+      return sim.shiftVehicle(action === 'gear.up' ? 1 : -1)
+    if (action === 'transfer') {
       this.cameraState.mode = 'chase'
       return sim.transferControls()
     }
-    if (code === 'Space') {
+    if (action === 'jump') {
       if (sim.liftNearbyBike()) return 'Levantando la moto'
       if (!sim.player.vehicleId && !sim.playerEjection) this.jumpRequested = true
     }

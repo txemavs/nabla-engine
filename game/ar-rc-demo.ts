@@ -56,7 +56,7 @@ renderer.setAnimationLoop((time, frame) => {
   if (frame && xr.active) {
     xr.update(frame)
     xr.interactCalibration(xr.visible, () => null)
-    const space = renderer.xr.getReferenceSpace()
+    const space = xr.referenceSpace
     if (space) room.update(frame, space, xr.visible)
     vehicle.setAudioActive(xr.visible)
     vehicle.update(dt, xr.visible ? xr.grabHands : [], room.targets)

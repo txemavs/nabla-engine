@@ -31,3 +31,5 @@ export const controlDefaults = Object.freeze({
    */
   showPilotTouchRing: false,
 })
+
+export * from './input-bindings.js'

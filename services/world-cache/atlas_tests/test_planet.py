@@ -13,12 +13,19 @@ class PlanetAddressTests(unittest.TestCase):
 
     def test_rejects_local_tiles_aliases_and_paths(self):
         for address in ['0_0', '5_-6', 'z/15/016218/11997', 'z/15/32768/0',
-                        'z/15/-1/0', 'z/12/1/1', 'z/15/1/2/../../../', 'z/15/1/2.json']:
+                        'z/15/-1/0', 'z/11/1/1', 'z/15/1/2/../../../', 'z/15/1/2.json']:
             with self.subTest(address=address), self.assertRaises(ValueError):
                 tile_bounds(address)
 
     def test_parent_covers_four_children(self):
         _, parent = tile_bounds('z/14/8109/5998')
         children = [tile_bounds(f'z/15/{16218+x}/{11996+y}')[1] for x in range(2) for y in range(2)]
+        self.assertEqual(parent, (min(b[0] for b in children), min(b[1] for b in children),
+                                  max(b[2] for b in children), max(b[3] for b in children)))
+
+    def test_zoom12_covers_four_zoom13_children(self):
+        _, parent = tile_bounds('z/12/2027/1499')
+        children = [tile_bounds(f'z/13/{4054+x}/{2998+y}')[1]
+                    for x in range(2) for y in range(2)]
         self.assertEqual(parent, (min(b[0] for b in children), min(b[1] for b in children),
                                   max(b[2] for b in children), max(b[3] for b in children)))

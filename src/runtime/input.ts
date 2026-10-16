@@ -1,3 +1,11 @@
+import { idleUsbFrame, type UsbFrame } from './usb/controllers.js'
+import {
+  actionHeld,
+  actionAxis,
+  actionChordHeld,
+  inputMode,
+  type InputContext,
+} from '../config/input-bindings.js'
 import { controlDefaults } from '../config/controls.js'
 import { KeyboardSteering } from '../simulation/vehicles/keyboard-steering.js'
 import { idleInput, type PlayerInput, type Simulation } from '../simulation/simulation.js'
@@ -50,6 +58,7 @@ export function gamepadAxes(pad: Pick<Gamepad, 'axes' | 'buttons'>, flight: bool
 export interface GameInputSources {
   keys: ReadonlySet<string>
   yaw: number
+  usb?: UsbFrame
   pad?: Pick<Gamepad, 'axes' | 'buttons'> | null
   touch?: { forward: number; right: number; lift: number; turn: number; brake: boolean }
   driving?: { forward: number; right: number; brake: boolean; sprint?: boolean }
@@ -73,6 +82,8 @@ export function finiteInput(input: PlayerInput): PlayerInput {
     riderRight: safe(input.riderRight),
     riderForward: safe(input.riderForward),
     rearBrake: Math.min(1, Math.max(0, safe(input.rearBrake))),
+    serviceBrake: Math.min(1, Math.max(0, safe(input.serviceBrake))),
+    clutch: Math.min(1, Math.max(0, safe(input.clutch))),
     frontBrake: Math.min(1, Math.max(0, safe(input.frontBrake))),
   }
 }
@@ -101,62 +112,95 @@ export class GameInput {
       return { ...idleInput(), brake: !!sources.menuOpen }
     }
     const { keys, yaw, pad } = sources
+    const usb = sources.usb ?? idleUsbFrame()
+    const strongest = (...values: number[]) =>
+      values.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0)
     const id = sim?.player.vehicleId
     const info = id && sim ? sim.vehicleInfo(id) : null
     const flight = Boolean(info?.flightMode)
-    const axis = (positive: string, negative: string) =>
-      Number(keys.has(positive)) - Number(keys.has(negative))
     const analog = pad
       ? gamepadAxes(pad, flight)
       : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
     const touch = sources.touch ?? { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
     const driving = sources.driving ?? { forward: 0, right: 0, brake: false }
-    const keyboardRight = flight
-      ? axis('ArrowRight', 'ArrowLeft')
-      : axis('KeyD', 'KeyA') + axis('ArrowRight', 'ArrowLeft')
     const vehicle = id ? document.entities.find((e) => e.id === id)?.vehicle : null
+    const context: InputContext = { mode: inputMode(!!id, flight, vehicle) }
+    const held = (action: Parameters<typeof actionHeld>[1]) =>
+      actionHeld(keys, action, context) || usb.held.has(action)
+    const axis = (
+      positive: Parameters<typeof actionAxis>[1],
+      negative: Parameters<typeof actionAxis>[2],
+    ) =>
+      actionAxis(keys, positive, negative, context) +
+      Number(usb.held.has(positive)) -
+      Number(usb.held.has(negative))
+    const keyboardRight = flight
+      ? axis('flight.right', 'flight.left')
+      : axis('move.right', 'move.left')
     const roadCar = id && isRoadTouchDriving(vehicle, flight)
-    const shift = keys.has('ShiftLeft') || keys.has('ShiftRight')
+    const shift = held('sprint')
     // Two-wheeler keys (Txema 2026-10-09): Space is the front lever, S/ArrowDown the rear pedal
     // (still a paddle back from a standstill). W and S together are full throttle, like Shift
     // (no Sticky Keys prompt), instead of cancelling out; adding Space (full front lever, as with
     // Shift) is the burnout on the spot.
     const bike = !flight && !!vehicle?.twoWheeled
-    const up = keys.has('KeyW') || keys.has('ArrowUp')
-    const down = keys.has('KeyS') || keys.has('ArrowDown')
-    const twin = (bike || !!roadCar) && up && down
+    const up = held('move.forward')
+    const down = held('move.back')
+    const twin = (bike || !!roadCar) && actionChordHeld(keys, 'launch', context)
     const rolling = !!info && !info.reversing && info.speedKmh >= BIKE_PADDLE_KMH
     const pedal = bike && down && !up && rolling
     const keyForward = twin
       ? 1
       : flight
-        ? axis('ArrowUp', 'ArrowDown')
+        ? axis('flight.forward', 'flight.back')
         : pedal
           ? Number(up)
-          : axis('KeyW', 'KeyS') + axis('ArrowUp', 'ArrowDown')
+          : axis('move.forward', 'move.back')
     const input: PlayerInput = {
-      forward: keyForward + analog.forward + touch.forward + driving.forward,
-      right:
+      forward: strongest(
+        keyForward + analog.forward + touch.forward + driving.forward,
+        flight ? (usb.axes.pitch ?? 0) : (usb.axes.throttle ?? 0) - (usb.axes.reverse ?? 0),
+      ),
+      right: strongest(
         this.steering.update(roadCar ? id : null, keyboardRight, elapsed) +
-        analog.right +
-        touch.right +
-        driving.right,
-      lift: (flight ? axis('KeyW', 'KeyS') : 0) + analog.lift + touch.lift,
-      turn: (flight ? axis('KeyD', 'KeyA') : 0) + analog.turn + touch.turn,
+          analog.right +
+          touch.right +
+          driving.right,
+        flight ? (usb.axes.roll ?? 0) : (usb.axes.steering ?? 0),
+      ),
+      lift: strongest(
+        (flight ? axis('flight.liftUp', 'flight.liftDown') : 0) + analog.lift + touch.lift,
+        usb.axes.flightThrottle ?? usb.axes.lift ?? 0,
+      ),
+      turn: strongest(
+        (flight ? axis('flight.turnRight', 'flight.turnLeft') : 0) + analog.turn + touch.turn,
+        usb.axes.yaw ?? 0,
+      ),
+      serviceBrake: usb.axes.brake ?? 0,
+      clutch: usb.axes.clutch ?? 0,
+      selectedGear: usb.selectedGear,
       yaw,
-      frontBrake: bike && keys.has('Space') ? 1 : 0,
+      frontBrake: bike ? Math.max(held('brake') ? 1 : 0, usb.axes.brake ?? 0) : 0,
       sprint: shift || twin || Boolean(pad?.buttons[10]?.pressed) || !!driving.sprint,
       jump: false,
-      brake: (bike ? pedal : keys.has('Space')) || analog.brake || touch.brake || driving.brake,
+      brake:
+        (bike ? pedal : held('brake')) ||
+        analog.brake ||
+        touch.brake ||
+        driving.brake ||
+        (usb.axes.handbrake ?? 0) > 0.5,
       // Two-wheeler rider counterweight: U/O hang off left/right, I over the tank, L sit back.
-      riderRight: flight ? 0 : axis('KeyO', 'KeyU'),
-      riderForward: flight ? 0 : axis('KeyI', 'KeyL'),
+      riderRight: flight ? 0 : axis('rider.right', 'rider.left'),
+      riderForward: flight ? 0 : axis('rider.forward', 'rider.back'),
     }
     // Two-wheelers (Txema 2026-10-09): without Shift the throttle and the front brake give about
     // half; Shift gives full throttle (a wheelie at launch) and full braking (the stoppie).
     if (bike && !input.sprint) {
-      input.forward = Math.max(-1, Math.min(1, input.forward)) * TWO_WHEELER_CALM_SHARE
-      input.frontBrake = (input.frontBrake ?? 0) * TWO_WHEELER_CALM_SHARE
+      const usbThrottle = usb.axes.throttle !== undefined || usb.axes.reverse !== undefined
+      if (!usbThrottle)
+        input.forward = Math.max(-1, Math.min(1, input.forward)) * TWO_WHEELER_CALM_SHARE
+      if (usb.axes.brake === undefined)
+        input.frontBrake = (input.frontBrake ?? 0) * TWO_WHEELER_CALM_SHARE
     }
     return finiteInput(input)
   }

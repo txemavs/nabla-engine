@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree
 
-CELL = re.compile(r'z/(13|14|15)/\d+/\d+')
+CELL = re.compile(r'z/(12|13|14|15)/\d+/\d+')
 TYPES = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -39,7 +39,7 @@ def _settings():
 
 def _cell(address):
     if not CELL.fullmatch(address):
-        raise ValueError('Expected z/13|14|15/x/y')
+        raise ValueError('Expected z/12|13|14|15/x/y')
     return address
 
 

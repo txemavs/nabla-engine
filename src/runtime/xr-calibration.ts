@@ -49,12 +49,14 @@ const mirrored = (p: XRPoseAdjustment): XRPoseAdjustment => ({
 })
 const bikeDefaults: XRPoseAdjustment = { x: 45, y: 3, z: 30, rx: 100, ry: 100, rz: 1 }
 const zero = (): XRPoseAdjustment => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 })
-// V4 bakes the reversed wheel zero; retain older storage for recovery.
-const storageKey = 'nabla.xr.calibration.v4'
-export const xrCalibrationBaseline = '2026-10-15-wheel-zero'
+// Keep older storage intact; V5 accepts the new left-hand zero and carries its grip with it.
+const storageKey = 'nabla.xr.calibration.v5'
+export const xrCalibrationBaseline = '2026-10-15-hand-zero'
+export const xrHandZero: XRPoseAdjustment = { x: -2, y: -1, z: 0.5, rx: -20, ry: -10, rz: 0 }
 const defaults: Partial<Record<XRCalibrationObject, Partial<XRPoseAdjustment>>> = {
   'ar-rc-s3': { ry: 180 },
   'ar-rc-truck': { ry: 180 },
+  'ar-rc-forklift': { ry: 180 },
   'hand-right': { x: 1, rx: -45, rz: -70 },
   'hand-left': { x: -1, rx: -45, rz: 70 },
   'pistol-0': { rx: 90 },
@@ -80,6 +82,7 @@ const baselineAdjustments: Partial<Record<XRCalibrationObject, Partial<XRPoseAdj
   'pocket-0': { x: 8 },
   'pocket-1': { x: -8 },
 }
+const cleanAngle = (n: number) => (Math.abs(n) < 1e-8 ? 0 : n)
 const rotation = (p: XRPoseAdjustment) =>
   new THREE.Quaternion().setFromEuler(
     new THREE.Euler(
@@ -89,6 +92,38 @@ const rotation = (p: XRPoseAdjustment) =>
       'XYZ',
     ),
   )
+
+/** A rigid change in controller coordinates keeps the former hand-to-pistol relationship. */
+const handRebases = Object.fromEntries(
+  (['left', 'right'] as const).map((side) => {
+    const id = `hand-${side}` as const
+    const delta = side === 'left' ? xrHandZero : mirrored(xrHandZero)
+    const baked = { ...zero(), ...defaults[id] }
+    const accepted = { ...zero(), ...baselineAdjustments[id] }
+    const before = rotation(baked).multiply(rotation(accepted))
+    return [
+      side,
+      {
+        delta,
+        before: new THREE.Vector3(
+          baked.x + accepted.x,
+          baked.y + accepted.y,
+          baked.z + accepted.z,
+        ).multiplyScalar(0.01),
+        translation: new THREE.Vector3(delta.x, delta.y, delta.z).multiplyScalar(0.01),
+        rotation: before.clone().multiply(rotation(delta)).multiply(before.clone().invert()),
+      },
+    ]
+  }),
+) as Record<
+  'left' | 'right',
+  {
+    delta: XRPoseAdjustment
+    before: THREE.Vector3
+    translation: THREE.Vector3
+    rotation: THREE.Quaternion
+  }
+>
 
 /** Local offsets from the authored pose: centimetres and degrees, never tracking coordinates. */
 export class XRCalibration {
@@ -100,7 +135,8 @@ export class XRCalibration {
   >()
   constructor() {
     try {
-      const saved = localStorage.getItem(storageKey)
+      const current = localStorage.getItem(storageKey)
+      const saved = current ?? localStorage.getItem('nabla.xr.calibration.v4')
       const previous = localStorage.getItem('nabla.xr.calibration.v3')
       const stored = saved
         ? JSON.parse(saved)
@@ -126,6 +162,32 @@ export class XRCalibration {
             rz: THREE.MathUtils.radToDeg(e.z),
           }
         }
+      if (!current) {
+        for (const side of ['left', 'right'] as const) {
+          const { delta, rotation: change } = handRebases[side]
+          const hand = stored[`hand-${side}`]
+          if (hand) {
+            const old = { ...zero(), ...hand }
+            const q = rotation(delta).invert().multiply(rotation(old))
+            const e = new THREE.Euler().setFromQuaternion(q, 'XYZ')
+            stored[`hand-${side}`] = {
+              x: old.x - delta.x,
+              y: old.y - delta.y,
+              z: old.z - delta.z,
+              rx: cleanAngle(THREE.MathUtils.radToDeg(e.x)),
+              ry: cleanAngle(THREE.MathUtils.radToDeg(e.y)),
+              rz: cleanAngle(THREE.MathUtils.radToDeg(e.z)),
+            }
+          }
+          const grip = stored[`grip-${side}`]
+          if (grip) {
+            const offset = new THREE.Vector3(grip.x || 0, grip.y || 0, grip.z || 0).applyQuaternion(
+              change,
+            )
+            stored[`grip-${side}`] = { ...grip, x: offset.x, y: offset.y, z: offset.z }
+          }
+        }
+      }
       // Accepted truck posture is the new zero; keep position and the other angle.
       if (localStorage.getItem('nabla.xr.truck-zero') !== 'x20-z180') {
         if (stored['ar-rc-truck'])
@@ -142,6 +204,13 @@ export class XRCalibration {
         const pair = mirrorPairs.find((pair) => pair.includes(id))
         if (pair && id === pair[0] && stored[pair[1]]) continue
         if (stored[id]) this.set(id, stored[id], false)
+      }
+      if (!current) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(this.poses))
+        } catch {
+          /* Live poses still work. */
+        }
       }
     } catch {
       /* Storage is optional in private browsing and server-side tests. */
@@ -216,7 +285,7 @@ export class XRCalibration {
   export(): string {
     return JSON.stringify(
       {
-        version: 4,
+        version: 5,
         baseline: xrCalibrationBaseline,
         units: { position: 'cm', rotation: 'degrees' },
         poses: this.poses,
@@ -239,16 +308,27 @@ export class XRCalibration {
       .copy(base.position)
       .add(
         new THREE.Vector3(
-          baked.x + accepted.x + p.x,
-          baked.y + accepted.y + p.y,
-          baked.z + accepted.z + p.z,
+          baked.x + accepted.x,
+          baked.y + accepted.y,
+          baked.z + accepted.z,
         ).multiplyScalar(0.01),
       )
-    object.quaternion
-      .copy(base.rotation)
-      .multiply(rotation(baked))
-      .multiply(rotation(accepted))
-      .multiply(rotation(p))
+    object.quaternion.copy(base.rotation).multiply(rotation(baked)).multiply(rotation(accepted))
+    if (id === 'hand-left' || id === 'hand-right') {
+      const { delta, translation } = handRebases[id === 'hand-left' ? 'left' : 'right']
+      object.position.add(translation)
+      object.quaternion.multiply(rotation(delta))
+    } else if (id === 'grip-left' || id === 'grip-right') {
+      const change = handRebases[id === 'grip-left' ? 'left' : 'right']
+      object.position
+        .sub(change.before)
+        .applyQuaternion(change.rotation)
+        .add(change.before)
+        .add(change.translation)
+      object.quaternion.premultiply(change.rotation)
+    }
+    object.position.add(new THREE.Vector3(p.x, p.y, p.z).multiplyScalar(0.01))
+    object.quaternion.multiply(rotation(p))
     object.updateMatrix()
   }
 }

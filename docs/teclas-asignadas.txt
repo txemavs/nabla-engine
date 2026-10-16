@@ -1,0 +1,118 @@
+Comunes
+
+Liberar ratón                            [pointer.release]      Esc
+Avanzar / acelerar                       [move.forward]         W/↑
+Retroceder / freno trasero en moto       [move.back]            S/↓
+Derecha                                  [move.right]           D/→
+Izquierda                                [move.left]            A/←
+Correr / salida fuerte; gas y freno      [sprint]               Shift
+delantero completos en moto
+Interactuar / entrar / salir / recoger   [interact]             E
+Cambiar cámara                           [camera]               V
+Postura a pie / tierra-vuelo en nave     [stance]               C
+Recuperar vehículo                       [recover]              R
+Sacar / enfundar arma                    [holster]              Tab
+Reiniciar galería de tiro                [gallery.reset]        N
+Diagnóstico de ruedas                    [debug.wheels]         F9
+
+Vehículos
+
+Freno de mano; freno delantero en moto   [brake]                Espacio
+Acoplar / desacoplar                     [hitch]                F
+Modo de gobierno de nave                 [helm]                 M
+Automático / Normal-Bestia               [transmission]         B
+Subir marcha                             [gear.up]              PageUp
+Bajar marcha                             [gear.down]            PageDown
+Transferir puesto de conducción          [transfer]             T
+Intermitente izquierdo                   [signal.left]          Z
+Intermitente derecho                     [signal.right]         X
+Luces del vehículo                       [lights]               H
+GPS                                      [gps]                  G
+Largas / cortas                          [highBeam]             K
+Menú del vehículo                        [vehicle.menu]         J
+
+A pie
+
+Saltar / levantar moto cercana           [jump]                 Espacio
+
+Moto
+
+Peso del piloto a la izquierda           [rider.left]           U
+Peso del piloto a la derecha             [rider.right]          O
+Peso sobre el depósito                   [rider.forward]        I
+Peso del piloto atrás                    [rider.back]           L
+
+Toro
+
+Subir horquillas                         [forklift.liftUp]      I
+Bajar horquillas                         [forklift.liftDown]    K
+Inclinar mástil                          [forklift.tiltUp]      J
+Inclinar mástil al contrario             [forklift.tiltDown]    L
+Desplazar horquillas a la derecha        [forklift.sideRight]   O
+Desplazar horquillas a la izquierda      [forklift.sideLeft]    U
+Menú del toro                            [forklift.menu]        P
+
+Vuelo
+
+Cabeceo adelante / bajar morro           [flight.forward]       ↑
+Cabeceo atrás / levantar morro           [flight.back]          ↓
+Alabeo a la derecha                      [flight.right]         →
+Alabeo a la izquierda                    [flight.left]          ←
+Empuje en avión / ascender en nave       [flight.liftUp]        W
+Retirar empuje / descender en nave       [flight.liftDown]      S
+Girar rumbo a la derecha                 [flight.turnRight]     D
+Girar rumbo a la izquierda               [flight.turnLeft]      A
+
+Arma desenfundada
+
+Extraer / insertar cargador              [weapon.magazine]      R
+Accionar corredera                       [weapon.slide]         F
+Inspeccionar; clic izquierdo cambia      [weapon.inspect]       Z
+seguro
+Inspeccionar recámara                    [weapon.chamber]       X
+Láser                                    [weapon.laser]         G
+Linterna                                 [weapon.light]         H
+Automático experimental                  [weapon.auto]          M
+
+Apuntando
+
+Asomarse a la izquierda                  [lean.left]            Q
+Asomarse a la derecha                    [lean.right]           E
+
+Menús
+
+Opción anterior                          [menu.up]              ↑
+Opción siguiente                         [menu.down]            ↓
+Aceptar                                  [menu.accept]          Enter
+Volver                                   [menu.back]            Esc
+
+Visor libre
+
+Avanzar visor                            [viewer.forward]       W
+Retroceder visor                         [viewer.back]          S
+Derecha visor                            [viewer.right]         D
+Izquierda visor                          [viewer.left]          A
+Subir visor                              [viewer.up]            E
+Bajar visor                              [viewer.down]          Q
+
+Lanzador HeadSet
+
+Primera pestaña                          [launcher.first]       Home
+Última pestaña                           [launcher.last]        End
+Pestaña anterior                         [launcher.previous]    ←
+Pestaña siguiente                        [launcher.next]        →
+
+Combinaciones
+
+Cuerpo a tierra                          [prone]                C + Espacio
+Salida fuerte / gas completo             [launch]               W/↑ + S/↓
+
+Notas
+
+Las comunes se aplican donde el contexto admita la acción; vuelo y visor tienen ejes propios.
+Armas, apuntado y menús tienen prioridad sobre los controles generales.
+J (menú) y K (largas/cortas) no se aplican al toro: P abre su menú y J/K son hidráulicos.
+Las funciones de un vehículo solo actúan si el modelo las admite.
+Inspección + clic izquierdo conmuta el seguro del arma.
+Ratón: clic izquierdo dispara; clic derecho apunta.
+La salida fuerte también se solicita manteniendo Shift. En moto con gas completo, Espacio aplica freno delantero completo.

@@ -1,3 +1,4 @@
+import { mouseButtons } from '../config/input-bindings.js'
 import { Vector3, PerspectiveCamera } from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
@@ -21,8 +22,8 @@ export function sidearmButtonAction(
   button: number,
   down: boolean,
 ): 'fire' | 'aim' | 'release' | 'unaim' | null {
-  if (button === 0) return down ? 'fire' : 'release'
-  if (button === 2) return down ? 'aim' : 'unaim'
+  if (button === mouseButtons.fire) return down ? 'fire' : 'release'
+  if (button === mouseButtons.aim) return down ? 'aim' : 'unaim'
   return null
 }
 

@@ -220,6 +220,9 @@ export interface WheeledDefinition {
 export interface WheeledInput {
   throttle: number
   steering: number
+  serviceBrake?: number
+  clutch?: number
+  selectedGear?: number
   handbrake: boolean
   launch: boolean
   /**

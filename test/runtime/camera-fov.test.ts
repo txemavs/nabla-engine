@@ -53,7 +53,7 @@ describe('camera FOV offset', () => {
     const view = {
       vehicleMenu: () => ({
         open: true,
-        key: () => ({ handled: true, action: { type: 'vehicle.fov', value: '5' } }),
+        dispatch: () => ({ handled: true, action: { type: 'vehicle.fov', value: '5' } }),
       }),
     } as unknown as SceneView
     vehicleMenuKey(

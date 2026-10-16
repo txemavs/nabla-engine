@@ -67,7 +67,34 @@ export class XRLoadout {
   private readonly ejectButtons = new Set<CarriedPistol>()
   private readonly leverTouches = new Set<THREE.Object3D>()
   private readonly laserTouches = new Set<CarriedPistol>()
-  readonly pistols: CarriedPistol[]
+  readonly allPistols: CarriedPistol[]
+  private readonly absent = new Set<CarriedPistol>()
+  get pistols(): CarriedPistol[] {
+    return this.allPistols.filter((p) => !this.absent.has(p))
+  }
+  addPistol(): boolean {
+    const p = this.allPistols.find((p) => this.absent.has(p))
+    if (!p) return false
+    this.absent.delete(p)
+    p.weapon.reset()
+    p.holster.visible = p.adjustment.visible = p.holdMount.visible = true
+    return true
+  }
+  removePistol(p: CarriedPistol): void {
+    this.absent.add(p)
+    p.holder = null
+    p.dropped = false
+    p.grab.reset()
+    p.triggerDown = false
+    p.weapon.release()
+    p.weapon.visible = p.weapon.model.visible = false
+    p.holster.visible = p.adjustment.visible = p.holdMount.visible = false
+    this.supports.delete(p)
+    this.slides = this.slides.filter((s) => s.pistol !== p)
+    this.pulls = this.pulls.filter((s) => s.pistol !== p)
+    this.lasers[this.allPistols.indexOf(p)].enabled = false
+    if (!this.pistols.length) this.body.visible = false
+  }
   readonly pockets: THREE.Group[] = []
   readonly magazines: MagazineItem[] = []
   readonly cartridges: CartridgeItem[] = []
@@ -87,7 +114,7 @@ export class XRLoadout {
     readonly calibration = new XRCalibration(),
   ) {
     scene.add(this.body, this.loose)
-    this.pistols = weapons.map((weapon, i) => {
+    this.allPistols = weapons.map((weapon, i) => {
       const holster = new THREE.Group()
       holster.position.set(i === 0 ? -0.25 : 0.25, -0.57, -0.08)
       holster.rotation.x = Math.PI
@@ -158,10 +185,11 @@ export class XRLoadout {
     fov: number,
     cast: (origin: THREE.Vector3, direction: THREE.Vector3, range: number) => THREE.Vector3 | null,
   ): void {
-    for (const [index, pistol] of this.pistols.entries()) {
+    for (const [index, pistol] of this.allPistols.entries()) {
       const weapon = pistol.weapon,
         laser = this.lasers[index]
-      laser.enabled = !!pistol.holder && weapon.visible && weapon.laserEnabled
+      laser.enabled =
+        !this.absent.has(pistol) && !!pistol.holder && weapon.visible && weapon.laserEnabled
       if (!laser.enabled) continue
       const ray = weapon.accessoryRay(now, false, fov, 'RedLaserSocket')
       if (!ray) {
@@ -317,10 +345,11 @@ export class XRLoadout {
       this.suspend(now)
       return events
     }
-    this.body.visible = this.loose.visible = true
+    this.loose.visible = true
+    this.body.visible = this.pistols.length > 0
     for (const mesh of this.vestMeshes) mesh.visible = this.showVest
     this.bodyAnchor.update(this.body, camera, dt)
-    this.pistols.forEach((p, i) => {
+    this.allPistols.forEach((p, i) => {
       this.calibration.apply(p.holster, i === 0 ? 'holster-0' : 'holster-1')
       this.calibration.apply(p.adjustment, i === 0 ? 'pistol-0' : 'pistol-1')
     })
@@ -755,16 +784,22 @@ export class XRLoadout {
             .normalize()
         }
         // The calibrated handle owns aiming; the support hand stabilizes recoil only.
-        p.grab.update(p.holdMount, [p.holder.grip], dt)
+        p.grab.update(p.holdMount, [p.gripMode === 'handle' ? p.holder.mount : p.holder.grip], dt)
       } else if (this.physicalPistols) {
         if (p.grab.hands.length) {
-          const tracked = p.grab.hands.every((grip) => hands.some((h) => h.grip === grip))
+          const tracked = p.grab.hands.every((grip) =>
+            hands.some((h) => h.grip === grip || h.mount === grip),
+          )
           p.grab.update(p.holdMount, [], tracked ? dt : 0.2)
           p.velocity.copy(p.grab.velocity)
           p.angularVelocity.copy(p.grab.angularVelocity)
           p.dropped = position(p.holdMount).distanceTo(position(p.holster)) > 0.16
           p.weapon.release()
           p.triggerDown = false
+        }
+        if (p.dropped && this.discardDropped?.(p.holdMount, dt)) {
+          this.removePistol(p)
+          continue
         }
         if (p.dropped) this.droppedPhysics?.(p.holdMount, p.velocity, p.angularVelocity)
       } else p.grab.reset()

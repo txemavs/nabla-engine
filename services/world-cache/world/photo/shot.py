@@ -494,7 +494,7 @@ def shoot(cell):
         names = [manifest['files'][layer]['path'] for layer in ('terrain', 'buildings-osm')]
     except (OSError, ValueError, KeyError, TypeError):
         return None
-    if z not in (13, 14, 15):
+    if z not in (12, 13, 14, 15):
         return None
     sources = [cell / name for name in names]
     if not all(path.is_file() for path in sources):

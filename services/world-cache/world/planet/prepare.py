@@ -18,9 +18,9 @@ from world.bake.format import atomic_write
 
 
 def tile_bounds(address):
-    match = re.fullmatch(r'z/(13|14|15)/(0|[1-9]\d*)/(0|[1-9]\d*)', address)
+    match = re.fullmatch(r'z/(12|13|14|15)/(0|[1-9]\d*)/(0|[1-9]\d*)', address)
     if not match:
-        raise ValueError('Expected canonical z/zoom/x/y (zoom 13, 14 or 15)')
+        raise ValueError('Expected canonical z/zoom/x/y (zoom 12, 13, 14 or 15)')
     z, x, y = map(int, match.groups())
     n = 2 ** z
     if x >= n or y >= n:
@@ -53,8 +53,9 @@ def prepare(address, output, cache_base, publisher):
                       features=[])
     else:
         # Neighbouring zooms/cells reuse one upstream request, keyed by their z13 ancestor.
-        scale = 2 ** (tile['z'] - 13)
-        _, query_bounds = tile_bounds(f"z/13/{tile['x']//scale}/{tile['y']//scale}")
+        query_zoom = min(tile['z'], 13)
+        scale = 2 ** (tile['z'] - query_zoom)
+        _, query_bounds = tile_bounds(f"z/{query_zoom}/{tile['x']//scale}/{tile['y']//scale}")
         query = overpass_query(query_bounds)
         request = urllib.request.Request(cache_base.rstrip('/') + '/osm',
             data=urllib.parse.urlencode({'data': query}).encode(),

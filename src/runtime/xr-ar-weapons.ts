@@ -39,6 +39,7 @@ export class XRARWeapons {
     private readonly camera: THREE.PerspectiveCamera,
     private readonly xr: GameXR,
     viewport: HTMLElement,
+    initialPistols = 2,
   ) {
     const weapons = [
       new Sidearm(viewport, undefined, 'low'),
@@ -46,6 +47,8 @@ export class XRARWeapons {
     ]
     this.contacts.onContact = (point) => this.audio.weaponSound('prop-impact', point.toArray())
     this.loadout = new XRLoadout(scene, weapons, xr.calibration)
+    for (const p of this.loadout.allPistols.slice(Math.max(0, initialPistols)))
+      this.loadout.removePistol(p)
     this.loadout.physicalPistols = true
     this.loadout.discardDropped = (root, dt) =>
       !!this.disposalTest && this.contacts.entersDisposal(root, this.disposalTest, dt)
@@ -266,7 +269,7 @@ export class XRARWeapons {
     this.casingMeshes?.dispose()
     this.casingMeshes?.root.removeFromParent()
     this.loadout.dispose()
-    for (const pistol of this.loadout.pistols) pistol.weapon.dispose()
+    for (const pistol of this.loadout.allPistols) pistol.weapon.dispose()
     this.impacts.dispose()
     this.sparks.dispose()
     this.sparks.root.removeFromParent()

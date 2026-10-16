@@ -402,3 +402,62 @@ usan `XRItemContacts` y el mismo mundo físico que el resto del inventario; la
 expulsión conserva el lanzamiento de `CasingMotion`. Los casquillos vacíos
 siguen siendo efectos visuales, no munición. Hay un máximo de 24 cartuchos
 sueltos, además de los sostenidos.
+
+### Recuperar seguimiento al quitarse el casco
+
+Una pose no nula no garantiza seguimiento de posición: WebXR puede marcarla con
+`emulatedPosition`. `XRSessionController` no calibra suelo ni actualiza el ancla del mundo
+con esas poses; `GameAR` pausa interacción y físicas hasta recuperar posiciones reales.
+`ARRoom` tampoco guarda matrices estimadas o no finitas en las superficies de colisión.
+La orientación puede seguir disponible durante ese intervalo sin que eso permita fijar suelo.
+
+`GameXR.referenceSpace` expone la referencia que Three.js utilizó al principio del fotograma
+para sus cámaras y mandos. La cámara de aplicación y las consultas de `ARRoom` usan esa misma
+referencia. Una corrección del ancla puede instalar la referencia del siguiente fotograma,
+pero no mezcla superficies calculadas en el espacio nuevo con cámaras del anterior.
+
+Las pruebas cubren pérdida de visibilidad, posiciones estimadas de cabeza/suelo/ancla,
+recuperación sin desplazar objetos y cambio de referencia entre fotogramas. No sustituyen
+repetir quitarse y ponerse una Quest ni verifican errores del seguimiento del propio visor.
+
+### F-14: velocidad y mando de gas
+
+El preset compartido de Engine define 120 m/s en modo lento y 600 m/s en rápido,
+con 40 m/s² de aceleración inicial. `stepFlight` equilibra empuje y resistencia
+cuadrática para alcanzar la velocidad configurada; la amortiguación artificial del cuerpo
+no reduce otra vez esa velocidad. Al desplegar las alas desde alta velocidad se limita
+la desaceleración aerodinámica para evitar un frenazo instantáneo.
+
+La simulación permanece a tamaño real: `XRScaledVehicles.pose()` convierte la posición
+una sola vez a la escala elegida. A 1:100 son 1,2 y 6 m/s en la habitación; a 1:1 son
+432 y 2160 km/h. Las pruebas comparan trayectorias a 1:1, 1:100, 1:500 y 1:1000.
+
+En AR la seta izquierda adelante/atrás aumenta/reduce el gas; al centrarla mantiene el
+valor. Izquierda/derecha controla el timón. La seta derecha controla cabeceo y alabeo,
+y B alterna lento/rápido. No hay un segundo controlador de vuelo para la maqueta.
+
+### Diagnóstico de botón Meta y relocalización
+
+`XRSessionController.startDiagnostics()` activa muestras de seguimiento de 1 Hz;
+`recordDiagnostic()` permite añadir marcadores del host y `exportDiagnostics()` devuelve
+JSON. El registro conserva hasta 256 eventos: visibilidad, resets con su transformación,
+alineación inicial, creación/error/pérdida de ancla, cambios de origen y muestras de cámara.
+`ARRoom.trackingSnapshot()` añade matrices de hasta 32 superficies, sin imágenes ni vértices.
+
+La demo ofrece Entorno → Iniciar prueba Meta y Enviar diagnóstico. Hay otro botón de envío
+en la página de entrada por si el monitor queda fuera de alcance. El registro activo se
+conserva en `nabla.xr.tracking-report.v1` para recuperarlo tras recargar. La instrumentación
+no reintenta anclas ni corrige posiciones: sirve para observar el fallo sin cambiarlo.
+
+En el host local, POST `/__nabla/xr-diagnostics` recibe el informe JSON (máximo 4 MiB)
+y lo guarda en `/tmp/nabla-xr-report-last.json`. Este receptor pertenece a la configuración
+de desarrollo, no al módulo de Engine ni al despliegue estático. Sin receptor, la demo
+intenta copiar el JSON y, si el navegador lo impide, descargarlo como archivo.
+
+### Selector R/C y tamaño en la habitación
+
+El monitor presenta un carrusel de vehículos con imágenes de los modelos de Engine. Las flechas solo seleccionan; «Añadir» carga el vehículo. `scripts/prepare-vehicle-previews.mjs [origen HTTPS]` prepara los PNG con el mismo `SceneView` y calidad baja; no se cargan GLB al recorrer el selector. BMW aparece cuando el host aporta su preset.
+
+Las escalas incluyen 1:200 y 1:500, además de 1:4 y 1:2 para coches y toro. Engine comprueba que la dimensión más larga del conjunto quede entre 2 cm y 5 m, incluido el remolque. Las escalas incompatibles se ocultan y `ARRC.load` las rechaza antes de retirar el vehículo existente. Las físicas mantienen sus unidades y parámetros originales.
+
+La consola del toro se acerca 8 cm al volante y conserva la calibración independiente «AR · Palancas toro». El módulo experimental mantiene internamente Betaflight; su nombre visible es «Helicóptero».

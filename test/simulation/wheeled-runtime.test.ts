@@ -197,3 +197,19 @@ it('returns transmission domain results and rejects invalid commands before muta
     'Invalid wheeled',
   )
 })
+
+it('applies service brakes proportionally without the rear handbrake bias and disengages the clutch', () => {
+  const car = createWheeledVehicle(chassis(), definition(), { parked: false })
+  for (let i = 0; i < 120; i++)
+    stepWheeledVehicle(car, { ...idleWheeledInput(), throttle: 1 }, 1 / 60)
+  stepWheeledVehicle(
+    car,
+    { ...idleWheeledInput(), throttle: 1, serviceBrake: 0.5, clutch: 1 },
+    1 / 60,
+  )
+  expect(car.raycast.wheelInfos.every((w) => w.brake === definition().brakeForce * 0.5)).toBe(true)
+  expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0)).toBe(true)
+  expect(wheeledTelemetry(car, { ...idleWheeledInput(), serviceBrake: 0.5 }, true).braking).toBe(
+    true,
+  )
+})

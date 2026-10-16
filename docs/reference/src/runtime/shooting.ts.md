@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../config/input-bindings.js`
 - `three`
 - `../simulation/simulation.js`
 - `../render/entity/view.js`
@@ -16,7 +17,7 @@
 
 ## sidearmButtonAction
 
-[Implementation, line 20](../../../../src/runtime/shooting.ts#L20)
+[Implementation, line 21](../../../../src/runtime/shooting.ts#L21)
 
 Sidearm button edge. Left click fires even while right-button aim is already held: pointer
 lock often delivers that second press only as `mousedown`, not `pointerdown`.
@@ -27,7 +28,7 @@ sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' |
 
 ## sidearmAimRay
 
-[Implementation, line 44](../../../../src/runtime/shooting.ts#L44)
+[Implementation, line 45](../../../../src/runtime/shooting.ts#L45)
 
 Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
 
@@ -59,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fitted
 
-[Implementation, line 73](../../../../src/runtime/shooting.ts#L73)
+[Implementation, line 74](../../../../src/runtime/shooting.ts#L74)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -74,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 89](../../../../src/runtime/shooting.ts#L89)
+[Implementation, line 90](../../../../src/runtime/shooting.ts#L90)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -123,12 +124,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `traceBullet`
 - `view.sparks.add`
 
-## fireSidearm.callback@125
+## fireSidearm.callback@126
 
-[Implementation, line 125](../../../../src/runtime/shooting.ts#L125)
+[Implementation, line 126](../../../../src/runtime/shooting.ts#L126)
 
 ```ts
-callback@125(from, dir, length): inferred by TypeScript; see implementation
+callback@126(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

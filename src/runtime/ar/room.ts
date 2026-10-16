@@ -184,13 +184,28 @@ export class ARRoom {
         'planeSpace' in surface ? surface.planeSpace : surface.meshSpace,
         space,
       )
-      entry.tracked = !!pose
-      if (pose) {
+      entry.tracked =
+        !!pose && !pose.emulatedPosition && Array.from(pose.transform.matrix).every(Number.isFinite)
+      if (entry.tracked && pose) {
         entry.object.matrix.fromArray(pose.transform.matrix)
         entry.object.matrixWorldNeedsUpdate = true
       }
     }
     this.selectSurfaces()
+  }
+  /** Tracking transforms only; no room geometry or camera imagery is copied. */
+  trackingSnapshot() {
+    return {
+      source: this.source,
+      counts: this.surfaceCounts,
+      surfaces: [...this.surfaces].slice(0, 32).map(([surface, entry]) => ({
+        name: entry.object.name,
+        kind: 'vertices' in surface ? 'mesh' : 'plane',
+        tracked: entry.tracked,
+        active: entry.object.visible,
+        matrix: entry.object.matrix.toArray(),
+      })),
+    }
   }
   reset(): void {
     for (const entry of this.surfaces.values()) {

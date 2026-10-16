@@ -117,3 +117,20 @@ agarrados por una o dos manos y su velocidad de lanzamiento. No cambia la escala
 ni sustituye al motor físico. El inventario, marco y adaptadores AR comparten esta
 implementación; véase [agarre compartido](ar-module.md#agarre-rígido-compartido-con-una-o-dos-manos)
 para unidades, transición entre manos y entrega del movimiento a `Simulation`/`World`.
+
+### Cero de mano y ajuste de pistola
+
+El cero `2026-10-15-hand-zero` incorpora el ajuste de la mano izquierda
+`(-2, -1, 0.5 cm; -20, -10, 0°)` sobre el cero anterior; la derecha es su reflejo.
+Los campos vuelven a representar desplazamientos desde ese cero. La relación anterior
+entre la mano y el mango de la pistola se conserva mediante una transformación rígida,
+incluyendo posición y orientación, sin sumar ángulos Euler.
+
+`XRCalibration` guarda V5 y conserva V4 como respaldo. Al migrar, rebasa las manos ya
+ajustadas y conserva los ajustes de fundas, bolsillos y puestos de conducción. La migración
+se ejecuta una sola vez: recargar no vuelve a incorporar la misma corrección.
+
+En `XRLoadout`, un agarre por el mango sigue el montaje calibrado de la mano durante toda
+la sujeción, de modo que editar «Pistola» tiene efecto inmediato. Los agarres libres por
+corredera o parte delantera siguen el mando y conservan el punto de contacto. La postura
+en funda continúa siendo independiente de la postura en mano.

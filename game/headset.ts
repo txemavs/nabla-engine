@@ -1,6 +1,5 @@
-/** One launcher. The AR demo is prepared only when its tab is selected, then
- * its existing Enter handler requests WebXR directly from the user's click.
- */
+/** Two self-contained entry cards. Supported AR is prepared in advance so
+ * the Enter handler keeps the original user activation for WebXR. */
 const place = document.querySelector<HTMLSelectElement>('#xr-place')!
 const vehicle = document.querySelector<HTMLSelectElement>('#xr-vehicle')!
 const ride = document.querySelector<HTMLAnchorElement>('#ride-xr')!
@@ -47,33 +46,33 @@ function prepareAR(): Promise<void> {
       if (!active) enter.focus()
     })
     enter.textContent = 'Entrar en realidad aumentada'
+    status.textContent = ''
   })().catch((error) => {
     status.textContent = `No se ha podido preparar AR: ${String(error)}. Recarga para intentarlo de nuevo.`
     enter.disabled = true
   }))
 }
-function selectTab(mode: 'vr' | 'ar') {
-  for (const name of ['vr', 'ar']) {
-    const selected = name === mode
-    const tab = document.getElementById(`tab-${name}`)!
-    tab.setAttribute('aria-selected', String(selected))
-    tab.tabIndex = selected ? 0 : -1
-    document.getElementById(`${name}-panel`)!.hidden = !selected
+ride.addEventListener('click', (event) => {
+  if (ride.getAttribute('aria-disabled') === 'true') event.preventDefault()
+})
+async function checkSupport() {
+  const supported = async (mode: XRSessionMode) => {
+    try {
+      return isSecureContext && !!navigator.xr && (await navigator.xr.isSessionSupported(mode))
+    } catch {
+      return false
+    }
   }
-  if (mode === 'ar') void prepareAR()
+  const [vr, ar] = await Promise.all([supported('immersive-vr'), supported('immersive-ar')])
+  ride.setAttribute('aria-disabled', String(!vr))
+  ride.tabIndex = vr ? 0 : -1
+  ride.textContent = vr ? 'Entrar en realidad virtual' : 'VR no compatible en este navegador'
+  if (ar) {
+    enter.textContent = 'Preparando realidad aumentada…'
+    await prepareAR()
+  } else enter.textContent = 'AR no compatible en este navegador'
 }
-for (const mode of ['vr', 'ar'] as const) {
-  const tab = document.getElementById(`tab-${mode}`)!
-  tab.onclick = () => selectTab(mode)
-  tab.onkeydown = (event) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-    event.preventDefault()
-    const next =
-      event.key === 'Home' ? 'vr' : event.key === 'End' ? 'ar' : mode === 'vr' ? 'ar' : 'vr'
-    selectTab(next)
-    document.getElementById(`tab-${next}`)!.focus()
-  }
-}
+void checkSupport()
 place.addEventListener('change', update)
 vehicle.addEventListener('change', update)
 window.addEventListener('pageshow', update)

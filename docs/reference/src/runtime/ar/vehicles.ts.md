@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../xr-input.js`
 - `../../catalog/props/pallet.js`
 - `../xr-scaled-body-contacts.js`
 - `../../simulation/physics.js`
@@ -26,7 +27,7 @@
 
 ## ARRC.beforeRoomStep
 
-[Implementation, line 28](../../../../../src/runtime/ar/vehicles.ts#L28)
+[Implementation, line 29](../../../../../src/runtime/ar/vehicles.ts#L29)
 
 ```ts
 beforeRoomStep(dt: number): void
@@ -38,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.unlockAudio
 
-[Implementation, line 36](../../../../../src/runtime/ar/vehicles.ts#L36)
+[Implementation, line 37](../../../../../src/runtime/ar/vehicles.ts#L37)
 
 ```ts
 unlockAudio(): void
@@ -50,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.setAudioActive
 
-[Implementation, line 39](../../../../../src/runtime/ar/vehicles.ts#L39)
+[Implementation, line 40](../../../../../src/runtime/ar/vehicles.ts#L40)
 
 ```ts
 setAudioActive(active: boolean): void
@@ -62,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.simulation
 
-[Implementation, line 44](../../../../../src/runtime/ar/vehicles.ts#L44)
+[Implementation, line 45](../../../../../src/runtime/ar/vehicles.ts#L45)
 
 ```ts
 simulation(): inferred by TypeScript; see implementation
@@ -70,7 +71,7 @@ simulation(): inferred by TypeScript; see implementation
 
 ## ARRC.presentation
 
-[Implementation, line 47](../../../../../src/runtime/ar/vehicles.ts#L47)
+[Implementation, line 48](../../../../../src/runtime/ar/vehicles.ts#L48)
 
 ```ts
 presentation(): inferred by TypeScript; see implementation
@@ -78,7 +79,7 @@ presentation(): inferred by TypeScript; see implementation
 
 ## ARRC.toggleFlightSpeed
 
-[Implementation, line 58](../../../../../src/runtime/ar/vehicles.ts#L58)
+[Implementation, line 60](../../../../../src/runtime/ar/vehicles.ts#L60)
 
 ```ts
 toggleFlightSpeed(): void
@@ -91,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.constructor
 
-[Implementation, line 66](../../../../../src/runtime/ar/vehicles.ts#L66)
+[Implementation, line 68](../../../../../src/runtime/ar/vehicles.ts#L68)
 
 ```ts
 constructor(private scene: THREE.Scene, calibration?: Pick<XRCalibration, 'get' | 'apply' | 'motorcycleStatus'>, private readonly options: { simulation?: ConstructorParameters<typeof Simulation>[1] assetQuality?: AssetQuality roomWorld?: () => World | null } = {}): instance
@@ -103,17 +104,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `VehicleEffects`
 - `XRScaledBodyContacts`
 
-## ARRC.constructor.callback@75
+## ARRC.constructor.callback@77
 
-[Implementation, line 75](../../../../../src/runtime/ar/vehicles.ts#L75)
+[Implementation, line 77](../../../../../src/runtime/ar/vehicles.ts#L77)
 
 ```ts
-callback@75(): inferred by TypeScript; see implementation
+callback@77(): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.targets
 
-[Implementation, line 81](../../../../../src/runtime/ar/vehicles.ts#L81)
+[Implementation, line 83](../../../../../src/runtime/ar/vehicles.ts#L83)
 
 ```ts
 targets(): THREE.Mesh[]
@@ -123,12 +124,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `car.root.traverse`
 
-## ARRC.targets.callback@84
+## ARRC.targets.callback@86
 
-[Implementation, line 84](../../../../../src/runtime/ar/vehicles.ts#L84)
+[Implementation, line 86](../../../../../src/runtime/ar/vehicles.ts#L86)
 
 ```ts
-callback@84(object): inferred by TypeScript; see implementation
+callback@86(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -137,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.hit
 
-[Implementation, line 92](../../../../../src/runtime/ar/vehicles.ts#L92)
+[Implementation, line 94](../../../../../src/runtime/ar/vehicles.ts#L94)
 
 ```ts
 hit(object: THREE.Object3D, point: THREE.Vector3, direction: THREE.Vector3): { handled: boolean; glass: boolean; metal: boolean } | null
@@ -161,25 +162,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.brokenGlass.hit`
 - `this.view.destruction.glass`
 
-## ARRC.hit.callback@100
+## ARRC.hit.callback@102
 
-[Implementation, line 100](../../../../../src/runtime/ar/vehicles.ts#L100)
+[Implementation, line 102](../../../../../src/runtime/ar/vehicles.ts#L102)
 
 ```ts
-callback@100(c): inferred by TypeScript; see implementation
+callback@102(c): inferred by TypeScript; see implementation
 ```
 
-## ARRC.hit.callback@113
+## ARRC.hit.callback@115
 
-[Implementation, line 113](../../../../../src/runtime/ar/vehicles.ts#L113)
+[Implementation, line 115](../../../../../src/runtime/ar/vehicles.ts#L115)
 
 ```ts
-callback@113(e): inferred by TypeScript; see implementation
+callback@115(e): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.owns
 
-[Implementation, line 123](../../../../../src/runtime/ar/vehicles.ts#L123)
+[Implementation, line 125](../../../../../src/runtime/ar/vehicles.ts#L125)
 
 ```ts
 owns(grip: THREE.Group): boolean
@@ -191,9 +192,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.controls.owns`
 - `this.objectGrab.hands.includes`
 
+## ARRC.scaleAllowed
+
+[Implementation, line 132](../../../../../src/runtime/ar/vehicles.ts#L132)
+
+Room-scale limits use the authored dimensions, including a coupled trailer.
+
+```ts
+scaleAllowed(kind: string, denominator: number, authored?: readonly Entity[]): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Number.isFinite`
+- `THREE.Box3`
+- `THREE.Vector3`
+- `bounds.getSize`
+- `bounds.union`
+- `new THREE.Box3().setFromCenterAndSize`
+- `new THREE.Vector3(...entities[0].vehicle!.hitch!).sub`
+- `new THREE.Vector3(...entity.transform.position).sub`
+- `presetVehicle`
+
 ## ARRC.load
 
-[Implementation, line 129](../../../../../src/runtime/ar/vehicles.ts#L129)
+[Implementation, line 165](../../../../../src/runtime/ar/vehicles.ts#L165)
 
 ```ts
 load(kind: 's3' | 'vfr' | 'truck' | 'f14' | 'forklift', denominator: number, camera: THREE.Camera, authoredEntities?: readonly Entity[]): Promise<void>
@@ -241,6 +265,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.controls.place`
 - `this.controls.spin.add`
 - `this.ground`
+- `this.scaleAllowed`
 - `this.scene.add`
 - `this.sync`
 - `view.dispose`
@@ -253,14 +278,15 @@ Explicit throws in this body:
 
 - `new Error('Invalid model scale')`
 - `new Error('At least one vehicle is required')`
+- `new Error('El vehículo debe medir entre 2 cm y 5 m. Elige otra escala.')`
 - `error`
 
-## ARRC.load.callback@248
+## ARRC.load.callback@286
 
-[Implementation, line 248](../../../../../src/runtime/ar/vehicles.ts#L248)
+[Implementation, line 286](../../../../../src/runtime/ar/vehicles.ts#L286)
 
 ```ts
-callback@248(node): inferred by TypeScript; see implementation
+callback@286(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -269,24 +295,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.material.clone`
 - `mesh.material.map`
 
-## ARRC.load.callback@248.callback@253
+## ARRC.load.callback@286.callback@291
 
-[Implementation, line 253](../../../../../src/runtime/ar/vehicles.ts#L253)
+[Implementation, line 291](../../../../../src/runtime/ar/vehicles.ts#L291)
 
 ```ts
-callback@253(m): inferred by TypeScript; see implementation
+callback@291(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `m.clone`
 
-## ARRC.load.callback@265
+## ARRC.load.callback@303
 
-[Implementation, line 265](../../../../../src/runtime/ar/vehicles.ts#L265)
+[Implementation, line 303](../../../../../src/runtime/ar/vehicles.ts#L303)
 
 ```ts
-callback@265(node): inferred by TypeScript; see implementation
+callback@303(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -295,12 +321,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `node.material.clone`
 - `node.material.map`
 
-## ARRC.load.callback@265.callback@269
+## ARRC.load.callback@303.callback@307
 
-[Implementation, line 269](../../../../../src/runtime/ar/vehicles.ts#L269)
+[Implementation, line 307](../../../../../src/runtime/ar/vehicles.ts#L307)
 
 ```ts
-callback@269(m): inferred by TypeScript; see implementation
+callback@307(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -309,7 +335,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.addPallet
 
-[Implementation, line 286](../../../../../src/runtime/ar/vehicles.ts#L286)
+[Implementation, line 326](../../../../../src/runtime/ar/vehicles.ts#L326)
 
 ```ts
 addPallet(withBox = false): boolean
@@ -335,17 +361,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.addPlaced`
 - `this.view.objects.get`
 
-## ARRC.addPallet.callback@288
+## ARRC.addPallet.callback@328
 
-[Implementation, line 288](../../../../../src/runtime/ar/vehicles.ts#L288)
+[Implementation, line 328](../../../../../src/runtime/ar/vehicles.ts#L328)
 
 ```ts
-callback@288(e): inferred by TypeScript; see implementation
+callback@328(e): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.removeProp
 
-[Implementation, line 314](../../../../../src/runtime/ar/vehicles.ts#L314)
+[Implementation, line 354](../../../../../src/runtime/ar/vehicles.ts#L354)
 
 ```ts
 removeProp(id: string): void
@@ -361,33 +387,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.physics.simulation.removePlaced`
 - `this.view.removePlaced`
 
-## ARRC.removeProp.callback@316
+## ARRC.removeProp.callback@356
 
-[Implementation, line 316](../../../../../src/runtime/ar/vehicles.ts#L316)
+[Implementation, line 356](../../../../../src/runtime/ar/vehicles.ts#L356)
 
 ```ts
-callback@316(c): inferred by TypeScript; see implementation
+callback@356(c): inferred by TypeScript; see implementation
 ```
 
-## ARRC.removeProp.callback@318
+## ARRC.removeProp.callback@358
 
-[Implementation, line 318](../../../../../src/runtime/ar/vehicles.ts#L318)
+[Implementation, line 358](../../../../../src/runtime/ar/vehicles.ts#L358)
 
 ```ts
-callback@318(c): inferred by TypeScript; see implementation
+callback@358(c): inferred by TypeScript; see implementation
 ```
 
-## ARRC.removeProp.callback@322
+## ARRC.removeProp.callback@362
 
-[Implementation, line 322](../../../../../src/runtime/ar/vehicles.ts#L322)
+[Implementation, line 362](../../../../../src/runtime/ar/vehicles.ts#L362)
 
 ```ts
-callback@322(e): inferred by TypeScript; see implementation
+callback@362(e): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.ground
 
-[Implementation, line 326](../../../../../src/runtime/ar/vehicles.ts#L326)
+[Implementation, line 366](../../../../../src/runtime/ar/vehicles.ts#L366)
 
 ```ts
 ground(point: THREE.Vector3, distance: number, surfaces: THREE.Mesh[]): inferred by TypeScript; see implementation
@@ -405,7 +431,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.update
 
-[Implementation, line 343](../../../../../src/runtime/ar/vehicles.ts#L343)
+[Implementation, line 383](../../../../../src/runtime/ar/vehicles.ts#L383)
 
 ```ts
 update(dt: number, hands: readonly Hand[], surfaces: THREE.Mesh[]): void
@@ -420,6 +446,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Box3`
 - `THREE.Quaternion`
 - `THREE.Vector3`
+- `adjustFlightThrottle`
 - `axis`
 - `bounds.getCenter`
 - `bounds.getSize`
@@ -466,40 +493,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.toggleFlightSpeed`
 - `this.view?.destruction.update`
 
-## ARRC.update.callback@346
+## ARRC.update.callback@386
 
-[Implementation, line 346](../../../../../src/runtime/ar/vehicles.ts#L346)
+[Implementation, line 386](../../../../../src/runtime/ar/vehicles.ts#L386)
 
 ```ts
-callback@346(h): inferred by TypeScript; see implementation
+callback@386(h): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@348
+## ARRC.update.callback@388
 
-[Implementation, line 348](../../../../../src/runtime/ar/vehicles.ts#L348)
+[Implementation, line 388](../../../../../src/runtime/ar/vehicles.ts#L388)
 
 ```ts
-callback@348(h): inferred by TypeScript; see implementation
+callback@388(h): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@351
+## ARRC.update.callback@391
 
-[Implementation, line 351](../../../../../src/runtime/ar/vehicles.ts#L351)
+[Implementation, line 391](../../../../../src/runtime/ar/vehicles.ts#L391)
 
 ```ts
-callback@351(h): inferred by TypeScript; see implementation
+callback@391(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.objectGrab.hands.includes`
 
-## ARRC.update.callback@354
+## ARRC.update.callback@394
 
-[Implementation, line 354](../../../../../src/runtime/ar/vehicles.ts#L354)
+[Implementation, line 394](../../../../../src/runtime/ar/vehicles.ts#L394)
 
 ```ts
-callback@354(h): inferred by TypeScript; see implementation
+callback@394(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -508,42 +535,42 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.update.pressed
 
-[Implementation, line 355](../../../../../src/runtime/ar/vehicles.ts#L355)
+[Implementation, line 395](../../../../../src/runtime/ar/vehicles.ts#L395)
 
 ```ts
 pressed(h: Hand): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@356
+## ARRC.update.callback@396
 
-[Implementation, line 356](../../../../../src/runtime/ar/vehicles.ts#L356)
+[Implementation, line 396](../../../../../src/runtime/ar/vehicles.ts#L396)
 
 ```ts
-callback@356(grip): inferred by TypeScript; see implementation
+callback@396(grip): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hands.some`
 
-## ARRC.update.callback@356.callback@357
+## ARRC.update.callback@396.callback@397
 
-[Implementation, line 357](../../../../../src/runtime/ar/vehicles.ts#L357)
+[Implementation, line 397](../../../../../src/runtime/ar/vehicles.ts#L397)
 
 ```ts
-callback@357(h): inferred by TypeScript; see implementation
+callback@397(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `pressed`
 
-## ARRC.update.callback@369
+## ARRC.update.callback@409
 
-[Implementation, line 369](../../../../../src/runtime/ar/vehicles.ts#L369)
+[Implementation, line 409](../../../../../src/runtime/ar/vehicles.ts#L409)
 
 ```ts
-callback@369(c): inferred by TypeScript; see implementation
+callback@409(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -551,24 +578,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Box3`
 - `new THREE.Box3().setFromObject`
 
-## ARRC.update.callback@370
+## ARRC.update.callback@410
 
-[Implementation, line 370](../../../../../src/runtime/ar/vehicles.ts#L370)
+[Implementation, line 410](../../../../../src/runtime/ar/vehicles.ts#L410)
 
 ```ts
-callback@370(c): inferred by TypeScript; see implementation
+callback@410(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `c.bounds.distanceToPoint`
 
-## ARRC.update.callback@372
+## ARRC.update.callback@412
 
-[Implementation, line 372](../../../../../src/runtime/ar/vehicles.ts#L372)
+[Implementation, line 412](../../../../../src/runtime/ar/vehicles.ts#L412)
 
 ```ts
-callback@372(a, b): inferred by TypeScript; see implementation
+callback@412(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -581,61 +608,61 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `b.bounds.getCenter`
 - `b.bounds.getCenter(new THREE.Vector3()).distanceToSquared`
 
-## ARRC.update.callback@384
+## ARRC.update.callback@424
 
-[Implementation, line 384](../../../../../src/runtime/ar/vehicles.ts#L384)
+[Implementation, line 424](../../../../../src/runtime/ar/vehicles.ts#L424)
 
 ```ts
-callback@384(c): inferred by TypeScript; see implementation
+callback@424(c): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@386
+## ARRC.update.callback@426
 
-[Implementation, line 386](../../../../../src/runtime/ar/vehicles.ts#L386)
+[Implementation, line 426](../../../../../src/runtime/ar/vehicles.ts#L426)
 
 ```ts
-callback@386(grip): inferred by TypeScript; see implementation
+callback@426(grip): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hands.some`
 
-## ARRC.update.callback@386.callback@386
+## ARRC.update.callback@426.callback@426
 
-[Implementation, line 386](../../../../../src/runtime/ar/vehicles.ts#L386)
+[Implementation, line 426](../../../../../src/runtime/ar/vehicles.ts#L426)
 
 ```ts
-callback@386(h): inferred by TypeScript; see implementation
+callback@426(h): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@400
+## ARRC.update.callback@440
 
-[Implementation, line 400](../../../../../src/runtime/ar/vehicles.ts#L400)
+[Implementation, line 440](../../../../../src/runtime/ar/vehicles.ts#L440)
 
 ```ts
-callback@400(h): inferred by TypeScript; see implementation
+callback@440(h): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@401
+## ARRC.update.callback@441
 
-[Implementation, line 401](../../../../../src/runtime/ar/vehicles.ts#L401)
+[Implementation, line 441](../../../../../src/runtime/ar/vehicles.ts#L441)
 
 ```ts
-callback@401(h): inferred by TypeScript; see implementation
+callback@441(h): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@402
+## ARRC.update.callback@442
 
-[Implementation, line 402](../../../../../src/runtime/ar/vehicles.ts#L402)
+[Implementation, line 442](../../../../../src/runtime/ar/vehicles.ts#L442)
 
 ```ts
-callback@402(h): inferred by TypeScript; see implementation
+callback@442(h): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.update.axis
 
-[Implementation, line 403](../../../../../src/runtime/ar/vehicles.ts#L403)
+[Implementation, line 443](../../../../../src/runtime/ar/vehicles.ts#L443)
 
 ```ts
 axis(pad: Gamepad | undefined, index: number): inferred by TypeScript; see implementation
@@ -645,28 +672,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.abs`
 
-## ARRC.update.callback@422
+## ARRC.update.callback@463
 
-[Implementation, line 422](../../../../../src/runtime/ar/vehicles.ts#L422)
+[Implementation, line 463](../../../../../src/runtime/ar/vehicles.ts#L463)
 
 ```ts
-callback@422(c): inferred by TypeScript; see implementation
+callback@463(c): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@433
+## ARRC.update.callback@474
 
-[Implementation, line 433](../../../../../src/runtime/ar/vehicles.ts#L433)
+[Implementation, line 474](../../../../../src/runtime/ar/vehicles.ts#L474)
 
 ```ts
-callback@433(e): inferred by TypeScript; see implementation
+callback@474(e): inferred by TypeScript; see implementation
 ```
 
-## ARRC.update.callback@466
+## ARRC.update.callback@507
 
-[Implementation, line 466](../../../../../src/runtime/ar/vehicles.ts#L466)
+[Implementation, line 507](../../../../../src/runtime/ar/vehicles.ts#L507)
 
 ```ts
-callback@466(entity): inferred by TypeScript; see implementation
+callback@507(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -674,17 +701,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.physics!.simulation.entityCollisionParts`
 - `this.physics!.simulation.entityCollisionParts(entity.id).map`
 
-## ARRC.update.callback@466.callback@467
+## ARRC.update.callback@507.callback@508
 
-[Implementation, line 467](../../../../../src/runtime/ar/vehicles.ts#L467)
+[Implementation, line 508](../../../../../src/runtime/ar/vehicles.ts#L508)
 
 ```ts
-callback@467(part): inferred by TypeScript; see implementation
+callback@508(part): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.sync
 
-[Implementation, line 487](../../../../../src/runtime/ar/vehicles.ts#L487)
+[Implementation, line 528](../../../../../src/runtime/ar/vehicles.ts#L528)
 
 ```ts
 sync(): void
@@ -696,17 +723,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.view.root.updateWorldMatrix`
 - `this.view?.sync`
 
-## ARRC.sync.callback@495
+## ARRC.sync.callback@536
 
-[Implementation, line 495](../../../../../src/runtime/ar/vehicles.ts#L495)
+[Implementation, line 536](../../../../../src/runtime/ar/vehicles.ts#L536)
 
 ```ts
-callback@495(car): inferred by TypeScript; see implementation
+callback@536(car): inferred by TypeScript; see implementation
 ```
 
 ## ARRC.disposeRoot
 
-[Implementation, line 503](../../../../../src/runtime/ar/vehicles.ts#L503)
+[Implementation, line 544](../../../../../src/runtime/ar/vehicles.ts#L544)
 
 ```ts
 disposeRoot(root: THREE.Object3D): void
@@ -719,7 +746,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.dispose
 
-[Implementation, line 507](../../../../../src/runtime/ar/vehicles.ts#L507)
+[Implementation, line 548](../../../../../src/runtime/ar/vehicles.ts#L548)
 
 ```ts
 dispose(): void
@@ -734,7 +761,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARRC.clear
 
-[Implementation, line 513](../../../../../src/runtime/ar/vehicles.ts#L513)
+[Implementation, line 554](../../../../../src/runtime/ar/vehicles.ts#L554)
 
 ```ts
 clear(): void

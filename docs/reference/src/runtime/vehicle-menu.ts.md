@@ -6,13 +6,14 @@
 
 ## Module dependencies
 
+- `../config/input-bindings.js`
 - `../scene/document.js`
 - `./messages.js`
 - `../presentation/scene-view.js`
 
 ## vehicleMenuKey
 
-[Implementation, line 6](../../../../src/runtime/vehicle-menu.ts#L6)
+[Implementation, line 7](../../../../src/runtime/vehicle-menu.ts#L7)
 
 Equipment actions shared by game hosts. Persistence is a host concern.
 
@@ -25,11 +26,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number`
+- `controlsHint`
 - `createRuntimeText`
 - `document.entities.find`
 - `engineMode`
 - `fov`
-- `menu.key`
+- `keyboardAction`
+- `menu.dispatch`
 - `music`
 - `report`
 - `text`
@@ -41,18 +44,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.toggleVehicleMenu`
 - `view.vehicleMenu`
 
-## vehicleMenuKey.callback@35
+## vehicleMenuKey.callback@24
 
-[Implementation, line 35](../../../../src/runtime/vehicle-menu.ts#L35)
+[Implementation, line 24](../../../../src/runtime/vehicle-menu.ts#L24)
 
 ```ts
-callback@35(e): inferred by TypeScript; see implementation
+callback@24(entity): inferred by TypeScript; see implementation
 ```
 
-## vehicleMenuKey.callback@59
+## vehicleMenuKey.callback@45
 
-[Implementation, line 59](../../../../src/runtime/vehicle-menu.ts#L59)
+[Implementation, line 45](../../../../src/runtime/vehicle-menu.ts#L45)
 
 ```ts
-callback@59(e): inferred by TypeScript; see implementation
+callback@45(e): inferred by TypeScript; see implementation
+```
+
+## vehicleMenuKey.callback@69
+
+[Implementation, line 69](../../../../src/runtime/vehicle-menu.ts#L69)
+
+```ts
+callback@69(e): inferred by TypeScript; see implementation
 ```

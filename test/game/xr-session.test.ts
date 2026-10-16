@@ -244,7 +244,7 @@ test('recording interruptions preserve the AR world across translated and rotate
     native.dispatchEvent(new Event('visibilitychange'))
     frame.getViewerPose.mockClear()
     t.session.update(frame as unknown as XRFrame)
-    expect(frame.getViewerPose).not.toHaveBeenCalled() // No head-based recenter.
+    expect(frame.getViewerPose).toHaveBeenCalledOnce() // Confidence check only; the reset delta still owns the origin.
     expect(t.session.referenceReady).toBe(true)
     for (let i = 0; i < points.length; i++) {
       const actual = points[i]
@@ -314,7 +314,7 @@ test('a room anchor recovers fixed placements after Meta interrupts tracking wit
   const native = Object.assign(t.native, { visibilityState: 'visible' })
   await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
   const anchor = { anchorSpace: {} as XRSpace, delete: vi.fn() }
-  let anchorPose: { transform: { matrix: number[] } } | null = null
+  let anchorPose: { emulatedPosition?: boolean; transform: { matrix: number[] } } | null = null
   const frame = {
     createAnchor: vi.fn(async () => anchor),
     trackedAnchors: new Set([anchor]),
@@ -356,6 +356,25 @@ test('a room anchor recovers fixed placements after Meta interrupts tracking wit
       .distanceTo(object),
   ).toBeLessThan(1e-10)
   expect(t.report).not.toHaveBeenCalled()
+  const stable = installed.clone()
+  const realAnchor = anchorPose
+  const down = new Matrix4().makeTranslation(0, -1.5, 0)
+  frame.getViewerPose.mockReturnValueOnce({
+    emulatedPosition: true,
+    transform: { position: { x: 2, y: -1.5, z: 3 }, orientation: new Quaternion() },
+  } as never)
+  anchorPose = { transform: { matrix: down.toArray() } }
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.session.referenceReady).toBe(false)
+  expect(installed.equals(stable)).toBe(true)
+  anchorPose = { emulatedPosition: true, transform: { matrix: down.toArray() } }
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.session.referenceReady).toBe(false)
+  expect(installed.equals(stable)).toBe(true)
+  anchorPose = realAnchor
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.session.referenceReady).toBe(true)
+  expect(installed.equals(stable)).toBe(true)
   const calls = t.xr.setReferenceSpace.mock.calls.length
   t.session.recenter()
   t.session.update(frame as unknown as XRFrame)
@@ -388,4 +407,72 @@ test('an anchor created after its session ends is deleted instead of attached to
   await Promise.resolve()
   expect(anchor.delete).toHaveBeenCalledOnce()
   expect(t.session.active).toBe(false)
+})
+
+test('does not bake estimated head or floor positions into the initial AR origin', async () => {
+  const t = setup()
+  const unbounded = Object.assign(new EventTarget(), { getOffsetReferenceSpace: vi.fn(() => ({})) })
+  t.native.requestReferenceSpace.mockImplementation(async (...args: unknown[]) =>
+    args[0] === 'unbounded' ? (unbounded as unknown as typeof t.floor) : t.floor,
+  )
+  vi.stubGlobal('XRRigidTransform', class {})
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  let headEstimated = true,
+    floorEstimated = false
+  const frame = {
+    getViewerPose: () => ({
+      emulatedPosition: headEstimated,
+      transform: { position: { x: 1, y: 0, z: 2 }, orientation: new Quaternion() },
+    }),
+    getPose: () => ({
+      emulatedPosition: floorEstimated,
+      transform: { position: { x: 0, y: -1.7, z: 0 } },
+    }),
+  }
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.xr.setReferenceSpace).not.toHaveBeenCalled()
+  headEstimated = false
+  floorEstimated = true
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.xr.setReferenceSpace).not.toHaveBeenCalled()
+  expect(t.session.referenceReady).toBe(false)
+  floorEstimated = false
+  t.session.update(frame as unknown as XRFrame)
+  expect(t.xr.setReferenceSpace).toHaveBeenCalledOnce()
+  expect(t.session.referenceReady).toBe(true)
+})
+
+test('diagnostics retain failed anchors, visibility changes and a bounded saved report across reload', async () => {
+  const storage = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+  })
+  vi.stubGlobal('XRRigidTransform', class {})
+  const t = setup()
+  const native = Object.assign(t.native, { visibilityState: 'visible' })
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  const frame = {
+    getViewerPose: () => ({
+      transform: { position: { x: 0, y: 1.7, z: 0 }, orientation: new Quaternion() },
+    }),
+    getPose: () => ({ transform: { position: { x: 0, y: 0, z: 0 } } }),
+    createAnchor: () => Promise.reject(new Error('anchor permission denied')),
+  }
+  t.session.startDiagnostics()
+  t.session.update(frame as unknown as XRFrame)
+  await Promise.resolve()
+  await Promise.resolve()
+  native.visibilityState = 'hidden'
+  native.dispatchEvent(new Event('visibilitychange'))
+  const report = JSON.parse(t.session.exportDiagnostics())
+  expect(report.events.some((event: { type: string }) => event.type === 'anchor-failed')).toBe(true)
+  expect(report.events.some((event: { type: string }) => event.type === 'visibility-change')).toBe(
+    true,
+  )
+  expect(report.state.anchorError).toContain('permission denied')
+  const restored = setup()
+  expect(JSON.parse(restored.session.exportDiagnostics()).events).toEqual(report.events)
+  for (let i = 0; i < 300; i++) t.session.recordDiagnostic('marker', { i })
+  expect(JSON.parse(t.session.exportDiagnostics()).events).toHaveLength(256)
 })

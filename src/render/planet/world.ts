@@ -1,3 +1,5 @@
+import { startupTerrainTiles } from './startup-tiles.js'
+import { streamingDefaults } from '../../config/streaming.js'
 import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
 import {
@@ -27,6 +29,10 @@ import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Coarsest published mesh LOD. Static/Atlas sources default to Z15, dynamic sources to Z13.
+   * Set 12 only after publishing native coarse mesh manifests; absence must not create holes. */
+  meshMinZoom?: 12 | 13 | 14 | 15
+
   /** Known coverage of a finite offline dataset. Omit for unrestricted streaming. */
   tiles?: readonly MapTile[]
   /**
@@ -645,8 +651,24 @@ export class PlanetWorld {
   private lastInstallMs = 0
   private maxInstallMs = 0
   private staging = new Set<THREE.Group>()
+  private startup = false
+  private startupCount: 1 | 4 = 1
+  private startupSelection: MapTile[] = []
+  /** Fixed reveal footprint; neighbour ground checks must not move it away from the spawn. */
+  get startupTiles(): readonly MapTile[] {
+    return this.startupSelection
+  }
+  /** Restrict loading during reveal to the terrain actually required by blocking ground checks. */
+  setStartupMode(enabled: boolean, count: 1 | 4 = 1): void {
+    if (enabled === this.startup && count === this.startupCount) return
+    this.startup = enabled
+    this.startupCount = count
+    this.startupSelection = []
+    this.planKey = ''
+  }
   private streamMode: 'ground' | 'flight' | 'model' = 'ground'
   setStreamMode(mode: 'ground' | 'flight' | 'model'): void {
+    if (this.streamMode === mode) return
     this.streamMode = mode
     this.planKey = ''
   }
@@ -870,57 +892,105 @@ export class PlanetWorld {
     )
     // Relief span is the quality control. Do not inflate it with altitude:
     // a hidden 40 km ring was rebuilding hundreds of photo meshes in flight.
-    if (this.sourceOptions.horizon !== false) {
+    if (!this.startup && this.sourceOptions.horizon !== false) {
       this.horizon.update(gps.latitude, gps.longitude, this.relief)
       this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
     }
     const center = mapTileAt(gps.latitude, gps.longitude, 15)
     this.focus = center
-    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${this.streamMode}:${Math.floor(height / 500)}`
+    if (this.startup && !this.startupSelection.length)
+      this.startupSelection =
+        this.startupCount === 4 ? startupTerrainTiles(gps.latitude, gps.longitude) : [center]
+    const advertisedZoom =
+      this.sourceOptions.meshMinZoom ?? (this.discoveryMode === 'static' ? 15 : 13)
+    const minZoom = this.missing.has(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
+      ? 15
+      : advertisedZoom
+    const flight = this.streamMode === 'flight'
+    const seconds = this.startup ? 0 : this.ahead
+    const ahead = localToGeo(this.origin, [
+      position[0] + velocity[0] * seconds,
+      position[1],
+      position[2] + velocity[2] * seconds,
+    ])
+    const preciseSupport =
+      !flight ||
+      minZoom === 15 ||
+      Math.min(height, height + Math.min(0, velocity[1]) * seconds) <
+        streamingDefaults.flightFineHeight
+    const protectedTiles = _protected
+      .map((p) => localToGeo(this.origin, p))
+      .filter(
+        (p) =>
+          p.altitude < 12000 &&
+          (preciseSupport ||
+            p.altitude < gps.altitude - 1 ||
+            mapTileId(mapTileAt(p.latitude, p.longitude, 15)) !== mapTileId(center)),
+      )
+      .map((p) => mapTileAt(p.latitude, p.longitude, 15))
+    const allCorridor: MapTile[] = []
+    const predictionZoom = flight ? Math.max(minZoom, 12) : 15
+    for (let step = 0; step <= 8; step++) {
+      const p = localToGeo(this.origin, [
+        position[0] + (velocity[0] * seconds * step) / 8,
+        position[1],
+        position[2] + (velocity[2] * seconds * step) / 8,
+      ])
+      allCorridor.push(mapTileAt(p.latitude, p.longitude, predictionZoom))
+    }
+    const required = [
+      ...this.pinned.values(),
+      ...(preciseSupport ? [center] : []),
+      ...protectedTiles,
+    ]
+    const requiredIds = new Set(required.map(mapTileId))
+    const corridor = [...new Map(allCorridor.map((tile) => [mapTileId(tile), tile])).values()]
+      .filter((tile) => !requiredIds.has(mapTileId(tile)))
+      .slice(0, Math.max(0, this.maxTiles - requiredIds.size - 1))
+    const planBudget = Math.max(1, this.maxTiles - requiredIds.size - corridor.length)
+    const planKey = `${mapTileId(center)}:${this.distance}:${this.maxTiles}:${planBudget}:${this.streamMode}:${this.startup}:${Math.floor(height / 500)}:${mapTileId(mapTileAt(ahead.latitude, ahead.longitude, minZoom))}`
     if (!this.plan || planKey !== this.planKey) {
       this.planKey = planKey
-      this.plan = planMapZooms({
-        latitude: gps.latitude,
-        longitude: gps.longitude,
-        heightAboveGround: height,
-        viewDistance: this.distance,
-        maxTiles: this.maxTiles,
-        adaptive: this.streamMode !== 'ground',
-      })
+      this.plan = this.startup
+        ? {
+            roots: this.startupSelection,
+            leaves: this.startupSelection,
+            requests: this.startupSelection,
+            budgetLimited: false,
+          }
+        : planMapZooms({
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            heightAboveGround: height,
+            viewDistance: this.distance,
+            maxTiles: planBudget,
+            adaptive: this.streamMode !== 'ground',
+            minZoom,
+            ...(flight
+              ? { lookAhead: { latitude: ahead.latitude, longitude: ahead.longitude } }
+              : {}),
+          })
     }
     const plan = this.plan
     if (!plan) return
-    const ahead = localToGeo(this.origin, [
-      position[0] + velocity[0] * this.ahead,
-      position[1],
-      position[2] + velocity[2] * this.ahead,
-    ])
-    const future = mapTileAt(ahead.latitude, ahead.longitude, 15)
-    const protectedTiles = _protected
-      .map((p) => localToGeo(this.origin, p))
-      .filter((p) => p.altitude < 12000)
-      .map((p) => mapTileAt(p.latitude, p.longitude, 15))
-    const corridor: MapTile[] = []
-    for (let step = 0; step <= 8; step++) {
-      const p = localToGeo(this.origin, [
-        position[0] + (velocity[0] * this.ahead * step) / 8,
-        position[1],
-        position[2] + (velocity[2] * this.ahead * step) / 8,
-      ])
-      corridor.push(mapTileAt(p.latitude, p.longitude, 15))
-    }
-    this.wanted = [
-      ...new Map(
-        [
-          ...this.pinned.values(),
-          center,
-          ...protectedTiles,
-          ...corridor,
-          ...plan.requests,
-          future,
-        ].map((t) => [mapTileId(t), t]),
-      ).values(),
-    ]
+    this.wanted = this.startup
+      ? [...this.startupSelection, center, ...this.pinned.values()].filter(
+          (tile, index, all) => all.findIndex((t) => mapTileId(t) === mapTileId(tile)) === index,
+        )
+      : [
+          ...new Map(
+            [
+              ...required,
+              ...corridor,
+              ...(requiredIds.size < this.maxTiles ? plan.requests : []),
+            ].map((t) => [mapTileId(t), t]),
+          ).values(),
+        ]
+    if (!this.startup)
+      this.wanted = this.wanted.slice(
+        0,
+        Math.max(this.maxTiles, new Set(required.map(mapTileId)).size),
+      )
     const known = this.sourceOptions.coverage ?? this.sourceOptions.tiles
     if (known) {
       const available = new Set(known.map(mapTileId))
@@ -1359,6 +1429,21 @@ export class PlanetWorld {
     const cover = planetReadyCover(this.plan, new Set(this.resident.keys())).map(mapTileId)
     // Keep the last city cover if the new plan has nothing ready yet.
     this.visible = cover.length ? cover : this.visible
+    // A host may publish only part of its coarse pyramid. Never hide the available local
+    // Z15 while every planned ancestor is absent; this fallback does not overlap a ready parent.
+    if (this.focus && this.resident.has(mapTileId(this.focus))) {
+      const focus = this.focus
+      const covered = this.visible.some((key) => {
+        const tile = this.ready.get(key)?.tile
+        return (
+          tile &&
+          tile.z <= focus.z &&
+          Math.floor(focus.x / 2 ** (focus.z - tile.z)) === tile.x &&
+          Math.floor(focus.y / 2 ** (focus.z - tile.z)) === tile.y
+        )
+      })
+      if (!covered) this.visible.push(mapTileId(focus))
+    }
     const pinned = [...this.pinned.values()].filter((tile) => this.resident.has(mapTileId(tile)))
     // A pinned detailed cell replaces an overlapping coarse cover, never another Z15.
     this.visible = this.visible.filter((key) => {
@@ -1389,7 +1474,7 @@ export class PlanetWorld {
     let bytes = [...this.resident.values()].reduce((n, r) => n + r.bytes, 0)
     for (const [key, r] of this.resident) {
       if (active.has(key) || wanted.has(key)) continue
-      if (bytes < this.memoryBudget && this.resident.size <= 64) break
+      if (bytes < this.memoryBudget && this.resident.size <= this.maxTiles) break
       this.remove(key)
       bytes -= r.bytes
     }
@@ -1421,7 +1506,7 @@ export class PlanetWorld {
         })
       )
         continue
-      for (const z of [15, 14, 13]) {
+      for (const z of [15, 14, 13, 12]) {
         const key = mapTileId(mapTileAt(p.latitude, p.longitude, z))
         if (this.resident.has(key)) {
           physics.add(key)
@@ -1487,7 +1572,6 @@ export class PlanetWorld {
   }
 
   async ensureGround(position: Vec3Tuple): Promise<void> {
-    const { streamingDefaults } = await import('../../config/streaming.js')
     const started = Date.now()
     while (this.groundHeight(position) === undefined) {
       if (this.disposed) throw Error('Carga cancelada')

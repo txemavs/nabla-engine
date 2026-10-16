@@ -1,3 +1,4 @@
+import { XRMenuGesture } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
@@ -70,6 +71,7 @@ const loadModel = async () => {
     if (['vfr', 's3', 'truck', 'bmw', 'f14', 'forklift'].includes(modelSource.value)) {
       await balls.ready
       const kind = modelSource.value
+      updateScaleOptions(kind)
       await rc.load(
         kind === 'bmw' ? 's3' : (kind as 'vfr' | 's3' | 'truck' | 'f14' | 'forklift'),
         Number(rcScale.value),
@@ -143,8 +145,27 @@ const toggleControl = () => {
   )
   return rc.controls.enabled
 }
+const updateScaleOptions = (kind: string) => {
+  const authored = kind === 'bmw' ? [presetVehicle('bmw', 'rc-0')] : undefined
+  for (const option of rcScale.options) {
+    option.disabled = !rc.scaleAllowed(kind, Number(option.value), authored)
+    option.hidden = option.disabled
+  }
+  if (rcScale.selectedOptions[0]?.disabled)
+    rcScale.value = [...rcScale.options].find((option) => !option.disabled)!.value
+}
 const nextScale = () => {
-  rcScale.selectedIndex = (rcScale.selectedIndex + 1) % rcScale.options.length
+  for (let i = 0; i < rcScale.options.length; i++) {
+    rcScale.selectedIndex = (rcScale.selectedIndex + 1) % rcScale.options.length
+    if (
+      rc.scaleAllowed(
+        selectedVehicle().kind,
+        Number(rcScale.value),
+        selectedVehicle().kind === 'bmw' ? [presetVehicle('bmw', 'rc-0')] : undefined,
+      )
+    )
+      break
+  }
   room.setMessage('Escala para el próximo vehículo que añadas.')
   return '1:' + rcScale.value
 }
@@ -156,6 +177,7 @@ let bowReady: Promise<void> | undefined
 const hoop = new XRHoop(scene)
 balls.afterPhysicsStep = () => hoop.sampleBalls(balls.ballSamples)
 const drone = new ARDrone(scene, () => balls.physicsWorld)
+drone.lightButtonIndex = 5
 balls.beforePhysicsStep = (dt) => {
   drone.beforeStep(dt)
   rc.beforeRoomStep(dt)
@@ -164,7 +186,7 @@ let droneGeneration = 0
 const addBall = () => balls.spawn(camera)
 let ballPressed = false
 let placed = false
-let menuPressed = false
+const menuGesture = new XRMenuGesture()
 const xr = new GameAR(
   renderer,
   camera,
@@ -181,7 +203,7 @@ const xr = new GameAR(
     rc.setAudioActive(active)
     ballPressed = false
     placed = false
-    menuPressed = false
+    menuGesture.reset()
     if (!active) weapons.suspend(performance.now())
   },
   report,
@@ -190,7 +212,7 @@ rc = new ARRC(scene, xr.calibration, {
   simulation: { ignition: false, vehicleDamage: false },
   roomWorld: () => balls.physicsWorld,
 })
-const weapons = new XRARWeapons(scene, camera, xr, document.body)
+const weapons = new XRARWeapons(scene, camera, xr, document.body, 0)
 void weapons.ready.catch(report)
 weapons.physicsWorld = () => balls.physicsWorld
 weapons.onHit = (object, point, direction) => {
@@ -280,6 +302,7 @@ screen.mainMenuOrder = [
   'development',
   'quality',
   'radio',
+  'pistol',
   'ball',
   'model',
   'board',
@@ -308,6 +331,18 @@ const addBow = async () => {
 }
 screen.mainMenu = () => [
   {
+    id: 'pistol',
+    label: 'Pistola',
+    run: () => {
+      const added = weapons.loadout.addPistol()
+      room.setMessage(
+        added
+          ? 'Pistola añadida a la funda. Cógela con agarre.'
+          : 'Ya tienes las dos pistolas. Puedes recogerlas o retirarlas en la papelera.',
+      )
+    },
+  },
+  {
     id: 'hoop',
     label: 'Canasta',
     run: () => {
@@ -324,7 +359,7 @@ screen.mainMenu = () => [
   },
   {
     id: 'betaflight',
-    label: 'Betaflight · experimental',
+    label: 'Helicóptero',
     run: () => screen.navigate('experimental'),
   },
   { id: 'ball', label: 'Añadir balón', run: () => roomAction(3) },
@@ -357,8 +392,55 @@ const freeEnvironment = () => {
   modelStatus.textContent = 'Objetos retirados. Escaneo y ajustes conservados.'
   room.setMessage(modelStatus.textContent)
 }
+const sendTrackingReport = async () => {
+  xr.session.recordDiagnostic('test-report', { room: room.trackingSnapshot() })
+  const body = xr.session.exportDiagnostics()
+  try {
+    const response = await fetch('/__nabla/xr-diagnostics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+    if (!response.ok) throw new Error('No hay receptor local')
+    room.setMessage('Informe de seguimiento enviado. Ya puedes avisar.')
+    status.textContent = 'Informe de seguimiento enviado.'
+  } catch {
+    try {
+      await navigator.clipboard.writeText(body)
+      room.setMessage('Informe copiado. Pégalo en el chat.')
+      status.textContent = 'Informe copiado.'
+    } catch {
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
+      link.download = 'nabla-xr-tracking.json'
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000)
+      status.textContent = 'Informe descargado.'
+    }
+  }
+}
+const reportButton = document.createElement('button')
+reportButton.textContent = 'Enviar diagnóstico de seguimiento'
+reportButton.addEventListener('click', () => {
+  void sendTrackingReport()
+})
+if (!document.getElementById('headset-launcher')) enter.parentElement!.append(reportButton)
+let lastRoomDiagnostic = -Infinity
 screen.environmentMenu = () => [
   ...environmentOptions(),
+  {
+    label: 'Iniciar prueba Meta',
+    run: () => {
+      xr.session.startDiagnostics()
+      room.setMessage('Captura activa. Pulsa Meta, vuelve y envía el informe.')
+    },
+  },
+  {
+    label: 'Enviar diagnóstico',
+    run: () => {
+      void sendTrackingReport()
+    },
+  },
   {
     id: 'geometry',
     label: `Geometría: ${{ auto: 'Auto', mesh: 'Malla', planes: 'Planos' }[room.source]}`,
@@ -375,7 +457,7 @@ const spawnDrone = async () => {
   rc.clear()
   if (await drone.spawnModel(camera, '/library/aircraft/littlebird/littlebird.glb'))
     room.setMessage(
-      'Helicóptero Betaflight: arma motores en el monitor. Izq. altura/giro; der. avance/lateral. X foco · Y monitor.',
+      'Helicóptero: arma motores en el monitor. Izq. altura/giro; der. avance/lateral. Y foco · X monitor (mantener 2 s para acercar).',
     )
 }
 screen.experimentalMenu = () => [
@@ -394,7 +476,7 @@ screen.experimentalMenu = () => [
     run: () => drone.setMode(drone.mode === 'angle' ? 'acro' : 'angle'),
   },
   {
-    label: drone.spotlightEnabled ? 'Foco: Sí · X' : 'Foco: No · X',
+    label: drone.spotlightEnabled ? 'Foco: Sí · Y' : 'Foco: No · Y',
     run: () => drone.toggleSpotlight(),
   },
   { label: 'Recuperar aquí (desarma)', run: () => drone.reset(camera) },
@@ -449,13 +531,31 @@ screen.mapMenu = () => {
     ...cells.pending.slice(0, 2).map((key) => ({ label: `Cargando: ${key}`, run: () => {} })),
   ]
 }
+const radioVehicles: {
+  kind: 's3' | 'vfr' | 'truck' | 'bmw' | 'f14' | 'forklift'
+  label: string
+}[] = [
+  { kind: 's3', label: 'S3 bestia' },
+  { kind: 'vfr', label: 'Moto VFR' },
+  { kind: 'truck', label: 'Camión + remolque' },
+  ...(hasVehiclePreset('bmw') ? [{ kind: 'bmw' as const, label: 'BMW' }] : []),
+  { kind: 'f14', label: 'F14 Tomcat' },
+  { kind: 'forklift', label: 'Toro · tres palancas' },
+]
+let radioVehicleIndex = 0
+const selectedVehicle = () => radioVehicles[radioVehicleIndex]
+const selectRadioVehicle = (direction: number) => {
+  radioVehicleIndex = (radioVehicleIndex + direction + radioVehicles.length) % radioVehicles.length
+  updateScaleOptions(selectedVehicle().kind)
+}
 screen.radioMenu = () => [
-  { label: 'S3 bestia', run: () => addVehicle('s3') },
-  { label: 'Moto VFR', run: () => addVehicle('vfr') },
-  { label: 'Camión + remolque', run: () => addVehicle('truck') },
-  ...(hasVehiclePreset('bmw') ? [{ label: 'BMW', run: () => addVehicle('bmw') }] : []),
-  { label: 'F14 Tomcat', run: () => addVehicle('f14') },
-  { label: 'Toro · tres palancas', run: () => addVehicle('forklift') },
+  { label: '‹ Anterior', run: () => selectRadioVehicle(-1) },
+  {
+    label: `Añadir ${selectedVehicle().label}`,
+    preview: `/library/previews/${selectedVehicle().kind}.png`,
+    run: () => addVehicle(selectedVehicle().kind),
+  },
+  { label: 'Siguiente ›', run: () => selectRadioVehicle(1) },
   {
     label: 'Palé suelto',
     run: () =>
@@ -560,18 +660,30 @@ renderer.setAnimationLoop((time, frame) => {
   if (hostSessionChanged && !xr.active) return
   if (frame && xr.active) {
     xr.update(frame)
-    const space = renderer.xr.getReferenceSpace()
+    const space = xr.referenceSpace
     if (!placed && xr.visible) {
       model.place(camera)
+      screen.navigate('main')
+      screen.show(true)
       placed = true
     }
     if (space) room.update(frame, space, xr.visible)
+    if (xr.session.diagnosticsEnabled && time - lastRoomDiagnostic >= 1000) {
+      lastRoomDiagnostic = time
+      xr.session.recordDiagnostic('room-sample', {
+        room: room.trackingSnapshot(),
+        visible: xr.visible,
+        camera: camera.matrixWorld.toArray(),
+        monitor: screen.root.matrixWorld.toArray(),
+      })
+    }
     rc.setAudioActive(xr.visible)
     weapons.setAudioActive(xr.visible)
     if (!xr.visible) {
       bow.cancel()
       drone.setArmed(false)
       previousTime = 0
+      menuGesture.reset()
       return // Keep placements, grips and physics frozen until room tracking returns.
     }
     const hands = xr.visible ? xr.grabHands : []
@@ -692,15 +804,16 @@ renderer.setAnimationLoop((time, frame) => {
       },
     )
     const pressed = hands.some(
-      (h) =>
-        h.source?.handedness === 'left' &&
-        h.source.gamepad?.buttons[drone.hasSpotlight ? 5 : 4]?.pressed,
+      (h) => h.source?.handedness === 'left' && h.source.gamepad?.buttons[4]?.pressed,
     )
-    if (pressed && !menuPressed) {
+    const menuAction = menuGesture.update(pressed, time)
+    if (menuAction === 'recall') {
+      screen.navigate('main')
+      screen.show(true)
+    } else if (menuAction === 'toggle') {
       if (screen.isOpen) screen.hide()
       else screen.openMain()
     }
-    menuPressed = pressed
   }
   renderer.render(scene, camera)
 })

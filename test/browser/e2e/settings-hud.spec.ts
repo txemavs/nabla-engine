@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 /** The Ajustes window places every menu section in its tab, including sections bound later. */
-test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarrollo and late Tierra placement', async ({
+test('full-screen settings preserves controls, keyboard catalog and late terrain sections', async ({
   page,
 }) => {
   await page.route('**/settings-hud', (route) =>
@@ -17,6 +17,7 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   )
   await page.goto('/settings-hud')
   const result = await page.evaluate(async (root) => {
+    const { UsbControllers } = await import(`/@fs/${root}/src/runtime/usb/controllers.ts`)
     const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
     const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
     const { normalizeActionCamSettings } = await import(
@@ -46,6 +47,11 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      usbControllers: new UsbControllers(null),
+      terrainTiles: [
+        { tile: { z: 15, x: 16224, y: 11998 }, kind: 'mesh', state: 'visible' },
+        { tile: { z: 15, x: 16230, y: 12003 }, kind: 'mesh', state: 'downloading' },
+      ],
       actionCamEnabled: true,
       actionCamSettings: normalizeActionCamSettings({}),
       setActionCamSettings: (patch: object) => {
@@ -145,8 +151,8 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
       ),
       after: tabs(),
       planet: order('settings-pane-planet'),
-      performance: order('settings-pane-performance'),
-      video: order('settings-pane-video'),
+      performance: order('settings-pane-options'),
+      video: order('settings-pane-options'),
       options: order('settings-pane-options'),
       dev: order('settings-pane-dev'),
       places: pane('layer-places'),
@@ -164,7 +170,7 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
     }
   }, process.cwd())
 
-  const visible = ['Planeta', 'Opciones', 'Rendimiento', 'Vídeo', 'Objetos', 'Desarrollo']
+  const visible = ['Mundo', 'Opciones', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
   expect(result.actionCam).toBe(false)
   expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
@@ -173,39 +179,47 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.actionCamPane).toBe('settings-pane-options')
   expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
   expect(result.smoke).toBe(false)
-  expect(result.smokePane).toBe('settings-pane-performance')
+  expect(result.smokePane).toBe('settings-pane-options')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
   expect(result.weaponOutputs).toEqual(['-33.00 mm', '0.70°'])
   expect(result.after).toEqual(visible)
-  expect(result.planet).toEqual([
-    'terrain-position',
-    'terrain-layers',
-    'settings-planet-sea',
-    'settings-planet-air',
-    'settings-planet-sky',
-  ])
-  expect(result.performance).toEqual(['display-quality-section', 'display-performance'])
-  expect(result.video).toEqual(['quality-shadows', 'road-style'])
-  expect(result.options).toEqual([
-    'camera-extras',
-    'settings-muzzle-flash',
-    'driving-extras',
-    'settings-options-labels',
-  ])
-  expect(result.dev.sort()).toEqual(
-    [
+  expect(result.planet).toEqual(
+    expect.arrayContaining([
+      'settings-map',
+      'terrain-position',
+      'terrain-layers',
+      'settings-planet-sea',
+      'settings-planet-air',
+      'settings-planet-sky',
+    ]),
+  )
+  expect(result.options).toEqual(
+    expect.arrayContaining([
+      'camera-extras',
+      'settings-action-cam',
+      'driving-extras',
+      'settings-controls',
+      'display-quality-section',
+      'quality-shadows',
+      'road-style',
+      'settings-effects',
+    ]),
+  )
+  expect(result.dev).toEqual(
+    expect.arrayContaining([
       'settings-config-planet',
       'terrain-source',
       'settings-options-sidearm',
       'settings-weapon-poses',
-    ].sort(),
+      'settings-muzzle-flash',
+    ]),
   )
-  expect(result.places).toBe('settings-pane-options')
-  expect(result.placesGroup).toBe('settings-options-labels')
+  expect(result.places).toBe('settings-pane-planet')
+  expect(result.placesGroup).toBe('terrain-layers')
   expect(result.road).toBe('settings-pane-planet')
-  expect(result.layersTitle).toBe('Tierra')
-  expect(result.asphaltTitle).toBe('Postproceso')
+  expect(result.layersTitle).toBe('Terreno')
+  expect(result.asphaltTitle).toBe('Suelo y texturas')
   expect(result.copy).toBe('settings-pane-dev')
   expect(result.configText).toContain('cloudAmount=0.35')
   expect(result.planetHasCopy).toBe(false)
@@ -215,18 +229,47 @@ test('settings HUD tabs: Planeta, Opciones, Rendimiento, Vídeo, Objetos, Desarr
   expect(result.vehicles).toBe('settings-pane-objects')
   await page.locator('#settings-toggle').click()
   await page.getByRole('tab', { name: 'Desarrollo' }).click()
-  const branch = page
-    .locator('#settings-pane-dev > details')
-    .filter({ has: page.locator('summary', { hasText: /^Arma$/ }) })
-  await expect(branch).not.toHaveAttribute('open', '')
-  await branch.locator(':scope > summary').focus()
-  await page.keyboard.press('Enter')
+  const branch = page.locator('#settings-pane-dev .settings-nav-group')
   await expect(branch).toHaveAttribute('open', '')
-  await branch.getByText('Ajuste del apuntado', { exact: true }).first().click()
+  await branch.getByRole('button', { name: 'Apuntado', exact: true }).click()
   await expect(page.locator('#sidearm-aim-height')).toBeVisible()
+  await page.getByRole('tab', { name: 'Opciones', exact: true }).click()
+  await expect(page.locator('.settings-footer button')).toHaveCount(0)
+  await expect(page.locator('#settings-defaults')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Cámara', exact: true }).click()
+  await page.locator('#camera-action-cam-settings').getByText('Ángulos', { exact: true }).click()
+  await expect(page.locator('#action-cam-stepRollRadians')).toBeVisible()
+  await expect(
+    page.locator(
+      '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
+    ),
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'Gestión de ajustes', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Teclas', exact: true }).click()
+  await page.getByRole('searchbox', { name: 'Buscar teclas' }).fill('forklift')
+  await expect(page.locator('.settings-key-table tbody tr')).toHaveCount(7)
+  await expect(page.locator('.settings-key-table')).toContainText('Subir horquillas')
+  await page.getByRole('tab', { name: 'Mundo', exact: true }).click()
+  await page.getByRole('button', { name: 'Mapa', exact: true }).click()
+  await expect(page.locator('.settings-map-tile')).toHaveCount(2)
+  await expect(page.locator('.settings-map-legend')).toContainText('Pedida: 1')
+  const layout = await page.locator('#settings-window').boundingBox()
+  expect(layout?.width).toBe(1440)
+  expect(layout?.height).toBe(960)
+  const sidebar = await page.locator('#settings-pane-planet .settings-sections').boundingBox()
+  const content = await page
+    .locator('#settings-pane-planet .settings-section-content')
+    .boundingBox()
+  expect(sidebar!.x).toBeLessThan(content!.x)
   await page.setViewportSize({ width: 390, height: 740 })
   expect(
     await page.locator('#settings-window').evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true)
-  await page.screenshot({ path: '/tmp/settings-tree.png' })
+  await page.screenshot({ path: '/tmp/settings-menu-mobile.png' })
+  await page.keyboard.press('Escape')
+  await expect(page.locator('#settings-window')).toBeHidden()
+  await expect(page.locator('#settings-toggle')).toHaveAttribute('aria-expanded', 'false')
 })

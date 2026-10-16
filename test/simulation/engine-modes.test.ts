@@ -150,7 +150,7 @@ describe('S3 engine modes: Normal (D) and Bestia (S)', () => {
     const view = {
       vehicleMenu: () => ({
         open: true,
-        key: () => ({ handled: true, action: { type: 'vehicle.engine', value: 'beast' } }),
+        dispatch: () => ({ handled: true, action: { type: 'vehicle.engine', value: 'beast' } }),
       }),
     } as unknown as SceneView
     const result = vehicleMenuKey(

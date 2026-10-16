@@ -16,11 +16,24 @@ export interface XRPanelAction {
   /** Stable key for host-defined menu ordering, independent of the displayed label. */
   id?: string
   label: string
+  /** Prepared model image; radio pages use the first three actions as a carousel. */
+  preview?: string
   run: () => void
 }
 export function targetScore(x: number, y: number): number {
   const radius = Math.hypot(x - 512, y - 337)
   return radius > 225 ? 0 : Math.max(1, 10 - Math.floor(radius / 22.5))
+}
+
+/** The same layout coordinates drive drawing and pointer activation. */
+export function radioActionAt(x: number, y: number): number {
+  if (x >= 112 && x < 912 && y >= 90 && y < 310) return 1
+  if (x < 24 || x >= 1008) return -1
+  const col = Math.floor((x - 24) / 328)
+  if ((x - 24) % 328 >= 312) return -1
+  if (y >= 320 && y < 396) return col
+  if (y >= 410 && y < 576 && (y - 410) % 90 < 76) return 3 + Math.floor((y - 410) / 90) * 3 + col
+  return -1
 }
 
 /** Small, bounded drawing surface for the shared XR framed display. */
@@ -32,6 +45,7 @@ export class XRPanelCanvas {
   private previous = new Map<XRInputSource, { x: number; y: number }>()
   private revision = 0
   private last = ''
+  private images = new Map<string, HTMLImageElement>()
   private pressed = -1
   private until = 0
   constructor() {
@@ -82,7 +96,7 @@ export class XRPanelCanvas {
     if (performance.now() > this.until) this.pressed = -1
     const key = JSON.stringify([
       page,
-      actions.map((a) => a.label),
+      actions.map((a) => [a.label, a.preview]),
       status,
       this.revision,
       this.pressed,
@@ -111,7 +125,7 @@ export class XRPanelCanvas {
                 : page === 'environment'
                   ? 'ENTORNO'
                   : page === 'experimental'
-                    ? 'BETAFLIGHT · EXPERIMENTAL'
+                    ? 'HELICÓPTERO'
                     : 'NABLA',
       630,
       48,
@@ -121,9 +135,32 @@ export class XRPanelCanvas {
     c.fillStyle = theme.ink
     c.fillText('X', 976, 49)
     if (['main', 'options', 'radio', 'map', 'environment', 'experimental'].includes(page)) {
+      const carousel = page === 'radio' && !!actions[1]?.preview
+      if (carousel) {
+        const url = actions[1].preview! + '?frame=2'
+        let img = this.images.get(url)
+        if (!img) {
+          img = new Image()
+          img.onload = () => {
+            this.revision++
+          }
+          img.src = url
+          this.images.set(url, img)
+        }
+        if (img.complete && img.naturalWidth) {
+          const factor = Math.min(800 / img.naturalWidth, 220 / img.naturalHeight)
+          const w = img.naturalWidth * factor,
+            h = img.naturalHeight * factor
+          c.drawImage(img, 512 - w / 2, 200 - h / 2, w, h)
+        }
+      }
       actions.forEach((action, i) => {
         const x = 24 + (i % 3) * 328,
-          y = 94 + Math.floor(i / 3) * 90
+          y = carousel
+            ? i < 3
+              ? 320
+              : 410 + Math.floor((i - 3) / 3) * 90
+            : 94 + Math.floor(i / 3) * 90
         const down = this.pressed === i
         c.fillStyle = down ? theme.selected : theme.button
         c.beginPath()
@@ -193,6 +230,8 @@ export class XRPanelCanvas {
     this.texture.needsUpdate = true
   }
   dispose(): void {
+    for (const img of this.images.values()) img.onload = null
+    this.images.clear()
     this.texture.dispose()
   }
 }

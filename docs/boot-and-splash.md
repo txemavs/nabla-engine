@@ -171,6 +171,17 @@ install in the background through `play()`'s ground wait; none of them are drawn
 begins. `stopAttract()` and `attracting` are available; `dispose()` stops it too. The canvas
 reports `data-boot-mode="attract" | "play"`.
 
+The attract view owns a separate camera: shader/start-view warmup cannot change its
+projection or pose. Orbit time advances with rendered frames, capped at 50 ms per
+frame; a busy loading step or tab suspension pauses the orbit instead of jumping
+forward. Probe redraws reuse the current orbit pose. Gameplay clocks are unchanged.
+
+The globe also loads NASA's bundled Black Marble 2016 city-light texture. Its warm
+emission fades in through twilight using the same world-space sun direction as the
+day texture and cloud shadows. This adds one texture sample, no extra sphere or draw
+call. Night-map loading is optional and does not gate startup; missing night imagery
+leaves the existing day globe intact. See `assets/README.md` for image provenance.
+
 Engine overlays (touch rigs) exist before play; hide them during attract with
 `body:has(canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight) { display: none }`
 as the demo page does.

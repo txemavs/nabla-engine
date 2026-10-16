@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import * as THREE from 'three'
-import { XRCalibration } from '../../src/runtime/xr-calibration.js'
+import { XRCalibration, xrHandZero } from '../../src/runtime/xr-calibration.js'
 
 it('applies local centimetres and angles without accumulating over XR frames', () => {
   const calibration = new XRCalibration(),
@@ -39,7 +39,7 @@ it('bakes the supplied zero while exposing zero offsets for every object', () =>
     hand = new THREE.Group(),
     holster = new THREE.Group()
   c.apply(hand, 'hand-right')
-  expect(hand.position.x).toBeCloseTo(0)
+  expect(hand.position.toArray()).toEqual([0.02, -0.01, 0.01])
   expect(
     hand.quaternion.angleTo(
       new THREE.Quaternion()
@@ -48,6 +48,11 @@ it('bakes the supplied zero while exposing zero offsets for every object', () =>
           new THREE.Quaternion().setFromEuler(
             new THREE.Euler((3 * Math.PI) / 180, (-23 * Math.PI) / 180, (-4 * Math.PI) / 180),
           ),
+        )
+        .multiply(
+          new THREE.Quaternion().setFromEuler(
+            new THREE.Euler((-20 * Math.PI) / 180, (10 * Math.PI) / 180, 0),
+          ),
         ),
     ),
   ).toBeCloseTo(0)
@@ -55,7 +60,7 @@ it('bakes the supplied zero while exposing zero offsets for every object', () =>
   expect(holster.position.toArray()).toEqual([0.05, 0.075, 0.2])
   for (const id of Object.keys(c.objects) as (keyof typeof c.objects)[])
     if (id !== 'bike-controls') expect(Object.values(c.get(id))).toEqual([0, 0, 0, 0, 0, 0])
-  expect(JSON.parse(c.export()).version).toBe(4)
+  expect(JSON.parse(c.export()).version).toBe(5)
 })
 
 it('does not reuse V1 values after baking them, and saves future adjustments in V3', () => {
@@ -79,7 +84,7 @@ it('does not reuse V1 values after baking them, and saves future adjustments in 
   }
 })
 
-it('preserves the former composed in-hand orientation for either pistol', () => {
+it('preserves the former pistol-to-hand relationship after accepting the new hand zero', () => {
   const c = new XRCalibration()
   for (const id of ['grip-left', 'grip-right'] as const) {
     const mount = new THREE.Group()
@@ -99,7 +104,31 @@ it('preserves the former composed in-hand orientation for either pistol', () => 
         ),
       ),
     )
-    expect(mount.quaternion.angleTo(old)).toBeCloseTo(0)
+    const oldHand = new THREE.Quaternion()
+      .setFromEuler(new THREE.Euler(-Math.PI / 4, 0, (side * -70 * Math.PI) / 180))
+      .multiply(
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(
+            (3 * Math.PI) / 180,
+            (side * -23 * Math.PI) / 180,
+            (side * -4 * Math.PI) / 180,
+          ),
+        ),
+      )
+    const visual = new THREE.Group()
+    c.apply(visual, id === 'grip-left' ? 'hand-left' : 'hand-right')
+    const relative = visual.quaternion.clone().invert().multiply(mount.quaternion)
+    expect(relative.angleTo(oldHand.clone().invert().multiply(old))).toBeCloseTo(0)
+    const oldRelativePosition = new THREE.Vector3(side * -0.015, 0, -0.005).applyQuaternion(
+      oldHand.clone().invert(),
+    )
+    expect(
+      mount.position
+        .clone()
+        .sub(visual.position)
+        .applyQuaternion(visual.quaternion.clone().invert())
+        .distanceTo(oldRelativePosition),
+    ).toBeCloseTo(0)
   }
 })
 
@@ -204,7 +233,10 @@ it('rebases the accepted 180 degree wheel zero without changing other adjustment
       wheel = new THREE.Group()
     expect(c.get('ar-rc-s3').ry).toBeCloseTo(0)
     expect(c.get('ar-rc-s3').x).toBe(4)
-    expect(c.get('hand-left').y).toBe(7)
+    expect(c.get('hand-left').y).toBe(8)
+    const hand = new THREE.Group()
+    c.apply(hand, 'hand-left')
+    expect(hand.position.y).toBeCloseTo(0.07)
     c.apply(wheel, 'ar-rc-s3')
     expect(wheel.localToWorld(new THREE.Vector3(0, 0, 1)).z).toBeCloseTo(-1)
     c.set('ar-rc-s3', { ry: 2 })
@@ -223,6 +255,34 @@ it('retains readable adjustments when persisting a migration is denied', () => {
   })
   try {
     expect(new XRCalibration().get('hand-left').y).toBe(6)
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})
+
+it('accepts the supplied hand pose as zero once and preserves the other saved objects', () => {
+  const old = JSON.stringify({
+    'hand-left': xrHandZero,
+    'ar-rc-bike': { x: 12 },
+    'pistol-0': { ry: 9 },
+  })
+  const storage = new Map([
+    ['nabla.xr.calibration.v4', old],
+    ['nabla.xr.truck-zero', 'x20-z180'],
+  ])
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+  })
+  try {
+    const calibration = new XRCalibration()
+    expect(Object.values(calibration.get('hand-left'))).toEqual([0, 0, 0, 0, 0, 0])
+    expect(Object.values(calibration.get('hand-right'))).toEqual([0, 0, 0, 0, 0, 0])
+    expect(calibration.get('ar-rc-bike').x).toBe(12)
+    expect(calibration.get('pistol-0').ry).toBe(9)
+    calibration.set('hand-left', { y: 2 })
+    expect(new XRCalibration().get('hand-left').y).toBe(2)
+    expect(storage.get('nabla.xr.calibration.v4')).toBe(old)
   } finally {
     vi.unstubAllGlobals()
   }

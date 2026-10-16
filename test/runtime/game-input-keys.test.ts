@@ -139,10 +139,15 @@ describe('keyboard driving keys never stay stuck', () => {
   it('maps U/O/I/L to the two-wheeler rider counterweight', () => {
     const r = rig()
     const read = (codes: string[]) =>
-      new GameInput().read(r.sim, { version: 1, name: 'x', entities: [] }, 1 / 60, {
-        keys: new Set(codes),
-        yaw: 0,
-      })
+      new GameInput().read(
+        r.sim,
+        { version: 1, name: 'x', entities: [presetVehicle('vfr800', 's3')] },
+        1 / 60,
+        {
+          keys: new Set(codes),
+          yaw: 0,
+        },
+      )
     expect(read([])).toMatchObject({ riderRight: 0, riderForward: 0 })
     expect(read(['KeyO'])).toMatchObject({ riderRight: 1, riderForward: 0 })
     expect(read(['KeyU'])).toMatchObject({ riderRight: -1 })

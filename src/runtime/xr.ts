@@ -236,10 +236,19 @@ export class GameXR {
     this.session.recenter()
   }
 
+  private frameSpace: XRReferenceSpace | null = null
+  /** The space Three used for its cameras/controllers at the start of this XR frame. */
+  get referenceSpace(): XRReferenceSpace | null {
+    return this.frameSpace ?? this.renderer.xr.getReferenceSpace()
+  }
+
   update(frame: XRFrame): void {
+    // WebXRManager updates cameras before calling the host animation loop. Origin corrections
+    // made below apply to its NEXT frame, so room queries must retain this frame's space.
+    this.frameSpace = this.renderer.xr.getReferenceSpace()
     if (!this.visible) this.stats.reset()
     this.session.update(frame)
-    const space = this.renderer.xr.getReferenceSpace()
+    const space = this.referenceSpace
     this.tracked =
       this.visible && space
         ? [...(this.renderer.xr.getSession()?.inputSources ?? [])].filter(

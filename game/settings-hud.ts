@@ -1,11 +1,14 @@
+import { createUsbSettingsPanel } from '@nabla/engine/runtime'
+import { settingsNavigationStyles } from './settings-navigation-styles.js'
+import { createControlsSection } from './settings-controls.js'
+import { createMapSection } from './settings-map.js'
+import { formatClockTime, localMinutes, skyTime } from '@nabla/engine/planet/sky'
+import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls'
 /**
- * Compact in-game settings: a small HUD icon opens a GTA Online–style tabbed
- * window styled with the shared ship-monitor stylesheet. Plain HTML/CSS/JS.
- *
- * Architecture: the Planeta tab hosts `createPlanetSettingsPanel().root`, which
- * a ship interior monitor can remount later without a second stylesheet.
+ * Full-screen HTML monitor for the desktop game. Navigation remounts the existing controls;
+ * their engine methods, input listeners and saved preferences remain authoritative.
  */
-import { resetGameSettings } from './reset-settings.js'
+import { createSettingsManagement } from './settings-management.js'
 import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
@@ -32,53 +35,48 @@ export type SettingsHud = {
 }
 
 const TABS = [
-  { id: 'planet', label: 'Planeta' },
+  { id: 'planet', label: 'Mundo' },
   { id: 'options', label: 'Opciones' },
-  { id: 'performance', label: 'Rendimiento' },
-  { id: 'video', label: 'Vídeo' },
-  { id: 'audio', label: 'Audio' },
   { id: 'objects', label: 'Objetos' },
   { id: 'dev', label: 'Desarrollo' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
-/**
- * Where each menu section (`menuSection(id, …)`) lives, in display order within its tab:
- *   Planeta     — Posición, Hora, Tierra (map layers), Mar, Aire (clouds), Cielo (sky, sun, flare)
- *   Opciones    — everyday preferences: Cámara, Conducción, Mapa (city labels)
- *   Rendimiento — Calidad (profile, FPS limit, resolution scale, apply) and the terrain Caché
- *   Vídeo       — Sombras and Postproceso (asphalt contrast)
- *   Audio       — General / Motor / Música volumes and music mute
- *   Objetos     — Añadir (vehicles and objects to place)
- *   Desarrollo  — folded tree: weapon poses, vehicle calibration, lighting, planet/debug values
- * Sections created after the HUD mounts (the Tierra layer list is bound later) are placed as they
- * appear. An unknown id lands in Opciones so a new feature is never left in the hidden legacy menu.
- */
+/** Sections retain their DOM, listeners and persistence; only their location changes. */
 export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
+  ['settings-map', 'planet'],
   ['terrain-position', 'planet'],
   ['settings-planet-time', 'planet'],
   ['terrain-layers', 'planet'],
+  ['settings-options-labels', 'planet'],
   ['settings-planet-sea', 'planet'],
   ['settings-planet-air', 'planet'],
   ['settings-planet-sky', 'planet'],
   ['camera-extras', 'options'],
-  ['settings-muzzle-flash', 'options'],
   ['driving-extras', 'options'],
-  ['settings-options-driver', 'dev'],
+  ['settings-controls', 'options'],
+  ['settings-usb', 'options'],
+  ['display-quality-section', 'options'],
+  ['display-performance', 'options'],
+  ['quality-shadows', 'options'],
+  ['road-style', 'options'],
+  ['settings-effects', 'options'],
+  ['settings-sound', 'options'],
+  ['settings-management', 'options'],
+  ['scene-vehicles', 'objects'],
+  ['settings-placed-objects', 'objects'],
+  ['settings-object-layout', 'objects'],
   ['settings-options-sidearm', 'dev'],
   ['settings-weapon-poses', 'dev'],
-  ['settings-options-labels', 'options'],
-  ['display-quality-section', 'performance'],
-  ['display-performance', 'performance'],
-  ['terrain-cache', 'performance'],
-  ['quality-shadows', 'video'],
-  ['road-style', 'video'],
-  ['settings-sound', 'audio'],
-  ['scene-vehicles', 'objects'],
-  ['settings-config-planet', 'dev'],
+  ['settings-muzzle-flash', 'dev'],
+  ['settings-options-driver', 'dev'],
+  ['settings-truck-exhaust', 'dev'],
   ['settings-light', 'dev'],
+  ['settings-config-planet', 'dev'],
   ['terrain-source', 'dev'],
+  ['terrain-cache', 'dev'],
+  ['settings-diagnostics', 'dev'],
 ]
 
 /** Tab for a section id, or undefined when the HUD does not place it (the legacy Planeta). */
@@ -89,11 +87,18 @@ export function sectionTab(id: string): TabId | undefined {
 
 /** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
 const SECTION_TITLES: Readonly<Record<string, string>> = {
-  'terrain-layers': 'Tierra',
-  'road-style': 'Postproceso',
+  'terrain-layers': 'Terreno',
+  'road-style': 'Suelo y texturas',
   'scene-vehicles': 'Añadir',
+  'display-quality-section': 'Calidad y resolución',
+  'settings-options-labels': 'Nombres de lugares',
+  'settings-sound': 'Sonido',
+  'settings-planet-air': 'Atmósfera',
+  'settings-options-sidearm': 'Apuntado',
+  'settings-muzzle-flash': 'Fogonazo',
+  'settings-config-planet': 'Planeta',
+  'terrain-source': 'Terreno',
   'settings-light': 'Luz (ajuste fino)',
-  'settings-options-sidearm': 'Ajuste del apuntado',
   'settings-weapon-poses': 'Posturas y animaciones',
 }
 
@@ -133,13 +138,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   toggle.type = 'button'
   toggle.id = 'settings-toggle'
   toggle.className = 'settings-toggle'
-  toggle.title = 'Ajustes (Planeta / visual)'
+  toggle.title = 'Abrir menú'
+  toggle.classList.add('settings-clock')
   toggle.setAttribute('aria-label', 'Abrir ajustes')
   toggle.setAttribute('aria-expanded', 'false')
   toggle.setAttribute('aria-controls', 'settings-window')
-  toggle.innerHTML =
-    '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">' +
-    '<path fill="currentColor" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm9.4 3.1-1.1-.6.2-1.3 1.2-2.1-2.1-2.1-2.1 1.2-1.3.2-.6-1.1L14.4 3h-4.8l-.6 1.8-1.3-.2-2.1-1.2-2.1 2.1 1.2 2.1-.2 1.3-1.1.6L3 14.4v4.8l1.8.6.2 1.3-1.2 2.1 2.1 2.1 2.1-1.2 1.3-.2.6 1.1.6 1.8h4.8l.6-1.8 1.3.2 2.1 1.2 2.1-2.1-1.2-2.1.2-1.3 1.1-.6 1.8-.6v-4.8l-1.8-.6zM12 16.5A4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 0 1 0 9z"/></svg>'
+  toggle.textContent = '12:00'
 
   const win = doc.createElement('div')
   win.id = 'settings-window'
@@ -193,29 +197,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const toolbarResize = new ResizeObserver(alignToolbar)
   toolbarResize.observe(toggle)
   window.addEventListener('resize', alignToolbar)
-  const closeBtn = doc.createElement('button')
-  closeBtn.type = 'button'
-  closeBtn.className = 'settings-close'
-  closeBtn.textContent = 'Cerrar'
-  const defaults = doc.createElement('button')
-  defaults.type = 'button'
-  defaults.id = 'settings-defaults'
-  defaults.textContent = 'AJUSTES PREDETERMINADOS'
-  defaults.title = 'Borra los ajustes guardados del juego y recarga con los valores de serie'
-  defaults.addEventListener('click', () => {
-    try {
-      runtime.pause()
-      resetGameSettings(localStorage)
-      resetGameSettings(sessionStorage)
-      location.reload()
-    } catch {
-      defaults.textContent = 'No se pudieron borrar los ajustes. Reintentar'
-    }
-  })
-  console.append(title, tabBar, panes, defaults, closeBtn)
+  const header = doc.createElement('header')
+  header.className = 'settings-header'
+  header.append(title)
+  const footer = doc.createElement('footer')
+  footer.className = 'settings-footer'
+  const footerHint = doc.createElement('small')
+  footerHint.textContent = 'Copias y restauración en Opciones → Gestión de ajustes'
+  footer.append(footerHint)
+  console.append(header, tabBar, panes, footer)
   win.append(console)
 
-  const planetPane = paneEls.get('planet')!
   const timeGroup = doc.getElementById('scene-time')
   // The planet panel's controls are spread over the Planeta sections below; its emptied root
   // stays out of the window.
@@ -262,16 +254,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // «Nombres de poblaciones» keeps its checkbox (and the layer selector's listener and storage);
   // only its row moves to Opciones → Mapa.
   const moveOptionLayers = (layers: HTMLElement) => {
-    const rows = OPTION_LAYERS.map(
-      (id) => layers.querySelector(`input[data-layer="${id}"]`)?.closest('label') ?? null,
-    ).filter((row): row is HTMLLabelElement => row !== null)
-    if (!rows.length) return
-    let group = doc.getElementById('settings-options-labels')
-    if (!group) {
-      group = fieldset('settings-options-labels', 'Mapa')
-      place(group)
-    }
-    group.append(...rows)
+    for (const id of OPTION_LAYERS)
+      relabel(
+        layers.querySelector(`input[data-layer="${id}"]`)?.closest('label'),
+        'Nombres de lugares',
+      )
   }
 
   // Desarrollo: the planet config text and «Copiar config».
@@ -752,9 +739,63 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(group)
   }
 
+  const vehicleList = byId('vehicle-list')
+  if (vehicleList) {
+    const placed = fieldset('settings-placed-objects', 'En el mundo')
+    placed.append(vehicleList)
+    place(placed)
+  }
+  const exportButton = byId('vehicle-export')
+  if (exportButton) {
+    const distribution = fieldset('settings-object-layout', 'Guardar distribución')
+    distribution.append(exportButton, ...rows(byId('vehicle-export-text')))
+    place(distribution)
+  }
+
+  const management = createSettingsManagement(doc, {
+    local: () => localStorage,
+    session: () => sessionStorage,
+    search: () => location.search,
+    reload: (search) => {
+      const url = new URL(location.href)
+      url.search = search
+      history.replaceState(history.state, '', url)
+      runtime.pause?.()
+      location.reload()
+    },
+  })
+  place(management)
+  const controlsSection = createControlsSection(doc)
+  place(controlsSection)
+  const usbPanel = createUsbSettingsPanel(runtime.usbControllers, runtime.usbFeedback, doc)
+  place(usbPanel.root)
+  const mapSection = createMapSection(doc, runtime)
+  place(mapSection.root)
+  const actionCam = byId('camera-action-cam-settings')
+  if (actionCam) {
+    const section = fieldset('settings-action-cam', 'Action Cam')
+    ;(actionCam as HTMLDetailsElement).open = true
+    actionCam.querySelector('summary')?.setAttribute('hidden', '')
+    section.append(actionCam)
+    cameraOptions.append(section)
+  }
+  const effects = fieldset('settings-effects', 'Efectos')
+  for (const id of ['quality-smoke']) {
+    const row = rowOf(id)
+    if (row) effects.append(row)
+  }
+  if (effects.querySelector('input')) place(effects)
+
   // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
   // planet panel already has; its Hora and Mar groups moved above. Keep it in the DOM (it holds
   // the listeners) but hidden.
+  const diagnostics = fieldset('settings-diagnostics', 'Diagnóstico')
+  for (const id of ['terrain-missing-show', 'terrain-missing-retry', 'terrain-missing-list']) {
+    const control = byId(id)
+    if (control) diagnostics.append(control)
+  }
+  if (diagnostics.children.length > 1) place(diagnostics)
+
   const legacyPlanet = byId('scene-planet')
   if (legacyPlanet) {
     for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
@@ -762,7 +803,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       if (el) el.hidden = true
     }
     legacyPlanet.hidden = true
-    planetPane.append(legacyPlanet)
+    paneEls.get('planet')!.append(legacyPlanet)
   }
 
   // A tab with nothing to show (e.g. Audio on a host without the mixer) is hidden.
@@ -770,64 +811,111 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     for (const tab of TABS) {
       const pane = paneEls.get(tab.id)!
       const btn = tabBar.querySelector<HTMLElement>(`#settings-tab-${tab.id}`)
-      if (btn) btn.hidden = !pane.querySelector(':scope > :not([hidden])')
+      if (btn) btn.hidden = !pane.querySelector('.settings-section-content > .menu-section')
     }
   }
   // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
-  const devBranches = [
-    ['Arma', ['settings-options-sidearm', 'settings-weapon-poses']],
-    ['Vehículo', ['settings-options-driver']],
-    ['Iluminación', ['settings-light']],
-    ['Planeta y diagnóstico', ['settings-config-planet', 'terrain-source']],
-  ] as const
-  const branches = new Map<string, HTMLDetailsElement>()
+  const navigationGroups = [
+    {
+      tab: 'options',
+      id: 'controls',
+      label: 'Controles',
+      sections: ['driving-extras', 'settings-controls', 'settings-usb'],
+    },
+    {
+      tab: 'options',
+      id: 'graphics',
+      label: 'Gráficos',
+      sections: ['display-quality-section', 'quality-shadows', 'road-style', 'settings-effects'],
+    },
+    {
+      tab: 'dev',
+      id: 'weapons',
+      label: 'Armas (3)',
+      sections: ['settings-options-sidearm', 'settings-weapon-poses', 'settings-muzzle-flash'],
+    },
+  ]
+  const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
+  let activeTab: TabId = 'planet'
+  const chooseSection = (tab: TabId, id: string) => {
+    const layout = sections.get(tab)
+    if (!layout) return
+    layout.active = id
+    for (const group of layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section'))
+      group.hidden = group.id !== id
+    for (const button of layout.nav.querySelectorAll<HTMLButtonElement>('button[data-section]')) {
+      const selected = button.dataset.section === id
+      if (selected) button.setAttribute('aria-current', 'page')
+      else button.removeAttribute('aria-current')
+    }
+    const category = layout.nav
+      .querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
+      ?.closest('details')
+    if (category) category.open = true
+    layout.body.scrollTop = 0
+    if (tab === 'planet' && id === 'settings-map' && !win.hidden) mapSection.refresh()
+  }
   const foldSections = () => {
     for (const [tab, pane] of paneEls) {
+      let layout = sections.get(tab)
+      if (!layout) {
+        const nav = doc.createElement('nav'),
+          body = doc.createElement('div')
+        nav.className = 'settings-sections'
+        nav.setAttribute('aria-label', 'Secciones')
+        body.className = 'settings-section-content'
+        pane.append(nav, body)
+        layout = { nav, body }
+        sections.set(tab, layout)
+      }
       for (const section of [...pane.querySelectorAll<HTMLElement>(':scope > .menu-section')]) {
         if (section.hidden) continue
-        let parent: HTMLElement = pane
-        if (tab === 'dev') {
-          const category =
-            devBranches.find(([, ids]) => (ids as readonly string[]).includes(section.id))?.[0] ??
-            'Otros ajustes'
-          let branch = branches.get(category)
-          if (!branch) {
-            branch = doc.createElement('details')
-            branch.className = 'settings-branch'
-            const summary = doc.createElement('summary')
-            summary.textContent = category
-            branch.append(summary)
-            pane.append(branch)
-            branches.set(category, branch)
-            if (category === 'Arma')
-              branch.addEventListener('toggle', () => {
-                if (!branch!.open) runtime.setSidearmAimPreview?.(false)
-              })
-          }
-          parent = branch
-        }
-        const fold = doc.createElement('details')
-        fold.className = 'settings-fold'
-        const summary = doc.createElement('summary')
         const legend = section.querySelector<HTMLElement>(':scope > legend')
-        summary.textContent = legend?.textContent ?? section.id
         if (legend) legend.hidden = true
-        fold.append(summary)
-        if (parent === pane) pane.insertBefore(fold, section)
-        else parent.append(fold)
-        fold.append(section)
-        if (
-          section.id.startsWith('settings-options-sidearm') ||
-          section.id === 'settings-weapon-poses'
-        )
-          fold.addEventListener('toggle', () => {
-            if (!fold.open) runtime.setSidearmAimPreview?.(false)
-          })
+        section.dataset.sectionTitle = legend?.textContent ?? section.id
+        layout.body.append(section)
       }
-    }
-    for (const [category] of devBranches) {
-      const branch = branches.get(category)
-      if (branch) paneEls.get('dev')!.append(branch)
+      const ordered = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')].sort(
+        (a, b) => (order(a.id) < 0 ? 999 : order(a.id)) - (order(b.id) < 0 ? 999 : order(b.id)),
+      )
+      const items: HTMLElement[] = []
+      const previousGroups = new Map(
+        [...layout.nav.querySelectorAll<HTMLDetailsElement>('details[data-nav-group]')].map(
+          (el) => [el.dataset.navGroup, el.open],
+        ),
+      )
+      const groups = new Map<string, HTMLDetailsElement>()
+      for (const section of ordered) {
+        const button = doc.createElement('button')
+        button.type = 'button'
+        button.textContent = section.dataset.sectionTitle ?? section.id
+        button.dataset.section = section.id
+        button.addEventListener('click', () => {
+          runtime.setSidearmAimPreview?.(false)
+          chooseSection(tab, section.id)
+        })
+        const category = navigationGroups.find(
+          (group) => group.tab === tab && group.sections.includes(section.id),
+        )
+        if (category) {
+          let group = groups.get(category.id)
+          if (!group) {
+            group = doc.createElement('details')
+            group.className = 'settings-nav-group'
+            group.dataset.navGroup = category.id
+            group.open = previousGroups.get(category.id) ?? true
+            const summary = doc.createElement('summary')
+            summary.textContent = category.label
+            group.append(summary)
+            groups.set(category.id, group)
+            items.push(group)
+          }
+          group.append(button)
+        } else items.push(button)
+      }
+      layout.nav.replaceChildren(...items)
+      const chosen = ordered.find((el) => el.id === layout.active) ?? ordered[0]
+      if (chosen) chooseSection(tab, chosen.id)
     }
   }
   foldSections()
@@ -845,180 +933,22 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   const style = doc.createElement('style')
   style.id = 'nabla-settings-hud-layout'
-  style.textContent = `
-.settings-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 30;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  color: #c6e6ff;
-  background: #142735;
-  border: 2px solid #395e79;
-  border-radius: 12px;
-  cursor: pointer;
-}
-.settings-toggle[aria-expanded='true'] {
-  background: #1d4e73;
-  border-color: #8fd0ff;
-}
-.settings-window {
-  position: fixed;
-  top: 72px;
-  right: 76px;
-  z-index: 30;
-  width: min(480px, calc(100vw - 88px));
-  max-height: calc(100vh - 92px);
-  overflow: auto;
-  pointer-events: auto;
-}
-.settings-console {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  max-height: none;
-}
-.settings-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin: 10px 0 12px;
-}
-.settings-console .settings-tab {
-  min-width: 0;
-  padding: 4px;
-  font-size: 14px;
-}
-.settings-console { padding: 12px; font-size: 14px; }
-.settings-console > strong { min-height: 0; margin-bottom: 6px; }
-.settings-console button, .settings-console select { font-size: 14px; padding: 6px 8px; }
-.settings-console .settings-tab { margin: 0; padding: 5px 2px; font-size: 12px; }
-.settings-fold, .settings-branch { margin: 5px 0; border: 1px solid #395e7966; border-radius: 6px; }
-.settings-fold > summary, .settings-branch > summary { padding: 8px 10px; cursor: pointer; color: #c6e6ff; }
-.settings-fold > summary:hover, .settings-branch > summary:hover { background: #1d4e7344; }
-.settings-fold > summary:focus-visible, .settings-branch > summary:focus-visible { outline: 2px solid #8fd0ff; }
-.settings-branch > .settings-fold { margin: 5px 8px 8px 16px; }
-.settings-fold > .menu-section { padding: 0 10px 10px; margin: 0; }
-.settings-console input[type='number'] { max-width: 76px; }
-@media (max-width: 520px) {
-  .settings-pane label:has(select), .settings-pane label:has(input[type='range']) { flex-wrap: wrap !important; white-space: normal !important; }
-}
-.settings-tab[hidden],
-.settings-pane [hidden] {
-  display: none !important;
-}
-.settings-tab[aria-selected='true'] {
-  background: #1d4e73;
-  border-color: #8fd0ff;
-}
-.settings-pane .menu-section {
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-}
-.settings-pane label {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0;
-}
-.settings-pane output,
-.planet-settings-config {
-  color: #91cdfb;
-  font-variant-numeric: tabular-nums;
-}
-.planet-settings-config {
-  margin-top: 0;
-  padding: 10px;
-  background: #0a1520;
-  border: 1px solid #395e79;
-  border-radius: 6px;
-  font-size: 16px;
-  white-space: pre-wrap;
-  user-select: all;
-}
-/* Compact rows everywhere: a select or slider shares the line with its label. */
-.settings-pane label:has(select),
-.settings-pane label:has(input[type='range']) {
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-.settings-pane label select {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-  margin: 0;
-  padding-block: 2px;
-}
-.settings-pane label input[type='range'] {
-  flex: 1 1 auto;
-  min-width: 70px;
-}
-/* Planeta: compact rows — one line per slider, switches in a grid, status beside the heading. */
-#settings-pane-planet label {
-  flex-wrap: nowrap;
-  gap: 6px;
-  margin: 2px 0;
-  white-space: nowrap;
-}
-#settings-pane-planet .menu-section {
-  margin-top: 6px;
-}
-#settings-pane-planet .planet-group {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  column-gap: 10px;
-}
-#settings-pane-planet .planet-group > * {
-  grid-column: 1 / -1;
-  margin: 2px 0;
-}
-#settings-pane-planet .planet-group > .menu-subtitle {
-  grid-column: 1;
-  grid-row: 1;
-}
-#settings-pane-planet .planet-group > p[role='status'] {
-  grid-column: 2;
-  grid-row: 1;
-  opacity: 0.8;
-  font-size: 0.85em;
-}
-#settings-pane-planet .planet-group > button {
-  grid-column: 3;
-  grid-row: 1;
-  padding: 2px 10px;
-}
-/* The planet panel's switches read like the other tabs: box first, then its name. */
-#settings-pane-planet label:has(> input[type='checkbox'][id^='ps-']) {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
-}
-.settings-pane .planet-settings-config-block button {
-  margin-top: 8px;
-}
-.settings-close {
-  margin-top: 14px;
-  width: 100%;
-}
-`
+  style.textContent = settingsNavigationStyles
+
   doc.head.append(style)
   doc.body.append(toggle, win)
 
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
+    activeTab = id
     if (id !== 'dev') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
       const btn = doc.getElementById(`settings-tab-${tab.id}`)
       const pane = paneEls.get(tab.id)!
       const on = tab.id === id
       btn?.setAttribute('aria-selected', on ? 'true' : 'false')
+      if (btn) btn.tabIndex = on ? 0 : -1
       pane.hidden = !on
     }
     planetPanel?.refresh()
@@ -1027,7 +957,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const open = () => {
     refreshSidearm()
     win.hidden = false
+    if (legacy) legacy.open = true
     toggle.setAttribute('aria-expanded', 'true')
+    toggle.setAttribute('aria-label', 'Recoger menú')
+    toggle.title = 'Recoger menú'
+    doc.body.classList.add('settings-is-open')
+    if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
+      mapSection.refresh()
+    toggle.focus()
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
     doc.getElementById('game-canvas')?.blur()
     planetPanel?.refresh()
@@ -1035,7 +972,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const close = () => {
     runtime.setSidearmAimPreview?.(false)
     win.hidden = true
+    if (legacy) legacy.open = false
     toggle.setAttribute('aria-expanded', 'false')
+    toggle.setAttribute('aria-label', 'Abrir menú')
+    toggle.title = 'Abrir menú'
+    doc.body.classList.remove('settings-is-open')
     doc.getElementById('game-canvas')?.focus()
   }
   const toggleWin = () => (win.hidden ? open() : close())
@@ -1044,7 +985,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     e.stopPropagation()
     toggleWin()
   })
-  closeBtn.addEventListener('click', close)
   tabBar.addEventListener('click', (event) => {
     const btn = (event.target as HTMLElement).closest(
       'button[data-tab]',
@@ -1052,18 +992,64 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (!btn?.dataset.tab) return
     selectTab(btn.dataset.tab as TabId)
   })
-  doc.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !win.hidden) {
+  tabBar.addEventListener('keydown', (event) => {
+    const intent = menuNavigationKey(event.code)
+    if (!intent || intent === 'focus') return
+    event.preventDefault()
+    const current = TABS.findIndex((tab) => tab.id === activeTab)
+    const index =
+      intent === 'first'
+        ? 0
+        : intent === 'last'
+          ? TABS.length - 1
+          : (current + (intent === 'next' ? 1 : -1) + TABS.length) % TABS.length
+    selectTab(TABS[index].id)
+    doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
+  })
+  const updateClock = () => {
+    if (runtime.skyClock)
+      toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))
+    if (!win.hidden && activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
+      mapSection.refresh()
+  }
+  updateClock()
+  const clockTimer = window.setInterval(updateClock, 1000)
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (win.hidden) return
+    if (menuNavigationKey(event.code) === 'focus') {
+      const focusable = [
+        toggle,
+        ...win.querySelectorAll<HTMLElement>('button, input, select, textarea, summary, a[href]'),
+      ].filter(
+        (el) =>
+          !(el as HTMLInputElement).disabled && el.tabIndex >= 0 && el.getClientRects().length > 0,
+      )
+      const first = focusable[0],
+        last = focusable.at(-1)
+      if (event.shiftKey && doc.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && doc.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+    if (keyboardAction(event.code, { mode: 'road', menu: true }) === 'menu.back' && !win.hidden) {
       event.preventDefault()
       close()
     }
-  })
+  }
+  doc.addEventListener('keydown', onKeyDown)
 
   return {
     open,
     close,
     toggle: toggleWin,
     destroy: () => {
+      usbPanel.dispose()
+      doc.removeEventListener('keydown', onKeyDown)
+      window.clearInterval(clockTimer)
+      doc.body.classList.remove('settings-is-open')
       toolbarResize.disconnect()
       window.removeEventListener('resize', alignToolbar)
       runtime.setSidearmAimPreview?.(false)

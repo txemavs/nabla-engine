@@ -6,8 +6,21 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { mapTileChildren, mapTilePath, type MapTile } from '#src/scene/mercator.js'
-import { planetTileFrame, validatePlanetManifest } from '#src/planet/index.js'
+import {
+  planetTileFrame,
+  validatePlanetManifest,
+  planetTileGlbLayers,
+  planetCellVersion,
+  isCandidateRoadKind,
+  tagCandidateRoadMesh,
+  candidateAsphaltDisposition,
+} from '#src/planet/index.js'
 import { geoToLocal, localFrame } from '#src/math/geo/sphere.js'
+import {
+  adaptAtlasManifest,
+  atlasPackageRef,
+  validateAtlasZ15Package,
+} from '#src/planet/atlas-z15.js'
 export const LOD_REVISION = 'mesh-lod-v1'
 export interface LodReport {
   revision: string
@@ -68,8 +81,8 @@ export async function simplifyTile(root: Group, zoom: number): Promise<LodReport
     }
     const simplified = await simplifyGeometry(
       mesh.geometry,
-      zoom === 14 ? 0.35 : 0.18,
-      zoom === 14 ? 1 : 4,
+      zoom === 14 ? 0.35 : zoom === 13 ? 0.18 : 0.08,
+      zoom === 14 ? 1 : zoom === 13 ? 4 : 12,
     )
     mesh.geometry.dispose()
     mesh.geometry = simplified.geometry
@@ -125,14 +138,26 @@ export async function composeChildMeshes(
   try {
     for (const child of mapTileChildren(tile)) {
       const path = join(output, mapTilePath(child))
-      const manifest = validatePlanetManifest(
+      let manifest = validatePlanetManifest(
         JSON.parse(await readFile(join(path, 'manifest.json'), 'utf8')),
         child,
       )
+      const ref = atlasPackageRef(manifest)
+      if (ref) {
+        const bytes = await readFile(join(path, ref.file))
+        if (
+          bytes.length !== ref.bytes ||
+          createHash('sha256').update(bytes).digest('hex') !== ref.sha256
+        )
+          throw Error('LOD child Atlas package checksum mismatch')
+        const pkg = validateAtlasZ15Package(JSON.parse(bytes.toString('utf8')), child)
+        manifest = adaptAtlasManifest(manifest, pkg, { photo: 'none' })
+      }
       manifests.push({ path, manifest })
     }
-  } catch {
-    return
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw error
   }
   const root = new Group(),
     sources: string[] = []
@@ -147,11 +172,12 @@ export async function composeChildMeshes(
       sources.push(
         manifest.id +
           '@' +
-          Object.values(manifest.files)
-            .map((f) => f.sha256)
+          planetTileGlbLayers(manifest)
+            .map((layer) => layer.file.sha256)
             .join(':'),
       )
-      for (const file of Object.values(manifest.files)) {
+      for (const layer of planetTileGlbLayers(manifest)) {
+        const file = layer.file
         const scene = await readGeometryGlb(join(path, file.path), file.sha256)
         scene.updateMatrixWorld(true)
         const meshes: Mesh[] = []
@@ -159,6 +185,18 @@ export async function composeChildMeshes(
           if (node instanceof Mesh) meshes.push(node)
         })
         for (const mesh of meshes) {
+          if (isCandidateRoadKind(layer.kind)) {
+            tagCandidateRoadMesh(mesh.userData, layer.kind)
+            if (
+              layer.kind === 'asphalt' &&
+              candidateAsphaltDisposition(planetCellVersion(manifest), mesh.userData) !== 'keep'
+            ) {
+              mesh.geometry.dispose()
+              continue
+            }
+          }
+          if (layer.kind === 'terrain' && !mesh.userData.category)
+            mesh.userData.category = 'Terrain'
           if (!mesh.userData.drape && !mesh.userData.skirt) {
             mesh.geometry.applyMatrix4(new Matrix4().multiplyMatrices(transform, mesh.matrixWorld))
             mesh.position.set(0, 0, 0)

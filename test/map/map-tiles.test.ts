@@ -117,3 +117,36 @@ test('flight height reduces detail; budgets and antimeridian stay bounded', () =
   expect(polar.leaves.length).toBeLessThanOrEqual(96)
   for (const tile of polar.requests) expect(() => mapTileId(tile)).not.toThrow()
 })
+
+test('flight uses Z12–Z15 without exceeding its budget and keeps a parent until all children arrive', () => {
+  const plan = planMapZooms({
+    ...options,
+    viewDistance: 16000,
+    maxTiles: 96,
+    adaptive: true,
+    minZoom: 12,
+    heightAboveGround: 100,
+  })
+  expect(plan.roots.every((t) => t.z === 12)).toBe(true)
+  expect(new Set(plan.requests.map((t) => t.z))).toEqual(new Set([12, 13, 14, 15]))
+  expect(plan.requests.length).toBeLessThanOrEqual(96)
+  expect(readyMapCover(plan, new Set(plan.roots.map(mapTileId)))).toEqual(plan.roots)
+  expect(readyMapCover(plan, new Set(plan.requests.map(mapTileId)))).toEqual(plan.leaves)
+})
+
+test('the source can require Z15-only coverage, and mixed flight plans wrap at the dateline', () => {
+  const only = planMapZooms({ ...options, adaptive: true, minZoom: 15 })
+  expect(only.requests.every((t) => t.z === 15)).toBe(true)
+  const plan = planMapZooms({
+    ...options,
+    longitude: 179.999,
+    adaptive: true,
+    minZoom: 12,
+    lookAhead: { latitude: options.latitude, longitude: -179.9 },
+  })
+  expect(plan.requests.length).toBeLessThanOrEqual(96)
+  expect(new Set(plan.requests.map(mapTileId)).size).toBe(plan.requests.length)
+  expect(plan.roots.some((t) => t.x === 0)).toBe(true)
+  expect(plan.roots.some((t) => t.x === 2 ** 12 - 1)).toBe(true)
+  for (const t of plan.requests) expect(() => mapTileId(t)).not.toThrow()
+})

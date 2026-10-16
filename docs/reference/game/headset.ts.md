@@ -4,15 +4,15 @@
 
 [Source](../../../game/headset.ts)
 
-One launcher. The AR demo is prepared only when its tab is selected, then
-its existing Enter handler requests WebXR directly from the user's click.
+Two self-contained entry cards. Supported AR is prepared in advance so
+the Enter handler keeps the original user activation for WebXR.
 
 ## Module dependencies
 
 
 ## update
 
-[Implementation, line 10](../../../game/headset.ts#L10)
+[Implementation, line 9](../../../game/headset.ts#L9)
 
 ```ts
 update(): inferred by TypeScript; see implementation
@@ -26,18 +26,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## prepareAR
 
-[Implementation, line 30](../../../game/headset.ts#L30)
+[Implementation, line 29](../../../game/headset.ts#L29)
 
 ```ts
 prepareAR(): Promise<void>
 ```
 
-## prepareAR.callback@31
+## prepareAR.callback@30
 
-[Implementation, line 31](../../../game/headset.ts#L31)
+[Implementation, line 30](../../../game/headset.ts#L30)
 
 ```ts
-callback@31(): inferred by TypeScript; see implementation
+callback@30(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,12 +53,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `panel.querySelector('#status')?.remove`
 - `template.querySelector`
 
-## prepareAR.callback@31.callback@44
+## prepareAR.callback@30.callback@43
 
-[Implementation, line 44](../../../game/headset.ts#L44)
+[Implementation, line 43](../../../game/headset.ts#L43)
 
 ```ts
-callback@44(active): inferred by TypeScript; see implementation
+callback@43(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -77,45 +77,43 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `String`
 
-## selectTab
+## callback@55
 
 [Implementation, line 55](../../../game/headset.ts#L55)
 
 ```ts
-selectTab(mode: 'vr' | 'ar'): inferred by TypeScript; see implementation
+callback@55(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `String`
-- `document.getElementById`
-- `prepareAR`
-- `tab.setAttribute`
-
-## callback@67
-
-[Implementation, line 67](../../../game/headset.ts#L67)
-
-```ts
-callback@67(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `selectTab`
-
-## callback@68
-
-[Implementation, line 68](../../../game/headset.ts#L68)
-
-```ts
-callback@68(event): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes`
-- `document.getElementById`
-- `document.getElementById(\`tab-${next}\`)!.focus`
 - `event.preventDefault`
-- `selectTab`
+- `ride.getAttribute`
+
+## checkSupport
+
+[Implementation, line 58](../../../game/headset.ts#L58)
+
+```ts
+checkSupport(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise.all`
+- `String`
+- `prepareAR`
+- `ride.setAttribute`
+- `supported`
+
+## checkSupport.supported
+
+[Implementation, line 59](../../../game/headset.ts#L59)
+
+```ts
+supported(mode: XRSessionMode): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `navigator.xr.isSessionSupported`

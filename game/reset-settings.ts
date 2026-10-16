@@ -1,34 +1,6 @@
-/** Only persisted game preferences; terrain data and unrelated origin storage survive. */
-const keys = new Set([
-  'nabla.anisotropy',
-  'nabla.groundDetailCells',
-  'nabla.asphaltContrast',
-  'nabla.terrain.source',
-  'nabla.terrain.layers',
-  'nabla.flipCinematic',
-  'nabla.recoverToRoad',
-  'nabla.shadowBias',
-  'nabla.shadowsEnabled',
-  'nabla.truckExhaustOffset',
-  'nabla.truckExhaustAmount',
-  'nabla.audioMix',
-  'nabla.cameraFov',
-  'nabla.driverPose',
-  'nabla.bodycam',
-  'nabla.actionCam',
-  'nabla.actionCamSettings',
-  'nabla.tunnel',
-  'nabla.smoke',
-  'nabla.smokePercent',
-  'nabla.weaponPoses',
-  'nabla.weaponWheel',
-  'nabla.muzzleFlash',
-  'nabla.lightTuning',
-  'nabla.planetVisual',
-  'nabla.sidearmTuning',
-])
+import { isCalibrationKey, isPreferenceKey } from '../src/runtime/settings-backup.js'
+/** Legacy API: clear game preferences while retaining physical controller calibration. */
 export function resetGameSettings(storage: Storage): void {
   for (const key of Object.keys(storage))
-    if (keys.has(key) || key.startsWith('nabla.mirrors:') || key.startsWith('nabla.steeringWheel:'))
-      storage.removeItem(key)
+    if (isPreferenceKey(key) && !isCalibrationKey(key)) storage.removeItem(key)
 }

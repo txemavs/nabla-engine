@@ -1,3 +1,19 @@
+import { UsbFeedback } from './usb/feedback.js'
+import { UsbControllers, idleUsbFrame, usbDeviceKey } from './usb/controllers.js'
+import type { UsbFrame, UsbStorage } from './usb/controllers.js'
+import {
+  actionHeld,
+  inputMode,
+  actionCompletesChord,
+  actionAxis,
+  bindingForKey,
+  inputBindings,
+  contextualAction,
+  legacyInputAction,
+  gamepadActionButtons,
+  controlsHint,
+  type InputContext,
+} from '../config/input-bindings.js'
 import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
@@ -326,6 +342,7 @@ export interface VehiclePlacement {
 
 export interface GameRuntimeOptions {
   /** Override automatic low-profile/Quest geometry selection. Requires a new runtime. */
+  usb?: { storage?: UsbStorage | null }
   assetQuality?: AssetQuality
   /** Fixed initial pickup location; projected onto the ground, takes precedence over a vehicle. */
   weaponPickupLocation?: GeoPoint
@@ -350,6 +367,10 @@ export interface GameRuntimeOptions {
   acceptsInput?: () => boolean
   scene: SceneDocument
   /** Vehicle assemblies prepared during the intro, before gameplay is revealed. Empty by default. */
+  /** 'spawn' starts with usable ground and streams the surroundings while playing.
+   * 'nearby' waits for the spawn Z15 and its three nearest neighbours.
+   * 'area' is an explicit opt-in for finite demonstrations that need full coverage before reveal. */
+  startupTerrain?: 'spawn' | 'nearby' | 'area'
   preloadVehicles?: readonly (readonly Entity[])[]
   /** Spawn one of these prepared assemblies on a road behind the player 2 s after an occupied-vehicle impact explosion. */
   accidentReplacementVehicles?: readonly (readonly Entity[])[]
@@ -469,7 +490,8 @@ export class GameRuntime {
   private probing: Promise<unknown> | null = null
   private attract: {
     loop: FrameLoop
-    started: number
+    elapsed: number
+    camera: THREE.PerspectiveCamera
     last: number | null
     options: Required<AttractOptions>
   } | null = null
@@ -612,6 +634,9 @@ export class GameRuntime {
   private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
   private lastTime: number | null = null
+  readonly usbControllers: UsbControllers
+  readonly usbFeedback = new UsbFeedback()
+  private usbFrame: UsbFrame = idleUsbFrame()
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
   private readonly originalTabIndex: string | null
@@ -669,6 +694,7 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.usbControllers = new UsbControllers(options.usb?.storage)
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
       this.actionCamOn =
@@ -891,10 +917,10 @@ export class GameRuntime {
         options.canvas.focus()
         this.effects.audio.unlock()
       },
-      interact: () => this.action('KeyE'),
+      interact: () => this.action('interact'),
       camera: () => this.cycleCamera(),
       respawn: () => {
-        const message = this.game.action('KeyR')
+        const message = this.game.dispatch('recover')
         if (message) this.options.onMessage?.(message)
       },
     }
@@ -1033,6 +1059,10 @@ export class GameRuntime {
     const controller = new AbortController()
     this.loading = controller
     this.options.canvas.dataset.loadingStage = 'terrain'
+    this.world?.setStartupMode(
+      this.options.startupTerrain !== 'area',
+      this.options.startupTerrain === 'nearby' ? 4 : 1,
+    )
     const document = structuredClone(this.document)
     try {
       if (this.world) {
@@ -1042,7 +1072,9 @@ export class GameRuntime {
             this.world!.activeTiles.map((tile) => tile.key),
           )
         // A finite example loads its declared coverage before the player can cross a seam.
-        for (const tile of this.options.tiles?.tiles ?? []) {
+        for (const tile of this.options.startupTerrain === 'area'
+          ? (this.options.tiles?.tiles ?? [])
+          : []) {
           await waitForGround(
             this.world,
             geoToLocal(this.document.geography!, mapTileSample(tile, 1, 1, 2)),
@@ -1060,6 +1092,17 @@ export class GameRuntime {
           signal: controller.signal,
           onProgress: progress,
         })
+        if (this.options.startupTerrain === 'nearby') {
+          // These checks share the frozen four-cell plan and reject missing terrain rather than
+          // revealing a scene with fewer cells or silently proceeding after an area timeout.
+          for (const tile of this.world.startupTiles) {
+            await waitForGround(
+              this.world,
+              geoToLocal(this.document.geography!, mapTileSample(tile, 1, 1, 2)),
+              { signal: controller.signal, onProgress: progress },
+            )
+          }
+        }
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
         if (this.options.restParkedOnGround) {
           const authored = new Map(
@@ -1122,6 +1165,7 @@ export class GameRuntime {
       // The scene clock starts at its authored time (e.g. 10:00) at reveal, not at construction.
       const clock = this.document.sky
       if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+      this.world?.setStartupMode(false)
       this.options.canvas.dataset.reveal = 'play'
       this.toolbar.setVisible(true)
       this.stopAttract()
@@ -1134,7 +1178,10 @@ export class GameRuntime {
       if (this.loading === controller) this.stop()
       throw error
     } finally {
-      if (this.loading === controller) this.loading = null
+      if (this.loading === controller) {
+        this.world?.setStartupMode(false)
+        this.loading = null
+      }
     }
   }
 
@@ -1223,6 +1270,8 @@ export class GameRuntime {
   }
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
+    this.usbFeedback.dispose()
+    this.usbControllers.reset()
     if (this.disposed) return
     this.stopAttract()
     this.stop()
@@ -1317,7 +1366,7 @@ export class GameRuntime {
       controls.touch.forward = freeTrigger('right') - freeTrigger('left')
     }
     for (const code of controls.actions) {
-      if (code === 'XRMenu') this.xr.toggleMenu()
+      if (code === 'xr.menu') this.xr.toggleMenu()
       else this.action(code)
     }
     // Keep a stable body heading. Head orientation belongs exclusively to WebXR.
@@ -1673,6 +1722,7 @@ export class GameRuntime {
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
+      usb: this.usbFrame,
       touch: {
         forward: Math.max(
           -1,
@@ -1701,14 +1751,18 @@ export class GameRuntime {
       this.cameraActivity()
     if (this.startSequence && (input.forward || input.right || input.brake))
       this.applyStartCamera(this.startSequence.skip(), sim)
-    const hydraulicKey = (positive: string, negative: string) =>
-      this.hasInput()
-        ? Number(this.keys.values.has(positive)) - Number(this.keys.values.has(negative))
-        : 0
+    const hydraulicContext = this.controlContext
+    const hydraulicAxis = (
+      positive: Parameters<typeof actionAxis>[1],
+      negative: Parameters<typeof actionAxis>[2],
+    ) => (this.hasInput() ? actionAxis(this.keys.values, positive, negative, hydraulicContext) : 0)
     sim.setForkliftInput([
-      hydraulicKey('KeyI', 'KeyK'),
-      hydraulicKey('KeyJ', 'KeyL'),
-      hydraulicKey('KeyO', 'KeyU'),
+      hydraulicAxis('forklift.liftUp', 'forklift.liftDown') +
+        (this.usbFrame.axes.hydraulicLift ?? 0),
+      hydraulicAxis('forklift.tiltUp', 'forklift.tiltDown') +
+        (this.usbFrame.axes.hydraulicTilt ?? 0),
+      hydraulicAxis('forklift.sideRight', 'forklift.sideLeft') +
+        (this.usbFrame.axes.hydraulicSide ?? 0),
     ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
@@ -1736,6 +1790,11 @@ export class GameRuntime {
     this.environment.ocean.setLevel(water.level)
     const physicsStart = measuring ? performance.now() : 0
     const crossing = this.game.step(dt, input, water.level, time)
+    this.usbFeedback.update(
+      vehicleId ? sim.vehicleFeedback(vehicleId) : null,
+      availableGamepads(),
+      this.hasInput() && !this.controlContext.menu,
+    )
     const physicsMs = measuring ? performance.now() - physicsStart : 0
     if (crossing)
       this.options.onMessage?.(
@@ -1804,7 +1863,7 @@ export class GameRuntime {
     const canLean =
       eyes && !player.vehicleId && this.weaponDrawn && !!this.sidearm?.isAiming && this.hasInput()
     const leanTarget = canLean
-      ? Number(this.keys.values.has('KeyE')) - Number(this.keys.values.has('KeyQ'))
+      ? actionAxis(this.keys.values, 'lean.right', 'lean.left', this.controlContext)
       : 0
     this.aimLean += (leanTarget - this.aimLean) * (1 - Math.exp(-14 * Math.min(dt, 0.1)))
     if (!eyes || player.vehicleId) this.aimLean = 0
@@ -2032,7 +2091,18 @@ export class GameRuntime {
         this.document.entities.find((entity) => entity.id === player.vehicleId)?.name ?? null,
       cameraMode: canvas.dataset.cameraMode!,
       interaction: player.vehicleId
-        ? 'E exit · V camera · H lights · G GPS · K high/low · Z/X indicators · F9 wheel diagnostics'
+        ? controlsHint(this.controlContext, [
+            'interact',
+            'camera',
+            'lights',
+            'gps',
+            'highBeam',
+            'signal.left',
+            'signal.right',
+            'debug.wheels',
+            'vehicle.menu',
+            'forklift.menu',
+          ])
         : nearbyPickup
           ? this.text('E pick up {0}', nearbyPickup.name)
           : 'WASD move · Space jump · E enter · V camera · C crouch · C+Space prone',
@@ -3126,6 +3196,11 @@ export class GameRuntime {
     }
   }
 
+  /** Read-only tile states for menus and maps; the existing streamer remains authoritative. */
+  get terrainTiles() {
+    return this.world?.diagnostics.tiles.filter((tile) => tile.kind === 'mesh') ?? []
+  }
+
   /** Terrain cells loaded and drawn of the known dataset; null without tiles. */
   get cellStats(): {
     loaded: number
@@ -3734,7 +3809,7 @@ export class GameRuntime {
             requestAnimationFrame((time) => {
               if (this.disposed) return resolve(0)
               const start = performance.now()
-              for (let pass = 0; pass < 3; pass++) this.renderAttractFrame(time)
+              for (let pass = 0; pass < 3; pass++) this.renderAttractFrame()
               // One-pixel readback waits for the queued GPU work: a CPU+GPU proxy, not a GPU timer.
               gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
               const work = performance.now() - start
@@ -3865,15 +3940,23 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
-      await waitForArea(this.world, spawn, {
-        signal,
-        pending: () => this.view.pendingMapInstalls,
-        flush: () =>
-          this.view.flushMapInstall(
-            streamingDefaults.mapInstallBudgetMs * 3,
-            streamingDefaults.mapInstallCount * 4,
-          ),
-      })
+      if (this.options.startupTerrain === 'area') {
+        await waitForArea(this.world, spawn, {
+          signal,
+          pending: () => this.view.pendingMapInstalls,
+          flush: () =>
+            this.view.flushMapInstall(
+              streamingDefaults.mapInstallBudgetMs * 3,
+              streamingDefaults.mapInstallCount * 4,
+            ),
+        })
+      } else {
+        await waitForGround(this.world, spawn, { signal })
+        this.view.flushMapInstall(
+          streamingDefaults.mapInstallBudgetMs,
+          streamingDefaults.mapInstallCount,
+        )
+      }
       this.world.renderUpdate(this.origin, !!this.quality.buildings, sim)
     }
     signal.throwIfAborted()
@@ -3984,7 +4067,9 @@ export class GameRuntime {
         if (!attract || this.disposed) return
         const frameMs = attract.last === null ? 0 : time - attract.last
         attract.last = time
-        this.renderAttractFrame(time)
+        // Loading, tab suspension or a busy GPU must not fast-forward the orbit on resume.
+        attract.elapsed += Math.min(50, Math.max(0, frameMs))
+        this.renderAttractFrame()
         this.observeResolution(frameMs, time)
       } catch (error) {
         this.stopAttract()
@@ -3992,7 +4077,13 @@ export class GameRuntime {
       }
     })
     loop.setMaxFps(this.display.maxFps)
-    this.attract = { loop, started: performance.now(), last: null, options: resolved }
+    this.attract = {
+      loop,
+      elapsed: 0,
+      camera: this.camera.clone(),
+      last: null,
+      options: resolved,
+    }
     this.options.canvas.dataset.bootMode = 'attract'
     loop.start()
   }
@@ -4008,13 +4099,17 @@ export class GameRuntime {
   get attracting(): boolean {
     return !!this.attract
   }
-  private renderAttractFrame(time: number): void {
+  private renderAttractFrame(): void {
     if (!this.document.geography) return
     const options = this.attract?.options ?? { altitude: 18_000_000, orbitSeconds: 120, tilt: 0.45 }
-    const started = this.attract?.started ?? 0
+    // Warmup changes the gameplay camera's FOV/pose across async waits. The intro owns its
+    // projection so those preparations cannot zoom the globe in and out between frames.
+    const camera = this.attract?.camera ?? this.camera.clone()
+    camera.aspect = this.camera.aspect
+    camera.updateProjectionMatrix()
     const centre = new THREE.Vector3(0, -(EARTH_RADIUS + this.document.geography.altitude), 0)
     const angle = options.orbitSeconds
-      ? (((time - started) / 1000) * Math.PI * 2) / options.orbitSeconds
+      ? (((this.attract?.elapsed ?? 0) / 1000) * Math.PI * 2) / options.orbitSeconds
       : 0
     const distance = EARTH_RADIUS + options.altitude
     const eye = new THREE.Vector3(
@@ -4024,10 +4119,10 @@ export class GameRuntime {
     )
       .multiplyScalar(distance)
       .add(centre)
-    this.camera.up.set(0, 1, 0)
-    this.camera.position.copy(eye)
-    this.camera.lookAt(centre)
-    this.camera.updateMatrixWorld()
+    camera.up.set(0, 1, 0)
+    camera.position.copy(eye)
+    camera.lookAt(centre)
+    camera.updateMatrixWorld()
     this.environment.updateSky(
       this.sky,
       eye,
@@ -4035,11 +4130,11 @@ export class GameRuntime {
       this.attract?.options.clock ?? { mode: 'live' },
       this.quality.fog,
     )
-    this.sky.setViewAspect(this.camera.aspect)
+    this.sky.setViewAspect(camera.aspect)
     const autoClear = this.renderer.autoClear
     this.renderer.autoClear = true
     try {
-      this.sky.render(this.renderer, this.camera, eye)
+      this.sky.render(this.renderer, camera, eye)
     } finally {
       this.renderer.autoClear = autoClear
     }
@@ -4105,6 +4200,9 @@ export class GameRuntime {
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
   releaseInput(): void {
+    this.usbControllers.reset()
+    this.usbFrame = idleUsbFrame()
+    this.usbFeedback.stop()
     if (this.sidearm) this.sidearm.state.manualRackHeld = false
     this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
@@ -4136,7 +4234,9 @@ export class GameRuntime {
     advancePools = true,
   ): void {
     sidearm.setSteadyHeld(
-      ['KeyW', 'KeyA', 'KeyS', 'KeyD'].every((key) => this.keys.values.has(key)),
+      (['move.forward', 'move.left', 'move.back', 'move.right'] as const).every((action) =>
+        actionHeld(this.keys.values, action, this.controlContext),
+      ),
     )
     const weaponPosition = (
       eyes
@@ -4422,7 +4522,8 @@ export class GameRuntime {
     const action = sidearmButtonAction(button, down)
     if (
       action === 'fire' &&
-      (this.keys.values.has('KeyZ') || this.safetyClickHeld) &&
+      (actionHeld(this.keys.values, 'weapon.inspect', this.controlContext) ||
+        this.safetyClickHeld) &&
       this.sidearm
     ) {
       if (!this.safetyClickHeld) {
@@ -4534,50 +4635,74 @@ export class GameRuntime {
     }
   }
   private cycleCamera(): void {
-    // C during the start sequence hands the camera to the player (a held engine starts).
+    // The camera action during the start sequence hands the view to the player (a held engine starts).
     const sim = this.session.simulation
     if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
-    const message = this.game.action('KeyV')
+    const message = this.game.dispatch('camera')
     if (message) this.options.onMessage?.(message)
   }
   private pollGamepad(): Gamepad | null {
-    if (!this.hasInput()) {
+    const pads = availableGamepads()
+    this.usbFrame = this.usbControllers.read(pads, this.controlContext, this.hasInput())
+    for (const action of this.usbFrame.pressed) {
+      if (action === 'camera') this.cycleCamera()
+      else this.action(action)
+    }
+    if (!this.hasInput() || this.usbControllers.configuring) {
       this.previousButtons = []
       return null
     }
-    const pad = availableGamepads().find((p) => p?.connected && p.mapping === 'standard') ?? null
+    const mapped = this.usbControllers.mappedDevices(
+      this.controlContext.mode === 'flight' ? 'flight' : 'road',
+    )
+    const pad =
+      pads.find((p) => p?.connected && p.mapping === 'standard' && !mapped.has(usbDeviceKey(p))) ??
+      null
     if (pad?.index !== this.previousPad) this.previousButtons = []
     this.previousPad = pad?.index ?? null
     if (!pad) return null
     const pressed = (index: number) => !!pad.buttons[index]?.pressed && !this.previousButtons[index]
-    if (pressed(0)) this.action('KeyE')
-    if (pressed(1)) this.cycleCamera()
-    if (pressed(2)) this.action('KeyF')
-    if (pressed(3)) this.action('KeyC')
-    if (pressed(4)) this.action('KeyR')
+    for (const [button, action] of gamepadActionButtons) {
+      if (!pressed(button)) continue
+      if (action === 'camera') this.cycleCamera()
+      else this.action(action)
+    }
     this.previousButtons = pad.buttons.map((button) => button.pressed)
     return pad
   }
-  private action(code: string): void {
+  get controlContext(): InputContext {
+    const sim = this.session.simulation
+    const id = sim?.player.vehicleId
+    const vehicle = id
+      ? this.document.entities.find((entity) => entity.id === id)?.vehicle
+      : undefined
+    return {
+      mode: inputMode(!!id, !!(id && sim?.vehicleInfo(id).flightMode), vehicle),
+      weapon: this.weaponDrawn,
+      aiming: !!this.sidearm?.isAiming,
+      menu: !!(id && this.view.vehicleMenu(id)?.open),
+    }
+  }
+  private action(value: string): void {
     const sim = this.session.simulation
     if (!sim) return
+    const context = this.controlContext
+    const raw = legacyInputAction(value) ?? bindingForKey(value, context)
+    if (!raw || (context.menu && !raw.startsWith('menu.'))) return
+    const action = contextualAction(raw, context)
     if (
-      (code === 'KeyQ' || code === 'KeyE') &&
+      (action === 'lean.left' || action === 'lean.right' || action === 'interact') &&
       !sim.player.vehicleId &&
       this.weaponDrawn &&
       this.sidearm?.isAiming
     )
       return
-    if (
-      !sim.player.vehicleId &&
-      ((code === 'Space' && this.keys.values.has('KeyC')) ||
-        (code === 'KeyC' && this.keys.values.has('Space')))
-    ) {
+    if (!sim.player.vehicleId && actionCompletesChord(this.keys.values, 'prone', action, context)) {
       sim.setStance('prone')
-      this.options.onMessage?.('Cuerpo a tierra · C para levantarse')
+      this.options.onMessage?.('Cuerpo a tierra · ' + controlsHint({ mode: 'walk' }, ['stance']))
       return
     }
-    if (code === 'KeyE') {
+    if (action === 'interact') {
       const nearby = this.nearbyPickup(sim)
       const item =
         nearby &&
@@ -4600,15 +4725,17 @@ export class GameRuntime {
         }
         this.weaponDrawn = true
         this.sidearm.visible = true
-        this.options.onMessage?.(this.text('Picked up {0} · Tab holster', item.name))
+        this.options.onMessage?.(
+          this.text('Picked up {0}', item.name) + ' · ' + controlsHint(context, ['holster']),
+        )
         return
       }
     }
-    if (code === 'F9') {
+    if (action === 'debug.wheels') {
       this.wheelDebug.toggle()
       return
     }
-    if (code === 'Tab') {
+    if (action === 'holster') {
       if (!this.weaponOwned) return
       this.weaponDrawn = !this.weaponDrawn
       this.fireRequested = false
@@ -4626,23 +4753,41 @@ export class GameRuntime {
     if (
       this.xr.active &&
       this.weaponDrawn &&
-      ['KeyR', 'KeyF', 'KeyM', 'KeyX', 'KeyZ'].includes(code)
+      [
+        'weapon.magazine',
+        'weapon.slide',
+        'weapon.auto',
+        'weapon.chamber',
+        'weapon.inspect',
+      ].includes(action)
     )
       return
-    if ((code === 'KeyR' || code === 'KeyF') && this.weaponDrawn) {
+    if ((action === 'weapon.magazine' || action === 'weapon.slide') && this.weaponDrawn) {
       if (this.sidearm?.state.reload !== 'none') return
       this.magazineAction =
-        code === 'KeyF' ? 'release' : this.sidearm?.state.magazineSeated ? 'drop' : 'insert'
+        action === 'weapon.slide'
+          ? 'release'
+          : this.sidearm?.state.magazineSeated
+            ? 'drop'
+            : 'insert'
       return
     }
-    if ((code === 'KeyZ' || code === 'KeyX') && this.weaponDrawn && this.sidearm) {
-      this.sidearm.inspect(performance.now(), code === 'KeyX')
-      if (code === 'KeyX')
+    if (
+      (action === 'weapon.inspect' || action === 'weapon.chamber') &&
+      this.weaponDrawn &&
+      this.sidearm
+    ) {
+      this.sidearm.inspect(performance.now(), action === 'weapon.chamber')
+      if (action === 'weapon.chamber')
         this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
       return
     }
-    if ((code === 'KeyG' || code === 'KeyH') && this.weaponDrawn && this.sidearm) {
-      if (code === 'KeyG') {
+    if (
+      (action === 'weapon.laser' || action === 'weapon.light') &&
+      this.weaponDrawn &&
+      this.sidearm
+    ) {
+      if (action === 'weapon.laser') {
         const on = this.sidearm.toggleLaser()
         this.view.laser.enabled = on
         this.options.onMessage?.(on ? this.text('Laser on') : this.text('Laser off'))
@@ -4655,28 +4800,28 @@ export class GameRuntime {
     }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
     // the pistol) M keeps its game meaning (helm mode / its notice).
-    if (code === 'KeyM' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
+    if (action === 'weapon.auto' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
       this.magazineAction = 'automatic'
       this.triggerDown = false
       return
     }
-    if (code === 'KeyN') this.gallery.reset()
-    let message = this.game.action(code)
-    if ((code === 'KeyZ' || code === 'KeyX') && sim.player.vehicleId) {
-      this.view.signal(sim.player.vehicleId, code === 'KeyZ' ? -1 : 1)
-      message = this.text('Indicators: Z left · X right · press again to cancel')
+    if (action === 'gallery.reset') this.gallery.reset()
+    let message = this.game.dispatch(action)
+    if ((action === 'signal.left' || action === 'signal.right') && sim.player.vehicleId) {
+      this.view.signal(sim.player.vehicleId, action === 'signal.left' ? -1 : 1)
+      message = controlsHint(context, ['signal.left', 'signal.right'])
     }
-    if (code === 'KeyH') {
+    if (action === 'lights') {
       if (sim.player.vehicleId) {
         const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
         if (mode !== null) message = this.text(lightModeNotice[mode])
       }
     }
-    if (code === 'KeyG' && sim.player.vehicleId) {
+    if (action === 'gps' && sim.player.vehicleId) {
       const open = this.view.toggleVehicleGps(sim.player.vehicleId)
       if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
     }
-    if (code === 'KeyK' && sim.player.vehicleId) {
+    if (action === 'highBeam' && sim.player.vehicleId) {
       const high = this.view.toggleVehicleHighBeam(sim.player.vehicleId)
       if (high !== null)
         message = high ? this.text('High beams selected') : this.text('Low beams selected')
@@ -4828,14 +4973,13 @@ export class GameRuntime {
       'keydown',
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
+        if (event.ctrlKey || event.metaKey || event.altKey) return
         // Escape while unlocked asks for the free mouse; any other key while the game should
         // own the pointer (first keypress after loading, or a refused lock) captures it.
-        if (event.code === 'Escape') this.pointerFree = true
+        if (bindingForKey(event.code, this.controlContext) === 'pointer.release')
+          this.pointerFree = true
         else if (!this.pointerFree && !event.repeat) this.capturePointer()
-        if (
-          ['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)
-        )
-          event.preventDefault()
+        if (bindingForKey(event.code, this.controlContext) !== undefined) event.preventDefault()
         const id = this.session.simulation?.player.vehicleId
         if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
           const result = vehicleMenuKey(
@@ -4893,10 +5037,11 @@ export class GameRuntime {
         this.keys.press(event.code, event.repeat, performance.now())
         this.effects.audio.unlock()
         if (!event.repeat) {
-          if (event.code === 'KeyF' && this.weaponDrawn && this.sidearm)
+          const action = bindingForKey(event.code, this.controlContext)
+          if (action === 'weapon.slide' && this.weaponDrawn && this.sidearm)
             this.sidearm.state.manualRackHeld =
               this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
-          this.action(event.code)
+          if (action) this.action(action)
         }
       },
       options,
@@ -4905,10 +5050,14 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
-        if (event.code === 'KeyF' && this.sidearm) this.sidearm.state.manualRackHeld = false
-        if (event.code === 'KeyZ' || event.code === 'KeyX') {
+        if (inputBindings['weapon.slide'].keys.includes(event.code) && this.sidearm)
+          this.sidearm.state.manualRackHeld = false
+        if (
+          inputBindings['weapon.inspect'].keys.includes(event.code) ||
+          inputBindings['weapon.chamber'].keys.includes(event.code)
+        ) {
           this.sidearm?.stopInspect(performance.now())
-          if (event.code === 'KeyX' && this.weaponDrawn)
+          if (inputBindings['weapon.chamber'].keys.includes(event.code) && this.weaponDrawn)
             this.effects.audio.weaponSound('slide-forward', this.camera.position.toArray())
         }
       },

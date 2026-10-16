@@ -1,3 +1,4 @@
+import { actionHeld, actionAxis, bindingForKey } from '../config/input-bindings.js'
 import { mapCache } from '../render/planet/cache.js'
 export { mapCacheStats, setMapCacheBudget, clearMapCache } from '../render/planet/cache.js'
 import * as THREE from 'three'
@@ -432,7 +433,7 @@ export function createGeographicViewer(
     }
     return (
       THREE.MathUtils.clamp(clearance * 0.8, 4, 5000) *
-      (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 4 : 1)
+      (actionHeld(keys, 'sprint', { mode: 'viewer' }) ? 4 : 1)
     )
   }
   let looking: { id: number; x: number; y: number } | undefined
@@ -481,11 +482,7 @@ export function createGeographicViewer(
     'keydown',
     (event) => {
       if (!active || event.ctrlKey || event.metaKey || event.altKey) return
-      if (
-        ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight'].includes(
-          event.code,
-        )
-      ) {
+      if (bindingForKey(event.code, { mode: 'viewer' }) !== undefined) {
         event.preventDefault()
         keys.add(event.code)
       }
@@ -508,9 +505,9 @@ export function createGeographicViewer(
     if (direction.lengthSq() < 0.000001) direction.set(0, 0, -1).projectOnPlane(up)
     direction.normalize()
     const right = direction.clone().cross(up).normalize()
-    const forward = Number(keys.has('KeyW')) - Number(keys.has('KeyS'))
-    const sideways = Number(keys.has('KeyD')) - Number(keys.has('KeyA'))
-    const lift = Number(keys.has('KeyE')) - Number(keys.has('KeyQ'))
+    const forward = actionAxis(keys, 'viewer.forward', 'viewer.back', { mode: 'viewer' })
+    const sideways = actionAxis(keys, 'viewer.right', 'viewer.left', { mode: 'viewer' })
+    const lift = actionAxis(keys, 'viewer.up', 'viewer.down', { mode: 'viewer' })
     const movement = direction
       .multiplyScalar(forward)
       .addScaledVector(right, sideways)

@@ -15,7 +15,7 @@
 
 ## ARDrone.hasSpotlight
 
-[Implementation, line 32](../../../../../src/experimental/betaflight/ar-drone.ts#L32)
+[Implementation, line 33](../../../../../src/experimental/betaflight/ar-drone.ts#L33)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -26,7 +26,7 @@ hasSpotlight(): boolean
 
 ## ARDrone.spotlightEnabled
 
-[Implementation, line 35](../../../../../src/experimental/betaflight/ar-drone.ts#L35)
+[Implementation, line 36](../../../../../src/experimental/betaflight/ar-drone.ts#L36)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -37,7 +37,7 @@ spotlightEnabled(): boolean
 
 ## ARDrone.toggleSpotlight
 
-[Implementation, line 38](../../../../../src/experimental/betaflight/ar-drone.ts#L38)
+[Implementation, line 39](../../../../../src/experimental/betaflight/ar-drone.ts#L39)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -48,7 +48,7 @@ toggleSpotlight(): boolean
 
 ## ARDrone.spawnModel
 
-[Implementation, line 43](../../../../../src/experimental/betaflight/ar-drone.ts#L43)
+[Implementation, line 44](../../../../../src/experimental/betaflight/ar-drone.ts#L44)
 
 Replace presentation only. The existing Betaflight body, PID, mixer and sticks stay unchanged.
 
@@ -79,7 +79,7 @@ Explicit throws in this body:
 
 ## ARDrone.constructor
 
-[Implementation, line 76](../../../../../src/experimental/betaflight/ar-drone.ts#L76)
+[Implementation, line 77](../../../../../src/experimental/betaflight/ar-drone.ts#L77)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -90,7 +90,7 @@ constructor(private scene: THREE.Scene, private getWorld: () => World | null): i
 
 ## ARDrone.spawn
 
-[Implementation, line 80](../../../../../src/experimental/betaflight/ar-drone.ts#L80)
+[Implementation, line 81](../../../../../src/experimental/betaflight/ar-drone.ts#L81)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -114,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.spawn.box
 
-[Implementation, line 88](../../../../../src/experimental/betaflight/ar-drone.ts#L88)
+[Implementation, line 89](../../../../../src/experimental/betaflight/ar-drone.ts#L89)
 
 ```ts
 box(x: number, y: number, z: number, sx: number, sy: number, sz: number, material = carbon): inferred by TypeScript; see implementation
@@ -129,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.spawnPosition
 
-[Implementation, line 121](../../../../../src/experimental/betaflight/ar-drone.ts#L121)
+[Implementation, line 122](../../../../../src/experimental/betaflight/ar-drone.ts#L122)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.reset
 
-[Implementation, line 128](../../../../../src/experimental/betaflight/ar-drone.ts#L128)
+[Implementation, line 129](../../../../../src/experimental/betaflight/ar-drone.ts#L129)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -173,7 +173,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.setArmed
 
-[Implementation, line 139](../../../../../src/experimental/betaflight/ar-drone.ts#L139)
+[Implementation, line 140](../../../../../src/experimental/betaflight/ar-drone.ts#L140)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -188,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.setMode
 
-[Implementation, line 145](../../../../../src/experimental/betaflight/ar-drone.ts#L145)
+[Implementation, line 146](../../../../../src/experimental/betaflight/ar-drone.ts#L146)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -203,7 +203,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.readInput
 
-[Implementation, line 151](../../../../../src/experimental/betaflight/ar-drone.ts#L151)
+[Implementation, line 152](../../../../../src/experimental/betaflight/ar-drone.ts#L152)
 
 Neutral spring-centred left stick holds hover in Angle; Acro integrates throttle.
 
@@ -223,7 +223,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.readInput.axis
 
-[Implementation, line 152](../../../../../src/experimental/betaflight/ar-drone.ts#L152)
+[Implementation, line 153](../../../../../src/experimental/betaflight/ar-drone.ts#L153)
 
 ```ts
 axis(side: XRHandedness, index: number): inferred by TypeScript; see implementation
@@ -236,20 +236,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.clamp`
 - `sources.find`
 
-## ARDrone.readInput.axis.callback@154
+## ARDrone.readInput.axis.callback@155
 
-[Implementation, line 154](../../../../../src/experimental/betaflight/ar-drone.ts#L154)
-
-```ts
-callback@154(s): inferred by TypeScript; see implementation
-```
-
-## ARDrone.readInput.callback@163
-
-[Implementation, line 163](../../../../../src/experimental/betaflight/ar-drone.ts#L163)
+[Implementation, line 155](../../../../../src/experimental/betaflight/ar-drone.ts#L155)
 
 ```ts
-callback@163(s): inferred by TypeScript; see implementation
+callback@155(s): inferred by TypeScript; see implementation
 ```
 
 ## ARDrone.readInput.callback@164
@@ -260,17 +252,25 @@ callback@163(s): inferred by TypeScript; see implementation
 callback@164(s): inferred by TypeScript; see implementation
 ```
 
-## ARDrone.readInput.callback@167
+## ARDrone.readInput.callback@165
 
-[Implementation, line 167](../../../../../src/experimental/betaflight/ar-drone.ts#L167)
+[Implementation, line 165](../../../../../src/experimental/betaflight/ar-drone.ts#L165)
 
 ```ts
-callback@167(s): inferred by TypeScript; see implementation
+callback@165(s): inferred by TypeScript; see implementation
+```
+
+## ARDrone.readInput.callback@168
+
+[Implementation, line 168](../../../../../src/experimental/betaflight/ar-drone.ts#L168)
+
+```ts
+callback@168(s): inferred by TypeScript; see implementation
 ```
 
 ## ARDrone.beforeStep
 
-[Implementation, line 183](../../../../../src/experimental/betaflight/ar-drone.ts#L183)
+[Implementation, line 185](../../../../../src/experimental/betaflight/ar-drone.ts#L185)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -285,7 +285,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARDrone.sync
 
-[Implementation, line 186](../../../../../src/experimental/betaflight/ar-drone.ts#L186)
+[Implementation, line 188](../../../../../src/experimental/betaflight/ar-drone.ts#L188)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.
@@ -306,25 +306,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.quaternion.copy`
 - `this.rotors.forEach`
 
-## ARDrone.sync.callback@191
+## ARDrone.sync.callback@193
 
-[Implementation, line 191](../../../../../src/experimental/betaflight/ar-drone.ts#L191)
+[Implementation, line 193](../../../../../src/experimental/betaflight/ar-drone.ts#L193)
 
 ```ts
-callback@191(sum, value): inferred by TypeScript; see implementation
+callback@193(sum, value): inferred by TypeScript; see implementation
 ```
 
-## ARDrone.sync.callback@194
+## ARDrone.sync.callback@196
 
-[Implementation, line 194](../../../../../src/experimental/betaflight/ar-drone.ts#L194)
+[Implementation, line 196](../../../../../src/experimental/betaflight/ar-drone.ts#L196)
 
 ```ts
-callback@194(rotor, i): inferred by TypeScript; see implementation
+callback@196(rotor, i): inferred by TypeScript; see implementation
 ```
 
 ## ARDrone.clear
 
-[Implementation, line 204](../../../../../src/experimental/betaflight/ar-drone.ts#L204)
+[Implementation, line 206](../../../../../src/experimental/betaflight/ar-drone.ts#L206)
 
 Small AR host adapter: Mode 2 sticks and the original Agency procedural quad.
 Uses the host's Engine world, room scan, menu, disposal portal and clock.

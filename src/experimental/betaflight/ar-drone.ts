@@ -27,6 +27,7 @@ export class ARDrone {
   private generation = 0
   private mainRotor: THREE.Object3D | null = null
   private tailRotor: THREE.Object3D | null = null
+  lightButtonIndex = 4
   private spotlight: THREE.SpotLight | null = null
   private lightButtonDown = false
   get hasSpotlight(): boolean {
@@ -164,8 +165,9 @@ export class ARDrone {
       !sources.some((s) => s.handedness === 'right' && !!s.gamepad)
     )
       this.setArmed(false)
-    const lightButton = !!sources.find((s) => s.handedness === 'left')?.gamepad?.buttons?.[4]
-      ?.pressed
+    const lightButton = !!sources.find((s) => s.handedness === 'left')?.gamepad?.buttons?.[
+      this.lightButtonIndex
+    ]?.pressed
     if (lightButton && !this.lightButtonDown && this.spotlight) this.toggleSpotlight()
     this.lightButtonDown = lightButton
     const climb = -axis('left', 1)

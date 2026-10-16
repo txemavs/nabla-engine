@@ -497,9 +497,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.session.recenter`
 
+## GameXR.referenceSpace
+
+[Implementation, line 241](../../../../src/runtime/xr.ts#L241)
+
+The space Three used for its cameras/controllers at the start of this XR frame.
+
+```ts
+referenceSpace(): XRReferenceSpace | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.renderer.xr.getReferenceSpace`
+
 ## GameXR.update
 
-[Implementation, line 239](../../../../src/runtime/xr.ts#L239)
+[Implementation, line 245](../../../../src/runtime/xr.ts#L245)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -528,29 +542,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.tracked.includes`
 - `this.tracked.push`
 
-## GameXR.update.callback@246
+## GameXR.update.callback@255
 
-[Implementation, line 246](../../../../src/runtime/xr.ts#L246)
+[Implementation, line 255](../../../../src/runtime/xr.ts#L255)
 
 ```ts
-callback@246(source): inferred by TypeScript; see implementation
+callback@255(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `frame.getPose`
 
-## GameXR.update.callback@267
+## GameXR.update.callback@276
 
-[Implementation, line 267](../../../../src/runtime/xr.ts#L267)
+[Implementation, line 276](../../../../src/runtime/xr.ts#L276)
 
 ```ts
-callback@267(s): inferred by TypeScript; see implementation
+callback@276(s): inferred by TypeScript; see implementation
 ```
 
 ## GameXR.anchor
 
-[Implementation, line 288](../../../../src/runtime/xr.ts#L288)
+[Implementation, line 297](../../../../src/runtime/xr.ts#L297)
 
 Authored eye pose is the seat/standing anchor; tracked head movement stays relative to it.
 
@@ -569,7 +583,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.dispose
 
-[Implementation, line 299](../../../../src/runtime/xr.ts#L299)
+[Implementation, line 308](../../../../src/runtime/xr.ts#L308)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 

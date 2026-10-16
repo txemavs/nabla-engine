@@ -1,5 +1,6 @@
 import { expect, it, vi } from 'vitest'
 import * as THREE from 'three'
+import { GameAR } from '../../src/runtime/ar/session.js'
 import { GameXR } from '../../src/runtime/xr.js'
 
 it('anchors tracked eyes at a seat and restores camera ownership after exit', async () => {
@@ -66,4 +67,52 @@ it('anchors tracked eyes at a seat and restores camera ownership after exit', as
   expect(camera.parent).toBe(parent)
   expect(camera.position.toArray()).toEqual([7, 8, 9])
   xr.dispose()
+})
+
+it('uses the camera frame space for AR room queries even when an anchor changes the next reference', () => {
+  const oldSpace = {} as XRReferenceSpace,
+    correctedSpace = {} as XRReferenceSpace
+  let current = oldSpace
+  const manager = {
+    enabled: false,
+    setReferenceSpaceType() {},
+    setFramebufferScaleFactor() {},
+    setFoveation() {},
+    getReferenceSpace: () => current,
+    getSession: () => ({ visibilityState: 'visible', inputSources: [] }),
+    getControllerGrip: () => new THREE.Group(),
+    getController: () => new THREE.Group(),
+  }
+  const camera = new THREE.PerspectiveCamera()
+  const ar = new GameAR(
+    { xr: manager } as unknown as THREE.WebGLRenderer,
+    camera,
+    new THREE.Scene(),
+    () => {},
+    () => {},
+  )
+  vi.spyOn(ar.session, 'referenceReady', 'get').mockReturnValue(true)
+  vi.spyOn(ar.session, 'update').mockImplementation(() => {
+    current = correctedSpace
+  })
+  let estimated = false
+  const frame = {
+    getViewerPose: (space: XRReferenceSpace) => ({
+      emulatedPosition: estimated,
+      transform: {
+        position: { x: 0, y: space === oldSpace ? 1.7 : 3.2, z: 0 },
+        orientation: new THREE.Quaternion(),
+      },
+    }),
+  }
+  ar.update(frame as unknown as XRFrame)
+  expect(ar.referenceSpace).toBe(oldSpace)
+  expect(camera.position.y).toBe(1.7)
+  ar.update(frame as unknown as XRFrame)
+  expect(ar.referenceSpace).toBe(correctedSpace)
+  expect(camera.position.y).toBe(3.2)
+  estimated = true
+  ar.update(frame as unknown as XRFrame)
+  expect(ar.visible).toBe(false)
+  ar.dispose()
 })

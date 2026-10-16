@@ -1,9 +1,12 @@
+import { showControlHints } from './control-hints.js'
+import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   createFlatTestScene,
+  createFlatTestGround,
   FLAT_TEST_BASE,
   FLAT_TEST_TILES,
 } from '@nabla/engine/examples/flat-tile'
@@ -72,6 +75,7 @@ try {
   if (flat && !solo) {
     const fleet = ['car', 'white-truck', 'carrier']
     scene.entities = [
+      createFlatTestGround(),
       createEntity('spawn', 'spawn', [-4, 2, 0]),
       ...fleet.flatMap((preset, index) =>
         presetEntities(preset, preset === config.vehicle ? vehicle.id : `demo-${preset}`, [
@@ -139,6 +143,7 @@ try {
   }
   if (solo)
     scene.entities = [
+      ...(flat ? [createFlatTestGround()] : []),
       createEntity('spawn', 'spawn', [-4, 2, -4]),
       ...presetEntities(config.vehicle, vehicle.id, [0, 2, 0]),
     ]
@@ -292,6 +297,8 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
+      if (runtime)
+        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showLocation(frame.location)
     },
@@ -312,7 +319,15 @@ try {
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
     const help = document.createElement('p')
     help.textContent =
-      'Toro: verde altura (I/K), azul inclinación (J/L), rojo lateral (U/O). En VR: mantener agarre y tirar/empujar la palanca.'
+      controlsHint({ mode: 'forklift' }, [
+        'forklift.liftUp',
+        'forklift.liftDown',
+        'forklift.tiltUp',
+        'forklift.tiltDown',
+        'forklift.sideLeft',
+        'forklift.sideRight',
+        'forklift.menu',
+      ]) + '. En VR: mantener agarre y tirar/empujar la palanca.'
     help.style.cssText =
       'position:fixed;bottom:70px;left:12px;max-width:420px;background:#102632e8;color:white;padding:10px;pointer-events:none'
     document.body.append(help)
