@@ -1145,7 +1145,7 @@ Install vehicles added while the scene is running (the game menu spawns cars and
 The entities join the shared document; pair with `Simulation.addVehicles`.
 
 ```ts
-addVehicles(added: Entity[]): void
+addVehicles(added: Entity[]): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1153,7 +1153,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `Map`
 - `Promise.all`
-- `Promise.all(this.loading.splice(0)).catch`
+- `Promise.all(this.loading.splice(0)).then`
 - `SceneGraph.fromValidated`
 - `added.filter`
 - `assertHostedMouths`

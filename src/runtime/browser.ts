@@ -569,6 +569,10 @@ export class GameRuntime {
     return this.truckExhaustOffset
   }
   private vehicleWarmup: VehicleWarmup | null = null
+  private readonly drivingPrepared = new Set<string>()
+  private enteringVehicle = false
+  private vehiclePreparationCount = 0
+  private finishVehiclePreparation: (() => void) | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
   private aimLean = 0
@@ -1238,6 +1242,7 @@ export class GameRuntime {
       // vehicle and sidearm models, shader programs, and any host gate (an intro sequence).
       this.options.onProgress?.('Preparing…')
       await this.prepareReveal(controller.signal)
+      if (options.vehicleId) this.drivingPrepared.add(options.vehicleId)
       controller.signal.throwIfAborted()
       const first = this.startSequence?.steps[0]
       if (first?.view === 'map' && first.fromHeight !== undefined) {
@@ -1309,6 +1314,7 @@ export class GameRuntime {
     this.weaponDrawn = false
     this.clearPickups()
     this.accidentReplacement?.clear()
+    this.drivingPrepared.clear()
     this.lightSensorVehicle = null
     this.lightSensorSeconds = 0
     this.sidearmAimPreview = false
@@ -2929,19 +2935,15 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
     const [x, , z] = position
-    // Parse, texture upload and shader compile happen before the vehicle exists, spread over
-    // frames, so adding it below is a cheap clone instead of a frozen frame.
+    // Place the parked model now. Full driving preparation is deferred until first entry.
     // Behind an intro (`beforeReveal`) the host's cards cover loading; no badge over them.
     const hide =
       this.options.canvas.dataset.reveal === 'preparing'
         ? () => {}
-        : showLoadingBadge(this.options.canvas.parentElement, this.text('Loading vehicle…'))
+        : showLoadingBadge(this.options.canvas.parentElement, this.text('Waiting for terrain…'))
     let ground: number
     try {
-      ;[ground] = await Promise.all([
-        waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 }),
-        this.prewarmVehicle([vehicle, ...hostedTemplates]).catch(() => undefined),
-      ])
+      ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
     } finally {
       hide()
     }
@@ -2966,7 +2968,7 @@ export class GameRuntime {
       parentId: id,
     }))
     const added = [entity, ...hosted]
-    this.view.addVehicles(added)
+    const modelsReady = this.view.addVehicles(added)
     sim.addVehicles(added)
     this.game.addVehicles(added)
     // Ships with an interior (carrier) get their helm/telemetry/map/systems/portal monitor
@@ -2975,15 +2977,14 @@ export class GameRuntime {
     if (entity.vehicle?.interior || hosted.some((e) => e.portal))
       this.monitors.rebuild(this.document)
     this.spawned.push(id)
-    const group = this.view.objects.get(id)
-    if (group)
-      void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => undefined)
+    // Parked geometry must be visible even before its driving presentation is prepared.
+    await modelsReady
     return id
   }
   /**
    * Prepare the mounted vehicle materials, instruments, textures, shaders and mirror views
-   * without adding it to the simulation. `placeVehicle` and `spawnVehicle`
-   * call this first; a host may call it early (for example when a vehicle is picked in a menu).
+   * without adding it to the simulation. First entry calls this; placement only loads
+   * the parked model. A host may explicitly prepare a vehicle early.
    */
   async prewarmVehicle(
     template: Entity | readonly Entity[],
@@ -3020,7 +3021,43 @@ export class GameRuntime {
         return view
       },
     })
-    await this.vehicleWarmup.warm(entities, progress)
+    let started = false
+    let badge: ReturnType<typeof showLoadingBadge> | undefined
+    try {
+      await this.vehicleWarmup.warm(entities, async (phase) => {
+        if (!started && this.options.canvas.dataset.reveal !== 'preparing') {
+          started = true
+          if (this.vehiclePreparationCount++ === 0 && this.session.state === 'playing') {
+            const simulation = this.session.simulation
+            this.pause()
+            this.finishVehiclePreparation = () => {
+              if (
+                !this.disposed &&
+                this.session.simulation === simulation &&
+                this.session.state === 'paused'
+              )
+                this.resume()
+            }
+          }
+          badge = showLoadingBadge(this.options.canvas.parentElement, '')
+        }
+        const vehicle = entities[0]?.vehicle
+        const module = vehicle?.twoWheeled
+          ? 'motos'
+          : vehicle?.hitch && !vehicle.passive
+            ? 'camión articulado'
+            : (entities[0]?.name ?? 'vehículo')
+        badge?.update(`PLEASE WAIT · Cargando módulo de simulación de ${module} · ${phase}`)
+        await progress?.(phase)
+      })
+    } finally {
+      badge?.()
+      if (started && --this.vehiclePreparationCount === 0) {
+        const finish = this.finishVehiclePreparation
+        this.finishVehiclePreparation = null
+        finish?.()
+      }
+    }
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
@@ -4289,10 +4326,9 @@ export class GameRuntime {
       await this.reportLoadStep('Compilando destrucción y fragmentos')
       await this.view.destruction.warm(this.renderer, this.scene, this.camera, [this.view.root])
       stage('preload', 4)
-      const preloadVehicles = [
-        ...(this.options.preloadVehicles ?? []),
-        ...(this.options.accidentReplacementVehicles ?? []),
-      ]
+      // Replacement candidates are availability metadata, not an instruction to preload
+      // every vehicle. placeVehicle prepares a replacement when it is actually needed.
+      const preloadVehicles = this.options.preloadVehicles ?? []
       for (const [index, templates] of preloadVehicles.entries()) {
         signal.throwIfAborted()
         await this.reportLoadStep(`Precargando vehículo: ${index + 1}/${preloadVehicles.length}`)
@@ -5158,6 +5194,35 @@ export class GameRuntime {
       return
     }
     if (action === 'gallery.reset') this.gallery.reset()
+    if (action === 'interact' && !sim.player.vehicleId) {
+      const id = sim.nearestVehicle()
+      if (id && !this.drivingPrepared.has(id)) {
+        if (this.enteringVehicle) return
+        const entity = this.document.entities.find((e) => e.id === id)
+        if (!entity) return
+        this.enteringVehicle = true
+        const assembly = [entity, ...this.document.entities.filter((e) => e.parentId === id)]
+        void this.prewarmVehicle(assembly)
+          .then(() => {
+            if (this.disposed || this.session.simulation !== sim) return
+            this.drivingPrepared.add(id)
+            if (
+              this.session.state === 'playing' &&
+              !sim.player.vehicleId &&
+              sim.nearestVehicle() === id
+            )
+              this.action('interact')
+          })
+          .catch((error) => {
+            this.options.onMessage?.('No se pudo preparar el vehículo. Puedes volver a intentarlo.')
+            console.error('Vehicle preparation failed', error)
+          })
+          .finally(() => {
+            this.enteringVehicle = false
+          })
+        return
+      }
+    }
     let message = this.game.dispatch(action)
     if ((action === 'signal.left' || action === 'signal.right') && sim.player.vehicleId) {
       this.view.signal(sim.player.vehicleId, action === 'signal.left' ? -1 : 1)

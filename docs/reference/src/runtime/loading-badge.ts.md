@@ -16,32 +16,49 @@ Small "loading" pill over the game canvas while a vehicle is being prepared.
 Show the pill in `host`; call the returned function to remove it. No-op without a DOM.
 
 ```ts
-showLoadingBadge(host: HTMLElement | null | undefined, label: string): () => void
+showLoadingBadge(host: HTMLElement | null | undefined, label: string): (() => void) & { update(label: string): void }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Object.assign`
 - `badge.append`
 - `badge.setAttribute`
 - `document.createElement`
 - `host.append`
 
-## showLoadingBadge.callback@14
+## showLoadingBadge.callback@18
 
-[Implementation, line 14](../../../../src/runtime/loading-badge.ts#L14)
+[Implementation, line 18](../../../../src/runtime/loading-badge.ts#L18)
 
 ```ts
-callback@14(): inferred by TypeScript; see implementation
+callback@18(): inferred by TypeScript; see implementation
 ```
 
-## showLoadingBadge.callback@25
+## showLoadingBadge.update
 
-[Implementation, line 25](../../../../src/runtime/loading-badge.ts#L25)
+[Implementation, line 18](../../../../src/runtime/loading-badge.ts#L18)
 
 ```ts
-callback@25(): inferred by TypeScript; see implementation
+update(_label: string): inferred by TypeScript; see implementation
+```
+
+## showLoadingBadge.callback@29
+
+[Implementation, line 29](../../../../src/runtime/loading-badge.ts#L29)
+
+```ts
+callback@29(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `badge.remove`
+
+## showLoadingBadge.update
+
+[Implementation, line 30](../../../../src/runtime/loading-badge.ts#L30)
+
+```ts
+update(label: string): inferred by TypeScript; see implementation
+```

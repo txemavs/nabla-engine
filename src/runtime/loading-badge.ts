@@ -10,8 +10,12 @@ const style = `
 `
 
 /** Show the pill in `host`; call the returned function to remove it. No-op without a DOM. */
-export function showLoadingBadge(host: HTMLElement | null | undefined, label: string): () => void {
-  if (!host || typeof document === 'undefined') return () => {}
+export function showLoadingBadge(
+  host: HTMLElement | null | undefined,
+  label: string,
+): (() => void) & { update(label: string): void } {
+  if (!host || typeof document === 'undefined')
+    return Object.assign(() => {}, { update: (_label: string) => {} })
   const badge = document.createElement('div')
   badge.className = 'nabla-loading-badge'
   badge.setAttribute('role', 'status')
@@ -22,5 +26,9 @@ export function showLoadingBadge(host: HTMLElement | null | undefined, label: st
   text.textContent = label
   badge.append(css, spinner, text)
   host.append(badge)
-  return () => badge.remove()
+  return Object.assign(() => badge.remove(), {
+    update: (label: string) => {
+      text.textContent = label
+    },
+  })
 }
