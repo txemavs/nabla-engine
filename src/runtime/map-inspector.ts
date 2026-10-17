@@ -1,4 +1,5 @@
 import { Euler, Quaternion, Vector3 } from 'three'
+import { inspectorKeys } from '../config/input-bindings.js'
 
 /** Free inspection camera. Owns no simulation state: movement cannot move the player. */
 export class MapInspector {
@@ -28,15 +29,15 @@ export class MapInspector {
   step(keys: ReadonlySet<string>, dt: number): void {
     if (this.returning) return
     const held = (...codes: string[]) => Number(codes.some((code) => keys.has(code)))
-    const forward = held('KeyW', 'ArrowUp') - held('KeyS', 'ArrowDown')
-    const right = held('KeyD', 'ArrowRight') - held('KeyA', 'ArrowLeft')
+    const forward = held(...inspectorKeys.forward) - held(...inspectorKeys.back)
+    const right = held(...inspectorKeys.right) - held(...inspectorKeys.left)
     const length = Math.max(1, Math.hypot(forward, right))
-    const speed = held('ShiftLeft', 'ShiftRight') ? 800 : 200
+    const speed = held(...inspectorKeys.boost) ? 800 : 200
     const distance = Math.min(0.1, Math.max(0, dt)) * speed
     this.position.x +=
       ((-Math.sin(this.yaw) * forward + Math.cos(this.yaw) * right) / length) * distance
     this.position.z +=
       ((-Math.cos(this.yaw) * forward - Math.sin(this.yaw) * right) / length) * distance
-    this.position.y += (held('KeyE', 'PageUp') - held('KeyQ', 'PageDown')) * distance
+    this.position.y += (held(...inspectorKeys.up) - held(...inspectorKeys.down)) * distance
   }
 }

@@ -279,7 +279,7 @@ callback@276(action): inferred by TypeScript; see implementation
 
 ## actionCompletesChord
 
-[Implementation, line 282](../../../../src/config/input-bindings.ts#L282)
+[Implementation, line 292](../../../../src/config/input-bindings.ts#L292)
 
 A press completes a chord when the other declared actions are already held.
 
@@ -292,12 +292,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `actions.every`
 - `actions.includes`
 
-## actionCompletesChord.callback@291
+## actionCompletesChord.callback@301
 
-[Implementation, line 291](../../../../src/config/input-bindings.ts#L291)
+[Implementation, line 301](../../../../src/config/input-bindings.ts#L301)
 
 ```ts
-callback@291(action): inferred by TypeScript; see implementation
+callback@301(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -306,7 +306,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## inputMode
 
-[Implementation, line 296](../../../../src/config/input-bindings.ts#L296)
+[Implementation, line 306](../../../../src/config/input-bindings.ts#L306)
 
 Determine the one locomotion mode shared by mixing, event routing and help.
 
@@ -316,7 +316,7 @@ inputMode(seated: boolean, flight: boolean, vehicle?: { twoWheeled?: unknown; fo
 
 ## menuNavigationKey
 
-[Implementation, line 313](../../../../src/config/input-bindings.ts#L313)
+[Implementation, line 323](../../../../src/config/input-bindings.ts#L323)
 
 Keyboard intents for HTML tab lists and focus containment; independent of gameplay actions.
 

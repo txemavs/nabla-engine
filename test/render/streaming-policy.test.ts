@@ -229,7 +229,10 @@ it('installed Z16 cells and pins retain the Z15 collider until the quartet is re
     w.setStartupMode(true, 4)
     w.update([0, 0, 0], [0, 0, 0])
     const setPlanetTiles = vi.fn()
-    const simulation = { setPlanetTiles } as unknown as Parameters<typeof w.renderUpdate>[2]
+    const simulation = {
+      setPlanetTiles,
+      discardPlanetReplacement: vi.fn(),
+    } as unknown as Parameters<typeof w.renderUpdate>[2]
     for (const tile of [parent, ...children]) {
       const key = mapTileId(tile)
       state.ready.set(key, { tile })
