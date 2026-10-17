@@ -12,6 +12,24 @@ import {
   PLANET_DEFAULTS,
 } from '../render/planet/world-environment.js'
 import { geoToLocal, localToGeo, localFrame, type GeoPoint } from '../math/geo/sphere.js'
+import {
+  SurfaceImages,
+  applyOpacity,
+  listNodes,
+  meshesUnder,
+  setNodesVisible,
+  validateSelector,
+  visibleThrough,
+  type NodeSelector,
+  type NodeSurfaceImageOptions,
+  type ViewerNodeInfo,
+} from './asset-ops.js'
+export type {
+  NodeSelector,
+  NodeSelectorSpec,
+  NodeSurfaceImageOptions,
+  ViewerNodeInfo,
+} from './asset-ops.js'
 export { PLANET_DEFAULTS } from '../render/planet/world-environment.js'
 export type { GeoPoint } from '../math/geo/sphere.js'
 export interface GeographicCamera extends GeoPoint {
@@ -37,6 +55,17 @@ export interface GeographicAsset {
   /** Display colour for untextured meshes; textured materials retain their appearance. */
   untexturedColor?: string
 }
+/** What `listAssets` reports for one loaded asset. */
+export interface GeographicAssetInfo {
+  id: string
+  visible: boolean
+  /** Last value given to `setAssetOpacity` (1 when never set). */
+  opacity: number
+}
+export interface ReplaceGlbOptions {
+  /** Aborting before the new GLB is installed keeps the old asset and resolves without error. */
+  signal?: AbortSignal
+}
 export interface GeographicViewerOptions {
   origin: GeoPoint
   camera?: GeographicCamera
@@ -46,8 +75,41 @@ export interface GeographicViewer {
   loadGlb(asset: GeographicAsset): Promise<void>
   removeGlb(id: string): void
   setVisible(id: string, visible: boolean): void
-  /** Replace UV surface imagery in place; null restores the original material. Caller owns the canvas. */
-  setSurfaceImage(id: string, image: HTMLCanvasElement | null): void
+  /** Replace UV surface imagery in place; null restores the original material. Caller owns the canvas.
+   * With a `selector`, only the meshes at or under the matched nodes change; other meshes keep
+   * whatever they have. Without one, the whole asset is replaced (or restored). */
+  setSurfaceImage(id: string, image: HTMLCanvasElement | null, selector?: NodeSelector): void
+  /** True when `id` is loaded (a download still in flight does not count). */
+  hasAsset(id: string): boolean
+  /** The loaded assets, in load order. */
+  listAssets(): GeographicAssetInfo[]
+  /**
+   * Like `loadGlb`, but the asset already under `asset.id` stays on screen until the new GLB is
+   * downloaded and parsed, then is swapped for it within one frame and disposed. If the download or
+   * parse fails, or `options.signal` aborts, the old asset stays and the error (not the abort) is
+   * thrown. With no asset under that id it behaves as `loadGlb`. `asset.visible` defaults to the old
+   * asset's visibility and `setAssetOpacity` carries over; node visibility and surface images do
+   * not (re-apply them right after the returned promise settles: no frame is drawn in between).
+   * A later `loadGlb`/`replaceGlb`/`removeGlb` of the same id cancels this one.
+   */
+  replaceGlb(asset: GeographicAsset, options?: ReplaceGlbOptions): Promise<void>
+  /** The nodes of a loaded GLB, parents before children; [] for an unknown id. */
+  getNodes(id: string): ViewerNodeInfo[]
+  /** Show or hide the nodes matching `selector`; returns how many matched (0 for an unknown id). */
+  setNodeVisible(id: string, selector: NodeSelector, visible: boolean): number
+  /**
+   * Drape `image` over the UV meshes at or under the nodes matching `selector` (null restores them)
+   * and return how many meshes changed. Meshes without UVs are skipped. Independent of the whole-asset
+   * image set with `setSurfaceImage`: the most recent call wins on each mesh. Caller owns the canvas.
+   */
+  setNodeSurfaceImage(
+    id: string,
+    selector: NodeSelector,
+    image: HTMLCanvasElement | null,
+    options?: NodeSurfaceImageOptions,
+  ): number
+  /** Fade a whole asset, 0 (invisible) to 1 (as loaded). Ignored for an unknown id. */
+  setAssetOpacity(id: string, opacity: number): void
   frame(ids?: string[]): void
   ground(): boolean
   setMouseSensitivity(value: number): void
@@ -200,45 +262,44 @@ export function createGeographicViewer(
     camera.aspect = width / height
     camera.updateProjectionMatrix()
   }
-  const surfaceOverrides = new Map<
-    string,
-    { texture: THREE.CanvasTexture; restore: (() => void)[] }
-  >()
+  const surfaces = new Map<string, SurfaceImages>(),
+    opacities = new Map<string, number>()
   function clearSurface(id: string) {
-    const override = surfaceOverrides.get(id)
-    if (!override) return
-    for (const restore of override.restore) restore()
-    override.texture.dispose()
-    surfaceOverrides.delete(id)
+    surfaces.get(id)?.dispose()
+    surfaces.delete(id)
   }
-  function setSurfaceImage(id: string, image: HTMLCanvasElement | null) {
-    clearSurface(id)
+  /** Glb nodes live under the glTF scene, the first child of the asset group. */
+  function nodeRoot(group: THREE.Group): THREE.Object3D {
+    return group.children[0] ?? group
+  }
+  function drape(
+    id: string,
+    image: HTMLCanvasElement | null,
+    selector: NodeSelector | undefined,
+    options: NodeSurfaceImageOptions = {},
+  ): number {
+    if (selector !== undefined) validateSelector(selector)
     const asset = assets.get(id)
-    if (!image || !asset || disposed) return
-    const texture = new THREE.CanvasTexture(image)
-    texture.flipY = false // GLTF UVs: top row is v=0.
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy())
-    const restore: (() => void)[] = []
-    asset.traverse((object) => {
-      if (!(object instanceof THREE.Mesh) || !object.geometry.getAttribute('uv')) return
-      const original = object.material
-      const clones = (Array.isArray(original) ? original : [original]).map((material) => {
-        const copy = material.clone()
-        if ('map' in copy) {
-          ;(copy as THREE.MeshStandardMaterial).map = texture
-          if ('color' in copy) (copy as THREE.MeshStandardMaterial).color.set(0xffffff)
-          copy.needsUpdate = true
-        }
-        return copy
+    if (selector === undefined) clearSurface(id)
+    if (!asset || disposed) return 0
+    const meshes = meshesUnder(nodeRoot(asset), selector)
+    let images = surfaces.get(id)
+    let changed = 0
+    if (!image) changed = images?.clear(selector === undefined ? undefined : meshes) ?? 0
+    else {
+      if (!images) surfaces.set(id, (images = new SurfaceImages()))
+      changed = images.set(meshes, image, {
+        ...options,
+        maxAnisotropy: renderer.capabilities.getMaxAnisotropy(),
       })
-      object.material = Array.isArray(original) ? clones : clones[0]
-      restore.push(() => {
-        object.material = original
-        for (const material of clones) material.dispose()
-      })
-    })
-    surfaceOverrides.set(id, { texture, restore })
+    }
+    if (images && !images.size) surfaces.delete(id)
+    // Overrides clone materials: keep the asset's fade consistent across clone/restore.
+    if (opacities.has(id)) applyOpacity(asset, opacities.get(id)!)
+    return changed
+  }
+  function setSurfaceImage(id: string, image: HTMLCanvasElement | null, selector?: NodeSelector) {
+    drape(id, image, selector)
   }
   function removeGlb(id: string) {
     clearSurface(id)
@@ -248,6 +309,7 @@ export function createGeographicViewer(
     if (asset) release(asset)
     assets.delete(id)
     assetBounds.delete(id)
+    opacities.delete(id)
   }
   function setEnvironment(value: ViewerEnvironment) {
     if (value.at !== undefined && !Number.isFinite(Date.parse(value.at)))
@@ -301,6 +363,78 @@ export function createGeographicViewer(
     camera.lookAt(center)
     controls.update()
   }
+  /**
+   * Download and parse one GLB into a detached group (not in the scene, not registered).
+   * Resolves undefined when `signal` aborts or the viewer is disposed meanwhile.
+   */
+  async function buildAsset(
+    asset: GeographicAsset,
+    signal: AbortSignal,
+    visible: boolean,
+  ): Promise<THREE.Group | undefined> {
+    // Atlas includes the content hash in this URL: a rebuilt section gets a new cache key.
+    // Unversioned URLs are fetched normally to avoid keeping mutable assets indefinitely.
+    const cache = new URL(asset.url, window.location.href).searchParams.has('version')
+      ? mapCache('geographic-glb')
+      : undefined
+    let response: Response | undefined
+    try {
+      response = await cache?.match(asset.url)
+    } catch {
+      /* Storage unavailable: use network. */
+    }
+    if (signal.aborted || disposed) return
+    const cached = Boolean(response)
+    response ??= await fetch(asset.url, { signal })
+    if (!response.ok) throw new Error(`GLB request failed (${response.status})`)
+    const data = await response.arrayBuffer()
+    if (
+      !cached &&
+      cache &&
+      data.byteLength >= 12 &&
+      new DataView(data).getUint32(0, true) === 0x46546c67
+    ) {
+      try {
+        await cache.put(
+          asset.url,
+          new Response(data, { headers: { 'Content-Type': 'model/gltf-binary' } }),
+        )
+      } catch {
+        /* Quota or private mode must not prevent viewing the downloaded GLB. */
+      }
+    }
+    if (signal.aborted || disposed) return
+    const gltf = await loader.parseAsync(
+      data,
+      new URL('.', new URL(asset.url, window.location.href)).href,
+    )
+    if (signal.aborted || disposed) {
+      for (const root of gltf.scenes) release(root)
+      return
+    }
+    const group = new THREE.Group()
+    group.name = asset.id
+    group.applyMatrix4(geographicAssetTransform(origin, asset.origin))
+    if (asset.untexturedColor)
+      gltf.scene.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return
+        for (const material of Array.isArray(object.material)
+          ? object.material
+          : [object.material]) {
+          if (material instanceof THREE.MeshStandardMaterial && !material.map)
+            material.color.set(asset.untexturedColor!)
+        }
+      })
+    group.add(gltf.scene)
+    group.visible = visible
+    return group
+  }
+  function install(id: string, group: THREE.Group) {
+    assets.set(id, group)
+    scene.add(group)
+    group.updateMatrixWorld(true)
+    assetBounds.set(id, new THREE.Box3().setFromObject(group))
+  }
   async function loadGlb(asset: GeographicAsset) {
     if (disposed) throw new Error('Viewer disposed')
     checkPoint(asset.origin)
@@ -309,68 +443,47 @@ export function createGeographicViewer(
     const controller = new AbortController()
     pending.set(asset.id, controller)
     try {
-      // Atlas includes the content hash in this URL: a rebuilt section gets a new cache key.
-      // Unversioned URLs are fetched normally to avoid keeping mutable assets indefinitely.
-      const cache = new URL(asset.url, window.location.href).searchParams.has('version')
-        ? mapCache('geographic-glb')
-        : undefined
-      let response: Response | undefined
-      try {
-        response = await cache?.match(asset.url)
-      } catch {
-        /* Storage unavailable: use network. */
-      }
-      if (controller.signal.aborted || disposed) return
-      const cached = Boolean(response)
-      response ??= await fetch(asset.url, { signal: controller.signal })
-      if (!response.ok) throw new Error(`GLB request failed (${response.status})`)
-      const data = await response.arrayBuffer()
-      if (
-        !cached &&
-        cache &&
-        data.byteLength >= 12 &&
-        new DataView(data).getUint32(0, true) === 0x46546c67
-      ) {
-        try {
-          await cache.put(
-            asset.url,
-            new Response(data, { headers: { 'Content-Type': 'model/gltf-binary' } }),
-          )
-        } catch {
-          /* Quota or private mode must not prevent viewing the downloaded GLB. */
-        }
-      }
-      if (controller.signal.aborted || disposed) return
-      const gltf = await loader.parseAsync(
-        data,
-        new URL('.', new URL(asset.url, window.location.href)).href,
-      )
-      if (controller.signal.aborted || disposed) {
-        for (const root of gltf.scenes) release(root)
-        return
-      }
-      const group = new THREE.Group()
-      group.name = asset.id
-      group.applyMatrix4(geographicAssetTransform(origin, asset.origin))
-      if (asset.untexturedColor)
-        gltf.scene.traverse((object) => {
-          if (!(object instanceof THREE.Mesh)) return
-          for (const material of Array.isArray(object.material)
-            ? object.material
-            : [object.material]) {
-            if (material instanceof THREE.MeshStandardMaterial && !material.map)
-              material.color.set(asset.untexturedColor!)
-          }
-        })
-      group.add(gltf.scene)
-      group.visible = asset.visible !== false
-      assets.set(asset.id, group)
-      scene.add(group)
-      group.updateMatrixWorld(true)
-      assetBounds.set(asset.id, new THREE.Box3().setFromObject(group))
+      const group = await buildAsset(asset, controller.signal, asset.visible !== false)
+      if (group) install(asset.id, group)
     } catch (error) {
       if (!controller.signal.aborted) throw error
     } finally {
+      if (pending.get(asset.id) === controller) pending.delete(asset.id)
+    }
+  }
+  async function replaceGlb(asset: GeographicAsset, options: ReplaceGlbOptions = {}) {
+    if (disposed) throw new Error('Viewer disposed')
+    checkPoint(asset.origin)
+    if (!asset.id) throw new Error('Asset id required')
+    const previous = assets.get(asset.id)
+    if (!previous && !options.signal) return loadGlb(asset)
+    // A newer request for this id supersedes any download still in flight.
+    pending.get(asset.id)?.abort()
+    const controller = new AbortController()
+    pending.set(asset.id, controller)
+    const abort = () => controller.abort()
+    if (options.signal?.aborted) abort()
+    options.signal?.addEventListener('abort', abort, { once: true })
+    try {
+      const group = await buildAsset(
+        asset,
+        controller.signal,
+        asset.visible ?? previous?.visible ?? true,
+      )
+      if (!group) return
+      // Swap synchronously: the new asset is in the scene before the old one is released.
+      const current = assets.get(asset.id)
+      if (current) {
+        const opacity = opacities.get(asset.id)
+        clearSurface(asset.id)
+        install(asset.id, group)
+        release(current)
+        if (opacity !== undefined) applyOpacity(group, opacity)
+      } else install(asset.id, group)
+    } catch (error) {
+      if (!controller.signal.aborted) throw error
+    } finally {
+      options.signal?.removeEventListener('abort', abort)
       if (pending.get(asset.id) === controller) pending.delete(asset.id)
     }
   }
@@ -385,7 +498,8 @@ export function createGeographicViewer(
     const candidates = [...assets.entries()]
       .filter(([id, a]) => a.visible && ray.ray.intersectsBox(assetBounds.get(id)!))
       .map(([, a]) => a)
-    return ray.intersectObjects(candidates, true)[0]
+    // Raycaster ignores `visible`: skip hits on nodes hidden with setNodeVisible.
+    return ray.intersectObjects(candidates, true).find((hit) => visibleThrough(hit.object, scene))
   }
   function translate(delta: THREE.Vector3) {
     const length = delta.length()
@@ -565,8 +679,37 @@ export function createGeographicViewer(
   tick()
   return {
     loadGlb,
+    replaceGlb,
     setSurfaceImage,
+    setNodeSurfaceImage(id, selector, image, options) {
+      validateSelector(selector)
+      return drape(id, image, selector, options)
+    },
     removeGlb,
+    hasAsset: (id) => assets.has(id),
+    listAssets: () =>
+      [...assets].map(([id, group]) => ({
+        id,
+        visible: group.visible,
+        opacity: opacities.get(id) ?? 1,
+      })),
+    getNodes(id) {
+      const group = assets.get(id)
+      return group ? listNodes(nodeRoot(group)) : []
+    },
+    setNodeVisible(id, selector, visible) {
+      validateSelector(selector)
+      const group = assets.get(id)
+      return group ? setNodesVisible(nodeRoot(group), selector, visible) : 0
+    },
+    setAssetOpacity(id, opacity) {
+      if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1)
+        throw new Error('Asset opacity must be between 0 and 1')
+      const group = assets.get(id)
+      if (!group) return
+      opacities.set(id, opacity)
+      applyOpacity(group, opacity)
+    },
     setVisible(id, visible) {
       const asset = assets.get(id)
       if (asset) asset.visible = visible
