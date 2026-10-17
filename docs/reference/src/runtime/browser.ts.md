@@ -6256,6 +6256,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `bindingForKey`
 - `event.preventDefault`
+- `inputBindings['pointer.release'].keys.includes`
 - `performance.now`
 - `this.action`
 - `this.capturePointer`

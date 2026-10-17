@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `three`
+- `../config/input-bindings.js`
 
 ## MapInspector.constructor
 
-[Implementation, line 11](../../../../src/runtime/map-inspector.ts#L11)
+[Implementation, line 12](../../../../src/runtime/map-inspector.ts#L12)
 
 Free inspection camera. Owns no simulation state: movement cannot move the player.
 
@@ -29,7 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MapInspector.look
 
-[Implementation, line 19](../../../../src/runtime/map-inspector.ts#L19)
+[Implementation, line 20](../../../../src/runtime/map-inspector.ts#L20)
 
 Free inspection camera. Owns no simulation state: movement cannot move the player.
 
@@ -46,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MapInspector.step
 
-[Implementation, line 28](../../../../src/runtime/map-inspector.ts#L28)
+[Implementation, line 29](../../../../src/runtime/map-inspector.ts#L29)
 
 Free inspection camera. Owns no simulation state: movement cannot move the player.
 
@@ -65,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MapInspector.step.held
 
-[Implementation, line 30](../../../../src/runtime/map-inspector.ts#L30)
+[Implementation, line 31](../../../../src/runtime/map-inspector.ts#L31)
 
 ```ts
 held(...codes: string[]): inferred by TypeScript; see implementation
@@ -76,12 +77,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `codes.some`
 
-## MapInspector.step.held.callback@30
+## MapInspector.step.held.callback@31
 
-[Implementation, line 30](../../../../src/runtime/map-inspector.ts#L30)
+[Implementation, line 31](../../../../src/runtime/map-inspector.ts#L31)
 
 ```ts
-callback@30(code): inferred by TypeScript; see implementation
+callback@31(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -39,7 +39,9 @@ it('steps position then low beams, alternates high beams and masks the upper pro
   expect(low.castShadow).toBe(false)
   expect([low, high, fog].every((light) => light.visible === false)).toBe(true)
   expect(control.toggleHighBeam()).toBe(true)
-  expect([low.intensity, high.intensity, fog.intensity]).toEqual([0, on, 0])
+  // High beams run at 90% of the shared beam level (authored-lights.ts).
+  expect([low.intensity, fog.intensity]).toEqual([0, 0])
+  expect(high.intensity).toBeCloseTo(on * 0.9)
   expect(control.toggle()).toBe(false)
   expect(high.intensity).toBe(0)
   control.dispose()

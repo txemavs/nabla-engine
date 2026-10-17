@@ -5417,7 +5417,7 @@ export class GameRuntime {
         }
         if (this.inspector) {
           event.preventDefault()
-          if (event.code === 'Escape') this.releasePointer()
+          if (inputBindings['pointer.release'].keys.includes(event.code)) this.releasePointer()
           else {
             this.keys.press(event.code, event.repeat, performance.now())
             if (!this.pointerFree) this.capturePointer()
