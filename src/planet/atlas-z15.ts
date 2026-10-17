@@ -21,7 +21,8 @@
  *     is its `terrain.lidar` file (the Atlas unified terrain: LiDAR relief with the roads and the
  *     tunnel openings built in), used whatever `relief` asks; `files.terrain` is only the v1 engine
  *     terrain kept for older engines.
- *   every other role (masks, classes, instances, roofs, licences) is
+ *   role instances -> verified scenery sidecar (trees)
+ *   every other role (masks, classes, roofs, licences) is
  *   listed but not consumed by the engine yet; see docs/terrain-folder.md.
  *
  * Pure data: no DOM, no network. `fetchTileManifest` performs the (verified) fetches.
@@ -84,6 +85,7 @@ const ATLAS_CONSUMED_ROLES = new Set([
   'ground.composite',
   'ground.composite.lo',
   'osm.snapshot',
+  'instances',
   ...Object.values(ATLAS_ROAD_ROLES).flat(),
 ])
 export interface AtlasZ15Options {
@@ -281,6 +283,14 @@ export function adaptAtlasManifest(
   // Read manifest.json roads in every published shape (roads, roadCandidates, files.roads-*).
   const roads = mergeCandidateRoads(readCandidateRoads(adapted), roadsFromPackage(pkg))
   if (roads) adapted.roads = roads
+  const instances = atlasFile(pkg, 'instances')
+  if (instances)
+    adapted.instances = {
+      path: instances.path,
+      download: instances.path,
+      bytes: instances.bytes,
+      sha256: instances.sha256,
+    }
   const osm = atlasFile(pkg, 'osm.snapshot')
   if (osm)
     adapted.osmSnapshot = {
@@ -366,7 +376,10 @@ export function atlasPhotoFor(
   nearCells = 1,
 ): NonNullable<AtlasZ15Options['photo']> {
   if (wanted !== 'full' || !focus) return wanted
-  return Math.max(Math.abs(tile.x - focus.x), Math.abs(tile.y - focus.y)) <= nearCells
-    ? 'full'
-    : 'lo'
+  // Compare in the requested tile's matrix: Z16 focus coordinates are not Z15 coordinates.
+  const scale = 2 ** (tile.z - focus.z)
+  const x = Math.floor((focus.x + 0.5) * scale)
+  const y = Math.floor((focus.y + 0.5) * scale)
+  const dx = Math.abs(tile.x - x)
+  return Math.max(Math.min(dx, 2 ** tile.z - dx), Math.abs(tile.y - y)) <= nearCells ? 'full' : 'lo'
 }

@@ -131,7 +131,7 @@ No new nodes per gear change. A hard drop in load vents the stored boost once:
 that is the short shift cut. The whistle fades out as rpm rises.
 
 ```ts
-update(time: number, dt: number, audible: boolean, rpm: number, load: number, whistle = 1, blowOff = 1, spoolFrom = 1600, spoolSpan = 3600, whistleBase = 1100, whistleRise = 1900): void
+update(time: number, dt: number, audible: boolean, rpm: number, load: number, whistle = 1, blowOff = 1, spoolFrom = 1600, spoolSpan = 3600, whistleBase = 1100, whistleRise = 1900, intakeNoise = 1): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -145,7 +145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.constructor
 
-[Implementation, line 150](../../../../src/audio/powertrain.ts#L150)
+[Implementation, line 151](../../../../src/audio/powertrain.ts#L151)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
@@ -164,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.silence
 
-[Implementation, line 163](../../../../src/audio/powertrain.ts#L163)
+[Implementation, line 164](../../../../src/audio/powertrain.ts#L164)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
@@ -189,7 +189,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.update
 
-[Implementation, line 174](../../../../src/audio/powertrain.ts#L174)
+[Implementation, line 175](../../../../src/audio/powertrain.ts#L175)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
@@ -233,7 +233,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.inlineVoice
 
-[Implementation, line 249](../../../../src/audio/powertrain.ts#L249)
+[Implementation, line 251](../../../../src/audio/powertrain.ts#L251)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
@@ -252,7 +252,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.dieselVoice
 
-[Implementation, line 268](../../../../src/audio/powertrain.ts#L268)
+[Implementation, line 270](../../../../src/audio/powertrain.ts#L270)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`
@@ -271,7 +271,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Powertrain.v4Voice
 
-[Implementation, line 287](../../../../src/audio/powertrain.ts#L287)
+[Implementation, line 289](../../../../src/audio/powertrain.ts#L289)
 
 Engine voice and turbo, driven by the same rpm and load. Pass rpm 0 to silence; pass
 `turbo: false` for an engine without one (the turbo voice then stays silent). `engine`

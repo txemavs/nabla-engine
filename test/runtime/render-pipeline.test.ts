@@ -1,5 +1,12 @@
 import { expect, it, vi } from 'vitest'
-import { Scene, PerspectiveCamera, Vector3, Object3D, WebGLRenderTarget } from 'three'
+import {
+  DirectionalLight,
+  Scene,
+  PerspectiveCamera,
+  Vector3,
+  Object3D,
+  WebGLRenderTarget,
+} from 'three'
 import { GameRenderPipeline, type GameRenderFrame } from '../../src/runtime/render-pipeline.js'
 function fixture() {
   const events: string[] = [],
@@ -7,6 +14,7 @@ function fixture() {
     target = new WebGLRenderTarget(1, 1)
   let current = target
   const renderer = {
+    info: { programs: [] as unknown[] },
     autoClear: false,
     shadowMap: { needsUpdate: false },
     getRenderTarget: () => current,
@@ -51,7 +59,14 @@ function fixture() {
       events.push('layers')
     },
   } as unknown as GameRenderFrame
-  return { frame, renderer, overlay, target, events, pipeline: new GameRenderPipeline() }
+  return {
+    frame,
+    renderer,
+    overlay,
+    target,
+    events,
+    pipeline: Object.assign(new GameRenderPipeline(), { diagnostics: true }),
+  }
 }
 it('keeps the same colour pass at rest and throughout tunnel aiming', () => {
   const { frame, pipeline, target } = fixture()
@@ -132,4 +147,42 @@ it('restores portal live flags and editor overlays after a failed mirror pass', 
   expect(renderer.autoClear).toBe(false)
   pipeline.dispose()
   target.dispose()
+})
+
+it('updates local shadows without repainting disabled sun shadow maps', () => {
+  const { frame, renderer, pipeline, target } = fixture()
+  const sun = new DirectionalLight()
+  sun.castShadow = true
+  sun.shadow.map = new WebGLRenderTarget(2, 2)
+  frame.lights = [sun]
+  frame.shadowsEnabled = false
+  frame.localShadowUpdate = true
+  Object.assign(renderer, { clear: vi.fn() })
+  renderer.render.mockImplementation(() => {
+    expect(renderer.shadowMap.needsUpdate).toBe(true)
+    expect(sun.shadow.autoUpdate).toBe(false)
+    expect(sun.shadow.needsUpdate).toBe(false)
+    return 0
+  })
+  pipeline.render(frame)
+  expect(sun.shadow.autoUpdate).toBe(true)
+  sun.dispose()
+  pipeline.dispose()
+  target.dispose()
+})
+
+it('attributes newly created programs to their render pass without retaining per-frame histories', () => {
+  const { frame, renderer, pipeline } = fixture()
+  frame.view.renderMirrors = () => {
+    renderer.info.programs.push({})
+  }
+  renderer.render.mockImplementation(() => {
+    renderer.info.programs.push({}, {})
+    return 0
+  })
+  pipeline.render(frame)
+  expect(pipeline.timings.mirrorPrograms).toBe(1)
+  expect(pipeline.timings.mainPrograms).toBe(2)
+  expect(pipeline.timings.portalPrograms).toBe(0)
+  expect(pipeline.timings.postPrograms).toBe(0)
 })

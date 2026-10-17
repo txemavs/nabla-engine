@@ -323,7 +323,7 @@ The V4 voice. Nodes are built once; `update` only automates parameters. Building
 `createPeriodicWave` and `createWaveShaper` (every browser with Web Audio has them).
 
 ```ts
-update(time: number, audible: boolean, rpm: number, load: number, volume = 1): void
+update(time: number, audible: boolean, rpm: number, load: number, volume = 1, intakeNoise = 1): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

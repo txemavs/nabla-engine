@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320">
-<rect width="640" height="320" fill="#000000"/>
 <g transform="translate(130 166) scale(0.8) translate(-150 -166)">
 <circle cx="150" cy="166" r="132" fill="#090c11" stroke="#aab3bb" stroke-width="3"/>
 <circle cx="150" cy="166" r="126" fill="none" stroke="#313945" stroke-width="2"/>

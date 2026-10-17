@@ -1,3 +1,5 @@
+import { adaptAtlasZ16Instances } from '../../planet/atlas-z16.js'
+import { atlasTreeInstances, loadAtlasInstances } from './instances.js'
 import { planetChart } from './chart.js'
 import { convertPlanetGlbMesh } from './convert-mesh.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -61,6 +63,7 @@ self.onmessage = async (
   const controller = new AbortController()
   controllers.set(id, controller)
   const meshes: PlanetMesh[] = []
+  const chartMeshes: PlanetMesh[] = []
   const photos: { mesh: PlanetMesh; image: CanvasImageSource }[] = []
   let vegetation: { position: [number, number, number]; size: [number, number] }[] = []
   let bytesTotal = 0
@@ -85,8 +88,14 @@ self.onmessage = async (
     })
     const loader = new GLTFLoader(manager)
     /** Download, verify (size + SHA-256, in the worker) and convert one GLB layer into `meshes`. */
-    const loadLayer = async (name: string, file: PlanetLayerFile, kind: PlanetGlbKind) => {
-      const url = directory + file.path
+    const loadLayer = async (
+      name: string,
+      file: PlanetLayerFile,
+      kind: PlanetGlbKind,
+      chartOnly = false,
+      discard = false,
+    ) => {
+      const url = file.url ?? directory + file.path
       const cache = mapCache('nabla-planet-glb-v2')
       const cacheKey = planetGlbCacheKey(url, file, kind)
       const bytes = await phase('fetch', async () => {
@@ -94,6 +103,7 @@ self.onmessage = async (
         if (!response)
           response = await fetch(url, {
             signal: AbortSignal.any([controller.signal, AbortSignal.timeout(45000)]),
+            credentials: 'omit',
           })
         if (!response.ok) throw Error(`GLB HTTP ${response.status}`)
         return response.arrayBuffer()
@@ -124,11 +134,19 @@ self.onmessage = async (
               .slice(0, 20000)
           const mesh = node as Mesh
           if (!mesh.isMesh) return
+          if (manifest.atlasZ16 && !mesh.userData.category) {
+            if (kind === 'terrain') mesh.userData.category = 'Terrain'
+            if (kind === 'buildings-osm') mesh.userData.category = 'Buildings'
+          }
           const converted = convertPlanetGlbMesh(mesh, {
             kind,
             anchorAltitude: manifest.anchor.altitude,
           })
-          if (!converted) return
+          if (!converted || discard) return
+          if (chartOnly) {
+            chartMeshes.push(converted.mesh)
+            return
+          }
           meshes.push(converted.mesh)
           if (converted.image) photos.push({ mesh: converted.mesh, image: converted.image })
         })
@@ -149,24 +167,32 @@ self.onmessage = async (
       }
     }
     for (const layer of planetTileGlbLayers(manifest, {
-      buildings: event.data.buildings !== false,
+      buildings: !!manifest.atlasZ16 || event.data.buildings !== false,
       inspectRoadCollision: event.data.inspectRoadCollision === true,
     })) {
-      if (!isCandidateRoadKind(layer.kind)) {
+      if (manifest.atlasZ16 || !isCandidateRoadKind(layer.kind)) {
         // Terrain and buildings are the cell: a failure fails the cell.
-        await loadLayer(layer.name, layer.file, layer.kind)
+        await loadLayer(
+          layer.name,
+          layer.file,
+          layer.kind,
+          layer.chartOnly,
+          layer.kind === 'buildings-osm' && event.data.buildings === false,
+        )
         continue
       }
       // Road layers (asphalt, bridge supports) fall back per layer and never fail the cell.
       const files = layer.fallback ? [layer.file, layer.fallback] : [layer.file]
       for (const file of files) {
         const before = meshes.length
+        const chartsBefore = chartMeshes.length
         try {
-          await loadLayer(layer.name, file, layer.kind)
+          await loadLayer(layer.name, file, layer.kind, layer.chartOnly)
           break
         } catch (error) {
           if (controller.signal.aborted) throw error
           meshes.length = before
+          chartMeshes.length = chartsBefore
           roadErrors.push(`${layer.name} ${file.path}: ${String(error)}`)
         }
       }
@@ -212,7 +238,26 @@ self.onmessage = async (
     }
     const collisionStarted = performance.now()
     const chunks = planetCollisionChunks(meshes)
-    const chart = planetChart(meshes)
+    if (manifest.instances && (manifest.atlasZ16 || !vegetation.length)) {
+      const file = manifest.instances
+      try {
+        const json = await loadAtlasInstances(
+          file.url ?? directory + file.path,
+          file,
+          controller.signal,
+        )
+        vegetation = atlasTreeInstances(
+          manifest.atlasZ16 ? adaptAtlasZ16Instances(json) : json,
+          chunks,
+        )
+        bytesTotal += file.bytes
+      } catch (error) {
+        controller.signal.throwIfAborted()
+        if (manifest.atlasZ16) throw error
+        console.warn('Atlas vegetation unavailable', manifest.id, String(error))
+      }
+    }
+    const chart = planetChart([...meshes, ...chartMeshes])
     timings.collision = performance.now() - collisionStarted
     controller.signal.throwIfAborted()
     const transfers = [
@@ -237,7 +282,7 @@ self.onmessage = async (
           chart,
           chunks,
           bytes: bytesTotal,
-          buildings: event.data.buildings !== false,
+          buildings: !!manifest.atlasZ16 || event.data.buildings !== false,
           vegetation,
           timings,
           drape,

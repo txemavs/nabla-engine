@@ -25,7 +25,7 @@ styleButton(button: HTMLButtonElement): void
 Shared layout, icon appearance and ordered groups for the gameplay action rail.
 
 ```ts
-constructor(host: HTMLElement, read: () => number, write: (value: number) => void): instance
+constructor(host: HTMLElement, read: () => number, write: (value: number) => void, resolution?: { read: () => number; write: (value: number) => void }): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -35,6 +35,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.addEventListener`
 - `button.setAttribute`
 - `document.createElement`
+- `document.getElementById`
+- `document.head.append`
 - `group.append`
 - `host.append`
 - `input.addEventListener`
@@ -42,14 +44,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `label.append`
 - `panel.addEventListener`
 - `panel.append`
-- `reset.addEventListener`
+- `rb.addEventListener`
+- `rb.setAttribute`
+- `rg.append`
+- `ri.addEventListener`
+- `ri.setAttribute`
+- `rl.append`
+- `rp.addEventListener`
+- `rp.append`
 - `this.root.append`
 - `this.root.setAttribute`
 - `this.setVisible`
+- `well.append`
 
 ## GameToolbar.constructor.refresh
 
-[Implementation, line 41](../../../../src/runtime/game-toolbar.ts#L41)
+[Implementation, line 62](../../../../src/runtime/game-toolbar.ts#L62)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -62,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameToolbar.constructor.change
 
-[Implementation, line 50](../../../../src/runtime/game-toolbar.ts#L50)
+[Implementation, line 75](../../../../src/runtime/game-toolbar.ts#L75)
 
 ```ts
 change(value: number): inferred by TypeScript; see implementation
@@ -73,12 +83,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `write`
 
-## GameToolbar.constructor.callback@54
+## GameToolbar.constructor.callback@79
 
-[Implementation, line 54](../../../../src/runtime/game-toolbar.ts#L54)
+[Implementation, line 79](../../../../src/runtime/game-toolbar.ts#L79)
 
 ```ts
-callback@54(): inferred by TypeScript; see implementation
+callback@79(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -86,24 +96,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `change`
 
-## GameToolbar.constructor.callback@55
+## GameToolbar.constructor.callback@82
 
-[Implementation, line 55](../../../../src/runtime/game-toolbar.ts#L55)
-
-```ts
-callback@55(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `change`
-
-## GameToolbar.constructor.callback@58
-
-[Implementation, line 58](../../../../src/runtime/game-toolbar.ts#L58)
+[Implementation, line 82](../../../../src/runtime/game-toolbar.ts#L82)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@82(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -113,24 +111,93 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.exitPointerLock`
 - `refresh`
 
-## GameToolbar.constructor.callback@67
+## GameToolbar.constructor.callback@91
 
-[Implementation, line 67](../../../../src/runtime/game-toolbar.ts#L67)
+[Implementation, line 91](../../../../src/runtime/game-toolbar.ts#L91)
 
 ```ts
-callback@67(e): inferred by TypeScript; see implementation
+callback@91(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.stopPropagation`
 
-## GameToolbar.constructor.callback@68
+## GameToolbar.constructor.callback@92
 
-[Implementation, line 68](../../../../src/runtime/game-toolbar.ts#L68)
+[Implementation, line 92](../../../../src/runtime/game-toolbar.ts#L92)
 
 ```ts
-callback@68(e): inferred by TypeScript; see implementation
+callback@92(e): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `e.stopPropagation`
+
+## GameToolbar.constructor.sync
+
+[Implementation, line 119](../../../../src/runtime/game-toolbar.ts#L119)
+
+```ts
+sync(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `String`
+- `resolution.read`
+- `ri.setAttribute`
+- `scales.reduce`
+
+## GameToolbar.constructor.sync.callback@123
+
+[Implementation, line 123](../../../../src/runtime/game-toolbar.ts#L123)
+
+```ts
+callback@123(best, n, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+
+## GameToolbar.constructor.callback@132
+
+[Implementation, line 132](../../../../src/runtime/game-toolbar.ts#L132)
+
+```ts
+callback@132(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `resolution.write`
+- `sync`
+
+## GameToolbar.constructor.callback@140
+
+[Implementation, line 140](../../../../src/runtime/game-toolbar.ts#L140)
+
+```ts
+callback@140(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `document.exitPointerLock`
+- `rb.setAttribute`
+- `sync`
+
+## GameToolbar.constructor.callback@149
+
+[Implementation, line 149](../../../../src/runtime/game-toolbar.ts#L149)
+
+```ts
+callback@149(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -139,12 +206,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameToolbar.addAction
 
-[Implementation, line 74](../../../../src/runtime/game-toolbar.ts#L74)
+[Implementation, line 158](../../../../src/runtime/game-toolbar.ts#L158)
 
 Shared layout, icon appearance and ordered groups for the gameplay action rail.
 
 ```ts
-addAction(label: string, icon: string, order: number, action: () => Promise<void>): void
+addAction(label: string, icon: string, order: number, action: () => Promise<void>, shortLabel?: string): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -156,24 +223,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.createElement`
 - `this.root.append`
 
-## GameToolbar.addAction.callback@82
+## GameToolbar.addAction.callback@173
 
-[Implementation, line 82](../../../../src/runtime/game-toolbar.ts#L82)
+[Implementation, line 173](../../../../src/runtime/game-toolbar.ts#L173)
 
 ```ts
-callback@82(e): inferred by TypeScript; see implementation
+callback@173(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.stopPropagation`
 
-## GameToolbar.addAction.callback@87
+## GameToolbar.addAction.callback@178
 
-[Implementation, line 87](../../../../src/runtime/game-toolbar.ts#L87)
+[Implementation, line 178](../../../../src/runtime/game-toolbar.ts#L178)
 
 ```ts
-callback@87(e): inferred by TypeScript; see implementation
+callback@178(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -185,7 +252,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameToolbar.mount
 
-[Implementation, line 103](../../../../src/runtime/game-toolbar.ts#L103)
+[Implementation, line 194](../../../../src/runtime/game-toolbar.ts#L194)
 
 Shared layout, icon appearance and ordered groups for the gameplay action rail.
 
@@ -199,12 +266,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.querySelectorAll('button').forEach`
 - `this.root.append`
 
-## GameToolbar.mount.callback@107
+## GameToolbar.mount.callback@198
 
-[Implementation, line 107](../../../../src/runtime/game-toolbar.ts#L107)
+[Implementation, line 198](../../../../src/runtime/game-toolbar.ts#L198)
 
 ```ts
-callback@107(button): inferred by TypeScript; see implementation
+callback@198(button): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -213,7 +280,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameToolbar.setVisible
 
-[Implementation, line 109](../../../../src/runtime/game-toolbar.ts#L109)
+[Implementation, line 200](../../../../src/runtime/game-toolbar.ts#L200)
 
 Shared layout, icon appearance and ordered groups for the gameplay action rail.
 
@@ -223,7 +290,7 @@ setVisible(visible: boolean): void
 
 ## GameToolbar.dispose
 
-[Implementation, line 112](../../../../src/runtime/game-toolbar.ts#L112)
+[Implementation, line 203](../../../../src/runtime/game-toolbar.ts#L203)
 
 Shared layout, icon appearance and ordered groups for the gameplay action rail.
 

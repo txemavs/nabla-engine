@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { waitForArea } from '../../src/runtime/ground.js'
 import { uploadSceneTextures } from '../../src/runtime/presentation-warmup.js'
 import { Mesh, MeshStandardMaterial, BoxGeometry, Scene, Texture } from 'three'
@@ -73,4 +73,30 @@ describe('staged reveal', () => {
     expect(sequence.update({ now: 1, arrived: true, engineRunning: false }).view).toBe('cockpit')
     expect(sequence.step).toBe(1)
   })
+})
+
+it('does not abandon startup terrain after the old one-minute cap', async () => {
+  vi.useFakeTimers()
+  try {
+    let pending = 1
+    const world = {
+      ...fakeWorld(0),
+      flushInstall() {},
+      get cellStats() {
+        return { pending }
+      },
+    }
+    let finished = false
+    const ready = waitForArea(world, [0, 0, 0]).then(() => {
+      finished = true
+    })
+    await vi.advanceTimersByTimeAsync(65_000)
+    expect(finished).toBe(false)
+    pending = 0
+    await vi.advanceTimersByTimeAsync(1000)
+    await ready
+    expect(finished).toBe(true)
+  } finally {
+    vi.useRealTimers()
+  }
 })

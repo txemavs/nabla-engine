@@ -85,6 +85,17 @@ export function skyClockAtMinutes(
   at.setHours(Math.floor(m / 60), m % 60, 0, 0)
   return { mode: 'fixed', at: at.toISOString() }
 }
+/** Move the displayed local calendar clock by minutes, including midnight/month/year crossings. */
+export function shiftSkyClockMinutes(
+  clock: SkyClock | undefined,
+  minutes: number,
+  now = Date.now(),
+): SkyClock {
+  if (!Number.isFinite(minutes)) throw new Error('Invalid clock minute offset')
+  const at = skyTime(clock, now)
+  at.setMinutes(at.getMinutes() + Math.round(minutes), 0, 0)
+  return { mode: 'fixed', at: at.toISOString() }
+}
 const FOG_CEILING = 100
 
 export function atmosphere(height: number, sunElevation: number, visibility = 220) {

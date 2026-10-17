@@ -102,6 +102,7 @@ export const inputBindings = {
   'signal.left': press('Intermitente izquierdo', ['KeyZ'], ['vehicle']),
   'signal.right': press('Intermitente derecho', ['KeyX'], ['vehicle']),
   lights: press('Luces del vehículo', ['KeyH'], ['vehicle']),
+  horn: press('Claxon', [], ['vehicle']),
   gps: press('GPS', ['KeyG'], ['vehicle']),
   highBeam: press('Largas / cortas', ['KeyK'], ['road', 'bike', 'flight']),
   'vehicle.menu': press('Menú del vehículo', ['KeyJ'], ['road', 'bike', 'flight']),
@@ -276,6 +277,16 @@ export const movementKeyCodes: ReadonlySet<string> = new Set(
   ),
 )
 export const mouseButtons = Object.freeze({ fire: 0, aim: 2 })
+/** Free map-inspection camera keys (Home toggles it); WASD/arrows move, Shift boosts, E/Q rise and sink. */
+export const inspectorKeys = Object.freeze({
+  forward: ['KeyW', 'ArrowUp'],
+  back: ['KeyS', 'ArrowDown'],
+  right: ['KeyD', 'ArrowRight'],
+  left: ['KeyA', 'ArrowLeft'],
+  boost: ['ShiftLeft', 'ShiftRight'],
+  up: ['KeyE', 'PageUp'],
+  down: ['KeyQ', 'PageDown'],
+} as const)
 
 /** A press completes a chord when the other declared actions are already held. */
 export function actionCompletesChord(

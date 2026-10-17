@@ -1,4 +1,5 @@
-import { startupTerrainTiles } from './startup-tiles.js'
+import { Z16Updates } from './z16-updates.js'
+import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
 import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
 import { placeLabel } from './place-label.js'
@@ -32,6 +33,10 @@ export interface PlanetSourceOptions {
   /** Coarsest published mesh LOD. Static/Atlas sources default to Z15, dynamic sources to Z13.
    * Set 12 only after publishing native coarse mesh manifests; absence must not create holes. */
   meshMinZoom?: 12 | 13 | 14 | 15
+  /** Opt-in detailed Z16 delivery; keep Z15 parents available during migration. */
+  meshMaxZoom?: 15 | 16
+  /** Development only: poll Atlas Z16 publications every 15 seconds. Off by default. */
+  developmentRefresh?: boolean
 
   /** Known coverage of a finite offline dataset. Omit for unrestricted streaming. */
   tiles?: readonly MapTile[]
@@ -92,6 +97,9 @@ import {
   mapTileAt,
   mapTileId,
   mapTilePath,
+  mapTileChildren,
+  mapTileParent,
+  mergeReadyMapCover,
   planMapZooms,
   planetReadyCover,
   type MapTile,
@@ -187,7 +195,7 @@ export function dressSatelliteRoofs(
   prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap; roofPhoto?: ImageBitmap },
 ) {
   const tile = manifest.tile
-  if (tile.z !== 15 || imagery === 'none') return
+  if ((tile.z !== 15 && tile.z !== 16) || imagery === 'none') return
   if (imagery === 'package' && (!manifest.photo || !photoUrl)) return
   const baked = bakedDrapeLayers(
     group.children.flatMap((node) => {
@@ -490,6 +498,15 @@ export class PlanetWorld {
   private tileBase(tile: MapTile): string {
     return this.tileBases.get(mapTileId(tile)) ?? this.base
   }
+  /** Fill caller-owned tile storage without allocating intermediate active-tile lists. */
+  collectActiveMapTiles(output: MapTile[]): MapTile[] {
+    output.length = 0
+    for (const key of this.visible) {
+      const tile = this.resident.get(key)?.group.userData.planetTile
+      if (tile) output.push(tile.manifest.tile)
+    }
+    return output
+  }
   get activeTiles() {
     return this.visible.map(
       (key) =>
@@ -541,6 +558,7 @@ export class PlanetWorld {
       }
     }
   }
+  private updates?: Z16Updates
   private simulation: Simulation | null = null
   private horizon: PlanetHorizon
   private treeTexture: THREE.Texture | undefined
@@ -601,6 +619,23 @@ export class PlanetWorld {
     private sourceOptions: PlanetSourceOptions = {},
   ) {
     this.missing = sourceOptions.missing ?? new MissingTiles()
+    if (
+      discoveryMode === 'static' &&
+      sourceOptions.meshMaxZoom === 16 &&
+      sourceOptions.developmentRefresh
+    ) {
+      this.updates = new Z16Updates(base, this.controller.signal, () => {
+        for (const publication of this.updates!.entries.values()) {
+          const id = mapTileId(publication.tile)
+          if (this.ready.get(id)?.atlasZ16?.revision !== publication.revision) {
+            this.missing.resolve(publication.tile)
+          }
+        }
+        this.next = 0
+        void this.discover()
+      })
+      void this.updates.poll()
+    }
     this.horizon = new PlanetHorizon(origin, changed, `${base}/photos`, setupMaterial)
     this.root.add(this.horizon.root)
     this.worker.onmessage = (
@@ -618,6 +653,12 @@ export class PlanetWorld {
         { atWorkerDone: performance.now() },
         event.data.payload?.timings,
       )
+      if (event.data.payload && this.superseded(request.manifest)) {
+        event.data.payload.chart?.bitmap.close()
+        for (const mesh of event.data.payload.meshes) mesh.map?.close()
+        this.pump()
+        return
+      }
       if (event.data.payload && !this.disposed)
         this.installQueue.push({
           key: request.key,
@@ -716,8 +757,14 @@ export class PlanetWorld {
   /** The tile the host lacks under this position: nothing will ever load there. */
   missingTileAt(position: Vec3Tuple): MapTile | undefined {
     const gps = localToGeo(this.origin, position)
-    const tile = mapTileAt(gps.latitude, gps.longitude, 15)
-    return this.missing.has(tile) ? tile : undefined
+    const tile = mapTileAt(gps.latitude, gps.longitude, this.sourceOptions.meshMaxZoom ?? 15)
+    if (!this.missing.has(tile)) return undefined
+    // A missing fine child is not a ground hole while its Z15 fallback can still arrive.
+    if (tile.z === 16) {
+      const parent = mapTileParent(tile)!
+      if (this.resident.has(mapTileId(parent)) || !this.missing.has(parent)) return undefined
+    }
+    return tile
   }
   /** Changes whenever a cell finishes loading or fails; stays equal while nothing is happening. */
   get loadProgress(): string {
@@ -761,14 +808,20 @@ export class PlanetWorld {
       distance: this.distance,
     }
   }
+  /** Optional host paint barrier before a cell starts installation; false defers without consuming it. */
+  beforeInstall?: (key: string) => boolean
+  /** Reports completion after visual/collision publication. */
+  afterInstall?: (key: string) => void
   /** Time-sliced mesh staging; publication remains atomic. A single mesh is an indivisible task. */
   flushInstall(budgetMs = 1.5): boolean {
     const started = performance.now()
     let worked = false
     do {
       if (!this.installing) {
-        const job = this.installQueue.shift()
+        const job = this.installQueue[0]
         if (!job) break
+        if (this.beforeInstall && !this.beforeInstall(job.key)) break
+        this.installQueue.shift()
         this.installing = { key: job.key, steps: this.install(job.key, job.manifest, job.payload) }
       }
       const stepStarted = performance.now()
@@ -780,6 +833,7 @@ export class PlanetWorld {
       worked = true
       if (done) {
         timing.atInstalled = performance.now()
+        this.afterInstall?.(this.installing.key)
         this.installing = undefined
       }
     } while (performance.now() - started < budgetMs)
@@ -896,11 +950,16 @@ export class PlanetWorld {
       this.horizon.update(gps.latitude, gps.longitude, this.relief)
       this.horizon.setFocus(mapTileAt(gps.latitude, gps.longitude, 15))
     }
-    const center = mapTileAt(gps.latitude, gps.longitude, 15)
+    const maxZoom = this.sourceOptions.meshMaxZoom ?? 15
+    const center = mapTileAt(gps.latitude, gps.longitude, maxZoom)
     this.focus = center
     if (this.startup && !this.startupSelection.length)
       this.startupSelection =
-        this.startupCount === 4 ? startupTerrainTiles(gps.latitude, gps.longitude) : [center]
+        maxZoom === 16
+          ? mapTileChildren(mapTileAt(gps.latitude, gps.longitude, 15))
+          : this.startupCount === 4
+            ? startupTerrainTiles(gps.latitude, gps.longitude)
+            : [center]
     const advertisedZoom =
       this.sourceOptions.meshMinZoom ?? (this.discoveryMode === 'static' ? 15 : 13)
     const minZoom = this.missing.has(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
@@ -925,11 +984,11 @@ export class PlanetWorld {
           p.altitude < 12000 &&
           (preciseSupport ||
             p.altitude < gps.altitude - 1 ||
-            mapTileId(mapTileAt(p.latitude, p.longitude, 15)) !== mapTileId(center)),
+            mapTileId(mapTileAt(p.latitude, p.longitude, maxZoom)) !== mapTileId(center)),
       )
-      .map((p) => mapTileAt(p.latitude, p.longitude, 15))
+      .map((p) => mapTileAt(p.latitude, p.longitude, maxZoom))
     const allCorridor: MapTile[] = []
-    const predictionZoom = flight ? Math.max(minZoom, 12) : 15
+    const predictionZoom = flight ? Math.max(minZoom, 12) : maxZoom
     for (let step = 0; step <= 8; step++) {
       const p = localToGeo(this.origin, [
         position[0] + (velocity[0] * seconds * step) / 8,
@@ -953,9 +1012,13 @@ export class PlanetWorld {
       this.planKey = planKey
       this.plan = this.startup
         ? {
-            roots: this.startupSelection,
+            roots:
+              maxZoom === 16 ? [mapTileParent(this.startupSelection[0])!] : this.startupSelection,
             leaves: this.startupSelection,
-            requests: this.startupSelection,
+            requests:
+              maxZoom === 16
+                ? [mapTileParent(this.startupSelection[0])!, ...this.startupSelection]
+                : this.startupSelection,
             budgetLimited: false,
           }
         : planMapZooms({
@@ -966,6 +1029,7 @@ export class PlanetWorld {
             maxTiles: planBudget,
             adaptive: this.streamMode !== 'ground',
             minZoom,
+            maxZoom,
             ...(flight
               ? { lookAhead: { latitude: ahead.latitude, longitude: ahead.longitude } }
               : {}),
@@ -974,7 +1038,7 @@ export class PlanetWorld {
     const plan = this.plan
     if (!plan) return
     this.wanted = this.startup
-      ? [...this.startupSelection, center, ...this.pinned.values()].filter(
+      ? [...plan.requests, center, ...this.pinned.values()].filter(
           (tile, index, all) => all.findIndex((t) => mapTileId(t) === mapTileId(tile)) === index,
         )
       : [
@@ -998,7 +1062,10 @@ export class PlanetWorld {
         (tile) => available.has(mapTileId(tile)) || this.pinned.has(mapTileId(tile)),
       )
     }
-    const needed = new Set(this.wanted.map(mapTileId))
+    const needed = new Set([
+      ...this.wanted.map(mapTileId),
+      ...(this.updates ? this.resident.keys() : []),
+    ])
     this.installQueue = this.installQueue.filter((job) => {
       if (needed.has(job.key)) return true
       job.payload.chart?.bitmap.close()
@@ -1017,19 +1084,39 @@ export class PlanetWorld {
     void this.discover()
     this.pump()
   }
+  private superseded(manifest: PlanetManifest): boolean {
+    const publication = this.updates?.get(manifest.tile)
+    return !!publication && manifest.atlasZ16?.revision !== publication.revision
+  }
   private async discover() {
+    void this.updates?.poll()
     if (this.busy || Date.now() < this.next || this.disposed) return
     const isStatic = this.discoveryMode === 'static'
     const now = Date.now()
-    const missing = this.wanted.filter((t) => {
+    const candidates = [
+      ...new Map(
+        [
+          ...this.wanted,
+          ...(this.updates
+            ? [...this.ready.values()]
+                .filter((m) => this.resident.has(mapTileId(m.tile)))
+                .map((m) => m.tile)
+            : []),
+        ].map((tile) => [mapTileId(tile), tile]),
+      ).values(),
+    ]
+    const missing = candidates.filter((t) => {
       const id = mapTileId(t)
       // A static host cannot regenerate a tile: older revisions and unpublished (404)
       // tiles are not re-requested on every pass.
       if (isStatic) {
         // A cell the player has come close to is read again for the full-quality photo.
         const upgrade = this.ready.get(id)?.photo?.level === 'lo' && this.photoQuality(t) === 'full'
+        const publication = this.updates?.get(t)
+        const refresh =
+          publication && this.ready.get(id)?.atlasZ16?.revision !== publication.revision
         return (
-          ((!this.resident.has(id) && !this.ready.has(id)) || upgrade) &&
+          ((!this.resident.has(id) && !this.ready.has(id)) || upgrade || refresh) &&
           !this.missing.suppressed(t) &&
           now >= (this.failedManifests.get(id)?.until ?? 0)
         )
@@ -1040,6 +1127,7 @@ export class PlanetWorld {
         (t.z < 15 && this.ready.get(id)?.lod?.revision !== 'mesh-lod-v1')
       )
     })
+    if (isStatic && this.sourceOptions.meshMaxZoom === 16) missing.sort((a, b) => b.z - a.z)
     if (!missing.length) return
     // Public requests may be ineligible; do not let the first rejected batch
     // permanently hide available/adjacent cells later in the flight plan.
@@ -1118,8 +1206,10 @@ export class PlanetWorld {
         let status = 404
         this.manifestsInFlight++
         try {
+          const publication = this.updates?.get(tile)
           const manifest = await fetchTileManifest(tile, {
             baseUrl: this.tileBase(tile),
+            publication,
             signal: this.controller.signal,
             cors: true,
             missingStatuses: [403, 404],
@@ -1130,6 +1220,7 @@ export class PlanetWorld {
             },
           })
           if (manifest) {
+            if (this.superseded(manifest)) return
             this.ready.set(id, manifest)
             this.missing.resolve(tile)
             this.failedManifests.delete(id)
@@ -1139,7 +1230,8 @@ export class PlanetWorld {
           } else {
             // A hole, not an error: remembered, and not asked for again for a while.
             notFound++
-            this.missing.record(tile, status)
+            if (publication) this.failedManifests.set(id, { until: Date.now() + 15000 })
+            else this.missing.record(tile, status)
           }
         } catch (error) {
           if (this.controller.signal.aborted) return
@@ -1160,7 +1252,30 @@ export class PlanetWorld {
   }
   private pump() {
     if (this.disposed) return
-    for (const tile of this.wanted) {
+    const fineFirst = this.discoveryMode === 'static' && this.sourceOptions.meshMaxZoom === 16
+    const wantedIds = new Set(this.wanted.map(mapTileId))
+    const candidates = [
+      ...new Map(
+        [
+          ...this.wanted,
+          ...(this.updates
+            ? [...this.ready.values()]
+                .filter((m) => this.resident.has(mapTileId(m.tile)))
+                .map((m) => m.tile)
+            : []),
+        ].map((tile) => [mapTileId(tile), tile]),
+      ).values(),
+    ]
+    const queue = fineFirst ? candidates.sort((a, b) => b.z - a.z) : candidates
+    for (const tile of queue) {
+      if (
+        fineFirst &&
+        deferZ15Parent(tile, wantedIds, (child) => {
+          const id = mapTileId(child)
+          return this.missing.has(child) || this.failedManifests.has(id) || this.retry.has(id)
+        })
+      )
+        continue
       if (
         this.requests.size + this.installQueue.length + Number(!!this.installing) >=
         this.concurrency
@@ -1170,6 +1285,7 @@ export class PlanetWorld {
         manifest = this.ready.get(key)
       if (
         !manifest ||
+        this.superseded(manifest) ||
         this.installing?.key === key ||
         this.installQueue.some((job) => job.key === key) ||
         (this.resident.has(key) &&
@@ -1191,7 +1307,7 @@ export class PlanetWorld {
         inspectRoadCollision: this.sourceOptions.inspectRoadCollision === true,
         osmRoads: this.sourceOptions.osmRoads === true,
         drape:
-          imagery === 'package' && manifest.photo && tile.z === 15
+          imagery === 'package' && manifest.photo && (tile.z === 15 || tile.z === 16)
             ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }
             : undefined,
         directory: this.tileBase(tile).replace(/\/$/, '') + '/' + mapTilePath(tile) + '/',
@@ -1337,16 +1453,17 @@ export class PlanetWorld {
       group.add(trees)
     }
     yield
-    const restoreSupport = this.simulation?.capturePlanetSupport((p) => this.groundHeight(p))
-    this.remove(key)
-    group.visible = false
-    this.root.add(group)
-    this.staging.delete(group)
-    this.resident.set(key, {
+    const previous = this.resident.get(key)
+    const hotReload =
+      !!previous &&
+      !!manifest.atlasZ16 &&
+      (previous.group.userData.planetTile.manifest as PlanetManifest).atlasZ16?.revision !==
+        manifest.atlasZ16.revision
+    const next: Resident = {
       group,
       chart: payload.chart,
       collision: {
-        id: key + '@' + manifest.files.terrain.sha256,
+        id: key + '@' + tileRevision(manifest),
         pose: { position, rotation },
         chunks: payload.chunks,
         poles: payload.vegetation.flatMap((v, i) => {
@@ -1392,7 +1509,42 @@ export class PlanetWorld {
         payload.chunks.reduce((n, c) => n + c.triangles.byteLength, 0),
       revision: tileRevision(manifest),
       buildings: payload.buildings,
-    })
+    }
+    const simulation = this.simulation
+    let commitCollision: (() => void) | undefined
+    while (hotReload && simulation && !this.superseded(manifest)) {
+      commitCollision = simulation.preparePlanetReplacement(previous!.collision.id, next.collision)
+      if (commitCollision) break
+      yield
+    }
+    if (this.superseded(manifest)) {
+      simulation?.discardPlanetReplacement()
+      this.staging.delete(group)
+      group.traverse((node) => {
+        const mesh = node as THREE.Mesh
+        if (!mesh.isMesh) return
+        mesh.geometry.dispose()
+        for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+          const map = (material as THREE.MeshStandardMaterial).map
+          if (map && map !== this.treeTexture) {
+            ;(map.image as { close?: () => void } | undefined)?.close?.()
+            map.dispose()
+          }
+          material.dispose()
+        }
+      })
+      payload.chart?.bitmap.close()
+      return
+    }
+    const restoreSupport = hotReload
+      ? undefined
+      : simulation?.capturePlanetSupport((p) => this.groundHeight(p))
+    this.remove(key)
+    group.visible = false
+    this.root.add(group)
+    this.staging.delete(group)
+    this.resident.set(key, next)
+    commitCollision?.()
     this.loadOsmSnapshot(key, manifest)
     this.cover()
     restoreSupport?.()
@@ -1445,17 +1597,11 @@ export class PlanetWorld {
       if (!covered) this.visible.push(mapTileId(focus))
     }
     const pinned = [...this.pinned.values()].filter((tile) => this.resident.has(mapTileId(tile)))
-    // A pinned detailed cell replaces an overlapping coarse cover, never another Z15.
-    this.visible = this.visible.filter((key) => {
-      const tile = this.ready.get(key)!.tile
-      return !pinned.some(
-        (p) =>
-          p.z > tile.z &&
-          Math.floor(p.x / 2 ** (p.z - tile.z)) === tile.x &&
-          Math.floor(p.y / 2 ** (p.z - tile.z)) === tile.y,
-      )
-    })
-    this.visible = [...new Set([...this.visible, ...pinned.map(mapTileId)])]
+    // A pinned child must not remove the rest of its parent's coverage.
+    this.visible = mergeReadyMapCover(
+      this.visible.map((key) => this.ready.get(key)!.tile),
+      pinned,
+    ).map(mapTileId)
     this.horizon.setCoverage(this.visible.map((key) => this.ready.get(key)!.tile))
     const active = new Set(this.visible)
     for (const [key, r] of this.resident) {
@@ -1506,7 +1652,7 @@ export class PlanetWorld {
         })
       )
         continue
-      for (const z of [15, 14, 13, 12]) {
+      for (const z of [16, 15, 14, 13, 12]) {
         const key = mapTileId(mapTileAt(p.latitude, p.longitude, z))
         if (this.resident.has(key)) {
           physics.add(key)
@@ -1757,6 +1903,7 @@ export class PlanetWorld {
     this.disposed = true
     this.controller.abort()
     this.worker.terminate()
+    this.simulation?.discardPlanetReplacement()
     this.installing?.steps.return(undefined)
     for (const job of this.installQueue) {
       job.payload.chart?.bitmap.close()

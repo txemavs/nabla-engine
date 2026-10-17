@@ -43,12 +43,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `aim`
 
-## WeaponControls.constructor.callback@45
+## WeaponControls.constructor.callback@47
 
-[Implementation, line 45](../../../../src/runtime/weapon-controls.ts#L45)
+[Implementation, line 47](../../../../src/runtime/weapon-controls.ts#L47)
 
 ```ts
-callback@45(event): inferred by TypeScript; see implementation
+callback@47(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -59,24 +59,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `event.preventDefault`
 - `event.stopPropagation`
 
-## WeaponControls.constructor.callback@56
+## WeaponControls.constructor.callback@58
 
-[Implementation, line 56](../../../../src/runtime/weapon-controls.ts#L56)
+[Implementation, line 58](../../../../src/runtime/weapon-controls.ts#L58)
 
 ```ts
-callback@56(): inferred by TypeScript; see implementation
+callback@58(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `aiming`
 
-## WeaponControls.constructor.callback@60
+## WeaponControls.constructor.callback@62
 
-[Implementation, line 60](../../../../src/runtime/weapon-controls.ts#L60)
+[Implementation, line 62](../../../../src/runtime/weapon-controls.ts#L62)
 
 ```ts
-callback@60(event): inferred by TypeScript; see implementation
+callback@62(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -84,12 +84,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `action`
 - `aiming`
 
-## WeaponControls.constructor.callback@72
+## WeaponControls.constructor.callback@74
 
-[Implementation, line 72](../../../../src/runtime/weapon-controls.ts#L72)
+[Implementation, line 74](../../../../src/runtime/weapon-controls.ts#L74)
 
 ```ts
-callback@72(): inferred by TypeScript; see implementation
+callback@74(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -98,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponControls.setActive
 
-[Implementation, line 75](../../../../src/runtime/weapon-controls.ts#L75)
+[Implementation, line 77](../../../../src/runtime/weapon-controls.ts#L77)
 
 On-screen weapon controls, available with mouse and touch.
 
@@ -112,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponControls.dispose
 
-[Implementation, line 82](../../../../src/runtime/weapon-controls.ts#L82)
+[Implementation, line 84](../../../../src/runtime/weapon-controls.ts#L84)
 
 On-screen weapon controls, available with mouse and touch.
 

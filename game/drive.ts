@@ -1,3 +1,4 @@
+import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
@@ -218,6 +219,7 @@ try {
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   runtime = new GameRuntime({
+    performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
@@ -314,6 +316,7 @@ try {
   if (new URLSearchParams(location.search).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
   void runBootPhase(runtime, loading, boot)
+  restoreStartupLightSettings(runtime)
   await runtime.play(!solo && noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
   bindVR(runtime)
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {

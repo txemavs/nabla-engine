@@ -54,6 +54,8 @@ export type PlanetCandidateRoadFileKey = (typeof FILE_ROAD_KEYS)[PlanetCandidate
 export type PlanetGlbKind = PlanetRequiredLayer | PlanetCandidateRoadKind
 
 export interface PlanetLayerFile {
+  /** Validated publication URL supplied by an external delivery adapter. */
+  url?: string
   path: string
   download: string
   bytes: number
@@ -120,6 +122,10 @@ export interface PlanetRoadCandidates {
 }
 
 export interface PlanetManifest {
+  /** Atlas acceptance metadata; never gates rendering or collision. */
+  atlasZ16?: { revision: string; drivable: boolean }
+  /** Split publication layers using the same renderer and collision pipeline. */
+  additionalLayers?: PlanetGlbLayer[]
   lod?: {
     revision: string
     inputTriangles: number
@@ -160,6 +166,8 @@ export interface PlanetManifest {
    * Set only by the Atlas adapter; used by the in-car GPS for named streets.
    */
   osmSnapshot?: PlanetLayerFile
+  /** Verified Atlas scenery sidecar (trees, signs and street furniture). */
+  instances?: PlanetLayerFile
 }
 /** Pointer to the `nabla-z15-package/1` JSON that lists every file of an Atlas cell. */
 export interface PlanetZ15PackageRef {
@@ -224,7 +232,9 @@ export interface PlanetCollisionChunk {
 }
 
 export interface PlanetGlbLayer {
-  name: PlanetRequiredLayer | PlanetCandidateRoadFileKey
+  /** Rasterize for the GPS only; never install render meshes or collision bodies. */
+  chartOnly?: boolean
+  name: string
   kind: PlanetGlbKind
   file: PlanetLayerFile
   /** Road layers only: the alternative published file to load when `file` fails. */
@@ -519,11 +529,14 @@ export function planetCellVersion(
 export function planetTileRevision(manifest: PlanetManifest): string {
   const roads = readCandidateRoads(manifest)
   return (
+    (manifest.atlasZ16 ? 'atlas:' + manifest.atlasZ16.revision + ':' : '') +
     manifest.files.terrain.sha256 +
     ':' +
     manifest.files['buildings-osm'].sha256 +
     (manifest.photo ? ':' + manifest.photo.sha256 : '') +
-    (roads ? ':' + planetRoadRevision(roads) : '')
+    (manifest.instances ? ':instances:' + manifest.instances.sha256 : '') +
+    (roads ? ':' + planetRoadRevision(roads) : '') +
+    (manifest.additionalLayers?.map((layer) => ':' + layer.file.sha256).join('') ?? '')
   )
 }
 
@@ -552,6 +565,7 @@ export function planetTileGlbLayers(
   if (roads?.supports) layers.push(road('roads-supports', 'supports', roads.supports))
   if (options.inspectRoadCollision && roads?.collision)
     layers.push(road('roads-collision', 'collision', roads.collision))
+  if (manifest.additionalLayers) layers.push(...manifest.additionalLayers)
   return layers
 }
 

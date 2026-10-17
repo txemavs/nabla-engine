@@ -100,6 +100,7 @@ class Turbo {
     spoolSpan = 3600,
     whistleBase = 1100,
     whistleRise = 1900,
+    intakeNoise = 1,
   ): void {
     const target = audible
       ? load * Math.max(0, Math.min(1, (rpm - spoolFrom) / Math.max(1, spoolSpan)))
@@ -119,7 +120,7 @@ class Turbo {
     this.whistleLevel.gain.setTargetAtTime(this.boost * whistleFade * 0.006 * whistle, time, 0.06)
     this.whistle.frequency.setTargetAtTime(whistleBase + this.boost * whistleRise, time, 0.08)
     this.air.gain.setTargetAtTime(
-      this.boost * whistleFade * 0.003 * whistle + this.release * 0.04 * blowOff,
+      this.boost * whistleFade * 0.003 * whistle * intakeNoise + this.release * 0.04 * blowOff,
       time,
       0.025,
     )
@@ -202,6 +203,7 @@ export class Powertrain {
         spool?.spanRpm,
         spool?.whistleBaseHz,
         spool?.whistleRiseHz,
+        inline ? (engine?.intakeNoise ?? 1) : 1,
       )
     else this.turbo.silence(time)
     if (diesel && engine) {
@@ -231,7 +233,7 @@ export class Powertrain {
       this.engine.silence(time)
       this.v4?.silence(time)
       this.diesel?.silence(time)
-      inline.update(time, running, rpm, load, engine?.volume ?? 1)
+      inline.update(time, running, rpm, load, engine?.volume ?? 1, engine?.intakeNoise ?? 1)
       if (engine?.burble) {
         this.burble ??= new OverrunBurble(this.context, this.noise, this.random)
         if (running) this.burble.update(time, dt, rpm, load, engine.burble, engine.volume)

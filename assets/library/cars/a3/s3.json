@@ -15,6 +15,7 @@
         "voice": "inline",
         "cylinders": 4,
         "volume": 0.75,
+        "intakeNoise": 0,
         "turboWhistle": 0.35,
         "blowOff": 0
       },
@@ -23,6 +24,7 @@
           "voice": "inline",
           "cylinders": 4,
           "volume": 0.75,
+          "intakeNoise": 0,
           "turboWhistle": 0.35,
           "blowOff": 0
         },
@@ -30,6 +32,7 @@
           "voice": "inline",
           "cylinders": 5,
           "warble": 0.14,
+          "intakeNoise": 0,
           "turboWhistle": 0.5,
           "blowOff": 0.1,
           "burble": 0.35

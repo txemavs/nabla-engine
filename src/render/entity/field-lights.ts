@@ -12,11 +12,19 @@ import type { GeoPoint } from '../../math/geo/sphere.js'
 import type { Vec3Tuple } from '../../entity/schema.js'
 
 const MAP = 'https://api.openstreetmap.org/api/0.6/map'
+// Geographic fallback globe: total height includes the lens, not just the post.
+const LAMP_HEIGHT = 4
+const LAMP_RADIUS = 0.75 * 0.6 * 0.6
+const POLE_HEIGHT = LAMP_HEIGHT - 2 * LAMP_RADIUS
+const LAMP_CENTER = LAMP_HEIGHT - LAMP_RADIUS
 const CACHE = 'nabla-lamps-z15:'
 
 export type FieldLightMark = { lat: number; lon: number; tags: Record<string, string> }
 export type FieldLightSource = (tile: MapTile, signal: AbortSignal) => Promise<FieldLightMark[]>
 export interface FieldLightOptions {
+  /** Maximum nearby lamps casting light; 0 disables beams, 24 is the supported ceiling. */
+  maxBeams?: number
+  shadows?: boolean
   source?: FieldLightSource
   layers?: Partial<{ lamps: boolean; navigation: boolean }>
   look?: Partial<{ level: number; reach: number; armed: boolean }>
@@ -43,21 +51,22 @@ export class FieldLights {
   readonly layers: { lamps: boolean; navigation: boolean }
   readonly look: { level: number; reach: number; armed: boolean }
   private readonly source: FieldLightSource
-  private wanted = new Set<string>()
+  private readonly wanted = new Set<string>()
   private originKey = ''
   private disposed = false
   private readonly cells = new Map<string, Mark[]>()
   private readonly lampCells = new Map<string, LampCell>()
   private readonly loading = new Map<string, AbortController>()
   private nextTry = new Map<string, number>()
-  private readonly poleGeometry = new THREE.CylinderGeometry(0.05, 0.07, 5, 5)
-  private readonly headGeometry = new THREE.SphereGeometry(0.75, 8, 6)
-  private readonly poleMaterial = new THREE.MeshBasicMaterial({ color: '#6d7680' })
+  private readonly poleGeometry = new THREE.CylinderGeometry(0.05, 0.07, POLE_HEIGHT, 5)
+  private readonly headGeometry = new THREE.SphereGeometry(LAMP_RADIUS, 8, 6)
+  private readonly poleMaterial = new THREE.MeshBasicMaterial({ color: '#454b52' })
   private readonly headMaterial = new THREE.MeshBasicMaterial({
     color: '#fff1d2',
     toneMapped: false,
   })
   private readonly lampMatrix = new THREE.Matrix4()
+  private beamShadows = false
   private readonly beams: THREE.SpotLight[] = []
   private readonly nearest: { x: number; y: number; z: number; d2: number }[] = []
   constructor(options: FieldLightOptions = {}) {
@@ -74,11 +83,50 @@ export class FieldLights {
     }
     this.source = options.source ?? osmFieldLightSource
     this.root.name = 'Field lights'
-    for (let i = 0; i < lightingDefaults.maxBeams; i++) {
-      const beam = new THREE.SpotLight('#fff1d2', 0, this.look.reach, Math.PI / 3, 0.55, 2)
-      beam.castShadow = false
+    this.beamShadows = options.shadows ?? false
+    this.setBeamLimit(options.maxBeams ?? lightingDefaults.maxBeams)
+  }
+  get beamLimit(): number {
+    return this.beams.length
+  }
+  /** Resize only on a settings change; reuse the same lights as the player moves. */
+  setBeamLimit(value: number): void {
+    if (!Number.isFinite(value)) return
+    const count = Math.max(0, Math.min(24, Math.round(value)))
+    if (count !== this.beams.length) this.nearest.length = 0
+    while (this.beams.length > count) {
+      const beam = this.beams.pop()!
+      beam.target.removeFromParent()
+      beam.removeFromParent()
+      beam.dispose()
+    }
+    while (this.beams.length < count) {
+      const beam = new THREE.SpotLight(
+        '#fff1d2',
+        0,
+        this.look.reach,
+        Math.atan(2.8 * Math.tan(Math.PI / 3)),
+        0.7,
+        1,
+      )
+      beam.castShadow = this.beamShadows
       this.root.add(beam, beam.target)
       this.beams.push(beam)
+    }
+  }
+  get shadowsEnabled(): boolean {
+    return this.beamShadows
+  }
+  /** Opt-in shadow passes for the nearby beam pool; release maps when disabled. */
+  setShadows(enabled: boolean): void {
+    this.beamShadows = enabled
+    for (const beam of this.beams) {
+      beam.castShadow = enabled
+      beam.shadow.needsUpdate = enabled
+      if (!enabled) {
+        beam.shadow.map?.dispose()
+        beam.shadow.map = null
+      }
     }
   }
   private lampLevel(): number {
@@ -100,13 +148,14 @@ export class FieldLights {
     this.headGeometry.dispose()
     this.poleMaterial.dispose()
     this.headMaterial.dispose()
+    this.setBeamLimit(0)
     this.root.clear()
     this.root.removeFromParent()
   }
   update(
     origin: GeoPoint | undefined,
     camera: Vec3Tuple,
-    _night: boolean,
+    night: boolean,
     now: number,
     heightAt: (position: Vec3Tuple) => number | undefined,
     tiles: MapTile[] = [],
@@ -119,15 +168,16 @@ export class FieldLights {
     }
     const showLamps = this.lampLevel() > 0
     const showNav = this.layers.navigation
-    this.paintHeads()
+    this.paintHeads(night)
     this.root.visible = !!origin
     if (!origin) return
-    const wanted = new Set(tiles.filter((tile) => tile.z === 15).map(mapTilePath))
+    const wanted = this.wanted
+    wanted.clear()
+    for (const tile of tiles) if (tile.z === 15 || tile.z === 16) wanted.add(mapTilePath(tile))
     if (!wanted.size) {
       const here = localToGeo(origin, camera)
       wanted.add(mapTilePath(mapTileAt(here.latitude, here.longitude, 15)))
     }
-    this.wanted = wanted
     for (const [path, controller] of this.loading)
       if (!wanted.has(path)) {
         controller.abort()
@@ -156,7 +206,7 @@ export class FieldLights {
         cell.heads.instanceMatrix.needsUpdate = true
       }
     }
-    this.lightNearest(camera)
+    this.lightNearest(camera, night)
     for (const marks of this.cells.values()) {
       for (const mark of marks) {
         const layer = mark.kind === 'lamp' ? showLamps : showNav
@@ -242,7 +292,10 @@ export class FieldLights {
     const poles: { position: Vec3Tuple; half: Vec3Tuple }[] = []
     for (const cell of this.lampCells.values())
       for (const spot of cell.spots)
-        poles.push({ position: [spot.x, spot.y + 2.5, spot.z], half: [0.07, 2.5, 0.07] })
+        poles.push({
+          position: [spot.x, spot.y + POLE_HEIGHT / 2, spot.z],
+          half: [0.07, POLE_HEIGHT / 2, 0.07],
+        })
     for (const marks of this.cells.values())
       for (const mark of marks) {
         if (mark.kind === 'nav') continue
@@ -257,42 +310,60 @@ export class FieldLights {
       }
     return poles
   }
-  private paintHeads(): void {
-    const glow = this.lampLevel() <= 0 ? 0 : Math.min(1, this.lampLevel() / 10)
+  private paintHeads(night: boolean): void {
+    const glow = !night || this.lampLevel() <= 0 ? 0 : Math.min(1, this.lampLevel() / 10)
     this.headMaterial.color.setRGB(0.1 + 0.9 * glow, 0.1 + 0.845 * glow, 0.1 + 0.724 * glow)
   }
-  private lightNearest(camera: Vec3Tuple): void {
-    const cast = Math.max(0, this.lampLevel() - 10) / 10
+  private lightNearest(camera: Vec3Tuple, night: boolean): void {
+    const cast = night && this.beams.length ? Math.max(0, this.lampLevel() - 10) / 10 : 0
     const found = this.nearest
-    found.length = 0
+    let count = 0
     if (cast > 0) {
       const [cx, cy, cz] = camera
       for (const cell of this.lampCells.values()) {
         if (!cell.heads.visible) continue
         for (const spot of cell.spots) {
-          const y = spot.y + 5.75
+          if (!spot.grounded) continue
+          const y = spot.y + LAMP_CENTER
           const dx = spot.x - cx,
             dy = y - cy,
             dz = spot.z - cz
           const d2 = dx * dx + dy * dy + dz * dz
-          if (found.length < this.beams.length) {
-            found.push({ x: spot.x, y, z: spot.z, d2 })
-            found.sort((a, b) => a.d2 - b.d2)
-          } else if (d2 < found[found.length - 1].d2) {
-            found[found.length - 1] = { x: spot.x, y, z: spot.z, d2 }
-            found.sort((a, b) => a.d2 - b.d2)
+          // Reuse the bounded candidate records; insertion avoids sorting/allocating per lamp.
+          if (count === this.beams.length && d2 >= found[count - 1].d2) continue
+          const item = found[count < this.beams.length ? count : count - 1] ?? {
+            x: 0,
+            y: 0,
+            z: 0,
+            d2: 0,
           }
+          let index = Math.min(count, this.beams.length - 1)
+          while (index > 0 && found[index - 1].d2 > d2) {
+            found[index] = found[index - 1]
+            index--
+          }
+          item.x = spot.x
+          item.y = y
+          item.z = spot.z
+          item.d2 = d2
+          found[index] = item
+          if (count < this.beams.length) count++
         }
       }
     }
     for (let i = 0; i < this.beams.length; i++) {
       const beam = this.beams[i]
-      const item = found[i]
+      const item = i < count ? found[i] : undefined
+      // Keep the shader light/shadow counts stable as the nearest set changes.
+      beam.castShadow = this.beamShadows
+      beam.shadow.intensity = item && cast > 0 ? 1 : 0
+      beam.shadow.autoUpdate = this.beamShadows && !!item && cast > 0
+      if (this.beamShadows && !beam.shadow.map) beam.shadow.needsUpdate = true
       if (!item || cast <= 0) {
         beam.intensity = 0
         continue
       }
-      beam.intensity = cast * 700
+      beam.intensity = cast * 80
       beam.distance = this.look.reach
       beam.position.set(item.x, item.y, item.z)
       beam.target.position.set(item.x, item.y - 8, item.z)
@@ -300,9 +371,9 @@ export class FieldLights {
   }
   private placeLamp(cell: LampCell, index: number): void {
     const spot = cell.spots[index]
-    this.lampMatrix.makeTranslation(spot.x, spot.y + 2.5, spot.z)
+    this.lampMatrix.makeTranslation(spot.x, spot.y + POLE_HEIGHT / 2, spot.z)
     cell.poles.setMatrixAt(index, this.lampMatrix)
-    this.lampMatrix.makeTranslation(spot.x, spot.y + 5.75, spot.z)
+    this.lampMatrix.makeTranslation(spot.x, spot.y + LAMP_CENTER, spot.z)
     cell.heads.setMatrixAt(index, this.lampMatrix)
   }
   private drop(path: string): void {

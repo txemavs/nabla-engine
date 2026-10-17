@@ -70,6 +70,7 @@ export class VehicleAudio {
   private clicks = 0
   private starts = 0
   private shots = 0
+  private nextHorn = 0
   private enabled = true
   private suspended = false
   /** Master / engine / music buses; levels apply as soon as the context exists. */
@@ -319,6 +320,34 @@ export class VehicleAudio {
     this.gunshotVoice.trigger(frame.time, true)
     if (last) this.weaponHandling?.trigger(frame.time + 0.035, 'slide-lock')
     this.shots++
+  }
+
+  /** Short dual-tone vehicle horn, through the existing SFX mixer and mute policy. */
+  horn(): void {
+    const frame = this.frame()
+    const context = this.context
+    if (!frame?.audible || !context || frame.time < this.nextHorn) return
+    const time = frame.time
+    this.nextHorn = time + 0.3
+    const gain = context.createGain()
+    gain.connect(audioBus(context, 'sfx'))
+    gain.gain.setValueAtTime(0, time)
+    gain.gain.linearRampToValueAtTime(0.08, time + 0.015)
+    gain.gain.setValueAtTime(0.08, time + 0.25)
+    gain.gain.linearRampToValueAtTime(0, time + 0.3)
+    let remaining = 2
+    for (const frequency of [400, 500]) {
+      const tone = context.createOscillator()
+      tone.type = 'triangle'
+      tone.frequency.value = frequency
+      tone.connect(gain)
+      tone.onended = () => {
+        tone.disconnect()
+        if (--remaining === 0) gain.disconnect()
+      }
+      tone.start(time)
+      tone.stop(time + 0.31)
+    }
   }
 
   /** Procedural handling cue, at the weapon rather than the listener. */

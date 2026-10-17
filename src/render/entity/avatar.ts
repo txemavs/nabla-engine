@@ -10,6 +10,7 @@ const monitors = new WeakMap<
     target: number
     screen: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>
     matrixMode: { value: number }
+    faceLight: { value: number }
     tint: THREE.MeshPhysicalMaterial
     shell: THREE.MeshPhysicalMaterial
   }
@@ -224,10 +225,13 @@ export function createMonitorAvatar(): THREE.Group {
   root.add(propulsionSocket)
   const face = new MonitorFace()
   const matrixMode = { value: 1 }
+  const faceLight = { value: 0 }
   const screenMaterial = new THREE.MeshBasicMaterial({ map: face.texture, toneMapped: false })
   screenMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.monitorMatrixMode = matrixMode
-    shader.fragmentShader = 'uniform float monitorMatrixMode;\n' + shader.fragmentShader
+    shader.uniforms.monitorFaceLight = faceLight
+    shader.fragmentShader =
+      'uniform float monitorMatrixMode; uniform float monitorFaceLight;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <map_fragment>',
       `
@@ -243,6 +247,7 @@ export function createMonitorAvatar(): THREE.Group {
       vec2 pixelCell = fract(monitorUv * vec2(${MONITOR_COLUMNS}.0, ${MONITOR_ROWS}.0));
       float pixelMask = step(0.12, pixelCell.x) * step(pixelCell.x, 0.88) * step(0.12, pixelCell.y) * step(pixelCell.y, 0.88) * step(0.0, monitorUv.y) * step(monitorUv.y, 1.0) * faceMask;
       diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.0003, 0.0008, 0.002), diffuseColor.rgb, pixelMask), monitorMatrixMode);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), monitorFaceLight);
     `,
     )
   }
@@ -360,6 +365,7 @@ export function createMonitorAvatar(): THREE.Group {
     target: VISOR_TRAVEL,
     screen: screen as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
     matrixMode,
+    faceLight,
     tint,
     shell,
   })
@@ -401,6 +407,12 @@ export function setMonitorVisorTint(model: THREE.Group, darkness: number): void 
   const amount = THREE.MathUtils.clamp(darkness, 0, 1)
   monitor.tint.opacity = THREE.MathUtils.lerp(0.025, 0.72, amount)
   monitor.tint.color.set(0x050609)
+}
+
+/** Turn the existing display white without replacing its texture or compiling another shader. */
+export function setMonitorFaceLight(model: THREE.Group, enabled: boolean): void {
+  const monitor = monitors.get(model)
+  if (monitor) monitor.faceLight.value = enabled ? 1 : 0
 }
 
 /** Display a caller-owned photo/video texture on the curved face; null restores blue pixels.

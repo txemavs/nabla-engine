@@ -58,14 +58,16 @@ it('stops when the play session is aborted', async () => {
   const controller = new AbortController()
   controller.abort()
   const renderer = { compileAsync: vi.fn(async () => {}) }
-  await warmGamePresentation({
-    renderer,
-    scene: new Scene(),
-    camera: new PerspectiveCamera(),
-    view: { mirroredVehicles: ['car'], renderMirrors: vi.fn() },
-    settings: { firstPersonFov: 70, chaseFov: 48 },
-    signal: controller.signal,
-  })
+  await expect(
+    warmGamePresentation({
+      renderer,
+      scene: new Scene(),
+      camera: new PerspectiveCamera(),
+      view: { mirroredVehicles: ['car'], renderMirrors: vi.fn() },
+      settings: { firstPersonFov: 70, chaseFov: 48 },
+      signal: controller.signal,
+    }),
+  ).rejects.toThrow()
   expect(renderer.compileAsync).not.toHaveBeenCalled()
 })
 
@@ -98,4 +100,22 @@ it('uses actual world lighting and removes warmup copies even when compilation f
   expect(scene.children).toEqual([original])
   expect(effect.visible).toBe(false)
   expect(renderer.shadowMap).toEqual({ autoUpdate: true, needsUpdate: false })
+})
+
+it('reports preparation failure instead of silently declaring the views ready', async () => {
+  const camera = new PerspectiveCamera(48, 1, 0.1, 1000)
+  await expect(
+    warmGamePresentation({
+      renderer: {
+        compileAsync: async () => {
+          throw new Error('GPU compilation failed')
+        },
+      },
+      scene: new Scene(),
+      camera,
+      view: { mirroredVehicles: [], renderMirrors: vi.fn() },
+      settings: { firstPersonFov: 70, chaseFov: 60 },
+    }),
+  ).rejects.toThrow('GPU compilation failed')
+  expect(camera.fov).toBe(48)
 })

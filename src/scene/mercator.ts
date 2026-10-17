@@ -11,7 +11,7 @@ export interface MapTile {
   y: number
 }
 export const MAP_TILE_MATRIX = 'WebMercatorQuad'
-export const MAP_ZOOMS = [15, 14, 13, 12] as const
+export const MAP_ZOOMS = [16, 15, 14, 13, 12] as const
 export const MERCATOR_LIMIT = 85.0511287798066
 const radius = 6378137
 const circumference = 2 * Math.PI * radius
@@ -170,7 +170,7 @@ export interface MapZoomPlan {
   requests: MapTile[]
   budgetLimited: boolean
 }
-/** Ground uses Z15; flight can refine published Z12–Z15 mesh coverage within one budget. */
+/** Z15 by default; opt-in Z16 retains complete parent coverage within the request budget. */
 export function planMapZooms(options: {
   latitude: number
   longitude: number
@@ -180,11 +180,14 @@ export function planMapZooms(options: {
   adaptive?: boolean
   /** Coarsest mesh level actually published by the source. */
   minZoom?: 12 | 13 | 14 | 15
+  /** Finest delivery level. Z16 is opt-in; its parent is retained during refinement. */
+  maxZoom?: 15 | 16
   /** Coarse coverage ahead of a flying player; fine detail stays near the current position. */
   lookAhead?: { latitude: number; longitude: number }
 }): MapZoomPlan {
   const { latitude, longitude, viewDistance } = options
   const budget = options.maxTiles ?? 96
+  const maxZoom = options.maxZoom ?? 15
   if (
     !Number.isFinite(options.heightAboveGround) ||
     !Number.isFinite(viewDistance) ||
@@ -192,18 +195,20 @@ export function planMapZooms(options: {
     !Number.isInteger(budget) ||
     budget < 1 ||
     budget > 512 ||
+    ![15, 16].includes(maxZoom) ||
     (options.minZoom !== undefined && ![12, 13, 14, 15].includes(options.minZoom))
   )
     throw Error('Invalid map streaming budget')
-  if (options.adaptive && options.minZoom !== 15)
+  if (maxZoom === 16 || (options.adaptive && options.minZoom !== 15))
     return adaptiveMapPlan(
       options.latitude,
       options.longitude,
-      options.heightAboveGround,
+      options.adaptive ? options.heightAboveGround : 0,
       viewDistance,
       budget,
-      options.minZoom ?? 12,
+      options.minZoom ?? (maxZoom === 16 ? 15 : 12),
       options.lookAhead,
+      maxZoom,
     )
   const center = mapTileAt(latitude, longitude, 15)
   const width = mapTileGroundWidth(latitude, 15)
@@ -237,7 +242,7 @@ export function planMapZooms(options: {
 export function readyMapCover(plan: MapZoomPlan, ready: ReadonlySet<string>): MapTile[] {
   const wanted = new Set(plan.requests.map(mapTileId))
   const visit = (tile: MapTile): MapTile[] | undefined => {
-    const children = tile.z < 15 ? mapTileChildren(tile) : []
+    const children = tile.z < 22 ? mapTileChildren(tile) : []
     if (children.length && children.every((child) => wanted.has(mapTileId(child)))) {
       const covers = children.map(visit)
       if (covers.every((cover) => cover !== undefined)) return covers.flat() as MapTile[]
@@ -251,7 +256,7 @@ export function readyMapCover(plan: MapZoomPlan, ready: ReadonlySet<string>): Ma
 export function planetReadyCover(plan: MapZoomPlan, ready: ReadonlySet<string>): MapTile[] {
   const wanted = new Set(plan.requests.map(mapTileId))
   const visit = (tile: MapTile): { tiles: MapTile[]; complete: boolean } => {
-    const children = tile.z < 15 ? mapTileChildren(tile) : []
+    const children = tile.z < 22 ? mapTileChildren(tile) : []
     const covers =
       children.length && children.every((c) => wanted.has(mapTileId(c))) ? children.map(visit) : []
     if (covers.length && covers.every((c) => c.complete))
@@ -262,6 +267,32 @@ export function planetReadyCover(plan: MapZoomPlan, ready: ReadonlySet<string>):
   return plan.roots.flatMap((t) => visit(t).tiles)
 }
 
+/** Add ready pinned tiles without punching a hole in an existing parent or drawing overlaps. */
+export function mergeReadyMapCover(cover: MapTile[], additions: MapTile[]): MapTile[] {
+  const available = new Map([...cover, ...additions].map((tile) => [mapTileId(tile), tile]))
+  const requests = new Map(available)
+  const roots: MapTile[] = []
+  for (const tile of available.values()) {
+    const ancestors: MapTile[] = []
+    let parent = mapTileParent(tile)
+    while (parent && !available.has(mapTileId(parent))) {
+      ancestors.push(parent)
+      parent = mapTileParent(parent)
+    }
+    if (!parent) roots.push(tile)
+    else for (const ancestor of ancestors) requests.set(mapTileId(ancestor), ancestor)
+  }
+  return planetReadyCover(
+    {
+      roots,
+      leaves: [...available.values()],
+      requests: [...requests.values()],
+      budgetLimited: false,
+    },
+    new Set(available.keys()),
+  )
+}
+
 /** Mixed visual coverage. Ancestors remain requested until complete children can replace them. */
 function adaptiveMapPlan(
   latitude: number,
@@ -269,8 +300,9 @@ function adaptiveMapPlan(
   height: number,
   distance: number,
   budget: number,
-  minZoom: 12 | 13 | 14,
+  minZoom: 12 | 13 | 14 | 15,
   lookAhead?: { latitude: number; longitude: number },
+  maxZoom: 15 | 16 = 15,
 ): MapZoomPlan {
   const center = mapTileAt(latitude, longitude, minZoom),
     width = mapTileGroundWidth(latitude, minZoom),
@@ -325,7 +357,7 @@ function adaptiveMapPlan(
     const next = leaves
       .filter(
         (tile) =>
-          tile.z < 15 &&
+          tile.z < maxZoom &&
           Math.hypot(groundDistance(tile), height) <
             (tile.z === 12
               ? Math.max(near * 4, distance * 0.95)

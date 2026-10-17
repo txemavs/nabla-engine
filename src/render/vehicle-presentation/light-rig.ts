@@ -1,5 +1,5 @@
 /** Fixed renderer lights for the occupied vehicle. GLB lamps stay hidden so light count never changes. */
-import { Group, PointLight, SpotLight, Vector3, type Light } from 'three'
+import { Group, PointLight, SpotLight, Vector3, type Light, type Object3D } from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
 import { lowBeamMask } from './authored-lights.js'
 
@@ -16,6 +16,7 @@ export class VehicleLightRig {
   private readonly points: PointLight[] = []
   private readonly mask = lowBeamMask()
   private readonly world = new Vector3()
+  private freeGroundSlot: SpotLight | undefined
 
   constructor() {
     this.root.name = 'Vehicle light rig'
@@ -34,6 +35,11 @@ export class VehicleLightRig {
     }
   }
 
+  /** Unmapped headlight slot, reusable by the pedestrian while no vehicle owns the rig. */
+  get pedestrianLight(): SpotLight {
+    return this.spots[vehicleLightBudget.mappedSpots]!
+  }
+
   get lights(): Light[] {
     return [...this.spots, ...this.points]
   }
@@ -43,12 +49,37 @@ export class VehicleLightRig {
     this.root.updateWorldMatrix(true, false)
     const mapped = spots.filter((light) => light.map)
     const plain = spots.filter((light) => !light.map)
+    this.freeGroundSlot =
+      plain.length < this.spots.length - vehicleLightBudget.mappedSpots
+        ? this.spots[this.spots.length - 1]
+        : undefined
     for (let i = 0; i < this.spots.length; i++)
       this.copy(
         this.spots[i],
         i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots],
       )
     for (let i = 0; i < this.points.length; i++) this.copy(this.points[i], points[i])
+  }
+
+  /** Subtle downward road wash, using a spare unmapped slot rather than another light. */
+  groundGlow(vehicle: Object3D): void {
+    const light = this.freeGroundSlot
+    if (!light || light === this.pedestrianLight) return
+    vehicle.updateWorldMatrix(true, false)
+    this.world.set(0, 0, 1.8)
+    vehicle.localToWorld(this.world)
+    light.position.copy(this.root.worldToLocal(this.world))
+    this.world.set(0, -1, 2.6)
+    vehicle.localToWorld(this.world)
+    light.target.position.copy(this.root.worldToLocal(this.world))
+    light.color.set('#ff2410')
+    light.intensity = 4.8
+    light.distance = 5
+    light.decay = 1
+    light.angle = 1.3
+    light.penumbra = 1
+    // This slot is never the pedestrian shadow slot.
+    light.castShadow = false
   }
 
   dispose(): void {

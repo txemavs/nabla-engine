@@ -18,7 +18,7 @@ Closest point on any centreline within `maxDistance` of (x, z), or null.
 Bounding boxes (`minX`… when present, as on OSM chart roads) skip far roads cheaply.
 
 ```ts
-nearestRoadPoint(x: number, z: number, roads: Iterable<RoadCenterline & Partial<Record<'minX' | 'maxX' | 'minZ' | 'maxZ', number>>>, maxDistance = ROAD_SNAP_MAX_DISTANCE): RoadSnap | null
+nearestRoadPoint(x: number, z: number, roads: Iterable<RoadCenterline & Partial<Record<'minX' | 'maxX' | 'minZ' | 'maxZ', number>>>, maxDistance = ROAD_SNAP_MAX_DISTANCE, accept?: (point: RoadSnap) => boolean): RoadSnap | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -27,10 +27,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Math.sqrt`
+- `accept`
 
 ## RoadSegmentIndex.constructor
 
-[Implementation, line 88](../../../../src/simulation/road-snap.ts#L88)
+[Implementation, line 97](../../../../src/simulation/road-snap.ts#L97)
 
 ```ts
 constructor(roads: Iterable<RoadCenterline>): instance
@@ -50,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RoadSegmentIndex.nearest
 
-[Implementation, line 127](../../../../src/simulation/road-snap.ts#L127)
+[Implementation, line 136](../../../../src/simulation/road-snap.ts#L136)
 
 ```ts
 nearest(x: number, z: number, maxDistance = ROAD_SNAP_MAX_DISTANCE): RoadSnap | null

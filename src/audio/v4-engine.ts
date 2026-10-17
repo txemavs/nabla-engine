@@ -244,7 +244,14 @@ export class V4Engine {
     this.intake.gain.setTargetAtTime(0, time, 0.05)
   }
 
-  update(time: number, audible: boolean, rpm: number, load: number, volume = 1): void {
+  update(
+    time: number,
+    audible: boolean,
+    rpm: number,
+    load: number,
+    volume = 1,
+    intakeNoise = 1,
+  ): void {
     const d = this.timbre
     const firings = this.firingCount
     const level = audible ? (d.idleGain + load * d.loadGain) * volume : 0
@@ -256,7 +263,11 @@ export class V4Engine {
       time,
       0.04,
     )
-    this.intake.gain.setTargetAtTime(audible ? load * d.intakeGain * volume : 0, time, 0.05)
+    this.intake.gain.setTargetAtTime(
+      audible ? load * d.intakeGain * volume * intakeNoise : 0,
+      time,
+      0.05,
+    )
     // Intake band around a few times the firing rate.
     this.intakeFilter.frequency.setTargetAtTime(
       (d.intakeBaseHz ?? 400) + cycle * firings * (d.intakeFiringMultiple ?? 3),

@@ -63,9 +63,19 @@ Borrow the world/material; this subsystem owns only its fallback body.
 constructor(private readonly world: World, private readonly solidMaterial: Material): instance
 ```
 
-## PlanetCatchFloor.pose
+## PlanetCatchFloor.owns
 
 [Implementation, line 25](../../../../src/simulation/catch-floor.ts#L25)
+
+Identify the emergency support so recovery never treats it as real terrain.
+
+```ts
+owns(body: Body): boolean
+```
+
+## PlanetCatchFloor.pose
+
+[Implementation, line 29](../../../../src/simulation/catch-floor.ts#L29)
 
 Read the top-face world pose for presentation, without exposing the body.
 
@@ -83,7 +93,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetCatchFloor.update
 
-[Implementation, line 39](../../../../src/simulation/catch-floor.ts#L39)
+[Implementation, line 43](../../../../src/simulation/catch-floor.ts#L43)
 
 Follow a submerged actor; geography and water level are geodetic/metres.
 
@@ -117,7 +127,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetCatchFloor.seatCatchFloor
 
-[Implementation, line 74](../../../../src/simulation/catch-floor.ts#L74)
+[Implementation, line 78](../../../../src/simulation/catch-floor.ts#L78)
 
 Synchronize current and previous transforms to avoid interpolation jumps.
 
@@ -140,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetCatchFloor.dropCatchFloor
 
-[Implementation, line 86](../../../../src/simulation/catch-floor.ts#L86)
+[Implementation, line 90](../../../../src/simulation/catch-floor.ts#L90)
 
 Remove the owned body; safe to call repeatedly before freeing the world.
 

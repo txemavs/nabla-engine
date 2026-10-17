@@ -19,26 +19,41 @@ export class VehicleWarmup {
   private disposed = false
   constructor(private readonly target: VehicleWarmupTarget) {}
 
-  warm(entities: readonly Entity[]): Promise<void> {
+  warm(entities: readonly Entity[], progress?: (phase: string) => Promise<void>): Promise<void> {
     // IDs, positions and paint colours do not change shader variants; finishes can.
     const key = JSON.stringify(entities.map((e) => [e.visual, e.vehicle]))
     const cached = this.warmed.get(key)
     if (cached) return cached
     const snapshot = structuredClone([...entities])
-    const pending = this.queue.then(() => this.prepare(snapshot))
+    const pending = this.queue.then(() => this.prepare(snapshot, progress))
     this.queue = pending.catch(() => undefined)
     this.warmed.set(key, pending)
     void pending.catch(() => this.warmed.delete(key))
     return pending
   }
 
-  private async prepare(entities: readonly Entity[]): Promise<void> {
+  private async prepare(
+    entities: readonly Entity[],
+    progress?: (phase: string) => Promise<void>,
+  ): Promise<void> {
+    const checkpoint = async (phase: string) => {
+      await progress?.(phase)
+      // A task after rAF allows the browser to paint before expensive synchronous work.
+      await new Promise<void>((resolve) => {
+        if (typeof document !== 'undefined' && document.hidden) setTimeout(resolve, 0)
+        else requestAnimationFrame(() => setTimeout(resolve, 0))
+      })
+    }
     if (this.disposed) return
     const { renderer, scene } = this.target
+    await checkpoint('Loading model')
+    if (this.disposed) return
     const view = this.target.createView([...entities])
     this.kept.add(view)
     try {
       await view.ready
+      if (this.disposed) return
+      await checkpoint('Preparing materials')
       if (this.disposed) return
       view.setPlaying(true)
       // Only vehicle groups join the warm draw. The temporary view's fixed light pools
@@ -55,36 +70,48 @@ export class VehicleWarmup {
         // still needs its GPU buffers uploaded before an eventual cockpit/chase view.
         if (object instanceof THREE.Mesh) object.frustumCulled = false
       })
-      for (const texture of materialTextures(group)) {
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      const textures = materialTextures(group)
+      for (const [index, texture] of textures.entries()) {
+        await checkpoint(`Uploading textures ${index + 1}/${textures.length}`)
         if (this.disposed) return
         renderer.initTexture(texture)
       }
       const camera = this.target.camera.clone()
+      await checkpoint('Compiling vehicle shaders')
+      if (this.disposed) return
       await renderer.compileAsync(group, camera, scene)
       if (this.disposed) return
-      const previous = renderer.getRenderTarget()
-      const shadowNeedsUpdate = renderer.shadowMap.needsUpdate
-      const target = new THREE.WebGLRenderTarget(1, 1)
-      // Attach, draw and detach in one synchronous block: attract/game frames never see
-      // these representatives. Use the real scene's lights and shadow configuration.
-      scene.add(group)
-      try {
-        // Warmup bypasses the main pipeline's shadow allocation. A frozen shadow
-        // manager may not have depth textures yet; sampling its placeholder as
-        // sampler2DShadow causes GL_INVALID_OPERATION on the very first draw.
-        renderer.shadowMap.needsUpdate = true
-        renderer.setRenderTarget(target)
-        renderer.render(scene, camera)
-        for (const id of view.mirroredVehicles)
-          view.renderMirrors(renderer, scene, camera, id, performance.now())
-      } finally {
-        renderer.shadowMap.needsUpdate = shadowNeedsUpdate
-        renderer.setRenderTarget(previous)
-        target.dispose()
-        group.removeFromParent()
-        view.root.add(group)
+      // Restore all shared render state before yielding: the intro/game loop can run
+      // between these phases and must never see a temporary vehicle or target.
+      const draw = (operation: () => void) => {
+        const previous = renderer.getRenderTarget()
+        const shadowNeedsUpdate = renderer.shadowMap.needsUpdate
+        const target = new THREE.WebGLRenderTarget(1, 1)
+        scene.add(group)
+        try {
+          renderer.setRenderTarget(target)
+          operation()
+        } finally {
+          renderer.shadowMap.needsUpdate = shadowNeedsUpdate
+          renderer.setRenderTarget(previous)
+          target.dispose()
+          group.removeFromParent()
+          view.root.add(group)
+        }
       }
+      await checkpoint('Rendering scene and shadows')
+      if (this.disposed) return
+      draw(() => {
+        renderer.shadowMap.needsUpdate = true
+        renderer.render(scene, camera)
+      })
+      const mirrors = view.mirroredVehicles
+      for (const [index, id] of mirrors.entries()) {
+        await checkpoint(`Rendering mirrors ${index + 1}/${mirrors.length}`)
+        if (this.disposed) return
+        draw(() => view.renderMirrors(renderer, scene, camera, id, performance.now()))
+      }
+      await checkpoint('Vehicle ready')
     } catch (error) {
       view.dispose()
       this.kept.delete(view)

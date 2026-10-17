@@ -1,3 +1,4 @@
+import { adaptAtlasZ16, ATLAS_Z16_SCHEMA } from '../../planet/atlas-z16.js'
 /**
  * Static tile provider: fetches tiles via GET requests to pre-built manifest.json files.
  * Suitable for deployment on static hosts (S3, nginx) where POST /prepare/tiles is unavailable.
@@ -34,6 +35,8 @@ import { sha256 } from '../../util/sha256.js'
 export interface StaticTileProviderOptions {
   /** Application-owned tile origin. Use `/` (or normalized empty string) for this origin. */
   baseUrl: string
+  /** Exact pinned publication from the development registry. */
+  publication?: { manifestUrl: string; revision: string }
   signal?: AbortSignal
   cors?: boolean
   /** Protocol of the embedding page, for the mixed-content check. Defaults to `location.protocol`. */
@@ -125,7 +128,7 @@ export async function fetchTileManifest(
   options: StaticTileProviderOptions,
 ): Promise<PlanetManifest | undefined> {
   const { baseUrl, signal, cors = true } = options
-  const url = tileManifestUrl(tile, baseUrl)
+  const url = options.publication?.manifestUrl ?? tileManifestUrl(tile, baseUrl)
   assertSecureTileBase(
     url,
     options.pageProtocol ?? (typeof location !== 'undefined' ? location.protocol : undefined),
@@ -134,6 +137,8 @@ export async function fetchTileManifest(
   const timeout = AbortSignal.timeout(15000)
   const fetchOptions: RequestInit = {
     method: 'GET',
+    credentials: 'omit',
+    cache: 'no-store',
     signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
   }
   if (cors) {
@@ -174,7 +179,10 @@ export async function fetchTileManifest(
   }
   let manifest: PlanetManifest
   try {
-    manifest = validatePlanetManifest(data, tile)
+    manifest =
+      (data as { schema?: string })?.schema === ATLAS_Z16_SCHEMA
+        ? adaptAtlasZ16(data, tile, baseUrl)
+        : validatePlanetManifest(data, tile)
   } catch (error) {
     throw new StaticTileError(
       `Manifest ${url}: invalid manifest (${error instanceof Error ? error.message : String(error)})`,
@@ -182,6 +190,8 @@ export async function fetchTileManifest(
       url,
     )
   }
+  if (options.publication && manifest.atlasZ16?.revision !== options.publication.revision)
+    throw new StaticTileError('Pinned Z16 revision mismatch', 'invalid', url)
   return options.atlas && manifest.z15Package
     ? adaptWithAtlasPackage(tile, manifest, options, url)
     : manifest
@@ -257,5 +267,8 @@ export function tileGlbUrl(
   manifest: PlanetManifest,
 ): string {
   const path = mapTilePath(tile)
-  return `${normalizeTilesBase(baseUrl)}/${path}/${manifest.files[layer].path}`
+  return (
+    manifest.files[layer].url ??
+    `${normalizeTilesBase(baseUrl)}/${path}/${manifest.files[layer].path}`
+  )
 }

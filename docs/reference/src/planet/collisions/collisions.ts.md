@@ -295,9 +295,70 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.built.has`
 
+## PlanetCollisions.prepareReplacement
+
+[Implementation, line 201](../../../../../src/planet/collisions/collisions.ts#L201)
+
+Cook a replacement in an isolated physics world; commit is synchronous with the visual swap.
+
+```ts
+prepareReplacement(previousId: string, tile: PlanetCollisionTile, positions: Vec3Tuple[], buildings: boolean, budgetMs = 3): (() => void) | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `PlanetCollisions`
+- `World`
+- `staged.setTiles`
+- `staged.update`
+- `this.discardReplacement`
+
+## PlanetCollisions.prepareReplacement.callback@216
+
+[Implementation, line 216](../../../../../src/planet/collisions/collisions.ts#L216)
+
+```ts
+callback@216(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `key.startsWith`
+- `staged.built.clear`
+- `staged.world.removeBody`
+- `this.built.delete`
+- `this.built.set`
+- `this.discardReplacement`
+- `this.tiles.map`
+- `this.world.addBody`
+- `this.world.removeBody`
+
+## PlanetCollisions.prepareReplacement.callback@216.callback@228
+
+[Implementation, line 228](../../../../../src/planet/collisions/collisions.ts#L228)
+
+```ts
+callback@228(existing): inferred by TypeScript; see implementation
+```
+
+## PlanetCollisions.discardReplacement
+
+[Implementation, line 234](../../../../../src/planet/collisions/collisions.ts#L234)
+
+Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+
+```ts
+discardReplacement(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.replacement.staged.dispose`
+- `this.replacement.staged.world.raw.free`
+
 ## PlanetCollisions.dispose
 
-[Implementation, line 199](../../../../../src/planet/collisions/collisions.ts#L199)
+[Implementation, line 241](../../../../../src/planet/collisions/collisions.ts#L241)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
 
@@ -309,4 +370,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.built.clear`
 - `this.built.values`
+- `this.discardReplacement`
 - `this.world.removeBody`

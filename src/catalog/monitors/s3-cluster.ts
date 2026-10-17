@@ -5,13 +5,23 @@ export const s3ClusterDefinition: MonitorDefinition = {
   height: 320,
   layers: [
     {
+      id: 'dial-surface',
+      kind: 'image',
+      lighting: 'scene',
+      x: 0,
+      y: 0,
+      width: 640,
+      height: 320,
+      url: '/monitors/s3-cluster-surface.svg',
+    },
+    {
       id: 'face',
       kind: 'image',
       x: 0,
       y: 0,
       width: 640,
       height: 320,
-      url: '/monitors/s3-cluster.svg',
+      url: '/monitors/s3-cluster-lit.svg',
     },
     {
       id: 'rpm-needle',

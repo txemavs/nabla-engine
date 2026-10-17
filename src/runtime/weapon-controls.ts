@@ -26,6 +26,8 @@ export class WeaponControls {
     ]) {
       const button = document.createElement('button')
       button.type = 'button'
+      button.dataset.toolbarLabel =
+        code === 'aim' ? 'AIM' : code === 'weapon.magazine' ? 'MAG' : 'SLIDE'
       button.title = label
       button.setAttribute('aria-label', label)
       const icon =

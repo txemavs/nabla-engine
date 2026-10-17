@@ -137,8 +137,8 @@ Explicit throws in this body:
 
 Wait until every cell the stream plans around `position` has arrived (or failed / is a known
 hole), e.g. the landscape seen during a start descent. `pending` adds other install queues
-(map meshes) that must drain too. Resolves true when settled, false at the stall limit (no
-progress for `stallMs`) or the hard cap; never throws for slowness.
+(map meshes) that must drain too. By default wait until settled or aborted. A caller may
+explicitly opt into stall/cap limits; false then means incomplete, never ready.
 
 ```ts
 waitForArea(world: GroundProvider & { readonly cellStats?: { pending: number } }, position: Vec3Tuple, options: { signal?: AbortSignal stallMs?: number capMs?: number installBudgetMs?: number pending?: () => number /** Drains another install queue each tick (e.g. map meshes). */ flush?: () => void onProgress?: (pending: number) => void } = {}): Promise<boolean>

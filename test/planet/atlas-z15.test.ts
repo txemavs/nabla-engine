@@ -283,7 +283,8 @@ describe('Atlas Z15 package adapter', () => {
     const p = validateAtlasZ15Package(pkg(), tile)
     const notes = atlasCompatibilityNotes(manifest(), p, PLANET_GEOMETRY_REVISION)
     expect(notes.join('\n')).toMatch(/native-surfaces-v2 is older than native-surfaces-v5/)
-    expect(notes.join('\n')).toMatch(/not consumed by the engine: .*classes.*instances/)
+    expect(notes.join('\n')).toMatch(/not consumed by the engine: .*classes/)
+    expect(notes.join('\n')).not.toMatch(/not consumed by the engine: .*instances/)
     expect(atlasPackageUrl('/terrain/', tile, manifest().z15Package!)).toBe(
       '/terrain/z/15/16211/12003/z15-059a2665959db8a9.json',
     )
@@ -323,6 +324,8 @@ describe('fetchTileManifest with Atlas packages', () => {
     const calls = serve()
     const m = await fetchTileManifest(tile, { ...options, atlas: { relief: 'lidar' } })
     expect(m?.files.terrain.path).toBe('terrain-lidar-50074696349a0012.glb')
+    expect(m?.instances?.path).toMatch(/^instances-.*\.json$/)
+    expect(m?.instances?.sha256).toMatch(/^[a-f0-9]{64}$/)
     expect(m?.photo?.path).toBe('ground-lots-ec58b341916d2b55.webp')
     expect(m?.roofPhoto?.path).toBe('roof-0474668251b791ff.webp')
     expect(calls).toEqual([
@@ -445,4 +448,16 @@ describe('GPS keeps its OSM road data when the OSM road mesh is hidden', () => {
       expect(v3.osmSnapshot?.path).toBe('osm-3f3939c12c359aab.json.gz')
     }
   })
+})
+
+it('photo proximity compares mixed Z15/Z16 addresses in the same matrix', () => {
+  expect(
+    atlasPhotoFor('full', { z: 15, x: 16224, y: 11998 }, { z: 16, x: 32449, y: 23997 }, 0),
+  ).toBe('full')
+  expect(
+    atlasPhotoFor('full', { z: 15, x: 16226, y: 11998 }, { z: 16, x: 32449, y: 23997 }, 0),
+  ).toBe('lo')
+  expect(atlasPhotoFor('full', { z: 16, x: 0, y: 200 }, { z: 16, x: 65535, y: 200 }, 1)).toBe(
+    'full',
+  )
 })

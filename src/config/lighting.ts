@@ -54,7 +54,7 @@ export const lightingDefaults = Object.freeze({
   lamps: true,
   navigation: true,
   /** Street-light intensity multiplier and reach in metres. */
-  level: 10,
+  level: 20,
   reach: 28,
   /** Permit geographic lamps to emit light. */
   armed: true,

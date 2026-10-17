@@ -286,6 +286,12 @@ export class TouchDriving {
       const button = document.createElement('button')
       button.innerHTML = touchActionIcon(action)
       button.dataset.drive = action
+      button.dataset.toolbarLabel = {
+        play: 'PLAY',
+        interact: 'IN/OUT',
+        camera: 'CAM',
+        respawn: 'RESET',
+      }[action]
       button.type = 'button'
       button.className = 'touch-driving-action'
       button.setAttribute('aria-label', label)

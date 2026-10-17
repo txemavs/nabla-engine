@@ -110,7 +110,9 @@ export class NavigationPlaceLookup {
   private generation = 0
   private latest: number[] = [0, 0, 0]
   request(position: readonly number[], apply: (city: string, street: string) => void): void {
-    this.latest = [...position]
+    this.latest[0] = position[0]
+    this.latest[1] = position[1]
+    this.latest[2] = position[2]
     if (this.pending || performance.now() < this.next) return
     this.pending = true
     const generation = this.generation

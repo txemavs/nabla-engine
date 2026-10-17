@@ -4,7 +4,7 @@ import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
 /**
  * Read shareable URL overrides, falling back to Engine defaults for invalid input.
- * The player's saved `scale` wins: `scale=<0.25..2>` fixes it (above 1 supersamples), `scale=auto` adapts live.
+ * The player's saved `scale` wins: `scale=<0.25..5>` fixes it (above 1 supersamples), `scale=auto` adapts live.
  * Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
  */
 export function readDisplaySettings(search = location.search): DisplaySettings {
@@ -47,11 +47,21 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   const auto = document.getElementById('display-scale-auto') as HTMLInputElement | null
   const label = document.getElementById('display-scale-label')!
   const quality = document.getElementById('display-quality') as HTMLSelectElement
+  const steps = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5]
+  scale.min = '0'
+  scale.max = '7'
+  scale.step = '1'
   const initial = runtime.displaySettings
   fps.value = String(initial.maxFps)
   const sync = () => {
     const state = runtime.resolutionScaleState
-    scale.value = String(Math.round(state.scale * 100))
+    scale.value = String(
+      steps.reduce(
+        (best, value, i) =>
+          Math.abs(value - state.scale) < Math.abs(steps[best] - state.scale) ? i : best,
+        0,
+      ),
+    )
     if (auto) auto.checked = state.mode === 'auto'
     scale.disabled = state.mode === 'auto'
     label.textContent = scaleLabel(runtime)
@@ -94,7 +104,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
     if (!scale.checkValidity()) return
     scaleChosen = true
     runtime.setDisplay({
-      resolutionScale: Number(scale.value) / 100,
+      resolutionScale: steps[Number(scale.value)],
       resolutionScaleMode: 'manual',
     })
     sync()

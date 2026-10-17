@@ -1,3 +1,4 @@
+import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -115,8 +116,11 @@ try {
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
+    performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
-    startupTerrain: 'nearby',
+    // Desktop prepares its visible streaming footprint before gameplay begins.
+    startupTerrain: params.has('xr') || location.pathname === '/xr.html' ? 'nearby' : 'area',
+    fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
@@ -158,6 +162,8 @@ try {
     tiles: {
       baseUrl: config.base,
       mode: 'static',
+      meshMaxZoom: params.get('meshMaxZoom') === '16' ? 16 : 15,
+      developmentRefresh: params.get('tileRefresh') === '1',
       horizon: false,
       meshMinZoom:
         params.get('meshMinZoom') === '12'
@@ -225,6 +231,7 @@ try {
       bootLog('installHostVehicles done')
     })
   bootLog('play() start')
+  restoreStartupLightSettings(runtime)
   await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
   if (params.has('xr')) runtime.equipTestSidearm()
   bindVR(runtime)
