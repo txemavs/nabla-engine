@@ -21,6 +21,10 @@ export class PlanetCatchFloor {
     private readonly world: World,
     private readonly solidMaterial: Material,
   ) {}
+  /** Identify the emergency support so recovery never treats it as real terrain. */
+  owns(body: Body): boolean {
+    return body === this.catchFloor
+  }
   /** Read the top-face world pose for presentation, without exposing the body. */
   pose(): Transform | null {
     if (!this.catchFloor) return null

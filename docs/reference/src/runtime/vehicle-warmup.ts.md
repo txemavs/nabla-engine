@@ -30,7 +30,7 @@ constructor(private readonly target: VehicleWarmupTarget): instance
 Retain prepared materials until runtime disposal so Three.js retains their programs.
 
 ```ts
-warm(entities: readonly Entity[]): Promise<void>
+warm(entities: readonly Entity[], progress?: (phase: string) => Promise<void>): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,34 +90,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Retain prepared materials until runtime disposal so Three.js retains their programs.
 
 ```ts
-prepare(entities: readonly Entity[]): Promise<void>
+prepare(entities: readonly Entity[], progress?: (phase: string) => Promise<void>): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Promise`
 - `THREE.Group`
-- `THREE.WebGLRenderTarget`
+- `checkpoint`
+- `draw`
 - `group.add`
-- `group.removeFromParent`
 - `group.traverse`
 - `group.updateMatrixWorld`
 - `materialTextures`
-- `performance.now`
+- `mirrors.entries`
 - `renderer.compileAsync`
-- `renderer.getRenderTarget`
 - `renderer.initTexture`
-- `renderer.render`
-- `renderer.setRenderTarget`
-- `scene.add`
-- `target.dispose`
+- `textures.entries`
 - `this.kept.add`
 - `this.kept.delete`
 - `this.target.camera.clone`
 - `this.target.createView`
 - `view.dispose`
 - `view.objects.get`
-- `view.renderMirrors`
 - `view.root.add`
 - `view.setPlaying`
 
@@ -125,41 +119,99 @@ Explicit throws in this body:
 
 - `error`
 
-## VehicleWarmup.prepare.callback@53
+## VehicleWarmup.prepare.checkpoint
 
-[Implementation, line 53](../../../../src/runtime/vehicle-warmup.ts#L53)
+[Implementation, line 39](../../../../src/runtime/vehicle-warmup.ts#L39)
 
 ```ts
-callback@53(object): inferred by TypeScript; see implementation
+checkpoint(phase: string): inferred by TypeScript; see implementation
 ```
 
-## VehicleWarmup.prepare.callback@59
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 59](../../../../src/runtime/vehicle-warmup.ts#L59)
+- `Promise`
+- `progress`
+
+## VehicleWarmup.prepare.checkpoint.callback@42
+
+[Implementation, line 42](../../../../src/runtime/vehicle-warmup.ts#L42)
 
 ```ts
-callback@59(resolve): inferred by TypeScript; see implementation
+callback@42(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `requestAnimationFrame`
+- `setTimeout`
 
-## VehicleWarmup.prepare.callback@59.callback@59
+## VehicleWarmup.prepare.checkpoint.callback@42.callback@44
 
-[Implementation, line 59](../../../../src/runtime/vehicle-warmup.ts#L59)
+[Implementation, line 44](../../../../src/runtime/vehicle-warmup.ts#L44)
 
 ```ts
-callback@59(): inferred by TypeScript; see implementation
+callback@44(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `resolve`
+- `setTimeout`
+
+## VehicleWarmup.prepare.callback@68
+
+[Implementation, line 68](../../../../src/runtime/vehicle-warmup.ts#L68)
+
+```ts
+callback@68(object): inferred by TypeScript; see implementation
+```
+
+## VehicleWarmup.prepare.draw
+
+[Implementation, line 86](../../../../src/runtime/vehicle-warmup.ts#L86)
+
+```ts
+draw(operation: () => void): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.WebGLRenderTarget`
+- `group.removeFromParent`
+- `operation`
+- `renderer.getRenderTarget`
+- `renderer.setRenderTarget`
+- `scene.add`
+- `target.dispose`
+- `view.root.add`
+
+## VehicleWarmup.prepare.callback@104
+
+[Implementation, line 104](../../../../src/runtime/vehicle-warmup.ts#L104)
+
+```ts
+callback@104(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `renderer.render`
+
+## VehicleWarmup.prepare.callback@112
+
+[Implementation, line 112](../../../../src/runtime/vehicle-warmup.ts#L112)
+
+```ts
+callback@112(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `performance.now`
+- `view.renderMirrors`
 
 ## VehicleWarmup.dispose
 
-[Implementation, line 95](../../../../src/runtime/vehicle-warmup.ts#L95)
+[Implementation, line 122](../../../../src/runtime/vehicle-warmup.ts#L122)
 
 Retain prepared materials until runtime disposal so Three.js retains their programs.
 

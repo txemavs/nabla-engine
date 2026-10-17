@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../../planet/atlas-z16.js`
 - `../../math/geo/sphere.js`
 - `../../planet/atlas-z15.js`
 - `./static-tiles.js`
@@ -14,7 +15,7 @@
 
 ## atlasLightMarks
 
-[Implementation, line 8](../../../../../src/render/planet/instance-lights.ts#L8)
+[Implementation, line 9](../../../../../src/render/planet/instance-lights.ts#L9)
 
 Positions and identities come from the same Atlas publication as the driven terrain.
 
@@ -33,12 +34,12 @@ Explicit throws in this body:
 
 - `new Error('Invalid Atlas instances')`
 
-## atlasLightMarks.callback@11
+## atlasLightMarks.callback@12
 
-[Implementation, line 11](../../../../../src/render/planet/instance-lights.ts#L11)
+[Implementation, line 12](../../../../../src/render/planet/instance-lights.ts#L12)
 
 ```ts
-callback@11(raw): inferred by TypeScript; see implementation
+callback@12(raw): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -50,32 +51,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.fromEntries`
 - `localToGeo`
 
-## atlasLightMarks.callback@11.callback@26
+## atlasLightMarks.callback@12.callback@27
 
-[Implementation, line 26](../../../../../src/render/planet/instance-lights.ts#L26)
+[Implementation, line 27](../../../../../src/render/planet/instance-lights.ts#L27)
 
 ```ts
-callback@26(entry): entry is [string, string]
+callback@27(entry): entry is [string, string]
 ```
 
 ## atlasFieldLightSource
 
-[Implementation, line 32](../../../../../src/render/planet/instance-lights.ts#L32)
+[Implementation, line 33](../../../../../src/render/planet/instance-lights.ts#L33)
 
 ```ts
 atlasFieldLightSource(options: StaticTileProviderOptions): FieldLightSource
 ```
 
-## atlasFieldLightSource.callback@33
+## atlasFieldLightSource.callback@34
 
-[Implementation, line 33](../../../../../src/render/planet/instance-lights.ts#L33)
+[Implementation, line 34](../../../../../src/render/planet/instance-lights.ts#L34)
 
 ```ts
-callback@33(tile, signal): inferred by TypeScript; see implementation
+callback@34(tile, signal): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `adaptAtlasZ16Instances`
 - `atlasFileUrl`
 - `atlasLightMarks`
 - `fetchTileManifest`

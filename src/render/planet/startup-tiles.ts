@@ -1,4 +1,4 @@
-import { mapTileAt, mapTileId, type MapTile } from '../../scene/mercator.js'
+import { mapTileAt, mapTileId, mapTileChildren, type MapTile } from '../../scene/mercator.js'
 
 /** Spawn Z15 followed by its three closest neighbours, measured to cell bounds in Mercator. */
 export function startupTerrainTiles(latitude: number, longitude: number): MapTile[] {
@@ -28,4 +28,16 @@ export function startupTerrainTiles(latitude: number, longitude: number): MapTil
       mapTileId(a.tile).localeCompare(mapTileId(b.tile)),
   )
   return [center, ...neighbours.slice(0, 3).map(({ tile }) => tile)]
+}
+
+/** Keep a Z15 parent as fallback without downloading duplicate geometry for a healthy quartet. */
+export function deferZ15Parent(
+  tile: MapTile,
+  wanted: ReadonlySet<string>,
+  unavailable: (child: MapTile) => boolean,
+): boolean {
+  return (
+    tile.z === 15 &&
+    mapTileChildren(tile).every((child) => wanted.has(mapTileId(child)) && !unavailable(child))
+  )
 }

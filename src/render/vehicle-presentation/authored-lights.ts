@@ -114,7 +114,9 @@ export class AuthoredVehicleLights {
       const lampChannel = channel(owner.userData.channel)
       const beam = lampChannel === 'low' || lampChannel === 'high' || lampChannel === 'fog'
       // Driving beams share one global level and a slightly softer edge than authored.
-      const intensity = beam ? authored * lightingDefaults.headlightIntensityScale : authored
+      const intensity =
+        (beam ? authored * lightingDefaults.headlightIntensityScale : authored) *
+        (lampChannel === 'high' ? 0.9 : 1)
       if (beam && node instanceof SpotLight)
         node.penumbra = Math.min(1, node.penumbra + lightingDefaults.headlightPenumbraBoost)
       // Configure the beam once in vehicle space, independently of GLB lamp axes.

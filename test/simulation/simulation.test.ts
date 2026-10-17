@@ -423,3 +423,14 @@ it('raises resting actors when coarse planetary support is replaced, but leaves 
   expect(sim.entityTransform('airborne').position[1]).toBe(100)
   sim.dispose()
 })
+
+it('does not reposition frozen actors when an in-flight tile finishes during inspection', () => {
+  const sim = new Simulation(scene([car('resting', [0, 1, 0])]))
+  let ground = 0
+  const restore = sim.capturePlanetSupport(() => ground)
+  sim.terrainSupportPaused = true
+  ground = 4
+  restore()
+  expect(sim.entityTransform('resting').position).toEqual([0, 1, 0])
+  sim.dispose()
+})

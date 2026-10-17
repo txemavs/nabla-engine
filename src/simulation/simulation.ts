@@ -219,9 +219,29 @@ export class Simulation {
   setPlanetTiles(tiles: PlanetCollisionTile[]): void {
     this.planetCollisions.setTiles(tiles)
   }
+  /** Prepare hot-reloaded terrain without moving any actor or stepping physics. */
+  preparePlanetReplacement(
+    previousId: string,
+    tile: PlanetCollisionTile,
+  ): (() => void) | undefined {
+    return this.planetCollisions.prepareReplacement(
+      previousId,
+      tile,
+      [
+        vec(this.playerBody.position),
+        ...[...this.vehicles.values()].map((v) => vec(v.body.position)),
+      ],
+      this.mapBuildingsEnabled,
+    )
+  }
+  discardPlanetReplacement(): void {
+    this.planetCollisions.discardReplacement()
+  }
   setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
     this.planetCollisions.setPoles(poles)
   }
+  /** Frozen inspection keeps authored body poses intact while terrain streams. */
+  terrainSupportPaused = false
   /** Keep resting actors above newly refined ground while collision coverage swaps. */
   capturePlanetSupport(sample: (position: Vec3Tuple) => number | undefined): () => void {
     const bodies = [...this.vehicles.values()].map((v) => v.body)
@@ -235,6 +255,7 @@ export class Simulation {
           Math.abs(body.velocity.y) < 3,
       )
     return () => {
+      if (this.terrainSupportPaused) return
       for (const { body, height } of support) {
         const next = sample(vec(body.position))
         if (next === undefined || next <= height!) continue
@@ -2127,6 +2148,9 @@ export class Simulation {
       forward = up.cross(right).negate()
     }
     forward.normalize()
+    const dry = (x: number, y: number, z: number) =>
+      !this.document.geography ||
+      this.altitude(new Vec3(x, y, z)) + this.document.geography.altitude > this.waterLevel + 0.05
     let snapped: { x: number; y: number; z: number } | null = null
     let roadMissing = false
     if (options.snapToRoad && !v.flight && !v.definition.boat) {
@@ -2138,8 +2162,24 @@ export class Simulation {
           ...this.roadGuidance.centerlines(this.document.entities, this.graph, this.entitiesById),
         ],
         options.maxRoadDistance ?? ROAD_SNAP_MAX_DISTANCE,
+        (candidate) => {
+          const y = this.groundUnder(candidate.x, candidate.z, v.body.position.y, true)
+          if (y === null || !dry(candidate.x, y, candidate.z)) return false
+          // Check a footprint, not just a centre point at the edge of a loaded tile.
+          for (const along of [-2, 2])
+            for (const across of [-1, 1]) {
+              const support = this.groundUnder(
+                candidate.x + candidate.dx * along - candidate.dz * across,
+                candidate.z + candidate.dz * along + candidate.dx * across,
+                y,
+                true,
+              )
+              if (support === null || Math.abs(support - y) > 1.5) return false
+            }
+          return true
+        },
       )
-      const ground = road ? this.groundUnder(road.x, road.z, v.body.position.y) : null
+      const ground = road ? this.groundUnder(road.x, road.z, v.body.position.y, true) : null
       if (road && ground !== null) {
         // Face along the road, keeping whichever direction is closer to the old heading.
         const sign = road.dx * forward.x + road.dz * forward.z < 0 ? -1 : 1
@@ -2147,9 +2187,18 @@ export class Simulation {
         snapped = { x: road.x, y: ground, z: road.z }
       } else roadMissing = true
     }
+    const localGround = roadMissing
+      ? this.groundUnder(v.body.position.x, v.body.position.z, v.body.position.y, true)
+      : null
+    if (
+      roadMissing &&
+      (localGround === null || !dry(v.body.position.x, localGround, v.body.position.z))
+    )
+      return 'No hay una vía seca con suelo cargado cerca'
     v.body.quaternion.setFromAxisAngle(up, Math.atan2(-forward.x, -forward.z))
     v.body.previousQuaternion.copy(v.body.quaternion)
     if (snapped) v.body.position.set(snapped.x, snapped.y + 3, snapped.z)
+    else if (localGround !== null) v.body.position.y = localGround + 3
     else v.body.position.y += 3
     v.body.previousPosition.copy(v.body.position)
     v.body.interpolatedPosition.copy(v.body.position)
@@ -2167,15 +2216,30 @@ export class Simulation {
    * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY`, ignoring
    * vehicles; null where no collision is loaded.
    */
-  private groundUnder(x: number, z: number, nearY: number): number | null {
+  private groundUnder(x: number, z: number, nearY: number, allLoaded = false): number | null {
     const vehicleBodies = new Set<Body>([...this.vehicles.values()].map((v) => v.body))
     let best: number | null = null
+    let top = nearY + 600,
+      bottom = nearY - 600
+    if (allLoaded) {
+      // A fallen car can be thousands of metres below the map. Search the actual
+      // loaded collision bounds instead of a ray centred on its fallen height.
+      for (const body of this.world.bodies) {
+        if (body.mass !== 0 || vehicleBodies.has(body) || this.fallbackFloor.owns(body)) continue
+        if (body.aabbNeedsUpdate) body.updateAABB()
+        const { lowerBound: lo, upperBound: hi } = body.aabb
+        if (x < lo.x || x > hi.x || z < lo.z || z > hi.z) continue
+        if (Number.isFinite(hi.y) && Math.abs(hi.y) < 1e7) top = Math.max(top, hi.y + 1)
+        if (Number.isFinite(lo.y) && Math.abs(lo.y) < 1e7) bottom = Math.min(bottom, lo.y - 1)
+      }
+    }
     this.world.raycastAll(
-      new Vec3(x, nearY + 600, z),
-      new Vec3(x, nearY - 600, z),
+      new Vec3(x, top, z),
+      new Vec3(x, bottom, z),
       { skipBackfaces: true },
       (hit) => {
         if (!hit.body || hit.body.mass !== 0 || vehicleBodies.has(hit.body)) return
+        if (allLoaded && this.fallbackFloor.owns(hit.body)) return
         if (hit.hitNormalWorld.y < 0.5) return
         if (best === null || hit.hitPointWorld.y > best) best = hit.hitPointWorld.y
       },

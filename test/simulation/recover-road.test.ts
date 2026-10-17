@@ -79,6 +79,83 @@ describe('R reset on the nearest road', () => {
     sim.dispose()
   })
 
+  it('recovers from far below the map using loaded collision height', () => {
+    const sim = new Simulation(scene(), { playerMode: 'hover' })
+    sim.startInVehicle('car')
+    body(sim).position.set(0, -2500, 0)
+    expect(
+      sim.recoverVehicle({
+        snapToRoad: true,
+        roads: [
+          {
+            points: [
+              { x: -60, z: 25 },
+              { x: 60, z: 25 },
+            ],
+            width: 6,
+          },
+        ],
+      }),
+    ).toBe('En la vía más cercana')
+    expect(body(sim).position.y).toBeCloseTo(3)
+    expect(body(sim).position.z).toBeCloseTo(25)
+    sim.dispose()
+  })
+
+  it('skips a closer unloaded road and an unsupported tile edge', () => {
+    const sim = new Simulation(scene(), { playerMode: 'hover' })
+    sim.startInVehicle('car')
+    body(sim).position.set(120, -2500, 0)
+    expect(
+      sim.recoverVehicle({
+        snapToRoad: true,
+        roads: [120, 99.5, 80].map((x) => ({
+          points: [
+            { x, z: -50 },
+            { x, z: 50 },
+          ],
+          width: 6,
+        })),
+      }),
+    ).toBe('En la vía más cercana')
+    expect(body(sim).position.x).toBeCloseTo(80)
+    expect(body(sim).position.y).toBeCloseTo(3)
+    sim.dispose()
+  })
+
+  it('skips a submerged road and recovers on the dry road above water', () => {
+    const doc = scene()
+    doc.geography = {
+      latitude: 43.4,
+      longitude: -1.8,
+      altitude: 0,
+      imagery: 'offline',
+      planetary: true,
+    }
+    const bridge = createEntity('bridge', 'box', [60, 5, 0])
+    bridge.size = [20, 1, 100]
+    doc.entities.push(bridge)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
+    sim.setWaterLevel(3)
+    sim.startInVehicle('car')
+    body(sim).position.set(0, -10, 0)
+    expect(
+      sim.recoverVehicle({
+        snapToRoad: true,
+        roads: [0, 60].map((x) => ({
+          points: [
+            { x, z: -40 },
+            { x, z: 40 },
+          ],
+          width: 6,
+        })),
+      }),
+    ).toBe('En la vía más cercana')
+    expect(body(sim).position.x).toBeCloseTo(60)
+    expect(body(sim).position.y).toBeCloseTo(8.5)
+    sim.dispose()
+  })
+
   it('uprights in place when no road is near or the option is off', () => {
     const sim = new Simulation(scene(), { playerMode: 'hover' })
     for (let i = 0; i < 30; i++) sim.step(1 / 60)

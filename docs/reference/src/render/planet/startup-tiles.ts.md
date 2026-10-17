@@ -49,3 +49,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 ```ts
 callback@30({ tile }): inferred by TypeScript; see implementation
 ```
+
+## deferZ15Parent
+
+[Implementation, line 34](../../../../../src/render/planet/startup-tiles.ts#L34)
+
+Keep a Z15 parent as fallback without downloading duplicate geometry for a healthy quartet.
+
+```ts
+deferZ15Parent(tile: MapTile, wanted: ReadonlySet<string>, unavailable: (child: MapTile) => boolean): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mapTileChildren`
+- `mapTileChildren(tile).every`
+
+## deferZ15Parent.callback@41
+
+[Implementation, line 41](../../../../../src/render/planet/startup-tiles.ts#L41)
+
+```ts
+callback@41(child): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mapTileId`
+- `unavailable`
+- `wanted.has`

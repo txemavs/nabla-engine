@@ -24,10 +24,14 @@ until that service supports it. This setting is shared by the Engine planet
 world; it does not create a different physics system for PC, VR or AR.
 
 For the initial pilot, startup requests the four Z16 children of the spawn Z15
-plus their Z15 fallback: five deliveries, not four. During ordinary streaming,
+plus their Z15 fallback manifest. Mesh downloads prioritize Z16 and defer the
+parent while a full healthy quartet is requested. A missing or failed child
+restores the parent fallback; an already resident parent is retained until
+coverage is ready. This avoids downloading both levels for the same area.
+During ordinary streaming,
 the existing request budget includes ancestors. Budgets too small for a quartet
 keep coarser coverage. Loaded byte budgets and active/protected tile retention
-still apply; this is not a promise that five deliveries fit a particular headset.
+still apply; this is not a promise that the requested area fits a particular headset.
 
 ## Supported delivery contract
 
@@ -45,13 +49,22 @@ a parent. The validator rejects a parent anchor served for a child.
 
 The existing Atlas `nabla-z15-package/1` adapter remains unchanged in identity and
 schema. A native Z16 manifest does not require that Z15 package pointer. Atlas's
-new delivery envelope, registry lookup and URLs must be checked against a real
-published sample before adding any separate adapter. No speculative Z16 package
-schema or `/api/atlas/geo/z16` production asset route is implemented here.
+`atlas-z16-cell/1` envelope is also supported by `src/planet/atlas-z16.ts`, verified
+against the local tile server on 17 October. Its tile, origin, axes, revision,
+asset sizes and hashes are validated. Asset URLs must remain inside that
+revision and child directory; host proxy prefixes are retained.
+
+The adapter loads terrain and buildings through the usual layers. The separate ground roads are rasterized for the GPS only, without scene meshes
+or collision bodies: the terrain already includes those roads. Decks and tunnel
+floors use the existing asphalt path; supports and bridge fill
+use the structural road path. They retain embedded textures and participate in
+the same collision pipeline. The instance sidecar feeds existing trees and lamps.
+No acceptance flag disables driving: `drivable` is retained as Atlas metadata.
+Bridge and tunnel surfaces remain physical geometry. Z15 delivery remains compatible and supplies parent coverage.
 
 Atlas review availability is not native publication or driving acceptance. The
 reported reviews remain `drivable=false`; this work does not alter that flag or
-the existing candidate-road collision policy.
+the shared collision implementation.
 
 ## Coverage and ancillary layers
 
@@ -95,3 +108,33 @@ Before enabling production:
    enabled or treated as measured defaults.
 6. Enable an opt-in Euskadi profile, then change the default only after acceptance.
    Keep the previous Engine/data configuration available for rollback.
+
+## Development publication refresh
+
+Opt in with `PlanetSourceOptions.developmentRefresh: true` on a static Z16 source,
+or `tileRefresh=1` in the terrain demo query. Z15 delivery is unchanged.
+Engine polls `<source base>/z/16/updates.json` every 15 seconds without credentials,
+using ETag/If-None-Match. A 304 retains the snapshot; a validated 200 replaces it.
+Failures retain the last snapshot and use a bounded retry backoff. Missing entries
+never request eviction. The source base may be a same-origin HTTPS proxy to the
+Atlas HTTP development server; publisher paths retain that proxy prefix.
+
+Revision UUIDs are compared only for equality, including when geometry hashes
+are identical. New loads use the registry's exact pinned manifest. Tile identity,
+revision, supported asset roles, byte lengths and SHA-256 are validated. All Z16
+layers and the optional instances sidecar must succeed, including GPS-only roads.
+Disabled buildings are validated but excluded from the rendered payload.
+
+Changed resident cells are staged while the old cell remains usable. Nearby
+collision resources are prepared separately and committed alongside the new
+visuals. Refresh does not invoke terrain-support repositioning or respawn: player
+position, orientation and velocity are preserved at the swap. Physics resumes
+against the new geometry normally, so a genuinely changed surface can subsequently
+cause contacts or falling. A superseded staging revision is discarded; resources
+from different manifests are never combined.
+
+Read-only integration review confirmed a 200 snapshot, conditional 304, and a
+matching pinned manifest on the development server. Unit tests cover conditional
+polling, failures, pin validation and staged collision replacement. A real Atlas
+regeneration followed by an in-browser position-preserving swap remains an operator
+integration test; backend publication tests alone do not establish that behavior.

@@ -84,10 +84,10 @@ Explicit throws in this body:
 callback@66(): inferred by TypeScript; see implementation
 ```
 
-## loadAtlasInstances.callback@75
+## loadAtlasInstances.callback@79
 
-[Implementation, line 75](../../../../../src/render/planet/instances.ts#L75)
+[Implementation, line 79](../../../../../src/render/planet/instances.ts#L79)
 
 ```ts
-callback@75(): inferred by TypeScript; see implementation
+callback@79(): inferred by TypeScript; see implementation
 ```

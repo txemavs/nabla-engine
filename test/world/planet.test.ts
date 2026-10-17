@@ -231,6 +231,40 @@ describe('collisions', () => {
     colliders.update([[0, 1000, 0]], true)
     expect(world.bodies).toHaveLength(0)
   })
+  it('stages a published replacement without touching active bodies or the player pose', () => {
+    const world = new World(),
+      colliders = new PlanetCollisions(world, new Material())
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    const chunks = planetCollisionChunks([ground])
+    colliders.setTiles([{ id: 'old', pose, chunks }])
+    colliders.update([[0, 1, 0]], true, 100)
+    const old = [...world.bodies]
+    const actor = new Body({
+      mass: 1,
+      position: new Vec3(0, 2, 0),
+      shape: new Box(new Vec3(0.5, 0.5, 0.5)),
+    })
+    actor.velocity.set(50, 0, 0)
+    world.addBody(actor)
+    const commit = colliders.prepareReplacement(
+      'old',
+      { id: 'new', pose, chunks },
+      [[0, 1, 0]],
+      true,
+      100,
+    )
+    expect(commit).toBeTypeOf('function')
+    expect(world.bodies).toEqual([...old, actor])
+    commit!()
+    expect(world.bodies.some((b) => old.includes(b))).toBe(false)
+    expect(world.bodies).toContain(actor)
+    expect([actor.position.x, actor.position.y, actor.position.z]).toEqual([0, 2, 0])
+    expect([actor.velocity.x, actor.velocity.y, actor.velocity.z]).toEqual([50, 0, 0])
+    colliders.dispose()
+  })
   it('stops a moving body on a trunk pole', () => {
     const world = new World({ gravity: new Vec3(0, 0, 0) })
     const colliders = new PlanetCollisions(world, new Material())

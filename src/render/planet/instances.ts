@@ -65,7 +65,11 @@ export async function loadAtlasInstances(
   const cache = mapCache('nabla-planet-instances-v1')
   const cached = await cache.match(url).catch(() => undefined)
   const response =
-    cached ?? (await fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) }))
+    cached ??
+    (await fetch(url, {
+      credentials: 'omit',
+      signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
+    }))
   if (!response.ok) throw new Error('Instances HTTP ' + response.status)
   const bytes = await response.arrayBuffer()
   if (bytes.byteLength !== file.bytes || (await sha256(bytes)) !== file.sha256)

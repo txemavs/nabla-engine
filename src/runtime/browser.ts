@@ -1,3 +1,5 @@
+import { describePrograms, latestProgramId } from './shader-diagnostics.js'
+import { MapInspector } from './map-inspector.js'
 import { Headlamp } from '../render/entity/headlamp.js'
 import type { MapTile } from '../scene/mercator.js'
 import { installShaderWarmup } from '../render/shader-warmup.js'
@@ -345,6 +347,8 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /** Opt-in stall/shader capture; disabled during normal play. */
+  performanceLog?: boolean
   /** Override automatic low-profile/Quest geometry selection. Requires a new runtime. */
   usb?: { storage?: UsbStorage | null }
   assetQuality?: AssetQuality
@@ -639,6 +643,9 @@ export class GameRuntime {
   private readonly preparationGates: Promise<unknown>[] = []
   private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
+  private inspector: MapInspector | null = null
+  private readonly inspectorState = createGameCameraState()
+  private stallLog: string[] = []
   private lastTime: number | null = null
   private fpsElapsed = 0
   private fpsFrames = 0
@@ -703,6 +710,7 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.pipeline.diagnostics = !!options.performanceLog
     this.usbControllers = new UsbControllers(options.usb?.storage)
     try {
       this.smokeOn = browserStorage()?.getItem('nabla.smoke') !== '0'
@@ -1020,6 +1028,35 @@ export class GameRuntime {
           )
         : null
     if (this.world) {
+      let announced: string | undefined
+      let painted = false
+      this.world.beforeInstall = (key) => {
+        // No diagnostic delay during preload. During play, let the DOM indicator paint
+        // before an indivisible mesh upload can occupy the main thread.
+        if (!options.performanceLog || this.session.state !== 'playing') return true
+        if (announced !== key) {
+          announced = key
+          painted = false
+          options.canvas.dataset.tileInstallActive = '1'
+          options.canvas.dataset.tileInstallDetail = 'Instalando celda ' + key
+          window.dispatchEvent(new Event('nabla-stream-step'))
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              if (announced === key) painted = true
+            }),
+          )
+          return false
+        }
+        return painted
+      }
+      this.world.afterInstall = (key) => {
+        if (!options.performanceLog) return
+        options.canvas.dataset.tileInstallActive = '0'
+        options.canvas.dataset.tileInstallDetail = 'Última celda ' + key
+        announced = undefined
+        painted = false
+        window.dispatchEvent(new Event('nabla-stream-step'))
+      }
       const budget = streamBudget(this.quality)
       this.world.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
       this.world.setDistance(this.quality.distance)
@@ -1695,6 +1732,9 @@ export class GameRuntime {
     const measuring = !!this.options.onDiagnostics || !!this.xr.onStats
     const cpuStart = performance.now()
     const programsBefore = this.renderer.info.programs?.length ?? 0
+    const programIdBefore = this.options.performanceLog
+      ? latestProgramId(this.renderer.info.programs ?? [])
+      : -1
     const frameMs = this.lastTime === null ? 0 : Math.max(0, time - this.lastTime)
     if (measuring) this.renderer.info.reset()
     const dt =
@@ -1703,6 +1743,10 @@ export class GameRuntime {
         : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
     this.lastTime = time
     const playing = this.session.state === 'playing' && !document.hidden
+    if (this.inspector) {
+      if (playing) this.inspectionFrame(time, dt, frameMs)
+      return
+    }
     const controls = this.controlSurfaces(sim)
     const rigs = touchRigState(controls.touch, playing)
     this.touchDriving?.setActive(rigs.driving.active)
@@ -1847,8 +1891,11 @@ export class GameRuntime {
       this.options.onMessage?.(
         crossing.blocked ? this.text('Passage blocked') : this.text('Stargate crossed'),
       )
+    const streamStarted = performance.now()
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.syncPickupGround(sim, dt)
+    const streamMs = performance.now() - streamStarted
+    const presentationStarted = performance.now()
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.smokeEnabled = this.smokeOn
@@ -1859,6 +1906,7 @@ export class GameRuntime {
       this.cameraState.headYaw,
       this.cameraState.headPitch,
     )
+    const presentationMs = performance.now() - presentationStarted
     this.advanceStartCameras(sim, time)
     const bodycamActive =
       !!this.cameraState.bodycam &&
@@ -2155,7 +2203,9 @@ export class GameRuntime {
           : 'WASD move · Space jump · E enter · V camera · C crouch · C+Space prone',
       wheelDebug: this.wheelDebug.formatHud(),
     })
+    const audioStarted = performance.now()
     this.effects.updateAudio(sim, this.document, eye)
+    const audioMs = performance.now() - audioStarted
     this.effects.updateTires(sim, dt, this.origin)
     this.environment.updateSea(
       this.document.geography,
@@ -2215,6 +2265,7 @@ export class GameRuntime {
       this.origin,
       this.cameraState.mode === 'cockpit',
     )
+    const lightsStarted = performance.now()
     this.fieldLighting?.update({
       origin: this.document.geography,
       eye,
@@ -2236,6 +2287,7 @@ export class GameRuntime {
     this.applyLightTuning()
     if (this.sidearm) this.sidearm.flashTuning = this.flashSettings
     this.sidearm?.syncMuzzleLight(time, this.scene, this.camera, eyes || this.sidearmAimPreview)
+    const lightsMs = performance.now() - lightsStarted
     const renderStarted = performance.now()
     try {
       this.pipeline.render({
@@ -2283,11 +2335,44 @@ export class GameRuntime {
       this.camera.position.copy(eye)
     }
     const cpuMs = performance.now() - cpuStart
-    if (cpuMs > 100 || frameMs > 200) {
+    if (this.options.performanceLog && (cpuMs > 50 || frameMs > 100)) {
       const renderMs = performance.now() - renderStarted
       const programsAdded = (this.renderer.info.programs?.length ?? 0) - programsBefore
       this.options.canvas.dataset.stallDetail = `Pausa ${Math.round(frameMs)} ms · CPU ${Math.round(cpuMs)} · render ${Math.round(renderMs)} · terreno ${Math.round(installMs)} · física ${Math.round(physicsMs)} ms · shaders +${programsAdded}`
       this.options.canvas.dataset.stallAt = String(performance.now())
+      const sample = {
+        atSeconds: +(performance.now() / 1000).toFixed(2),
+        frameIntervalMs: +frameMs.toFixed(1),
+        cpuMs: +cpuMs.toFixed(1),
+        renderMs: +renderMs.toFixed(1),
+        physicsMs: +physicsMs.toFixed(1),
+        installMs: +installMs.toFixed(1),
+        streamingMs: +streamMs.toFixed(1),
+        presentationMs: +presentationMs.toFixed(1),
+        audioMs: +audioMs.toFixed(1),
+        lightsMs: +lightsMs.toFixed(1),
+        programsAdded,
+        renderPasses: { ...this.pipeline.timings },
+        newShaders: describePrograms(this.renderer.info.programs ?? [], programIdBefore).map(
+          (shader) => ({
+            ...shader,
+            pass: this.pipeline.shaderPasses.get(shader.id) ?? 'outside-main-pipeline',
+          }),
+        ),
+        programs: this.renderer.info.programs?.length ?? 0,
+        calls: this.renderer.info.render.calls,
+        triangles: this.renderer.info.render.triangles,
+        camera: this.cameraState.mode,
+        quality: this.quality.preset,
+        cellInstalling: canvas.dataset.tileInstallActive === '1',
+        cell: canvas.dataset.tileInstallDetail,
+        cells: this.world?.cellStats,
+      }
+      this.stallLog.push(JSON.stringify(sample))
+      if (this.stallLog.length > 100) this.stallLog.shift()
+      canvas.dataset.stallLog =
+        'Nabla performance v2 — milliseconds measured on main thread; frame interval includes previous frame and scheduling, render is CPU submission, not GPU timing.\n' +
+        this.stallLog.join('\n')
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
     if (this.options.onDiagnostics)
@@ -2332,13 +2417,69 @@ export class GameRuntime {
    * or host callbacks, 1 px scissored on the canvas. Programs (shadow and transmission passes
    * included), buffers and textures of that view are built while the host still covers it.
    */
-  private warmFrame(sim: Simulation, state: GameCameraState, time: number, focus = false): void {
+  /** Home pauses physics without touching any body pose, velocity or drivetrain state. */
+  private toggleInspection(): void {
+    if (this.renderer.xr.isPresenting) return
+    this.releaseInput()
+    if (this.inspector) {
+      this.inspector.returning = true
+      this.inspector.position.copy(this.inspector.home)
+      this.options.onMessage?.('Volviendo al vehículo · preparando terreno')
+    } else {
+      this.inspector = new MapInspector(this.camera.position.clone(), this.camera.quaternion)
+      this.inspectorState.mode = 'map'
+      if (this.session.simulation) this.session.simulation.terrainSupportPaused = true
+      this.effects.audio.setSuspended(true)
+      this.usbFeedback.stop()
+      this.options.onMessage?.(
+        'Modo Dios · WASD/flechas · ratón · Shift rápido · Q/E altura · Inicio volver',
+      )
+    }
+    this.lastTime = null
+    this.options.canvas.dataset.inspection = this.inspector.returning ? 'returning' : 'active'
+  }
+  private inspectionFrame(time: number, dt: number, frameMs: number): void {
+    const inspector = this.inspector!,
+      sim = this.session.simulation!
+    if (!this.hasInput()) this.releaseInput()
+    this.keys.expire(time)
+    inspector.step(this.keys.values, dt)
+    const target = inspector.returning
+      ? sim.player.position
+      : (inspector.position.toArray() as Vec3Tuple)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, null)
+    this.world?.update(target, [0, 0, 0])
+    this.world?.flushInstall(streamingDefaults.installBudgetMs)
+    this.warmFrame(sim, this.inspectorState, time, false, inspector)
+    this.canvasDiagnostics(frameMs)
+    if (
+      inspector.returning &&
+      (!this.world || groundAtSeam(this.world, sim.player.position) !== undefined)
+    ) {
+      this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+      if (this.world && !sim.preparePlanetCollisions()) return
+      sim.terrainSupportPaused = false
+      this.game.streaming.reset()
+      this.inspector = null
+      this.lastTime = null
+      this.effects.audio.setSuspended(false)
+      this.options.canvas.dataset.inspection = 'off'
+      this.options.onMessage?.('Conducción reanudada')
+    }
+  }
+  private warmFrame(
+    sim: Simulation,
+    state: GameCameraState,
+    time: number,
+    focus = false,
+    inspector?: MapInspector,
+  ): void {
     this.view.flushMapInstall(
       streamingDefaults.mapInstallBudgetMs * 3,
       streamingDefaults.mapInstallCount * 4,
       this.camera.position,
     )
-    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, inspector ? null : sim)
     this.view.sync(
       sim,
       0,
@@ -2347,10 +2488,15 @@ export class GameRuntime {
       state.headPitch,
     )
     const { player } = updateGameCamera(sim, this.view, this.camera, state, time, 0)
+    if (inspector) {
+      this.camera.position.copy(inspector.position)
+      this.camera.quaternion.copy(inspector.rotation)
+    }
     const eye = this.camera.position.clone()
     this.origin.set(0, 0, 0)
-    if (new THREE.Vector3(...player.position).length() > streamingDefaults.floatingOriginDistance)
-      this.origin.fromArray(player.position)
+    const originPosition = inspector ? inspector.position : new THREE.Vector3(...player.position)
+    if (originPosition.length() > streamingDefaults.floatingOriginDistance)
+      this.origin.copy(originPosition)
     this.environment.updateSea(
       this.document.geography,
       eye,
@@ -2388,7 +2534,7 @@ export class GameRuntime {
     this.view.night = this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     this.view.root.position.copy(this.origin).negate()
-    this.world?.renderUpdate(this.origin, !!this.quality.buildings, sim)
+    this.world?.renderUpdate(this.origin, !!this.quality.buildings, inspector ? null : sim)
     this.view.streetlights.update(eye, this.view.night, this.quality.distance)
     this.cull(eye)
     this.monitors.update(
@@ -2422,12 +2568,12 @@ export class GameRuntime {
     this.applyLightTuning()
     const weaponVisible = this.sidearm?.visible ?? false
     if (this.sidearm) {
-      this.sidearm.visible = true
+      this.sidearm.visible = !inspector
       this.sidearm.syncWorld(this.view.avatar, time, false)
     }
     try {
-      this.renderer.setScissor(0, 0, 1, 1)
-      this.renderer.setScissorTest(true)
+      if (!inspector) this.renderer.setScissor(0, 0, 1, 1)
+      this.renderer.setScissorTest(!inspector)
       this.pipeline.render({
         renderer: this.renderer,
         scene: this.scene,
@@ -2501,7 +2647,7 @@ export class GameRuntime {
     // Complete every requested view before play. A time cutoff shifts compilation
     // onto the first steering/camera frames and leaves the preparation incomplete.
     try {
-      for (const view of views) {
+      for (const [viewIndex, view] of views.entries()) {
         signal.throwIfAborted()
         setGameCameraView(state, view.mode, !!sim.player.vehicleId)
         state.transition = null
@@ -2533,7 +2679,7 @@ export class GameRuntime {
           await new Promise<void>((resolve) => setTimeout(resolve, 0))
         }
         // Effects need the final light count too, including field lights and shadow maps.
-        await this.reportLoadStep('Efectos para cámara ' + view.mode)
+        await this.reportLoadStep('Efectos para cámara ' + (viewIndex + 1))
         await warmEffectPresentation(
           this.renderer,
           this.camera,
@@ -2548,7 +2694,7 @@ export class GameRuntime {
           this.scene,
         )
         // Compile the viewmodel against the lights and shadow maps this view actually uses.
-        await this.reportLoadStep('Arma para cámara ' + view.mode)
+        await this.reportLoadStep('Arma para cámara ' + (viewIndex + 1))
         await this.sidearm?.warm(this.renderer, this.scene)
         await new Promise<void>((resolve) => setTimeout(resolve, 0))
       }
@@ -2839,7 +2985,10 @@ export class GameRuntime {
    * without adding it to the simulation. `placeVehicle` and `spawnVehicle`
    * call this first; a host may call it early (for example when a vehicle is picked in a menu).
    */
-  async prewarmVehicle(template: Entity | readonly Entity[]): Promise<void> {
+  async prewarmVehicle(
+    template: Entity | readonly Entity[],
+    progress?: (phase: string) => Promise<void>,
+  ): Promise<void> {
     this.assertAlive()
     const entities = Array.isArray(template) ? template : [template as Entity]
     this.vehicleWarmup ??= new VehicleWarmup({
@@ -2871,7 +3020,7 @@ export class GameRuntime {
         return view
       },
     })
-    await this.vehicleWarmup.warm(entities)
+    await this.vehicleWarmup.warm(entities, progress)
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
@@ -4140,20 +4289,49 @@ export class GameRuntime {
       await this.reportLoadStep('Compilando destrucción y fragmentos')
       await this.view.destruction.warm(this.renderer, this.scene, this.camera, [this.view.root])
       stage('preload', 4)
-      for (const templates of [
+      const preloadVehicles = [
         ...(this.options.preloadVehicles ?? []),
         ...(this.options.accidentReplacementVehicles ?? []),
-      ]) {
+      ]
+      for (const [index, templates] of preloadVehicles.entries()) {
         signal.throwIfAborted()
-        await this.reportLoadStep(
-          'Precargando vehículo: ' + (templates[0]?.name ?? templates[0]?.id ?? 'modelo'),
-        )
-        await this.prewarmVehicle(templates)
+        await this.reportLoadStep(`Precargando vehículo: ${index + 1}/${preloadVehicles.length}`)
+        let lastPhase = '',
+          phaseStarted = performance.now()
+        await this.prewarmVehicle(templates, async (phase) => {
+          if (lastPhase && this.options.performanceLog) {
+            this.stallLog.push(
+              JSON.stringify({
+                type: 'vehicle-preload',
+                vehicle: index + 1,
+                phase: lastPhase,
+                elapsedMs: Math.round(performance.now() - phaseStarted),
+              }),
+            )
+            if (this.stallLog.length > 100) this.stallLog.shift()
+            canvas.dataset.stallLog = this.stallLog.join('\n')
+          }
+          await this.reportLoadStep(
+            `Precargando vehículo: ${index + 1}/${preloadVehicles.length} · ${phase}`,
+          )
+          lastPhase = phase
+          phaseStarted = performance.now()
+        })
       }
     } finally {
       this.view.setPlaying(false)
     }
     signal.throwIfAborted()
+    if (this.options.performanceLog) {
+      this.stallLog.push(
+        JSON.stringify({
+          type: 'preload-complete',
+          programs: this.renderer.info.programs?.length ?? 0,
+          shaders: describePrograms(this.renderer.info.programs ?? []),
+        }),
+      )
+      canvas.dataset.stallLog = this.stallLog.join('\n')
+    }
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'
     await this.reportLoadStep('GPU preparada · entrando al juego')
@@ -4653,6 +4831,7 @@ export class GameRuntime {
 
   /** Fire or aim from one mouse button edge. Safe to call from both pointer and mouse events. */
   private applySidearmButton(button: number, down: boolean): void {
+    if (this.inspector) return
     if (this.session.state !== 'playing') return
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
     if (!this.weaponDrawn) return
@@ -4852,6 +5031,7 @@ export class GameRuntime {
     return !!sim && !sim.player.vehicleId && sim.nearestVehicle() !== null
   }
   private action(value: string): void {
+    if (this.inspector) return
     const sim = this.session.simulation
     if (!sim) return
     const context = this.controlContext
@@ -5146,6 +5326,20 @@ export class GameRuntime {
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
         if (event.ctrlKey || event.metaKey || event.altKey) return
+        if (event.code === 'Home') {
+          event.preventDefault()
+          if (!event.repeat) this.toggleInspection()
+          return
+        }
+        if (this.inspector) {
+          event.preventDefault()
+          if (event.code === 'Escape') this.releasePointer()
+          else {
+            this.keys.press(event.code, event.repeat, performance.now())
+            if (!this.pointerFree) this.capturePointer()
+          }
+          return
+        }
         // Escape while unlocked asks for the free mouse; any other key while the game should
         // own the pointer (first keypress after loading, or a refused lock) captures it.
         if (bindingForKey(event.code, this.controlContext) === 'pointer.release')
@@ -5271,6 +5465,11 @@ export class GameRuntime {
       'pointermove',
       (event) => {
         if (!this.hasInput()) return
+        if (this.inspector) {
+          if (this.pointerLocked() || event.buttons & 1)
+            this.inspector.look(event.movementX, event.movementY)
+          return
+        }
         const state = this.cameraState
         const seated = !!this.session.simulation?.player.vehicleId
         if (!mouseLooksWithoutButton(state, seated)) return

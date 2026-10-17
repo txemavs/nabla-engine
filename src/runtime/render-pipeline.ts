@@ -1,3 +1,4 @@
+import { latestProgramId } from './shader-diagnostics.js'
 import * as THREE from 'three'
 import type { SceneView } from '../render/entity/view.js'
 import type { GeographicView } from '../render/planet/sky.js'
@@ -42,6 +43,19 @@ export interface GameRenderFrame {
 /** Ordered mirror, portal, sky, shadow, CSS aperture and postprocessing passes. */
 export class GameRenderPipeline {
   renderedPortals = 0
+  diagnostics = false
+  readonly shaderPasses = new Map<number, string>()
+  /** Main-thread pass timings; reused storage, not GPU timings. */
+  readonly timings = {
+    mirrorsMs: 0,
+    portalsMs: 0,
+    mainMs: 0,
+    postMs: 0,
+    mirrorPrograms: 0,
+    portalPrograms: 0,
+    mainPrograms: 0,
+    postPrograms: 0,
+  }
   readonly depthOfField = new DepthOfField()
   private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
@@ -58,6 +72,17 @@ export class GameRenderPipeline {
    */
   render(frame: GameRenderFrame): void {
     const { renderer, scene, camera, view, sky, origin, eye, monitors } = frame
+    this.shaderPasses.clear()
+    let lastProgramId = this.diagnostics ? latestProgramId(renderer.info.programs ?? []) : -1
+    const recordShaders = (pass: string) => {
+      if (!this.diagnostics) return
+      for (const program of renderer.info.programs ?? []) {
+        if (program.id > lastProgramId) this.shaderPasses.set(program.id, pass)
+      }
+      lastProgramId = latestProgramId(renderer.info.programs ?? [])
+    }
+    let phaseStarted = this.diagnostics ? performance.now() : 0
+    let phasePrograms = renderer.info.programs?.length ?? 0
     const target = renderer.getRenderTarget(),
       autoClear = renderer.autoClear
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
@@ -106,6 +131,11 @@ export class GameRenderPipeline {
         for (const { surface, live } of portalStates)
           surface.mesh.material.uniforms.live.value = live
       }
+      recordShaders('mirrors')
+      this.timings.mirrorsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
+      this.timings.mirrorPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
+      phaseStarted = this.diagnostics ? performance.now() : 0
+      phasePrograms = renderer.info.programs?.length ?? 0
       this.renderedPortals = renderPortals(
         view.portals,
         renderer,
@@ -136,6 +166,11 @@ export class GameRenderPipeline {
         },
         frame.externalViews,
       )
+      recordShaders('portals')
+      this.timings.portalsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
+      this.timings.portalPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
+      phaseStarted = this.diagnostics ? performance.now() : 0
+      phasePrograms = renderer.info.programs?.length ?? 0
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
@@ -164,6 +199,11 @@ export class GameRenderPipeline {
       } finally {
         if (flare) flare.visible = flareVisible
       }
+      recordShaders('main-scene-sky-shadows')
+      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
+      this.timings.mainPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
+      phaseStarted = this.diagnostics ? performance.now() : 0
+      phasePrograms = renderer.info.programs?.length ?? 0
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
@@ -189,6 +229,9 @@ export class GameRenderPipeline {
           }
         }
       }
+      recordShaders('postprocessing')
+      this.timings.postMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
+      this.timings.postPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
     } finally {
       for (const { shadow, auto, needs } of pausedSun) {
         shadow.autoUpdate = auto

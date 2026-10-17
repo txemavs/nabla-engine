@@ -1,3 +1,4 @@
+import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime'
 import { settingsNavigationStyles } from './settings-navigation-styles.js'
 import { createControlsSection } from './settings-controls.js'
@@ -448,13 +449,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const input = doc.createElement('input')
     input.type = 'checkbox'
     input.id = 'headlamp-shadows'
-    const key = 'nabla.headlamp-shadows-v2'
-    try {
-      const saved = localStorage.getItem(key)
-      if (saved !== null) runtime.setHeadlampShadows(saved === 'true')
-    } catch {
-      /* optional storage */
-    }
+    const key = HEADLAMP_SHADOWS_KEY
+    // Startup restored this before warming shaders; mounting UI must not change it.
     input.checked = runtime.headlampShadows
     input.addEventListener('change', () => {
       runtime.setHeadlampShadows(input.checked)

@@ -196,7 +196,50 @@ export class PlanetCollisions {
       }
     }
   }
+  private replacement: { id: string; staged: PlanetCollisions } | undefined
+  /** Cook a replacement in an isolated physics world; commit is synchronous with the visual swap. */
+  prepareReplacement(
+    previousId: string,
+    tile: PlanetCollisionTile,
+    positions: Vec3Tuple[],
+    buildings: boolean,
+    budgetMs = 3,
+  ): (() => void) | undefined {
+    if (this.replacement?.id !== tile.id) {
+      this.discardReplacement()
+      this.replacement = { id: tile.id, staged: new PlanetCollisions(new World(), this.material) }
+    }
+    const staged = this.replacement.staged
+    staged.setTiles([tile])
+    staged.update(positions, buildings, budgetMs)
+    if (!staged.ready) return undefined
+    return () => {
+      for (const [key, body] of this.built)
+        if (key.startsWith(previousId + ':')) {
+          if (body.world) this.world.removeBody(body)
+          this.built.delete(key)
+        }
+      for (const [key, body] of staged.built) {
+        if (body.world) staged.world.removeBody(body)
+        this.world.addBody(body)
+        this.built.set(key, body)
+      }
+      staged.built.clear()
+      this.tiles = this.tiles.map((existing) => (existing.id === previousId ? tile : existing))
+      this.tileKey = ''
+      this.selectionKey = ''
+      this.discardReplacement()
+    }
+  }
+  discardReplacement(): void {
+    if (this.replacement) {
+      this.replacement.staged.dispose()
+      this.replacement.staged.world.raw.free()
+    }
+    this.replacement = undefined
+  }
   dispose() {
+    this.discardReplacement()
     for (const body of this.built.values()) if (body.world) this.world.removeBody(body)
     this.built.clear()
     this.tiles = []

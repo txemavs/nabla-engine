@@ -1,3 +1,4 @@
+import { adaptAtlasZ16Instances } from '../../planet/atlas-z16.js'
 import { localToGeo, type GeoPoint } from '../../math/geo/sphere.js'
 import { atlasFileUrl } from '../../planet/atlas-z15.js'
 import { fetchTileManifest, type StaticTileProviderOptions } from './static-tiles.js'
@@ -34,10 +35,10 @@ export function atlasFieldLightSource(options: StaticTileProviderOptions): Field
     const manifest = await fetchTileManifest(tile, { ...options, signal })
     if (!manifest?.instances) return []
     const json = await loadAtlasInstances(
-      atlasFileUrl(options.baseUrl, tile, manifest.instances.path),
+      manifest.instances.url ?? atlasFileUrl(options.baseUrl, tile, manifest.instances.path),
       manifest.instances,
       signal,
     )
-    return atlasLightMarks(json, manifest.anchor)
+    return atlasLightMarks(manifest.atlasZ16 ? adaptAtlasZ16Instances(json) : json, manifest.anchor)
   }
 }

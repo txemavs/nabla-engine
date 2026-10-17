@@ -32,6 +32,7 @@ export function nearestRoadPoint(
   z: number,
   roads: Iterable<RoadCenterline & Partial<Record<'minX' | 'maxX' | 'minZ' | 'maxZ', number>>>,
   maxDistance = ROAD_SNAP_MAX_DISTANCE,
+  accept?: (point: RoadSnap) => boolean,
 ): RoadSnap | null {
   let best: RoadSnap | null = null
   for (const road of roads) {
@@ -58,7 +59,15 @@ export function nearestRoadPoint(
       const d = Math.hypot(x - px, z - pz)
       if (d <= maxDistance && (!best || d < best.distance)) {
         const len = Math.sqrt(len2)
-        best = { x: px, z: pz, dx: sx / len, dz: sz / len, distance: d, width: road.width }
+        const candidate = {
+          x: px,
+          z: pz,
+          dx: sx / len,
+          dz: sz / len,
+          distance: d,
+          width: road.width,
+        }
+        if (!accept || accept(candidate)) best = candidate
       }
     }
   }
