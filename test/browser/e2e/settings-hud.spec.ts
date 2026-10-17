@@ -297,7 +297,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   ).toBeLessThan(2)
   await page.screenshot({ path: '/tmp/settings-menu-mobile.png' })
   await page.setViewportSize({ width: 1440, height: 960 })
-  expect(await mobileBody.evaluate((el) => el.parentElement?.id)).toBe('settings-pane-planet')
+  await expect
+    .poll(() => mobileBody.evaluate((el) => el.parentElement?.id))
+    .toBe('settings-pane-planet')
   await expect(page.locator('#ps-sun')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
