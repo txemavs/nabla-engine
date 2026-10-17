@@ -186,3 +186,26 @@ it('attributes newly created programs to their render pass without retaining per
   expect(pipeline.timings.portalPrograms).toBe(0)
   expect(pipeline.timings.postPrograms).toBe(0)
 })
+
+it('upscales after mirrors and focus, preserving the low-resolution focus destination', () => {
+  const { frame, pipeline, renderer, target, events } = fixture()
+  frame.depthOfField = true
+  vi.spyOn(pipeline.fsr, 'begin').mockImplementation(() => {
+    events.push('fsr-begin')
+    return true
+  })
+  const input = new WebGLRenderTarget(32, 24)
+  vi.spyOn(pipeline.fsr, 'input', 'get').mockReturnValue(input)
+  vi.spyOn(pipeline.depthOfField, 'begin').mockImplementation(() => events.push('focus'))
+  const focusPresent = vi
+    .spyOn(pipeline.depthOfField, 'present')
+    .mockImplementation(() => events.push('focus-present'))
+  vi.spyOn(pipeline.fsr, 'present').mockImplementation(() => events.push('fsr-present'))
+  pipeline.render(frame)
+  expect(events.indexOf('mirrors')).toBeLessThan(events.indexOf('fsr-begin'))
+  expect(events.indexOf('focus-present')).toBeLessThan(events.indexOf('fsr-present'))
+  expect(focusPresent).toHaveBeenCalledWith(renderer, frame.camera, input)
+  pipeline.dispose()
+  target.dispose()
+  input.dispose()
+})

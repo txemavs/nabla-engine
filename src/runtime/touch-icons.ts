@@ -2,6 +2,10 @@
 export function touchActionIcon(action: string): string {
   const common =
     'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'
+  if (action === 'horn')
+    return `<svg ${common}><path d="M3 10h5l7-5v14l-7-5H3zM19 8q4 4 0 8"/></svg>`
+  if (action === 'speed')
+    return `<svg ${common}><path d="M4 18a9 9 0 1 1 16 0M12 13l5-6"/><circle cx="12" cy="13" r="2"/></svg>`
   if (action === 'play')
     return `<svg ${common}><polygon points="8 5 19 12 8 19 8 5" fill="currentColor" stroke="none"/></svg>`
   if (action === 'camera')

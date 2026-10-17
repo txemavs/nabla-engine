@@ -1,3 +1,4 @@
+import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime'
 import { settingsNavigationStyles } from './settings-navigation-styles.js'
@@ -37,7 +38,7 @@ export type SettingsHud = {
 
 const TABS = [
   { id: 'planet', label: 'Mundo' },
-  { id: 'options', label: 'Opciones' },
+  { id: 'options', label: 'Configuración' },
   { id: 'objects', label: 'Objetos' },
   { id: 'dev', label: 'Desarrollo' },
 ] as const
@@ -46,23 +47,27 @@ type TabId = (typeof TABS)[number]['id']
 
 /** Sections retain their DOM, listeners and persistence; only their location changes. */
 export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
+  ['settings-planet-time', 'planet'],
   ['settings-map', 'planet'],
   ['terrain-position', 'planet'],
-  ['settings-planet-time', 'planet'],
   ['terrain-layers', 'planet'],
-  ['settings-options-labels', 'planet'],
-  ['settings-planet-sea', 'planet'],
+  ['settings-layer-air', 'planet'],
+  ['settings-sharpness', 'planet'],
+  ['quality-shadows', 'planet'],
+  ['road-style', 'planet'],
   ['settings-planet-air', 'planet'],
-  ['settings-planet-sky', 'planet'],
+  ['settings-planet-sea', 'planet'],
+  ['settings-streetlights', 'planet'],
+  ['settings-headlamp', 'planet'],
+  ['settings-options-labels', 'planet'],
+  ['display-quality-section', 'options'],
+  ['display-performance', 'options'],
+  ['settings-effects', 'options'],
   ['camera-extras', 'options'],
+  ['settings-action-cam', 'options'],
   ['driving-extras', 'options'],
   ['settings-controls', 'options'],
   ['settings-usb', 'options'],
-  ['display-quality-section', 'options'],
-  ['display-performance', 'options'],
-  ['quality-shadows', 'options'],
-  ['road-style', 'options'],
-  ['settings-effects', 'options'],
   ['settings-sound', 'options'],
   ['settings-management', 'options'],
   ['scene-vehicles', 'objects'],
@@ -89,13 +94,16 @@ export function sectionTab(id: string): TabId | undefined {
 
 /** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
 const SECTION_TITLES: Readonly<Record<string, string>> = {
-  'terrain-layers': 'Terreno',
-  'road-style': 'Suelo y texturas',
+  'terrain-layers': 'Suelo',
+  'road-style': 'Contraste del asfalto',
   'scene-vehicles': 'Añadir',
-  'display-quality-section': 'Calidad y resolución',
+  'display-quality-section': 'Calidad',
   'settings-options-labels': 'Nombres de lugares',
   'settings-sound': 'Sonido',
-  'settings-planet-air': 'Atmósfera',
+  'settings-planet-air': 'Climatología',
+  'quality-shadows': 'Sombras del sol',
+  'camera-extras': 'Opciones',
+  'settings-management': 'Ajustes',
   'settings-options-sidearm': 'Apuntado',
   'settings-muzzle-flash': 'Fogonazo',
   'settings-config-planet': 'Planeta',
@@ -157,7 +165,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const console = doc.createElement('div')
   console.className = 'portal-console settings-console'
   const title = doc.createElement('strong')
-  title.textContent = 'NABLA · AJUSTES'
+  title.textContent = doc.documentElement.dataset.appName ?? 'NABLA · AJUSTES'
   const tabBar = doc.createElement('div')
   tabBar.className = 'settings-tabs'
   tabBar.setAttribute('role', 'tablist')
@@ -201,11 +209,16 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   window.addEventListener('resize', alignToolbar)
   const header = doc.createElement('header')
   header.className = 'settings-header'
-  header.append(title)
+  const closeButton = doc.createElement('button')
+  closeButton.type = 'button'
+  closeButton.className = 'settings-close'
+  closeButton.textContent = 'Volver al juego'
+  closeButton.addEventListener('click', () => close())
+  header.append(title, closeButton)
   const footer = doc.createElement('footer')
   footer.className = 'settings-footer'
   const footerHint = doc.createElement('small')
-  footerHint.textContent = 'Copias y restauración en Opciones → Gestión de ajustes'
+  footerHint.textContent = 'Copias y restauración en Configuración → Ajustes'
   footer.append(footerHint)
   console.append(header, tabBar, panes, footer)
   win.append(console)
@@ -250,6 +263,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       for (const [id, text] of Object.entries(LAYER_LABELS))
         relabel(el.querySelector(`input[data-layer="${id}"]`)?.closest('label'), text)
       moveOptionLayers(el)
+      if (seaRow && !el.contains(seaRow)) el.append(seaRow)
     }
   }
 
@@ -295,16 +309,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const seaRow = rowOf('ps-sea')
   const cloudsRow = rowOf('ps-clouds')
   const artisticRow = rowOf('ps-artistic')
-  relabel(skyRow, 'Activado')
-  relabel(sunRow, 'Activado')
-  relabel(seaRow, 'Activado')
+  relabel(skyRow, 'Estrellas y planetas')
+  relabel(sunRow, 'Sol')
+  relabel(seaRow, 'Mar')
+  relabel(artisticRow, 'Activar clima')
   relabel(rowOf('ps-cloud-amount'), 'Nublado')
   relabel(rowOf('ps-cloud-pressure-mode'), 'Presión')
   relabel(rowOf('ps-cloud-pressure'), 'Presión (valor)')
   relabel(rowOf('ps-lens-flare'), 'Destello')
 
   if (timeGroup) {
-    const time = fieldset('settings-planet-time', 'Hora')
+    const time = fieldset('settings-planet-time', 'Fecha y hora')
     hideSubtitle(timeGroup)
     relabel(rowOf('time-range'), 'Fijar')
     relabel(rowOf('time-speed'), 'Velocidad')
@@ -312,7 +327,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(time)
   }
   const seaGroup = byId('scene-sea')
-  const sea = fieldset('settings-planet-sea', 'Mar')
+  const sea = fieldset('settings-planet-sea', 'Nivel del mar')
   if (seaGroup) {
     hideSubtitle(seaGroup)
     // The panel's sea switch replaces the legacy duplicate; the tide button sits before the level.
@@ -329,7 +344,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const air = fieldset('settings-planet-air', 'Aire')
   air.append(
     ...rows(
-      cloudsRow,
       artisticRow,
       subtitle('Cielo'),
       rowOf('ps-cloud-amount'),
@@ -339,8 +353,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   )
   place(air)
 
-  const sky = fieldset('settings-planet-sky', 'Cielo')
-  sky.append(...rows(skyRow, subtitle('Sol'), sunRow, rowOf('ps-lens-flare')))
+  const sky = fieldset('settings-layer-air', 'Aire')
+  sky.append(...rows(sunRow, skyRow, cloudsRow, rowOf('ps-lens-flare')))
   place(sky)
 
   const menu = doc.getElementById('menu-sections')
@@ -355,6 +369,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // Rendimiento → Calidad: profile, FPS limit and resolution scale in one section, with the
   // «Aplicar calidad y reiniciar» button and its note last. The controls keep their ids and binds.
   const quality = byId('display-quality-section')
+  if (quality && typeof runtime.setFsr === 'function') appendFsrControls(quality, runtime)
   const performanceGroup = byId('display-performance')
   if (quality && performanceGroup) {
     const tail = [...quality.children].filter((el) => el.matches('button, p'))
@@ -419,7 +434,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       }
     })
     label.append(input, value)
-    quality.append(label, warning, apply)
+    const lamps = fieldset('settings-streetlights', 'Farolas')
+    lamps.append(label, warning, apply)
+    place(lamps)
     // Experimental opt-in for this session only; never restore an expensive saved setting.
     runtime.setFieldLightShadows(false)
     try {
@@ -461,7 +478,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       }
     })
     label.append(input, ' Sombras de la linterna')
-    quality.append(label)
+    const headlamp = fieldset('settings-headlamp', 'Linterna')
+    headlamp.append(label)
+    place(headlamp)
   }
 
   let cameraOptions = byId('camera-extras')
@@ -878,7 +897,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     ;(actionCam as HTMLDetailsElement).open = true
     actionCam.querySelector('summary')?.setAttribute('hidden', '')
     section.append(actionCam)
-    cameraOptions.append(section)
+    place(section)
   }
   const effects = fieldset('settings-effects', 'Efectos')
   for (const id of ['quality-smoke']) {
@@ -907,6 +926,16 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     paneEls.get('planet')!.append(legacyPlanet)
   }
 
+  const sharpness = fieldset('settings-sharpness', 'Nitidez')
+  for (const id of ['display-scale', 'display-scale-auto']) {
+    const row = rowOf(id)
+    if (row) {
+      relabel(row, id === 'display-scale' ? 'Nitidez' : 'Nitidez automática')
+      sharpness.append(row)
+    }
+  }
+  if (sharpness.querySelector('input')) place(sharpness)
+
   // A tab with nothing to show (e.g. Audio on a host without the mixer) is hidden.
   const syncTabs = () => {
     for (const tab of TABS) {
@@ -917,6 +946,40 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
   const navigationGroups = [
+    { tab: 'planet', id: 'map', label: 'Mapa', sections: ['settings-map', 'terrain-position'] },
+    {
+      tab: 'planet',
+      id: 'layers',
+      label: 'Capas',
+      sections: ['terrain-layers', 'settings-layer-air'],
+    },
+    {
+      tab: 'planet',
+      id: 'world-options',
+      label: 'Opciones',
+      sections: [
+        'settings-sharpness',
+        'quality-shadows',
+        'road-style',
+        'settings-planet-air',
+        'settings-planet-sea',
+        'settings-streetlights',
+        'settings-headlamp',
+        'settings-options-labels',
+      ],
+    },
+    {
+      tab: 'options',
+      id: 'video',
+      label: 'Vídeo',
+      sections: ['display-quality-section', 'display-performance', 'settings-effects'],
+    },
+    {
+      tab: 'options',
+      id: 'cameras',
+      label: 'Cámaras',
+      sections: ['camera-extras', 'settings-action-cam'],
+    },
     {
       tab: 'options',
       id: 'controls',
@@ -924,19 +987,49 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       sections: ['driving-extras', 'settings-controls', 'settings-usb'],
     },
     {
-      tab: 'options',
-      id: 'graphics',
-      label: 'Gráficos',
-      sections: ['display-quality-section', 'quality-shadows', 'road-style', 'settings-effects'],
-    },
-    {
       tab: 'dev',
       id: 'weapons',
-      label: 'Armas (3)',
+      label: 'Armas',
       sections: ['settings-options-sidearm', 'settings-weapon-poses', 'settings-muzzle-flash'],
     },
   ]
   const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
+  const mobileLayout = window.matchMedia('(max-width:600px)')
+  const positionContent = (tab: TabId) => {
+    const layout = sections.get(tab)
+    if (!layout) return
+    const selected = layout.nav.querySelector<HTMLButtonElement>(
+      `button[data-section="${layout.active}"]`,
+    )
+    if (mobileLayout.matches && selected) selected.after(layout.body)
+    else paneEls.get(tab)!.append(layout.body)
+  }
+  const onMenuResize = () => {
+    for (const tab of paneEls.keys()) positionContent(tab)
+  }
+  mobileLayout.addEventListener('change', onMenuResize)
+  // Move the existing nodes, retaining native labels, listeners and live value spans.
+  const alignSettingRows = (root: HTMLElement) => {
+    for (const label of root.querySelectorAll<HTMLLabelElement>('label')) {
+      if (
+        label.querySelector(':scope > .settings-row-name') ||
+        !label.querySelector('input, select, textarea')
+      )
+        continue
+      const text = [...label.childNodes].filter(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+      )
+      if (!text.length) continue
+      const name = doc.createElement('span'),
+        value = doc.createElement('span')
+      name.className = 'settings-row-name'
+      value.className = 'settings-row-value'
+      for (const node of text) name.append(node)
+      value.append(...label.childNodes)
+      label.append(name, value)
+      label.classList.add('settings-inline-row')
+    }
+  }
   let activeTab: TabId = 'planet'
   const chooseSection = (tab: TabId, id: string) => {
     const layout = sections.get(tab)
@@ -953,6 +1046,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       .querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
       ?.closest('details')
     if (category) category.open = true
+    positionContent(tab)
     layout.body.scrollTop = 0
     if (tab === 'planet' && id === 'settings-map' && !win.hidden) mapSection.refresh()
   }
@@ -1014,6 +1108,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
           group.append(button)
         } else items.push(button)
       }
+      // The mobile body may be nested in a group about to be replaced.
+      pane.append(layout.body)
+      alignSettingRows(layout.body)
       layout.nav.replaceChildren(...items)
       const chosen = ordered.find((el) => el.id === layout.active) ?? ordered[0]
       if (chosen) chooseSection(tab, chosen.id)
@@ -1065,7 +1162,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     doc.body.classList.add('settings-is-open')
     if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
       mapSection.refresh()
-    toggle.focus()
+    ;(doc.getElementById('euskadi-options-toggle') ?? closeButton).focus()
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
     doc.getElementById('game-canvas')?.blur()
     planetPanel?.refresh()
@@ -1151,6 +1248,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       doc.removeEventListener('keydown', onKeyDown)
       window.clearInterval(clockTimer)
       doc.body.classList.remove('settings-is-open')
+      mobileLayout.removeEventListener('change', onMenuResize)
       toolbarResize.disconnect()
       window.removeEventListener('resize', alignToolbar)
       runtime.setSidearmAimPreview?.(false)

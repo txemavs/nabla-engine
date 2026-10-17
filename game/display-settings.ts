@@ -47,9 +47,9 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   const auto = document.getElementById('display-scale-auto') as HTMLInputElement | null
   const label = document.getElementById('display-scale-label')!
   const quality = document.getElementById('display-quality') as HTMLSelectElement
-  const steps = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5]
+  const steps = [0.5, 1, 1.5, 2]
   scale.min = '0'
-  scale.max = '7'
+  scale.max = String(steps.length - 1)
   scale.step = '1'
   const initial = runtime.displaySettings
   fps.value = String(initial.maxFps)

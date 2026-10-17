@@ -380,3 +380,20 @@ it('loads a single loose cartridge and fires with no magazine', () => {
   expect(trigger(state, preset, true, 1200).fired).toBe(true)
   expect(state.chamber).toBe(0)
 })
+
+it('can supply a fresh magazine for repeated mobile reloads without reserve ammunition', () => {
+  const firearm = spec()
+  const state = freshFirearm({ ...firearm, spareMagazines: 0 })
+  for (let i = 0; i < 10; i++) {
+    state.magazine = 0
+    state.chamber = 0
+    state.slideLocked = true
+    const now = i * 10000
+    expect(beginReload(state, firearm, now, true).reloadStarted).toBe(true)
+    for (let dt = 100; dt < 9000; dt += 100) advanceFirearm(state, firearm, now + dt)
+    expect(state.reload).toBe('none')
+    expect(state.chamber).toBe(1)
+    expect(rounds(state)).toBe(firearm.magazineCapacity)
+    expect(state.spareMagazines).toHaveLength(0)
+  }
+})

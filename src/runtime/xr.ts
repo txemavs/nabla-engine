@@ -1,3 +1,4 @@
+import { XRScreenInput } from './xr-screen-input.js'
 import { XRTrackedHand } from './xr-tracked-hands.js'
 import { readXRQuality, saveXRQuality, type XRQualitySettings } from './xr-quality.js'
 import { XRCalibrationScreen } from './xr-calibration-screen.js'
@@ -10,6 +11,10 @@ import { XRGameInput } from './xr-input.js'
 
 /** Engine-owned immersive view. The browser runtime retains physics and terrain ownership. */
 export class GameXR {
+  /** Optional host touch surface; never required for headset sessions. */
+  /** Opt-in screen interaction can be disabled for dedicated headset experiences. */
+  screenTouchEnabled = true
+  domOverlayRoot?: HTMLElement
   readonly calibration = new XRCalibration()
   calibrationScreen: XRCalibrationScreen | null = null
   enableCalibrationScreen(): void {
@@ -108,6 +113,7 @@ export class GameXR {
   readonly anchorCamera = new THREE.PerspectiveCamera()
   readonly input = new XRGameInput()
   readonly session: XRSessionController
+  private readonly screenInput: XRScreenInput
   private height: number | null = null
   private readonly headPosition = new THREE.Vector3(0, 1.65, 0)
   private readonly headRotation = new THREE.Quaternion()
@@ -160,9 +166,24 @@ export class GameXR {
     renderer.xr.setReferenceSpaceType('local-floor')
     renderer.xr.setFramebufferScaleFactor(this.quality.scale)
     renderer.xr.setFoveation(this.quality.foveation)
+    this.screenInput = new XRScreenInput({
+      referenceSpace: () => this.referenceSpace,
+      worldMatrix: () => {
+        this.rig.updateWorldMatrix(true, false)
+        return this.rig.matrixWorld
+      },
+      enabled: () => this.visible && this.screenTouchEnabled,
+      select: (origin, direction) => {
+        const screen = this.calibrationScreen
+        if (!screen) return
+        if (!screen.isOpen) screen.show(true)
+        else screen.selectRay(origin, direction)
+      },
+    })
     this.session = new XRSessionController(
       renderer.xr,
       (active) => {
+        this.screenInput.bind(active ? renderer.xr.getSession() : null)
         this.input.reset()
         for (const hand of this.naturalHands) hand.reset()
         this.stats.reset()
@@ -226,7 +247,12 @@ export class GameXR {
   ): Promise<void> {
     if (!system) return Promise.reject(new Error('WebXR requiere HTTPS y un navegador compatible'))
     this.renderer.xr.setFramebufferScaleFactor(this.quality.scale)
-    return this.session.enter(system, mode, this.quality.handTracking)
+    return this.session.enter(
+      system,
+      mode,
+      this.quality.handTracking,
+      mode === 'immersive-ar' ? this.domOverlayRoot : undefined,
+    )
   }
   exit(): Promise<void> {
     return this.session.exit()
@@ -306,6 +332,7 @@ export class GameXR {
   }
 
   dispose(): void {
+    this.screenInput.dispose()
     void this.session.dispose()
     this.input.reset()
     for (const { grip } of this.hands) grip.clear()

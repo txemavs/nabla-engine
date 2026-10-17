@@ -275,6 +275,19 @@ export class XRCalibrationScreen {
     this.monitor.update({ values, bars: { dropdown: this.expanded ? 1 : 0 } }, now)
   }
 
+  /** Screen-space XR taps hit the same monitor face and actions as controller rays. */
+  selectRay(origin: THREE.Vector3, direction: THREE.Vector3): boolean {
+    if (!this.root.visible || !this.placed || !this.requested) return false
+    this.face.updateWorldMatrix(true, false)
+    this.raycaster.set(origin, direction)
+    this.raycaster.far = 5
+    const hit = this.raycaster.intersectObject(this.face, false)[0]
+    if (!hit) return false
+    const point = this.face.worldToLocal(hit.point.clone())
+    this.activate((point.x / width + 0.5) * 1024, (0.5 - point.y / height) * 640)
+    return true
+  }
+
   /** Pixel regions match the trusted HTML template; no arbitrary page scripts are executed. */
   activate(x: number, y: number, hand?: THREE.Object3D): void {
     if (this.mainMenu && this.page === 'main' && x < 400 && y < 76) {

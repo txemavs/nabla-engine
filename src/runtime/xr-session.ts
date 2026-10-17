@@ -111,6 +111,7 @@ export class XRSessionController {
     system: XRSystem,
     mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr',
     handTracking = false,
+    domOverlayRoot?: HTMLElement,
   ): Promise<void> {
     if (this.pending || this.session || this.closed) return
     this.pending = true
@@ -120,7 +121,9 @@ export class XRSessionController {
         requiredFeatures: mode === 'immersive-ar' ? ['unbounded', 'local-floor'] : ['local-floor'],
         ...(mode === 'immersive-ar' || handTracking
           ? {
+              ...(domOverlayRoot ? { domOverlay: { root: domOverlayRoot } } : {}),
               optionalFeatures: [
+                ...(domOverlayRoot ? ['dom-overlay'] : []),
                 ...(mode === 'immersive-ar'
                   ? ['plane-detection', 'mesh-detection', 'anchors']
                   : []),

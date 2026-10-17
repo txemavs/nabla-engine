@@ -613,8 +613,8 @@ export class Sidearm {
     return fired
   }
 
-  reload(now: number): FirearmEvent {
-    const event = beginReload(this.state, this.firearm, now)
+  reload(now: number, unlimited = false): FirearmEvent {
+    const event = beginReload(this.state, this.firearm, now, unlimited)
     if (event.reloadStarted) this.magazineLeverPoseAt = now
     return event
   }

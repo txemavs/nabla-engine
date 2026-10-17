@@ -14,9 +14,10 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 const MAP = 'https://api.openstreetmap.org/api/0.6/map'
 // Geographic fallback globe: total height includes the lens, not just the post.
 const LAMP_HEIGHT = 4
-const LAMP_RADIUS = 0.75 * 0.6 * 0.6
+const LAMP_RADIUS = 0.2
 const POLE_HEIGHT = LAMP_HEIGHT - 2 * LAMP_RADIUS
 const LAMP_CENTER = LAMP_HEIGHT - LAMP_RADIUS
+const LAMP_LIT_COLOR = new THREE.Color('#fff1d2')
 const CACHE = 'nabla-lamps-z15:'
 
 export type FieldLightMark = { lat: number; lon: number; tags: Record<string, string> }
@@ -60,9 +61,10 @@ export class FieldLights {
   private nextTry = new Map<string, number>()
   private readonly poleGeometry = new THREE.CylinderGeometry(0.05, 0.07, POLE_HEIGHT, 5)
   private readonly headGeometry = new THREE.SphereGeometry(LAMP_RADIUS, 8, 6)
-  private readonly poleMaterial = new THREE.MeshBasicMaterial({ color: '#454b52' })
+  private readonly poleMaterial = new THREE.MeshBasicMaterial({ color: '#3e494a' })
   private readonly headMaterial = new THREE.MeshBasicMaterial({
-    color: '#fff1d2',
+    color: '#d8d3b4',
+    vertexColors: true,
     toneMapped: false,
   })
   private readonly lampMatrix = new THREE.Matrix4()
@@ -70,6 +72,14 @@ export class FieldLights {
   private readonly beams: THREE.SpotLight[] = []
   private readonly nearest: { x: number; y: number; z: number; d2: number }[] = []
   constructor(options: FieldLightOptions = {}) {
+    // Cheap fixed shading keeps the cream globe readable without adding a lit material.
+    const normals = this.headGeometry.getAttribute('normal')
+    const colours = new Float32Array(normals.count * 3)
+    for (let i = 0; i < normals.count; i++) {
+      const shade = 0.48 + 0.52 * Math.max(0, normals.getY(i))
+      colours[i * 3] = colours[i * 3 + 1] = colours[i * 3 + 2] = shade
+    }
+    this.headGeometry.setAttribute('color', new THREE.BufferAttribute(colours, 3))
     this.layers = {
       lamps: lightingDefaults.lamps,
       navigation: lightingDefaults.navigation,
@@ -312,7 +322,7 @@ export class FieldLights {
   }
   private paintHeads(night: boolean): void {
     const glow = !night || this.lampLevel() <= 0 ? 0 : Math.min(1, this.lampLevel() / 10)
-    this.headMaterial.color.setRGB(0.1 + 0.9 * glow, 0.1 + 0.845 * glow, 0.1 + 0.724 * glow)
+    this.headMaterial.color.set('#d8d3b4').lerp(LAMP_LIT_COLOR, glow)
   }
   private lightNearest(camera: Vec3Tuple, night: boolean): void {
     const cast = night && this.beams.length ? Math.max(0, this.lampLevel() - 10) / 10 : 0

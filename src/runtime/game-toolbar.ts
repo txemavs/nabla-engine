@@ -94,7 +94,7 @@ export class GameToolbar {
     group.append(button, panel)
     this.root.append(group)
     if (resolution) {
-      const scales = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5]
+      const scales = [0.5, 1, 1.5, 2]
       const rg = document.createElement('div')
       rg.style.cssText = 'position:relative;order:31'
       const rb = document.createElement('button')
@@ -112,7 +112,7 @@ export class GameToolbar {
       const ri = document.createElement('input')
       ri.type = 'range'
       ri.min = '0'
-      ri.max = '7'
+      ri.max = String(scales.length - 1)
       ri.step = '1'
       ri.className = 'nabla-vertical-range'
       ri.setAttribute('aria-label', 'Escala de resolución')

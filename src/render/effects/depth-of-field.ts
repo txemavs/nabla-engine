@@ -103,8 +103,9 @@ export class DepthOfField {
   }
 
   /** Next draws land in the effect buffer. */
-  begin(renderer: THREE.WebGLRenderer): void {
-    renderer.getDrawingBufferSize(this.size)
+  begin(renderer: THREE.WebGLRenderer, size?: THREE.Vector2): void {
+    if (size) this.size.copy(size)
+    else renderer.getDrawingBufferSize(this.size)
     const width = Math.max(1, this.size.x)
     const height = Math.max(1, this.size.y)
     if (!this.target || this.target.width !== width || this.target.height !== height) {
@@ -125,8 +126,12 @@ export class DepthOfField {
   }
 
   /** Draw the blurred frame to the canvas. The caller renders HUD after this. */
-  present(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
-    renderer.setRenderTarget(null)
+  present(
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.PerspectiveCamera,
+    destination: THREE.WebGLRenderTarget | null = null,
+  ): void {
+    renderer.setRenderTarget(destination)
     this.material.uniforms.cameraFar.value = camera.far
     this.material.uniforms.radius.value = focusTuning.radiusPixels * renderer.getPixelRatio()
     const autoClear = renderer.autoClear

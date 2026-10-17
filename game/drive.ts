@@ -1,3 +1,5 @@
+import { mountVREntry } from './vr-entry.js'
+import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { controlsHint } from '@nabla/engine/config/controls'
@@ -219,6 +221,7 @@ try {
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   runtime = new GameRuntime({
+    fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
@@ -311,6 +314,7 @@ try {
       document.getElementById('game-message')!.textContent = message
     },
   })
+  mountVREntry(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   bindTerrainCache(runtime)
   if (new URLSearchParams(location.search).has('diagnostics'))

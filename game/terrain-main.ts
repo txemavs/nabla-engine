@@ -1,3 +1,5 @@
+import { mountVREntry } from './vr-entry.js'
+import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
@@ -116,6 +118,7 @@ try {
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
   bootLog('GameRuntime construct start')
   runtime = new GameRuntime({
+    fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
     // Desktop prepares its visible streaming footprint before gameplay begins.
@@ -216,6 +219,7 @@ try {
   // Headless checks read where vehicles and the player sit against the ground.
   if (params.has('diagnostics'))
     Object.assign(window, { nablaGroundAudit: () => runtime?.groundAudit(), nablaRuntime: runtime })
+  mountVREntry(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',

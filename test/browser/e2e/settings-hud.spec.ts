@@ -96,6 +96,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       lensFlareAmount: 1,
       setLensFlareAmount: () => {},
     }
+    document.documentElement.dataset.appName = 'EUSKADI.ONLINE'
     mountSettingsHud(runtime as never)
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
     roll.value = '2'
@@ -170,7 +171,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     }
   }, process.cwd())
 
-  const visible = ['Mundo', 'Opciones', 'Objetos', 'Desarrollo']
+  const visible = ['Mundo', 'Configuración', 'Objetos', 'Desarrollo']
   expect(result.before).toEqual(visible)
   expect(result.actionCam).toBe(false)
   expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
@@ -189,9 +190,11 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'settings-map',
       'terrain-position',
       'terrain-layers',
+      'quality-shadows',
+      'road-style',
       'settings-planet-sea',
       'settings-planet-air',
-      'settings-planet-sky',
+      'settings-layer-air',
     ]),
   )
   expect(result.options).toEqual(
@@ -201,8 +204,6 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'driving-extras',
       'settings-controls',
       'display-quality-section',
-      'quality-shadows',
-      'road-style',
       'settings-effects',
     ]),
   )
@@ -218,33 +219,40 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(result.places).toBe('settings-pane-planet')
   expect(result.placesGroup).toBe('terrain-layers')
   expect(result.road).toBe('settings-pane-planet')
-  expect(result.layersTitle).toBe('Terreno')
-  expect(result.asphaltTitle).toBe('Suelo y texturas')
+  expect(result.layersTitle).toBe('Suelo')
+  expect(result.asphaltTitle).toBe('Contraste del asfalto')
   expect(result.copy).toBe('settings-pane-dev')
   expect(result.configText).toContain('cloudAmount=0.35')
   expect(result.planetHasCopy).toBe(false)
   expect(result.sky).toBe('settings-pane-planet')
-  expect(result.clouds).toBe('settings-planet-air')
-  expect(result.flare).toBe('settings-planet-sky')
+  expect(result.clouds).toBe('settings-layer-air')
+  expect(result.flare).toBe('settings-layer-air')
   expect(result.vehicles).toBe('settings-pane-objects')
   await page.locator('#settings-toggle').click()
+  await expect(page.locator('.settings-header strong')).toHaveText('EUSKADI.ONLINE')
+  await expect(page.locator('#settings-toggle')).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Volver al juego' })).toBeVisible()
   await page.getByRole('tab', { name: 'Desarrollo' }).click()
   const branch = page.locator('#settings-pane-dev .settings-nav-group')
   await expect(branch).toHaveAttribute('open', '')
+  const indent = await branch
+    .getByRole('button', { name: 'Apuntado', exact: true })
+    .evaluate((el) => getComputedStyle(el).marginLeft)
+  expect(parseFloat(indent)).toBeGreaterThanOrEqual(20)
   await branch.getByRole('button', { name: 'Apuntado', exact: true }).click()
   await expect(page.locator('#sidearm-aim-height')).toBeVisible()
-  await page.getByRole('tab', { name: 'Opciones', exact: true }).click()
+  await page.getByRole('tab', { name: 'Configuración', exact: true }).click()
   await expect(page.locator('.settings-footer button')).toHaveCount(0)
   await expect(page.locator('#settings-defaults')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Cámara', exact: true }).click()
+  await page.getByRole('button', { name: 'Action Cam', exact: true }).click()
   await page.locator('#camera-action-cam-settings').getByText('Ángulos', { exact: true }).click()
   await expect(page.locator('#action-cam-stepRollRadians')).toBeVisible()
   await expect(
     page.locator(
       '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
     ),
-  ).toHaveCount(0)
-  await page.getByRole('button', { name: 'Gestión de ajustes', exact: true }).click()
+  ).toHaveCount(1)
+  await page.getByRole('button', { name: 'Ajustes', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }),
   ).toBeVisible()
@@ -268,7 +276,29 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(
     await page.locator('#settings-window').evaluate((el) => el.scrollWidth <= el.clientWidth),
   ).toBe(true)
+  const mobileBody = page.locator('#settings-pane-planet .settings-section-content')
+  await expect(mobileBody).toBeVisible()
+  expect(
+    await mobileBody.evaluate((el) => el.previousElementSibling?.getAttribute('data-section')),
+  ).toBe('settings-map')
+  expect(
+    await page.locator('#settings-map').evaluate((el) => getComputedStyle(el, '::before').display),
+  ).toBe('none')
+  await page.getByRole('button', { name: 'Aire', exact: true }).click()
+  expect(
+    await mobileBody.evaluate((el) => el.previousElementSibling?.getAttribute('data-section')),
+  ).toBe('settings-layer-air')
+  const row = page.locator('#ps-sun').locator('xpath=ancestor::label')
+  const nameBox = await row.locator('.settings-row-name').boundingBox()
+  const valueBox = await row.locator('.settings-row-value').boundingBox()
+  expect(nameBox!.x + nameBox!.width).toBeLessThanOrEqual(valueBox!.x)
+  expect(
+    Math.abs(nameBox!.y + nameBox!.height / 2 - valueBox!.y - valueBox!.height / 2),
+  ).toBeLessThan(2)
   await page.screenshot({ path: '/tmp/settings-menu-mobile.png' })
+  await page.setViewportSize({ width: 1440, height: 960 })
+  expect(await mobileBody.evaluate((el) => el.parentElement?.id)).toBe('settings-pane-planet')
+  await expect(page.locator('#ps-sun')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
   await expect(page.locator('#settings-toggle')).toHaveAttribute('aria-expanded', 'false')

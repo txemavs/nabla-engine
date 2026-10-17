@@ -1,7 +1,12 @@
-import { interfaceVariables, interfaceControls } from '../src/runtime/interface-theme.js'
+import {
+  interfaceVariables,
+  interfaceControls,
+  interfaceTabStyles,
+} from '../src/runtime/interface-theme.js'
 
 /** Full-screen HTML monitor, using the same theme tokens and controls as world-space monitors. */
 export const settingsNavigationStyles = `
+${interfaceTabStyles}
 .settings-window { ${interfaceVariables} position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;pointer-events:auto;background:var(--surface);color:var(--ink);font:var(--text-size)/1.4 Arial,sans-serif; }
 .settings-window[hidden],.settings-window [hidden]{display:none!important}
 .settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:var(--surface);border:0;border-radius:0;font:inherit;color:inherit;}
@@ -14,8 +19,8 @@ export const settingsNavigationStyles = `
 .settings-pane{display:grid;grid-template-columns:282px minmax(0,1fr)}
 .settings-sections{overflow:auto;border-right:1px solid var(--line);background:#1b1b1b;padding:26px 18px;}
 .settings-section-content{overflow:auto;padding:34px 46px;min-width:0;}
-.settings-sections button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 14px;min-height:46px;background:transparent;border:1px solid transparent;border-left:2px solid transparent;border-radius:2px;color:var(--muted);font-size:17px}
-.settings-sections button[aria-current=page]{background:var(--button);color:var(--ink);border-color:#3b3b3b;border-left-color:var(--accent)}
+.settings-sections button[data-section]{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 14px;min-height:46px;background:transparent;border:1px solid transparent;border-left:2px solid transparent;border-radius:2px;color:var(--muted);font-size:17px}
+.settings-sections button[data-section][aria-current=page]{background:var(--button);color:var(--ink);border-color:#3b3b3b;border-left-color:var(--accent)}
 .settings-nav-group summary{padding:10px 14px;cursor:pointer;font-size:17px}.settings-sections .settings-nav-group{margin-bottom:12px}.settings-sections .settings-nav-group>button{margin-left:24px;width:calc(100% - 24px);font-size:15px}
 .settings-section-content>.menu-section{display:block;max-width:1000px;margin:0 auto;padding:0;border:0;min-width:0}
 .settings-section-content>.menu-section::before{content:attr(data-section-title);display:block;font-size:28px;margin:0 0 28px}
@@ -37,11 +42,34 @@ export const settingsNavigationStyles = `
 .settings-tile-map{position:relative;width:100%;height:55vh;min-height:250px;background:#151515;border:1px solid var(--line);overflow:hidden}.settings-map-tile{position:absolute;display:grid;place-items:center;border:1px solid #444;background:#242424;font:11px monospace;overflow:hidden;white-space:nowrap}.settings-map-tile.state-visible{background:#31543e}.settings-map-tile.state-resident{background:#304336}.settings-map-tile.state-downloading{background:#243e54}.settings-map-tile.state-installing{background:#493e56}.settings-map-tile.state-retry{background:#592e2e}
 
 /* Navigation stays flat even under the generic monitor button selectors. */
-.settings-window .settings-sections button{background:transparent;border:1px solid transparent;border-left:2px solid transparent;font-size:17px;padding:10px 14px;margin:0 0 6px;min-height:46px;color:var(--muted)}
-.settings-window .settings-sections button[aria-current=page]{background:var(--button);border-color:#3b3b3b;border-left-color:var(--accent);color:var(--ink)}
-.settings-window .settings-nav-group button{font-size:15px}
+.settings-window .settings-sections button[data-section]{background:transparent;border:1px solid transparent;border-left:2px solid transparent;font-size:17px;padding:10px 14px;margin:0 0 6px;min-height:46px;color:var(--muted)}
+.settings-window .settings-sections button[data-section][aria-current=page]{background:var(--button);border-color:#3b3b3b;border-left-color:var(--accent);color:var(--ink)}
+.settings-window .settings-sections .settings-nav-group>button{font-size:15px;margin-left:24px;width:calc(100% - 24px)}
+.settings-window .settings-section-content details> :not(summary){margin-left:20px}
+.settings-window .settings-section-content details>details{padding-left:12px;border-left:1px solid var(--line)}
 .settings-window .settings-tab{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;margin:0;padding:0 22px;color:var(--muted)}
 .settings-window .settings-tab[aria-selected=true]{background:var(--button);border-bottom-color:var(--accent);color:var(--ink)}
 @media(max-width:850px){.settings-pane{grid-template-columns:205px minmax(0,1fr)}.settings-section-content{padding:25px}.settings-tabs{padding:0 8px}.settings-console .settings-tab{padding:0 14px;font-size:17px}}
-@media(max-width:520px){.settings-pane{grid-template-columns:145px minmax(0,1fr)}.settings-sections{padding:18px 6px}.settings-window .settings-sections button{padding:9px 7px;font-size:14px}.settings-section-content{padding:20px 14px}.settings-section-content>.menu-section::before{font-size:23px}.settings-nav-group summary{padding:9px 7px;font-size:14px}.settings-sections .settings-nav-group>button{margin-left:14px;width:calc(100% - 14px);font-size:13px}.settings-key-table{font-size:13px}.settings-key-table kbd{font-size:11px;white-space:normal}.settings-window input,.settings-window select{max-width:100%;min-width:0}.settings-window label{font-size:16px}.settings-header,.settings-footer{padding:0 16px}.settings-header strong{font-size:13px!important}.settings-window .settings-console{grid-template-rows:64px 52px minmax(0,1fr) 65px}}
+@media(max-width:520px){.settings-pane{grid-template-columns:145px minmax(0,1fr)}.settings-sections{padding:18px 6px}.settings-window .settings-sections button[data-section]{padding:9px 7px;font-size:14px}.settings-section-content{padding:20px 14px}.settings-section-content>.menu-section::before{font-size:23px}.settings-nav-group summary{padding:9px 7px;font-size:14px}.settings-sections .settings-nav-group>button{margin-left:14px;width:calc(100% - 14px);font-size:13px}.settings-key-table{font-size:13px}.settings-key-table kbd{font-size:11px;white-space:normal}.settings-window input,.settings-window select{max-width:100%;min-width:0}.settings-window label{font-size:16px}.settings-header,.settings-footer{padding:0 16px}.settings-header strong{font-size:13px!important}.settings-window .settings-console{grid-template-rows:64px 52px minmax(0,1fr) 65px}}
+
+/* The settings window owns the interaction while the gameplay HUD is hidden. */
+.settings-is-open :is(.game-toolbar,.touch-driving,.touch-walk,.touch-flight,#settings-toggle){display:none!important}
+.settings-header{justify-content:space-between;gap:16px}
+.settings-window .settings-close{margin:0;font-size:14px;flex:none}
+.settings-window label.settings-inline-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center;flex-wrap:nowrap}
+.settings-row-name{min-width:0;overflow-wrap:anywhere}
+.settings-row-value{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.settings-window .settings-row-value :is(input,select,textarea){min-width:0;max-width:100%;margin:0}
+.settings-window .settings-row-value input[type=range]{flex:1;width:100%;max-width:380px}
+.settings-row-value output{flex:none}
+@media(max-width:600px){
+ .settings-pane{display:block;overflow:auto}
+ .settings-sections{overflow:visible;border-right:0;padding:12px 8px}
+ .settings-section-content{overflow:visible;padding:12px 14px 22px;margin:0 0 12px;min-width:0}
+ .settings-section-content>.menu-section::before{display:none}
+ .settings-window label.settings-inline-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;font-size:15px}
+ .settings-row-value{gap:6px;flex-wrap:wrap}
+ .settings-window .settings-sections .settings-row-value button{width:auto;margin:0}
+ .settings-tile-map{height:45vh;min-height:200px}
+}
 `

@@ -33,8 +33,8 @@ it('keeps light settings independent and hands grounded lamp posts to physics', 
   await settle()
   tick(undefined)
   tick(12)
-  expect(poles[0].position[1]).toBeCloseTo(13.73)
-  expect(poles[0].half[1]).toBeCloseTo(1.73)
+  expect(poles[0].position[1]).toBeCloseTo(13.8)
+  expect(poles[0].half[1]).toBeCloseTo(1.8)
   expect(a.lights.root.position.x).toBe(-100)
   expect(a.lights.root.children.some((x) => x instanceof SpotLight && x.intensity > 0)).toBe(true)
   b.update({

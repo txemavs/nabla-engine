@@ -160,10 +160,8 @@ export function vehicleChoices(): VehicleChoice[] {
     .map((preset) => ({ id: preset.id, label: preset.label }))
 }
 
-/** Prepare common vehicles and the flying carrier behind the opening credits. */
-export function menuPreloadVehicles(
-  ids: readonly string[] = ['car', 'vfr800', 'white-truck', 'carrier'],
-): Entity[][] {
+/** Optional explicit preloads; other menu vehicles prepare on first use. */
+export function menuPreloadVehicles(ids: readonly string[] = []): Entity[][] {
   return [...new Set(ids)]
     .filter((id) => vehicleChoices().some((choice) => choice.id === id))
     .map((id) => presetEntities(id, `preload-${id}`))

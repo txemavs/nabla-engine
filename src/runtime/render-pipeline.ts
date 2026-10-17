@@ -1,3 +1,4 @@
+import { Fsr1 } from '../render/effects/fsr1.js'
 import { latestProgramId } from './shader-diagnostics.js'
 import * as THREE from 'three'
 import type { SceneView } from '../render/entity/view.js'
@@ -56,6 +57,7 @@ export class GameRenderPipeline {
     mainPrograms: 0,
     postPrograms: 0,
   }
+  readonly fsr = new Fsr1()
   readonly depthOfField = new DepthOfField()
   private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
@@ -63,6 +65,7 @@ export class GameRenderPipeline {
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
     this.depthOfField.dispose()
+    this.fsr.dispose()
   }
   /**
    * Render auxiliary views before the main scene and optional depth of field.
@@ -181,7 +184,8 @@ export class GameRenderPipeline {
       // Switching render targets at the first aiming frame changes sky tone mapping.
       const focus = frame.depthOfField || frame.tunnelFocus !== undefined
       this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
-      if (focus) this.depthOfField.begin(renderer)
+      const upscale = this.fsr.begin(renderer)
+      if (focus) this.depthOfField.begin(renderer, upscale ? this.fsr.inputSize : undefined)
       if (sky.enabled && frame.skyVisible !== false) {
         sky.render(renderer, camera, eye)
         renderer.autoClear = false
@@ -208,7 +212,7 @@ export class GameRenderPipeline {
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
       if (focus) {
-        this.depthOfField.present(renderer, camera)
+        this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
         if (flare && flareVisible) {
           const parent = flare.parent
           const material = flare.material as THREE.ShaderMaterial
@@ -229,10 +233,12 @@ export class GameRenderPipeline {
           }
         }
       }
+      if (upscale) this.fsr.present(renderer)
       recordShaders('postprocessing')
       this.timings.postMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.postPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
     } finally {
+      this.fsr.restore(renderer)
       for (const { shadow, auto, needs } of pausedSun) {
         shadow.autoUpdate = auto
         shadow.needsUpdate = needs

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **497 modules; 5817 executable function definitions**.
+Coverage: **500 modules; 5836 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -28,6 +28,7 @@ Coverage: **497 modules; 5817 executable function definitions**.
 | [game/entry.ts](game/entry.ts.md) | 3 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 6 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
+| [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
 | [game/headset.ts](game/headset.ts.md) | 8 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
@@ -215,6 +216,8 @@ Coverage: **497 modules; 5817 executable function definitions**.
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 8 |
+| [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
+| [src/render/effects/fsr1.ts](src/render/effects/fsr1.ts.md) | 13 |
 | [src/render/entity/aircraft.ts](src/render/entity/aircraft.ts.md) | 4 |
 | [src/render/entity/asset-pack.ts](src/render/entity/asset-pack.ts.md) | 7 |
 | [src/render/entity/asset-quality.ts](src/render/entity/asset-quality.ts.md) | 2 |
@@ -343,7 +346,7 @@ Coverage: **497 modules; 5817 executable function definitions**.
 | [src/runtime/ar/session.ts](src/runtime/ar/session.ts.md) | 4 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 54 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 418 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 420 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |

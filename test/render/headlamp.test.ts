@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { Group, PerspectiveCamera, Vector3 } from 'three'
 import { VehicleLightRig } from '../../src/render/vehicle-presentation/light-rig.js'
+import { lightingDefaults } from '../../src/config/lighting.js'
 import { Headlamp } from '../../src/render/entity/headlamp.js'
 
 it('follows the face with floating origin and rotates its beam with the head', () => {
@@ -113,5 +114,15 @@ it('aims up and down from the face in third person, without moving the light to 
   expect(lamp.light.penumbra).toBeGreaterThan(0.6)
   expect(lamp.light.angle).toBeGreaterThan(0.475)
   expect(lamp.needsShadowPass).toBe(false)
+  rig.dispose()
+})
+
+it('uses a dedicated gentler intensity without changing vehicle high beams', () => {
+  const rig = new VehicleLightRig()
+  const lamp = new Headlamp(rig.pedestrianLight)
+  lamp.enabled = true
+  lamp.update(new Group())
+  expect(lamp.light.intensity).toBe(lightingDefaults.flashlightIntensity)
+  expect(lamp.light.intensity).toBeLessThan(lightingDefaults.highBeamIntensity)
   rig.dispose()
 })

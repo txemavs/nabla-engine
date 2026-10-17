@@ -46,6 +46,8 @@ export const lightingDefaults = Object.freeze({
   lowBeamOuterCone: 0.65,
   highBeamIntensity: 18000,
   highBeamRange: 130,
+  /** Face flashlight brightness in candela, independent of vehicle high beams. */
+  flashlightIntensity: 1800,
   highBeamInnerCone: 0.16,
   highBeamOuterCone: 0.38,
   /** Downward aim of code-built beams in radians (the truck's lamps tilt by the same 0.035). */

@@ -1,4 +1,8 @@
-import { XRMenuGesture } from '@nabla/engine/ar'
+import { mobileWeaponUI } from './ar-mobile-weapon.js'
+import { arMode } from './ar-mode.js'
+import { touchActionIcon } from '../src/runtime/touch-icons.js'
+import { mountXRDeviceInfo } from './xr-device-info.js'
+import { XRMenuGesture, ARTouchControls } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
@@ -18,10 +22,12 @@ export function configureARHost(changed: (active: boolean) => void): void {
   hostSessionChanged = changed
 }
 
+const mobileAR = arMode() === 'mobile'
 const canvas = document.querySelector<HTMLCanvasElement>('#viewport')!
 const enter = document.querySelector<HTMLButtonElement>('#enter')!
 const panel = document.querySelector<HTMLElement>('#panel')!
 const status = document.querySelector<HTMLElement>('#status')!
+const deviceInfo = mountXRDeviceInfo(document.getElementById('ar-panel') ?? panel)
 const report = (error: unknown) => {
   status.textContent = String(error)
 }
@@ -193,6 +199,7 @@ const xr = new GameAR(
   scene,
   (active) => {
     hostSessionChanged?.(active)
+    if (!active) touchControls.update(null, null, true)
     panel.hidden = active
     enter.disabled = active
     bow.cancel()
@@ -212,8 +219,44 @@ rc = new ARRC(scene, xr.calibration, {
   simulation: { ignition: false, vehicleDamage: false },
   roomWorld: () => balls.physicsWorld,
 })
+let touchActionObject: unknown
+let touchActionRevision = 0
+const touchControls = new ARTouchControls({
+  menu: () => {
+    if (screen.isOpen) screen.hide()
+    else {
+      screen.openMain()
+      screen.show(true)
+    }
+  },
+  arm: () => drone.setArmed(!drone.armed),
+  engage: () => {
+    rc.unlockAudio()
+    weapons.unlock()
+  },
+})
+xr.domOverlayRoot = mobileAR ? touchControls.root : undefined
+xr.screenTouchEnabled = false
 const weapons = new XRARWeapons(scene, camera, xr, document.body, 0)
 void weapons.ready.catch(report)
+if (mobileAR) {
+  touchControls.root.querySelector<HTMLButtonElement>(':scope > button')!.hidden = true
+  mobileWeaponUI(touchControls.root, {
+    equip: () => {
+      void weapons.enableMobile().catch(report)
+    },
+    reload: () => weapons.reloadMobile(performance.now()),
+    fire: (down) => {
+      weapons.unlock()
+      weapons.mobileTrigger = down
+    },
+    move: (x, y) => {
+      weapons.mobilePosition.x = THREE.MathUtils.clamp(weapons.mobilePosition.x + x, -0.35, 0.35)
+      weapons.mobilePosition.y = THREE.MathUtils.clamp(weapons.mobilePosition.y + y, -0.35, 0.2)
+    },
+  })
+}
+
 weapons.physicsWorld = () => balls.physicsWorld
 weapons.onHit = (object, point, direction) => {
   if (xr.calibrationScreen?.hit(object, point)) return true
@@ -427,6 +470,7 @@ reportButton.addEventListener('click', () => {
 if (!document.getElementById('headset-launcher')) enter.parentElement!.append(reportButton)
 let lastRoomDiagnostic = -Infinity
 screen.environmentMenu = () => [
+  { label: 'Dispositivo y controles', run: () => room.setMessage(deviceInfo.lines().join(' · ')) },
   ...environmentOptions(),
   {
     label: 'Iniciar prueba Meta',
@@ -660,11 +704,13 @@ renderer.setAnimationLoop((time, frame) => {
   if (hostSessionChanged && !xr.active) return
   if (frame && xr.active) {
     xr.update(frame)
+    deviceInfo.updateFrame(frame, time)
     const space = xr.referenceSpace
     if (!placed && xr.visible) {
       model.place(camera)
       screen.navigate('main')
-      screen.show(true)
+      if (!mobileAR) screen.show(true)
+      else screen.hide()
       placed = true
     }
     if (space) room.update(frame, space, xr.visible)
@@ -676,6 +722,28 @@ renderer.setAnimationLoop((time, frame) => {
         camera: camera.matrixWorld.toArray(),
         monitor: screen.root.matrixWorld.toArray(),
       })
+    }
+    touchControls.update(
+      mobileAR ? renderer.xr.getSession() : null,
+      drone.flight || rc.kind === 'f14' ? 'flight' : rc.kind ? 'road' : null,
+      screen.isOpen || !xr.visible,
+    )
+    const actionObject = drone.flight ?? rc.presentation
+    if (actionObject !== touchActionObject) {
+      touchActionObject = actionObject
+      touchControls.setActions(
+        String(++touchActionRevision),
+        drone.flight
+          ? [
+              {
+                id: 'arm',
+                label: 'Armar / desarmar motores',
+                icon: touchActionIcon('play'),
+                run: () => drone.setArmed(!drone.armed),
+              },
+            ]
+          : rc.touchActions(),
+      )
     }
     rc.setAudioActive(xr.visible)
     weapons.setAudioActive(xr.visible)
@@ -731,6 +799,11 @@ renderer.setAnimationLoop((time, frame) => {
       ),
       dt,
     )
+    rc.driveInput = touchControls.available
+      ? rc.kind === 'f14'
+        ? touchControls.flight.input()
+        : touchControls.driving.input()
+      : null
     rc.update(
       dt,
       hands.filter(
@@ -744,19 +817,24 @@ renderer.setAnimationLoop((time, frame) => {
       ),
       [...collisionSurfaces(), ...screen.collisionSurfaces, ...hoop.collisionSurfaces],
     )
+    if (touchControls.available) rc.controls.root.visible = false
     if (xr.visible) {
-      drone.readInput(
-        hands.map((h) => h.source).filter((source): source is XRInputSource => !!source),
-        dt,
-        screen.isOpen ||
-          hands.some(
-            (h) =>
-              bow.owns(h.grip) ||
-              weapons.loadout.occupied(h) ||
-              balls.owns(h.grip) ||
-              rc.owns(h.grip),
-          ),
-      )
+      if (touchControls.available) {
+        if (screen.isOpen) drone.setArmed(false)
+        drone.readTouchInput(touchControls.flight.input(), dt)
+      } else
+        drone.readInput(
+          hands.map((h) => h.source).filter((source): source is XRInputSource => !!source),
+          dt,
+          screen.isOpen ||
+            hands.some(
+              (h) =>
+                bow.owns(h.grip) ||
+                weapons.loadout.occupied(h) ||
+                balls.owns(h.grip) ||
+                rc.owns(h.grip),
+            ),
+        )
       balls.update(dt, [
         ...collisionSurfaces(),
         ...screen.collisionSurfaces,
@@ -774,6 +852,7 @@ renderer.setAnimationLoop((time, frame) => {
     )
     if (spawnPressed && !ballPressed) balls.spawn(camera)
     ballPressed = spawnPressed
+    if (mobileAR) screen.hide()
     xr.calibrationScreen!.sync(camera, origin, xr.visible, time)
     xr.interactCalibration(xr.visible, (source) => weapons.tip(source))
     weapons.update(
@@ -803,6 +882,13 @@ renderer.setAnimationLoop((time, frame) => {
         )
       },
     )
+    if (mobileAR)
+      weapons.updateMobile(time, [
+        ...collisionSurfaces(),
+        ...hoop.collisionSurfaces,
+        ...balls.targets,
+        ...rc.targets,
+      ])
     const pressed = hands.some(
       (h) => h.source?.handedness === 'left' && h.source.gamepad?.buttons[4]?.pressed,
     )
@@ -825,6 +911,12 @@ enter.onclick = () => {
   void xr
     .enterAR(navigator.xr!)
     .then(async () => {
+      deviceInfo.setSession(renderer.xr.getSession())
+      touchControls.update(mobileAR ? renderer.xr.getSession() : null, null, true)
+      if (touchControls.mobile && !touchControls.available)
+        room.setMessage(
+          'Este navegador no ha concedido DOM Overlay: no puede mostrar los mandos táctiles sobre AR.',
+        )
       if (renderer.xr.getSession()?.environmentBlendMode === 'opaque') {
         await xr.exit()
         throw new Error(
@@ -852,6 +944,7 @@ void (async () => {
 addEventListener(
   'pagehide',
   () => {
+    touchControls.dispose()
     renderer.setAnimationLoop(null)
     hoop.dispose()
     bowGeneration++

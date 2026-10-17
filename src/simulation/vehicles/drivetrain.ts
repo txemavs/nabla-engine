@@ -367,7 +367,10 @@ export function stepDrivetrain(
       ? Math.max(0, Math.min(1, (15 - Math.abs(speed)) / 10))
       : 0
   const gearbox = gearboxTuning(spec)
-  if (selectedGear !== undefined) selectManualGear(state, spec, radius, speed, selectedGear)
+  // A resting H-pattern selector is a persistent reading, not a request to leave P.
+  // Require a pedal before engaging it, just as the automatic direction selector does.
+  if (selectedGear !== undefined && (!state.parked || Math.abs(throttle) > 0.01))
+    selectManualGear(state, spec, radius, speed, selectedGear)
   else selectNeutralOrPark(state, speed, throttle, handbrake, dt, gearbox)
   const fromNeutral = state.gear === 0
   const changingDirection =

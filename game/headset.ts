@@ -1,3 +1,5 @@
+import { arMode } from './ar-mode.js'
+import { mountXRDeviceInfo } from './xr-device-info.js'
 /** Two self-contained entry cards. Supported AR is prepared in advance so
  * the Enter handler keeps the original user activation for WebXR. */
 const place = document.querySelector<HTMLSelectElement>('#xr-place')!
@@ -25,6 +27,26 @@ const update = () => {
   } else query.set('example', 'flat')
   ride.href = `/xr.html?${query}`
 }
+mountXRDeviceInfo(document.querySelector<HTMLElement>('#ar-panel')!)
+const mode = arMode()
+const modeSelector = document.createElement('select')
+modeSelector.setAttribute('aria-label', 'Modo de realidad aumentada')
+for (const [value, label] of [
+  ['headset', 'AR para casco'],
+  ['mobile', 'AR para móvil · experimental'],
+]) {
+  const option = document.createElement('option')
+  option.value = value
+  option.textContent = label
+  modeSelector.append(option)
+}
+modeSelector.value = mode
+enter.before(modeSelector)
+modeSelector.addEventListener('change', () => {
+  const url = new URL(location.href)
+  url.searchParams.set('arMode', modeSelector.value)
+  location.assign(url)
+})
 let arReady: Promise<void> | undefined
 function prepareAR(): Promise<void> {
   return (arReady ??= (async () => {
@@ -45,7 +67,7 @@ function prepareAR(): Promise<void> {
       canvas.hidden = !active
       if (!active) enter.focus()
     })
-    enter.textContent = 'Entrar en realidad aumentada'
+    enter.textContent = mode === 'mobile' ? 'Entrar en AR móvil' : 'Entrar en AR para casco'
     status.textContent = ''
   })().catch((error) => {
     status.textContent = `No se ha podido preparar AR: ${String(error)}. Recarga para intentarlo de nuevo.`

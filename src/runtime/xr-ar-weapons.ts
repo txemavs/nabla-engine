@@ -162,24 +162,7 @@ export class XRARWeapons {
             this.ray.set(barrel.origin, barrel.target.sub(barrel.origin).normalize())
             this.ray.far = weapon.range
             for (const target of targets) target.updateWorldMatrix(true, true)
-            const hit = this.ray.intersectObjects(targets, false)[0]
-            if (hit) {
-              const response =
-                this.contacts.hit(hit.object, hit.point, this.ray.ray.direction) ||
-                this.onHit?.(hit.object, hit.point, this.ray.ray.direction)
-              const handled = typeof response === 'object' ? response.handled : !!response
-              const glass = typeof response === 'object' && !!response.glass
-              if (glass) this.audio.destruction(hit.point.toArray(), true)
-              else if (typeof response === 'object' && response.metal)
-                this.audio.metalImpact(hit.point.toArray())
-              const normal = (
-                hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1)
-              ).applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld))
-              if (normal.dot(this.ray.ray.direction) > 0) normal.negate()
-              if (!glass) this.sparks.add(hit.point.toArray(), now, normal.toArray())
-              if (!handled)
-                this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
-            }
+            this.hitTargets(targets, now)
           }
         }
       }
@@ -264,7 +247,83 @@ export class XRARWeapons {
     if (event.manualSlideLocked) this.audio.weaponSound('slide-lock', position)
   }
 
+  private mobileWeapon?: Sidearm
+  private readonly mobileMount = new THREE.Group()
+  mobilePosition = new THREE.Vector2(0.18, -0.18)
+  mobileTrigger = false
+  private mobileDown = false
+  async enableMobile(): Promise<void> {
+    if (!this.mobileWeapon) {
+      this.mobileWeapon = new Sidearm(document.body, undefined, 'low')
+      this.scene.add(this.mobileMount)
+    }
+    await this.mobileWeapon.ready
+    this.mobileWeapon.visible = true
+    this.unlock()
+  }
+  reloadMobile(now: number): void {
+    if (this.mobileWeapon) this.sound(this.mobileWeapon.reload(now, true), this.mobileWeapon)
+  }
+  updateMobile(now: number, targets: THREE.Object3D[]): void {
+    const weapon = this.mobileWeapon
+    if (!weapon?.visible) return
+    this.mobileMount.visible = this.xr.visible
+    const position = this.mobilePosition
+    this.mobileMount.position
+      .set(position.x, position.y, -0.5)
+      .applyMatrix4(this.camera.matrixWorld)
+    this.camera.getWorldDirection(this.ray.ray.direction)
+    this.camera.getWorldPosition(this.ray.ray.origin)
+    this.ray.far = weapon.range
+    for (const target of targets) target.updateWorldMatrix(true, true)
+    const aim =
+      this.ray.intersectObjects(targets, false)[0]?.point ??
+      this.ray.ray.at(weapon.range, new THREE.Vector3())
+    this.mobileMount.up.set(0, 1, 0).applyQuaternion(this.camera.quaternion)
+    this.mobileMount.lookAt(aim)
+    this.mobileMount.rotateY(Math.PI)
+    weapon.setSmokeEnabled(this.xr.quality.effects)
+    this.sound(weapon.update(now), weapon)
+    weapon.syncTracked(this.mobileMount, now)
+    const down = this.mobileTrigger && this.xr.visible
+    if (!down) weapon.release()
+    if (down && !this.mobileDown) {
+      const shot = weapon.pull(now)
+      this.sound(shot, weapon)
+      if (shot.fired) {
+        const muzzle = weapon.worldMuzzle() ?? this.mobileMount.position
+        this.audio.gunshot(muzzle.toArray(), shot.locked)
+        this.eject(weapon, false)
+        // Aim at the centre, but cast from the muzzle so nearby obstacles still block the shot.
+        this.ray.set(muzzle, aim.clone().sub(muzzle).normalize())
+        this.hitTargets(targets, now)
+      }
+    }
+    this.mobileDown = down
+  }
+  private hitTargets(targets: THREE.Object3D[], now: number): void {
+    const hit = this.ray.intersectObjects(targets, false)[0]
+    if (hit) {
+      const response =
+        this.contacts.hit(hit.object, hit.point, this.ray.ray.direction) ||
+        this.onHit?.(hit.object, hit.point, this.ray.ray.direction)
+      const handled = typeof response === 'object' ? response.handled : !!response
+      const glass = typeof response === 'object' && !!response.glass
+      if (glass) this.audio.destruction(hit.point.toArray(), true)
+      else if (typeof response === 'object' && response.metal)
+        this.audio.metalImpact(hit.point.toArray())
+      const normal = (hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1)).applyNormalMatrix(
+        new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld),
+      )
+      if (normal.dot(this.ray.ray.direction) > 0) normal.negate()
+      if (!glass) this.sparks.add(hit.point.toArray(), now, normal.toArray())
+      if (!handled) this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
+    }
+  }
+
   dispose(): void {
+    this.mobileWeapon?.dispose()
+    this.mobileMount.removeFromParent()
     this.contacts.dispose()
     this.casingMeshes?.dispose()
     this.casingMeshes?.root.removeFromParent()

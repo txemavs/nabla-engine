@@ -1,4 +1,5 @@
 import { Object3D, Quaternion, SpotLight, Vector3 } from 'three'
+import { installProjectedShadowDepth } from '../shadow-depth.js'
 import { lightingDefaults } from '../../config/lighting.js'
 
 /** Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources. */
@@ -19,6 +20,7 @@ export class Headlamp {
     }
   }
   constructor(readonly light: SpotLight) {
+    installProjectedShadowDepth()
     // Stable shader layout: toggles change uniforms, never add another renderer light.
     light.castShadow = false
     light.shadow.autoUpdate = false
@@ -40,7 +42,7 @@ export class Headlamp {
     if (this.light.castShadow && !this.light.shadow.map) this.light.shadow.needsUpdate = true
     // SceneView has already restored the vehicle's light parameters this frame.
     if (occupied) return
-    this.light.intensity = active ? lightingDefaults.highBeamIntensity : 0
+    this.light.intensity = active ? lightingDefaults.flashlightIntensity : 0
     if (!active) return
     this.light.color.set(0xffffff)
     this.light.distance = lightingDefaults.highBeamRange

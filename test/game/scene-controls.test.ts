@@ -15,8 +15,8 @@ import {
   parseTimeSpeedParam,
 } from '../../game/terrain.js'
 
-it('prepares the common menu vehicles and permits an explicit reduced or empty list', () => {
-  expect(menuPreloadVehicles().map((assembly) => assembly[0].visual?.presentation)).toHaveLength(4)
+it('does not preload unused menu vehicles unless explicitly requested', () => {
+  expect(menuPreloadVehicles()).toEqual([])
   expect(menuPreloadVehicles([])).toEqual([])
   expect(menuPreloadVehicles(['car', 'car', 'unknown'])).toHaveLength(1)
 })

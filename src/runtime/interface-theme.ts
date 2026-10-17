@@ -30,7 +30,13 @@ export const interfaceControls = `
   min-height:var(--control-height); box-sizing:border-box; padding:5px 12px;
   box-shadow:none;
 `
+/** Tabs share an underline-only selection, never the boxed button border. */
+export const interfaceTabStyles = `
+[role="tablist"] [role="tab"] { border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;box-shadow:none!important;background:transparent!important; }
+[role="tablist"] [role="tab"][aria-selected="true"] { border-bottom-color:var(--accent,#2196f3)!important;color:var(--ink,#eee); }
+`
 export const monitorThemeStyles = `
+${interfaceTabStyles}
 .portal-tablet-layer,.planet-settings-form,.portal-console,.helm-console,.helm-portal { ${interfaceVariables} }
 .portal-console,.helm-console,.helm-portal,.planet-settings-form {
   background:var(--surface); color:var(--ink); font:400 var(--text-size)/1.3 Arial,sans-serif; border-radius:var(--radius);

@@ -213,3 +213,18 @@ it('applies service brakes proportionally without the rear handbrake bias and di
     true,
   )
 })
+
+it('keeps a parked car in P with a resting gear selector, and ignores another driver gear', () => {
+  const car = createWheeledVehicle(chassis(), definition())
+  enterWheeledVehicle(car)
+  const input = { ...idleWheeledInput(), selectedGear: 1 }
+  for (let i = 0; i < 600; i++) stepWheeledVehicle(car, input, 1 / 60)
+  expect(car.drivetrain.parked).toBe(true)
+  expect(car.drivetrain.gear).toBe(0)
+  for (let i = 0; i < 120; i++) stepWheeledVehicle(car, { ...input, throttle: 1 }, 1 / 60, false)
+  expect(car.drivetrain.parked).toBe(true)
+  expect(car.raycast.wheelInfos.every((w) => w.engineForce === 0)).toBe(true)
+  for (let i = 0; i < 120; i++) stepWheeledVehicle(car, { ...input, throttle: 1 }, 1 / 60)
+  expect(car.drivetrain.parked).toBe(false)
+  expect(car.drivetrain.gear).toBe(1)
+})

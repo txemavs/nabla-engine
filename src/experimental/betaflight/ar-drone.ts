@@ -182,6 +182,24 @@ export class ARDrone {
       throttle: this.mode === 'angle' ? 0.5 + climb * 0.5 : this.throttle,
     }
   }
+  /** Engine touch flight axes; the same Betaflight simulation and arming state are retained. */
+  readTouchInput(
+    input: { forward: number; right: number; lift: number; turn: number },
+    dt: number,
+  ): void {
+    const axis = (n: number) => (Number.isFinite(n) ? THREE.MathUtils.clamp(n, -1, 1) : 0)
+    const climb = axis(input.lift)
+    if (this.mode === 'acro')
+      this.throttle = THREE.MathUtils.clamp(this.throttle + climb * Math.min(dt, 0.05) * 0.5, 0, 1)
+    this.input = {
+      arm: this.armed,
+      mode: this.mode,
+      yaw: -axis(input.turn),
+      pitch: axis(input.forward),
+      roll: axis(input.right),
+      throttle: this.mode === 'angle' ? 0.5 + climb * 0.5 : this.throttle,
+    }
+  }
   beforeStep(dt: number): void {
     this.flight?.beforeStep(this.input, dt)
   }

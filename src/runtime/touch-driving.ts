@@ -1,3 +1,4 @@
+import { touchCoordinates } from './touch-coordinates.js'
 import { GameToolbar } from './game-toolbar.js'
 import { controlDefaults } from '../config/controls.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
@@ -81,10 +82,8 @@ function clampUnit(n: number) {
 }
 
 function unitFromEvent(e: PointerEvent, el: HTMLElement, axis: 'x' | 'y') {
-  const r = el.getBoundingClientRect()
-  return axis === 'x'
-    ? clampUnit((e.clientX - (r.left + r.width / 2)) / (r.width / 2 || 1))
-    : clampUnit((e.clientY - (r.top + r.height / 2)) / (r.height / 2 || 1))
+  const r = touchCoordinates(e, el)
+  return axis === 'x' ? clampUnit(r.x / (r.width / 2 || 1)) : clampUnit(r.y / (r.height / 2 || 1))
 }
 
 /**
@@ -403,11 +402,8 @@ export class TouchDriving {
   }
 
   private applyPilot(e: PointerEvent, el: HTMLElement) {
-    const r = el.getBoundingClientRect()
-    const ang = drivePilotAngle(
-      e.clientX - (r.left + r.width / 2),
-      e.clientY - (r.top + r.height / 2),
-    )
+    const r = touchCoordinates(e, el)
+    const ang = drivePilotAngle(r.x, r.y)
     if (!this.grab) this.grab = { ang0: ang, steer0: this.pad.steer }
     this.setPad({ steer: drivePilotSteer(ang, this.grab.ang0, this.grab.steer0) })
   }

@@ -77,6 +77,7 @@ export const inputBindings = {
   'rider.forward': hold('Peso sobre el depósito', ['KeyI'], ['bike']),
   'rider.back': hold('Peso del piloto atrás', ['KeyL'], ['bike']),
   interact: press('Interactuar / entrar / salir / recoger', ['KeyE'], ['game']),
+  headlamp: press('Linterna', ['KeyT'], ['walk']),
   camera: press('Cambiar cámara', ['KeyV'], ['game']),
   stance: press('Postura a pie / tierra-vuelo en nave', ['KeyC'], ['game']),
   jump: press('Saltar / levantar moto cercana', ['Space'], ['walk']),

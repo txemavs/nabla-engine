@@ -34,9 +34,10 @@ variant despite identical geometry and lighting.
 ## Preparation during opening credits
 
 `GameRuntimeOptions.preloadVehicles` lists vehicle assemblies to prepare before
-the reveal gate opens. The game host defaults to `car`, `vfr800` and `white-truck`;
-`NABLA_BOOT.preloadVehicles` or `VITE_NABLA_BOOT` can replace that list. An empty
-list disables eager menu preparation. Large ships remain on demand by default.
+the reveal gate opens. The game host defaults to an empty list: only vehicles
+already in the initial scene are prepared at startup. Hosts may explicitly opt in
+through `NABLA_BOOT.preloadVehicles` or `VITE_NABLA_BOOT`. Accident replacement
+candidates are not implicitly preloaded either.
 
 The existing startup pass prepares the actual cockpit, chase and start camera
 views. The added `preload` stage then prepares menu vehicles using a temporary
@@ -53,13 +54,25 @@ preparation vehicle joins the document or physics. The renderer's previous targe
 is restored. Prepared views remain owned by the runtime until disposal so their
 shader programs remain cached.
 
-`prewarmVehicle` uses the same path for an uncommon menu selection and spawning.
+`placeVehicle` loads the parked model immediately and waits for it to be ready.
+First entry through the shared interaction action calls `prewarmVehicle`; spawning
+and parking do not run the full driving warmup.
 Assemblies with matching visual/vehicle definitions share the preparation promise;
-paint colour and placement do not invalidate it. Work is serialized to avoid
+placement does not invalidate it. Different visual/vehicle definitions may need
+separate preparation. Work is serialized to avoid
 concurrent preparation draws. Required eager preparation completes before play is
 revealed; it is not abandoned after a fixed intro timer.
 
-This moves predictable work into startup and prevents light-count recompilation.
+On first entry, preparation pauses active gameplay and shows the simulation module and
+actual model/material/texture/shader/mirror phase in a PLEASE WAIT badge. The
+browser gets paint opportunities between phases. Cached preparation does not
+show these phases again. Failed preparation is evicted for retry and entry
+does not continue with an unprepared vehicle; its parked model remains visible. A previously paused session stays
+paused; a session that ended during preparation is never restarted.
+
+This is deferred presentation preparation, not a separate physics engine per
+vehicle type. The shared physics engine remains loaded; vehicle bodies are added
+when the vehicle is placed. There is no artificial minimum loading duration.
 It cannot promise a fixed load time or uninterrupted animation on every driver:
 GLB parsing and individual GPU uploads remain indivisible, and asynchronous shader
 compilation depends on browser/driver support. Loading unseen terrain, an uncommon
@@ -88,3 +101,12 @@ La precarga incluye las reservas de expulsión, impactos y humo en ambas vistas,
 la luz frontal del fogonazo y las variantes de foco/túnel. Se usa la iluminación
 final de cada vista; preparar solo el modelo con luces de estudio no basta.
 Véase [weapon-camera-controls.md](weapon-camera-controls.md) para el contrato y pruebas.
+
+## Pending investigation: container preparation
+
+The user reports a long stall at **Rendering scene and shadows** when preparing
+the container. The exact cause has not been isolated. Measure that phase with
+and without the container, separating geometry upload, shader compilation, shadow
+passes and its monitor/portal renders. Identify which work is required for the
+parked exterior and which belongs at first interaction; improve that path without
+removing the visible parked model or imposing a timeout on preparation.

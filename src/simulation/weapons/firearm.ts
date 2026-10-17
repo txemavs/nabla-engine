@@ -138,10 +138,15 @@ export function freshFirearm(spec: FirearmSpec): FirearmState {
 }
 
 /** A reload request at `now` (ms). Nothing when one is running or the pistol is full. */
-export function beginReload(state: FirearmState, spec: FirearmSpec, now: number): FirearmEvent {
+export function beginReload(
+  state: FirearmState,
+  spec: FirearmSpec,
+  now: number,
+  unlimited = false,
+): FirearmEvent {
   const event = empty()
   if (state.reload !== 'none') return event
-  if (!state.spareMagazines.length) return event
+  if (!unlimited && !state.spareMagazines.length) return event
   if (
     state.magazineSeated &&
     state.magazine >= spec.magazineCapacity &&
@@ -149,7 +154,9 @@ export function beginReload(state: FirearmState, spec: FirearmSpec, now: number)
   )
     return event
   event.reloadStarted = true
-  state.pendingMagazine = state.spareMagazines.shift()!
+  state.pendingMagazine = unlimited
+    ? createMagazine(spec.magazineCapacity)
+    : state.spareMagazines.shift()!
   state.reloadAction = undefined
   state.stopAfterInsertion = false
   state.manualSlideTravel = undefined

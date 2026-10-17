@@ -1,3 +1,5 @@
+import { touchActionIcon } from '../touch-icons.js'
+import type { ARTouchAction } from './touch-controls.js'
 import { adjustFlightThrottle } from '../xr-input.js'
 import { palletEntity } from '../../catalog/props/pallet.js'
 import { XRScaledBodyContacts } from '../xr-scaled-body-contacts.js'
@@ -29,6 +31,14 @@ export class ARRC {
   beforeRoomStep(dt: number): void {
     this.roomContacts.beforeStep(dt)
   }
+  /** Host input uses the same Engine axes as keyboard/touch driving. Null retains XR controls. */
+  driveInput: {
+    forward: number
+    right: number
+    brake: boolean
+    lift?: number
+    turn?: number
+  } | null = null
   readonly controls: ARRCControls
   private readonly effects: VehicleEffects
   private camera?: THREE.Camera
@@ -42,6 +52,30 @@ export class ARRC {
   }
   disposalTest?: XRDisposalTest
   kind = ''
+  /** Object commands use the same simulation and audio as the full-size vehicle. */
+  touchActions(): ARTouchAction[] {
+    if (!this.physics) return []
+    if (this.kind === 'f14')
+      return [
+        {
+          id: 'flight-speed',
+          label: 'Cambiar velocidad de vuelo',
+          icon: touchActionIcon('speed'),
+          run: () => this.toggleFlightSpeed(),
+        },
+      ]
+    return [
+      {
+        id: 'horn',
+        label: 'Claxon',
+        icon: touchActionIcon('horn'),
+        run: () => {
+          this.unlockAudio()
+          this.effects.audio.horn()
+        },
+      },
+    ]
+  }
   get simulation() {
     return this.physics?.simulation
   }
@@ -481,15 +515,15 @@ export class ARRC {
     }
     if (!holdingAssembly)
       this.physics?.step(dt, {
-        throttle,
+        throttle: this.driveInput?.forward ?? throttle,
         forklift: real.forklift,
-        lift: flying ? this.flightThrottle : undefined,
-        turn: flying ? axis(left, 2) : undefined,
-        handbrake: !flying && handbrake,
-        steering: steer,
+        lift: this.driveInput?.lift ?? (flying ? this.flightThrottle : undefined),
+        turn: this.driveInput?.turn ?? (flying ? axis(left, 2) : undefined),
+        handbrake: this.driveInput?.brake ?? (!flying && handbrake),
+        steering: this.driveInput?.right ?? steer,
         brake,
-        frontBrake: this.controls.enabled ? real.frontBrake : brake,
-        rearBrake: this.controls.enabled ? real.rearBrake : brake,
+        frontBrake: this.driveInput ? 0 : this.controls.enabled ? real.frontBrake : brake,
+        rearBrake: this.driveInput ? 0 : this.controls.enabled ? real.rearBrake : brake,
       })
     for (const car of this.cars) {
       car.marks.update(

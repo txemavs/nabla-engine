@@ -13,6 +13,7 @@
  * Bias is set per cascade from the world size of one shadow-map texel (see
  * `cascadeShadowBias`), times a live player factor (`setBiasScale`).
  */
+import { installProjectedShadowDepth } from './shadow-depth.js'
 import { CSM } from 'three/addons/csm/CSM.js'
 import * as THREE from 'three'
 import {
@@ -136,6 +137,7 @@ export class ShadowManager {
   /** Create CSM instance if tier is non-null. */
   init(config: CSMConfig): void {
     this.dispose()
+    installProjectedShadowDepth()
     freezeShadowKernel()
     this.tier = config.tier
     this.projectionCamera.copy(config.camera)

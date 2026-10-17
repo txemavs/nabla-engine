@@ -274,7 +274,7 @@ export function stepWheeledVehicle(
       active && input.handbrake,
       dt,
       aggressiveLaunch,
-      input.selectedGear,
+      active && powered && !starting ? input.selectedGear : undefined,
     )
     if (
       powered &&
