@@ -20,6 +20,7 @@ Bias is set per cascade from the world size of one shadow-map texel (see
 
 ## Module dependencies
 
+- `./shadow-depth.js`
 - `three/addons/csm/CSM.js`
 - `three`
 - `./shadow-tiers.js`
@@ -27,7 +28,7 @@ Bias is set per cascade from the world size of one shadow-map texel (see
 
 ## cascadedLighting
 
-[Implementation, line 32](../../../../src/render/shadows.ts#L32)
+[Implementation, line 33](../../../../src/render/shadows.ts#L33)
 
 ```ts
 cascadedLighting(standard: string, cascaded: string): string
@@ -46,17 +47,17 @@ Explicit throws in this body:
 
 - `new Error('Unsupported Three.js CSM lighting layout')`
 
-## cascadedLighting.callback@37
+## cascadedLighting.callback@38
 
-[Implementation, line 37](../../../../src/render/shadows.ts#L37)
+[Implementation, line 38](../../../../src/render/shadows.ts#L38)
 
 ```ts
-callback@37(index): inferred by TypeScript; see implementation
+callback@38(index): inferred by TypeScript; see implementation
 ```
 
 ## cascadeCutMetres
 
-[Implementation, line 47](../../../../src/render/shadows.ts#L47)
+[Implementation, line 48](../../../../src/render/shadows.ts#L48)
 
 Near-heavy cuts: the car and the façade that shades it stay in cascade 0.
 
@@ -66,7 +67,7 @@ cascadeCutMetres(count: number): number[]
 
 ## cascadeBlendMetres
 
-[Implementation, line 58](../../../../src/render/shadows.ts#L58)
+[Implementation, line 59](../../../../src/render/shadows.ts#L59)
 
 World-space blend at a cascade edge. Zero at the near plane so contact stays sharp.
 
@@ -81,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cascadeBoundPad
 
-[Implementation, line 64](../../../../src/render/shadows.ts#L64)
+[Implementation, line 65](../../../../src/render/shadows.ts#L65)
 
 Extra ortho metres so the fade band can still sample this cascade.
 
@@ -97,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## softenCascadeSeams
 
-[Implementation, line 72](../../../../src/render/shadows.ts#L72)
+[Implementation, line 73](../../../../src/render/shadows.ts#L73)
 
 Widen the addon fade; the stock band is invisible at Nabla's near-heavy splits.
 
@@ -120,7 +121,7 @@ Explicit throws in this body:
 
 ## freezeShadowKernel
 
-[Implementation, line 86](../../../../src/render/shadows.ts#L86)
+[Implementation, line 87](../../../../src/render/shadows.ts#L87)
 
 ```ts
 freezeShadowKernel(): void
@@ -132,7 +133,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shadowProjectionKey
 
-[Implementation, line 107](../../../../src/render/shadows.ts#L107)
+[Implementation, line 108](../../../../src/render/shadows.ts#L108)
 
 Identity of the camera projection for cascade rebuilds. Field of view is rounded to a
 degree and far to a metre so a view blend does not rebuild the shadow frustums every frame.
@@ -151,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.disposedMaterial
 
-[Implementation, line 128](../../../../src/render/shadows.ts#L128)
+[Implementation, line 129](../../../../src/render/shadows.ts#L129)
 
 ```ts
 disposedMaterial(event: { target: THREE.Material }): inferred by TypeScript; see implementation
@@ -163,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.init
 
-[Implementation, line 137](../../../../src/render/shadows.ts#L137)
+[Implementation, line 138](../../../../src/render/shadows.ts#L138)
 
 Create CSM instance if tier is non-null.
 
@@ -178,6 +179,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `config.lightDirection.clone`
 - `config.lightDirection.clone().normalize`
 - `freezeShadowKernel`
+- `installProjectedShadowDepth`
 - `softenCascadeSeams`
 - `this.applyBias`
 - `this.bind`
@@ -188,7 +190,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.init.customSplitsCallback
 
-[Implementation, line 159](../../../../src/render/shadows.ts#L159)
+[Implementation, line 161](../../../../src/render/shadows.ts#L161)
 
 ```ts
 customSplitsCallback(count, _near, far, breaks): inferred by TypeScript; see implementation
@@ -202,7 +204,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.enabled
 
-[Implementation, line 182](../../../../src/render/shadows.ts#L182)
+[Implementation, line 184](../../../../src/render/shadows.ts#L184)
 
 ```ts
 enabled(): boolean
@@ -210,7 +212,7 @@ enabled(): boolean
 
 ## ShadowManager.lights
 
-[Implementation, line 186](../../../../src/render/shadows.ts#L186)
+[Implementation, line 188](../../../../src/render/shadows.ts#L188)
 
 ```ts
 lights(): THREE.DirectionalLight[]
@@ -218,7 +220,7 @@ lights(): THREE.DirectionalLight[]
 
 ## ShadowManager.shadowBiasScale
 
-[Implementation, line 191](../../../../src/render/shadows.ts#L191)
+[Implementation, line 193](../../../../src/render/shadows.ts#L193)
 
 Player factor on the tier's texel-scaled shadow bias (1 = tuned default).
 
@@ -228,7 +230,7 @@ shadowBiasScale(): number
 
 ## ShadowManager.setBiasScale
 
-[Implementation, line 196](../../../../src/render/shadows.ts#L196)
+[Implementation, line 198](../../../../src/render/shadows.ts#L198)
 
 Change the bias factor live; no shader recompilation, the next shadow pass uses it.
 
@@ -243,7 +245,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.applyBias
 
-[Implementation, line 206](../../../../src/render/shadows.ts#L206)
+[Implementation, line 208](../../../../src/render/shadows.ts#L208)
 
 Normal and depth bias of every cascade from the world size of one of its texels. A fixed
 offset in metres is a fraction of a texel on Baja and several on Ultra: the coarse maps
@@ -260,7 +262,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.setupMaterial
 
-[Implementation, line 219](../../../../src/render/shadows.ts#L219)
+[Implementation, line 221](../../../../src/render/shadows.ts#L221)
 
 Register a material for CSM shadow receiving.
 
@@ -278,7 +280,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.removeMaterial
 
-[Implementation, line 228](../../../../src/render/shadows.ts#L228)
+[Implementation, line 230](../../../../src/render/shadows.ts#L230)
 
 Unregister a material when it is disposed.
 
@@ -295,7 +297,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.bind
 
-[Implementation, line 235](../../../../src/render/shadows.ts#L235)
+[Implementation, line 237](../../../../src/render/shadows.ts#L237)
 
 ```ts
 bind(material: THREE.Material): void
@@ -306,12 +308,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.csm.setupMaterial`
 - `this.originals.get`
 
-## ShadowManager.bind.callback@240
+## ShadowManager.bind.callback@242
 
-[Implementation, line 240](../../../../src/render/shadows.ts#L240)
+[Implementation, line 242](../../../../src/render/shadows.ts#L242)
 
 ```ts
-callback@240(shader, renderer): inferred by TypeScript; see implementation
+callback@242(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -322,7 +324,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.setLightDirection
 
-[Implementation, line 249](../../../../src/render/shadows.ts#L249)
+[Implementation, line 251](../../../../src/render/shadows.ts#L251)
 
 Update light direction (e.g., from sun position).
 
@@ -337,7 +339,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.setLightIntensity
 
-[Implementation, line 256](../../../../src/render/shadows.ts#L256)
+[Implementation, line 258](../../../../src/render/shadows.ts#L258)
 
 Update light intensity (e.g., day/night transition).
 
@@ -347,7 +349,7 @@ setLightIntensity(intensity: number): void
 
 ## ShadowManager.setLightColor
 
-[Implementation, line 265](../../../../src/render/shadows.ts#L265)
+[Implementation, line 267](../../../../src/render/shadows.ts#L267)
 
 Update light color (e.g., day/night transition).
 
@@ -361,7 +363,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.update
 
-[Implementation, line 274](../../../../src/render/shadows.ts#L274)
+[Implementation, line 276](../../../../src/render/shadows.ts#L276)
 
 Call each frame before rendering.
 
@@ -392,7 +394,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.padShadowBounds
 
-[Implementation, line 306](../../../../src/render/shadows.ts#L306)
+[Implementation, line 308](../../../../src/render/shadows.ts#L308)
 
 Keep façades and the cascade fade band inside each shadow map.
 
@@ -404,12 +406,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.csm.lights.forEach`
 
-## ShadowManager.padShadowBounds.callback@308
+## ShadowManager.padShadowBounds.callback@310
 
-[Implementation, line 308](../../../../src/render/shadows.ts#L308)
+[Implementation, line 310](../../../../src/render/shadows.ts#L310)
 
 ```ts
-callback@308(light, index): inferred by TypeScript; see implementation
+callback@310(light, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -419,7 +421,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.updateFrustums
 
-[Implementation, line 321](../../../../src/render/shadows.ts#L321)
+[Implementation, line 323](../../../../src/render/shadows.ts#L323)
 
 Call when camera projection changes.
 
@@ -434,7 +436,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.reconfigure
 
-[Implementation, line 327](../../../../src/render/shadows.ts#L327)
+[Implementation, line 329](../../../../src/render/shadows.ts#L329)
 
 Reconfigure CSM when quality setting changes.
 
@@ -449,7 +451,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShadowManager.dispose
 
-[Implementation, line 354](../../../../src/render/shadows.ts#L354)
+[Implementation, line 356](../../../../src/render/shadows.ts#L356)
 
 ```ts
 dispose(): void

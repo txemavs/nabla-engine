@@ -256,7 +256,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applySpeedLimiter
 
-[Implementation, line 431](../../../../../src/simulation/vehicles/drivetrain.ts#L431)
+[Implementation, line 434](../../../../../src/simulation/vehicles/drivetrain.ts#L434)
 
 Soft speed limiter, ignition-cut style: at the limit the drive (and the engine load the audio
 hears) drops to zero until the speed has fallen `hysteresisKmh` below it, then comes back.
@@ -267,7 +267,7 @@ applySpeedLimiter(state: DrivetrainState, spec: PowertrainDefinition, speed: num
 
 ## shiftGear
 
-[Implementation, line 452](../../../../../src/simulation/vehicles/drivetrain.ts#L452)
+[Implementation, line 455](../../../../../src/simulation/vehicles/drivetrain.ts#L455)
 
 A paddle enters manual mode; reject unsafe reductions instead of over-revving.
 
@@ -283,7 +283,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineBrakingForce
 
-[Implementation, line 476](../../../../../src/simulation/vehicles/drivetrain.ts#L476)
+[Implementation, line 479](../../../../../src/simulation/vehicles/drivetrain.ts#L479)
 
 Closed-throttle pumping losses through the selected gear, fading before standstill.
 
@@ -300,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## selectManualGear
 
-[Implementation, line 492](../../../../../src/simulation/vehicles/drivetrain.ts#L492)
+[Implementation, line 495](../../../../../src/simulation/vehicles/drivetrain.ts#L495)
 
 H-pattern shares the same over-rev and direction protection as the drivetrain.
 

@@ -7,11 +7,12 @@
 ## Module dependencies
 
 - `three`
+- `../shadow-depth.js`
 - `../../config/lighting.js`
 
 ## Headlamp.shadows
 
-[Implementation, line 10](../../../../../src/render/entity/headlamp.ts#L10)
+[Implementation, line 11](../../../../../src/render/entity/headlamp.ts#L11)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 
@@ -21,7 +22,7 @@ shadows(): boolean
 
 ## Headlamp.shadows
 
-[Implementation, line 13](../../../../../src/render/entity/headlamp.ts#L13)
+[Implementation, line 14](../../../../../src/render/entity/headlamp.ts#L14)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 
@@ -31,7 +32,7 @@ shadows(enabled: boolean): inferred by TypeScript; see implementation
 
 ## Headlamp.constructor
 
-[Implementation, line 21](../../../../../src/render/entity/headlamp.ts#L21)
+[Implementation, line 22](../../../../../src/render/entity/headlamp.ts#L22)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 
@@ -41,11 +42,12 @@ constructor(readonly light: SpotLight): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `installProjectedShadowDepth`
 - `light.shadow.mapSize.set`
 
 ## Headlamp.needsShadowPass
 
-[Implementation, line 32](../../../../../src/render/entity/headlamp.ts#L32)
+[Implementation, line 34](../../../../../src/render/entity/headlamp.ts#L34)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 
@@ -55,7 +57,7 @@ needsShadowPass(): boolean
 
 ## Headlamp.update
 
-[Implementation, line 35](../../../../../src/render/entity/headlamp.ts#L35)
+[Implementation, line 37](../../../../../src/render/entity/headlamp.ts#L37)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 

@@ -659,7 +659,7 @@ muzzle rise the shooter has to bring back down (`recoil.ts`), and the first-pers
 that shows it (slide, trigger and magazine of the assembled model).
 
 ```ts
-reload(now: number): FirearmEvent
+reload(now: number, unlimited = false): FirearmEvent
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

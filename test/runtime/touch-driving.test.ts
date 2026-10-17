@@ -85,6 +85,10 @@ type FakePointer = {
 
 function installDom() {
   class El {
+    // These fixtures are ordinary, unrotated touch controls.
+    closest() {
+      return null
+    }
     className = ''
     dataset: Record<string, string> = {}
     style: Record<string, string> = {}

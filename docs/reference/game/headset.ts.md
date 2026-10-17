@@ -4,15 +4,14 @@
 
 [Source](../../../game/headset.ts)
 
-Two self-contained entry cards. Supported AR is prepared in advance so
-the Enter handler keeps the original user activation for WebXR.
-
 ## Module dependencies
 
+- `./ar-mode.js`
+- `./xr-device-info.js`
 
 ## update
 
-[Implementation, line 9](../../../game/headset.ts#L9)
+[Implementation, line 11](../../../game/headset.ts#L11)
 
 ```ts
 update(): inferred by TypeScript; see implementation
@@ -24,20 +23,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `URLSearchParams`
 - `query.set`
 
+## callback@45
+
+[Implementation, line 45](../../../game/headset.ts#L45)
+
+```ts
+callback@45(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `URL`
+- `location.assign`
+- `url.searchParams.set`
+
 ## prepareAR
 
-[Implementation, line 29](../../../game/headset.ts#L29)
+[Implementation, line 51](../../../game/headset.ts#L51)
 
 ```ts
 prepareAR(): Promise<void>
 ```
 
-## prepareAR.callback@30
+## prepareAR.callback@52
 
-[Implementation, line 30](../../../game/headset.ts#L30)
+[Implementation, line 52](../../../game/headset.ts#L52)
 
 ```ts
-callback@30(): inferred by TypeScript; see implementation
+callback@52(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,36 +66,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `panel.querySelector('#status')?.remove`
 - `template.querySelector`
 
-## prepareAR.callback@30.callback@43
+## prepareAR.callback@52.callback@65
 
-[Implementation, line 43](../../../game/headset.ts#L43)
+[Implementation, line 65](../../../game/headset.ts#L65)
 
 ```ts
-callback@43(active): inferred by TypeScript; see implementation
+callback@65(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `enter.focus`
 
-## prepareAR.callback@50
+## prepareAR.callback@72
 
-[Implementation, line 50](../../../game/headset.ts#L50)
+[Implementation, line 72](../../../game/headset.ts#L72)
 
 ```ts
-callback@50(error): inferred by TypeScript; see implementation
+callback@72(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## callback@55
+## callback@77
 
-[Implementation, line 55](../../../game/headset.ts#L55)
+[Implementation, line 77](../../../game/headset.ts#L77)
 
 ```ts
-callback@55(event): inferred by TypeScript; see implementation
+callback@77(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -92,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## checkSupport
 
-[Implementation, line 58](../../../game/headset.ts#L58)
+[Implementation, line 80](../../../game/headset.ts#L80)
 
 ```ts
 checkSupport(): inferred by TypeScript; see implementation
@@ -108,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## checkSupport.supported
 
-[Implementation, line 59](../../../game/headset.ts#L59)
+[Implementation, line 81](../../../game/headset.ts#L81)
 
 ```ts
 supported(mode: XRSessionMode): inferred by TypeScript; see implementation

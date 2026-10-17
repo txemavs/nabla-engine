@@ -188,7 +188,6 @@ update(hands: readonly GrabHand[], now: number, dt: number, height: number, targ
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.Matrix3`
 - `THREE.Vector3`
 - `barrel.target.sub`
 - `barrel.target.sub(barrel.origin).normalize`
@@ -196,24 +195,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `collide`
 - `events.get`
 - `hands.filter`
-- `hit.face?.normal.clone`
-- `hit.point.toArray`
 - `meshes.sync`
 - `model.getWorldPosition`
 - `motion.impacts.slice`
 - `motion.poses`
 - `motion.setLimit`
 - `motion.update`
-- `new THREE.Matrix3().getNormalMatrix`
-- `normal.dot`
-- `normal.negate`
-- `normal.toArray`
 - `pending.push`
 - `target.updateWorldMatrix`
 - `this.audio.casing`
-- `this.audio.destruction`
 - `this.audio.gunshot`
-- `this.audio.metalImpact`
 - `this.audio.setListener`
 - `this.audio.setSuspended`
 - `this.audio.weaponSound`
@@ -221,12 +212,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.camera.quaternion.toArray`
 - `this.contacts.apply`
 - `this.contacts.forget`
-- `this.contacts.hit`
 - `this.contacts.resolve`
 - `this.contacts.retainDropped`
 - `this.contacts.trackHeld`
 - `this.eject`
-- `this.impacts.addSurface`
+- `this.hitTargets`
 - `this.impacts.setLimit`
 - `this.loadout.cartridges.map`
 - `this.loadout.magazines.filter`
@@ -237,12 +227,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.loadout.slideHeld`
 - `this.loadout.update`
 - `this.loadout.updateLasers`
-- `this.onHit`
 - `this.physicsWorld`
-- `this.ray.intersectObjects`
 - `this.ray.set`
 - `this.sound`
-- `this.sparks.add`
 - `this.sparks.update`
 - `this.xr.calibrationOwns`
 - `weapon.accessoryRay`
@@ -370,12 +357,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@122(p): p is THREE.Vector3
 ```
 
-## XRARWeapons.update.callback@202
+## XRARWeapons.update.callback@185
 
-[Implementation, line 202](../../../../src/runtime/xr-ar-weapons.ts#L202)
+[Implementation, line 185](../../../../src/runtime/xr-ar-weapons.ts#L185)
 
 ```ts
-callback@202(origin, direction, range): inferred by TypeScript; see implementation
+callback@185(origin, direction, range): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -386,7 +373,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.update.cast
 
-[Implementation, line 208](../../../../src/runtime/xr-ar-weapons.ts#L208)
+[Implementation, line 191](../../../../src/runtime/xr-ar-weapons.ts#L191)
 
 ```ts
 cast(from: Vec3Tuple, direction: Vec3Tuple, length: number): inferred by TypeScript; see implementation
@@ -399,17 +386,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.physicsWorld`
 - `world?.sweepSphere`
 
-## XRARWeapons.update.cast.callback@210
+## XRARWeapons.update.cast.callback@193
 
-[Implementation, line 210](../../../../src/runtime/xr-ar-weapons.ts#L210)
+[Implementation, line 193](../../../../src/runtime/xr-ar-weapons.ts#L193)
 
 ```ts
-callback@210(v, i): inferred by TypeScript; see implementation
+callback@193(v, i): inferred by TypeScript; see implementation
 ```
 
 ## XRARWeapons.eject
 
-[Implementation, line 231](../../../../src/runtime/xr-ar-weapons.ts#L231)
+[Implementation, line 214](../../../../src/runtime/xr-ar-weapons.ts#L214)
 
 Same ejection ports, motion and visual pools as desktop/VR.
 
@@ -435,7 +422,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.sound
 
-[Implementation, line 258](../../../../src/runtime/xr-ar-weapons.ts#L258)
+[Implementation, line 241](../../../../src/runtime/xr-ar-weapons.ts#L241)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -449,9 +436,107 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapon.worldMuzzle`
 - `weapon.worldMuzzle()?.toArray`
 
-## XRARWeapons.dispose
+## XRARWeapons.enableMobile
+
+[Implementation, line 255](../../../../src/runtime/xr-ar-weapons.ts#L255)
+
+Small mixed-reality host for the same carried weapons used by the game.
+
+```ts
+enableMobile(): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Sidearm`
+- `this.scene.add`
+- `this.unlock`
+
+## XRARWeapons.reloadMobile
+
+[Implementation, line 264](../../../../src/runtime/xr-ar-weapons.ts#L264)
+
+Small mixed-reality host for the same carried weapons used by the game.
+
+```ts
+reloadMobile(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.mobileWeapon.reload`
+- `this.sound`
+
+## XRARWeapons.updateMobile
 
 [Implementation, line 267](../../../../src/runtime/xr-ar-weapons.ts#L267)
+
+Small mixed-reality host for the same carried weapons used by the game.
+
+```ts
+updateMobile(now: number, targets: THREE.Object3D[]): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `aim.clone`
+- `aim.clone().sub`
+- `aim.clone().sub(muzzle).normalize`
+- `muzzle.toArray`
+- `target.updateWorldMatrix`
+- `this.audio.gunshot`
+- `this.camera.getWorldDirection`
+- `this.camera.getWorldPosition`
+- `this.eject`
+- `this.hitTargets`
+- `this.mobileMount.lookAt`
+- `this.mobileMount.rotateY`
+- `this.mobileMount.up.set`
+- `this.mobileMount.up.set(0, 1, 0).applyQuaternion`
+- `this.ray.intersectObjects`
+- `this.ray.ray.at`
+- `this.ray.set`
+- `this.sound`
+- `weapon.pull`
+- `weapon.release`
+- `weapon.setSmokeEnabled`
+- `weapon.syncTracked`
+- `weapon.update`
+- `weapon.worldMuzzle`
+
+## XRARWeapons.hitTargets
+
+[Implementation, line 304](../../../../src/runtime/xr-ar-weapons.ts#L304)
+
+Small mixed-reality host for the same carried weapons used by the game.
+
+```ts
+hitTargets(targets: THREE.Object3D[], now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1)).applyNormalMatrix`
+- `THREE.Matrix3`
+- `THREE.Vector3`
+- `hit.face?.normal.clone`
+- `hit.point.toArray`
+- `new THREE.Matrix3().getNormalMatrix`
+- `normal.dot`
+- `normal.negate`
+- `normal.toArray`
+- `this.audio.destruction`
+- `this.audio.metalImpact`
+- `this.contacts.hit`
+- `this.impacts.addSurface`
+- `this.onHit`
+- `this.ray.intersectObjects`
+- `this.sparks.add`
+
+## XRARWeapons.dispose
+
+[Implementation, line 324](../../../../src/runtime/xr-ar-weapons.ts#L324)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -468,5 +553,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.contacts.dispose`
 - `this.impacts.dispose`
 - `this.loadout.dispose`
+- `this.mobileMount.removeFromParent`
+- `this.mobileWeapon?.dispose`
 - `this.sparks.dispose`
 - `this.sparks.root.removeFromParent`

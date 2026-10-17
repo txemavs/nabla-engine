@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `./touch-coordinates.js`
 - `./game-toolbar.js`
 - `../config/controls.js`
 - `./messages.js`
@@ -14,7 +15,7 @@
 
 ## isRoadTouchDriving
 
-[Implementation, line 27](../../../../src/runtime/touch-driving.ts#L27)
+[Implementation, line 28](../../../../src/runtime/touch-driving.ts#L28)
 
 True when the resolved control profile uses the road rig (cars and trucks).
 False on foot, in trailers, boats, planes, carriers, or while a flyable vehicle is in flight.
@@ -30,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driveSliderThrottle
 
-[Implementation, line 42](../../../../src/runtime/touch-driving.ts#L42)
+[Implementation, line 43](../../../../src/runtime/touch-driving.ts#L43)
 
 RC slider: ny −1 at the top (gas), +1 at the bottom (brake). Ported from agency-ui `drive.ts`.
 
@@ -46,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driveHandbrakePull
 
-[Implementation, line 48](../../../../src/runtime/touch-driving.ts#L48)
+[Implementation, line 49](../../../../src/runtime/touch-driving.ts#L49)
 
 Handbrake lever: 0 rest (down) … 1 pulled up. ny −1 is the top of the travel.
 
@@ -62,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driveWheelSteer
 
-[Implementation, line 54](../../../../src/runtime/touch-driving.ts#L54)
+[Implementation, line 55](../../../../src/runtime/touch-driving.ts#L55)
 
 RC wheel: nx −1 left / +1 right.
 
@@ -78,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## drivePilotAngle
 
-[Implementation, line 60](../../../../src/runtime/touch-driving.ts#L60)
+[Implementation, line 61](../../../../src/runtime/touch-driving.ts#L61)
 
 Polar angle of a wheel gesture. 0 = up, +x = right.
 
@@ -92,7 +93,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## drivePilotSteer
 
-[Implementation, line 66](../../../../src/runtime/touch-driving.ts#L66)
+[Implementation, line 67](../../../../src/runtime/touch-driving.ts#L67)
 
 Twist from a grab: ~135° of rim is full lock.
 
@@ -107,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampUnit
 
-[Implementation, line 79](../../../../src/runtime/touch-driving.ts#L79)
+[Implementation, line 80](../../../../src/runtime/touch-driving.ts#L80)
 
 ```ts
 clampUnit(n: number): inferred by TypeScript; see implementation
@@ -120,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## unitFromEvent
 
-[Implementation, line 83](../../../../src/runtime/touch-driving.ts#L83)
+[Implementation, line 84](../../../../src/runtime/touch-driving.ts#L84)
 
 ```ts
 unitFromEvent(e: PointerEvent, el: HTMLElement, axis: 'x' | 'y'): inferred by TypeScript; see implementation
@@ -129,11 +130,11 @@ unitFromEvent(e: PointerEvent, el: HTMLElement, axis: 'x' | 'y'): inferred by Ty
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `clampUnit`
-- `el.getBoundingClientRect`
+- `touchCoordinates`
 
 ## TouchDriving.constructor
 
-[Implementation, line 199](../../../../src/runtime/touch-driving.ts#L199)
+[Implementation, line 198](../../../../src/runtime/touch-driving.ts#L198)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -172,29 +173,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wheel.setAttribute`
 - `window.addEventListener`
 
-## TouchDriving.constructor.callback@230
+## TouchDriving.constructor.callback@229
 
-[Implementation, line 230](../../../../src/runtime/touch-driving.ts#L230)
+[Implementation, line 229](../../../../src/runtime/touch-driving.ts#L229)
 
 ```ts
-callback@230(e): inferred by TypeScript; see implementation
+callback@229(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applyLever`
 
-## TouchDriving.constructor.callback@231
+## TouchDriving.constructor.callback@230
 
-[Implementation, line 231](../../../../src/runtime/touch-driving.ts#L231)
+[Implementation, line 230](../../../../src/runtime/touch-driving.ts#L230)
 
 ```ts
-callback@231(): inferred by TypeScript; see implementation
+callback@230(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseLever`
+
+## TouchDriving.constructor.callback@242
+
+[Implementation, line 242](../../../../src/runtime/touch-driving.ts#L242)
+
+```ts
+callback@242(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.setPad`
 
 ## TouchDriving.constructor.callback@243
 
@@ -208,48 +221,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.setPad`
 
-## TouchDriving.constructor.callback@244
+## TouchDriving.constructor.callback@258
 
-[Implementation, line 244](../../../../src/runtime/touch-driving.ts#L244)
-
-```ts
-callback@244(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.setPad`
-
-## TouchDriving.constructor.callback@259
-
-[Implementation, line 259](../../../../src/runtime/touch-driving.ts#L259)
+[Implementation, line 258](../../../../src/runtime/touch-driving.ts#L258)
 
 ```ts
-callback@259(e): inferred by TypeScript; see implementation
+callback@258(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applyGas`
 
-## TouchDriving.constructor.callback@260
+## TouchDriving.constructor.callback@259
 
-[Implementation, line 260](../../../../src/runtime/touch-driving.ts#L260)
+[Implementation, line 259](../../../../src/runtime/touch-driving.ts#L259)
 
 ```ts
-callback@260(): inferred by TypeScript; see implementation
+callback@259(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.setPad`
 
-## TouchDriving.constructor.callback@299
+## TouchDriving.constructor.callback@298
 
-[Implementation, line 299](../../../../src/runtime/touch-driving.ts#L299)
+[Implementation, line 298](../../../../src/runtime/touch-driving.ts#L298)
 
 ```ts
-callback@299(e): inferred by TypeScript; see implementation
+callback@298(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -263,7 +264,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.constructor.release
 
-[Implementation, line 309](../../../../src/runtime/touch-driving.ts#L309)
+[Implementation, line 308](../../../../src/runtime/touch-driving.ts#L308)
 
 ```ts
 release(e: PointerEvent): inferred by TypeScript; see implementation
@@ -273,53 +274,65 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.held.delete`
 
-## TouchDriving.constructor.callback@332
+## TouchDriving.constructor.callback@331
 
-[Implementation, line 332](../../../../src/runtime/touch-driving.ts#L332)
+[Implementation, line 331](../../../../src/runtime/touch-driving.ts#L331)
 
 ```ts
-callback@332(e): inferred by TypeScript; see implementation
+callback@331(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applyPilot`
 
-## TouchDriving.constructor.callback@333
+## TouchDriving.constructor.callback@332
 
-[Implementation, line 333](../../../../src/runtime/touch-driving.ts#L333)
+[Implementation, line 332](../../../../src/runtime/touch-driving.ts#L332)
 
 ```ts
-callback@333(): inferred by TypeScript; see implementation
+callback@332(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseSteer`
 
-## TouchDriving.constructor.callback@346
+## TouchDriving.constructor.callback@345
 
-[Implementation, line 346](../../../../src/runtime/touch-driving.ts#L346)
+[Implementation, line 345](../../../../src/runtime/touch-driving.ts#L345)
 
 ```ts
-callback@346(e): inferred by TypeScript; see implementation
+callback@345(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.applySteer`
 
-## TouchDriving.constructor.callback@347
+## TouchDriving.constructor.callback@346
 
-[Implementation, line 347](../../../../src/runtime/touch-driving.ts#L347)
+[Implementation, line 346](../../../../src/runtime/touch-driving.ts#L346)
 
 ```ts
-callback@347(): inferred by TypeScript; see implementation
+callback@346(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.releaseSteer`
+
+## TouchDriving.constructor.callback@352
+
+[Implementation, line 352](../../../../src/runtime/touch-driving.ts#L352)
+
+```ts
+callback@352(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
 
 ## TouchDriving.constructor.callback@353
 
@@ -345,21 +358,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.clear`
 
-## TouchDriving.constructor.callback@355
-
-[Implementation, line 355](../../../../src/runtime/touch-driving.ts#L355)
-
-```ts
-callback@355(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.clear`
-
 ## TouchDriving.bindPointer
 
-[Implementation, line 360](../../../../src/runtime/touch-driving.ts#L360)
+[Implementation, line 359](../../../../src/runtime/touch-driving.ts#L359)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -367,12 +368,12 @@ Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture alwa
 bindPointer(el: HTMLElement, key: string, apply: (e: PointerEvent) => void, release: () => void): inferred by TypeScript; see implementation
 ```
 
-## TouchDriving.bindPointer.callback@366
+## TouchDriving.bindPointer.callback@365
 
-[Implementation, line 366](../../../../src/runtime/touch-driving.ts#L366)
+[Implementation, line 365](../../../../src/runtime/touch-driving.ts#L365)
 
 ```ts
-callback@366(e): inferred by TypeScript; see implementation
+callback@365(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -384,12 +385,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.actions.engage`
 - `this.held.set`
 
-## TouchDriving.bindPointer.callback@376
+## TouchDriving.bindPointer.callback@375
 
-[Implementation, line 376](../../../../src/runtime/touch-driving.ts#L376)
+[Implementation, line 375](../../../../src/runtime/touch-driving.ts#L375)
 
 ```ts
-callback@376(e): inferred by TypeScript; see implementation
+callback@375(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -399,7 +400,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.bindPointer.up
 
-[Implementation, line 380](../../../../src/runtime/touch-driving.ts#L380)
+[Implementation, line 379](../../../../src/runtime/touch-driving.ts#L379)
 
 ```ts
 up(e: PointerEvent): inferred by TypeScript; see implementation
@@ -413,7 +414,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setPad
 
-[Implementation, line 390](../../../../src/runtime/touch-driving.ts#L390)
+[Implementation, line 389](../../../../src/runtime/touch-driving.ts#L389)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -428,7 +429,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.applyGas
 
-[Implementation, line 395](../../../../src/runtime/touch-driving.ts#L395)
+[Implementation, line 394](../../../../src/runtime/touch-driving.ts#L394)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -444,7 +445,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.applySteer
 
-[Implementation, line 400](../../../../src/runtime/touch-driving.ts#L400)
+[Implementation, line 399](../../../../src/runtime/touch-driving.ts#L399)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -460,7 +461,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.applyPilot
 
-[Implementation, line 405](../../../../src/runtime/touch-driving.ts#L405)
+[Implementation, line 404](../../../../src/runtime/touch-driving.ts#L404)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -472,12 +473,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drivePilotAngle`
 - `drivePilotSteer`
-- `el.getBoundingClientRect`
 - `this.setPad`
+- `touchCoordinates`
 
 ## TouchDriving.applyLever
 
-[Implementation, line 415](../../../../src/runtime/touch-driving.ts#L415)
+[Implementation, line 411](../../../../src/runtime/touch-driving.ts#L411)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -494,7 +495,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.releaseLever
 
-[Implementation, line 422](../../../../src/runtime/touch-driving.ts#L422)
+[Implementation, line 418](../../../../src/runtime/touch-driving.ts#L418)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -508,7 +509,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.releaseSteer
 
-[Implementation, line 428](../../../../src/runtime/touch-driving.ts#L428)
+[Implementation, line 424](../../../../src/runtime/touch-driving.ts#L424)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -522,7 +523,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.paint
 
-[Implementation, line 433](../../../../src/runtime/touch-driving.ts#L433)
+[Implementation, line 429](../../../../src/runtime/touch-driving.ts#L429)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -542,7 +543,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.reflect
 
-[Implementation, line 446](../../../../src/runtime/touch-driving.ts#L446)
+[Implementation, line 442](../../../../src/runtime/touch-driving.ts#L442)
 
 Follow mixed keyboard/gamepad axes so the knobs move like Studio's driveHud.
 
@@ -560,7 +561,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setPilot
 
-[Implementation, line 467](../../../../src/runtime/touch-driving.ts#L467)
+[Implementation, line 463](../../../../src/runtime/touch-driving.ts#L463)
 
 Show the cockpit twist ring used in Studio pilot view.
 No-op while `showPilotTouchRing` / `controlDefaults.showPilotTouchRing` is false
@@ -576,7 +577,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setDriving
 
-[Implementation, line 475](../../../../src/runtime/touch-driving.ts#L475)
+[Implementation, line 471](../../../../src/runtime/touch-driving.ts#L471)
 
 Show wheel / accelerator / handbrake only while seated in a road vehicle.
 Enter / Camera stay available on foot and in ships so touch hosts can board.
@@ -592,7 +593,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.clear
 
-[Implementation, line 483](../../../../src/runtime/touch-driving.ts#L483)
+[Implementation, line 479](../../../../src/runtime/touch-driving.ts#L479)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -611,7 +612,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.busy
 
-[Implementation, line 498](../../../../src/runtime/touch-driving.ts#L498)
+[Implementation, line 494](../../../../src/runtime/touch-driving.ts#L494)
 
 True while a rig pointer is captured or a latched/held axis is still commanding.
 
@@ -621,7 +622,7 @@ busy(): boolean
 
 ## TouchDriving.setActive
 
-[Implementation, line 510](../../../../src/runtime/touch-driving.ts#L510)
+[Implementation, line 506](../../../../src/runtime/touch-driving.ts#L506)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -637,7 +638,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setPlace
 
-[Implementation, line 520](../../../../src/runtime/touch-driving.ts#L520)
+[Implementation, line 516](../../../../src/runtime/touch-driving.ts#L516)
 
 City (large) + street under it, to the right of the accelerator.
 
@@ -647,7 +648,7 @@ setPlace(city: string, street: string = ''): void
 
 ## TouchDriving.dispose
 
-[Implementation, line 527](../../../../src/runtime/touch-driving.ts#L527)
+[Implementation, line 523](../../../../src/runtime/touch-driving.ts#L523)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -664,7 +665,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.input
 
-[Implementation, line 536](../../../../src/runtime/touch-driving.ts#L536)
+[Implementation, line 532](../../../../src/runtime/touch-driving.ts#L532)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 

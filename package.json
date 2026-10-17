@@ -1,6 +1,6 @@
 {
   "name": "@nabla/engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Independent scene, simulation and editing foundation for Nabla applications",
   "type": "module",
   "main": "./dist/index.js",

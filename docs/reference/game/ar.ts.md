@@ -6,6 +6,10 @@
 
 ## Module dependencies
 
+- `./ar-mobile-weapon.js`
+- `./ar-mode.js`
+- `../src/runtime/touch-icons.js`
+- `./xr-device-info.js`
 - `@nabla/engine/ar`
 - `@nabla/engine/xr/hoop`
 - `@nabla/engine/xr/bow`
@@ -21,7 +25,7 @@
 
 ## configureARHost
 
-[Implementation, line 17](../../../game/ar.ts#L17)
+[Implementation, line 21](../../../game/ar.ts#L21)
 
 ```ts
 configureARHost(changed: (active: boolean) => void): void
@@ -29,7 +33,7 @@ configureARHost(changed: (active: boolean) => void): void
 
 ## report
 
-[Implementation, line 25](../../../game/ar.ts#L25)
+[Implementation, line 31](../../../game/ar.ts#L31)
 
 ```ts
 report(error: unknown): inferred by TypeScript; see implementation
@@ -39,12 +43,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `String`
 
-## callback@43
+## callback@49
 
-[Implementation, line 43](../../../game/ar.ts#L43)
+[Implementation, line 49](../../../game/ar.ts#L49)
 
 ```ts
-callback@43(url): inferred by TypeScript; see implementation
+callback@49(url): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,37 +57,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `url.replace`
 - `url.startsWith`
 
-## callback@49
+## callback@55
 
-[Implementation, line 49](../../../game/ar.ts#L49)
+[Implementation, line 55](../../../game/ar.ts#L55)
 
 ```ts
-callback@49(text): inferred by TypeScript; see implementation
+callback@55(text): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `room.setMessage`
 
-## callback@58
+## callback@64
 
-[Implementation, line 58](../../../game/ar.ts#L58)
+[Implementation, line 64](../../../game/ar.ts#L64)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@64(): inferred by TypeScript; see implementation
 ```
 
-## callback@63
+## callback@69
 
-[Implementation, line 63](../../../game/ar.ts#L63)
+[Implementation, line 69](../../../game/ar.ts#L69)
 
 ```ts
-callback@63(): inferred by TypeScript; see implementation
+callback@69(): inferred by TypeScript; see implementation
 ```
 
 ## loadModel
 
-[Implementation, line 66](../../../game/ar.ts#L66)
+[Implementation, line 72](../../../game/ar.ts#L72)
 
 ```ts
 loadModel(): inferred by TypeScript; see implementation
@@ -114,12 +118,12 @@ Explicit throws in this body:
 
 - `new Error('Elige un archivo o una URL en el menú antes de entrar en AR.')`
 
-## callback@120
+## callback@126
 
-[Implementation, line 120](../../../game/ar.ts#L120)
+[Implementation, line 126](../../../game/ar.ts#L126)
 
 ```ts
-callback@120(): inferred by TypeScript; see implementation
+callback@126(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addModel
 
-[Implementation, line 123](../../../game/ar.ts#L123)
+[Implementation, line 129](../../../game/ar.ts#L129)
 
 ```ts
 addModel(): inferred by TypeScript; see implementation
@@ -140,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addVehicle
 
-[Implementation, line 128](../../../game/ar.ts#L128)
+[Implementation, line 134](../../../game/ar.ts#L134)
 
 ```ts
 addVehicle(kind: 's3' | 'vfr' | 'truck' | 'bmw' | 'f14' | 'forklift'): inferred by TypeScript; see implementation
@@ -153,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## toggleControl
 
-[Implementation, line 138](../../../game/ar.ts#L138)
+[Implementation, line 144](../../../game/ar.ts#L144)
 
 ```ts
 toggleControl(): inferred by TypeScript; see implementation
@@ -166,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## updateScaleOptions
 
-[Implementation, line 148](../../../game/ar.ts#L148)
+[Implementation, line 154](../../../game/ar.ts#L154)
 
 ```ts
 updateScaleOptions(kind: string): inferred by TypeScript; see implementation
@@ -179,17 +183,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `presetVehicle`
 - `rc.scaleAllowed`
 
-## updateScaleOptions.callback@155
+## updateScaleOptions.callback@161
 
-[Implementation, line 155](../../../game/ar.ts#L155)
+[Implementation, line 161](../../../game/ar.ts#L161)
 
 ```ts
-callback@155(option): inferred by TypeScript; see implementation
+callback@161(option): inferred by TypeScript; see implementation
 ```
 
 ## nextScale
 
-[Implementation, line 157](../../../game/ar.ts#L157)
+[Implementation, line 163](../../../game/ar.ts#L163)
 
 ```ts
 nextScale(): inferred by TypeScript; see implementation
@@ -203,26 +207,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `room.setMessage`
 - `selectedVehicle`
 
-## callback@173
-
-[Implementation, line 173](../../../game/ar.ts#L173)
-
-```ts
-callback@173(): inferred by TypeScript; see implementation
-```
-
-## callback@178
-
-[Implementation, line 178](../../../game/ar.ts#L178)
-
-```ts
-callback@178(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `hoop.sampleBalls`
-
 ## callback@179
 
 [Implementation, line 179](../../../game/ar.ts#L179)
@@ -231,12 +215,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@179(): inferred by TypeScript; see implementation
 ```
 
-## callback@181
+## callback@184
 
-[Implementation, line 181](../../../game/ar.ts#L181)
+[Implementation, line 184](../../../game/ar.ts#L184)
 
 ```ts
-callback@181(dt): inferred by TypeScript; see implementation
+callback@184(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hoop.sampleBalls`
+
+## callback@185
+
+[Implementation, line 185](../../../game/ar.ts#L185)
+
+```ts
+callback@185(): inferred by TypeScript; see implementation
+```
+
+## callback@187
+
+[Implementation, line 187](../../../game/ar.ts#L187)
+
+```ts
+callback@187(dt): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -246,7 +250,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addBall
 
-[Implementation, line 186](../../../game/ar.ts#L186)
+[Implementation, line 192](../../../game/ar.ts#L192)
 
 ```ts
 addBall(): inferred by TypeScript; see implementation
@@ -256,12 +260,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `balls.spawn`
 
-## callback@194
+## callback@200
 
-[Implementation, line 194](../../../game/ar.ts#L194)
+[Implementation, line 200](../../../game/ar.ts#L200)
 
 ```ts
-callback@194(active): inferred by TypeScript; see implementation
+callback@200(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -275,30 +279,120 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.setAudioActive`
 - `rc.update`
 - `room.reset`
+- `touchControls.update`
 - `weapons.suspend`
 
 ## roomWorld
 
-[Implementation, line 213](../../../game/ar.ts#L213)
+[Implementation, line 220](../../../game/ar.ts#L220)
 
 ```ts
 roomWorld(): inferred by TypeScript; see implementation
 ```
 
-## callback@217
+## menu
 
-[Implementation, line 217](../../../game/ar.ts#L217)
+[Implementation, line 225](../../../game/ar.ts#L225)
 
 ```ts
-callback@217(): inferred by TypeScript; see implementation
+menu(): inferred by TypeScript; see implementation
 ```
 
-## callback@218
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 218](../../../game/ar.ts#L218)
+- `screen.hide`
+- `screen.openMain`
+- `screen.show`
+
+## arm
+
+[Implementation, line 232](../../../game/ar.ts#L232)
 
 ```ts
-callback@218(object, point, direction): inferred by TypeScript; see implementation
+arm(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `drone.setArmed`
+
+## engage
+
+[Implementation, line 233](../../../game/ar.ts#L233)
+
+```ts
+engage(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `rc.unlockAudio`
+- `weapons.unlock`
+
+## equip
+
+[Implementation, line 245](../../../game/ar.ts#L245)
+
+```ts
+equip(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `weapons.enableMobile`
+- `weapons.enableMobile().catch`
+
+## reload
+
+[Implementation, line 248](../../../game/ar.ts#L248)
+
+```ts
+reload(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `performance.now`
+- `weapons.reloadMobile`
+
+## fire
+
+[Implementation, line 249](../../../game/ar.ts#L249)
+
+```ts
+fire(down): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `weapons.unlock`
+
+## move
+
+[Implementation, line 253](../../../game/ar.ts#L253)
+
+```ts
+move(x, y): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.MathUtils.clamp`
+
+## callback@260
+
+[Implementation, line 260](../../../game/ar.ts#L260)
+
+```ts
+callback@260(): inferred by TypeScript; see implementation
+```
+
+## callback@261
+
+[Implementation, line 261](../../../game/ar.ts#L261)
+
+```ts
+callback@261(object, point, direction): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -309,7 +403,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## applyCollisionMode
 
-[Implementation, line 247](../../../game/ar.ts#L247)
+[Implementation, line 290](../../../game/ar.ts#L290)
 
 ```ts
 applyCollisionMode(): inferred by TypeScript; see implementation
@@ -321,7 +415,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## collisionSurfaces
 
-[Implementation, line 249](../../../game/ar.ts#L249)
+[Implementation, line 292](../../../game/ar.ts#L292)
 
 ```ts
 collisionSurfaces(): inferred by TypeScript; see implementation
@@ -333,7 +427,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## environmentOptions
 
-[Implementation, line 255](../../../game/ar.ts#L255)
+[Implementation, line 298](../../../game/ar.ts#L298)
 
 ```ts
 environmentOptions(): inferred by TypeScript; see implementation
@@ -345,7 +439,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## environmentOptions.run
 
-[Implementation, line 259](../../../game/ar.ts#L259)
+[Implementation, line 302](../../../game/ar.ts#L302)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -357,17 +451,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `localStorage.setItem`
 - `modes.indexOf`
 
-## callback@269
+## callback@312
 
-[Implementation, line 269](../../../game/ar.ts#L269)
+[Implementation, line 312](../../../game/ar.ts#L312)
 
 ```ts
-callback@269(): inferred by TypeScript; see implementation
+callback@312(): inferred by TypeScript; see implementation
 ```
 
-## callback@269.run
+## callback@312.run
 
-[Implementation, line 272](../../../game/ar.ts#L272)
+[Implementation, line 315](../../../game/ar.ts#L315)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -381,12 +475,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `room.setMessage`
 - `scales.indexOf`
 
-## callback@283
+## callback@326
 
-[Implementation, line 283](../../../game/ar.ts#L283)
+[Implementation, line 326](../../../game/ar.ts#L326)
 
 ```ts
-callback@283(): inferred by TypeScript; see implementation
+callback@326(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -395,7 +489,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## roomAction
 
-[Implementation, line 287](../../../game/ar.ts#L287)
+[Implementation, line 330](../../../game/ar.ts#L330)
 
 ```ts
 roomAction(button: number): inferred by TypeScript; see implementation
@@ -414,7 +508,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addBow
 
-[Implementation, line 314](../../../game/ar.ts#L314)
+[Implementation, line 357](../../../game/ar.ts#L357)
 
 ```ts
 addBow(): inferred by TypeScript; see implementation
@@ -427,17 +521,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `report`
 - `room.setMessage`
 
-## callback@332
+## callback@375
 
-[Implementation, line 332](../../../game/ar.ts#L332)
+[Implementation, line 375](../../../game/ar.ts#L375)
 
 ```ts
-callback@332(): inferred by TypeScript; see implementation
+callback@375(): inferred by TypeScript; see implementation
 ```
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 336](../../../game/ar.ts#L336)
+[Implementation, line 379](../../../game/ar.ts#L379)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -448,9 +542,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `room.setMessage`
 - `weapons.loadout.addPistol`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 348](../../../game/ar.ts#L348)
+[Implementation, line 391](../../../game/ar.ts#L391)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -461,9 +555,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hoop.place`
 - `room.setMessage`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 356](../../../game/ar.ts#L356)
+[Implementation, line 399](../../../game/ar.ts#L399)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -473,9 +567,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addBow`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 363](../../../game/ar.ts#L363)
+[Implementation, line 406](../../../game/ar.ts#L406)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -485,9 +579,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `screen.navigate`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 365](../../../game/ar.ts#L365)
+[Implementation, line 408](../../../game/ar.ts#L408)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -497,9 +591,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `roomAction`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 369](../../../game/ar.ts#L369)
+[Implementation, line 412](../../../game/ar.ts#L412)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -510,9 +604,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `addModel`
 - `screen.navigate`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 374](../../../game/ar.ts#L374)
+[Implementation, line 417](../../../game/ar.ts#L417)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -522,9 +616,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `roomAction`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 375](../../../game/ar.ts#L375)
+[Implementation, line 418](../../../game/ar.ts#L418)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -534,9 +628,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `screen.navigate`
 
-## callback@332.run
+## callback@375.run
 
-[Implementation, line 379](../../../game/ar.ts#L379)
+[Implementation, line 422](../../../game/ar.ts#L422)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -548,7 +642,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## freeEnvironment
 
-[Implementation, line 382](../../../game/ar.ts#L382)
+[Implementation, line 425](../../../game/ar.ts#L425)
 
 ```ts
 freeEnvironment(): inferred by TypeScript; see implementation
@@ -566,7 +660,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## sendTrackingReport
 
-[Implementation, line 395](../../../game/ar.ts#L395)
+[Implementation, line 438](../../../game/ar.ts#L438)
 
 ```ts
 sendTrackingReport(): inferred by TypeScript; see implementation
@@ -591,45 +685,59 @@ Explicit throws in this body:
 
 - `new Error('No hay receptor local')`
 
-## sendTrackingReport.callback@417
+## sendTrackingReport.callback@460
 
-[Implementation, line 417](../../../game/ar.ts#L417)
+[Implementation, line 460](../../../game/ar.ts#L460)
 
 ```ts
-callback@417(): inferred by TypeScript; see implementation
+callback@460(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URL.revokeObjectURL`
 
-## callback@424
+## callback@467
 
-[Implementation, line 424](../../../game/ar.ts#L424)
+[Implementation, line 467](../../../game/ar.ts#L467)
 
 ```ts
-callback@424(): inferred by TypeScript; see implementation
+callback@467(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `sendTrackingReport`
 
-## callback@429
+## callback@472
 
-[Implementation, line 429](../../../game/ar.ts#L429)
+[Implementation, line 472](../../../game/ar.ts#L472)
 
 ```ts
-callback@429(): inferred by TypeScript; see implementation
+callback@472(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `environmentOptions`
 
-## callback@429.run
+## callback@472.run
 
-[Implementation, line 433](../../../game/ar.ts#L433)
+[Implementation, line 473](../../../game/ar.ts#L473)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `deviceInfo.lines`
+- `deviceInfo.lines().join`
+- `room.setMessage`
+
+## callback@472.run
+
+[Implementation, line 477](../../../game/ar.ts#L477)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -640,9 +748,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `room.setMessage`
 - `xr.session.startDiagnostics`
 
-## callback@429.run
+## callback@472.run
 
-[Implementation, line 440](../../../game/ar.ts#L440)
+[Implementation, line 484](../../../game/ar.ts#L484)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -652,9 +760,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `sendTrackingReport`
 
-## callback@429.run
+## callback@472.run
 
-[Implementation, line 447](../../../game/ar.ts#L447)
+[Implementation, line 491](../../../game/ar.ts#L491)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -664,9 +772,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `room.setSource`
 
-## callback@429.run
+## callback@472.run
 
-[Implementation, line 451](../../../game/ar.ts#L451)
+[Implementation, line 495](../../../game/ar.ts#L495)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -678,7 +786,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## spawnDrone
 
-[Implementation, line 453](../../../game/ar.ts#L453)
+[Implementation, line 497](../../../game/ar.ts#L497)
 
 ```ts
 spawnDrone(): inferred by TypeScript; see implementation
@@ -690,17 +798,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.clear`
 - `room.setMessage`
 
-## callback@463
+## callback@507
 
-[Implementation, line 463](../../../game/ar.ts#L463)
+[Implementation, line 507](../../../game/ar.ts#L507)
 
 ```ts
-callback@463(): inferred by TypeScript; see implementation
+callback@507(): inferred by TypeScript; see implementation
 ```
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 466](../../../game/ar.ts#L466)
+[Implementation, line 510](../../../game/ar.ts#L510)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -711,9 +819,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `spawnDrone`
 - `spawnDrone().catch`
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 472](../../../game/ar.ts#L472)
+[Implementation, line 516](../../../game/ar.ts#L516)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -723,9 +831,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drone.setArmed`
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 476](../../../game/ar.ts#L476)
+[Implementation, line 520](../../../game/ar.ts#L520)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -735,9 +843,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drone.setMode`
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 480](../../../game/ar.ts#L480)
+[Implementation, line 524](../../../game/ar.ts#L524)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -747,9 +855,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drone.toggleSpotlight`
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 482](../../../game/ar.ts#L482)
+[Implementation, line 526](../../../game/ar.ts#L526)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -759,9 +867,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `drone.reset`
 
-## callback@463.run
+## callback@507.run
 
-[Implementation, line 485](../../../game/ar.ts#L485)
+[Implementation, line 529](../../../game/ar.ts#L529)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -773,26 +881,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## navigateMap
 
-[Implementation, line 492](../../../game/ar.ts#L492)
+[Implementation, line 536](../../../game/ar.ts#L536)
 
 ```ts
 navigateMap(x: number, y: number): inferred by TypeScript; see implementation
 ```
 
-## navigateMap.callback@498
+## navigateMap.callback@542
 
-[Implementation, line 498](../../../game/ar.ts#L498)
+[Implementation, line 542](../../../game/ar.ts#L542)
 
 ```ts
-callback@498(): inferred by TypeScript; see implementation
+callback@542(): inferred by TypeScript; see implementation
 ```
 
-## callback@502
+## callback@546
 
-[Implementation, line 502](../../../game/ar.ts#L502)
+[Implementation, line 546](../../../game/ar.ts#L546)
 
 ```ts
-callback@502(): inferred by TypeScript; see implementation
+callback@546(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -803,9 +911,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cells.pending.slice`
 - `cells.pending.slice(0, 2).map`
 
-## callback@502.run
+## callback@546.run
 
-[Implementation, line 508](../../../game/ar.ts#L508)
+[Implementation, line 552](../../../game/ar.ts#L552)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -815,9 +923,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addModel`
 
-## callback@502.run
+## callback@546.run
 
-[Implementation, line 517](../../../game/ar.ts#L517)
+[Implementation, line 561](../../../game/ar.ts#L561)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -827,21 +935,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `room.setMessage`
 
-## callback@502.run
+## callback@546.run
 
-[Implementation, line 519](../../../game/ar.ts#L519)
-
-```ts
-run(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `navigateMap`
-
-## callback@502.run
-
-[Implementation, line 520](../../../game/ar.ts#L520)
+[Implementation, line 563](../../../game/ar.ts#L563)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -851,21 +947,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `navigateMap`
 
-## callback@502.run
+## callback@546.run
 
-[Implementation, line 521](../../../game/ar.ts#L521)
-
-```ts
-run(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `navigateMap`
-
-## callback@502.run
-
-[Implementation, line 522](../../../game/ar.ts#L522)
+[Implementation, line 564](../../../game/ar.ts#L564)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -875,9 +959,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `navigateMap`
 
-## callback@502.run
+## callback@546.run
 
-[Implementation, line 523](../../../game/ar.ts#L523)
+[Implementation, line 565](../../../game/ar.ts#L565)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -887,17 +971,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `navigateMap`
 
-## callback@502.callback@524
+## callback@546.run
 
-[Implementation, line 524](../../../game/ar.ts#L524)
+[Implementation, line 566](../../../game/ar.ts#L566)
 
 ```ts
-callback@524(key): inferred by TypeScript; see implementation
+run(): inferred by TypeScript; see implementation
 ```
 
-## callback@502.callback@524.run
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 526](../../../game/ar.ts#L526)
+- `navigateMap`
+
+## callback@546.run
+
+[Implementation, line 567](../../../game/ar.ts#L567)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `navigateMap`
+
+## callback@546.callback@568
+
+[Implementation, line 568](../../../game/ar.ts#L568)
+
+```ts
+callback@568(key): inferred by TypeScript; see implementation
+```
+
+## callback@546.callback@568.run
+
+[Implementation, line 570](../../../game/ar.ts#L570)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -909,17 +1017,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `key.split('/').map`
 - `navigateMap`
 
-## callback@502.callback@531
+## callback@546.callback@575
 
-[Implementation, line 531](../../../game/ar.ts#L531)
+[Implementation, line 575](../../../game/ar.ts#L575)
 
 ```ts
-callback@531(key): inferred by TypeScript; see implementation
+callback@575(key): inferred by TypeScript; see implementation
 ```
 
-## callback@502.callback@531.run
+## callback@546.callback@575.run
 
-[Implementation, line 531](../../../game/ar.ts#L531)
+[Implementation, line 575](../../../game/ar.ts#L575)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -927,7 +1035,7 @@ run(): inferred by TypeScript; see implementation
 
 ## selectedVehicle
 
-[Implementation, line 546](../../../game/ar.ts#L546)
+[Implementation, line 590](../../../game/ar.ts#L590)
 
 ```ts
 selectedVehicle(): inferred by TypeScript; see implementation
@@ -935,7 +1043,7 @@ selectedVehicle(): inferred by TypeScript; see implementation
 
 ## selectRadioVehicle
 
-[Implementation, line 547](../../../game/ar.ts#L547)
+[Implementation, line 591](../../../game/ar.ts#L591)
 
 ```ts
 selectRadioVehicle(direction: number): inferred by TypeScript; see implementation
@@ -946,12 +1054,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `selectedVehicle`
 - `updateScaleOptions`
 
-## callback@551
+## callback@595
 
-[Implementation, line 551](../../../game/ar.ts#L551)
+[Implementation, line 595](../../../game/ar.ts#L595)
 
 ```ts
-callback@551(): inferred by TypeScript; see implementation
+callback@595(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -959,9 +1067,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.simulation?.vehicleInfo`
 - `selectedVehicle`
 
-## callback@551.run
+## callback@595.run
 
-[Implementation, line 552](../../../game/ar.ts#L552)
+[Implementation, line 596](../../../game/ar.ts#L596)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -971,9 +1079,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `selectRadioVehicle`
 
-## callback@551.run
+## callback@595.run
 
-[Implementation, line 556](../../../game/ar.ts#L556)
+[Implementation, line 600](../../../game/ar.ts#L600)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -984,9 +1092,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `addVehicle`
 - `selectedVehicle`
 
-## callback@551.run
+## callback@595.run
 
-[Implementation, line 558](../../../game/ar.ts#L558)
+[Implementation, line 602](../../../game/ar.ts#L602)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -996,22 +1104,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `selectRadioVehicle`
 
-## callback@551.run
+## callback@595.run
 
-[Implementation, line 561](../../../game/ar.ts#L561)
-
-```ts
-run(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `rc.addPallet`
-- `room.setMessage`
-
-## callback@551.run
-
-[Implementation, line 570](../../../game/ar.ts#L570)
+[Implementation, line 605](../../../game/ar.ts#L605)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -1022,9 +1117,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.addPallet`
 - `room.setMessage`
 
-## callback@551.run
+## callback@595.run
 
-[Implementation, line 577](../../../game/ar.ts#L577)
+[Implementation, line 614](../../../game/ar.ts#L614)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `rc.addPallet`
+- `room.setMessage`
+
+## callback@595.run
+
+[Implementation, line 621](../../../game/ar.ts#L621)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -1034,12 +1142,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `rc.toggleFlightSpeed`
 
-## callback@594
+## callback@638
 
-[Implementation, line 594](../../../game/ar.ts#L594)
+[Implementation, line 638](../../../game/ar.ts#L638)
 
 ```ts
-callback@594(point): inferred by TypeScript; see implementation
+callback@638(point): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1051,7 +1159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rows
 
-[Implementation, line 607](../../../game/ar.ts#L607)
+[Implementation, line 651](../../../game/ar.ts#L651)
 
 ```ts
 rows(): inferred by TypeScript; see implementation
@@ -1061,12 +1169,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `arQualityKeys.map`
 
-## rows.callback@608
+## rows.callback@652
 
-[Implementation, line 608](../../../game/ar.ts#L608)
+[Implementation, line 652](../../../game/ar.ts#L652)
 
 ```ts
-callback@608(key, i): inferred by TypeScript; see implementation
+callback@652(key, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1077,7 +1185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## change
 
-[Implementation, line 619](../../../game/ar.ts#L619)
+[Implementation, line 663](../../../game/ar.ts#L663)
 
 ```ts
 change(row, direction): inferred by TypeScript; see implementation
@@ -1091,7 +1199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## road
 
-[Implementation, line 630](../../../game/ar.ts#L630)
+[Implementation, line 674](../../../game/ar.ts#L674)
 
 ```ts
 road(): inferred by TypeScript; see implementation
@@ -1103,7 +1211,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## apply
 
-[Implementation, line 632](../../../game/ar.ts#L632)
+[Implementation, line 676](../../../game/ar.ts#L676)
 
 ```ts
 apply(): inferred by TypeScript; see implementation
@@ -1117,30 +1225,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## status
 
-[Implementation, line 635](../../../game/ar.ts#L635)
+[Implementation, line 679](../../../game/ar.ts#L679)
 
 ```ts
 status(): inferred by TypeScript; see implementation
 ```
 
-## callback@639
+## callback@683
 
-[Implementation, line 639](../../../game/ar.ts#L639)
+[Implementation, line 683](../../../game/ar.ts#L683)
 
 ```ts
-callback@639(source): inferred by TypeScript; see implementation
+callback@683(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `xr.grabHands.some`
 
-## callback@639.callback@641
+## callback@683.callback@685
 
-[Implementation, line 641](../../../game/ar.ts#L641)
+[Implementation, line 685](../../../game/ar.ts#L685)
 
 ```ts
-callback@641(h): inferred by TypeScript; see implementation
+callback@685(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1154,7 +1262,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resize
 
-[Implementation, line 649](../../../game/ar.ts#L649)
+[Implementation, line 693](../../../game/ar.ts#L693)
 
 ```ts
 resize(): inferred by TypeScript; see implementation
@@ -1165,17 +1273,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.updateProjectionMatrix`
 - `renderer.setSize`
 
-## callback@659
+## callback@703
 
-[Implementation, line 659](../../../game/ar.ts#L659)
+[Implementation, line 703](../../../game/ar.ts#L703)
 
 ```ts
-callback@659(time, frame): inferred by TypeScript; see implementation
+callback@703(time, frame): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.min`
+- `String`
 - `THREE.Vector3`
 - `balls.grab`
 - `balls.spawn`
@@ -1185,7 +1294,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bow.sync`
 - `camera.matrixWorld.toArray`
 - `collisionSurfaces`
+- `deviceInfo.updateFrame`
 - `drone.readInput`
+- `drone.readTouchInput`
 - `drone.setArmed`
 - `drone.sync`
 - `hands.filter`
@@ -1203,9 +1314,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.presentation?.objects.get`
 - `rc.setAudioActive`
 - `rc.sync`
+- `rc.touchActions`
 - `rc.update`
 - `renderer.getDrawingBufferSize`
 - `renderer.render`
+- `renderer.xr.getSession`
 - `room.trackingSnapshot`
 - `room.update`
 - `screen.hide`
@@ -1213,28 +1326,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `screen.openMain`
 - `screen.root.matrixWorld.toArray`
 - `screen.show`
+- `touchActionIcon`
+- `touchControls.driving.input`
+- `touchControls.flight.input`
+- `touchControls.setActions`
+- `touchControls.update`
 - `vehicle.getWorldPosition`
 - `weapons.setAudioActive`
 - `weapons.update`
+- `weapons.updateMobile`
 - `xr.calibrationScreen!.sync`
 - `xr.interactCalibration`
 - `xr.session.recordDiagnostic`
 - `xr.update`
 
-## callback@659.callback@690
+## callback@703.run
 
-[Implementation, line 690](../../../game/ar.ts#L690)
+[Implementation, line 742](../../../game/ar.ts#L742)
 
 ```ts
-callback@690(h): inferred by TypeScript; see implementation
+run(): inferred by TypeScript; see implementation
 ```
 
-## callback@659.callback@700
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 700](../../../game/ar.ts#L700)
+- `drone.setArmed`
+
+## callback@703.callback@758
+
+[Implementation, line 758](../../../game/ar.ts#L758)
 
 ```ts
-callback@700(h): inferred by TypeScript; see implementation
+callback@758(h): inferred by TypeScript; see implementation
+```
+
+## callback@703.callback@768
+
+[Implementation, line 768](../../../game/ar.ts#L768)
+
+```ts
+callback@768(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1246,12 +1377,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapons.loadout.occupied`
 - `xr.calibrationOwns`
 
-## callback@659.callback@712
+## callback@703.callback@780
 
-[Implementation, line 712](../../../game/ar.ts#L712)
+[Implementation, line 780](../../../game/ar.ts#L780)
 
 ```ts
-callback@712(h): inferred by TypeScript; see implementation
+callback@780(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1263,12 +1394,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapons.loadout.occupied`
 - `xr.calibrationOwns`
 
-## callback@659.callback@724
+## callback@703.callback@792
 
-[Implementation, line 724](../../../game/ar.ts#L724)
+[Implementation, line 792](../../../game/ar.ts#L792)
 
 ```ts
-callback@724(h): inferred by TypeScript; see implementation
+callback@792(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1280,12 +1411,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapons.loadout.occupied`
 - `xr.calibrationOwns`
 
-## callback@659.callback@737
+## callback@703.callback@810
 
-[Implementation, line 737](../../../game/ar.ts#L737)
+[Implementation, line 810](../../../game/ar.ts#L810)
 
 ```ts
-callback@737(h): inferred by TypeScript; see implementation
+callback@810(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1297,28 +1428,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapons.loadout.occupied`
 - `xr.calibrationOwns`
 
-## callback@659.callback@749
+## callback@703.callback@827
 
-[Implementation, line 749](../../../game/ar.ts#L749)
+[Implementation, line 827](../../../game/ar.ts#L827)
 
 ```ts
-callback@749(h): inferred by TypeScript; see implementation
+callback@827(h): inferred by TypeScript; see implementation
 ```
 
-## callback@659.callback@749
+## callback@703.callback@827
 
-[Implementation, line 749](../../../game/ar.ts#L749)
+[Implementation, line 827](../../../game/ar.ts#L827)
 
 ```ts
-callback@749(source): source is XRInputSource
+callback@827(source): source is XRInputSource
 ```
 
-## callback@659.callback@753
+## callback@703.callback@831
 
-[Implementation, line 753](../../../game/ar.ts#L753)
+[Implementation, line 831](../../../game/ar.ts#L831)
 
 ```ts
-callback@753(h): inferred by TypeScript; see implementation
+callback@831(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1328,32 +1459,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.owns`
 - `weapons.loadout.occupied`
 
-## callback@659.callback@773
+## callback@703.callback@851
 
-[Implementation, line 773](../../../game/ar.ts#L773)
+[Implementation, line 851](../../../game/ar.ts#L851)
 
 ```ts
-callback@773(h): inferred by TypeScript; see implementation
+callback@851(h): inferred by TypeScript; see implementation
 ```
 
-## callback@659.callback@778
+## callback@703.callback@857
 
-[Implementation, line 778](../../../game/ar.ts#L778)
+[Implementation, line 857](../../../game/ar.ts#L857)
 
 ```ts
-callback@778(source): inferred by TypeScript; see implementation
+callback@857(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `weapons.tip`
 
-## callback@659.callback@781
+## callback@703.callback@860
 
-[Implementation, line 781](../../../game/ar.ts#L781)
+[Implementation, line 860](../../../game/ar.ts#L860)
 
 ```ts
-callback@781(h): inferred by TypeScript; see implementation
+callback@860(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1363,12 +1494,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hoop.owns`
 - `rc.owns`
 
-## callback@659.callback@793
+## callback@703.callback@872
 
-[Implementation, line 793](../../../game/ar.ts#L793)
+[Implementation, line 872](../../../game/ar.ts#L872)
 
 ```ts
-callback@793(from, distance): inferred by TypeScript; see implementation
+callback@872(from, distance): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1378,20 +1509,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `collisionRay.set`
 - `collisionSurfaces`
 
-## callback@659.callback@807
+## callback@703.callback@893
 
-[Implementation, line 807](../../../game/ar.ts#L807)
+[Implementation, line 893](../../../game/ar.ts#L893)
 
 ```ts
-callback@807(h): inferred by TypeScript; see implementation
+callback@893(h): inferred by TypeScript; see implementation
 ```
 
-## callback@820
+## callback@906
 
-[Implementation, line 820](../../../game/ar.ts#L820)
+[Implementation, line 906](../../../game/ar.ts#L906)
 
 ```ts
-callback@820(): inferred by TypeScript; see implementation
+callback@906(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1399,50 +1530,53 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rc.unlockAudio`
 - `weapons.unlock`
 
-## callback@820.callback@827
+## callback@906.callback@913
 
-[Implementation, line 827](../../../game/ar.ts#L827)
+[Implementation, line 913](../../../game/ar.ts#L913)
 
 ```ts
-callback@827(): inferred by TypeScript; see implementation
+callback@913(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `deviceInfo.setSession`
 - `renderer.xr.getSession`
+- `room.setMessage`
+- `touchControls.update`
 - `xr.exit`
 
 Explicit throws in this body:
 
 - `new Error( 'El navegador ha devuelto una sesión opaca; esta prueba necesita passthrough.', )`
 
-## callback@820.callback@837
+## callback@906.callback@929
 
-[Implementation, line 837](../../../game/ar.ts#L837)
+[Implementation, line 929](../../../game/ar.ts#L929)
 
 ```ts
-callback@837(): inferred by TypeScript; see implementation
+callback@929(): inferred by TypeScript; see implementation
 ```
 
-## callback@841
+## callback@933
 
-[Implementation, line 841](../../../game/ar.ts#L841)
+[Implementation, line 933](../../../game/ar.ts#L933)
 
 ```ts
-callback@841(): inferred by TypeScript; see implementation
+callback@933(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `navigator.xr.isSessionSupported`
 
-## callback@854
+## callback@946
 
-[Implementation, line 854](../../../game/ar.ts#L854)
+[Implementation, line 946](../../../game/ar.ts#L946)
 
 ```ts
-callback@854(): inferred by TypeScript; see implementation
+callback@946(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1456,5 +1590,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `renderer.dispose`
 - `renderer.setAnimationLoop`
 - `room.dispose`
+- `touchControls.dispose`
 - `weapons.dispose`
 - `xr.dispose`

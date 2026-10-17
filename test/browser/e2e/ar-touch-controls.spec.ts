@@ -85,11 +85,14 @@ test('landscape controls stay on their sides and object actions run below the wh
   expect(result.calls).toBe(1)
 })
 
-
-test('rotated mobile controls map screen motion back to local steering and gas axes', async ({ page }) => {
-  await page.route('**/touch-axis', r => r.fulfill({ contentType: 'text/html', body: '<body></body>' }))
+test('rotated mobile controls map screen motion back to local steering and gas axes', async ({
+  page,
+}) => {
+  await page.route('**/touch-axis', (r) =>
+    r.fulfill({ contentType: 'text/html', body: '<body></body>' }),
+  )
   await page.goto('/touch-axis')
-  const result = await page.evaluate(async root => {
+  const result = await page.evaluate(async (root) => {
     const { touchCoordinates } = await import(`/@fs/${root}/src/runtime/touch-coordinates.ts`)
     const parent = document.createElement('div')
     parent.dataset.touchRotation = '90'
