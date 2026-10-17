@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Geographic viewer (`@nabla/engine/viewer`): additive asset-swap and node API, nothing existing changes. `replaceGlb(asset, { signal })` loads the new GLB while the old one stays on screen and swaps within one frame (a failed or aborted download keeps the old asset); `hasAsset`, `listAssets`; `getNodes(id)`, `setNodeVisible(id, selector, visible)` (returns the match count), `setNodeSurfaceImage(id, selector, image, options)`, an optional `selector` on `setSurfaceImage`, and `setAssetOpacity(id, opacity)`. Selectors are an exact node name, a RegExp, `{ name, path, kind, extras }` or a predicate. Nothing runs per frame for any of them. Documented in `docs/geographic-viewer.md`.
+
 ### Changed
 
 - Lighting, colour, shadow and material code restored to what euskadi.online runs (engine 8d18dba), because the trucks rendered black again on :8707. Reverted: the car sky fill and the S3 paint, chrome, rear-chrome, windscreen and cabin-floor overrides (#161, #167, #198, #199, #200), the chrome light scaling and its night/daylight curve (#163, #170, #172), the trailer box `Chassis B` repaint (#167), the zenithal shadow-cascade cuts (#183, #192), bridge shadow casters (#153), the VFR800 metal map GLB (#165) and the Alto artistic-cloud default (#184: artistic clouds also shade the ground; back to Ultra only, as online). Kept: the zenithal entry stall fix (#180) and every non-lighting feature.
