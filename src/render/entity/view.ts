@@ -701,7 +701,7 @@ export class SceneView {
    * Install vehicles added while the scene is running (the game menu spawns cars and trucks).
    * The entities join the shared document; pair with `Simulation.addVehicles`.
    */
-  addVehicles(added: Entity[]): void {
+  addVehicles(added: Entity[]): Promise<void> {
     const vehicles = added.filter((e) => !e.portal)
     // Hosted mouths (the carrier stern portal) follow their vehicle: the carrier maps its
     // portal monitor to them, so they join the document before the meshes are built.
@@ -716,7 +716,7 @@ export class SceneView {
     this.document.entities = [...this.document.entities, ...vehicles, ...mouths]
     this.graph = SceneGraph.fromValidated(this.document)
     this.addEntities([...vehicles, ...mouths])
-    void Promise.all(this.loading.splice(0)).catch(() => undefined)
+    return Promise.all(this.loading.splice(0)).then(() => undefined)
   }
   /**
    * Install scenery placed while running: standalone portals (Stargate frame), sprites, lamps and

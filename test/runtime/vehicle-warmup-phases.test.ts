@@ -57,5 +57,10 @@ it('yields and reports each expensive phase with render state restored between s
   ])
   expect(renderer.render).toHaveBeenCalledTimes(1)
   expect(mirrors).toHaveBeenCalledTimes(1)
+  // Reusing the model at another position must not repeat GPU work or loading phases.
+  const reusedProgress = vi.fn(async () => {})
+  await warmup.warm([{ id: 'another-car' } as any], reusedProgress)
+  expect(reusedProgress).not.toHaveBeenCalled()
+  expect(renderer.render).toHaveBeenCalledTimes(1)
   warmup.dispose()
 })

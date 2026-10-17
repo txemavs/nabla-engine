@@ -18,8 +18,7 @@ test('SceneView installs a vehicle added while running and releases it on remova
     })
     await view.ready
     const children = view.root.children.length
-    view.addVehicles([presetVehicle('white-truck', 'added-1', [0, 1.6, -8])])
-    await view.ready
+    await view.addVehicles([presetVehicle('white-truck', 'added-1', [0, 1.6, -8])])
     const added = {
       object: view.objects.has('added-1'),
       wheels: view.wheels.get('added-1')?.length ?? 0,
@@ -72,8 +71,7 @@ test('SceneView maps a late carrier stern portal onto its door monitor and drops
       entities: [createEntity('spawn', 'spawn')],
     })
     await view.ready
-    view.addVehicles(presetEntities('carrier', 'late-ship', [0, 1.2, -20]))
-    await view.ready
+    await view.addVehicles(presetEntities('carrier', 'late-ship', [0, 1.2, -20]))
     const tablet = view.portalTablets.get('late-ship-stern')?.[0]
     const added = {
       portal: view.portals.has('late-ship-stern'),
