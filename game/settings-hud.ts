@@ -537,7 +537,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const enabledLabel = doc.createElement('label')
     enabledLabel.append('Activar señales de tráfico', enabled)
     section.append(enabledLabel)
-    const number = (title: string, value: unknown, fallback: number, min: number, max: number) => {
+    const number = (
+      title: string,
+      value: unknown,
+      fallback: number,
+      min: number,
+      max: number,
+      parent: HTMLElement = section,
+    ) => {
       const input = doc.createElement('input')
       input.type = 'number'
       input.min = String(min)
@@ -549,27 +556,57 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
           : fallback,
       )
       const label = doc.createElement('label')
-      label.append(title, input)
-      section.append(label)
+      const slider = doc.createElement('input')
+      slider.type = 'range'
+      slider.min = input.min
+      slider.max = input.max
+      slider.step = input.step
+      slider.value = input.value
+      slider.setAttribute('aria-label', title)
+      input.setAttribute('aria-label', title + ' valor')
+      input.style.width = '90px'
+      slider.addEventListener('input', () => {
+        input.value = slider.value
+        input.dispatchEvent(new Event('change'))
+      })
+      input.addEventListener('change', () => {
+        const value = input.valueAsNumber
+        input.value = String(
+          Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback,
+        )
+        slider.value = input.value
+      })
+      label.append(title, slider, input)
+      parent.append(label)
       return input
     }
     const limit = number('Cantidad máxima', saved.limit, 100, 1, 500)
     const radius = number('Distancia alrededor del jugador (m)', saved.radius, 150, 25, 500)
+    const physicsRadius = number(
+      'Distancia de física (m)',
+      saved.physicsRadius,
+      45,
+      5,
+      150,
+      physicsSection,
+    )
+    doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
     const apply = () => {
-      for (const input of [limit, radius]) {
+      for (const input of [limit, radius, physicsRadius]) {
         const value = input.valueAsNumber
         input.value = String(
           Number.isFinite(value)
             ? Math.max(Number(input.min), Math.min(Number(input.max), Math.round(value)))
             : 100,
         )
-        input.disabled = !enabled.checked
       }
       const settings = {
         enabled: enabled.checked,
         limit: Number(limit.value),
         radius: Number(radius.value),
+        physicsRadius: Number(physicsRadius.value),
       }
+      doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
       try {
         localStorage.setItem(key, JSON.stringify(settings))
       } catch {
@@ -577,8 +614,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       }
       window.dispatchEvent(new CustomEvent('euskadi-sign-settings', { detail: settings }))
     }
-    for (const input of [enabled, limit, radius]) input.addEventListener('change', apply)
-    limit.disabled = radius.disabled = !enabled.checked
+    for (const input of [enabled, limit, radius, physicsRadius])
+      input.addEventListener('change', apply)
     section.append(physicsSection)
     place(section)
   }

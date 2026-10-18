@@ -121,3 +121,14 @@ it('executes semantic gameplay actions and preserves the historical key-code ada
     game.stop()
   }
 })
+
+it('uses Q to draw or holster even while aiming, leaving Tab to the host menu', () => {
+  for (const context of [
+    { mode: 'walk' as const },
+    { mode: 'walk' as const, weapon: true, aiming: true },
+  ]) {
+    expect(keyboardAction('KeyQ', context)).toBe('holster')
+    expect(keyboardAction('Tab', context)).toBeUndefined()
+  }
+  expect(bindingForKey('KeyU', { mode: 'walk', weapon: true, aiming: true })).toBe('lean.left')
+})
