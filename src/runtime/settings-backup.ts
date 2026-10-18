@@ -3,6 +3,7 @@ import { parseUsbSettings } from './usb/controllers.js'
 export const preferenceKeys = new Set([
   'nabla.anisotropy',
   'nabla.groundDetailCells',
+  'nabla.visibility',
   'nabla.asphaltContrast',
   'nabla.terrain.source',
   'nabla.terrain.layers',

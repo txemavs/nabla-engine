@@ -35,6 +35,29 @@ export {
   type ShadowTier,
 } from './shadows.js'
 
+/**
+ * Supported values of the visibility distances (metres unless noted). One list serves the
+ * profile normalizer and the live settings menu, so the two cannot drift apart.
+ */
+export const visibilityChoices = Object.freeze({
+  /** Road draw distance; 0 hides roads. */
+  roads: [0, 250, 500, 1000, 2000, 4000, 6000, 20000],
+  /** Horizontal distance where every drawn thing fades out. */
+  fog: [500, 1000, 2000, 4000, 8000, 16000],
+  /** Terrain collision radius. */
+  collisions: [200, 400, 800, 2000],
+  /** Far relief (horizon) span in map cells around the player. */
+  relief: [2, 4, 8, 12],
+  /** Streamed buildings: 0 hidden, 1 visible. */
+  buildings: [0, 1],
+} as const)
+
+/** The quality fields that can change live without a restart. */
+export type VisibilitySettings = Pick<
+  PerformanceSettings,
+  'roads' | 'fog' | 'collisions' | 'relief' | 'buildings'
+>
+
 export const performanceDefaults: Readonly<PerformanceSettings> = Object.freeze({
   preset: 'balanced',
   vehicleShadows: 0,
@@ -72,12 +95,12 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
           : 'custom',
       vehicleShadows: choose(s.vehicleShadows, [0, 1], performanceDefaults.vehicleShadows),
       mirrors: choose(s.mirrors, [0, 1], performanceDefaults.mirrors),
-      roads: choose(
-        s.roads,
-        [0, 250, 500, 1000, 2000, 4000, 6000, 20000],
-        performanceDefaults.roads,
+      roads: choose(s.roads, [...visibilityChoices.roads], performanceDefaults.roads),
+      buildings: choose(
+        s.buildings,
+        [...visibilityChoices.buildings],
+        performanceDefaults.buildings,
       ),
-      buildings: choose(s.buildings, [0, 1], performanceDefaults.buildings),
       distance: choose(
         s.distance,
         [1000, 2000, 4000, 6000, 10000, 20000],
@@ -85,13 +108,17 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
       ),
       fog: choose(
         s.fog,
-        [500, 1000, 2000, 4000, 8000, 16000],
+        [...visibilityChoices.fog],
         typeof s.preset === 'string' && Object.hasOwn(performancePresets, s.preset)
           ? performancePresets[s.preset as keyof typeof performancePresets].settings.fog
           : performanceDefaults.fog,
       ),
-      relief: choose(s.relief, [2, 4, 8, 12], performanceDefaults.relief),
-      collisions: choose(s.collisions, [200, 400, 800, 2000], performanceDefaults.collisions),
+      relief: choose(s.relief, [...visibilityChoices.relief], performanceDefaults.relief),
+      collisions: choose(
+        s.collisions,
+        [...visibilityChoices.collisions],
+        performanceDefaults.collisions,
+      ),
       resolution: choose(
         s.resolution,
         [0.35, 0.5, 0.75, 1, 1.25, 2],

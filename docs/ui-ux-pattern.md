@@ -26,7 +26,8 @@ Menú (full-screen, transparent window; world rendering continues behind it)
 │   ├── Capas            terrain layers (layers-ui.ts)
 │   └── Opciones         world options
 ├── Tab «Configuración»  (id options)
-│   ├── Vídeo            quality, resolution scale, anisotropy, ground detail distance, post-process
+│   ├── Vídeo            quality, Distancias (draw, fog, roads, buildings, collisions, relief, ground detail; km),
+│   │                    resolution scale, anisotropy, post-process
 │   ├── Cámaras          view, FOV, camera effects
 │   ├── Controles        generated key list (settings-controls.ts, from inputBindings)
 │   └── …                audio, mirrors, lights, as registered

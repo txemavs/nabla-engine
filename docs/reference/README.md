@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **512 modules; 6000 executable function definitions**.
+Coverage: **514 modules; 6013 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -25,6 +25,7 @@ Coverage: **512 modules; 6000 executable function definitions**.
 | [game/config.ts](game/config.ts.md) | 5 |
 | [game/control-hints.ts](game/control-hints.ts.md) | 1 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
+| [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
 | [game/drive.ts](game/drive.ts.md) | 17 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
@@ -354,7 +355,7 @@ Coverage: **512 modules; 6000 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 437 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 439 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
@@ -417,6 +418,7 @@ Coverage: **512 modules; 6000 executable function definitions**.
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 15 |
 | [src/runtime/viewmodel-lighting.ts](src/runtime/viewmodel-lighting.ts.md) | 2 |
+| [src/runtime/visibility-settings.ts](src/runtime/visibility-settings.ts.md) | 3 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/weapon-controls.ts](src/runtime/weapon-controls.ts.md) | 8 |
 | [src/runtime/weapon-pose-tuning.ts](src/runtime/weapon-pose-tuning.ts.md) | 1 |
