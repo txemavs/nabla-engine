@@ -247,7 +247,7 @@ export class NightSky {
               gl_FragDepth = log2(max(vFragDepth, 1.0)) * logDepthBufFC * 0.5;
             #endif
             vec3 color = mix(vec3(0.28, 0.3, 0.36), vec3(0.42, 0.38, 0.32), core);
-            gl_FragColor = vec4(color, alpha);
+            gl_FragColor = vec4(color * 0.5, alpha);
           }
         `,
       }),

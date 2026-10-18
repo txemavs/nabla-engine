@@ -20,13 +20,13 @@ export const autoResolutionScaleStart = 0.5
 
 /**
  * Fixed (manual) scale per quality preset when the host leaves resolution unset — a ladder
- * from Ultra down. Presets without a step of their own (`custom` "Predeterminada", unknown
- * names, no preset) use 100%. Auto stays available (`resolutionScaleMode: 'auto'`).
+ * from Ultra down. Presets without a step of their own (unknown names, no preset) use 100%; `custom` (Predeterminada) uses 150%. Auto stays available (`resolutionScaleMode: 'auto'`).
  */
 export const presetResolutionScales: Readonly<Record<string, number>> = Object.freeze({
-  ultra: 1.3,
-  high: 1.15,
-  balanced: 0.8,
+  ultra: 2,
+  high: 1.75,
+  balanced: 1,
+  custom: 1.5,
   low: 0.5,
   mobile: 0.45,
   minimal: 0.4,
@@ -48,7 +48,7 @@ export interface DisplaySettings {
    * Drawing-buffer multiplier relative to the selected quality profile.
    * In `manual` mode this is the host-fixed value (0.25..5).
    * In `auto` mode this is the live adapted value, starting at 0.5 and clamped to 0.5..1.
-   * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 1.3, Alta 1.15 … Mínima 0.4).
+   * Unset, it is the preset's fixed {@link presetResolutionScales} step (Ultra 2, Alta 1.75 … Mínima 0.4).
    */
   resolutionScale: number
   /**
@@ -69,7 +69,7 @@ export const displayDefaults: Readonly<DisplaySettings> = Object.freeze({
  * Validate per-runtime overrides; the minimum FPS cap preserves normal fixed-step catch-up.
  * An explicit `resolutionScale` without `resolutionScaleMode` selects `manual` so hosts that
  * pass a fixed scale keep that scale. Omitting both fixes the quality preset's default
- * ({@link presetResolutionScales}: Ultra 1.3, Alta 1.15, Equilibrada 0.8, Baja 0.5, Móvil 0.45,
+ * ({@link presetResolutionScales}: Ultra 2, Alta 1.75, Equilibrada 1, Baja 0.5, Móvil 0.45,
  * Mínima 0.4; others 1). `resolutionScaleMode: 'auto'` without a scale starts adaptation
  * at 0.5; `'manual'` without a scale is 1.
  */

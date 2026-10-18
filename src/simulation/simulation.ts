@@ -237,6 +237,61 @@ export class Simulation {
   discardPlanetReplacement(): void {
     this.planetCollisions.discardReplacement()
   }
+  /** Small streamed scenery bodies, owned and retired by the host layer. */
+  createSceneryPole(position: Vec3Tuple, height: number, movable: boolean) {
+    if (
+      this.disposed ||
+      height <= 0 ||
+      !Number.isFinite(height) ||
+      !position.every(Number.isFinite)
+    )
+      throw new Error('Invalid scenery pole')
+    const body = new Body({
+      mass: movable ? 18 : 0,
+      position: new Vec3(...position),
+      shape: new Box(new Vec3(movable ? 0.045 : 0.09, height / 2, movable ? 0.045 : 0.09)),
+      linearDamping: 0.15,
+      angularDamping: 0.2,
+    })
+    this.world.addBody(body)
+    body.preserveSleep = movable
+    if (movable) body.setBreakawayAnchor(true)
+    let removed = false
+    return {
+      impact: (point: Vec3Tuple, direction: Vec3Tuple, impulse: number) => {
+        if (removed || this.disposed || !movable) return
+        body.setBreakawayAnchor(false)
+        body.wakeUp()
+        body.applyImpulse(
+          new Vec3(...direction).scale(Math.min(20, Math.max(0, impulse))),
+          new Vec3(...point).vsub(body.position),
+        )
+      },
+      pose: () => ({
+        position: vec(body.position),
+        rotation: [body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w] as [
+          number,
+          number,
+          number,
+          number,
+        ],
+      }),
+      restore: (position: Vec3Tuple, rotation: [number, number, number, number]) => {
+        if (removed || this.disposed) return
+        body.raw?.wakeUp()
+        body.position.set(...position)
+        body.quaternion.set(...rotation)
+        if (movable && Math.abs(rotation[0]) + Math.abs(rotation[2]) > 0.001)
+          body.setBreakawayAnchor(false)
+        body.raw?.sleep()
+      },
+      dispose: () => {
+        if (!removed && !this.disposed) this.world.removeBody(body)
+        removed = true
+      },
+    }
+  }
+
   setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
     this.planetCollisions.setPoles(poles)
   }

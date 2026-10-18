@@ -89,3 +89,38 @@ it('builds focused, forward-only low and high beams at the S3 lamp units like th
   expect(low.intensity).toBe(0)
   authored.dispose()
 })
+
+it('keeps S3 position and dipped lenses lit when adding main beams', () => {
+  const model = new THREE.Group()
+  const unit = new THREE.Group()
+  unit.name = 'Foco Derecho'
+  model.add(unit)
+  let materials = ['LED BLANCO NARANJA', 'CORTA', 'Larga'].map((name) => {
+    const material = new THREE.MeshStandardMaterial({ name })
+    unit.add(new THREE.Mesh(new THREE.BoxGeometry(), material))
+    return material
+  })
+  const lights = createA3Lights(model)
+  const state = { powered: true, braking: false, reversing: false }
+  materials = unit.children.map(
+    (child) => (child as THREE.Mesh).material as THREE.MeshStandardMaterial,
+  )
+  const levels = () => materials.map((material) => material.emissiveIntensity)
+  lights.controller.mode = 'position'
+  lights.update(state, 0)
+  expect(levels()).toEqual([0.65, 0, 0])
+  lights.controller.mode = 'low'
+  lights.update(state, 0)
+  expect(levels()).toEqual([0.65, 4, 0])
+  lights.controller.highBeam = true
+  lights.update(state, 0)
+  expect(levels()).toEqual([0.65, 4, 4])
+  lights.toggle(1)
+  lights.update(state, 0)
+  expect(materials[0].emissive.getHexString()).toBe('ff7300')
+  expect(materials[0].emissiveIntensity).toBe(2)
+  lights.update(state, 450)
+  expect(materials[0].emissiveIntensity).toBe(0)
+  lights.update({ ...state, powered: false }, 0)
+  expect(levels()).toEqual([0, 0, 0])
+})

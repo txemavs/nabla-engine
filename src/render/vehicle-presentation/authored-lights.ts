@@ -34,10 +34,34 @@ function channel(value?: string): VehicleLightChannel {
   return channels[value ?? ''] ?? 'position'
 }
 
-/** Dipped cutoff with a short 45-degree rise toward the right; projection +Y is up. */
+const beamCutoff = { low: 0, high: 1 }
+const beamMasks = new Map<DataTexture, boolean>()
+
+/** Degrees above the authored cutoff. Updates textures without adding shader variants. */
+export function setVehicleBeamCutoff(kind: 'low' | 'high', degrees: number): void {
+  if (!Number.isFinite(degrees)) return
+  beamCutoff[kind] = Math.max(-5, Math.min(5, degrees))
+  for (const [texture, asymmetric] of beamMasks)
+    if (asymmetric === (kind === 'low')) paintBeamMask(texture, asymmetric)
+}
+export function getVehicleBeamCutoff(kind: 'low' | 'high'): number {
+  return beamCutoff[kind]
+}
+
 export function lowBeamMask(asymmetric = true): DataTexture {
   const size = lightingDefaults.lowBeamMaskSize
-  const data = new Uint8Array(size * size * 4)
+  const texture = new DataTexture(new Uint8Array(size * size * 4), size, size)
+  texture.minFilter = texture.magFilter = LinearFilter
+  beamMasks.set(texture, asymmetric)
+  texture.addEventListener('dispose', () => beamMasks.delete(texture))
+  paintBeamMask(texture, asymmetric)
+  return texture
+}
+
+/** Dipped cutoff with a short 45-degree rise toward the right; projection +Y is up. */
+function paintBeamMask(texture: DataTexture, asymmetric: boolean): void {
+  const size = lightingDefaults.lowBeamMaskSize
+  const data = texture.image.data as Uint8Array
   const rampStart =
     0.5 - Math.tan(Math.PI / 180) / (2 * Math.tan(lightingDefaults.lowBeamOuterCone))
   for (let y = 0; y < size; y++)
@@ -47,6 +71,8 @@ export function lowBeamMask(asymmetric = true): DataTexture {
       // Equal texture-axis increments make a short 45-degree ramp, then a raised plateau.
       const edge =
         lightingDefaults.lowBeamCutoff +
+        Math.tan((beamCutoff[asymmetric ? 'low' : 'high'] * Math.PI) / 180) /
+          (2 * Math.tan(lightingDefaults.lowBeamOuterCone)) +
         (asymmetric ? Math.min(0.02, Math.max(0, u - rampStart)) : 0)
       const cutoff = Math.max(0, Math.min(1, (edge - v) / lightingDefaults.lowBeamCutoffSoftness))
       const spread = Math.max(
@@ -57,10 +83,7 @@ export function lowBeamMask(asymmetric = true): DataTexture {
       data[at] = data[at + 1] = data[at + 2] = Math.round(255 * cutoff * spread)
       data[at + 3] = 255
     }
-  const texture = new DataTexture(data, size, size)
-  texture.minFilter = texture.magFilter = LinearFilter
   texture.needsUpdate = true
-  return texture
 }
 
 export class AuthoredVehicleLights {

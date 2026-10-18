@@ -59,6 +59,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-planet-sea', 'planet'],
   ['settings-streetlights', 'planet'],
   ['settings-headlamp', 'planet'],
+  ['settings-traffic-signs', 'planet'],
   ['settings-options-labels', 'planet'],
   ['display-quality-section', 'options'],
   ['display-performance', 'options'],
@@ -79,6 +80,8 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-options-driver', 'dev'],
   ['settings-truck-exhaust', 'dev'],
   ['settings-light', 'dev'],
+  ['settings-car-beams', 'dev'],
+  ['settings-sign-shadows', 'dev'],
   ['settings-experimental-light-shadows', 'dev'],
   ['settings-config-planet', 'dev'],
   ['terrain-source', 'dev'],
@@ -459,6 +462,162 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     )
     experimental.append(shadowLabel)
     place(experimental)
+  }
+
+  {
+    const section = fieldset('settings-car-beams', 'Luces del coche')
+    for (const [kind, title] of [
+      ['low', 'Corte de cortas (°)'],
+      ['high', 'Corte de largas (°)'],
+    ] as const) {
+      const label = doc.createElement('label')
+      const input = doc.createElement('input')
+      input.type = 'range'
+      input.min = '-5'
+      input.max = '5'
+      input.step = '0.1'
+      input.value = String(runtime.getVehicleBeamCutoff(kind))
+      const output = doc.createElement('output')
+      output.textContent = `${Number(input.value).toFixed(1)}°`
+      input.addEventListener('input', () => {
+        runtime.setVehicleBeamCutoff(kind, Number(input.value))
+        output.textContent = `${Number(input.value).toFixed(1)}°`
+      })
+      label.append(title, input, output)
+      section.append(label)
+    }
+    const note = doc.createElement('p')
+    note.textContent =
+      'Ajuste del corte respecto al original. Positivo: ilumina más arriba. Ajustes de prueba para esta sesión.'
+    section.append(note)
+    place(section)
+  }
+
+  if (doc.documentElement.dataset.irunSigns === 'true') {
+    const physicsSection = fieldset('settings-sign-physics', 'Física de señalización')
+    const physicsInput = doc.createElement('input')
+    physicsInput.type = 'checkbox'
+    physicsInput.checked = doc.documentElement.dataset.signPhysics === 'true'
+    physicsInput.addEventListener('change', () => {
+      doc.documentElement.dataset.signPhysics = String(physicsInput.checked)
+      window.dispatchEvent(new Event('euskadi-sign-physics'))
+    })
+    const physicsLabel = doc.createElement('label')
+    physicsLabel.append('Colisiones e impactos de señalización', physicsInput)
+    const physicsNote = doc.createElement('p')
+    physicsNote.textContent =
+      'Activa señales derribables, marcas de disparos y semáforos sólidos cercanos. Activado al iniciar; puedes desactivarlo para reducir el coste de física.'
+    physicsSection.append(physicsLabel, physicsNote)
+    const experimental = fieldset('settings-sign-shadows', 'Sombras de señales')
+    const shadows = doc.createElement('input')
+    shadows.type = 'checkbox'
+    shadows.checked = doc.documentElement.dataset.irunSignShadows === 'true'
+    shadows.addEventListener('change', () => {
+      doc.documentElement.dataset.irunSignShadows = String(shadows.checked)
+      window.dispatchEvent(new Event('euskadi-sign-shadows'))
+    })
+    const shadowLabel = doc.createElement('label')
+    shadowLabel.append('Activar sombras de señales y postes', shadows)
+    const warning = doc.createElement('p')
+    warning.textContent =
+      'Experimental: aumenta el coste de renderizado. La primera activación puede tardar mientras se preparan los shaders. Requiere sombras activadas en la luz. Se desactiva al recargar.'
+    experimental.append(shadowLabel, warning)
+    place(experimental)
+    const section = fieldset('settings-traffic-signs', 'Señales de tráfico')
+    const key = 'euskadi.irun-signs'
+    let saved: Record<string, unknown> = {}
+    try {
+      saved = JSON.parse(localStorage.getItem(key) ?? '{}') ?? {}
+    } catch {
+      /* Optional storage. */
+    }
+    const enabled = doc.createElement('input')
+    enabled.type = 'checkbox'
+    enabled.checked = saved.enabled !== false
+    const enabledLabel = doc.createElement('label')
+    enabledLabel.append('Activar señales de tráfico', enabled)
+    section.append(enabledLabel)
+    const number = (
+      title: string,
+      value: unknown,
+      fallback: number,
+      min: number,
+      max: number,
+      parent: HTMLElement = section,
+    ) => {
+      const input = doc.createElement('input')
+      input.type = 'number'
+      input.min = String(min)
+      input.max = String(max)
+      input.step = '1'
+      input.value = String(
+        typeof value === 'number' && Number.isFinite(value)
+          ? Math.max(min, Math.min(max, Math.round(value)))
+          : fallback,
+      )
+      const label = doc.createElement('label')
+      const slider = doc.createElement('input')
+      slider.type = 'range'
+      slider.min = input.min
+      slider.max = input.max
+      slider.step = input.step
+      slider.value = input.value
+      slider.setAttribute('aria-label', title)
+      input.setAttribute('aria-label', title + ' valor')
+      input.style.width = '90px'
+      slider.addEventListener('input', () => {
+        input.value = slider.value
+        input.dispatchEvent(new Event('change'))
+      })
+      input.addEventListener('change', () => {
+        const value = input.valueAsNumber
+        input.value = String(
+          Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback,
+        )
+        slider.value = input.value
+      })
+      label.append(title, slider, input)
+      parent.append(label)
+      return input
+    }
+    const limit = number('Cantidad máxima', saved.limit, 100, 1, 500)
+    const radius = number('Distancia alrededor del jugador (m)', saved.radius, 150, 25, 500)
+    const physicsRadius = number(
+      'Distancia de física (m)',
+      saved.physicsRadius,
+      45,
+      5,
+      150,
+      physicsSection,
+    )
+    doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
+    const apply = () => {
+      for (const input of [limit, radius, physicsRadius]) {
+        const value = input.valueAsNumber
+        input.value = String(
+          Number.isFinite(value)
+            ? Math.max(Number(input.min), Math.min(Number(input.max), Math.round(value)))
+            : 100,
+        )
+      }
+      const settings = {
+        enabled: enabled.checked,
+        limit: Number(limit.value),
+        radius: Number(radius.value),
+        physicsRadius: Number(physicsRadius.value),
+      }
+      doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
+      try {
+        localStorage.setItem(key, JSON.stringify(settings))
+      } catch {
+        /* Optional storage. */
+      }
+      window.dispatchEvent(new CustomEvent('euskadi-sign-settings', { detail: settings }))
+    }
+    for (const input of [enabled, limit, radius, physicsRadius])
+      input.addEventListener('change', apply)
+    section.append(physicsSection)
+    place(section)
   }
 
   if (quality) {
@@ -965,6 +1124,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         'settings-planet-sea',
         'settings-streetlights',
         'settings-headlamp',
+        'settings-traffic-signs',
         'settings-options-labels',
       ],
     },
@@ -1213,6 +1373,26 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   updateClock()
   const clockTimer = window.setInterval(updateClock, 1000)
   const onKeyDown = (event: KeyboardEvent) => {
+    if (
+      menuNavigationKey(event.code) === 'focus' &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      if (event.repeat) return
+      if (win.hidden) {
+        doc.exitPointerLock?.()
+        open()
+      } else {
+        close()
+        const canvas = doc.getElementById('game-canvas')
+        const lock = canvas?.requestPointerLock?.()
+        if (lock instanceof Promise) void lock.catch(() => undefined)
+      }
+      return
+    }
     if (win.hidden) return
     if (menuNavigationKey(event.code) === 'focus') {
       const focusable = [
@@ -1237,7 +1417,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       close()
     }
   }
-  doc.addEventListener('keydown', onKeyDown)
+  doc.addEventListener('keydown', onKeyDown, true)
 
   return {
     open,
@@ -1245,7 +1425,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     toggle: toggleWin,
     destroy: () => {
       usbPanel.dispose()
-      doc.removeEventListener('keydown', onKeyDown)
+      doc.removeEventListener('keydown', onKeyDown, true)
       window.clearInterval(clockTimer)
       doc.body.classList.remove('settings-is-open')
       mobileLayout.removeEventListener('change', onMenuResize)

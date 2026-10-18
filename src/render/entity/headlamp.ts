@@ -28,7 +28,10 @@ export class Headlamp {
     light.shadow.intensity = 0
     light.shadow.mapSize.set(1024, 1024)
     light.shadow.camera.near = 0.1
-    light.shadow.bias = -0.0001
+    // Perspective depth is non-linear: -0.0001 at near=0.1 moves a receiver
+    // about 40 cm at 20 m, erasing contact shadows. Keep the depth offset tiny;
+    // normalBias handles surface acne in world-space metres instead.
+    light.shadow.bias = -0.000001
     light.shadow.normalBias = 0.02
   }
   get needsShadowPass(): boolean {

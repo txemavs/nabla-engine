@@ -48,6 +48,8 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       preview = false
     const runtime = {
       usbControllers: new UsbControllers(null),
+      getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
+      setVehicleBeamCutoff: () => {},
       terrainTiles: [
         { tile: { z: 15, x: 16224, y: 11998 }, kind: 'mesh', state: 'visible' },
         { tile: { z: 15, x: 16230, y: 12003 }, kind: 'mesh', state: 'downloading' },
@@ -97,6 +99,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       setLensFlareAmount: () => {},
     }
     document.documentElement.dataset.appName = 'EUSKADI.ONLINE'
+    document.documentElement.dataset.irunSigns = 'true'
+    document.documentElement.dataset.signPhysics = 'true'
+    localStorage.setItem('euskadi.irun-signs', JSON.stringify({ enabled: false }))
     mountSettingsHud(runtime as never)
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
     roll.value = '2'
@@ -301,7 +306,27 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     .poll(() => mobileBody.evaluate((el) => el.parentElement?.id))
     .toBe('settings-pane-planet')
   await expect(page.locator('#ps-sun')).toBeVisible()
+  await page.getByRole('button', { name: 'Señales de tráfico', exact: true }).click()
+  const count = page.getByRole('spinbutton', { name: 'Cantidad máxima valor', exact: true })
+  await expect(count).toBeEnabled()
+  await count.fill('75')
+  await count.press('Enter')
+  await page
+    .getByRole('spinbutton', { name: 'Distancia alrededor del jugador (m) valor', exact: true })
+    .fill('120')
+  await page
+    .getByRole('spinbutton', { name: 'Distancia de física (m) valor', exact: true })
+    .fill('20')
+  await page.getByText('Colisiones e impactos de señalización', { exact: true }).click()
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('euskadi.irun-signs')!)),
+  ).toMatchObject({ limit: 75, radius: 120, physicsRadius: 20 })
+  expect(await page.evaluate(() => document.documentElement.dataset.signPhysicsRadius)).toBe('20')
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
   await expect(page.locator('#settings-toggle')).toHaveAttribute('aria-expanded', 'false')
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#settings-window')).toBeVisible()
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#settings-window')).toBeHidden()
 })

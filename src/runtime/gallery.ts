@@ -172,6 +172,25 @@ export class Gallery {
       }
       return true
     }
+    // Host instanced scenery can handle exact visible-surface hits (including instance id).
+    const sceneryRay = new THREE.Raycaster(
+      ray.ray.origin.clone().add(view.root.position),
+      ray.ray.direction,
+      0,
+      solid
+        ? Math.min(
+            rayView.range,
+            ray.ray.origin.distanceTo(new THREE.Vector3(...solid.point)) + 0.02,
+          )
+        : rayView.range,
+    )
+    const scenery: THREE.Object3D[] = []
+    view.root.traverseVisible((object) => {
+      if (typeof object.userData.sceneryShot === 'function') scenery.push(object)
+    })
+    for (const surface of sceneryRay.intersectObjects(scenery, false)) {
+      if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) return true
+    }
     const glassPoint = view.brokenGlass.hit(
       view.document.entities
         .filter((entity) => entity.vehicle)

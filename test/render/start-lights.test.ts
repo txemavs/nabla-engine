@@ -139,7 +139,7 @@ describe('position lights after the engine start-up', () => {
     const model = await loadModel('assets/library/cars/a3/a3.cabrio.glb')
     const car = createA3Lights(model)
     const authored = new AuthoredVehicleLights(model, car.controller)
-    const front = materials(model, (m) => m.name === 'CORTA')
+    const front = materials(model, (m) => m.name.startsWith('LED BLANCO NARANJA'))
     const rear = materials(model, (m) => m.name === 'PilotoP')
     expect(front.length).toBeGreaterThan(0)
     expect(rear.length).toBeGreaterThan(0)

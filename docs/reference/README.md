@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **509 modules; 5938 executable function definitions**.
+Coverage: **509 modules; 5962 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -50,7 +50,7 @@ Coverage: **509 modules; 5938 executable function definitions**.
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 70 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 83 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 91 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
 | [game/settings-navigation-styles.ts](game/settings-navigation-styles.ts.md) | 0 |
@@ -327,7 +327,7 @@ Coverage: **509 modules; 5938 executable function definitions**.
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
 | [src/render/shadows.ts](src/render/shadows.ts.md) | 29 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
-| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 16 |
+| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 20 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/landing-gear.ts](src/render/vehicle-presentation/landing-gear.ts.md) | 7 |
 | [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 15 |
@@ -352,14 +352,14 @@ Coverage: **509 modules; 5938 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 428 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 433 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
-| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 18 |
+| [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 19 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 13 |
 | [src/runtime/game-toolbar.ts](src/runtime/game-toolbar.ts.md) | 20 |
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 22 |
@@ -475,13 +475,13 @@ Coverage: **509 modules; 5938 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 121 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 122 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 260 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 265 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |

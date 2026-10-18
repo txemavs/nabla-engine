@@ -110,7 +110,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
       model: internal.pickupModels.get('initial-hk')?.children.length ?? 0,
       height: runtime.worldPickups[0]?.position[1],
     }
-    internal.action('Tab')
+    internal.action('KeyQ')
     const blocked = !internal.weaponDrawn
     internal.action('KeyE')
     const picked = {

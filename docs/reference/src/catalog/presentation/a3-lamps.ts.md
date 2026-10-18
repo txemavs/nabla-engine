@@ -72,6 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Mesh`
 - `THREE.MeshStandardMaterial`
 - `['CORTA', 'Larga'].includes`
+- `['FocoC', 'LED', 'LED BLANCO NARANJA'].includes`
 - `['PilotoFino', 'PilotoRojo', 'Plastico 3'].includes`
 - `[0, 1, 2].map`
 - `ancestors.includes`
@@ -84,6 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lamp.material.clone`
 - `lamps.push`
 - `masked`
+- `material.clone`
 - `material.color.set`
 - `material.emissive.getHex`
 - `material.emissive.set`
@@ -102,24 +104,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@43(n): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@33.callback@96
+## createA3Lights.callback@33.callback@130
 
-[Implementation, line 96](../../../../../src/catalog/presentation/a3-lamps.ts#L96)
+[Implementation, line 130](../../../../../src/catalog/presentation/a3-lamps.ts#L130)
 
 ```ts
-callback@96(j): inferred by TypeScript; see implementation
+callback@130(j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `index.getX`
 
-## createA3Lights.callback@33.callback@97
+## createA3Lights.callback@33.callback@131
 
-[Implementation, line 97](../../../../../src/catalog/presentation/a3-lamps.ts#L97)
+[Implementation, line 131](../../../../../src/catalog/presentation/a3-lamps.ts#L131)
 
 ```ts
-callback@97(sum, id): inferred by TypeScript; see implementation
+callback@131(sum, id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,7 +130,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## headBeams
 
-[Implementation, line 149](../../../../../src/catalog/presentation/a3-lamps.ts#L149)
+[Implementation, line 183](../../../../../src/catalog/presentation/a3-lamps.ts#L183)
 
 ```ts
 headBeams(model: THREE.Object3D): THREE.SpotLight[]
@@ -153,12 +155,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `owner.position.copy`
 - `owner.position.copy(center).add`
 
-## headBeams.callback@153
+## headBeams.callback@187
 
-[Implementation, line 153](../../../../../src/catalog/presentation/a3-lamps.ts#L153)
+[Implementation, line 187](../../../../../src/catalog/presentation/a3-lamps.ts#L187)
 
 ```ts
-callback@153(object): inferred by TypeScript; see implementation
+callback@187(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

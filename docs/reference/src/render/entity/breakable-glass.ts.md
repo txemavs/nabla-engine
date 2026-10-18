@@ -30,7 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BreakableGlass.removePane
 
-[Implementation, line 32](../../../../../src/render/entity/breakable-glass.ts#L32)
+[Implementation, line 36](../../../../../src/render/entity/breakable-glass.ts#L36)
 
 Remove only the connected glass pane struck by the ray; preserve shared asset geometry.
 
@@ -62,17 +62,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.originals.set`
 - `vertex`
 
-## BreakableGlass.removePane.callback@42
+## BreakableGlass.removePane.callback@46
 
-[Implementation, line 42](../../../../../src/render/entity/breakable-glass.ts#L42)
+[Implementation, line 46](../../../../../src/render/entity/breakable-glass.ts#L46)
 
 ```ts
-callback@42(group): inferred by TypeScript; see implementation
+callback@46(group): inferred by TypeScript; see implementation
 ```
 
 ## BreakableGlass.removePane.vertex
 
-[Implementation, line 44](../../../../../src/render/entity/breakable-glass.ts#L44)
+[Implementation, line 48](../../../../../src/render/entity/breakable-glass.ts#L48)
 
 ```ts
 vertex(i: number): inferred by TypeScript; see implementation
@@ -84,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BreakableGlass.removePane.key
 
-[Implementation, line 45](../../../../../src/render/entity/breakable-glass.ts#L45)
+[Implementation, line 49](../../../../../src/render/entity/breakable-glass.ts#L49)
 
 ```ts
 key(i: number): inferred by TypeScript; see implementation
@@ -97,12 +97,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position.getZ`
 - `vertex`
 
-## BreakableGlass.removePane.key.callback@48
+## BreakableGlass.removePane.key.callback@52
 
-[Implementation, line 48](../../../../../src/render/entity/breakable-glass.ts#L48)
+[Implementation, line 52](../../../../../src/render/entity/breakable-glass.ts#L52)
 
 ```ts
-callback@48(n): inferred by TypeScript; see implementation
+callback@52(n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -111,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BreakableGlass.clear
 
-[Implementation, line 80](../../../../../src/render/entity/breakable-glass.ts#L80)
+[Implementation, line 84](../../../../../src/render/entity/breakable-glass.ts#L84)
 
 Remove only the connected glass pane struck by the ray; preserve shared asset geometry.
 

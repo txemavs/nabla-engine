@@ -23,7 +23,11 @@ export class BreakableGlass {
       const material = materials[hit.face.materialIndex]
       if (!material || !material.visible || (material.transparent && material.opacity < 0.05))
         continue
-      if (!/glass|vidrio|cristal|parabrisas|windscreen|window/i.test(material.name)) return null
+      if (
+        mesh.userData.breakableGlass !== true &&
+        !/glass|vidrio|cristal|parabrisas|windscreen|window/i.test(material.name)
+      )
+        return null
       this.removePane(mesh, hit.faceIndex, hit.face.materialIndex)
       return hit.point.clone()
     }
