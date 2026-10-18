@@ -4,17 +4,16 @@
 
 [Source](../../../../../src/render/vehicle-presentation/light-rig.ts)
 
-Fixed renderer lights for the occupied vehicle. GLB lamps stay hidden so light count never changes.
-
 ## Module dependencies
 
+- `./light-tuning.js`
 - `three`
 - `../../config/lighting.js`
 - `./authored-lights.js`
 
 ## VehicleLightRig.constructor
 
-[Implementation, line 22](../../../../../src/render/vehicle-presentation/light-rig.ts#L22)
+[Implementation, line 23](../../../../../src/render/vehicle-presentation/light-rig.ts#L23)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
@@ -32,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.pedestrianLight
 
-[Implementation, line 40](../../../../../src/render/vehicle-presentation/light-rig.ts#L40)
+[Implementation, line 41](../../../../../src/render/vehicle-presentation/light-rig.ts#L41)
 
 Unmapped headlight slot, reusable by the pedestrian while no vehicle owns the rig.
 
@@ -42,7 +41,7 @@ pedestrianLight(): SpotLight
 
 ## VehicleLightRig.lights
 
-[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-rig.ts#L44)
+[Implementation, line 45](../../../../../src/render/vehicle-presentation/light-rig.ts#L45)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
@@ -52,27 +51,21 @@ lights(): Light[]
 
 ## VehicleLightRig.capture
 
-[Implementation, line 49](../../../../../src/render/vehicle-presentation/light-rig.ts#L49)
+[Implementation, line 50](../../../../../src/render/vehicle-presentation/light-rig.ts#L50)
 
 Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant.
 
 ```ts
-capture(spots: readonly SpotLight[], points: readonly PointLight[]): void
+capture(spots: readonly SpotLight[], points: readonly PointLight[], offset?: Vector3): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `light.position.add`
+- `light.target.position.add`
 - `spots.filter`
 - `this.copy`
 - `this.root.updateWorldMatrix`
-
-## VehicleLightRig.capture.callback@52
-
-[Implementation, line 52](../../../../../src/render/vehicle-presentation/light-rig.ts#L52)
-
-```ts
-callback@52(light): inferred by TypeScript; see implementation
-```
 
 ## VehicleLightRig.capture.callback@53
 
@@ -82,14 +75,22 @@ callback@52(light): inferred by TypeScript; see implementation
 callback@53(light): inferred by TypeScript; see implementation
 ```
 
+## VehicleLightRig.capture.callback@54
+
+[Implementation, line 54](../../../../../src/render/vehicle-presentation/light-rig.ts#L54)
+
+```ts
+callback@54(light): inferred by TypeScript; see implementation
+```
+
 ## VehicleLightRig.groundGlow
 
-[Implementation, line 67](../../../../../src/render/vehicle-presentation/light-rig.ts#L67)
+[Implementation, line 73](../../../../../src/render/vehicle-presentation/light-rig.ts#L73)
 
 Subtle downward road wash, using a spare unmapped slot rather than another light.
 
 ```ts
-groundGlow(vehicle: Object3D, braking = false): void
+groundGlow(vehicle: Object3D, braking = false, tuning: VehicleLightTuning = vehicleLightDefaults): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -104,26 +105,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.rearGroundGlow
 
-[Implementation, line 88](../../../../../src/render/vehicle-presentation/light-rig.ts#L88)
+[Implementation, line 98](../../../../../src/render/vehicle-presentation/light-rig.ts#L98)
 
 Rear road fill for bikes and articulated vehicles, reusing spare fixed point slots.
 
 ```ts
-rearGroundGlow(vehicle: Object3D, width: number, length: number, count: 1 | 2, braking: boolean): void
+rearGroundGlow(vehicle: Object3D, width: number, length: number, count: 1 | 2, braking: boolean, tuning: VehicleLightTuning = vehicleLightDefaults, anchor?: Object3D): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Vector3`
+- `anchor.getWorldPosition`
 - `light.color.set`
 - `light.position.copy`
 - `this.root.worldToLocal`
+- `this.world.add`
 - `this.world.set`
 - `vehicle.localToWorld`
 - `vehicle.updateWorldMatrix`
+- `vehicle.worldToLocal`
 
 ## VehicleLightRig.dispose
 
-[Implementation, line 110](../../../../../src/render/vehicle-presentation/light-rig.ts#L110)
+[Implementation, line 128](../../../../../src/render/vehicle-presentation/light-rig.ts#L128)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
@@ -140,7 +145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.copy
 
-[Implementation, line 121](../../../../../src/render/vehicle-presentation/light-rig.ts#L121)
+[Implementation, line 139](../../../../../src/render/vehicle-presentation/light-rig.ts#L139)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 

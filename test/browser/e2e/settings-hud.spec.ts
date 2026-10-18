@@ -49,6 +49,25 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     const runtime = {
       usbControllers: new UsbControllers(null),
       getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
+      vehicleLightAdjustment: {
+        model: '/test-bike.glb',
+        name: 'Moto de prueba',
+        values: {
+          low: 0,
+          high: 1,
+          frontX: 0,
+          frontY: 0,
+          frontZ: 0,
+          rearX: 0,
+          rearY: 0,
+          rearZ: 0,
+          rearIntensity: 1,
+          rearReach: 1,
+        },
+      },
+      setVehicleLightAdjustment: (patch: object) => {
+        Object.assign(runtime.vehicleLightAdjustment.values, patch)
+      },
       setVehicleBeamCutoff: () => {},
       terrainTiles: [
         { tile: { z: 15, x: 16224, y: 11998 }, kind: 'mesh', state: 'visible' },
@@ -322,6 +341,20 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     await page.evaluate(() => JSON.parse(localStorage.getItem('euskadi.irun-signs')!)),
   ).toMatchObject({ limit: 75, radius: 120, physicsRadius: 20 })
   expect(await page.evaluate(() => document.documentElement.dataset.signPhysicsRadius)).toBe('20')
+  await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
+  await page.getByRole('button', { name: 'Luces', exact: true }).click()
+  await expect(page.locator('#settings-car-beams')).toContainText('Moto de prueba')
+  const rearHeight = page.getByRole('slider', {
+    name: 'Luz trasera: arriba / abajo (m)',
+    exact: true,
+  })
+  await rearHeight.fill('0.12')
+  await page.getByRole('button', { name: 'Compartir ajustes de luces' }).click()
+  const shared = page.getByRole('textbox', { name: 'Ajustes de luces para compartir' })
+  expect(JSON.parse(await shared.inputValue())).toMatchObject({
+    model: '/test-bike.glb',
+    values: { rearY: 0.12 },
+  })
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
   await expect(page.locator('#settings-toggle')).toHaveAttribute('aria-expanded', 'false')

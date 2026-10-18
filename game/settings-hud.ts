@@ -77,10 +77,10 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-options-sidearm', 'dev'],
   ['settings-weapon-poses', 'dev'],
   ['settings-muzzle-flash', 'dev'],
-  ['settings-options-driver', 'dev'],
-  ['settings-truck-exhaust', 'dev'],
+  ['settings-options-driver', 'objects'],
+  ['settings-truck-exhaust', 'objects'],
   ['settings-light', 'dev'],
-  ['settings-car-beams', 'dev'],
+  ['settings-car-beams', 'objects'],
   ['settings-sign-shadows', 'dev'],
   ['settings-experimental-light-shadows', 'dev'],
   ['settings-config-planet', 'dev'],
@@ -100,6 +100,9 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'terrain-layers': 'Suelo',
   'road-style': 'Contraste del asfalto',
   'scene-vehicles': 'Añadir',
+  'settings-car-beams': 'Luces',
+  'settings-truck-exhaust': 'Humo del camión',
+  'settings-options-driver': 'Conductor y espejos',
   'display-quality-section': 'Calidad',
   'settings-options-labels': 'Nombres de lugares',
   'settings-sound': 'Sonido',
@@ -464,32 +467,103 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(experimental)
   }
 
+  let refreshVehicleLights = () => {}
   {
-    const section = fieldset('settings-car-beams', 'Luces del coche')
-    for (const [kind, title] of [
-      ['low', 'Corte de cortas (°)'],
-      ['high', 'Corte de largas (°)'],
-    ] as const) {
-      const label = doc.createElement('label')
-      const input = doc.createElement('input')
+    const section = fieldset('settings-car-beams', 'Vehículo · luces')
+    const status = doc.createElement('p')
+    section.append(status)
+    const controls = new Map<string, HTMLInputElement>()
+    const spec = [
+      ['low', 'Corte de cortas (°)', -5, 5, 0.01],
+      ['high', 'Corte de largas (°)', -5, 5, 0.01],
+      ['frontX', 'Faros: derecha / izquierda (m)', -2, 2, 0.01],
+      ['frontY', 'Faros: arriba / abajo (m)', -2, 2, 0.01],
+      ['frontZ', 'Faros: atrás / delante (m)', -2, 2, 0.01],
+      ['rearX', 'Luz trasera: derecha / izquierda (m)', -2, 2, 0.01],
+      ['rearY', 'Luz trasera: arriba / abajo (m)', -2, 2, 0.01],
+      ['rearZ', 'Luz trasera: atrás / delante (m)', -2, 2, 0.01],
+      ['rearIntensity', 'Luz trasera: intensidad (×)', 0, 3, 0.05],
+      ['rearReach', 'Luz trasera: alcance (×)', 0, 3, 0.05],
+    ] as const
+    for (const [key, title, min, max, step] of spec) {
+      const label = doc.createElement('label'),
+        input = doc.createElement('input')
       input.type = 'range'
-      input.min = '-5'
-      input.max = '5'
-      input.step = '0.1'
-      input.value = String(runtime.getVehicleBeamCutoff(kind))
+      input.min = String(min)
+      input.max = String(max)
+      input.step = String(step)
+      input.setAttribute('aria-label', title)
       const output = doc.createElement('output')
-      output.textContent = `${Number(input.value).toFixed(1)}°`
       input.addEventListener('input', () => {
-        runtime.setVehicleBeamCutoff(kind, Number(input.value))
-        output.textContent = `${Number(input.value).toFixed(1)}°`
+        runtime.setVehicleLightAdjustment({ [key]: Number(input.value) })
+        output.textContent = Number(input.value).toFixed(2)
+        refreshVehicleLights()
       })
+      controls.set(key, input)
       label.append(title, input, output)
       section.append(label)
     }
+    const reset = doc.createElement('button'),
+      share = doc.createElement('button')
+    reset.type = share.type = 'button'
+    reset.textContent = 'Restablecer luces'
+    share.textContent = 'Compartir ajustes de luces'
+    const exported = doc.createElement('textarea')
+    exported.readOnly = true
+    exported.hidden = true
+    exported.setAttribute('aria-label', 'Ajustes de luces para compartir')
+    share.addEventListener('click', async () => {
+      const current = runtime.vehicleLightAdjustment
+      if (!current) return
+      const text = JSON.stringify(
+        {
+          schema: 'nabla.vehicle-lights/1',
+          ...current,
+          units: { position: 'metres', cutoff: 'degrees' },
+        },
+        null,
+        2,
+      )
+      exported.value = text
+      exported.hidden = false
+      try {
+        await navigator.clipboard.writeText(text)
+        share.textContent = 'Ajustes copiados'
+      } catch {
+        exported.focus()
+        exported.select()
+      }
+    })
+    let previous = ''
+    refreshVehicleLights = () => {
+      const current = runtime.vehicleLightAdjustment
+      const signature = JSON.stringify(current)
+      if (signature === previous) return
+      previous = signature
+      status.textContent = current
+        ? current.name + ' · ajustes guardados para este modelo'
+        : 'Entra en un vehículo para ajustar sus luces.'
+      for (const [key, input] of controls) {
+        input.disabled = !current
+        if (current) {
+          input.value = String(current.values[key as keyof typeof current.values])
+          input.nextElementSibling!.textContent = Number(input.value).toFixed(2)
+        }
+      }
+      reset.disabled = share.disabled = !current
+      exported.hidden = true
+      share.textContent = 'Compartir ajustes de luces'
+    }
+    reset.addEventListener('click', () => {
+      runtime.setVehicleLightAdjustment()
+      previous = ''
+      refreshVehicleLights()
+    })
     const note = doc.createElement('p')
     note.textContent =
-      'Ajuste del corte respecto al original. Positivo: ilumina más arriba. Ajustes de prueba para esta sesión.'
-    section.append(note)
+      'Ajusta la posición de las luces, no la geometría del piloto. Se guarda por modelo en este navegador. Compartir copia los valores para convertirlos después en valores de fábrica.'
+    section.append(reset, share, exported, note)
+    refreshVehicleLights()
     place(section)
   }
 
@@ -580,12 +654,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       parent.append(label)
       return input
     }
-    const limit = number('Cantidad máxima', saved.limit, 100, 1, 500)
+    const limit = number('Cantidad máxima', saved.limit, 50, 1, 500)
     const radius = number('Distancia alrededor del jugador (m)', saved.radius, 150, 25, 500)
     const physicsRadius = number(
       'Distancia de física (m)',
       saved.physicsRadius,
-      45,
+      30,
       5,
       150,
       physicsSection,
@@ -783,7 +857,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     byId('scene-mirrors'),
   )
   if (driverGroups.length) {
-    const driver = fieldset('settings-options-driver', 'Conductor, volante y espejos')
+    const driver = fieldset('settings-options-driver', 'Vehículo · conductor y espejos')
     driver.append(...driverGroups)
     place(driver)
   }
@@ -1147,6 +1221,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       sections: ['driving-extras', 'settings-controls', 'settings-usb'],
     },
     {
+      tab: 'objects',
+      id: 'current-vehicle',
+      label: 'Vehículo actual',
+      sections: ['settings-options-driver', 'settings-car-beams', 'settings-truck-exhaust'],
+    },
+    {
       tab: 'dev',
       id: 'weapons',
       label: 'Armas',
@@ -1365,6 +1445,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
   })
   const updateClock = () => {
+    refreshVehicleLights()
     if (runtime.skyClock)
       toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))
     if (!win.hidden && activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')

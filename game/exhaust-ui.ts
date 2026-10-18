@@ -9,7 +9,7 @@ export function bindExhaustControls(
     'truckExhaustOffset' | 'setTruckExhaustOffset' | 'truckExhaustAmount' | 'setTruckExhaustAmount'
   >,
 ): void {
-  const group = menuSection('settings-truck-exhaust', 'Camión · posición del humo (provisional)')
+  const group = menuSection('settings-truck-exhaust', 'Vehículo · humo del camión')
   const storage = browserStorage()
   const key = 'nabla.truckExhaustOffset'
   const amountKey = 'nabla.truckExhaustAmount'

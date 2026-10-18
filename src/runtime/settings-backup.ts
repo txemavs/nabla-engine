@@ -62,6 +62,7 @@ export const preferenceQueryKeys = new Set([
 export const isPreferenceKey = (key: string): boolean =>
   preferenceKeys.has(key) ||
   key.startsWith('nabla.mirrors:') ||
+  key.startsWith('nabla.vehicle-lights.') ||
   key.startsWith('nabla.steeringWheel:')
 export const isCalibrationKey = (key: string): boolean =>
   key === 'nabla.usb.controllers.v1' ||

@@ -1,3 +1,4 @@
+import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
   VehiclePresentationResolver,
@@ -2061,12 +2062,27 @@ export class SceneView {
         if (material instanceof THREE.MeshStandardMaterial) callback(material)
     })
   }
+  private readonly rearLampAnchors = new WeakMap<THREE.Object3D, THREE.Object3D | null>()
   private captureOccupiedLights(vehicleId: string | null, sim: Simulation): void {
     const authored = vehicleId ? this.authoredLights.get(vehicleId)?.illuminators() : undefined
     const courtesy = vehicleId ? (this.carLights.get(vehicleId)?.courtesyLights ?? []) : []
     const group = vehicleId ? this.objects.get(vehicleId) : undefined
     group?.updateWorldMatrix(true, true)
-    this.vehicleLights.capture(authored?.spots ?? [], [...(authored?.points ?? []), ...courtesy])
+    const entity = this.document.entities.find((item) => item.id === vehicleId)
+    const tuning = readVehicleLights(entity?.visual?.body.url ?? vehicleId ?? '')
+    if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
+    const offset = new THREE.Vector3(tuning.frontX, tuning.frontY, tuning.frontZ)
+    if (group) {
+      offset.applyMatrix4(group.matrixWorld).sub(group.getWorldPosition(new THREE.Vector3()))
+      offset.applyQuaternion(
+        this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert(),
+      )
+    }
+    this.vehicleLights.capture(
+      authored?.spots ?? [],
+      [...(authored?.points ?? []), ...courtesy],
+      offset,
+    )
     if (
       vehicleId &&
       group &&
@@ -2074,7 +2090,7 @@ export class SceneView {
       this.carLights.has(vehicleId) &&
       !this.motorcycleRigs.has(vehicleId)
     )
-      this.vehicleLights.groundGlow(group, sim.vehicleInfo(vehicleId).braking)
+      this.vehicleLights.groundGlow(group, sim.vehicleInfo(vehicleId).braking, tuning)
     if (vehicleId && this.night) {
       for (const entity of this.document.entities) {
         if (
@@ -2086,14 +2102,29 @@ export class SceneView {
         const truck = entity.visual?.presentation === 'nabla.truck'
         const trailer = sim.vehicleInfo(entity.id).towVehicleId === vehicleId
         const object = this.objects.get(entity.id)
-        if (object && (bike || truck || trailer))
+        if (object && (bike || truck || trailer)) {
+          if (!this.rearLampAnchors.has(object)) {
+            let anchor: THREE.Object3D | null = null
+            object.traverse((node) => {
+              if (
+                node.userData.nabla?.anchor === 'light.tail.brake' ||
+                node.name === 'light.tail.brake' ||
+                node.name === 'light_tail_brake'
+              )
+                anchor = node
+            })
+            this.rearLampAnchors.set(object, anchor)
+          }
           this.vehicleLights.rearGroundGlow(
             object,
             entity.size[0],
             entity.size[2],
             1,
             sim.vehicleInfo(vehicleId).braking,
+            readVehicleLights(entity.visual?.body.url ?? entity.id),
+            this.rearLampAnchors.get(object) ?? undefined,
           )
+        }
       }
     }
   }
