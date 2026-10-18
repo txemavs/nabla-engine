@@ -3185,15 +3185,37 @@ export class GameRuntime {
   }
   /** Light calibration for the occupied vehicle model; null on foot. */
   get vehicleLightAdjustment() {
-    const id = this.session.simulation?.player.vehicleId
-    const entity = this.document.entities.find((item) => item.id === id)
-    if (!entity) return null
-    const model = entity.visual?.body.url ?? entity.id
-    return { model, name: entity.name ?? entity.id, values: readVehicleLights(model) }
+    const occupied = this.occupiedVehicle
+    if (!occupied) return null
+    return {
+      model: occupied.model,
+      name: occupied.name,
+      lamps: occupied.lamps,
+      values: readVehicleLights(occupied.model, occupied.lightDefaults),
+    }
   }
   setVehicleLightAdjustment(patch?: Partial<VehicleLightTuning>): void {
-    const current = this.vehicleLightAdjustment
-    if (current) writeVehicleLights(current.model, patch)
+    const occupied = this.occupiedVehicle
+    if (occupied) writeVehicleLights(occupied.model, patch, occupied.lightDefaults)
+  }
+  /**
+   * The occupied vehicle as the per-vehicle settings see it (null on foot): its name, model, which
+   * lamp groups it can light and whether it has mirrors or exhaust. The menu groups every
+   * per-vehicle option under this name and shows only what applies.
+   */
+  get occupiedVehicle() {
+    const id = this.session.simulation?.player.vehicleId
+    const entity = this.document.entities.find((item) => item.id === id)
+    if (!id || !entity) return null
+    return {
+      id,
+      name: entity.name ?? entity.id,
+      model: entity.visual?.body.url ?? entity.id,
+      lightDefaults: entity.vehicle?.lights?.tuning,
+      lamps: this.view.vehicleLamps(id),
+      mirrors: this.view.mirrorModel(id) !== undefined,
+      exhaust: this.view.hasExhaust(id),
+    }
   }
   /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */
   get mirrors(): MirrorState | null {

@@ -83,7 +83,7 @@ browser. Loading the example is undoable and does not overwrite the saved copy.
 - [Complete module and function reference](docs/reference/README.md)
 
 - [Module map and public API](docs/architecture/module-map.md)
-- [Create a vehicle](docs/creating-a-vehicle.md) · [Create a monitor](docs/creating-a-monitor.md)
+- [Create a vehicle](docs/creating-a-vehicle.md) · [Define a vehicle (JSON, lights, mirrors, exhaust, sounds)](docs/vehicle-definition.md) · [Create a monitor](docs/creating-a-monitor.md)
 - [Vehicle modularity: modular architecture and acceptance evidence](docs/architecture/vehicle-modularity.md)
 
 Start with the [documentation index](docs/README.md).

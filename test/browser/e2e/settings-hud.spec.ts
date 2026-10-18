@@ -52,6 +52,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       vehicleLightAdjustment: {
         model: '/test-bike.glb',
         name: 'Moto de prueba',
+        lamps: { front: true, rear: true },
         values: {
           low: 0,
           high: 1,
@@ -64,6 +65,14 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
           rearIntensity: 1,
           rearReach: 1,
         },
+      },
+      occupiedVehicle: {
+        id: 'test-bike',
+        name: 'Moto de prueba',
+        model: '/test-bike.glb',
+        lamps: { front: true, rear: true },
+        mirrors: true,
+        exhaust: false,
       },
       setVehicleLightAdjustment: (patch: object) => {
         Object.assign(runtime.vehicleLightAdjustment.values, patch)

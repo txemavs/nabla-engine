@@ -3,6 +3,7 @@ import { Group, SpotLight, DirectionalLight, Vector3, Mesh, MeshStandardMaterial
 import { cloneAssetScene } from '../../src/render/entity/assets.js'
 import {
   AuthoredVehicleLights,
+  lampFromMaterialName,
   lowBeamMask,
 } from '../../src/render/vehicle-presentation/authored-lights.js'
 import { lightingDefaults } from '../../src/config/lighting.js'
@@ -145,4 +146,50 @@ it('keeps dipped left aim, subtly raises right and opens high beams without a na
   expect(elevations[2]).toBeCloseTo((2 * Math.PI) / 180)
   expect(lamps[2].angle).toBe(lightingDefaults.lowBeamOuterCone)
   control.dispose()
+})
+
+it('resolves lamp roles from nabla.light.* material names only', () => {
+  expect(lampFromMaterialName('nabla.light.low')).toEqual({ channel: 'low', side: 0 })
+  expect(lampFromMaterialName('nabla.light.tail')).toEqual({ channel: 'tail-stop', side: 0 })
+  expect(lampFromMaterialName('nabla.light.indicator.l')).toEqual({ channel: 'signal', side: -1 })
+  expect(lampFromMaterialName('nabla.light.indicator.r.rear')).toEqual({
+    channel: 'signal',
+    side: 1,
+  })
+  expect(lampFromMaterialName('nabla.light.unknown')).toBeUndefined()
+  expect(lampFromMaterialName('Headlamp clear lens')).toBeUndefined()
+  expect(lampFromMaterialName('x.nabla.light.low')).toBeUndefined()
+})
+
+it('drives a named lamp lens and gives it the data lens colour only while lit', () => {
+  const root = new Group()
+  const lens = new MeshStandardMaterial({
+    name: 'nabla.light.low',
+    emissive: 0x2d2b26,
+    emissiveIntensity: 2,
+  })
+  const plain = new MeshStandardMaterial({
+    name: 'Paint',
+    emissive: 0x101010,
+    emissiveIntensity: 1,
+  })
+  root.add(new Mesh(undefined, lens), new Mesh(undefined, plain))
+  const control = new AuthoredVehicleLights(root, undefined, { lensEmissive: { low: '#ffffff' } })
+  expect(control.channels().has('low')).toBe(true)
+  // Dark until the lamp is lit: the glow is the authored intensity, applied by the controller.
+  expect(lens.emissiveIntensity).toBe(0)
+  expect(lens.emissive.getHex()).toBe(0xffffff)
+  expect(plain.emissive.getHex()).toBe(0x101010)
+  expect(plain.emissiveIntensity).toBe(1)
+  control.cycle()
+  control.cycle()
+  expect(lens.emissiveIntensity).toBeGreaterThan(0)
+})
+
+it('keeps the asset lens colour when the data names no colour for that lamp', () => {
+  const root = new Group()
+  const lens = new MeshStandardMaterial({ name: 'nabla.light.tail', emissive: 0xff0000 })
+  root.add(new Mesh(undefined, lens))
+  new AuthoredVehicleLights(root, undefined, { lensEmissive: { low: '#ffffff' } })
+  expect(lens.emissive.getHex()).toBe(0xff0000)
 })
