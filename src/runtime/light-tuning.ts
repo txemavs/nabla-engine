@@ -25,7 +25,7 @@ export interface LightTuning {
 export const lightTuningDefaults: Readonly<LightTuning> = Object.freeze({
   exposure: PLANET_DEFAULTS.exposure,
   sun: 1,
-  ambient: 1,
+  ambient: 3.5,
   reflections: 0.25,
   paint: 1,
   shadows: true,

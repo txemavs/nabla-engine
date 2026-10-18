@@ -8,6 +8,8 @@ export const lightingDefaults = Object.freeze({
   ambientIntensity: 0.22,
   /** Atmospheric daylight factor below which presentation is considered night, [0, 1]. */
   nightThreshold: 0.15,
+  /** Automatic vehicle beams require deep dusk; daytime shadows do not trigger them. */
+  vehicleAutoDarkThreshold: 0.04,
   /** Subtle vehicle footwell fill: point-light intensity in candela. */
   courtesyIntensity: 0.08,
   /** Local footwell cutoff in metres; prevents broad cabin/exterior spill. */
@@ -45,6 +47,8 @@ export const lightingDefaults = Object.freeze({
   lowBeamInnerCone: 0.35,
   lowBeamOuterCone: 0.65,
   highBeamIntensity: 18000,
+  /** Main beams are 20% brighter than dipped beams for the standard 18000/1800 sources. */
+  highBeamIntensityScale: 0.12,
   highBeamRange: 130,
   /** Face flashlight brightness in candela, independent of vehicle high beams. */
   flashlightIntensity: 1800,
@@ -65,7 +69,7 @@ export const lightingDefaults = Object.freeze({
   /** Fixed renderer budget for occupied-vehicle illumination. Parked GLB lights stay hidden. */
   vehicleSpots: 6,
   vehiclePoints: 10,
-  vehicleMappedSpots: 2,
+  vehicleMappedSpots: 4,
   /** Fixed budgets for placeable highway cones and neighbourhood globe lamps. No shadows.
    * Disabled for now (Txema, 2026-10-09): 0 = poles keep their lit lenses but cast no light. */
   streetSpots: 0,

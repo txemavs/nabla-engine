@@ -115,3 +115,24 @@ it('uses a spare downward spotlight for the red road wash and clears it on exit'
   expect(light.intensity).toBe(0)
   rig.dispose()
 })
+
+it('boosts rear road fill by 32% while braking without adding renderer lights', () => {
+  const rig = new VehicleLightRig(),
+    vehicle = new Group()
+  rig.capture([], [])
+  rig.groundGlow(vehicle)
+  const glow = rig.lights.find((light) => light.intensity === 4.8) as SpotLight
+  expect(glow).toBeDefined()
+  rig.groundGlow(vehicle, true)
+  expect(glow.intensity).toBeCloseTo(4.8 * 1.32)
+  expect(glow.distance).toBeCloseTo(6.6)
+  rig.capture([], [])
+  rig.rearGroundGlow(vehicle, 2.5, 6, 2, false)
+  rig.rearGroundGlow(new Group(), 2.5, 12, 2, true)
+  expect(rig.lights.filter((light) => light.intensity > 0)).toHaveLength(4)
+  expect(rig.lights).toHaveLength(vehicleLightBudget.spots + vehicleLightBudget.points)
+  rig.capture([], [])
+  rig.rearGroundGlow(vehicle, 0.8, 2, 1, false)
+  expect(rig.lights.filter((light) => light.intensity > 0)).toHaveLength(1)
+  rig.dispose()
+})

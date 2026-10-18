@@ -16,6 +16,7 @@ export class VehicleLightRig {
   private readonly points: PointLight[] = []
   private readonly mask = lowBeamMask()
   private readonly world = new Vector3()
+  private nextGroundPoint = 0
   private freeGroundSlot: SpotLight | undefined
 
   constructor() {
@@ -46,6 +47,7 @@ export class VehicleLightRig {
 
   /** Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. */
   capture(spots: readonly SpotLight[], points: readonly PointLight[]): void {
+    this.nextGroundPoint = points.length
     this.root.updateWorldMatrix(true, false)
     const mapped = spots.filter((light) => light.map)
     const plain = spots.filter((light) => !light.map)
@@ -62,7 +64,7 @@ export class VehicleLightRig {
   }
 
   /** Subtle downward road wash, using a spare unmapped slot rather than another light. */
-  groundGlow(vehicle: Object3D): void {
+  groundGlow(vehicle: Object3D, braking = false): void {
     const light = this.freeGroundSlot
     if (!light || light === this.pedestrianLight) return
     vehicle.updateWorldMatrix(true, false)
@@ -73,13 +75,36 @@ export class VehicleLightRig {
     vehicle.localToWorld(this.world)
     light.target.position.copy(this.root.worldToLocal(this.world))
     light.color.set('#ff2410')
-    light.intensity = 4.8
-    light.distance = 5
+    light.intensity = 4.8 * (braking ? 1.32 : 1)
+    light.distance = 5 * (braking ? 1.32 : 1)
     light.decay = 1
     light.angle = 1.3
     light.penumbra = 1
     // This slot is never the pedestrian shadow slot.
     light.castShadow = false
+  }
+
+  /** Rear road fill for bikes and articulated vehicles, reusing spare fixed point slots. */
+  rearGroundGlow(
+    vehicle: Object3D,
+    width: number,
+    length: number,
+    count: 1 | 2,
+    braking: boolean,
+  ): void {
+    vehicle.updateWorldMatrix(true, false)
+    for (let i = 0; i < count; i++) {
+      const light = this.points[this.nextGroundPoint++]
+      if (!light) return
+      this.world.set(count === 1 ? 0 : (i ? 1 : -1) * width * 0.35, -0.25, length / 2 - 0.2)
+      vehicle.localToWorld(this.world)
+      light.position.copy(this.root.worldToLocal(this.world))
+      light.color.set('#ff2410')
+      light.intensity = (count === 1 ? 1.8 : 1.2) * (braking ? 1.32 : 1)
+      light.distance = 3 * (braking ? 1.32 : 1)
+      light.decay = 1
+      light.castShadow = false
+    }
   }
 
   dispose(): void {
@@ -107,6 +132,8 @@ export class VehicleLightRig {
     slot.distance = source.distance
     slot.decay = source.decay
     if (!(slot instanceof SpotLight) || !(source instanceof SpotLight)) return
+    // Projection slots stay mapped for a constant shader budget; copy the beam pattern.
+    if (slot.map && source.map) slot.map = source.map
     slot.angle = source.angle
     slot.penumbra = source.penumbra
     source.target.updateWorldMatrix(true, false)

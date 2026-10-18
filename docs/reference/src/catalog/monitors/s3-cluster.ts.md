@@ -8,4 +8,26 @@
 
 - `../../render/monitors/layered-monitor.js`
 
-This module contains declarations, data or re-exports; it defines no executable functions.
+## callback@79
+
+[Implementation, line 79](../../../../../src/catalog/monitors/s3-cluster.ts#L79)
+
+```ts
+callback@79(side, index): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `side.toLowerCase`
+
+## callback@89
+
+[Implementation, line 89](../../../../../src/catalog/monitors/s3-cluster.ts#L89)
+
+```ts
+callback@89(mode): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mode.toLowerCase`

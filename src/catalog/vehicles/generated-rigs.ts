@@ -23,7 +23,7 @@ export const generatedVehicleRigs: Record<
 > = {
   a3: {
     source: '/library/cars/a3/a3.cabrio.glb',
-    sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
+    sha256: '6d376713f412a0507094abb4c6f05ce2652a4d7126bdb05152e635f249f30d13',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
       [0.7622195, -0.28462600000000005, -1.291815],
@@ -48,7 +48,7 @@ export const generatedVehicleRigs: Record<
   },
   car: {
     source: '/library/cars/a3/a3.cabrio.glb',
-    sha256: '4d5f48c92e93b643a6686dcef51a7567dd782f357be7e053ad7b7e1c48da5d86',
+    sha256: '6d376713f412a0507094abb4c6f05ce2652a4d7126bdb05152e635f249f30d13',
     hubs: [
       [-0.7622195, -0.28462600000000005, -1.291815],
       [0.7622195, -0.28462600000000005, -1.291815],

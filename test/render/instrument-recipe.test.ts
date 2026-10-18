@@ -14,7 +14,18 @@ it('preserves speed, manual/reverse gear and dial bindings without a vehicle ins
     manual: true,
   })
   expect(reading).toEqual({
-    values: { speed: 123.4, speedDisplay: '123', rpm: 3500, gear: 'M3', throttle: '50 %' },
+    values: {
+      lightPosition: 0,
+      lightLow: 0,
+      lightHigh: 0,
+      signalLeft: 0,
+      signalRight: 0,
+      speed: 123.4,
+      speedDisplay: '123',
+      rpm: 3500,
+      gear: 'M3',
+      throttle: '50 %',
+    },
     bars: { speed: 123 / 320, rpm: 0.5, throttle: 0.5 },
   })
   expect(

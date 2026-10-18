@@ -39,9 +39,9 @@ it('steps position then low beams, alternates high beams and masks the upper pro
   expect(low.castShadow).toBe(false)
   expect([low, high, fog].every((light) => light.visible === false)).toBe(true)
   expect(control.toggleHighBeam()).toBe(true)
-  // High beams run at 90% of the shared beam level (authored-lights.ts).
+  // High-beam sources use the shared reduction for a modest increase over standard dipped beams.
   expect([low.intensity, fog.intensity]).toEqual([0, 0])
-  expect(high.intensity).toBeCloseTo(on * 0.9)
+  expect(high.intensity).toBeCloseTo(on * 0.12)
   expect(control.toggle()).toBe(false)
   expect(high.intensity).toBe(0)
   control.dispose()
@@ -141,8 +141,8 @@ it('keeps dipped left aim, subtly raises right and opens high beams without a na
     return Math.atan2(to.y, Math.hypot(to.x, to.z))
   })
   expect(elevations[0]).toBeCloseTo(-0.035)
-  expect(elevations[1] - elevations[0]).toBeCloseTo(Math.PI / 360)
-  expect(elevations[2]).toBeCloseTo(0)
+  expect(elevations[1] - elevations[0]).toBeCloseTo(0)
+  expect(elevations[2]).toBeCloseTo((2 * Math.PI) / 180)
   expect(lamps[2].angle).toBe(lightingDefaults.lowBeamOuterCone)
   control.dispose()
 })

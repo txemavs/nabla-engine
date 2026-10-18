@@ -12,7 +12,7 @@
 
 ## CarLights.constructor
 
-[Implementation, line 22](../../../../../src/render/entity/car-lights.ts#L22)
+[Implementation, line 23](../../../../../src/render/entity/car-lights.ts#L23)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.courtesyLights
 
-[Implementation, line 31](../../../../../src/render/entity/car-lights.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/car-lights.ts#L32)
 
 Hidden courtesy sources; the shared vehicle light rig samples them while occupied.
 
@@ -38,17 +38,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.courtesy.map`
 
-## CarLights.courtesyLights.callback@32
+## CarLights.courtesyLights.callback@33
 
-[Implementation, line 32](../../../../../src/render/entity/car-lights.ts#L32)
+[Implementation, line 33](../../../../../src/render/entity/car-lights.ts#L33)
 
 ```ts
-callback@32(well): inferred by TypeScript; see implementation
+callback@33(well): inferred by TypeScript; see implementation
 ```
 
 ## CarLights.toggle
 
-[Implementation, line 34](../../../../../src/render/entity/car-lights.ts#L34)
+[Implementation, line 35](../../../../../src/render/entity/car-lights.ts#L35)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -62,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.toggleHeadlights
 
-[Implementation, line 38](../../../../../src/render/entity/car-lights.ts#L38)
+[Implementation, line 39](../../../../../src/render/entity/car-lights.ts#L39)
 
 Step the light switch (off → position → low → off) without touching brake, reverse or signal lamps.
 
@@ -76,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.cycleLights
 
-[Implementation, line 42](../../../../../src/render/entity/car-lights.ts#L42)
+[Implementation, line 43](../../../../../src/render/entity/car-lights.ts#L43)
 
 `toggleHeadlights`, returning the new switch position.
 
@@ -90,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarLights.update
 
-[Implementation, line 45](../../../../../src/render/entity/car-lights.ts#L45)
+[Implementation, line 46](../../../../../src/render/entity/car-lights.ts#L46)
 
 Prepared lens bindings; no model names, lights, shadows or extra scene passes.
 
@@ -100,7 +100,10 @@ update(state: CarLampState, now: number, night = false): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `Number`
 - `lamp.material.color.set`
 - `lamp.material.emissive.set`
+- `this.controller.glow`
 - `this.controller.indicating`
 - `this.controller.level`
