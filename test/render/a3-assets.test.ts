@@ -55,9 +55,9 @@ it('retains the corrected source paint, glazing, optical surfaces and mirror tri
       )
       hash.update(bytes)
     }
-  // Approved body with simplified headlights and original front glazing, 2026-10-18.
+  // Approved body with user-authored focosimple headlights and cleaned resources, 2026-10-18.
   expect(hash.digest('hex')).toBe(
-    'd921315613f07c5d0f883a9d3b1fecf47e9e81437bbfb141a40ade57cc591f58',
+    '72fc609e6d9b49ef35f290d693375b2c62773cc1ff71da728911b2bf625e9e19',
   )
 })
 it('keeps the complete assembled A3 under 100k triangles and includes the corrected body base', () => {
@@ -83,7 +83,7 @@ it('preserves the approved geometry and driver/mechanical anchors', () => {
     createHash('sha256')
       .update(bytes.subarray(20 + length))
       .digest('hex'),
-  ).toBe('654b1329dc4a1b7e725be36be4effa09b5a1ff6189feeb34c2463cb416675bf3')
+  ).toBe('337e80297bd447efc1cd917df1ee95fe3f152e23c32603a87d333943368658bf')
   const anchors = load('cabrio').json.nodes.filter((node) => node.name.startsWith('nabla.'))
   expect(anchors.map((node) => node.name).sort()).toEqual([
     'nabla.driver.eyes',

@@ -61,7 +61,7 @@ export class GameToolbar {
     input.setAttribute('aria-label', 'Ajuste del campo de visión en grados')
     const refresh = () => {
       input.value = String(read())
-      output.textContent = 'FOV · ajuste ' + (read() >= 0 ? '+' : '') + read() + '°'
+      output.textContent = String(read())
     }
     const well = document.createElement('div')
     well.className = 'nabla-slider-well'

@@ -72,7 +72,7 @@ test('C blends too, a one-off duration applies once, and 0 cuts', async () => {
   const state = createGameCameraState()
   state.mode = 'chase'
   updateGameCamera(sim, view, camera, state, 1000, 1 / 60)
-  expect(cycleGameCamera(state, true)).toBe('bodycam')
+  expect(cycleGameCamera(state, true)).toBe('map')
   updateGameCamera(sim, view, camera, state, 1016, 1 / 60)
   expect(state.transition?.duration).toBe(state.settings.modeTransitionMs)
   state.nextTransitionMs = 2000

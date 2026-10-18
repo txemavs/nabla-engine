@@ -47,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Headlamp.needsShadowPass
 
-[Implementation, line 34](../../../../../src/render/entity/headlamp.ts#L34)
+[Implementation, line 37](../../../../../src/render/entity/headlamp.ts#L37)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 
@@ -57,7 +57,7 @@ needsShadowPass(): boolean
 
 ## Headlamp.update
 
-[Implementation, line 37](../../../../../src/render/entity/headlamp.ts#L37)
+[Implementation, line 40](../../../../../src/render/entity/headlamp.ts#L40)
 
 Face light borrowing an existing vehicle spotlight; the vehicle rig owns its resources.
 

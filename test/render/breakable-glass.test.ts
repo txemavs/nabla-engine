@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { expect, it } from 'vitest'
+import { createA3Lights } from '../../src/catalog/presentation/a3-lamps.js'
 import { BreakableGlass } from '../../src/render/entity/breakable-glass.js'
 
 it('removes the struck pane only, does not change a shared asset, and restores on reset', () => {
@@ -48,4 +49,49 @@ it('a body panel before glass prevents the glass breaking', () => {
     mesh.geometry.dispose()
     mesh.material.dispose()
   }
+})
+
+it('breaks only the S3 outer cover and preserves LEDs, optics and the other headlamp', () => {
+  const model = new THREE.Group()
+  const geometry = new THREE.PlaneGeometry(0.5, 0.5)
+  const covers: THREE.Mesh[] = []
+  const interiors: THREE.Mesh[] = []
+  for (const [name, x] of [
+    ['Foco Derecho', -1],
+    ['Foco Izquierdo', 1],
+  ] as const) {
+    const unit = new THREE.Group()
+    unit.name = name
+    unit.position.x = x
+    model.add(unit)
+    const cover = new THREE.Mesh(
+      geometry,
+      new THREE.MeshStandardMaterial({ name: 'Foco 5', transparent: true, opacity: 0.7 }),
+    )
+    unit.add(cover)
+    covers.push(cover)
+    for (const name of ['LED BLANCO NARANJA', 'CORTA', 'Larga']) {
+      const inner = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ name }))
+      inner.position.z = -0.1
+      unit.add(inner)
+      interiors.push(inner)
+    }
+  }
+  const lights = createA3Lights(model)
+  lights.controller.mode = 'low'
+  lights.controller.highBeam = true
+  const glass = new BreakableGlass()
+  expect(
+    glass.hit([model], new THREE.Vector3(-1, 0, 2), new THREE.Vector3(0, 0, -1), 5),
+  ).not.toBeNull()
+  expect(covers[0].geometry.index!.count).toBe(0)
+  expect(covers[1].geometry.index!.count).toBe(6)
+  lights.update({ powered: true, braking: false, reversing: false }, 0)
+  for (const inner of interiors) {
+    expect(inner.geometry.index!.count).toBe(6)
+    expect((inner.material as THREE.MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(0)
+  }
+  expect(glass.hit([model], new THREE.Vector3(-1, 0, 2), new THREE.Vector3(0, 0, -1), 5)).toBeNull()
+  glass.clear()
+  expect(covers[0].geometry).toBe(geometry)
 })

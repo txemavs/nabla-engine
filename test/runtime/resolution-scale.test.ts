@@ -17,9 +17,10 @@ describe('display resolution modes', () => {
       resolutionScaleMode: 'manual',
     })
     expect(presetResolutionScales).toEqual({
-      ultra: 1.3,
-      high: 1.15,
-      balanced: 0.8,
+      ultra: 2,
+      high: 1.75,
+      balanced: 1,
+      custom: 1.5,
       low: 0.5,
       mobile: 0.45,
       minimal: 0.4,
@@ -30,7 +31,7 @@ describe('display resolution modes', () => {
         resolutionScale: scale,
         resolutionScaleMode: 'manual',
       })
-    for (const preset of ['custom', 'unknown', 'toString', undefined])
+    for (const preset of ['unknown', 'toString', undefined])
       expect(presetResolutionScale(preset)).toBe(1)
     // An explicit host or player choice wins over the preset step.
     expect(resolveDisplaySettings({ resolutionScale: 0.6 }, 'ultra').resolutionScale).toBe(0.6)

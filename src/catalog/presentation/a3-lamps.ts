@@ -33,7 +33,7 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh) || !(object.material instanceof THREE.MeshStandardMaterial))
       return
-    const material = object.material
+    let material = object.material
     let node: THREE.Object3D | null = object
     const ancestors: string[] = []
     while (node && node !== model) {
@@ -44,10 +44,31 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
     const trunk = ancestors.includes('luces maletero')
     const right = ancestors.includes('luz derecha')
     const front = ancestors.includes('foco izquierdo') || ancestors.includes('foco derecho')
+    // The separated outer cover is breakable; internal optics and LED strips are not.
+    if (front && material.name === 'Foco 5') object.userData.breakableGlass = true
+    // Each side needs independent emissive state, even when glTF shares its material.
+    const positionLed = front && ['FocoC', 'LED', 'LED BLANCO NARANJA'].includes(material.name)
+    if (positionLed) {
+      material = material.clone()
+      object.material = material
+    }
+    // Internal optical sleeves are solid reflectors, not a second transparent cover.
+    // Keep the separate Foco 5 exterior glazing untouched.
+    if (front && material.name === 'Foco 2') {
+      material = material.clone()
+      object.material = material
+      material.transparent = false
+      material.opacity = 1
+      material.depthWrite = true
+      material.side = THREE.DoubleSide
+      material.emissive.set(0x000000)
+      material.emissiveIntensity = 0
+    }
     // Glazing should blend over the emitters, never occlude later transparent surfaces.
     if ((front || rearSide || trunk) && material.transparent) material.depthWrite = false
-    if (front && material.name !== 'FocoClear') {
-      // Only the original outer cover is glass. Internal reflectors are opaque polished grey.
+    if (front && !material.transparent && !positionLed) {
+      // Preserve every authored glass material (including the separate Foco 5 cover).
+      // Only opaque internal reflectors receive the polished grey finish.
       material.transparent = false
       material.opacity = 1
       material.depthWrite = true
@@ -64,10 +85,23 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
       material.toneMapped = false
       material.side = THREE.DoubleSide
       material.emissiveIntensity = 0
-      lamps.push({ material, kind: material.name === 'CORTA' ? 'low' : 'high', side: 0 })
+      lamps.push({
+        material,
+        kind: material.name === 'CORTA' ? 'low' : 'high',
+        side: 0,
+        dedicatedPosition: true,
+      })
       return
     }
-    if (front && material.name === 'FocoC') {
+    if (positionLed) {
+      material.emissive.set('#ffffff')
+      material.toneMapped = false
+      lamps.push({
+        material,
+        kind: 'front-signal',
+        side: right || ancestors.includes('foco derecho') ? 1 : -1,
+        dedicatedPosition: true,
+      })
       material.emissiveIntensity = 0
       return
     }

@@ -126,3 +126,20 @@ it('uses a dedicated gentler intensity without changing vehicle high beams', () 
   expect(lamp.light.intensity).toBeLessThan(lightingDefaults.highBeamIntensity)
   rig.dispose()
 })
+
+it('keeps perspective shadow bias within centimetres at flashlight distances', () => {
+  const rig = new VehicleLightRig()
+  const lamp = new Headlamp(rig.pedestrianLight)
+  lamp.enabled = true
+  lamp.update(new Group())
+  lamp.light.shadow.updateMatrices(lamp.light)
+  const camera = lamp.light.shadow.camera
+  for (const distance of [5, 20, 50]) {
+    const projected = new Vector3(0, 0, -distance).applyMatrix4(camera.projectionMatrix)
+    // Shadow lookup adds bias in [0,1] depth; NDC depth spans [-1,1].
+    projected.z += 2 * lamp.light.shadow.bias
+    const receiver = projected.applyMatrix4(camera.projectionMatrixInverse)
+    expect(Math.abs(-receiver.z - distance)).toBeLessThan(0.03)
+  }
+  rig.dispose()
+})

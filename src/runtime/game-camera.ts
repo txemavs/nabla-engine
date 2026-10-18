@@ -191,8 +191,8 @@ export function gameCameraView(
 }
 
 /**
- * The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
- * exterior. On foot: first person → third person → overhead → first
+ * The single camera cycle behind C / gamepad B. Seated: driver → exterior → overhead →
+ * driver. On foot: first person → third person → overhead → first
  * person. Mutates `state` and returns the new view.
  */
 export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCameraView {
@@ -200,10 +200,10 @@ export function cycleGameCamera(state: GameCameraState, seated: boolean): GameCa
   const view = current === 'bodycam' ? (seated ? 'cockpit' : 'first-person') : current
   const next: Record<GameCameraView, GameCameraView> = seated
     ? {
-        chase: 'cockpit',
-        cockpit: 'map',
-        bodycam: 'map',
-        map: 'chase',
+        chase: 'map',
+        cockpit: 'chase',
+        bodycam: 'chase',
+        map: 'cockpit',
         cinematic: 'chase',
         'first-person': 'cockpit',
       }

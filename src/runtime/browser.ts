@@ -1,3 +1,7 @@
+import {
+  getVehicleBeamCutoff,
+  setVehicleBeamCutoff,
+} from '../render/vehicle-presentation/authored-lights.js'
 import type { FsrSettings } from '../render/effects/fsr1.js'
 import { describePrograms, latestProgramId } from './shader-diagnostics.js'
 import { MapInspector } from './map-inspector.js'
@@ -3378,6 +3382,18 @@ export class GameRuntime {
     if (!sim) throw new Error('A running game is required')
     return sim.configurePortal(id, destinationId, mode)
   }
+  /** Attach a render-only geographic layer in local metres; follows the floating origin. */
+  attachSceneryLayer(layer: THREE.Object3D): () => void {
+    this.assertAlive()
+    this.view.root.add(layer)
+    return () => layer.removeFromParent()
+  }
+
+  /** Loaded terrain elevation, without requesting cells or creating physics objects. */
+  sceneryGroundHeight(position: Vec3Tuple): number | undefined {
+    return this.world ? groundAtSeam(this.world, position) : undefined
+  }
+
   /** Remove a group added with `placeEntities` / `spawnEntities`, unlinking its portals. */
   removePlaced(id: string): void {
     this.assertAlive()
@@ -5083,6 +5099,13 @@ export class GameRuntime {
     this.headlamp.enabled = enabled && !this.session.simulation?.player.vehicleId
     this.view.setHeadLight(this.headlamp.enabled)
   }
+  getVehicleBeamCutoff(kind: 'low' | 'high'): number {
+    return getVehicleBeamCutoff(kind)
+  }
+  setVehicleBeamCutoff(kind: 'low' | 'high', degrees: number): void {
+    setVehicleBeamCutoff(kind, degrees)
+  }
+
   get headlampShadows(): boolean {
     return this.headlamp.shadows
   }

@@ -7,9 +7,9 @@ import {
 /** Full-screen HTML monitor, using the same theme tokens and controls as world-space monitors. */
 export const settingsNavigationStyles = `
 ${interfaceTabStyles}
-.settings-window { ${interfaceVariables} position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;pointer-events:auto;background:var(--surface);color:var(--ink);font:var(--text-size)/1.4 Arial,sans-serif; }
+.settings-window { ${interfaceVariables} position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;pointer-events:auto;background:transparent;color:var(--ink);font:var(--text-size)/1.4 Arial,sans-serif; }
 .settings-window[hidden],.settings-window [hidden]{display:none!important}
-.settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:var(--surface);border:0;border-radius:0;font:inherit;color:inherit;}
+.settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:transparent;border:0;border-radius:0;font:inherit;color:inherit;}
 .settings-header {display:flex;align-items:center;padding:0 30px;border-bottom:1px solid #333;}
 .settings-header strong{font:16px Arial,sans-serif!important;letter-spacing:2px;min-height:0!important;margin:0!important;color:var(--muted)}
 .settings-tabs{display:flex;align-items:stretch;gap:6px;padding:0 30px;border-bottom:1px solid var(--line);overflow-x:auto}
@@ -17,7 +17,7 @@ ${interfaceTabStyles}
 .settings-console .settings-tab[aria-selected=true]{border-bottom-color:var(--accent);background:var(--button);color:var(--ink)}
 .settings-panes,.settings-pane{min-height:0;height:100%;overflow:hidden}
 .settings-pane{display:grid;grid-template-columns:282px minmax(0,1fr)}
-.settings-sections{overflow:auto;border-right:1px solid var(--line);background:#1b1b1b;padding:26px 18px;}
+.settings-sections{overflow:auto;border-right:1px solid var(--line);background:transparent;padding:26px 18px;}
 .settings-section-content{overflow:auto;padding:34px 46px;min-width:0;}
 .settings-sections button[data-section]{display:block;width:100%;text-align:left;margin:0 0 6px;padding:10px 14px;min-height:46px;background:transparent;border:1px solid transparent;border-left:2px solid transparent;border-radius:2px;color:var(--muted);font-size:17px}
 .settings-sections button[data-section][aria-current=page]{background:var(--button);color:var(--ink);border-color:#3b3b3b;border-left-color:var(--accent)}
@@ -40,6 +40,10 @@ ${interfaceTabStyles}
 .settings-is-open .game-toolbar{display:none!important}
 .settings-key-tools{display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap}.settings-key-tools input{flex:1;min-width:160px}.settings-key-table{width:100%;border-collapse:collapse;font-size:16px}.settings-key-table :is(th,td){border-bottom:1px solid #363636;padding:12px 0;text-align:left}.settings-key-table th{color:var(--muted);font-size:13px;font-weight:400}.settings-key-table td:last-child{text-align:right}.settings-key-table small{display:block;font:11px monospace;margin:4px 0 0}.settings-key-table kbd{display:inline-block;border:1px solid var(--line);padding:3px 8px;background:var(--button);border-radius:2px;font:14px monospace}
 .settings-tile-map{position:relative;width:100%;height:55vh;min-height:250px;background:#151515;border:1px solid var(--line);overflow:hidden}.settings-map-tile{position:absolute;display:grid;place-items:center;border:1px solid #444;background:#242424;font:11px monospace;overflow:hidden;white-space:nowrap}.settings-map-tile.state-visible{background:#31543e}.settings-map-tile.state-resident{background:#304336}.settings-map-tile.state-downloading{background:#243e54}.settings-map-tile.state-installing{background:#493e56}.settings-map-tile.state-retry{background:#592e2e}
+
+/* Gameplay remains visible; text and controls retain full opacity. */
+.settings-window .settings-panes{background:rgba(24,24,24,.67)}
+.settings-window :is(.settings-header,.settings-tabs,.settings-footer){background:var(--surface)}
 
 /* Navigation stays flat even under the generic monitor button selectors. */
 .settings-window .settings-sections button[data-section]{background:transparent;border:1px solid transparent;border-left:2px solid transparent;font-size:17px;padding:10px 14px;margin:0 0 6px;min-height:46px;color:var(--muted)}

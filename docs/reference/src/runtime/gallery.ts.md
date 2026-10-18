@@ -180,6 +180,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ray.ray.origin.distanceTo`
 - `ray.ray.origin.toArray`
 - `ray.setFromCamera`
+- `sceneryRay.intersectObjects`
 - `shotView`
 - `sim.damageVehicle`
 - `sim.entityTransform`
@@ -187,6 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `skin.point.toArray`
 - `skinRay.intersectObject`
 - `skinRay.intersectObject(object, true).find`
+- `surface.object.userData.sceneryShot`
 - `this.respawn.set`
 - `view.brokenGlass.hit`
 - `view.destruction.balloons.hit`
@@ -198,6 +200,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.impacts.addSurface`
 - `view.impacts.addWorld`
 - `view.objects.get`
+- `view.root.traverseVisible`
 
 ## Gallery.shoot.callback@156
 
@@ -223,46 +226,58 @@ callback@159(e): inferred by TypeScript; see implementation
 callback@167(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@177
+## Gallery.shoot.callback@188
 
-[Implementation, line 177](../../../../src/runtime/gallery.ts#L177)
+[Implementation, line 188](../../../../src/runtime/gallery.ts#L188)
 
 ```ts
-callback@177(entity): inferred by TypeScript; see implementation
+callback@188(object): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@178
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 178](../../../../src/runtime/gallery.ts#L178)
+- `scenery.push`
+
+## Gallery.shoot.callback@196
+
+[Implementation, line 196](../../../../src/runtime/gallery.ts#L196)
 
 ```ts
-callback@178(entity): inferred by TypeScript; see implementation
+callback@196(entity): inferred by TypeScript; see implementation
+```
+
+## Gallery.shoot.callback@197
+
+[Implementation, line 197](../../../../src/runtime/gallery.ts#L197)
+
+```ts
+callback@197(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `view.objects.get`
 
-## Gallery.shoot.callback@179
+## Gallery.shoot.callback@198
 
-[Implementation, line 179](../../../../src/runtime/gallery.ts#L179)
+[Implementation, line 198](../../../../src/runtime/gallery.ts#L198)
 
 ```ts
-callback@179(object): object is THREE.Group
+callback@198(object): object is THREE.Group
 ```
 
-## Gallery.shoot.callback@206
+## Gallery.shoot.callback@225
 
-[Implementation, line 206](../../../../src/runtime/gallery.ts#L206)
+[Implementation, line 225](../../../../src/runtime/gallery.ts#L225)
 
 ```ts
-callback@206(entity): inferred by TypeScript; see implementation
+callback@225(entity): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@219
+## Gallery.shoot.callback@238
 
-[Implementation, line 219](../../../../src/runtime/gallery.ts#L219)
+[Implementation, line 238](../../../../src/runtime/gallery.ts#L238)
 
 ```ts
-callback@219(candidate): inferred by TypeScript; see implementation
+callback@238(candidate): inferred by TypeScript; see implementation
 ```

@@ -212,7 +212,7 @@ test('chase, first-person and driver views look with the mouse without a held bu
 test('C cycles ordinary views without entering cinematic', () => {
   const state = createGameCameraState()
   state.mode = 'chase'
-  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['bodycam', 'map', 'chase'])
+  expect([1, 2, 3].map(() => cycleGameCamera(state, true))).toEqual(['map', 'bodycam', 'chase'])
   state.mode = 'chase'
   state.firstPerson = true
   expect(gameCameraView(state, false)).toBe('bodycam')

@@ -482,8 +482,16 @@ export class Body {
     const r = point.vsub(this.position, new Vec3())
     return target.copy(this.velocity).vadd(this.angularVelocity.cross(r), target)
   }
+  breakawayAnchored = false
+  setBreakawayAnchor(anchored: boolean): void {
+    this.breakawayAnchored = anchored
+    this.raw?.setBodyType(anchored ? R().RigidBodyType.Fixed : R().RigidBodyType.Dynamic, true)
+  }
+  /** Streamed breakaway props stay dormant until an actual contact wakes them. */
+  preserveSleep = false
   push() {
     if (!this.raw || this.world?.stepping) return
+    if (this.preserveSleep && this.raw.isSleeping()) return
     this.raw.setTranslation(this.position.vsub(this.world?.origin ?? new Vec3()), true)
     this.raw.setRotation(this.quaternion, true)
     this.raw.setLinvel(this.velocity, true)
@@ -1047,6 +1055,19 @@ export class World {
             })
           })
         })
+      }
+    }
+    for (const contact of this.contacts) {
+      for (const [pole, other] of [
+        [contact.bi, contact.bj],
+        [contact.bj, contact.bi],
+      ]) {
+        if (!pole.breakawayAnchored || other.mass < 100 || other.velocity.length() < 0.5) continue
+        pole.setBreakawayAnchor(false)
+        pole.applyImpulse(
+          new Vec3(other.velocity.x * pole.mass, pole.mass * 1.5, other.velocity.z * pole.mass),
+          new Vec3(0, -0.5, 0),
+        )
       }
     }
   }

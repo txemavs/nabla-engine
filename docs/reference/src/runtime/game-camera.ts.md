@@ -91,8 +91,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 198](../../../../src/runtime/game-camera.ts#L198)
 
-The single camera cycle behind C / gamepad B. Seated: exterior → driver → overhead →
-exterior. On foot: first person → third person → overhead → first
+The single camera cycle behind C / gamepad B. Seated: driver → exterior → overhead →
+driver. On foot: first person → third person → overhead → first
 person. Mutates `state` and returns the new view.
 
 ```ts

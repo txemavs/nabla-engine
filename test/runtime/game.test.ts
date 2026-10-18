@@ -56,9 +56,9 @@ it('shares boarding, camera actions and fresh scene restoration across hosts', a
     expect(game.cameraState.mode).toBe('cockpit')
     expect(game.cameraState.entrance).toBeNull()
     game.action('KeyV')
-    expect(game.cameraState.mode).toBe('map')
-    expect(game.action('KeyV')).toMatch(/Chase camera/)
     expect(game.cameraState.mode).toBe('chase')
+    expect(game.action('KeyV')).toMatch(/Overhead camera/)
+    expect(game.cameraState.mode).toBe('map')
     // Re-entering runs the start-up (cranking, needle sweep) in P before W can select D.
     for (let i = 0; i < Math.ceil((START_UP_SECONDS + 2) * 60); i++)
       game.step(1 / 60, { ...idleInput(), forward: 1 }, 0, 2200 + (i * 1000) / 60)

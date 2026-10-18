@@ -11,6 +11,7 @@ export interface LampBinding {
   kind: 'position' | 'brake' | 'reverse' | 'signal' | 'front-signal' | 'low' | 'high'
   side: number
   mesh?: THREE.Mesh
+  dedicatedPosition?: boolean
   highBeam?: { value: number }
 }
 export interface CourtesyWell {
@@ -52,13 +53,19 @@ export class CarLights {
     for (const lamp of this.lamps) {
       if (lamp.kind === 'low' || lamp.kind === 'high') {
         const high = this.controller.level('high', lamp.side, state, now)
-        const low = lamp.kind === 'low' ? this.controller.glow('low', lamp.side, state, now) : 0
+        const low =
+          lamp.kind === 'low'
+            ? lamp.dedicatedPosition
+              ? this.controller.level('low', lamp.side, state, now)
+              : this.controller.glow('low', lamp.side, state, now)
+            : 0
         lamp.material.emissiveIntensity = Math.max(low, high) * 4
         continue
       }
 
       if (lamp.kind === 'front-signal') {
-        const high = this.controller.level('high', lamp.side, state, now) > 0
+        const high =
+          !lamp.dedicatedPosition && this.controller.level('high', lamp.side, state, now) > 0
         if (lamp.highBeam) lamp.highBeam.value = Number(high)
         const indicating = !high && this.controller.indicating(lamp.side, state)
         lamp.material.emissive.set(indicating ? '#ff7300' : '#e5f2ff')
