@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { Group, Light, PointLight, Scene, SpotLight, type Object3D } from 'three'
+import { Group, Light, PointLight, Scene, SpotLight, type Object3D, type DataTexture } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { AuthoredVehicleLights } from '../../src/render/vehicle-presentation/authored-lights.js'
 import {
@@ -135,4 +135,35 @@ it('boosts rear road fill by 32% while braking without adding renderer lights', 
   rig.rearGroundGlow(vehicle, 0.8, 2, 1, false)
   expect(rig.lights.filter((light) => light.intensity > 0)).toHaveLength(1)
   rig.dispose()
+})
+
+it('places motorcycle road glow at its tail anchor and applies model offsets without adding lights', async () => {
+  const { vehicleLightDefaults } =
+    await import('../../src/render/vehicle-presentation/light-tuning.js')
+  const rig = new VehicleLightRig(),
+    bike = new Group(),
+    anchor = new Group()
+  anchor.position.set(0, 0.88, 0.99)
+  bike.add(anchor)
+  bike.position.set(10, 2, -4)
+  rig.capture([], [])
+  rig.rearGroundGlow(bike, 0.8, 2.1, 1, false, { ...vehicleLightDefaults, rearY: 0.1 }, anchor)
+  const light = rig.lights.find((light) => light instanceof PointLight && light.intensity > 0)!
+  expect(light.position.y).toBeCloseTo(2.98)
+  expect(light.position.z).toBeCloseTo(-2.97)
+  expect(rig.lights).toHaveLength(vehicleLightBudget.spots + vehicleLightBudget.points)
+  rig.dispose()
+})
+
+it('keeps each vehicle beam cutoff independent', () => {
+  const a = authoredTruck(),
+    b = authoredTruck()
+  const mask = (rig: typeof a) =>
+    (rig.lights.illuminators().spots[0].map! as DataTexture).image.data as Uint8Array
+  const original = new Uint8Array(mask(b))
+  a.lights.setCutoffs(3, 1)
+  expect(Array.from(mask(a))).not.toEqual(Array.from(original))
+  expect(Array.from(mask(b))).toEqual(Array.from(original))
+  a.lights.dispose()
+  b.lights.dispose()
 })

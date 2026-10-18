@@ -1,3 +1,4 @@
+import { vehicleLightDefaults, type VehicleLightTuning } from './light-tuning.js'
 /** Fixed renderer lights for the occupied vehicle. GLB lamps stay hidden so light count never changes. */
 import { Group, PointLight, SpotLight, Vector3, type Light, type Object3D } from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
@@ -46,7 +47,7 @@ export class VehicleLightRig {
   }
 
   /** Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. */
-  capture(spots: readonly SpotLight[], points: readonly PointLight[]): void {
+  capture(spots: readonly SpotLight[], points: readonly PointLight[], offset?: Vector3): void {
     this.nextGroundPoint = points.length
     this.root.updateWorldMatrix(true, false)
     const mapped = spots.filter((light) => light.map)
@@ -60,23 +61,32 @@ export class VehicleLightRig {
         this.spots[i],
         i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots],
       )
+    if (offset)
+      for (const light of this.spots) {
+        light.position.add(offset)
+        light.target.position.add(offset)
+      }
     for (let i = 0; i < this.points.length; i++) this.copy(this.points[i], points[i])
   }
 
   /** Subtle downward road wash, using a spare unmapped slot rather than another light. */
-  groundGlow(vehicle: Object3D, braking = false): void {
+  groundGlow(
+    vehicle: Object3D,
+    braking = false,
+    tuning: VehicleLightTuning = vehicleLightDefaults,
+  ): void {
     const light = this.freeGroundSlot
     if (!light || light === this.pedestrianLight) return
     vehicle.updateWorldMatrix(true, false)
-    this.world.set(0, 0, 1.8)
+    this.world.set(tuning.rearX, tuning.rearY, 1.8 + tuning.rearZ)
     vehicle.localToWorld(this.world)
     light.position.copy(this.root.worldToLocal(this.world))
-    this.world.set(0, -1, 2.6)
+    this.world.set(tuning.rearX, -1 + tuning.rearY, 2.6 + tuning.rearZ)
     vehicle.localToWorld(this.world)
     light.target.position.copy(this.root.worldToLocal(this.world))
     light.color.set('#ff2410')
-    light.intensity = 4.8 * (braking ? 1.32 : 1)
-    light.distance = 5 * (braking ? 1.32 : 1)
+    light.intensity = 4.8 * tuning.rearIntensity * (braking ? 1.32 : 1)
+    light.distance = 5 * tuning.rearReach * (braking ? 1.32 : 1)
     light.decay = 1
     light.angle = 1.3
     light.penumbra = 1
@@ -91,17 +101,25 @@ export class VehicleLightRig {
     length: number,
     count: 1 | 2,
     braking: boolean,
+    tuning: VehicleLightTuning = vehicleLightDefaults,
+    anchor?: Object3D,
   ): void {
     vehicle.updateWorldMatrix(true, false)
     for (let i = 0; i < count; i++) {
       const light = this.points[this.nextGroundPoint++]
       if (!light) return
       this.world.set(count === 1 ? 0 : (i ? 1 : -1) * width * 0.35, -0.25, length / 2 - 0.2)
+      if (anchor) {
+        anchor.getWorldPosition(this.world)
+        vehicle.worldToLocal(this.world)
+        this.world.z += 0.04
+      }
+      this.world.add(new Vector3(tuning.rearX, tuning.rearY, tuning.rearZ))
       vehicle.localToWorld(this.world)
       light.position.copy(this.root.worldToLocal(this.world))
       light.color.set('#ff2410')
-      light.intensity = (count === 1 ? 1.8 : 1.2) * (braking ? 1.32 : 1)
-      light.distance = 3 * (braking ? 1.32 : 1)
+      light.intensity = (count === 1 ? 1.8 : 1.2) * tuning.rearIntensity * (braking ? 1.32 : 1)
+      light.distance = 3 * tuning.rearReach * (braking ? 1.32 : 1)
       light.decay = 1
       light.castShadow = false
     }

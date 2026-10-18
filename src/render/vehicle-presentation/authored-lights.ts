@@ -59,7 +59,11 @@ export function lowBeamMask(asymmetric = true): DataTexture {
 }
 
 /** Dipped cutoff with a short 45-degree rise toward the right; projection +Y is up. */
-function paintBeamMask(texture: DataTexture, asymmetric: boolean): void {
+function paintBeamMask(
+  texture: DataTexture,
+  asymmetric: boolean,
+  degrees = beamCutoff[asymmetric ? 'low' : 'high'],
+): void {
   const size = lightingDefaults.lowBeamMaskSize
   const data = texture.image.data as Uint8Array
   const rampStart =
@@ -71,8 +75,7 @@ function paintBeamMask(texture: DataTexture, asymmetric: boolean): void {
       // Equal texture-axis increments make a short 45-degree ramp, then a raised plateau.
       const edge =
         lightingDefaults.lowBeamCutoff +
-        Math.tan((beamCutoff[asymmetric ? 'low' : 'high'] * Math.PI) / 180) /
-          (2 * Math.tan(lightingDefaults.lowBeamOuterCone)) +
+        Math.tan((degrees * Math.PI) / 180) / (2 * Math.tan(lightingDefaults.lowBeamOuterCone)) +
         (asymmetric ? Math.min(0.02, Math.max(0, u - rampStart)) : 0)
       const cutoff = Math.max(0, Math.min(1, (edge - v) / lightingDefaults.lowBeamCutoffSoftness))
       const spread = Math.max(
@@ -87,6 +90,14 @@ function paintBeamMask(texture: DataTexture, asymmetric: boolean): void {
 }
 
 export class AuthoredVehicleLights {
+  private cutoffs?: { low: number; high: number }
+  /** Repaint only this vehicle's masks when its model calibration changes. */
+  setCutoffs(low: number, high: number): void {
+    if (this.cutoffs?.low === low && this.cutoffs?.high === high) return
+    if (this.mask) paintBeamMask(this.mask, true, low)
+    if (this.highMask) paintBeamMask(this.highMask, false, high)
+    this.cutoffs = { low, high }
+  }
   private reversing = false
   private mask?: DataTexture
   private highMask?: DataTexture

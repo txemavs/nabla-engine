@@ -1,4 +1,9 @@
 import {
+  readVehicleLights,
+  writeVehicleLights,
+  type VehicleLightTuning,
+} from '../render/vehicle-presentation/light-tuning.js'
+import {
   getVehicleBeamCutoff,
   setVehicleBeamCutoff,
 } from '../render/vehicle-presentation/authored-lights.js'
@@ -3174,10 +3179,19 @@ export class GameRuntime {
     console.info(`[nabla] Steering wheel ${model} reset: ${describeSteeringWheelOffset(applied)}`)
     return applied
   }
-  /**
-   * The mirrors of the vehicle the player is in, or null on foot and in vehicles without cockpit
-   * mirrors. Every vehicle of the same mirror model shares one adjustment.
-   */
+  /** Light calibration for the occupied vehicle model; null on foot. */
+  get vehicleLightAdjustment() {
+    const id = this.session.simulation?.player.vehicleId
+    const entity = this.document.entities.find((item) => item.id === id)
+    if (!entity) return null
+    const model = entity.visual?.body.url ?? entity.id
+    return { model, name: entity.name ?? entity.id, values: readVehicleLights(model) }
+  }
+  setVehicleLightAdjustment(patch?: Partial<VehicleLightTuning>): void {
+    const current = this.vehicleLightAdjustment
+    if (current) writeVehicleLights(current.model, patch)
+  }
+  /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */
   get mirrors(): MirrorState | null {
     const vehicleId = this.session.simulation?.player.vehicleId
     const model = vehicleId ? this.view.mirrorModel(vehicleId) : undefined
