@@ -4,6 +4,9 @@ import type { MonitorMenu, MonitorMenuItem } from '../monitors/menu.js'
 
 /** Presentation input only. The host owns simulation, input and persisted properties. */
 export interface CarInstrumentTelemetry {
+  lightStatus?: 'off' | 'position' | 'low' | 'high'
+  signalLeft?: boolean
+  signalRight?: boolean
   speedKmh: number
   rpm: number
   gear: number

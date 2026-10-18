@@ -94,3 +94,66 @@ it('keeps authored cabin lamps off when exterior lights are enabled', () => {
   expect(bulb.intensity).toBe(0)
   lights.dispose()
 })
+
+it('flashes while off or in daylight auto without changing the selected lights', () => {
+  const c = new VehicleLightController()
+  const state = { powered: true, braking: false, reversing: false }
+  for (const mode of ['off', 'position', 'auto'] as const) {
+    c.mode = mode
+    expect(c.beginFlash()).toBe(true)
+    expect(c.level('high', 0, state, 0)).toBe(1)
+    expect(c.level('high', 0, { ...state, powered: false }, 0)).toBe(0)
+    c.endFlash()
+    expect(c.level('high', 0, state, 0)).toBe(0)
+    expect(c.mode).toBe(mode)
+    expect(c.highBeam).toBe(false)
+  }
+  c.mode = 'low'
+  expect(c.beginFlash()).toBe(false)
+  c.toggleHighBeam()
+  c.endFlash()
+  expect(c.level('high', 0, state, 0)).toBe(1)
+})
+
+it('lights the marked dipped lens alone on low and all marked lenses on high or flash', () => {
+  const low = new MeshStandardMaterial(),
+    high = new MeshStandardMaterial()
+  const car = new CarLights([
+    { material: low, kind: 'low', side: 0 },
+    { material: high, kind: 'high', side: 0 },
+  ])
+  const state = { powered: true, braking: false, reversing: false }
+  car.controller.mode = 'low'
+  car.update(state, 0)
+  expect(low.emissiveIntensity).toBeGreaterThan(0)
+  expect(high.emissiveIntensity).toBe(0)
+  car.controller.highBeam = true
+  car.update(state, 0)
+  expect(low.emissiveIntensity).toBeGreaterThan(0)
+  expect(high.emissiveIntensity).toBeGreaterThan(0)
+  car.controller.mode = 'off'
+  car.controller.beginFlash()
+  car.update(state, 0)
+  expect(high.emissiveIntensity).toBeGreaterThan(0)
+  car.controller.endFlash()
+  car.update(state, 0)
+  expect(low.emissiveIntensity).toBe(0)
+  expect(high.emissiveIntensity).toBe(0)
+  low.dispose()
+  high.dispose()
+})
+
+it('reports one dashboard light for off, position, automatic beams and flashes', () => {
+  const c = new VehicleLightController()
+  expect(c.dashboardLight).toBe('off')
+  c.mode = 'auto'
+  expect(c.dashboardLight).toBe('position')
+  c.beginFlash()
+  expect(c.dashboardLight).toBe('high')
+  c.endFlash()
+  expect(c.dashboardLight).toBe('position')
+  c.sampleEnvironment(true, 1)
+  expect(c.dashboardLight).toBe('low')
+  c.toggleHighBeam()
+  expect(c.dashboardLight).toBe('high')
+})

@@ -12,7 +12,7 @@
 
 ## LayeredMonitor.constructor
 
-[Implementation, line 69](../../../../../src/render/monitors/layered-monitor.ts#L69)
+[Implementation, line 71](../../../../../src/render/monitors/layered-monitor.ts#L71)
 
 Pixel-space layered surface: origin at centre, definition coordinates from top left.
 Transform `root` to mount it on any vehicle, terminal or portal console.
@@ -46,12 +46,12 @@ Explicit throws in this body:
 - `Error('Invalid text columns')`
 - `Error('Invalid needle range')`
 
-## LayeredMonitor.constructor.callback@71
+## LayeredMonitor.constructor.callback@73
 
-[Implementation, line 71](../../../../../src/render/monitors/layered-monitor.ts#L71)
+[Implementation, line 73](../../../../../src/render/monitors/layered-monitor.ts#L73)
 
 ```ts
-callback@71(v): inferred by TypeScript; see implementation
+callback@73(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LayeredMonitor.constructor.load
 
-[Implementation, line 104](../../../../../src/render/monitors/layered-monitor.ts#L104)
+[Implementation, line 106](../../../../../src/render/monitors/layered-monitor.ts#L106)
 
 ```ts
 load(url: string): inferred by TypeScript; see implementation
@@ -74,24 +74,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pending.push`
 - `this.textures.add`
 
-## LayeredMonitor.constructor.load.callback@109
+## LayeredMonitor.constructor.load.callback@111
 
-[Implementation, line 109](../../../../../src/render/monitors/layered-monitor.ts#L109)
+[Implementation, line 111](../../../../../src/render/monitors/layered-monitor.ts#L111)
 
 ```ts
-callback@109(resolve, reject): inferred by TypeScript; see implementation
+callback@111(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `loader.load`
 
-## LayeredMonitor.constructor.load.callback@109.callback@112
+## LayeredMonitor.constructor.load.callback@111.callback@114
 
-[Implementation, line 112](../../../../../src/render/monitors/layered-monitor.ts#L112)
+[Implementation, line 114](../../../../../src/render/monitors/layered-monitor.ts#L114)
 
 ```ts
-callback@112(): inferred by TypeScript; see implementation
+callback@114(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -101,7 +101,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LayeredMonitor.constructor.make
 
-[Implementation, line 129](../../../../../src/render/monitors/layered-monitor.ts#L129)
+[Implementation, line 131](../../../../../src/render/monitors/layered-monitor.ts#L131)
 
 ```ts
 make(w: number, h: number, color: string, map?: Texture, sceneLit = false): inferred by TypeScript; see implementation
@@ -115,12 +115,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `PlaneGeometry`
 - `this.meshes.push`
 
-## LayeredMonitor.constructor.callback@150
+## LayeredMonitor.constructor.callback@152
 
-[Implementation, line 150](../../../../../src/render/monitors/layered-monitor.ts#L150)
+[Implementation, line 152](../../../../../src/render/monitors/layered-monitor.ts#L152)
 
 ```ts
-callback@150(layer, order): inferred by TypeScript; see implementation
+callback@152(layer, order): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -154,12 +154,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.textures.add`
 - `this.updates.push`
 
-## LayeredMonitor.constructor.callback@150.callback@209
+## LayeredMonitor.constructor.callback@152.callback@211
 
-[Implementation, line 209](../../../../../src/render/monitors/layered-monitor.ts#L209)
+[Implementation, line 211](../../../../../src/render/monitors/layered-monitor.ts#L211)
 
 ```ts
-callback@209(data): inferred by TypeScript; see implementation
+callback@211(data): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -171,24 +171,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uv.setXY`
 - `value.charCodeAt`
 
-## LayeredMonitor.constructor.callback@150.callback@259
+## LayeredMonitor.constructor.callback@152.callback@258
 
-[Implementation, line 259](../../../../../src/render/monitors/layered-monitor.ts#L259)
+[Implementation, line 258](../../../../../src/render/monitors/layered-monitor.ts#L258)
 
 ```ts
-callback@259(data, now): inferred by TypeScript; see implementation
+callback@258(data): inferred by TypeScript; see implementation
+```
+
+## LayeredMonitor.constructor.callback@152.callback@268
+
+[Implementation, line 268](../../../../../src/render/monitors/layered-monitor.ts#L268)
+
+```ts
+callback@268(data, now): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `monitor.update`
 
-## LayeredMonitor.constructor.callback@150.callback@264
+## LayeredMonitor.constructor.callback@152.callback@273
 
-[Implementation, line 264](../../../../../src/render/monitors/layered-monitor.ts#L264)
+[Implementation, line 273](../../../../../src/render/monitors/layered-monitor.ts#L273)
 
 ```ts
-callback@264({ HtmlMonitor }): inferred by TypeScript; see implementation
+callback@273({ HtmlMonitor }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -198,22 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `surface.update`
 - `this.html.push`
 
-## LayeredMonitor.constructor.callback@150.callback@284
-
-[Implementation, line 284](../../../../../src/render/monitors/layered-monitor.ts#L284)
-
-```ts
-callback@284(data): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Math.max`
-- `Math.min`
-- `Number`
-- `Number.isFinite`
-
-## LayeredMonitor.constructor.callback@150.callback@293
+## LayeredMonitor.constructor.callback@152.callback@293
 
 [Implementation, line 293](../../../../../src/render/monitors/layered-monitor.ts#L293)
 
@@ -225,19 +218,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
+- `Number`
 - `Number.isFinite`
 
-## LayeredMonitor.constructor.callback@300
+## LayeredMonitor.constructor.callback@152.callback@302
 
-[Implementation, line 300](../../../../../src/render/monitors/layered-monitor.ts#L300)
+[Implementation, line 302](../../../../../src/render/monitors/layered-monitor.ts#L302)
 
 ```ts
-callback@300(): inferred by TypeScript; see implementation
+callback@302(data): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+
+## LayeredMonitor.constructor.callback@309
+
+[Implementation, line 309](../../../../../src/render/monitors/layered-monitor.ts#L309)
+
+```ts
+callback@309(): inferred by TypeScript; see implementation
 ```
 
 ## LayeredMonitor.setSecondary
 
-[Implementation, line 302](../../../../../src/render/monitors/layered-monitor.ts#L302)
+[Implementation, line 311](../../../../../src/render/monitors/layered-monitor.ts#L311)
 
 Pixel-space layered surface: origin at centre, definition coordinates from top left.
 Transform `root` to mount it on any vehicle, terminal or portal console.
@@ -251,12 +259,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.html.forEach`
 
-## LayeredMonitor.setSecondary.callback@304
+## LayeredMonitor.setSecondary.callback@313
 
-[Implementation, line 304](../../../../../src/render/monitors/layered-monitor.ts#L304)
+[Implementation, line 313](../../../../../src/render/monitors/layered-monitor.ts#L313)
 
 ```ts
-callback@304(m): inferred by TypeScript; see implementation
+callback@313(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -265,7 +273,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LayeredMonitor.update
 
-[Implementation, line 306](../../../../../src/render/monitors/layered-monitor.ts#L306)
+[Implementation, line 315](../../../../../src/render/monitors/layered-monitor.ts#L315)
 
 Pixel-space layered surface: origin at centre, definition coordinates from top left.
 Transform `root` to mount it on any vehicle, terminal or portal console.
@@ -279,12 +287,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.updates.forEach`
 
-## LayeredMonitor.update.callback@307
+## LayeredMonitor.update.callback@316
 
-[Implementation, line 307](../../../../../src/render/monitors/layered-monitor.ts#L307)
+[Implementation, line 316](../../../../../src/render/monitors/layered-monitor.ts#L316)
 
 ```ts
-callback@307(update): inferred by TypeScript; see implementation
+callback@316(update): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -293,7 +301,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LayeredMonitor.dispose
 
-[Implementation, line 309](../../../../../src/render/monitors/layered-monitor.ts#L309)
+[Implementation, line 318](../../../../../src/render/monitors/layered-monitor.ts#L318)
 
 Pixel-space layered surface: origin at centre, definition coordinates from top left.
 Transform `root` to mount it on any vehicle, terminal or portal console.
@@ -310,36 +318,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.removeFromParent`
 - `this.textures.forEach`
 
-## LayeredMonitor.dispose.callback@313
+## LayeredMonitor.dispose.callback@322
 
-[Implementation, line 313](../../../../../src/render/monitors/layered-monitor.ts#L313)
+[Implementation, line 322](../../../../../src/render/monitors/layered-monitor.ts#L322)
 
 ```ts
-callback@313(m): inferred by TypeScript; see implementation
+callback@322(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `m.dispose`
 
-## LayeredMonitor.dispose.callback@314
+## LayeredMonitor.dispose.callback@323
 
-[Implementation, line 314](../../../../../src/render/monitors/layered-monitor.ts#L314)
+[Implementation, line 323](../../../../../src/render/monitors/layered-monitor.ts#L323)
 
 ```ts
-callback@314(t): inferred by TypeScript; see implementation
+callback@323(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t.dispose`
 
-## LayeredMonitor.dispose.callback@315
+## LayeredMonitor.dispose.callback@324
 
-[Implementation, line 315](../../../../../src/render/monitors/layered-monitor.ts#L315)
+[Implementation, line 324](../../../../../src/render/monitors/layered-monitor.ts#L324)
 
 ```ts
-callback@315(m): inferred by TypeScript; see implementation
+callback@324(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

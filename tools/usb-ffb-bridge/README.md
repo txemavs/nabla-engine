@@ -52,3 +52,17 @@ python -m unittest discover -s . -p 'test_*.py'
 ```
 
 Estas pruebas no requieren SDL2. Para validar hardware: anotar modelo, SO, driver, capacidades SDL2 y navegador; empezar con fuerza baja, comprobar el signo de la fuerza en ambos sentidos y verificar parada al cerrar pestaña, cambiar de ventana, desconectar el volante y detener el puente. Verificar que el driver no añade un autocentrado propio que interfiera con el efecto.
+
+## Ejecutable de Windows
+
+Ejecutar `build-windows.cmd` en Windows con Python instalado para generar
+`dist/Nabla-FFB.exe` (incluye Python y SDL2). Copiar ese ejecutable al PC del
+volante y abrirlo con doble clic; no necesita Python instalado en destino.
+El lanzador muestra dispositivos, pide su índice y arranca el puente con un
+límite del 20 %. Permite los orígenes HTTPS de euskadi.online (con y sin www),
+localhost:5193 y 10.10.10.80:5193. Muestra el token de sesión en la consola.
+Cerrar el programa o Ctrl+C detiene el puente. La versión de consola avanzada
+sigue disponible para configurar otros orígenes o TLS.
+
+La enumeración del Driving Force GT se ha verificado en Windows con el
+ejecutable; falta validar fuerzas y conexión desde el navegador con ese hardware.

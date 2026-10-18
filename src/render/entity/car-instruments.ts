@@ -148,6 +148,9 @@ export class CarInstruments {
     gaugeSweep = 0,
     /** Engine mode Bestia: the selector reads S. */
     sport = false,
+    signalLeft = false,
+    signalRight = false,
+    lightStatus: 'off' | 'position' | 'low' | 'high' = 'off',
   ): void {
     if (this.disposed || !this.powered) return
     if (this.lastUpdate !== undefined)
@@ -171,7 +174,18 @@ export class CarInstruments {
     this.speedMonitor.update(
       sweepCluster(
         this.definition.cluster,
-        this.definition.clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }),
+        this.definition.clusterData({
+          speedKmh,
+          rpm,
+          gear,
+          load,
+          manual,
+          parked,
+          sport,
+          signalLeft,
+          signalRight,
+          lightStatus,
+        }),
         gaugeSweep,
       ),
       now,

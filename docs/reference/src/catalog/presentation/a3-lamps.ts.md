@@ -22,7 +22,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `CarLights`
 - `console.warn`
-- `footwells`
 - `headBeams`
 - `model.traverse`
 
@@ -72,6 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.Mesh`
 - `THREE.MeshStandardMaterial`
+- `['CORTA', 'Larga'].includes`
 - `['PilotoFino', 'PilotoRojo', 'Plastico 3'].includes`
 - `[0, 1, 2].map`
 - `ancestors.includes`
@@ -84,7 +84,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lamp.material.clone`
 - `lamps.push`
 - `masked`
+- `material.color.set`
 - `material.emissive.getHex`
+- `material.emissive.set`
 - `node.name.replaceAll`
 - `node.name.replaceAll('_', ' ').toLowerCase`
 - `object.add`
@@ -100,24 +102,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@43(n): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@33.callback@80
+## createA3Lights.callback@33.callback@96
 
-[Implementation, line 80](../../../../../src/catalog/presentation/a3-lamps.ts#L80)
+[Implementation, line 96](../../../../../src/catalog/presentation/a3-lamps.ts#L96)
 
 ```ts
-callback@80(j): inferred by TypeScript; see implementation
+callback@96(j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `index.getX`
 
-## createA3Lights.callback@33.callback@81
+## createA3Lights.callback@33.callback@97
 
-[Implementation, line 81](../../../../../src/catalog/presentation/a3-lamps.ts#L81)
+[Implementation, line 97](../../../../../src/catalog/presentation/a3-lamps.ts#L97)
 
 ```ts
-callback@81(sum, id): inferred by TypeScript; see implementation
+callback@97(sum, id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -126,7 +128,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## headBeams
 
-[Implementation, line 133](../../../../../src/catalog/presentation/a3-lamps.ts#L133)
+[Implementation, line 149](../../../../../src/catalog/presentation/a3-lamps.ts#L149)
 
 ```ts
 headBeams(model: THREE.Object3D): THREE.SpotLight[]
@@ -151,12 +153,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `owner.position.copy`
 - `owner.position.copy(center).add`
 
-## headBeams.callback@137
+## headBeams.callback@153
 
-[Implementation, line 137](../../../../../src/catalog/presentation/a3-lamps.ts#L137)
+[Implementation, line 153](../../../../../src/catalog/presentation/a3-lamps.ts#L153)
 
 ```ts
-callback@137(object): inferred by TypeScript; see implementation
+callback@153(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -169,35 +171,3 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.name.replaceAll`
 - `object.name.replaceAll('_', ' ').toLowerCase`
 - `units.push`
-
-## footwells
-
-[Implementation, line 179](../../../../../src/catalog/presentation/a3-lamps.ts#L179)
-
-Soft cabin fill from each footwell up to the seat. Model +X is the driver.
-
-```ts
-footwells(model: THREE.Object3D): CourtesyWell[]
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `[0.32, -0.32].map`
-
-## footwells.callback@180
-
-[Implementation, line 180](../../../../../src/catalog/presentation/a3-lamps.ts#L180)
-
-```ts
-callback@180(x): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.BoxGeometry`
-- `THREE.Mesh`
-- `THREE.MeshStandardMaterial`
-- `THREE.PointLight`
-- `lamp.position.set`
-- `lens.position.set`
-- `model.add`

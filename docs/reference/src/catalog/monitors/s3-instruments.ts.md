@@ -16,19 +16,20 @@
 [Implementation, line 12](../../../../../src/catalog/monitors/s3-instruments.ts#L12)
 
 ```ts
-clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }): inferred by TypeScript; see implementation
+clusterData({ speedKmh, rpm, gear, load, manual, parked, sport, signalLeft, signalRight, lightStatus, }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 - `Math.round`
+- `Number`
 - `String`
 - `gearLabel`
 
 ## menuData
 
-[Implementation, line 25](../../../../../src/catalog/monitors/s3-instruments.ts#L25)
+[Implementation, line 41](../../../../../src/catalog/monitors/s3-instruments.ts#L41)
 
 ```ts
 menuData(menu, { mirrorTilt, mapFollow = true, heading = 0, longitude, latitude, altitude = 0, geography = false, }): inferred by TypeScript; see implementation

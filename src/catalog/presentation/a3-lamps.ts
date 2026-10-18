@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
-import { CarLights, type CourtesyWell, type LampBinding } from '../../render/entity/car-lights.js'
+import { CarLights, type LampBinding } from '../../render/entity/car-lights.js'
 
 export function createA3Lights(model: THREE.Object3D): CarLights {
   const lamps: LampBinding[] = []
@@ -46,12 +46,28 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
     const front = ancestors.includes('foco izquierdo') || ancestors.includes('foco derecho')
     // Glazing should blend over the emitters, never occlude later transparent surfaces.
     if ((front || rearSide || trunk) && material.transparent) material.depthWrite = false
+    if (front && material.name !== 'FocoClear') {
+      // Only the original outer cover is glass. Internal reflectors are opaque polished grey.
+      material.transparent = false
+      material.opacity = 1
+      material.depthWrite = true
+      material.alphaTest = 0
+      material.map = null
+      material.alphaMap = null
+      material.color.set('#858b93')
+      material.metalness = 0.55
+      material.roughness = 0.26
+      material.needsUpdate = true
+    }
+    if (front && ['CORTA', 'Larga'].includes(material.name)) {
+      material.emissive.set('#ffffff')
+      material.toneMapped = false
+      material.side = THREE.DoubleSide
+      material.emissiveIntensity = 0
+      lamps.push({ material, kind: material.name === 'CORTA' ? 'low' : 'high', side: 0 })
+      return
+    }
     if (front && material.name === 'FocoC') {
-      lamps.push({
-        material,
-        kind: 'front-signal',
-        side: ancestors.includes('foco derecho') ? 1 : -1,
-      })
       material.emissiveIntensity = 0
       return
     }
@@ -118,7 +134,7 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
 
   if (!lamps.length) console.warn('S3 lamps omitted: no matching lens nodes')
   headBeams(model)
-  return new CarLights(lamps, 450, footwells(model))
+  return new CarLights(lamps, 450)
 }
 
 /**
@@ -173,26 +189,4 @@ export function headBeams(model: THREE.Object3D): THREE.SpotLight[] {
       beams.push(light)
     }
   return beams
-}
-
-/** Soft cabin fill from each footwell up to the seat. Model +X is the driver. */
-function footwells(model: THREE.Object3D): CourtesyWell[] {
-  return [0.32, -0.32].map((x) => {
-    const lamp = new THREE.PointLight('#ffd7a8', 0, lightingDefaults.courtesyReach, 2)
-    lamp.name = 'Courtesy light'
-    lamp.position.set(x, 0.46, 0.02)
-    lamp.castShadow = false
-    const lens = new THREE.Mesh(
-      new THREE.BoxGeometry(0.05, 0.01, 0.04),
-      new THREE.MeshStandardMaterial({
-        name: 'Courtesy light',
-        color: '#2a241c',
-        emissive: '#ffd7a8',
-        emissiveIntensity: 0,
-      }),
-    )
-    lens.position.set(x, 0.5, 0.42)
-    model.add(lamp, lens)
-    return { lamp, lens: lens.material }
-  })
 }

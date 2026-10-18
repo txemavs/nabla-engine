@@ -33,14 +33,8 @@ it('switches off all lamps when unoccupied and separates braking from reversing'
   lights.update({ powered: false, braking: true, reversing: true }, 0)
   for (const material of [position, brake, reverse]) expect(material.emissiveIntensity).toBe(0)
   const courtesy = model.children.filter((child) => child instanceof THREE.PointLight)
-  expect(courtesy).toHaveLength(2)
-  expect(courtesy.every((lamp) => lamp.visible === false)).toBe(true)
-  lights.update({ powered: true, braking: false, reversing: false }, 0, false)
-  for (const lamp of courtesy) expect(lamp.intensity).toBe(0)
-  lights.update({ powered: true, braking: false, reversing: false }, 0, true)
-  for (const lamp of courtesy) expect(lamp.intensity).toBeGreaterThan(0)
-  lights.update({ powered: false, braking: false, reversing: false }, 0, true)
-  for (const lamp of courtesy) expect(lamp.intensity).toBe(0)
+  expect(courtesy).toHaveLength(0)
+  expect(lights.courtesyLights).toHaveLength(0)
 })
 
 it('builds focused, forward-only low and high beams at the S3 lamp units like the truck', () => {

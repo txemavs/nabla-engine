@@ -767,6 +767,14 @@ export class PlanetWorld {
     return tile
   }
   /** Changes whenever a cell finishes loading or fails; stays equal while nothing is happening. */
+  /** Freeze planned cells, including requests still waiting for a download slot. */
+  trackPlannedCells(): () => { loaded: number; total: number } {
+    const keys = this.wanted.map(mapTileId)
+    return () => ({
+      loaded: keys.filter((key) => this.resident.has(key)).length,
+      total: keys.length,
+    })
+  }
   get loadProgress(): string {
     return `${this.settled}:${this.resident.size}:${this.installQueue.length}`
   }

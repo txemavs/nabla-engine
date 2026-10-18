@@ -55,9 +55,9 @@ it('retains the corrected source paint, glazing, optical surfaces and mirror tri
       )
       hash.update(bytes)
     }
-  // Corrected user-supplied body, 2026-10-04; only meshless anchors are added during migration.
+  // Approved body with simplified headlights and original front glazing, 2026-10-18.
   expect(hash.digest('hex')).toBe(
-    'e20c8a7311d54b5ff58e8e2f3d03d994544a7f8fbc5c5a0462e245c273697be5',
+    'd921315613f07c5d0f883a9d3b1fecf47e9e81437bbfb141a40ade57cc591f58',
   )
 })
 it('keeps the complete assembled A3 under 100k triangles and includes the corrected body base', () => {
@@ -75,15 +75,15 @@ it('keeps the complete assembled A3 under 100k triangles and includes the correc
   expect(total).toBeLessThan(100000)
 })
 
-it('preserves the supplied binary geometry while adding driver and mechanical anchors', () => {
+it('preserves the approved geometry and driver/mechanical anchors', () => {
   const bytes = readFileSync('assets/library/cars/a3/a3.cabrio.glb')
   const length = bytes.readUInt32LE(12)
-  // Hash of the untouched binary chunk from the user-supplied body.
+  // Baseline after the approved headlight replacement and binary compaction.
   expect(
     createHash('sha256')
       .update(bytes.subarray(20 + length))
       .digest('hex'),
-  ).toBe('526a0a046eca7db2650d8131b7212a501bae4f88ce16a44ee16760c66f1f25a7')
+  ).toBe('654b1329dc4a1b7e725be36be4effa09b5a1ff6189feeb34c2463cb416675bf3')
   const anchors = load('cabrio').json.nodes.filter((node) => node.name.startsWith('nabla.'))
   expect(anchors.map((node) => node.name).sort()).toEqual([
     'nabla.driver.eyes',

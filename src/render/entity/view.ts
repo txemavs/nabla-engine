@@ -458,8 +458,26 @@ export class SceneView {
       null
     )
   }
+  /** Active beam channel, including the automatic light switch. */
+  vehicleActiveBeam(id: string): 'low' | 'high' | null {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    if (!controller) return null
+    const state = { powered: true, braking: false, reversing: false }
+    if (controller.level('high', 0, state, 0)) return 'high'
+    return controller.level('low', 0, state, 0) ? 'low' : null
+  }
   /** Lights after the start-up (`SceneViewOptions.startLights`); change `mode` to override. */
   readonly startLights = new StartLights()
+  beginVehicleBeamFlash(id: string): boolean {
+    return (
+      (
+        this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+      )?.beginFlash() ?? false
+    )
+  }
+  endVehicleBeamFlash(id: string): void {
+    ;(this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller)?.endFlash()
+  }
   toggleVehicleHighBeam(id: string): boolean | null {
     return this.authoredLights.get(id)?.toggleHighBeam() ?? null
   }
@@ -1814,10 +1832,24 @@ export class SceneView {
           info.altitude,
           info.gaugeSweep,
           info.engineModes && info.engineMode === 'beast',
+          (this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller)?.level(
+            'signal',
+            -1,
+            { powered: true, braking: false, reversing: false },
+            lightNow,
+          ) === 1,
+          (this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller)?.level(
+            'signal',
+            1,
+            { powered: true, braking: false, reversing: false },
+            lightNow,
+          ) === 1,
+          (this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller)
+            ?.dashboardLight ?? 'off',
         )
       }
     }
-    this.captureOccupiedLights(sim.player.vehicleId)
+    this.captureOccupiedLights(sim.player.vehicleId, sim)
     const vehicleId = sim.player.vehicleId
     this.updateRideSmoothing(sim, vehicleId, elapsed)
     const recovery = sim.playerBikeRecovery
@@ -2029,7 +2061,7 @@ export class SceneView {
         if (material instanceof THREE.MeshStandardMaterial) callback(material)
     })
   }
-  private captureOccupiedLights(vehicleId: string | null): void {
+  private captureOccupiedLights(vehicleId: string | null, sim: Simulation): void {
     const authored = vehicleId ? this.authoredLights.get(vehicleId)?.illuminators() : undefined
     const courtesy = vehicleId ? (this.carLights.get(vehicleId)?.courtesyLights ?? []) : []
     const group = vehicleId ? this.objects.get(vehicleId) : undefined
@@ -2042,7 +2074,28 @@ export class SceneView {
       this.carLights.has(vehicleId) &&
       !this.motorcycleRigs.has(vehicleId)
     )
-      this.vehicleLights.groundGlow(group)
+      this.vehicleLights.groundGlow(group, sim.vehicleInfo(vehicleId).braking)
+    if (vehicleId && this.night) {
+      for (const entity of this.document.entities) {
+        if (
+          !entity.vehicle ||
+          (entity.id !== vehicleId && sim.vehicleInfo(entity.id).towVehicleId !== vehicleId)
+        )
+          continue
+        const bike = !!entity.vehicle.twoWheeled
+        const truck = entity.visual?.presentation === 'nabla.truck'
+        const trailer = sim.vehicleInfo(entity.id).towVehicleId === vehicleId
+        const object = this.objects.get(entity.id)
+        if (object && (bike || truck || trailer))
+          this.vehicleLights.rearGroundGlow(
+            object,
+            entity.size[0],
+            entity.size[2],
+            1,
+            sim.vehicleInfo(vehicleId).braking,
+          )
+      }
+    }
   }
   dispose(): void {
     this.brokenGlass.clear()

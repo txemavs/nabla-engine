@@ -172,7 +172,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
 ```ts
-update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false, parked = false, altitude = 0, gaugeSweep = 0, sport = false): void
+update(doc: SceneDocument, pose: Transform, speedKmh: number, now: number, rpm = 900, gear = 1, load = 0, manual = false, parked = false, altitude = 0, gaugeSweep = 0, sport = false, signalLeft = false, signalRight = false, lightStatus: 'off' | 'position' | 'low' | 'high' = 'off'): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -191,24 +191,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.speedMonitor.update`
 - `vehicleRumbo`
 
-## CarInstruments.update.callback@183
+## CarInstruments.update.callback@197
 
-[Implementation, line 183](../../../../../src/render/entity/car-instruments.ts#L183)
+[Implementation, line 197](../../../../../src/render/entity/car-instruments.ts#L197)
 
 ```ts
-callback@183(v): inferred by TypeScript; see implementation
+callback@197(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.round`
 
-## CarInstruments.update.callback@184
+## CarInstruments.update.callback@198
 
-[Implementation, line 184](../../../../../src/render/entity/car-instruments.ts#L184)
+[Implementation, line 198](../../../../../src/render/entity/car-instruments.ts#L198)
 
 ```ts
-callback@184(v): inferred by TypeScript; see implementation
+callback@198(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -217,7 +217,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarInstruments.dispose
 
-[Implementation, line 193](../../../../../src/render/entity/car-instruments.ts#L193)
+[Implementation, line 207](../../../../../src/render/entity/car-instruments.ts#L207)
 
 Telemetry/menu/GPS controller mounted by an explicit asset adapter.
 
@@ -237,7 +237,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## vehicleRumbo
 
-[Implementation, line 209](../../../../../src/render/entity/car-instruments.ts#L209)
+[Implementation, line 223](../../../../../src/render/entity/car-instruments.ts#L223)
 
 Compass heading 0–359 from the entity quaternion.
 Same `(-yaw·180/π) mod 360` rule as helm `sys-rumbo`, but YXZ so 180° does not fold to 0.
@@ -255,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## gpsFix
 
-[Implementation, line 214](../../../../../src/render/entity/car-instruments.ts#L214)
+[Implementation, line 228](../../../../../src/render/entity/car-instruments.ts#L228)
 
 ```ts
 gpsFix(doc: SceneDocument, position: readonly [number, number, number]): inferred by TypeScript; see implementation

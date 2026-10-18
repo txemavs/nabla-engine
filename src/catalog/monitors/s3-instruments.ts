@@ -9,10 +9,26 @@ export const s3Instruments: CarInstrumentDefinition = {
   menu: carMenuDefinition,
   menuItems: carMenuItems,
   menuTitle: 'MENU COCHE',
-  clusterData({ speedKmh, rpm, gear, load, manual, parked, sport }) {
+  clusterData({
+    speedKmh,
+    rpm,
+    gear,
+    load,
+    manual,
+    parked,
+    sport,
+    signalLeft,
+    signalRight,
+    lightStatus,
+  }) {
     const speed = Math.round(Math.abs(speedKmh))
     return {
       values: {
+        lightPosition: Number(lightStatus === 'position'),
+        lightLow: Number(lightStatus === 'low'),
+        lightHigh: Number(lightStatus === 'high'),
+        signalLeft: Number(!!signalLeft),
+        signalRight: Number(!!signalRight),
         speed: Math.abs(speedKmh),
         speedDisplay: String(speed),
         rpm,

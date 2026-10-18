@@ -32,6 +32,16 @@ export const vehicleLightCycle: readonly VehicleLightMode[] = ['off', 'position'
 export class VehicleLightController {
   mode: VehicleLightMode = 'off'
   highBeam = false
+  private flashing = false
+  /** Momentary main beams without changing the master switch or latched selection. */
+  beginFlash(): boolean {
+    if (this.drivingMode === 'low') return false
+    this.flashing = true
+    return true
+  }
+  endFlash(): void {
+    this.flashing = false
+  }
   signal = 0
   private automaticLow = false
   private darknessSeconds = 0
@@ -46,6 +56,11 @@ export class VehicleLightController {
   }
   private get drivingMode(): Exclude<VehicleLightMode, 'auto'> {
     return this.mode === 'auto' ? (this.automaticLow ? 'low' : 'position') : this.mode
+  }
+  /** Exclusive dashboard tell-tale, including automatic beams and momentary flashes. */
+  get dashboardLight(): 'off' | 'position' | 'low' | 'high' {
+    if (this.flashing) return 'high'
+    return this.drivingMode === 'low' ? (this.highBeam ? 'high' : 'low') : this.drivingMode
   }
   constructor(readonly flashMs = lightingDefaults.signalFlashMs) {}
   /** Any driving light on (position or dipped). Setting true from `off` selects dipped beams. */
@@ -92,9 +107,9 @@ export class VehicleLightController {
       case 'front-signal':
         return this.indicating(side, state) ? Number(flash) : Number(this.enabled)
       case 'low':
-        return Number(this.drivingMode === 'low' && !this.highBeam)
+        return Number(this.drivingMode === 'low' && !this.highBeam && !this.flashing)
       case 'high':
-        return Number(this.drivingMode === 'low' && this.highBeam)
+        return Number(this.flashing || (this.drivingMode === 'low' && this.highBeam))
       case 'fog':
       case 'cabin':
         return 0

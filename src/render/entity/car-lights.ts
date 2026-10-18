@@ -8,9 +8,10 @@ import {
 export type CarLampState = VehicleLampState
 export interface LampBinding {
   material: THREE.MeshStandardMaterial
-  kind: 'position' | 'brake' | 'reverse' | 'signal' | 'front-signal'
+  kind: 'position' | 'brake' | 'reverse' | 'signal' | 'front-signal' | 'low' | 'high'
   side: number
   mesh?: THREE.Mesh
+  highBeam?: { value: number }
 }
 export interface CourtesyWell {
   lamp: THREE.PointLight
@@ -49,12 +50,22 @@ export class CarLights {
       well.lens.emissiveIntensity = footwell ? lightingDefaults.courtesyLensIntensity : 0
     }
     for (const lamp of this.lamps) {
+      if (lamp.kind === 'low' || lamp.kind === 'high') {
+        const high = this.controller.level('high', lamp.side, state, now)
+        const low = lamp.kind === 'low' ? this.controller.glow('low', lamp.side, state, now) : 0
+        lamp.material.emissiveIntensity = Math.max(low, high) * 4
+        continue
+      }
+
       if (lamp.kind === 'front-signal') {
-        const indicating = this.controller.indicating(lamp.side, state)
+        const high = this.controller.level('high', lamp.side, state, now) > 0
+        if (lamp.highBeam) lamp.highBeam.value = Number(high)
+        const indicating = !high && this.controller.indicating(lamp.side, state)
         lamp.material.emissive.set(indicating ? '#ff7300' : '#e5f2ff')
         lamp.material.color.set(indicating ? '#ff9a32' : '#ebf2ff')
         lamp.material.emissiveIntensity =
-          this.controller.level(lamp.kind, lamp.side, state, now) * (indicating ? 2 : 0.65)
+          (high ? Number(state.powered) : this.controller.level(lamp.kind, lamp.side, state, now)) *
+          (indicating ? 2 : high ? 4 : 0.65)
         continue
       }
       const intensity = lamp.kind === 'position' ? 0.65 : lamp.kind === 'brake' ? 3 : 2

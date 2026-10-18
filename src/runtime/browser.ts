@@ -502,6 +502,8 @@ export class GameRuntime {
   private attract: {
     loop: FrameLoop
     elapsed: number
+    orbitSpeed: number
+    orbitTarget: number
     camera: THREE.PerspectiveCamera
     last: number | null
     options: Required<AttractOptions>
@@ -537,9 +539,6 @@ export class GameRuntime {
   private spawned: string[] = []
   private spawnSequence = 0
   private accidentReplacement?: AccidentReplacement
-  private lightSensorSeconds = 0
-  private lightSensorShadow = false
-  private lightSensorVehicle: string | null = null
   private exhaustOffset: Vec3Tuple = [0, 0, 0]
   private readonly idleCinematic = new IdleCinematic()
   private cameraActivity(): void {
@@ -1319,8 +1318,6 @@ export class GameRuntime {
     this.clearPickups()
     this.accidentReplacement?.clear()
     this.drivingPrepared.clear()
-    this.lightSensorVehicle = null
-    this.lightSensorSeconds = 0
     this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -1766,6 +1763,8 @@ export class GameRuntime {
     this.touchWalk?.setActive(playing && !sim.player.vehicleId)
     this.weaponControls.setActive(playing && !sim.player.vehicleId && this.weaponDrawn)
     if (document.hidden) return
+    if (this.beamFlash && this.beamFlash.vehicle !== this.session.simulation?.player.vehicleId)
+      this.releaseBeamFlash()
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(performance.now())
     this.canvasDiagnostics(frameMs)
@@ -1867,20 +1866,9 @@ export class GameRuntime {
     ])
     const vehicleId = sim.player.vehicleId
     if (vehicleId) {
-      this.lightSensorSeconds += dt
-      if (vehicleId !== this.lightSensorVehicle || this.lightSensorSeconds >= 0.25) {
-        this.lightSensorVehicle = vehicleId
-        this.lightSensorSeconds = 0
-        const direction = this.sky.sunDirection
-        this.lightSensorShadow =
-          this.sky.enabled &&
-          direction.y > 0.04 &&
-          sim.vehicleSunOccluded(vehicleId, direction.toArray())
-      }
       this.view.sampleVehicleLightEnvironment(
         vehicleId,
-        (this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.nightThreshold) ||
-          this.lightSensorShadow,
+        this.sky.enabled && this.sky.atmosphere.day < lightingDefaults.vehicleAutoDarkThreshold,
         playing ? dt : 0,
       )
     }
@@ -2451,6 +2439,8 @@ export class GameRuntime {
   private inspectionFrame(time: number, dt: number, frameMs: number): void {
     const inspector = this.inspector!,
       sim = this.session.simulation!
+    if (this.beamFlash && this.beamFlash.vehicle !== this.session.simulation?.player.vehicleId)
+      this.releaseBeamFlash()
     if (!this.hasInput()) this.releaseInput()
     this.keys.expire(time)
     inspector.step(this.keys.values, dt)
@@ -4264,8 +4254,24 @@ export class GameRuntime {
       await this.reportLoadStep('Esperando teselas, ortofotos y colisiones del terreno')
       if (this.options.startupTerrain === 'area') {
         const spawnEye = new THREE.Vector3(...spawn)
+        let plannedCells: (() => { loaded: number; total: number }) | undefined
         await waitForArea(this.world, spawn, {
           signal,
+          onProgress: () => {
+            if (!plannedCells) {
+              const candidate = this.world!.trackPlannedCells()
+              if (candidate().total) plannedCells = candidate
+            }
+            const stats = plannedCells?.() ?? { loaded: 0, total: 0 }
+            const progress = stats.total ? stats.loaded / stats.total : 0
+            if (this.attract)
+              this.attract.orbitTarget = Math.min(this.attract.orbitTarget, 1 - progress)
+            const detail = `Cargando celdas ${stats.loaded} / ${stats.total}`
+            if (canvas.dataset.loadingDetail !== detail) {
+              canvas.dataset.loadingDetail = detail
+              window.dispatchEvent(new CustomEvent('nabla-load-step'))
+            }
+          },
           pending: () => this.view.pendingMapInstalls + Number(this.view.pendingBuildingBatches),
           flush: () => {
             this.view.flushMapInstall(
@@ -4289,6 +4295,8 @@ export class GameRuntime {
     if (sim) await this.placeInitialWeaponPickup(sim)
     signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
+    // Heavy GPU preparation keeps the already-visible planet still, without delaying startup.
+    if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
     stage('shaders', 3)
     await this.reportLoadStep('Preparando poses, luces y materiales')
     // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
@@ -4422,7 +4430,10 @@ export class GameRuntime {
         const frameMs = attract.last === null ? 0 : time - attract.last
         attract.last = time
         // Loading, tab suspension or a busy GPU must not fast-forward the orbit on resume.
-        attract.elapsed += Math.min(50, Math.max(0, frameMs))
+        const dt = Math.min(50, Math.max(0, frameMs))
+        attract.orbitSpeed += (attract.orbitTarget - attract.orbitSpeed) * (1 - Math.exp(-dt / 450))
+        if (attract.orbitSpeed < 0.001) attract.orbitSpeed = 0
+        attract.elapsed += dt * attract.orbitSpeed
         this.renderAttractFrame()
         this.observeResolution(frameMs, time)
       } catch (error) {
@@ -4434,6 +4445,8 @@ export class GameRuntime {
     this.attract = {
       loop,
       elapsed: 0,
+      orbitSpeed: 1,
+      orbitTarget: 1,
       camera: this.camera.clone(),
       last: null,
       options: resolved,
@@ -4562,7 +4575,13 @@ export class GameRuntime {
     }
   }
   /** Release held controls when host UI takes focus, without stopping simulation. */
+  private beamFlash?: { vehicle: string; key: string }
+  private releaseBeamFlash(): void {
+    if (this.beamFlash) this.view.endVehicleBeamFlash(this.beamFlash.vehicle)
+    this.beamFlash = undefined
+  }
   releaseInput(): void {
+    this.releaseBeamFlash()
     this.usbControllers.reset()
     this.usbFrame = idleUsbFrame()
     this.usbFeedback.stop()
@@ -5052,6 +5071,11 @@ export class GameRuntime {
     if (occupied && this.headlamp.enabled) this.setHeadlamp(false)
     this.headlamp.update(this.view.headLightMount, eyes, occupied, eyeOrigin)
   }
+  /** Actual beam of the occupied vehicle, for HUD indicators. */
+  get vehicleActiveBeam(): 'low' | 'high' | null {
+    const id = this.session.simulation?.player.vehicleId
+    return id ? this.view.vehicleActiveBeam(id) : null
+  }
   get headlampEnabled(): boolean {
     return this.headlamp.enabled
   }
@@ -5491,7 +5515,11 @@ export class GameRuntime {
           if (action === 'weapon.slide' && this.weaponDrawn && this.sidearm)
             this.sidearm.state.manualRackHeld =
               this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
-          if (action) this.action(action)
+          if (action === 'highBeam' && id && this.view.beginVehicleBeamFlash(id)) {
+            this.releaseBeamFlash()
+            this.view.beginVehicleBeamFlash(id)
+            this.beamFlash = { vehicle: id, key: event.code }
+          } else if (action) this.action(action)
         }
       },
       options,
@@ -5500,6 +5528,7 @@ export class GameRuntime {
       'keyup',
       (event) => {
         this.keys.release(event.code)
+        if (this.beamFlash?.key === event.code) this.releaseBeamFlash()
         if (inputBindings['weapon.slide'].keys.includes(event.code) && this.sidearm)
           this.sidearm.state.manualRackHeld = false
         if (

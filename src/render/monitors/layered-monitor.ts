@@ -20,6 +20,8 @@ export type MonitorLayer = Rect &
     | {
         kind: 'image'
         url: string
+        /** Optional on/off telemetry binding for a tell-tale. */
+        visibleBinding?: string
         /** Scene-lit printed surface, or self-lit display (default). */ lighting?:
           'scene' | 'unlit'
       }
@@ -250,6 +252,13 @@ export class LayeredMonitor {
       )
       mesh.renderOrder = order + 1
       group.add(mesh)
+      if (layer.kind === 'image' && layer.visibleBinding) {
+        const binding = layer.visibleBinding
+        mesh.visible = false
+        this.updates.push((data) => {
+          mesh.visible = !!data.values[binding]
+        })
+      }
       if (layer.kind === 'html') {
         // Optional backend: layered PNG/glyph/needle screens never fetch this module.
         // Keep the plane invisible until it has a texture (no white startup flash).

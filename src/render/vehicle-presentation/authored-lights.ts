@@ -34,18 +34,21 @@ function channel(value?: string): VehicleLightChannel {
   return channels[value ?? ''] ?? 'position'
 }
 
-/** Project a soft horizontal cutoff; texture +Y is up in the spotlight projection. */
-export function lowBeamMask(): DataTexture {
+/** Dipped cutoff with a short 45-degree rise toward the right; projection +Y is up. */
+export function lowBeamMask(asymmetric = true): DataTexture {
   const size = lightingDefaults.lowBeamMaskSize
   const data = new Uint8Array(size * size * 4)
+  const rampStart =
+    0.5 - Math.tan(Math.PI / 180) / (2 * Math.tan(lightingDefaults.lowBeamOuterCone))
   for (let y = 0; y < size; y++)
     for (let x = 0; x < size; x++) {
       const u = x / (size - 1),
         v = y / (size - 1)
-      const cutoff = Math.max(
-        0,
-        Math.min(1, (lightingDefaults.lowBeamCutoff - v) / lightingDefaults.lowBeamCutoffSoftness),
-      )
+      // Equal texture-axis increments make a short 45-degree ramp, then a raised plateau.
+      const edge =
+        lightingDefaults.lowBeamCutoff +
+        (asymmetric ? Math.min(0.02, Math.max(0, u - rampStart)) : 0)
+      const cutoff = Math.max(0, Math.min(1, (edge - v) / lightingDefaults.lowBeamCutoffSoftness))
       const spread = Math.max(
         0,
         1 - Math.pow(Math.abs(u - 0.5) * 2, lightingDefaults.lowBeamSpreadPower),
@@ -63,6 +66,7 @@ export function lowBeamMask(): DataTexture {
 export class AuthoredVehicleLights {
   private reversing = false
   private mask?: DataTexture
+  private highMask?: DataTexture
   private readonly lamps: {
     light: Light
     intensity: number
@@ -116,13 +120,13 @@ export class AuthoredVehicleLights {
       // Driving beams share one global level and a slightly softer edge than authored.
       const intensity =
         (beam ? authored * lightingDefaults.headlightIntensityScale : authored) *
-        (lampChannel === 'high' ? 0.9 : 1)
+        (lampChannel === 'high' ? lightingDefaults.highBeamIntensityScale : 1)
       if (beam && node instanceof SpotLight)
         node.penumbra = Math.min(1, node.penumbra + lightingDefaults.headlightPenumbraBoost)
       // Configure the beam once in vehicle space, independently of GLB lamp axes.
       if (
         node instanceof SpotLight &&
-        (lampChannel === 'high' || (lampChannel === 'low' && owner.userData.side === 'R')) &&
+        (lampChannel === 'high' || lampChannel === 'low') &&
         !node.userData.nablaBeamAimAdjusted
       ) {
         model.updateWorldMatrix(true, true)
@@ -133,7 +137,7 @@ export class AuthoredVehicleLights {
         const horizontal = Math.hypot(direction.x, direction.z)
         if (length > 0 && horizontal > 1e-6) {
           const elevation =
-            lampChannel === 'high' ? 0 : Math.atan2(direction.y, horizontal) + Math.PI / 360
+            lampChannel === 'high' ? (2 * Math.PI) / 180 : Math.atan2(direction.y, horizontal)
           direction.x *= (Math.cos(elevation) * length) / horizontal
           direction.z *= (Math.cos(elevation) * length) / horizontal
           direction.y = Math.sin(elevation) * length
@@ -145,6 +149,8 @@ export class AuthoredVehicleLights {
         }
         if (lampChannel === 'high') node.angle = lightingDefaults.lowBeamOuterCone
       }
+      if (node instanceof SpotLight && lampChannel === 'high')
+        node.map = this.highMask ??= lowBeamMask(false)
       this.lamps.push({
         light: node,
         intensity,
@@ -192,8 +198,10 @@ export class AuthoredVehicleLights {
   /** Release the per-vehicle beam texture on scene disposal. */
   dispose(): void {
     for (const { light } of this.lamps)
-      if (light instanceof SpotLight && light.map === this.mask) light.map = null
+      if (light instanceof SpotLight && (light.map === this.mask || light.map === this.highMask))
+        light.map = null
     this.mask?.dispose()
+    this.highMask?.dispose()
   }
   /** Reverse lamps follow the engaged gear independently of the driving-light switch. */
   update(reversing: boolean, enabled = this.controller.enabled): void {

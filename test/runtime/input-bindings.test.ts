@@ -42,7 +42,10 @@ describe('shared action contexts', () => {
       ),
     ).toBe(false)
     expect(controlsHint({ mode: 'road' }, ['camera', 'stance'])).toContain('V Cambiar cámara')
-    expect(controlsHint({ mode: 'road' }, ['camera', 'stance'])).toContain('C Postura')
+    expect(controlsHint({ mode: 'road' }, ['highBeam'])).toContain('C/K Largas')
+    expect(keyboardAction('KeyC', { mode: 'road' })).toBe('highBeam')
+    expect(keyboardAction('KeyC', { mode: 'bike' })).toBe('highBeam')
+    expect(keyboardAction('KeyC', { mode: 'flight' })).toBe('stance')
   })
   it('shares forward aliases but keeps aircraft thrust separate from pitch', () => {
     expect(

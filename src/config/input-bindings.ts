@@ -105,7 +105,7 @@ export const inputBindings = {
   lights: press('Luces del vehículo', ['KeyH'], ['vehicle']),
   horn: press('Claxon', [], ['vehicle']),
   gps: press('GPS', ['KeyG'], ['vehicle']),
-  highBeam: press('Largas / cortas', ['KeyK'], ['road', 'bike', 'flight']),
+  highBeam: press('Largas / cortas', ['KeyC', 'KeyK'], ['road', 'bike', 'flight']),
   'vehicle.menu': press('Menú del vehículo', ['KeyJ'], ['road', 'bike', 'flight']),
   'forklift.menu': press('Menú del toro', ['KeyP'], ['forklift']),
   'xr.menu': press('Monitor XR', [], ['game']),
@@ -152,6 +152,7 @@ for (const [id, binding] of Object.entries(inputBindings)) {
 Object.freeze(inputBindings)
 /** Resolve holds as well as presses, so a held contextual control can consume a fallback action. */
 export function bindingForKey(code: string, context: InputContext): InputAction | undefined {
+  if (code === 'KeyC' && context.mode === 'flight' && !context.menu) return 'stance'
   for (const scope of scopes(context)) {
     const id = scopedBindings.get(scope)?.get(code)
     if (id) return id
@@ -208,7 +209,7 @@ export function inputActionAvailable(action: InputAction, context: InputContext)
 export function legacyInputAction(value: string): InputAction | undefined {
   if (Object.hasOwn(inputBindings, value)) return value as InputAction
   // No active weapon/menu: preserve the historical public game.action(KeyE) contract.
-  return keyboardAction(value, { mode: value === 'Space' ? 'walk' : 'road' })
+  return keyboardAction(value, { mode: value === 'Space' || value === 'KeyC' ? 'walk' : 'road' })
 }
 export function keyLabel(code: string): string {
   const special: Record<string, string> = {
