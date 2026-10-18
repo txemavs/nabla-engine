@@ -141,9 +141,19 @@ and `end()`. The service gives a body only to poles inside the shared radius aro
 (default 30 m, editable 5–150 m under Mundo → Opciones → Señales de tráfico, defaults in
 `src/config/scenery-physics.ts`), caps bodies per layer (48), remembers knocked-down poses
 of movable layers while they stream out, and returns the live pose for rendering
-(`transform(key, matrix)`). Bodies come from `Simulation.createSceneryPole`. Street-lamp and tree
-posts are still static colliders through `Simulation.setPoles`; see
-[generalization candidates](generalization-candidates.md).
+(`transform(key, matrix)`). Bodies come from `Simulation.createSceneryPole`.
+
+Lamp posts and tree trunks use the same service as a third, **world** layer (`field-lights`, created
+by the runtime when field lights are on; `FieldLighting.update({ scenery })` feeds it from
+`FieldLights.poles()`). A world layer is always solid and differs from the sign layers only by its
+options: it ignores the on/off switch and the editable radius (they are for signs and traffic
+lights), selects poles within 65 m of **any** actor (the player and every vehicle, 3D box distance,
+as the planet trimesh set does), has no body cap, builds at most 3 ms of bodies per refresh nearest
+first, and gives each pole its own half size and the planet's static surface material
+(`createSceneryPole(..., { half, solid })`). `Simulation.setPoles` and the pole path inside
+`PlanetCollisions` are gone; tile-provided poles in `PlanetCollisionTile.poles` are unchanged.
+The street-light **budget** (`Streetlights`, how many lamps cast light) is rendering and stays
+separate. See [generalization candidates](generalization-candidates.md).
 
 Colour, lighting and material values are not per-vehicle code: they are shared tuning
 (`src/config/lighting.ts`, `light-tuning.ts`) and the GLB. See

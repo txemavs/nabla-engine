@@ -27,8 +27,6 @@ export class PlanetCollisions {
   private selectionKey = ''
   private tileKey = ''
   private bounds = new WeakMap<PlanetCollisionChunk[], number[]>()
-  private poleTile: PlanetCollisionTile | null = null
-  private poleKey = ''
   private candidates: {
     key: string
     tile: PlanetCollisionTile
@@ -61,44 +59,6 @@ export class PlanetCollisions {
         }
     }
   }
-  /** Trunks for trees and lamp posts. Positions are in the simulation frame. */
-  setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
-    const key = poles.map((p) => p.position.map((n) => Math.round(n * 50) / 50).join(',')).join('|')
-    if (key === this.poleKey) return
-    this.poleKey = key
-    this.selectionKey = ''
-    this.poleTile = poles.length
-      ? {
-          id: 'poles',
-          pose: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
-          chunks: [],
-          poles: poles.map((p, i) => ({
-            key: `${i}:${p.position.map((n) => n.toFixed(2)).join(',')}`,
-            center: p.position,
-            half: p.half,
-            bounds: [
-              p.position[0] - p.half[0],
-              p.position[1] - p.half[1],
-              p.position[2] - p.half[2],
-              p.position[0] + p.half[0],
-              p.position[1] + p.half[1],
-              p.position[2] + p.half[2],
-            ],
-          })),
-        }
-      : null
-    if (this.poleTile) this.remember(this.poleTile)
-  }
-  private remember(tile: PlanetCollisionTile): void {
-    if (this.bounds.has(tile.chunks)) return
-    const b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
-    for (const c of [...tile.chunks, ...(tile.poles ?? [])])
-      for (let i = 0; i < 3; i++) {
-        b[i] = Math.min(b[i], c.bounds[i])
-        b[i + 3] = Math.max(b[i + 3], c.bounds[i + 3])
-      }
-    this.bounds.set(tile.chunks, b[0] === Infinity ? [0, 0, 0, 0, 0, 0] : b)
-  }
   update(positions: Vec3Tuple[], buildings: boolean, budgetMs = 3): void {
     // A 65 m working set has ample margin for an 8 m selection grid. Reuse it
     // between movements instead of scanning every triangle chunk every frame.
@@ -109,7 +69,7 @@ export class PlanetCollisions {
     if (selectionKey !== this.selectionKey) {
       this.selectionKey = selectionKey
       const candidates: typeof this.candidates = []
-      for (const tile of this.poleTile ? [...this.tiles, this.poleTile] : this.tiles) {
+      for (const tile of this.tiles) {
         const inverse = new Quaternion(...tile.pose.rotation).inverse()
         const origin = new Vec3(...tile.pose.position)
         const local = positions.map((p) => inverse.vmult(new Vec3(...p).vsub(origin)))

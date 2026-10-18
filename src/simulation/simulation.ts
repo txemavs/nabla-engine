@@ -238,7 +238,16 @@ export class Simulation {
     this.planetCollisions.discardReplacement()
   }
   /** Small streamed scenery bodies, owned and retired by the host layer. */
-  createSceneryPole(position: Vec3Tuple, height: number, movable: boolean) {
+  /**
+   * Static or dynamic scenery pole. `shape.half` overrides the default box (a thin sign post);
+   * `shape.solid` gives it the same surface as the planet's static colliders (trees, lamp posts).
+   */
+  createSceneryPole(
+    position: Vec3Tuple,
+    height: number,
+    movable: boolean,
+    shape?: { half?: Vec3Tuple; solid?: boolean },
+  ) {
     if (
       this.disposed ||
       height <= 0 ||
@@ -249,7 +258,10 @@ export class Simulation {
     const body = new Body({
       mass: movable ? 18 : 0,
       position: new Vec3(...position),
-      shape: new Box(new Vec3(movable ? 0.045 : 0.09, height / 2, movable ? 0.045 : 0.09)),
+      shape: new Box(
+        new Vec3(...(shape?.half ?? [movable ? 0.045 : 0.09, height / 2, movable ? 0.045 : 0.09])),
+      ),
+      ...(shape?.solid ? { material: this.solidMaterial } : {}),
       linearDamping: 0.15,
       angularDamping: 0.2,
     })
@@ -292,8 +304,12 @@ export class Simulation {
     }
   }
 
-  setPoles(poles: { position: Vec3Tuple; half: Vec3Tuple }[]): void {
-    this.planetCollisions.setPoles(poles)
+  /** Positions of the player and every vehicle: the bodies scenery must be ready for. */
+  sceneryActors(): Vec3Tuple[] {
+    return [
+      vec(this.playerBody.position),
+      ...[...this.vehicles.values()].map((v) => vec(v.body.position)),
+    ]
   }
   /** Frozen inspection keeps authored body poses intact while terrain streams. */
   terrainSupportPaused = false
@@ -324,13 +340,7 @@ export class Simulation {
     }
   }
   preparePlanetCollisions(): boolean {
-    this.planetCollisions.update(
-      [
-        vec(this.playerBody.position),
-        ...[...this.vehicles.values()].map((v) => vec(v.body.position)),
-      ],
-      this.mapBuildingsEnabled,
-    )
+    this.planetCollisions.update(this.sceneryActors(), this.mapBuildingsEnabled)
     return this.planetCollisions.ready
   }
   private readonly characterMaterial = new Material({ friction: 0, restitution: 0 })
