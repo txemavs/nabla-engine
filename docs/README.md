@@ -1,6 +1,15 @@
 # Documentation
 
-Start with [Local development](local-development.md) to run the complete Docker
+**New here? Start with these three** (the documents written for day one):
+
+1. [Engine overview](engine-overview.md): architecture, Z15 cell loading, vehicles,
+   what attaches to a vehicle, configuration and layers, how Euskadi Online consumes
+   the Engine, and what not to redo.
+2. [UI/UX pattern — the rule](ui-ux-pattern.md): tabbed menu, clock as Menú button, HUD rows.
+3. [Generalization candidates](generalization-candidates.md): ad hoc and duplicated systems,
+   with a proposed per-vehicle attachments mechanism.
+
+Then [Local development](local-development.md) to run the complete Docker
 stack and follow the guided source-code tour.
 
 See [Asset packs](asset-packs.md) for compressed model distribution, server

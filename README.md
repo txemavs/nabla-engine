@@ -7,6 +7,9 @@ The TypeScript engine owns scene data, physics, and rendering. Studio connects
 that to input, persistence, and the editor. Agency integration is a future consumer,
 not a dependency of the engine.
 
+**Documentation:** start with the [Engine overview](docs/engine-overview.md), the
+[UI/UX rule](docs/ui-ux-pattern.md) and the [docs index](docs/README.md).
+
 ## Monitors and the S3
 
 Start with the [monitor editing guide](docs/monitors.md) for preview links, artwork,
