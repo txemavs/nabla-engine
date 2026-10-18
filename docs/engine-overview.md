@@ -130,6 +130,21 @@ Everything below is created from the vehicle's **presentation** when its entity 
 | Weapons                                     | Held by the avatar/driver, not by the vehicle; `Q` is reserved for weapons                                                                 | `src/simulation/weapons/`, `src/catalog/weapons/`                                                                   |
 | Touch controls / HUD                        | Control profile of the seat                                                                                                                | `touch-driving.ts`, `touch-walk.ts`, `game-toolbar.ts`                                                              |
 
+### Scenery physics (signs, traffic lights)
+
+Small streamed scenery that must react to the player (sign posts that can be knocked down,
+solid traffic-light poles) shares **one** service: `runtime.sceneryPhysics`
+(`src/runtime/scenery-physics.ts`, class `SceneryPhysics`). A host registers a layer per kind of
+scenery (`layer('signs', { movable: true })`, `layer('traffic-lights', { movable: false })`) and, on
+every streaming refresh, calls `begin()`, `add(key, x, ground, z, height)` for each wanted pole
+and `end()`. The service gives a body only to poles inside the shared radius around the player
+(default 30 m, editable 5–150 m under Mundo → Opciones → Señales de tráfico, defaults in
+`src/config/scenery-physics.ts`), caps bodies per layer (48), remembers knocked-down poses
+of movable layers while they stream out, and returns the live pose for rendering
+(`transform(key, matrix)`). Bodies come from `Simulation.createSceneryPole`. Street-lamp and tree
+posts are still static colliders through `Simulation.setPoles`; see
+[generalization candidates](generalization-candidates.md).
+
 Colour, lighting and material values are not per-vehicle code: they are shared tuning
 (`src/config/lighting.ts`, `light-tuning.ts`) and the GLB. See
 [generalization candidates](generalization-candidates.md) for what is still ad hoc here and a

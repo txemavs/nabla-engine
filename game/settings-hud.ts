@@ -571,9 +571,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const physicsSection = fieldset('settings-sign-physics', 'Física de señalización')
     const physicsInput = doc.createElement('input')
     physicsInput.type = 'checkbox'
-    physicsInput.checked = doc.documentElement.dataset.signPhysics === 'true'
+    physicsInput.checked = runtime.sceneryPhysics.enabled
     physicsInput.addEventListener('change', () => {
-      doc.documentElement.dataset.signPhysics = String(physicsInput.checked)
+      runtime.sceneryPhysics.setEnabled(physicsInput.checked)
       window.dispatchEvent(new Event('euskadi-sign-physics'))
     })
     const physicsLabel = doc.createElement('label')
@@ -664,7 +664,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       150,
       physicsSection,
     )
-    doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
+    runtime.sceneryPhysics.setRadius(Number(physicsRadius.value))
     const apply = () => {
       for (const input of [limit, radius, physicsRadius]) {
         const value = input.valueAsNumber
@@ -680,7 +680,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         radius: Number(radius.value),
         physicsRadius: Number(physicsRadius.value),
       }
-      doc.documentElement.dataset.signPhysicsRadius = physicsRadius.value
+      runtime.sceneryPhysics.setRadius(Number(physicsRadius.value))
       try {
         localStorage.setItem(key, JSON.stringify(settings))
       } catch {

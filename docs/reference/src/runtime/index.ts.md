@@ -30,6 +30,8 @@
 - `./control-profiles.js`
 - `./touch-flight.js`
 - `./touch-walk.js`
+- `./scenery-physics.js`
+- `../config/scenery-physics.js`
 - `./streaming.js`
 - `./sidearm.js`
 - `./gallery.js`
