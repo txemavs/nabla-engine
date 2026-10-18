@@ -1,0 +1,215 @@
+import * as THREE from 'three'
+import { sceneryPhysicsDefaults } from '../config/scenery-physics.js'
+import type { Simulation } from '../simulation/simulation.js'
+
+type Vec3 = [number, number, number]
+type Quat = [number, number, number, number]
+type SceneryBodies = Pick<Simulation, 'createSceneryPole' | 'renderPlayerPosition'>
+type PoleHandle = ReturnType<Simulation['createSceneryPole']>
+type Pose = { position: Vec3; rotation: Quat }
+
+const clampRadius = (value: number): number =>
+  Math.max(
+    sceneryPhysicsDefaults.radiusMin,
+    Math.min(sceneryPhysicsDefaults.radiusMax, Math.round(value)),
+  )
+
+/** Legacy host storage that held the physics radius before it became an engine setting. */
+const legacyStorageKey = 'euskadi.irun-signs'
+
+function initialSettings(): { enabled: boolean; radius: number } {
+  // Hosts used to publish these two values as data attributes; honour them if present.
+  const data = typeof document === 'undefined' ? undefined : document.documentElement.dataset
+  let radius = Number(data?.signPhysicsRadius)
+  if (!Number.isFinite(radius) || !data?.signPhysicsRadius) {
+    try {
+      radius = Number(
+        JSON.parse(globalThis.localStorage?.getItem(legacyStorageKey) ?? '{}')?.physicsRadius,
+      )
+    } catch {
+      radius = NaN
+    }
+  }
+  return {
+    enabled: data?.signPhysics ? data.signPhysics === 'true' : sceneryPhysicsDefaults.enabled,
+    radius: Number.isFinite(radius) ? clampRadius(radius) : sceneryPhysicsDefaults.radius,
+  }
+}
+
+/** Options of one scenery layer. */
+export interface SceneryLayerOptions {
+  /** Knockable (signs) or fixed (traffic lights). Fixed layers never remember fallen poses. */
+  movable: boolean
+  /** Most live bodies in this layer. Defaults to `sceneryPhysicsDefaults.maxBodies`. */
+  maxBodies?: number
+}
+
+/**
+ * The one scenery-physics service of a runtime. Hosts register a *layer* per kind of scenery
+ * and feed it the poles currently wanted around the player; the service decides, from the shared
+ * settings (`enabled`, `radius`), which of them get a body, keeps knocked-down poses while a
+ * region streams out and hands the current pose back for rendering.
+ *
+ * It owns physics only. Light budgets (`Streetlights`) and meshes stay with their renderers.
+ */
+export class SceneryPhysics {
+  private on: boolean
+  private reach: number
+  private readonly layers = new Set<SceneryLayer>()
+
+  constructor(private readonly simulation: () => SceneryBodies | null | undefined) {
+    const initial = initialSettings()
+    this.on = initial.enabled
+    this.reach = initial.radius
+  }
+
+  /** Scenery responds to impacts and gets bodies near the player. */
+  get enabled(): boolean {
+    return this.on
+  }
+  /** Metres around the player inside which scenery gets a body. */
+  get radius(): number {
+    return this.reach
+  }
+
+  /** Turn scenery physics on or off; layers retire their bodies on their next `begin()`. */
+  setEnabled(enabled: boolean): void {
+    this.on = enabled
+    this.publish()
+  }
+  /** Set the physics radius in metres, clamped to the editable range. */
+  setRadius(metres: number): void {
+    if (!Number.isFinite(metres)) return
+    this.reach = clampRadius(metres)
+    this.publish()
+  }
+
+  /** Create a layer for one kind of scenery. */
+  layer(name: string, options: SceneryLayerOptions): SceneryLayer {
+    const layer = new SceneryLayer(this, name, {
+      movable: options.movable,
+      maxBodies: options.maxBodies ?? sceneryPhysicsDefaults.maxBodies,
+    })
+    this.layers.add(layer)
+    return layer
+  }
+
+  /** Live and remembered poles per layer. */
+  diagnostics(): { name: string; movable: boolean; active: number; fallen: number }[] {
+    return [...this.layers].map((layer) => layer.stats())
+  }
+
+  /** Release every layer's bodies. */
+  dispose(): void {
+    for (const layer of [...this.layers]) layer.dispose()
+  }
+
+  /** @internal Bodies of the current simulation, if it is running. */
+  bodies(): SceneryBodies | null | undefined {
+    return this.simulation()
+  }
+  /** @internal Called by a layer when it is disposed. */
+  forget(layer: SceneryLayer): void {
+    this.layers.delete(layer)
+  }
+
+  /** Mirror the settings to the data attributes older host code still reads. */
+  private publish(): void {
+    if (typeof document === 'undefined') return
+    document.documentElement.dataset.signPhysics = String(this.on)
+    document.documentElement.dataset.signPhysicsRadius = String(this.reach)
+  }
+}
+
+/** One kind of scenery (for example sign posts) inside `SceneryPhysics`. */
+export class SceneryLayer {
+  private readonly active = new Map<string, { handle: PoleHandle; base: THREE.Matrix4 }>()
+  private readonly fallen = new Map<string, { pose: Pose; base: THREE.Matrix4 }>()
+  private readonly wanted = new Set<string>()
+  private readonly matrix = new THREE.Matrix4()
+
+  constructor(
+    private readonly owner: SceneryPhysics,
+    readonly name: string,
+    private readonly options: Required<SceneryLayerOptions>,
+  ) {}
+
+  /** Start a refresh: poles not re-added before `end()` are retired. */
+  begin(): void {
+    this.wanted.clear()
+    if (!this.owner.enabled) this.end()
+  }
+
+  /**
+   * Ask for a body for the pole `key` standing on `ground` at (`x`, `z`). Ignored when physics is
+   * off, the pole is outside the radius, or the layer is full.
+   */
+  add(key: string, x: number, ground: number, z: number, height: number): void {
+    if (!this.owner.enabled) return
+    const simulation = this.owner.bodies()
+    const at = simulation?.renderPlayerPosition
+    if (!simulation || !at || Math.hypot(x - at[0], z - at[2]) > this.owner.radius) return
+    this.wanted.add(key)
+    if (this.active.has(key) || this.active.size >= this.options.maxBodies) return
+    const handle = simulation.createSceneryPole(
+      [x, ground + height / 2, z],
+      height,
+      this.options.movable,
+    )
+    const saved = this.fallen.get(key)
+    const base = saved?.base ?? new THREE.Matrix4().makeTranslation(-x, -ground - height / 2, -z)
+    if (saved) handle.restore(saved.pose.position, saved.pose.rotation)
+    this.active.set(key, { handle, base })
+  }
+
+  /** Finish a refresh: retire poles that were not wanted, remembering knocked-down ones. */
+  end(): void {
+    for (const [key, item] of this.active)
+      if (!this.wanted.has(key)) {
+        if (this.options.movable)
+          this.fallen.set(key, { pose: item.handle.pose(), base: item.base })
+        item.handle.dispose()
+        this.active.delete(key)
+      }
+  }
+
+  /** Push the live pole `key` (a shot or a hit). No effect on fixed layers or retired poles. */
+  impact(key: string, point: Vec3, direction: Vec3, impulse: number): void {
+    this.active.get(key)?.handle.impact(point, direction, impulse)
+  }
+
+  /** Premultiply `matrix` (the pole's rest transform) by its current physical pose. */
+  transform(key: string, matrix: THREE.Matrix4): void {
+    const active = this.active.get(key)
+    const saved = this.fallen.get(key)
+    const pose = active?.handle.pose() ?? saved?.pose
+    const base = active?.base ?? saved?.base
+    if (!pose || !base) return
+    this.matrix
+      .compose(
+        new THREE.Vector3(...pose.position),
+        new THREE.Quaternion(...pose.rotation),
+        new THREE.Vector3(1, 1, 1),
+      )
+      .multiply(base)
+    matrix.premultiply(this.matrix)
+  }
+
+  /** @internal Counts for `SceneryPhysics.diagnostics`. */
+  stats(): { name: string; movable: boolean; active: number; fallen: number } {
+    return {
+      name: this.name,
+      movable: this.options.movable,
+      active: this.active.size,
+      fallen: this.fallen.size,
+    }
+  }
+
+  /** Release every body and forget fallen poses. */
+  dispose(): void {
+    for (const item of this.active.values()) item.handle.dispose()
+    this.active.clear()
+    this.fallen.clear()
+    this.owner.forget(this)
+  }
+}

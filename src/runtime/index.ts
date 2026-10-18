@@ -130,6 +130,8 @@ export {
   type TouchWalkVisibility,
   type TouchStick,
 } from './touch-walk.js'
+export { SceneryPhysics, SceneryLayer, type SceneryLayerOptions } from './scenery-physics.js'
+export { sceneryPhysicsDefaults } from '../config/scenery-physics.js'
 export { GameplayStreaming, type GameplayWorldStream } from './streaming.js'
 export { Sidearm } from './sidearm.js'
 export { Gallery, shotView } from './gallery.js'

@@ -163,6 +163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `row.append`
 - `rowOf`
 - `rows`
+- `runtime.sceneryPhysics.setRadius`
 - `runtime.setFieldLightLimit`
 - `runtime.setFieldLightShadows`
 - `saved.trim`
@@ -560,7 +561,7 @@ callback@575(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Event`
-- `String`
+- `runtime.sceneryPhysics.setEnabled`
 - `window.dispatchEvent`
 
 ## mountSettingsHud.callback@589
@@ -648,6 +649,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `String`
 - `localStorage.setItem`
+- `runtime.sceneryPhysics.setRadius`
 - `window.dispatchEvent`
 
 ## mountSettingsHud.callback@705

@@ -116,6 +116,15 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       setCloudWeather: () => {},
       lensFlareAmount: 1,
       setLensFlareAmount: () => {},
+      sceneryPhysics: {
+        enabled: true,
+        setEnabled: (on: boolean) => {
+          document.documentElement.dataset.signPhysics = String(on)
+        },
+        setRadius: (metres: number) => {
+          document.documentElement.dataset.signPhysicsRadius = String(metres)
+        },
+      },
     }
     document.documentElement.dataset.appName = 'EUSKADI.ONLINE'
     document.documentElement.dataset.irunSigns = 'true'

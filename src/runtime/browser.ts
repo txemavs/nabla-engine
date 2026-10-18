@@ -137,6 +137,7 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
+import { SceneryPhysics } from './scenery-physics.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
 import { createEntity } from '../entity/schema.js'
@@ -491,6 +492,8 @@ export class GameRuntime {
   readonly xr: GameXR
   readonly game = new SharedGameRuntime()
   readonly session = this.game.session
+  /** The one scenery-physics service: sign and traffic-light poles register layers here. */
+  readonly sceneryPhysics = new SceneryPhysics(() => this.session.simulation)
   readonly cameraState = this.game.cameraState
   private readonly document: SceneDocument
   private readonly scene = new THREE.Scene()
@@ -1400,6 +1403,7 @@ export class GameRuntime {
     this.fireModeBadge = null
     this.touchFlight?.dispose()
     this.touchWalk?.dispose()
+    this.sceneryPhysics.dispose()
     this.monitors.dispose()
     this.view.dispose()
     this.vehicleWarmup?.dispose()
