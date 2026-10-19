@@ -73,7 +73,7 @@ function clusterOf(x: number, z: number, box: THREE.Box3, grid: number): number 
 
 /**
  * Reorder a geometry's triangles by cluster and return its cluster table. New index or attribute
- * arrays replace the old ones on the geometry; arrays already shared elsewhere (collision, caches)
+ * arrays replace the old ones on the geometry (whose renderer buffers are disposed); arrays already shared elsewhere (collision, caches)
  * are never mutated. Returns undefined for geometries that are not plain triangle lists.
  */
 export function buildTileClusters(
@@ -126,6 +126,9 @@ export function buildTileClusters(
       if (pz > bounds[o + 5]) bounds[o + 5] = pz
     }
   }
+  // Free the renderer's copies of the old buffers now; otherwise they stay alive (GPU memory) until
+  // the tile is removed. The reordered buffers upload on the next draw.
+  geometry.dispose()
   const starts = new Uint32Array(clusters)
   for (let c = 1; c < clusters; c++) starts[c] = starts[c - 1] + counts[c - 1]
   const cursor = starts.slice()
