@@ -11,11 +11,10 @@ Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, pa
 - `@nabla/engine/runtime/splash`
 - `./boot.js`
 - `./entry.js`
-- `./default-hud.js`
 
 ## bootSay
 
-[Implementation, line 14](../../../game/main.ts#L14)
+[Implementation, line 13](../../../game/main.ts#L13)
 
 ```ts
 bootSay(text: string): inferred by TypeScript; see implementation

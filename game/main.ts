@@ -2,7 +2,6 @@
 import { applySplashSkin, splashMessageAt } from '@nabla/engine/runtime/splash'
 import { readBootConfig } from './boot.js'
 import { resolveEntry } from './entry.js'
-import { mountDefaultHud } from './default-hud.js'
 
 const bootStatus = document.getElementById('loading-status')
 const bootMark = performance.now()
@@ -18,7 +17,6 @@ const bootSay = (text: string) => {
 /** Keep the HTML from saying «Initializing...» while modules and the entry probe run. */
 bootSay('Cargando el motor…')
 
-mountDefaultHud()
 const entry = await resolveEntry()
 bootSay(entry.mode === 'terrain' ? 'Cargando el terreno…' : 'Preparando la sesión…')
 console.info(
