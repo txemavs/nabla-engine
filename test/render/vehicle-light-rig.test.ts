@@ -1,6 +1,15 @@
 import fs from 'node:fs/promises'
 import { expect, it } from 'vitest'
-import { Group, Light, PointLight, Scene, SpotLight, type Object3D, type DataTexture } from 'three'
+import {
+  Group,
+  Light,
+  PointLight,
+  Scene,
+  SpotLight,
+  Vector3,
+  type Object3D,
+  type DataTexture,
+} from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { AuthoredVehicleLights } from '../../src/render/vehicle-presentation/authored-lights.js'
 import {
@@ -166,4 +175,31 @@ it('keeps each vehicle beam cutoff independent', () => {
   expect(Array.from(mask(b))).toEqual(Array.from(original))
   a.lights.dispose()
   b.lights.dispose()
+})
+
+it('moves only the light of rear lamps by the rear offset and head lamps by the front offset', () => {
+  const rig = new VehicleLightRig()
+  const car = authoredTruck()
+  car.lights.toggle()
+  car.root.updateMatrixWorld(true)
+  const { spots, points, rear } = car.lights.illuminators()
+  // Only the tail lamp is a rear lamp; the indicator and the beams are not.
+  expect(rear.size).toBe(1)
+  expect(points.filter((light) => rear.has(light))).toHaveLength(1)
+  const where = (index: number) => rig.lights.filter((light) => light instanceof PointLight)[index]
+  rig.capture(spots, points)
+  const tail = points.findIndex((light) => rear.has(light))
+  const before = {
+    tail: where(tail).position.clone(),
+    signal: where(tail === 0 ? 1 : 0).position.clone(),
+    spot: rig.lights[0].position.clone(),
+  }
+  rig.capture(spots, points, new Vector3(0, 0, 0.3), {
+    lights: rear,
+    offset: new Vector3(0.1, -0.2, 0.5),
+  })
+  expect(where(tail).position.clone().sub(before.tail).toArray()).toEqual([0.1, -0.2, 0.5])
+  expect(where(tail === 0 ? 1 : 0).position.equals(before.signal)).toBe(true)
+  expect(rig.lights[0].position.clone().sub(before.spot).toArray()).toEqual([0, 0, 0.3])
+  rig.dispose()
 })

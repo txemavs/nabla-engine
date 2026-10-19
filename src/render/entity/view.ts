@@ -395,7 +395,10 @@ export class SceneView {
     const car = this.carLights.has(id)
     return {
       front: car || (['low', 'high', 'fog'] as const).some((name) => channels?.has(name)),
-      rear: car || (['tail-stop', 'brake', 'reverse'] as const).some((name) => channels?.has(name)),
+      rear:
+        car ||
+        (['tail-stop', 'brake', 'reverse'] as const).some((name) => channels?.has(name)) ||
+        !!(this.objects.get(id) && this.rearLampAnchor(this.objects.get(id)!)),
     }
   }
   /** True when the vehicle has exhaust outlets that smoke. */
@@ -2083,6 +2086,22 @@ export class SceneView {
     })
   }
   private readonly rearLampAnchors = new WeakMap<THREE.Object3D, THREE.Object3D | null>()
+  /** The node that says where a model's tail lamp is (`nabla.anchor = "light.tail.brake"`), if any. */
+  private rearLampAnchor(object: THREE.Object3D): THREE.Object3D | undefined {
+    if (!this.rearLampAnchors.has(object)) {
+      let anchor: THREE.Object3D | null = null
+      object.traverse((node) => {
+        if (
+          node.userData.nabla?.anchor === 'light.tail.brake' ||
+          node.name === 'light.tail.brake' ||
+          node.name === 'light_tail_brake'
+        )
+          anchor = node
+      })
+      this.rearLampAnchors.set(object, anchor)
+    }
+    return this.rearLampAnchors.get(object) ?? undefined
+  }
   private captureOccupiedLights(vehicleId: string | null, sim: Simulation): void {
     const authored = vehicleId ? this.authoredLights.get(vehicleId)?.illuminators() : undefined
     const courtesy = vehicleId ? (this.carLights.get(vehicleId)?.courtesyLights ?? []) : []
@@ -2094,17 +2113,25 @@ export class SceneView {
       entity?.vehicle?.lights?.tuning,
     )
     if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
-    const offset = new THREE.Vector3(tuning.frontX, tuning.frontY, tuning.frontZ)
-    if (group) {
-      offset.applyMatrix4(group.matrixWorld).sub(group.getWorldPosition(new THREE.Vector3()))
-      offset.applyQuaternion(
-        this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert(),
-      )
+    // Vehicle-space offsets of a lamp's light, as vectors in the light rig's frame.
+    const rigOffset = (x: number, y: number, z: number) => {
+      const result = new THREE.Vector3(x, y, z)
+      if (group) {
+        result.applyMatrix4(group.matrixWorld).sub(group.getWorldPosition(new THREE.Vector3()))
+        result.applyQuaternion(
+          this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert(),
+        )
+      }
+      return result
     }
     this.vehicleLights.capture(
       authored?.spots ?? [],
       [...(authored?.points ?? []), ...courtesy],
-      offset,
+      rigOffset(tuning.frontX, tuning.frontY, tuning.frontZ),
+      authored && {
+        lights: authored.rear,
+        offset: rigOffset(tuning.rearX, tuning.rearY, tuning.rearZ),
+      },
     )
     if (
       vehicleId &&
@@ -2125,19 +2152,11 @@ export class SceneView {
         const truck = entity.visual?.presentation === 'nabla.truck'
         const trailer = sim.vehicleInfo(entity.id).towVehicleId === vehicleId
         const object = this.objects.get(entity.id)
-        if (object && (bike || truck || trailer)) {
-          if (!this.rearLampAnchors.has(object)) {
-            let anchor: THREE.Object3D | null = null
-            object.traverse((node) => {
-              if (
-                node.userData.nabla?.anchor === 'light.tail.brake' ||
-                node.name === 'light.tail.brake' ||
-                node.name === 'light_tail_brake'
-              )
-                anchor = node
-            })
-            this.rearLampAnchors.set(object, anchor)
-          }
+        if (object) {
+          const anchor = this.rearLampAnchor(object)
+          // Any model that names its tail lamp gets the wash on its anchor; the S3 path above is
+          // the only one without an anchor.
+          if (!(bike || truck || trailer || (anchor && !this.carLights.has(entity.id)))) continue
           this.vehicleLights.rearGroundGlow(
             object,
             entity.size[0],
@@ -2145,7 +2164,7 @@ export class SceneView {
             1,
             sim.vehicleInfo(vehicleId).braking,
             readVehicleLights(entity.visual?.body.url ?? entity.id, entity.vehicle?.lights?.tuning),
-            this.rearLampAnchors.get(object) ?? undefined,
+            anchor,
           )
         }
       }

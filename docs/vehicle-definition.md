@@ -28,7 +28,9 @@ live) and the generated [module reference](reference/README.md). The JSON schema
    thing: it must land almost on the road, otherwise it lights the bike itself. So the vehicle
    JSON carries `rearX/rearY/rearZ` (metres, relative to the anchor), `rearIntensity` and
    `rearReach` (multipliers). Moving the lamp means moving the anchor in the model; moving its
-   light means changing these numbers.
+   light means changing these numbers. The offset is one optional, common value: it moves the
+   road wash and the point or spot emitters of the rear lamps (brake, tail, reverse), whichever
+   the vehicle has, and never the lens mesh, which stays on its GLB node.
 3. **An adjustment found on one vehicle is a common parameter for all vehicles.** The VFR needed
    its tail wash moved down and back and made stronger and shorter. That did not become a
    motorcycle switch: `rearY`, `rearZ`, `rearIntensity` and `rearReach` are in the common
@@ -235,13 +237,13 @@ Four layers, every vehicle, same schema:
 
 ### `vehicle.lights.tuning` (all optional)
 
-| Field                        | Unit    | Range  | Default | Meaning                                                               |
-| ---------------------------- | ------- | ------ | ------- | --------------------------------------------------------------------- |
-| `low`, `high`                | degrees | −5 … 5 | 0 / 1   | Beam cutoff of the dipped and the high beam                           |
-| `frontX`, `frontY`, `frontZ` | metres  | −2 … 2 | 0       | Offset of all the head lamps' light (right/left, up/down, back/front) |
-| `rearX`, `rearY`, `rearZ`    | metres  | −2 … 2 | 0       | Offset of the tail lamp's road wash from the lamp anchor              |
-| `rearIntensity`              | ×       | 0 … 3  | 1       | Strength of the tail wash                                             |
-| `rearReach`                  | ×       | 0 … 3  | 1       | How far the tail wash reaches                                         |
+| Field                        | Unit    | Range  | Default | Meaning                                                                         |
+| ---------------------------- | ------- | ------ | ------- | ------------------------------------------------------------------------------- |
+| `low`, `high`                | degrees | −5 … 5 | 0 / 1   | Beam cutoff of the dipped and the high beam                                     |
+| `frontX`, `frontY`, `frontZ` | metres  | −2 … 2 | 0       | Offset of all the head lamps' light (right/left, up/down, back/front)           |
+| `rearX`, `rearY`, `rearZ`    | metres  | −2 … 2 | 0       | Offset of the tail lamp's light (road wash, rear emitters) from the lamp anchor |
+| `rearIntensity`              | ×       | 0 … 3  | 1       | Strength of the tail wash                                                       |
+| `rearReach`                  | ×       | 0 … 3  | 1       | How far the tail wash reaches                                                   |
 
 ### `vehicle.lights.lensEmissive` (all optional)
 
@@ -262,10 +264,18 @@ other material.
 - Any other vehicle with a `light.tail.brake` anchor sets the same four numbers in its JSON; no
   code is involved.
 
-The values are the generic `nabla.vehicle-lights/1` ones; none is motorcycle specific. Today the
-anchored rear wash is drawn for two-wheelers, trucks and trailers, and S3-style cars use
-`groundGlow`; a plain car without a presentation adapter gets neither, so its `rear*` numbers
-have no visible effect until that gap is closed (section 9).
+The values are the generic `nabla.vehicle-lights/1` ones; none is motorcycle specific. The
+anchored rear wash is drawn for every vehicle whose model has the `light.tail.brake` anchor
+(and for trucks, trailers and two-wheelers as before); S3-style cars keep `groundGlow`, which
+uses the same offset. A vehicle with neither an anchor nor a car adapter has no tail wash, so its
+`rear*` numbers only move its authored rear emitters, if any.
+
+**Finding the numbers.** In the game open Settings → Desarrollo → _Luz trasera (ajuste fino)_
+while sitting in the vehicle (it only enables with a rear lamp). The ± buttons move the light 1 cm
+or 5 cm at a time (intensity and reach ±0.05 / ±0.25); _Copiar JSON_ copies the
+`{"vehicle":{"lights":{"tuning":{…}}}}` fragment to paste into the vehicle's JSON; _Restablecer_
+returns to the JSON values. The panel writes the same per-model saved choice as the sliders in
+Objetos.
 
 ## 6. Mirrors
 
@@ -326,18 +336,18 @@ Each item is a follow-up. "Adapter" means a `visual.presentation` id registered 
 
 ### Hard-coded per-model names in the engine (audit)
 
-| Where                                                                                | What                                                                               | Status                                                      |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `src/render/entity/view.ts` (bike mount)                                             | Node `Exhaust_Outlet_Closure`                                                      | **Migrated**: `nabla.anchor = exhaust`, old name deprecated |
-| `src/render/vehicle-presentation/light-tuning.ts`                                    | A regex of the VFR model URL with fixed rear values                                | **Removed**: now `vehicle.lights.tuning` data               |
-| `src/render/vehicle-presentation/authored-lights.ts`                                 | Lamp roles only from `extras.vehicleLightChannel`                                  | **Migrated**: `nabla.light.*` names; extras deprecated      |
-| `src/render/entity/view.ts` (exhaust setup, `s3Outlets`, `truckOutlets`, smoke rate) | `presentation === 'nabla.s3'` / `'nabla.truck'` branches                           | Open (section 9)                                            |
-| `src/render/entity/view.ts` (rear wash)                                              | `presentation === 'nabla.truck'` decides which vehicles get the anchored rear wash | Open                                                        |
-| `src/catalog/presentation/road-vehicles.ts`, `a3-lamps.ts`, `a3-mounts.ts`           | Spanish node/material names of the S3, `Llanta 2`, paint materials by regex        | Open                                                        |
-| `src/simulation/simulation.ts` (≈ line 2886)                                         | `body.url.endsWith('trailer.transporter.glb')`                                     | Open: should be a vehicle JSON flag                         |
-| `src/render/entity/view.ts` (≈ line 1131)                                            | `body.url.includes('ship.container')` for the interior                             | Open: use `vehicle.interior`                                |
-| `src/runtime/ar/vehicles.ts`, `xr-rc-controls.ts`, `game/ar.ts`                      | AR demo `kind` switch (`vfr`, `s3`, `truck`, `f14`, `forklift`)                    | Demo harness, open                                          |
-| `src/runtime/random-vehicle.ts`                                                      | `presetVehicle('vfr800', …)` as the random bike                                    | Fine (names a preset, not a branch)                         |
+| Where                                                                                | What                                                                                                                                      | Status                                                       |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/render/entity/view.ts` (bike mount)                                             | Node `Exhaust_Outlet_Closure`                                                                                                             | **Migrated**: `nabla.anchor = exhaust`, old name deprecated  |
+| `src/render/vehicle-presentation/light-tuning.ts`                                    | A regex of the VFR model URL with fixed rear values                                                                                       | **Removed**: now `vehicle.lights.tuning` data                |
+| `src/render/vehicle-presentation/authored-lights.ts`                                 | Lamp roles only from `extras.vehicleLightChannel`                                                                                         | **Migrated**: `nabla.light.*` names; extras deprecated       |
+| `src/render/entity/view.ts` (exhaust setup, `s3Outlets`, `truckOutlets`, smoke rate) | `presentation === 'nabla.s3'` / `'nabla.truck'` branches                                                                                  | Open (section 9)                                             |
+| `src/render/entity/view.ts` (rear wash)                                              | `presentation === 'nabla.truck'`, bikes and trailers get the anchored rear wash, and so does any model with the `light.tail.brake` anchor | Mostly migrated: the truck/bike/trailer flags remain until B |
+| `src/catalog/presentation/road-vehicles.ts`, `a3-lamps.ts`, `a3-mounts.ts`           | Spanish node/material names of the S3, `Llanta 2`, paint materials by regex                                                               | Open                                                         |
+| `src/simulation/simulation.ts` (≈ line 2886)                                         | `body.url.endsWith('trailer.transporter.glb')`                                                                                            | Open: should be a vehicle JSON flag                          |
+| `src/render/entity/view.ts` (≈ line 1131)                                            | `body.url.includes('ship.container')` for the interior                                                                                    | Open: use `vehicle.interior`                                 |
+| `src/runtime/ar/vehicles.ts`, `xr-rc-controls.ts`, `game/ar.ts`                      | AR demo `kind` switch (`vfr`, `s3`, `truck`, `f14`, `forklift`)                                                                           | Demo harness, open                                           |
+| `src/runtime/random-vehicle.ts`                                                      | `presetVehicle('vfr800', …)` as the random bike                                                                                           | Fine (names a preset, not a branch)                          |
 
 ### GLB files that must be renamed to comply
 

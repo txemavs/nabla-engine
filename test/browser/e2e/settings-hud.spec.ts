@@ -373,6 +373,16 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     model: '/test-bike.glb',
     values: { rearY: 0.12 },
   })
+  await page.getByRole('tab', { name: 'Desarrollo', exact: true }).click()
+  await page.getByRole('button', { name: 'Luz trasera (ajuste fino)', exact: true }).click()
+  await page.getByRole('button', { name: 'Atrás / delante (m) +0.01' }).click()
+  await page.getByRole('button', { name: 'Atrás / delante (m) +0.05' }).click()
+  await page.getByRole('button', { name: 'Copiar JSON' }).click()
+  const nudged = page.getByRole('textbox', { name: 'JSON de la luz trasera' })
+  expect(JSON.parse(await nudged.inputValue()).vehicle.lights.tuning).toMatchObject({
+    rearY: 0.12,
+    rearZ: 0.06,
+  })
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
   await expect(page.locator('#settings-toggle')).toHaveAttribute('aria-expanded', 'false')

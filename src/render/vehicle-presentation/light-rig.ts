@@ -46,8 +46,17 @@ export class VehicleLightRig {
     return [...this.spots, ...this.points]
   }
 
-  /** Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. */
-  capture(spots: readonly SpotLight[], points: readonly PointLight[], offset?: Vector3): void {
+  /**
+   * Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. `offset` moves
+   * the light of the head lamps, `rear.offset` the light of the lamps in `rear.lights`; both are
+   * rig-frame vectors, and the lamp nodes and lenses in the model do not move.
+   */
+  capture(
+    spots: readonly SpotLight[],
+    points: readonly PointLight[],
+    offset?: Vector3,
+    rear?: { lights: ReadonlySet<Light>; offset: Vector3 },
+  ): void {
     this.nextGroundPoint = points.length
     this.root.updateWorldMatrix(true, false)
     const mapped = spots.filter((light) => light.map)
@@ -56,17 +65,20 @@ export class VehicleLightRig {
       plain.length < this.spots.length - vehicleLightBudget.mappedSpots
         ? this.spots[this.spots.length - 1]
         : undefined
-    for (let i = 0; i < this.spots.length; i++)
-      this.copy(
-        this.spots[i],
-        i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots],
-      )
-    if (offset)
-      for (const light of this.spots) {
-        light.position.add(offset)
-        light.target.position.add(offset)
+    for (let i = 0; i < this.spots.length; i++) {
+      const source =
+        i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots]
+      this.copy(this.spots[i], source)
+      const moved = source && rear?.lights.has(source) ? rear.offset : offset
+      if (moved) {
+        this.spots[i].position.add(moved)
+        this.spots[i].target.position.add(moved)
       }
-    for (let i = 0; i < this.points.length; i++) this.copy(this.points[i], points[i])
+    }
+    for (let i = 0; i < this.points.length; i++) {
+      this.copy(this.points[i], points[i])
+      if (points[i] && rear?.lights.has(points[i])) this.points[i].position.add(rear.offset)
+    }
   }
 
   /** Subtle downward road wash, using a spare unmapped slot rather than another light. */

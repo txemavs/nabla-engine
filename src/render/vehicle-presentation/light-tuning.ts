@@ -32,6 +32,29 @@ export function normalizeVehicleLights(value: Partial<VehicleLightTuning>): Vehi
   }
   return result
 }
+/** The five numbers that place and size a rear lamp's light, in the order of the JSON and the panel. */
+export const rearLightKeys = [
+  'rearX',
+  'rearY',
+  'rearZ',
+  'rearIntensity',
+  'rearReach',
+] as const satisfies readonly (keyof VehicleLightTuning)[]
+/** `values` with `key` moved by `delta` (metres, or × for intensity and reach), clamped and rounded to 1 mm. */
+export function nudgeRearLight(
+  values: Partial<VehicleLightTuning>,
+  key: (typeof rearLightKeys)[number],
+  delta: number,
+): VehicleLightTuning {
+  const now = normalizeVehicleLights(values)
+  return normalizeVehicleLights({ ...now, [key]: Math.round((now[key] + delta) * 1000) / 1000 })
+}
+/** The `vehicle.lights.tuning` fragment of the vehicle JSON for the current rear-lamp values. */
+export function rearLightJson(values: Partial<VehicleLightTuning>): string {
+  const now = normalizeVehicleLights(values)
+  const tuning = Object.fromEntries(rearLightKeys.map((key) => [key, now[key]]))
+  return JSON.stringify({ vehicle: { lights: { tuning } } }, null, 2)
+}
 /** Calibration of a model: engine defaults, then the vehicle's own defaults, then the saved choice. */
 export function readVehicleLights(
   model: string,
