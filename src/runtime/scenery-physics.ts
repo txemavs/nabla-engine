@@ -4,7 +4,8 @@ import type { Simulation } from '../simulation/simulation.js'
 
 type Vec3 = [number, number, number]
 type Quat = [number, number, number, number]
-type SceneryBodies = Pick<Simulation, 'createSceneryPole' | 'renderPlayerPosition'>
+type SceneryBodies = Pick<Simulation, 'createSceneryPole' | 'renderPlayerPosition'> &
+  Partial<Pick<Simulation, 'sceneryActors'>>
 type PoleHandle = ReturnType<Simulation['createSceneryPole']>
 type Pose = { position: Vec3; rotation: Quat }
 
@@ -40,9 +41,24 @@ function initialSettings(): { enabled: boolean; radius: number } {
 export interface SceneryLayerOptions {
   /** Knockable (signs) or fixed (traffic lights). Fixed layers never remember fallen poses. */
   movable: boolean
-  /** Most live bodies in this layer. Defaults to `sceneryPhysicsDefaults.maxBodies`. */
+  /** Most live bodies in this layer. Defaults to `sceneryPhysicsDefaults.maxBodies`; may be `Infinity`. */
   maxBodies?: number
+  /**
+   * World scenery that is always solid (trees, lamp posts): bodies within `reach` metres of **any**
+   * actor (the player and every vehicle), whatever the shared radius and on/off switch say, and at
+   * most `budgetMs` of body creation per refresh (nearest first when the host feeds them so).
+   * Without it the layer follows the shared settings and the player only, like signs.
+   */
+  world?: { reach: number; budgetMs: number }
 }
+
+interface LayerConfig {
+  movable: boolean
+  maxBodies: number
+  world: { reach: number; budgetMs: number } | null
+}
+
+const identity = new THREE.Matrix4()
 
 /**
  * The one scenery-physics service of a runtime. Hosts register a *layer* per kind of scenery
@@ -89,6 +105,7 @@ export class SceneryPhysics {
     const layer = new SceneryLayer(this, name, {
       movable: options.movable,
       maxBodies: options.maxBodies ?? sceneryPhysicsDefaults.maxBodies,
+      world: options.world ?? null,
     })
     this.layers.add(layer)
     return layer
@@ -127,39 +144,87 @@ export class SceneryLayer {
   private readonly fallen = new Map<string, { pose: Pose; base: THREE.Matrix4 }>()
   private readonly wanted = new Set<string>()
   private readonly matrix = new THREE.Matrix4()
+  private created = 0
+  private deferred = 0
+  private deadline = 0
 
   constructor(
     private readonly owner: SceneryPhysics,
     readonly name: string,
-    private readonly options: Required<SceneryLayerOptions>,
+    private readonly options: LayerConfig,
   ) {}
 
   /** Start a refresh: poles not re-added before `end()` are retired. */
   begin(): void {
     this.wanted.clear()
-    if (!this.owner.enabled) this.end()
+    this.created = 0
+    this.deferred = 0
+    this.deadline = performance.now() + (this.options.world?.budgetMs ?? 0)
+    if (!this.options.world && !this.owner.enabled) this.end()
+  }
+
+  /** True while the simulation these bodies belong to is running. */
+  get available(): boolean {
+    return !!this.owner.bodies()
+  }
+  /** Poles of the last refresh that are wanted but not built yet (creation budget). */
+  get pending(): number {
+    return this.deferred
+  }
+  /** Positions of the player and every vehicle, as the simulation reports them. */
+  actors(): Vec3[] {
+    const simulation = this.owner.bodies()
+    return (
+      simulation?.sceneryActors?.() ??
+      (simulation?.renderPlayerPosition ? [simulation.renderPlayerPosition] : [])
+    )
   }
 
   /**
    * Ask for a body for the pole `key` standing on `ground` at (`x`, `z`). Ignored when physics is
    * off, the pole is outside the radius, or the layer is full.
    */
-  add(key: string, x: number, ground: number, z: number, height: number): void {
-    if (!this.owner.enabled) return
+  add(key: string, x: number, ground: number, z: number, height: number, halfWidth?: number): void {
+    const world = this.options.world
+    if (!world && !this.owner.enabled) return
     const simulation = this.owner.bodies()
-    const at = simulation?.renderPlayerPosition
-    if (!simulation || !at || Math.hypot(x - at[0], z - at[2]) > this.owner.radius) return
+    const center: Vec3 = [x, ground + height / 2, z]
+    if (world) {
+      if (!simulation || !this.within(center, height / 2, halfWidth ?? 0.09, world.reach)) return
+    } else {
+      const at = simulation?.renderPlayerPosition
+      if (!simulation || !at || Math.hypot(x - at[0], z - at[2]) > this.owner.radius) return
+    }
     this.wanted.add(key)
     if (this.active.has(key) || this.active.size >= this.options.maxBodies) return
-    const handle = simulation.createSceneryPole(
-      [x, ground + height / 2, z],
-      height,
-      this.options.movable,
-    )
+    if (world && this.created > 0 && performance.now() >= this.deadline) {
+      this.deferred++
+      return
+    }
+    this.created++
+    const handle = world
+      ? simulation!.createSceneryPole(center, height, this.options.movable, {
+          half: [halfWidth ?? 0.09, height / 2, halfWidth ?? 0.09],
+          solid: true,
+        })
+      : simulation!.createSceneryPole(center, height, this.options.movable)
     const saved = this.fallen.get(key)
-    const base = saved?.base ?? new THREE.Matrix4().makeTranslation(-x, -ground - height / 2, -z)
+    const base =
+      saved?.base ?? (world ? identity : new THREE.Matrix4().makeTranslation(-x, -center[1], -z))
     if (saved) handle.restore(saved.pose.position, saved.pose.rotation)
     this.active.set(key, { handle, base })
+  }
+
+  /** Distance from the box of a pole to the nearest actor is below `reach` (3D, like the trimesh set). */
+  private within(center: Vec3, halfHeight: number, halfWidth: number, reach: number): boolean {
+    return this.actors().some(
+      (a) =>
+        Math.hypot(
+          Math.max(center[0] - halfWidth - a[0], 0, a[0] - (center[0] + halfWidth)),
+          Math.max(center[1] - halfHeight - a[1], 0, a[1] - (center[1] + halfHeight)),
+          Math.max(center[2] - halfWidth - a[2], 0, a[2] - (center[2] + halfWidth)),
+        ) < reach,
+    )
   }
 
   /** Finish a refresh: retire poles that were not wanted, remembering knocked-down ones. */

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **512 modules; 6010 executable function definitions**.
+Coverage: **512 modules; 6019 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -193,7 +193,7 @@ Coverage: **512 modules; 6010 executable function definitions**.
 | [src/planet/buildings/roofs.ts](src/planet/buildings/roofs.ts.md) | 29 |
 | [src/planet/catch-floor.ts](src/planet/catch-floor.ts.md) | 0 |
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
-| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 25 |
+| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 19 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
 | [src/planet/contract.ts](src/planet/contract.ts.md) | 32 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
@@ -357,7 +357,7 @@ Coverage: **512 modules; 6010 executable function definitions**.
 | [src/runtime/browser.ts](src/runtime/browser.ts.md) | 438 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
-| [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
+| [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
@@ -390,7 +390,7 @@ Coverage: **512 modules; 6010 executable function definitions**.
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 11 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
-| [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 22 |
+| [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/settings-backup.ts](src/runtime/settings-backup.ts.md) | 11 |
 | [src/runtime/shader-diagnostics.ts](src/runtime/shader-diagnostics.ts.md) | 4 |

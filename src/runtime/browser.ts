@@ -137,7 +137,7 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
-import { SceneryPhysics } from './scenery-physics.js'
+import { SceneryPhysics, type SceneryLayer } from './scenery-physics.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
 import { createEntity } from '../entity/schema.js'
@@ -508,6 +508,8 @@ export class GameRuntime {
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
+  /** Static bodies of lamp posts and tree trunks: a world layer of the scenery-physics service. */
+  private readonly fieldPoles: SceneryLayer | null
   private display: DisplaySettings
   private readonly adaptive: AdaptiveResolutionScale
   private probing: Promise<unknown> | null = null
@@ -898,6 +900,14 @@ export class GameRuntime {
         })
       : null
     if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
+    // Same colliders as before the unification: 65 m around every actor, no cap, 3 ms per frame.
+    this.fieldPoles = this.fieldLighting
+      ? this.sceneryPhysics.layer('field-lights', {
+          movable: false,
+          maxBodies: Infinity,
+          world: { reach: 65, budgetMs: 3 },
+        })
+      : null
     this.view = new SceneView(this.document, false, false, {
       assetQuality:
         this.options.assetQuality ??
@@ -2285,7 +2295,7 @@ export class GameRuntime {
       time,
       heightAt: (p) => this.world?.groundHeight(p),
       tiles: this.world?.collectActiveMapTiles(this.fieldLightTiles) ?? [],
-      simulation: sim,
+      scenery: this.fieldPoles,
     })
     this.camera.position.sub(this.origin)
     this.updateHeadlamp(this.camera, eyes)
@@ -2573,7 +2583,7 @@ export class GameRuntime {
       time,
       heightAt: (p) => this.world?.groundHeight(p),
       tiles: this.world?.collectActiveMapTiles(this.fieldLightTiles) ?? [],
-      simulation: sim,
+      scenery: this.fieldPoles,
     })
     this.camera.position.sub(this.origin)
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
