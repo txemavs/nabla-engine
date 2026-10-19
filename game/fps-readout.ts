@@ -16,7 +16,7 @@ export function fpsReadout(
     frames++
     cpuMs += sample.cpuMs
     const gpu = sample.gpuTiming?.frameMs
-    if (gpu !== undefined) {
+    if (gpu !== undefined && gpu > 0) {
       gpuMs += gpu
       gpuFrames++
     }
