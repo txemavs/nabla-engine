@@ -4,26 +4,16 @@
 
 [Source](../../../../../src/render/vehicle-presentation/light-tuning.ts)
 
-Per-model vehicle light calibration; offsets are metres in vehicle space.
+Vehicle light calibration shared by every vehicle; offsets are metres in vehicle space, beam
+cutoffs are degrees. A vehicle's JSON (`vehicle.lights.tuning`) overrides these defaults and the
+player's saved choice (per model, schema `nabla.vehicle-lights/1`) overrides both.
 
 ## Module dependencies
 
 
-## modelDefaults
-
-[Implementation, line 15](../../../../../src/render/vehicle-presentation/light-tuning.ts#L15)
-
-```ts
-modelDefaults(model: string): VehicleLightTuning
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `/(?:^|\/)vfr800fi-1999(?:-quest)?\.glb(?:[?#].*)?$/.test`
-
 ## key
 
-[Implementation, line 21](../../../../../src/render/vehicle-presentation/light-tuning.ts#L21)
+[Implementation, line 20](../../../../../src/render/vehicle-presentation/light-tuning.ts#L20)
 
 ```ts
 key(model: string): inferred by TypeScript; see implementation
@@ -31,7 +21,7 @@ key(model: string): inferred by TypeScript; see implementation
 
 ## normalizeVehicleLights
 
-[Implementation, line 22](../../../../../src/render/vehicle-presentation/light-tuning.ts#L22)
+[Implementation, line 21](../../../../../src/render/vehicle-presentation/light-tuning.ts#L21)
 
 ```ts
 normalizeVehicleLights(value: Partial<VehicleLightTuning>): VehicleLightTuning
@@ -48,8 +38,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 36](../../../../../src/render/vehicle-presentation/light-tuning.ts#L36)
 
+Calibration of a model: engine defaults, then the vehicle's own defaults, then the saved choice.
+
 ```ts
-readVehicleLights(model: string): VehicleLightTuning
+readVehicleLights(model: string, defaults: Partial<VehicleLightTuning> = {}): VehicleLightTuning
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,15 +52,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cache.set`
 - `globalThis.localStorage?.getItem`
 - `key`
-- `modelDefaults`
 - `normalizeVehicleLights`
 
 ## writeVehicleLights
 
-[Implementation, line 48](../../../../../src/render/vehicle-presentation/light-tuning.ts#L48)
+[Implementation, line 52](../../../../../src/render/vehicle-presentation/light-tuning.ts#L52)
+
+Saves a patch for the model, or without one clears the saved choice back to the defaults.
 
 ```ts
-writeVehicleLights(model: string, patch?: Partial<VehicleLightTuning>): VehicleLightTuning
+writeVehicleLights(model: string, patch?: Partial<VehicleLightTuning>, defaults: Partial<VehicleLightTuning> = {}): VehicleLightTuning
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -78,6 +71,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `globalThis.localStorage?.removeItem`
 - `globalThis.localStorage?.setItem`
 - `key`
-- `modelDefaults`
 - `normalizeVehicleLights`
 - `readVehicleLights`

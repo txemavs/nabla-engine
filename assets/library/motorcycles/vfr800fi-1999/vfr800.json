@@ -19,6 +19,21 @@
         "tilt": 8.5
       }
     },
+    "lights": {
+      "tuning": {
+        "low": 0,
+        "high": 1,
+        "frontX": 0,
+        "frontY": 0,
+        "frontZ": 0,
+        "rearX": 0,
+        "rearY": -0.2,
+        "rearZ": 0.99,
+        "rearIntensity": 2.2,
+        "rearReach": 0.5
+      },
+      "lensEmissive": { "low": "#ffffff" }
+    },
     "controls": "road",
     "colliders": [
       {

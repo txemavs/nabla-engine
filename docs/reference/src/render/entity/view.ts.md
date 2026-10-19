@@ -508,9 +508,65 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.steeringAxes.get`
 - `this.steeringOffsets.get`
 
-## SceneView.mirrorModel
+## SceneView.vehicleLamps
 
 [Implementation, line 393](../../../../../src/render/entity/view.ts#L393)
+
+Which lamp groups a vehicle can light, from the channels its model binds; for the settings.
+
+```ts
+vehicleLamps(id: string): { front: boolean; rear: boolean }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(['low', 'high', 'fog'] as const).some`
+- `(['tail-stop', 'brake', 'reverse'] as const).some`
+- `this.authoredLights.get`
+- `this.authoredLights.get(id)?.channels`
+- `this.carLights.has`
+
+## SceneView.vehicleLamps.callback@397
+
+[Implementation, line 397](../../../../../src/render/entity/view.ts#L397)
+
+```ts
+callback@397(name): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `channels?.has`
+
+## SceneView.vehicleLamps.callback@398
+
+[Implementation, line 398](../../../../../src/render/entity/view.ts#L398)
+
+```ts
+callback@398(name): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `channels?.has`
+
+## SceneView.hasExhaust
+
+[Implementation, line 402](../../../../../src/render/entity/view.ts#L402)
+
+True when the vehicle has exhaust outlets that smoke.
+
+```ts
+hasExhaust(id: string): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.exhaustSmoke.has`
+
+## SceneView.mirrorModel
+
+[Implementation, line 406](../../../../../src/render/entity/view.ts#L406)
 
 Mirror model (`mirrorModelKey`) of a vehicle with cockpit mirrors, else undefined.
 
@@ -524,7 +580,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.mirrorSides
 
-[Implementation, line 397](../../../../../src/render/entity/view.ts#L397)
+[Implementation, line 410](../../../../../src/render/entity/view.ts#L410)
 
 Sides of a vehicle's mirrors (`left`, `right`, …); empty without mirrors.
 
@@ -538,7 +594,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.mirrorAdjustment
 
-[Implementation, line 401](../../../../../src/render/entity/view.ts#L401)
+[Implementation, line 414](../../../../../src/render/entity/view.ts#L414)
 
 Current glass adjustment of a mirror model; `{}` when it keeps the authored aim.
 
@@ -553,7 +609,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setMirrorAdjustment
 
-[Implementation, line 409](../../../../../src/render/entity/view.ts#L409)
+[Implementation, line 422](../../../../../src/render/entity/view.ts#L422)
 
 Turn the mirror glasses of every vehicle of `model`, now and when more load, by `adjustment`
 (per side, clamped to `mirrorAngleRange`) on top of the authored aim. Returns the applied
@@ -576,7 +632,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setVehicleMirrorTilt
 
-[Implementation, line 421](../../../../../src/render/entity/view.ts#L421)
+[Implementation, line 434](../../../../../src/render/entity/view.ts#L434)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -592,17 +648,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.document.entities.find`
 - `this.instruments.get`
 
-## SceneView.setVehicleMirrorTilt.callback@422
+## SceneView.setVehicleMirrorTilt.callback@435
 
-[Implementation, line 422](../../../../../src/render/entity/view.ts#L422)
+[Implementation, line 435](../../../../../src/render/entity/view.ts#L435)
 
 ```ts
-callback@422(e): inferred by TypeScript; see implementation
+callback@435(e): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.setVehicleMapFollow
 
-[Implementation, line 429](../../../../../src/render/entity/view.ts#L429)
+[Implementation, line 442](../../../../../src/render/entity/view.ts#L442)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -617,7 +673,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.toggleVehicleGps
 
-[Implementation, line 432](../../../../../src/render/entity/view.ts#L432)
+[Implementation, line 445](../../../../../src/render/entity/view.ts#L445)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -632,7 +688,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.mirroredVehicles
 
-[Implementation, line 438](../../../../../src/render/entity/view.ts#L438)
+[Implementation, line 451](../../../../../src/render/entity/view.ts#L451)
 
 Occupied-vehicle ids that already have cockpit mirrors allocated.
 
@@ -646,7 +702,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.toggleVehicleLights
 
-[Implementation, line 441](../../../../../src/render/entity/view.ts#L441)
+[Implementation, line 454](../../../../../src/render/entity/view.ts#L454)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -660,7 +716,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.sampleVehicleLightEnvironment
 
-[Implementation, line 446](../../../../../src/render/entity/view.ts#L446)
+[Implementation, line 459](../../../../../src/render/entity/view.ts#L459)
 
 Sample ambient conditions for automatic dipped beams.
 
@@ -676,7 +732,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.cycleVehicleLights
 
-[Implementation, line 451](../../../../../src/render/entity/view.ts#L451)
+[Implementation, line 464](../../../../../src/render/entity/view.ts#L464)
 
 H: step the vehicle's light switch off → position → low (dipped) → off; null without lights.
 
@@ -693,7 +749,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.vehicleLightMode
 
-[Implementation, line 455](../../../../../src/render/entity/view.ts#L455)
+[Implementation, line 468](../../../../../src/render/entity/view.ts#L468)
 
 Current light switch position of a vehicle; null while its model loads or it has no lights.
 
@@ -708,7 +764,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.vehicleActiveBeam
 
-[Implementation, line 463](../../../../../src/render/entity/view.ts#L463)
+[Implementation, line 476](../../../../../src/render/entity/view.ts#L476)
 
 Active beam channel, including the automatic light switch.
 
@@ -724,7 +780,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.beginVehicleBeamFlash
 
-[Implementation, line 472](../../../../../src/render/entity/view.ts#L472)
+[Implementation, line 485](../../../../../src/render/entity/view.ts#L485)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -739,7 +795,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.endVehicleBeamFlash
 
-[Implementation, line 479](../../../../../src/render/entity/view.ts#L479)
+[Implementation, line 492](../../../../../src/render/entity/view.ts#L492)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -755,7 +811,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.toggleVehicleHighBeam
 
-[Implementation, line 482](../../../../../src/render/entity/view.ts#L482)
+[Implementation, line 495](../../../../../src/render/entity/view.ts#L495)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -770,7 +826,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setVehicleShadowReceiving
 
-[Implementation, line 485](../../../../../src/render/entity/view.ts#L485)
+[Implementation, line 498](../../../../../src/render/entity/view.ts#L498)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -783,17 +839,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.objects.get(entity.id)?.traverse`
 
-## SceneView.setVehicleShadowReceiving.callback@489
+## SceneView.setVehicleShadowReceiving.callback@502
 
-[Implementation, line 489](../../../../../src/render/entity/view.ts#L489)
+[Implementation, line 502](../../../../../src/render/entity/view.ts#L502)
 
 ```ts
-callback@489(node): inferred by TypeScript; see implementation
+callback@502(node): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.pendingBuildingBatches
 
-[Implementation, line 500](../../../../../src/render/entity/view.ts#L500)
+[Implementation, line 513](../../../../../src/render/entity/view.ts#L513)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -803,7 +859,7 @@ pendingBuildingBatches(): boolean
 
 ## SceneView.headLightMount
 
-[Implementation, line 540](../../../../../src/render/entity/view.ts#L540)
+[Implementation, line 553](../../../../../src/render/entity/view.ts#L553)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -813,7 +869,7 @@ headLightMount(): THREE.Object3D
 
 ## SceneView.setHeadLight
 
-[Implementation, line 543](../../../../../src/render/entity/view.ts#L543)
+[Implementation, line 556](../../../../../src/render/entity/view.ts#L556)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -827,7 +883,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.constructor
 
-[Implementation, line 553](../../../../../src/render/entity/view.ts#L553)
+[Implementation, line 566](../../../../../src/render/entity/view.ts#L566)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -847,24 +903,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pendingMapMeshes.sort`
 - `this.root.add`
 
-## SceneView.constructor.callback@563
+## SceneView.constructor.callback@576
 
-[Implementation, line 563](../../../../../src/render/entity/view.ts#L563)
+[Implementation, line 576](../../../../../src/render/entity/view.ts#L576)
 
 ```ts
-callback@563(e): inferred by TypeScript; see implementation
+callback@576(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `isMapEnvironment`
 
-## SceneView.constructor.callback@564
+## SceneView.constructor.callback@577
 
-[Implementation, line 564](../../../../../src/render/entity/view.ts#L564)
+[Implementation, line 577](../../../../../src/render/entity/view.ts#L577)
 
 ```ts
-callback@564(e): inferred by TypeScript; see implementation
+callback@577(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -873,35 +929,35 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.constructor.priority
 
-[Implementation, line 565](../../../../../src/render/entity/view.ts#L565)
+[Implementation, line 578](../../../../../src/render/entity/view.ts#L578)
 
 ```ts
 priority(e: Entity): inferred by TypeScript; see implementation
 ```
 
-## SceneView.constructor.callback@567
+## SceneView.constructor.callback@580
 
-[Implementation, line 567](../../../../../src/render/entity/view.ts#L567)
+[Implementation, line 580](../../../../../src/render/entity/view.ts#L580)
 
 ```ts
-callback@567(a, b): inferred by TypeScript; see implementation
+callback@580(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `priority`
 
-## SceneView.constructor.callback@576
+## SceneView.constructor.callback@589
 
-[Implementation, line 576](../../../../../src/render/entity/view.ts#L576)
+[Implementation, line 589](../../../../../src/render/entity/view.ts#L589)
 
 ```ts
-callback@576(): inferred by TypeScript; see implementation
+callback@589(): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.updateEntityPose
 
-[Implementation, line 579](../../../../../src/render/entity/view.ts#L579)
+[Implementation, line 592](../../../../../src/render/entity/view.ts#L592)
 
 A known pose-only edit; preserve all unrelated entities and render batches.
 
@@ -925,32 +981,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.pendingMapMeshes.map`
 
-## SceneView.updateEntityPose.callback@589
+## SceneView.updateEntityPose.callback@602
 
-[Implementation, line 589](../../../../../src/render/entity/view.ts#L589)
+[Implementation, line 602](../../../../../src/render/entity/view.ts#L602)
 
 ```ts
-callback@589(e): inferred by TypeScript; see implementation
+callback@602(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `affected.has`
 
-## SceneView.updateEntityPose.callback@598
+## SceneView.updateEntityPose.callback@611
 
-[Implementation, line 598](../../../../../src/render/entity/view.ts#L598)
+[Implementation, line 611](../../../../../src/render/entity/view.ts#L611)
 
 ```ts
-callback@598(e): inferred by TypeScript; see implementation
+callback@611(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.updateEntityPose.callback@599
+## SceneView.updateEntityPose.callback@612
 
-[Implementation, line 599](../../../../../src/render/entity/view.ts#L599)
+[Implementation, line 612](../../../../../src/render/entity/view.ts#L612)
 
 ```ts
-callback@599(e): inferred by TypeScript; see implementation
+callback@612(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -960,7 +1016,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.updateEditorPoses
 
-[Implementation, line 605](../../../../../src/render/entity/view.ts#L605)
+[Implementation, line 618](../../../../../src/render/entity/view.ts#L618)
 
 Keep installed meshes and the streaming queue for pose-only editor changes.
 
@@ -980,7 +1036,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.updateEditorPoses.unchangedShape
 
-[Implementation, line 616](../../../../../src/render/entity/view.ts#L616)
+[Implementation, line 629](../../../../../src/render/entity/view.ts#L629)
 
 ```ts
 unchangedShape(entity: Entity): inferred by TypeScript; see implementation
@@ -990,12 +1046,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `JSON.stringify`
 
-## SceneView.updateEditorPoses.callback@623
+## SceneView.updateEditorPoses.callback@636
 
-[Implementation, line 623](../../../../../src/render/entity/view.ts#L623)
+[Implementation, line 636](../../../../../src/render/entity/view.ts#L636)
 
 ```ts
-callback@623(entity, i): inferred by TypeScript; see implementation
+callback@636(entity, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1007,20 +1063,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mapBounds.delete`
 - `this.objects.get`
 
-## SceneView.updateEditorPoses.callback@635
+## SceneView.updateEditorPoses.callback@648
 
-[Implementation, line 635](../../../../../src/render/entity/view.ts#L635)
+[Implementation, line 648](../../../../../src/render/entity/view.ts#L648)
 
 ```ts
-callback@635(e): inferred by TypeScript; see implementation
+callback@648(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.updateEditorPoses.callback@636
+## SceneView.updateEditorPoses.callback@649
 
-[Implementation, line 636](../../../../../src/render/entity/view.ts#L636)
+[Implementation, line 649](../../../../../src/render/entity/view.ts#L649)
 
 ```ts
-callback@636(e): inferred by TypeScript; see implementation
+callback@649(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1029,7 +1085,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.replaceMapEntities
 
-[Implementation, line 639](../../../../../src/render/entity/view.ts#L639)
+[Implementation, line 652](../../../../../src/render/entity/view.ts#L652)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1059,24 +1115,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.spritePixels.delete`
 - `this.sprites.delete`
 
-## SceneView.replaceMapEntities.callback@640
+## SceneView.replaceMapEntities.callback@653
 
-[Implementation, line 640](../../../../../src/render/entity/view.ts#L640)
+[Implementation, line 653](../../../../../src/render/entity/view.ts#L653)
 
 ```ts
-callback@640(e): inferred by TypeScript; see implementation
+callback@653(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `remove.has`
 
-## SceneView.replaceMapEntities.callback@654
+## SceneView.replaceMapEntities.callback@667
 
-[Implementation, line 654](../../../../../src/render/entity/view.ts#L654)
+[Implementation, line 667](../../../../../src/render/entity/view.ts#L667)
 
 ```ts
-callback@654(e): inferred by TypeScript; see implementation
+callback@667(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1085,7 +1141,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.replaceMapEntities.priority
 
-[Implementation, line 660](../../../../../src/render/entity/view.ts#L660)
+[Implementation, line 673](../../../../../src/render/entity/view.ts#L673)
 
 ```ts
 priority(e: Entity): inferred by TypeScript; see implementation
@@ -1095,12 +1151,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `isMapBuilding`
 
-## SceneView.replaceMapEntities.callback@662
+## SceneView.replaceMapEntities.callback@675
 
-[Implementation, line 662](../../../../../src/render/entity/view.ts#L662)
+[Implementation, line 675](../../../../../src/render/entity/view.ts#L675)
 
 ```ts
-callback@662(e): inferred by TypeScript; see implementation
+callback@675(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1108,12 +1164,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `this.graph.worldTransform`
 
-## SceneView.replaceMapEntities.callback@673
+## SceneView.replaceMapEntities.callback@686
 
-[Implementation, line 673](../../../../../src/render/entity/view.ts#L673)
+[Implementation, line 686](../../../../../src/render/entity/view.ts#L686)
 
 ```ts
-callback@673(a, b): inferred by TypeScript; see implementation
+callback@686(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1121,17 +1177,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `distances.get`
 - `priority`
 
-## SceneView.replaceMapEntities.callback@676
+## SceneView.replaceMapEntities.callback@689
 
-[Implementation, line 676](../../../../../src/render/entity/view.ts#L676)
+[Implementation, line 689](../../../../../src/render/entity/view.ts#L689)
 
 ```ts
-callback@676(): inferred by TypeScript; see implementation
+callback@689(): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.pendingMapInstalls
 
-[Implementation, line 680](../../../../../src/render/entity/view.ts#L680)
+[Implementation, line 693](../../../../../src/render/entity/view.ts#L693)
 
 A soft CPU budget; one indivisible mesh may exceed it. Call once per main frame.
 
@@ -1143,7 +1199,7 @@ pendingMapInstalls(): number
 
 ## SceneView.flushMapInstall
 
-[Implementation, line 683](../../../../../src/render/entity/view.ts#L683)
+[Implementation, line 696](../../../../../src/render/entity/view.ts#L696)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1164,12 +1220,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.pendingMapMeshes.shift`
 
-## SceneView.flushMapInstall.callback@706
+## SceneView.flushMapInstall.callback@719
 
-[Implementation, line 706](../../../../../src/render/entity/view.ts#L706)
+[Implementation, line 719](../../../../../src/render/entity/view.ts#L719)
 
 ```ts
-callback@706(object): inferred by TypeScript; see implementation
+callback@719(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1177,17 +1233,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `this.materialSetup!`
 
-## SceneView.flushMapInstall.callback@716
+## SceneView.flushMapInstall.callback@729
 
-[Implementation, line 716](../../../../../src/render/entity/view.ts#L716)
+[Implementation, line 729](../../../../../src/render/entity/view.ts#L729)
 
 ```ts
-callback@716(): inferred by TypeScript; see implementation
+callback@729(): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.addVehicles
 
-[Implementation, line 723](../../../../../src/render/entity/view.ts#L723)
+[Implementation, line 736](../../../../../src/render/entity/view.ts#L736)
 
 Install vehicles added while the scene is running (the game menu spawns cars and trucks).
 The entities join the shared document; pair with `Simulation.addVehicles`.
@@ -1215,49 +1271,49 @@ Explicit throws in this body:
 - `new Error(\`Entity ${e.id} is not a plain vehicle\`)`
 - `new Error(\`Entity id already in use: ${e.id}\`)`
 
-## SceneView.addVehicles.callback@724
+## SceneView.addVehicles.callback@737
 
-[Implementation, line 724](../../../../../src/render/entity/view.ts#L724)
+[Implementation, line 737](../../../../../src/render/entity/view.ts#L737)
 
 ```ts
-callback@724(e): inferred by TypeScript; see implementation
+callback@737(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addVehicles.callback@727
+## SceneView.addVehicles.callback@740
 
-[Implementation, line 727](../../../../../src/render/entity/view.ts#L727)
+[Implementation, line 740](../../../../../src/render/entity/view.ts#L740)
 
 ```ts
-callback@727(e): inferred by TypeScript; see implementation
+callback@740(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addVehicles.callback@731
+## SceneView.addVehicles.callback@744
 
-[Implementation, line 731](../../../../../src/render/entity/view.ts#L731)
+[Implementation, line 744](../../../../../src/render/entity/view.ts#L744)
 
 ```ts
-callback@731(o): inferred by TypeScript; see implementation
+callback@744(o): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addVehicles.callback@734
+## SceneView.addVehicles.callback@747
 
-[Implementation, line 734](../../../../../src/render/entity/view.ts#L734)
+[Implementation, line 747](../../../../../src/render/entity/view.ts#L747)
 
 ```ts
-callback@734(e): inferred by TypeScript; see implementation
+callback@747(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addVehicles.callback@738
+## SceneView.addVehicles.callback@751
 
-[Implementation, line 738](../../../../../src/render/entity/view.ts#L738)
+[Implementation, line 751](../../../../../src/render/entity/view.ts#L751)
 
 ```ts
-callback@738(): inferred by TypeScript; see implementation
+callback@751(): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.addPlaced
 
-[Implementation, line 744](../../../../../src/render/entity/view.ts#L744)
+[Implementation, line 757](../../../../../src/render/entity/view.ts#L757)
 
 Install scenery placed while running: standalone portals (Stargate frame), sprites, lamps and
 standalone static/dynamic boxes. The entities join the shared document; pair with `Simulation.addPlaced`.
@@ -1279,25 +1335,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.registerMaterials`
 
-## SceneView.addPlaced.callback@745
+## SceneView.addPlaced.callback@758
 
-[Implementation, line 745](../../../../../src/render/entity/view.ts#L745)
+[Implementation, line 758](../../../../../src/render/entity/view.ts#L758)
 
 ```ts
-callback@745(e): inferred by TypeScript; see implementation
+callback@758(e): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addPlaced.callback@752
+## SceneView.addPlaced.callback@765
 
-[Implementation, line 752](../../../../../src/render/entity/view.ts#L752)
+[Implementation, line 765](../../../../../src/render/entity/view.ts#L765)
 
 ```ts
-callback@752(): inferred by TypeScript; see implementation
+callback@765(): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.removePlaced
 
-[Implementation, line 755](../../../../../src/render/entity/view.ts#L755)
+[Implementation, line 768](../../../../../src/render/entity/view.ts#L768)
 
 Remove entities installed by `addPlaced`, releasing meshes, portal targets and lamp lights.
 
@@ -1320,12 +1376,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.spritePixels.delete`
 - `this.streetlights.remove`
 
-## SceneView.removePlaced.callback@773
+## SceneView.removePlaced.callback@786
 
-[Implementation, line 773](../../../../../src/render/entity/view.ts#L773)
+[Implementation, line 786](../../../../../src/render/entity/view.ts#L786)
 
 ```ts
-callback@773(e): inferred by TypeScript; see implementation
+callback@786(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1334,7 +1390,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.removeVehicle
 
-[Implementation, line 777](../../../../../src/render/entity/view.ts#L777)
+[Implementation, line 790](../../../../../src/render/entity/view.ts#L790)
 
 Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment.
 
@@ -1375,25 +1431,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.wheels.get`
 - `wheel.removeFromParent`
 
-## SceneView.removeVehicle.callback@787
+## SceneView.removeVehicle.callback@800
 
-[Implementation, line 787](../../../../../src/render/entity/view.ts#L787)
+[Implementation, line 800](../../../../../src/render/entity/view.ts#L800)
 
 ```ts
-callback@787(smoke): inferred by TypeScript; see implementation
+callback@800(smoke): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `smoke.dispose`
-
-## SceneView.removeVehicle.callback@836
-
-[Implementation, line 836](../../../../../src/render/entity/view.ts#L836)
-
-```ts
-callback@836(e): inferred by TypeScript; see implementation
-```
 
 ## SceneView.removeVehicle.callback@849
 
@@ -1403,13 +1451,21 @@ callback@836(e): inferred by TypeScript; see implementation
 callback@849(e): inferred by TypeScript; see implementation
 ```
 
+## SceneView.removeVehicle.callback@862
+
+[Implementation, line 862](../../../../../src/render/entity/view.ts#L862)
+
+```ts
+callback@862(e): inferred by TypeScript; see implementation
+```
+
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mouths.includes`
 
 ## SceneView.pendingMapInstall
 
-[Implementation, line 853](../../../../../src/render/entity/view.ts#L853)
+[Implementation, line 866](../../../../../src/render/entity/view.ts#L866)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1419,7 +1475,7 @@ pendingMapInstall(): number
 
 ## SceneView.addEntities
 
-[Implementation, line 856](../../../../../src/render/entity/view.ts#L856)
+[Implementation, line 869](../../../../../src/render/entity/view.ts#L869)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1522,24 +1578,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `triangles(e.geometry).flatMap`
 - `trianglesWithRoofInfo`
 
-## SceneView.addEntities.callback@878
+## SceneView.addEntities.callback@891
 
-[Implementation, line 878](../../../../../src/render/entity/view.ts#L878)
+[Implementation, line 891](../../../../../src/render/entity/view.ts#L891)
 
 ```ts
-callback@878(model): inferred by TypeScript; see implementation
+callback@891(model): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `model.scale.set`
 
-## SceneView.addEntities.callback@937
+## SceneView.addEntities.callback@950
 
-[Implementation, line 937](../../../../../src/render/entity/view.ts#L937)
+[Implementation, line 950](../../../../../src/render/entity/view.ts#L950)
 
 ```ts
-callback@937(resolve, reject): inferred by TypeScript; see implementation
+callback@950(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1547,12 +1603,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.TextureLoader`
 - `new THREE.TextureLoader().load`
 
-## SceneView.addEntities.callback@937.callback@940
+## SceneView.addEntities.callback@950.callback@953
 
-[Implementation, line 940](../../../../../src/render/entity/view.ts#L940)
+[Implementation, line 953](../../../../../src/render/entity/view.ts#L953)
 
 ```ts
-callback@940(texture): inferred by TypeScript; see implementation
+callback@953(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1565,12 +1621,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.surfaceTextures.push`
 - `window.document.createElement`
 
-## SceneView.addEntities.callback@959
+## SceneView.addEntities.callback@972
 
-[Implementation, line 959](../../../../../src/render/entity/view.ts#L959)
+[Implementation, line 972](../../../../../src/render/entity/view.ts#L972)
 
 ```ts
-callback@959({ texture, pixels }): inferred by TypeScript; see implementation
+callback@972({ texture, pixels }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1584,28 +1640,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.spritePixels.set`
 
-## SceneView.addEntities.callback@959.callback@986
+## SceneView.addEntities.callback@972.callback@999
 
-[Implementation, line 986](../../../../../src/render/entity/view.ts#L986)
+[Implementation, line 999](../../../../../src/render/entity/view.ts#L999)
 
 ```ts
-callback@986(): inferred by TypeScript; see implementation
+callback@999(): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addEntities.callback@995
+## SceneView.addEntities.callback@1008
 
-[Implementation, line 995](../../../../../src/render/entity/view.ts#L995)
+[Implementation, line 1008](../../../../../src/render/entity/view.ts#L1008)
 
 ```ts
-callback@995(n): inferred by TypeScript; see implementation
+callback@1008(n): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addEntities.callback@1035
+## SceneView.addEntities.callback@1048
 
-[Implementation, line 1035](../../../../../src/render/entity/view.ts#L1035)
+[Implementation, line 1048](../../../../../src/render/entity/view.ts#L1048)
 
 ```ts
-callback@1035(c): inferred by TypeScript; see implementation
+callback@1048(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1613,40 +1669,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Color`
 - `new THREE.Color(c).toArray`
 
-## SceneView.addEntities.callback@1085
+## SceneView.addEntities.callback@1098
 
-[Implementation, line 1085](../../../../../src/render/entity/view.ts#L1085)
+[Implementation, line 1098](../../../../../src/render/entity/view.ts#L1098)
 
 ```ts
-callback@1085(f): inferred by TypeScript; see implementation
+callback@1098(f): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `f.flatMap`
 
-## SceneView.addEntities.callback@1085.callback@1085
+## SceneView.addEntities.callback@1098.callback@1098
 
-[Implementation, line 1085](../../../../../src/render/entity/view.ts#L1085)
+[Implementation, line 1098](../../../../../src/render/entity/view.ts#L1098)
 
 ```ts
-callback@1085(i): inferred by TypeScript; see implementation
+callback@1098(i): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addEntities.callback@1133
+## SceneView.addEntities.callback@1146
 
-[Implementation, line 1133](../../../../../src/render/entity/view.ts#L1133)
+[Implementation, line 1146](../../../../../src/render/entity/view.ts#L1146)
 
 ```ts
-callback@1133(m): inferred by TypeScript; see implementation
+callback@1146(m): inferred by TypeScript; see implementation
 ```
 
-## SceneView.addEntities.callback@1168
+## SceneView.addEntities.callback@1181
 
-[Implementation, line 1168](../../../../../src/render/entity/view.ts#L1168)
+[Implementation, line 1181](../../../../../src/render/entity/view.ts#L1181)
 
 ```ts
-callback@1168(resolve, reject): inferred by TypeScript; see implementation
+callback@1181(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1654,12 +1710,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.TextureLoader`
 - `new THREE.TextureLoader().load`
 
-## SceneView.addEntities.callback@1168.callback@1171
+## SceneView.addEntities.callback@1181.callback@1184
 
-[Implementation, line 1171](../../../../../src/render/entity/view.ts#L1171)
+[Implementation, line 1184](../../../../../src/render/entity/view.ts#L1184)
 
 ```ts
-callback@1171(texture): inferred by TypeScript; see implementation
+callback@1184(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1670,7 +1726,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.addAsset
 
-[Implementation, line 1190](../../../../../src/render/entity/view.ts#L1190)
+[Implementation, line 1203](../../../../../src/render/entity/view.ts#L1203)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1683,12 +1739,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `assetUrlForQuality`
 - `this.loading.push`
 
-## SceneView.addAsset.callback@1199
+## SceneView.addAsset.callback@1212
 
-[Implementation, line 1199](../../../../../src/render/entity/view.ts#L1199)
+[Implementation, line 1212](../../../../../src/render/entity/view.ts#L1212)
 
 ```ts
-callback@1199(model): inferred by TypeScript; see implementation
+callback@1212(model): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1703,7 +1759,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.motorcycleMirrors
 
-[Implementation, line 1221](../../../../../src/render/entity/view.ts#L1221)
+[Implementation, line 1234](../../../../../src/render/entity/view.ts#L1234)
 
 Live rear-view mirrors for a motorcycle GLB (`mirror_L` / `mirror_R` glass), the same as the
 cars': cockpit-only reflections, per-side «Espejos» adjustment and `vehicle.mirrorAim` /
@@ -1725,7 +1781,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.assetVehicle
 
-[Implementation, line 1237](../../../../../src/render/entity/view.ts#L1237)
+[Implementation, line 1250](../../../../../src/render/entity/view.ts#L1250)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1758,12 +1814,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.wheels.set`
 - `vehicleDefinition`
 
-## SceneView.assetVehicle.callback@1247
+## SceneView.assetVehicle.callback@1260
 
-[Implementation, line 1247](../../../../../src/render/entity/view.ts#L1247)
+[Implementation, line 1260](../../../../../src/render/entity/view.ts#L1260)
 
 ```ts
-callback@1247(model): inferred by TypeScript; see implementation
+callback@1260(model): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1779,6 +1835,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map`
 - `adapter?.mount`
 - `adapter?.preparePart`
+- `anchoredNode`
 - `bindMotorcycleRig`
 - `definition.hubs.map`
 - `emitters.map`
@@ -1841,64 +1898,64 @@ Explicit throws in this body:
 - `new Error('Missing ramp node: ' + name)`
 - `new Error('Missing telescopic ramp node')`
 
-## SceneView.assetVehicle.callback@1247.callback@1273
-
-[Implementation, line 1273](../../../../../src/render/entity/view.ts#L1273)
-
-```ts
-callback@1273(outlet): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `outlet.position.clone`
-
-## SceneView.assetVehicle.callback@1247.callback@1283
-
-[Implementation, line 1283](../../../../../src/render/entity/view.ts#L1283)
-
-```ts
-callback@1283(outlet): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `outlet.position.clone`
-
-## SceneView.assetVehicle.callback@1247.callback@1291
+## SceneView.assetVehicle.callback@1260.callback@1291
 
 [Implementation, line 1291](../../../../../src/render/entity/view.ts#L1291)
 
 ```ts
-callback@1291(outlet, index): inferred by TypeScript; see implementation
+callback@1291(outlet): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `outlet.position.clone`
+
+## SceneView.assetVehicle.callback@1260.callback@1301
+
+[Implementation, line 1301](../../../../../src/render/entity/view.ts#L1301)
+
+```ts
+callback@1301(outlet): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `outlet.position.clone`
+
+## SceneView.assetVehicle.callback@1260.callback@1309
+
+[Implementation, line 1309](../../../../../src/render/entity/view.ts#L1309)
+
+```ts
+callback@1309(outlet, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `ExhaustSmoke`
 
-## SceneView.assetVehicle.callback@1247.callback@1299
+## SceneView.assetVehicle.callback@1260.callback@1317
 
-[Implementation, line 1299](../../../../../src/render/entity/view.ts#L1299)
+[Implementation, line 1317](../../../../../src/render/entity/view.ts#L1317)
 
 ```ts
-callback@1299(smoke): inferred by TypeScript; see implementation
+callback@1317(smoke): inferred by TypeScript; see implementation
 ```
 
-## SceneView.assetVehicle.callback@1247.callback@1313
+## SceneView.assetVehicle.callback@1260.callback@1331
 
-[Implementation, line 1313](../../../../../src/render/entity/view.ts#L1313)
+[Implementation, line 1331](../../../../../src/render/entity/view.ts#L1331)
 
 ```ts
-callback@1313(hub, i): inferred by TypeScript; see implementation
+callback@1331(hub, i): inferred by TypeScript; see implementation
 ```
 
-## SceneView.assetVehicle.callback@1247.callback@1376
+## SceneView.assetVehicle.callback@1260.callback@1396
 
-[Implementation, line 1376](../../../../../src/render/entity/view.ts#L1376)
+[Implementation, line 1396](../../../../../src/render/entity/view.ts#L1396)
 
 ```ts
-callback@1376(attachment): inferred by TypeScript; see implementation
+callback@1396(attachment): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1909,12 +1966,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.authoredLights.get`
 - `this.authoredLights.get(e.id)?.absorb`
 
-## SceneView.assetVehicle.callback@1402
+## SceneView.assetVehicle.callback@1422
 
-[Implementation, line 1402](../../../../../src/render/entity/view.ts#L1402)
+[Implementation, line 1422](../../../../../src/render/entity/view.ts#L1422)
 
 ```ts
-callback@1402(hub, i): inferred by TypeScript; see implementation
+callback@1422(hub, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1926,12 +1983,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wheel.add`
 - `wheel.position.fromArray`
 
-## SceneView.assetVehicle.callback@1402.callback@1411
+## SceneView.assetVehicle.callback@1422.callback@1431
 
-[Implementation, line 1411](../../../../../src/render/entity/view.ts#L1411)
+[Implementation, line 1431](../../../../../src/render/entity/view.ts#L1431)
 
 ```ts
-callback@1411(model): inferred by TypeScript; see implementation
+callback@1431(model): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1939,12 +1996,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `adapter?.preparePart`
 - `environment.add`
 
-## SceneView.assetVehicle.callback@1437
+## SceneView.assetVehicle.callback@1457
 
-[Implementation, line 1437](../../../../../src/render/entity/view.ts#L1437)
+[Implementation, line 1457](../../../../../src/render/entity/view.ts#L1457)
 
 ```ts
-callback@1437(model): inferred by TypeScript; see implementation
+callback@1457(model): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1956,7 +2013,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.outboard
 
-[Implementation, line 1457](../../../../../src/render/entity/view.ts#L1457)
+[Implementation, line 1477](../../../../../src/render/entity/view.ts#L1477)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -1977,7 +2034,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.outboard.tube
 
-[Implementation, line 1462](../../../../../src/render/entity/view.ts#L1462)
+[Implementation, line 1482](../../../../../src/render/entity/view.ts#L1482)
 
 ```ts
 tube(x: number): inferred by TypeScript; see implementation
@@ -1990,7 +2047,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.car
 
-[Implementation, line 1477](../../../../../src/render/entity/view.ts#L1477)
+[Implementation, line 1497](../../../../../src/render/entity/view.ts#L1497)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2019,7 +2076,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setMapRenderOmissions
 
-[Implementation, line 1522](../../../../../src/render/entity/view.ts#L1522)
+[Implementation, line 1542](../../../../../src/render/entity/view.ts#L1542)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2034,12 +2091,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.objects.get`
 - `this.omittedMeshes.clear`
 
-## SceneView.setMapRenderOmissions.callback@1523
+## SceneView.setMapRenderOmissions.callback@1543
 
-[Implementation, line 1523](../../../../../src/render/entity/view.ts#L1523)
+[Implementation, line 1543](../../../../../src/render/entity/view.ts#L1543)
 
 ```ts
-callback@1523(id): inferred by TypeScript; see implementation
+callback@1543(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2048,7 +2105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.limitDrawDistance
 
-[Implementation, line 1536](../../../../../src/render/entity/view.ts#L1536)
+[Implementation, line 1556](../../../../../src/render/entity/view.ts#L1556)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2079,24 +2136,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.roads.update`
 - `withinMapDistance`
 
-## SceneView.limitDrawDistance.callback@1547
+## SceneView.limitDrawDistance.callback@1567
 
-[Implementation, line 1547](../../../../../src/render/entity/view.ts#L1547)
+[Implementation, line 1567](../../../../../src/render/entity/view.ts#L1567)
 
 ```ts
-callback@1547(e): inferred by TypeScript; see implementation
+callback@1567(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.mapOmissions.has`
 
-## SceneView.limitDrawDistance.callback@1564
+## SceneView.limitDrawDistance.callback@1584
 
-[Implementation, line 1564](../../../../../src/render/entity/view.ts#L1564)
+[Implementation, line 1584](../../../../../src/render/entity/view.ts#L1584)
 
 ```ts
-callback@1564(child): inferred by TypeScript; see implementation
+callback@1584(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2106,7 +2163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setPlaying
 
-[Implementation, line 1608](../../../../../src/render/entity/view.ts#L1608)
+[Implementation, line 1628](../../../../../src/render/entity/view.ts#L1628)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2127,7 +2184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.sync
 
-[Implementation, line 1630](../../../../../src/render/entity/view.ts#L1630)
+[Implementation, line 1650](../../../../../src/render/entity/view.ts#L1650)
 
 Disable interpolation for externally positioned bodies (for example, an XR hand grab).
 
@@ -2230,12 +2287,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `thrusters.update`
 - `updateMonitorAvatar`
 
-## SceneView.sync.callback@1673
+## SceneView.sync.callback@1693
 
-[Implementation, line 1673](../../../../../src/render/entity/view.ts#L1673)
+[Implementation, line 1693](../../../../../src/render/entity/view.ts#L1693)
 
 ```ts
-callback@1673(p, i): inferred by TypeScript; see implementation
+callback@1693(p, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2243,17 +2300,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `applyPose`
 - `this.root.add`
 
-## SceneView.sync.callback@1869
+## SceneView.sync.callback@1889
 
-[Implementation, line 1869](../../../../../src/render/entity/view.ts#L1869)
+[Implementation, line 1889](../../../../../src/render/entity/view.ts#L1889)
 
 ```ts
-callback@1869(entity): inferred by TypeScript; see implementation
+callback@1889(entity): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.updateRideSmoothing
 
-[Implementation, line 1937](../../../../../src/render/entity/view.ts#L1937)
+[Implementation, line 1957](../../../../../src/render/entity/view.ts#L1957)
 
 Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
 flight follow the real pose exactly (and restart the filter).
@@ -2278,17 +2335,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.rideSmoothing.reset`
 - `this.rideSmoothing.update`
 
-## SceneView.updateRideSmoothing.callback@1942
+## SceneView.updateRideSmoothing.callback@1962
 
-[Implementation, line 1942](../../../../../src/render/entity/view.ts#L1942)
+[Implementation, line 1962](../../../../../src/render/entity/view.ts#L1962)
 
 ```ts
-callback@1942(e): inferred by TypeScript; see implementation
+callback@1962(e): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.hitSprite
 
-[Implementation, line 1960](../../../../../src/render/entity/view.ts#L1960)
+[Implementation, line 1980](../../../../../src/render/entity/view.ts#L1980)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2306,12 +2363,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.updateMatrixWorld`
 - `this.sprites.values`
 
-## SceneView.hitSprite.callback@1964
+## SceneView.hitSprite.callback@1984
 
-[Implementation, line 1964](../../../../../src/render/entity/view.ts#L1964)
+[Implementation, line 1984](../../../../../src/render/entity/view.ts#L1984)
 
 ```ts
-callback@1964(hit): inferred by TypeScript; see implementation
+callback@1984(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2323,7 +2380,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.signal
 
-[Implementation, line 1977](../../../../../src/render/entity/view.ts#L1977)
+[Implementation, line 1997](../../../../../src/render/entity/view.ts#L1997)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2338,7 +2395,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.scrapeSparks
 
-[Implementation, line 1986](../../../../../src/render/entity/view.ts#L1986)
+[Implementation, line 2006](../../../../../src/render/entity/view.ts#L2006)
 
 Footpeg scrape sparks: while a two-wheeler is down on its peg (`TwoWheeledPose.scrape`), the
 bullet-impact sparks (`sparks`) stream from the touching point on the inside of the turn,
@@ -2369,7 +2426,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.renderMirrors
 
-[Implementation, line 2028](../../../../../src/render/entity/view.ts#L2028)
+[Implementation, line 2048](../../../../../src/render/entity/view.ts#L2048)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2382,12 +2439,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.carMirrors].sort`
 - `mirrors.render`
 
-## SceneView.renderMirrors.callback@2042
+## SceneView.renderMirrors.callback@2062
 
-[Implementation, line 2042](../../../../../src/render/entity/view.ts#L2042)
+[Implementation, line 2062](../../../../../src/render/entity/view.ts#L2062)
 
 ```ts
-callback@2042([a], [b]): inferred by TypeScript; see implementation
+callback@2062([a], [b]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2396,7 +2453,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setupMaterials
 
-[Implementation, line 2047](../../../../../src/render/entity/view.ts#L2047)
+[Implementation, line 2067](../../../../../src/render/entity/view.ts#L2067)
 
 Traverse all materials and call the callback for CSM setup.
 
@@ -2410,7 +2467,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.registerMaterials
 
-[Implementation, line 2054](../../../../../src/render/entity/view.ts#L2054)
+[Implementation, line 2074](../../../../../src/render/entity/view.ts#L2074)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2422,12 +2479,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `root.traverse`
 
-## SceneView.registerMaterials.callback@2058
+## SceneView.registerMaterials.callback@2078
 
-[Implementation, line 2058](../../../../../src/render/entity/view.ts#L2058)
+[Implementation, line 2078](../../../../../src/render/entity/view.ts#L2078)
 
 ```ts
-callback@2058(object): inferred by TypeScript; see implementation
+callback@2078(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2437,7 +2494,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.captureOccupiedLights
 
-[Implementation, line 2066](../../../../../src/render/entity/view.ts#L2066)
+[Implementation, line 2086](../../../../../src/render/entity/view.ts#L2086)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2474,25 +2531,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicleLights.root.getWorldQuaternion`
 - `this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert`
 
-## SceneView.captureOccupiedLights.callback@2071
+## SceneView.captureOccupiedLights.callback@2091
 
-[Implementation, line 2071](../../../../../src/render/entity/view.ts#L2071)
+[Implementation, line 2091](../../../../../src/render/entity/view.ts#L2091)
 
 ```ts
-callback@2071(item): inferred by TypeScript; see implementation
+callback@2091(item): inferred by TypeScript; see implementation
 ```
 
-## SceneView.captureOccupiedLights.callback@2108
+## SceneView.captureOccupiedLights.callback@2131
 
-[Implementation, line 2108](../../../../../src/render/entity/view.ts#L2108)
+[Implementation, line 2131](../../../../../src/render/entity/view.ts#L2131)
 
 ```ts
-callback@2108(node): inferred by TypeScript; see implementation
+callback@2131(node): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.dispose
 
-[Implementation, line 2131](../../../../../src/render/entity/view.ts#L2131)
+[Implementation, line 2154](../../../../../src/render/entity/view.ts#L2154)
 
 Bare renderer. The public package SceneView supplies stock presentation recipes.
 
@@ -2538,12 +2595,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.truckOutlets.clear`
 - `this.vehicleLights.dispose`
 
-## SceneView.dispose.callback@2158
+## SceneView.dispose.callback@2181
 
-[Implementation, line 2158](../../../../../src/render/entity/view.ts#L2158)
+[Implementation, line 2181](../../../../../src/render/entity/view.ts#L2181)
 
 ```ts
-callback@2158(texture): inferred by TypeScript; see implementation
+callback@2181(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2552,7 +2609,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## riderHeadOffset
 
-[Implementation, line 2173](../../../../../src/render/entity/view.ts#L2173)
+[Implementation, line 2196](../../../../../src/render/entity/view.ts#L2196)
 
 Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
 metres, +z back): the head follows the body sideways and fore-aft and drops a little as the
@@ -2567,3 +2624,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
+
+## anchoredNode
+
+[Implementation, line 2213](../../../../../src/render/entity/view.ts#L2213)
+
+First node of a model tagged `extras.nabla.anchor = name`, if any.
+
+```ts
+anchoredNode(root: THREE.Object3D, name: string): THREE.Object3D | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `root.traverse`
+
+## anchoredNode.callback@2215
+
+[Implementation, line 2215](../../../../../src/render/entity/view.ts#L2215)
+
+```ts
+callback@2215(node): inferred by TypeScript; see implementation
+```

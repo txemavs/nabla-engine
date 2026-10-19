@@ -389,6 +389,19 @@ export class SceneView {
       entry.adjust.position,
     )
   }
+  /** Which lamp groups a vehicle can light, from the channels its model binds; for the settings. */
+  vehicleLamps(id: string): { front: boolean; rear: boolean } {
+    const channels = this.authoredLights.get(id)?.channels()
+    const car = this.carLights.has(id)
+    return {
+      front: car || (['low', 'high', 'fog'] as const).some((name) => channels?.has(name)),
+      rear: car || (['tail-stop', 'brake', 'reverse'] as const).some((name) => channels?.has(name)),
+    }
+  }
+  /** True when the vehicle has exhaust outlets that smoke. */
+  hasExhaust(id: string): boolean {
+    return this.exhaustSmoke.has(id)
+  }
   /** Mirror model (`mirrorModelKey`) of a vehicle with cockpit mirrors, else undefined. */
   mirrorModel(id: string): string | undefined {
     return this.mirrorModels.get(id)
@@ -1251,7 +1264,12 @@ export class SceneView {
         this.options.carInstruments,
         this.options.mirrorPolicy,
       )
-      this.authoredLights.set(e.id, new AuthoredVehicleLights(model, equipment?.lights?.controller))
+      this.authoredLights.set(
+        e.id,
+        new AuthoredVehicleLights(model, equipment?.lights?.controller, {
+          lensEmissive: e.vehicle?.lights?.lensEmissive,
+        }),
+      )
       if (e.vehicle && hasLandingGear(e.vehicle)) {
         const bounds = landingGearMeshBounds(model)
         const visual = bounds
@@ -1320,7 +1338,9 @@ export class SceneView {
         const stand = new MotorcycleSideStand(bottom)
         group.add(stand.root)
         this.motorcycleStands.set(e.id, stand)
-        const outlet = model.getObjectByName('Exhaust_Outlet_Closure')
+        // `extras.nabla.anchor = 'exhaust'` marks the outlet; the old node name is deprecated.
+        const outlet =
+          anchoredNode(model, 'exhaust') ?? model.getObjectByName('Exhaust_Outlet_Closure')
         if (outlet) {
           const socket = new THREE.Object3D()
           socket.name = 'Motorcycle smoke socket'
@@ -2069,7 +2089,10 @@ export class SceneView {
     const group = vehicleId ? this.objects.get(vehicleId) : undefined
     group?.updateWorldMatrix(true, true)
     const entity = this.document.entities.find((item) => item.id === vehicleId)
-    const tuning = readVehicleLights(entity?.visual?.body.url ?? vehicleId ?? '')
+    const tuning = readVehicleLights(
+      entity?.visual?.body.url ?? vehicleId ?? '',
+      entity?.vehicle?.lights?.tuning,
+    )
     if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
     const offset = new THREE.Vector3(tuning.frontX, tuning.frontY, tuning.frontZ)
     if (group) {
@@ -2121,7 +2144,7 @@ export class SceneView {
             entity.size[2],
             1,
             sim.vehicleInfo(vehicleId).braking,
-            readVehicleLights(entity.visual?.body.url ?? entity.id),
+            readVehicleLights(entity.visual?.body.url ?? entity.id, entity.vehicle?.lights?.tuning),
             this.rearLampAnchors.get(object) ?? undefined,
           )
         }
@@ -2184,4 +2207,13 @@ export function riderHeadOffset(
     y + (base[1] + eye[1] - y) * t,
     z + (base[2] + eye[2] - z) * t,
   ]
+}
+
+/** First node of a model tagged `extras.nabla.anchor = name`, if any. */
+function anchoredNode(root: THREE.Object3D, name: string): THREE.Object3D | undefined {
+  let found: THREE.Object3D | undefined
+  root.traverse((node) => {
+    if (!found && node.userData.nabla?.anchor === name) found = node
+  })
+  return found
 }

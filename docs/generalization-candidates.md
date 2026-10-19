@@ -9,20 +9,22 @@ toggle that lets you compare old and new is fine.
 
 ### Today: where positions come from
 
-| Element                        | Position comes from                                                                                       | Editable without Blender? |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------- |
-| Lamp lenses / emissive parts   | Meshes in the GLB, bound to a light channel by **material** `extras.vehicleLightChannel` (`Tail_Stop`, …) | No                        |
-| Lamp anchors / light nodes     | GLB nodes (`extras.nabla.anchor`, KHR punctual lights) read by `authored-lights.ts`                       | No                        |
-| Ground/rear wash of lamps      | Constants from chassis `size` in `render/vehicle-presentation/light-rig.ts` (`rearGroundGlow`)            | No (code)                 |
-| Mirrors                        | GLB lens meshes (+ `vehicle.mirrors` for models without lens), aim in `vehicle.mirrorAim`/`mirrorTilt`    | Aim yes, position no      |
-| Instruments, wheel, rider head | Named GLB anchors + presentation adapter (`src/catalog/presentation/*-mounts.ts`)                         | Partly                    |
-| Weapons                        | Avatar hand/pose, independent of vehicle                                                                  | n/a                       |
+| Element                        | Position comes from                                                                                                                       | Editable without Blender? |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Lamp lenses / emissive parts   | Meshes in the GLB, bound to a light channel by **material name** `nabla.light.<role>` (deprecated fallback: `extras.vehicleLightChannel`) | No                        |
+| Lamp anchors / light nodes     | GLB nodes (`extras.nabla.anchor`, KHR punctual lights) read by `authored-lights.ts`                                                       | No                        |
+| Ground/rear wash of lamps      | The `light.tail.brake` anchor + `vehicle.lights.tuning` (data); S3-style cars still use constants in `light-rig.ts` (`groundGlow`)        | Yes (JSON)                |
+| Mirrors                        | GLB lens meshes (+ `vehicle.mirrors` for models without lens), aim in `vehicle.mirrorAim`/`mirrorTilt`                                    | Aim yes, position no      |
+| Instruments, wheel, rider head | Named GLB anchors + presentation adapter (`src/catalog/presentation/*-mounts.ts`)                                                         | Partly                    |
+| Weapons                        | Avatar hand/pose, independent of vehicle                                                                                                  | n/a                       |
 
 Result: the same job — "put a thing on a vehicle" — has four mechanisms (GLB mesh, GLB
 anchor, JSON field, code constant), and they are created in different places and disposed
 independently.
 
 ### Proposal (a): one `attachments` list in the vehicle JSON
+
+> Naming note: `visual.attachments` already exists (cargo / equipment GLBs composed onto the chassis). The per-vehicle mounts proposed here must use another name, for example `vehicle.mounts`. The part of the proposal that is already real is [`vehicle.lights`](vehicle-definition.md#5-lights) (tuning defaults and lens glow) and the `nabla.*` names of [vehicle-definition.md](vehicle-definition.md#3-naming-convention-nabla).
 
 ```jsonc
 // assets/library/motorcycles/vfr800fi-1999/vfr800.json
@@ -109,14 +111,14 @@ supported field.
 
 ## D. Misplaced controls
 
-| Candidate                  | Observation                                                                                                                                       | Recommendation                                                                                                                                                                                                                                                 | Effort |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Car light settings         | As reported by Txema: entering a car shows the full lighting settings list instead of the car's own lamps (not re-verified in code in this pass). | Filter the lights section by the occupied vehicle's attachments: only lamps it has (headlamps, high beam, tail, signals) are listed, global/world lighting stays in «Desarrollo». Needs (A) or at least the list of `VehicleLightChannel`s on the entity view. | M      |
-| Menu open/close from hosts | The engine menu looks up host DOM ids (`euskadi-options-toggle`) and the host restyles `#settings-toggle`.                                        | Expose menu open/close/toggle on the runtime API; host calls it.                                                                                                                                                                                               | S      |
+| Candidate                  | Observation                                                                                                                                                                                                                                                                                                    | Recommendation                                                                                            | Effort |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------ |
+| Car light settings         | **Done** (`feat/vehicle-definition-lights`): the lamp sliders list only the lamp groups the occupied vehicle can light (`runtime.occupiedVehicle.lamps`), and every per-vehicle option sits in one group of the «Objetos» tab titled with the vehicle's name. Global and world lighting stays in «Desarrollo». | Next: mount the other per-vehicle options (mirrors, sounds) behind the same group when they get settings. | done   |
+| Menu open/close from hosts | The engine menu looks up host DOM ids (`euskadi-options-toggle`) and the host restyles `#settings-toggle`.                                                                                                                                                                                                     | Expose menu open/close/toggle on the runtime API; host calls it.                                          | S      |
 
 ## E. Documentation debt noticed
 
-- `settings-menu.md` tab names differ from the code (see [UI/UX pattern](ui-ux-pattern.md)).
+- `settings-menu.md` is written in Spanish; its tab names now match the code. Translating it to English is open (project rule: all docs in English).
 - Euskadi `GAME.md` describes an older HUD layout; it should only point here.
 - Several architecture documents carry a date in the title ("phase 3", "review 2026-10-04");
   prefer stable names plus a changelog entry.
