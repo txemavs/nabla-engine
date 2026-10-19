@@ -193,6 +193,18 @@ describe('bare URL and cell streaming', () => {
     expect(await probeTerrainFolder('/terrain')).toBe(false)
   })
 
+  it('does not take a dev-server HTML fallback for a published cell', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response('<!doctype html><html></html>', {
+          status: 200,
+          headers: { 'content-type': 'text/html' },
+        }),
+    )
+    expect(await probeTerrainFolder('/terrain')).toBe(false)
+  })
+
   it('floats the Studio monitor unless asked otherwise', () => {
     expect(parseTerrainConfig('?terrain=/t&tile=16211/12003')).toMatchObject({
       playerMode: 'hover',

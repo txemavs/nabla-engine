@@ -45,6 +45,13 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       watch: { usePolling: true, interval: 300 },
       proxy: {
+        // Same-origin Atlas package folder, as Euskadi Online serves it: `?terrain=/tiles`.
+        // Tile GLB/webp files carry no CORS headers, so the browser must not fetch them cross-origin.
+        '/tiles/': {
+          target: env.NABLA_TILES_UPSTREAM || 'https://atlas.chained.world/euskadi/terraform',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/tiles/, ''),
+        },
         '/atlas-live/euskadi/terraform/': {
           target: 'https://atlas.chained.world',
           changeOrigin: true,

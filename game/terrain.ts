@@ -88,7 +88,7 @@ export function terrainDefaults(
 
 /**
  * True when the folder publishes the default start cell. This asks for one manifest, like the engine
- * does for any tile; no index file is needed.
+ * does for any tile; no index file is needed. An HTML fallback page is not a manifest.
  */
 export async function probeTerrainFolder(
   base: string = DEFAULT_TERRAIN_QUERY.terrain,
@@ -96,7 +96,11 @@ export async function probeTerrainFolder(
 ): Promise<boolean> {
   try {
     const response = await fetch(`${base}/z/15/${cell}/manifest.json`)
-    return response.ok
+    if (!response.ok) return false
+    // A dev server without the folder mounted answers 200 with its index.html (SPA fallback):
+    // only a JSON manifest means the folder publishes the cell.
+    const manifest: unknown = await response.json()
+    return typeof manifest === 'object' && manifest !== null
   } catch {
     return false
   }
