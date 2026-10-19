@@ -14,6 +14,13 @@ import { MapInspector } from './map-inspector.js'
 import { Headlamp } from '../render/entity/headlamp.js'
 import type { MapTile } from '../scene/mercator.js'
 import { installShaderWarmup } from '../render/shader-warmup.js'
+import {
+  frameDrawCalls,
+  rendererBackend,
+  type RenderBackend,
+  type RenderBackendKind,
+  webgpuSkippedMaterials,
+} from '../render/backend.js'
 import { atlasFieldLightSource } from '../render/planet/instance-lights.js'
 import { UsbFeedback } from './usb/feedback.js'
 import { UsbControllers, idleUsbFrame, usbDeviceKey } from './usb/controllers.js'
@@ -120,6 +127,7 @@ import {
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
+import { createGpuTiming } from '../diagnostics/gpu-timing.js'
 import { Sidearm } from './sidearm.js'
 import {
   normalizeWeaponPoses,
@@ -258,6 +266,7 @@ import { hiddenTileLayers, setHiddenTileLayers } from '../render/planet/tile-lay
 import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
+import { workerAtlasPackageLoader } from '../render/planet/atlas-package-loader.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
@@ -367,6 +376,11 @@ export interface VehiclePlacement {
 }
 
 export interface GameRuntimeOptions {
+  /**
+   * Renderer prepared by {@link createRenderBackend} on `canvas` (e.g. WebGPU for `?renderer=webgpu`).
+   * Omit for the default WebGL renderer, created here exactly as before.
+   */
+  backend?: RenderBackend
   /** Desktop FSR 1 upscaling, opt-in; immersive XR bypasses it. */
   fsr?: Partial<FsrSettings>
   /** Opt-in stall/shader capture; disabled during normal play. */
@@ -538,6 +552,8 @@ export class GameRuntime {
   )
   private readonly viewForward = new THREE.Vector3()
   private readonly renderer: THREE.WebGLRenderer
+  /** Backend drawing this runtime: `webgpu` only when the host passed a WebGPU backend. */
+  readonly backend: RenderBackendKind
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
@@ -892,15 +908,26 @@ export class GameRuntime {
     )
     if (!this.document.geography)
       throw new Error('A Nabla game requires planetary coordinates, including offline scenes')
-    this.renderer = new THREE.WebGLRenderer({
-      canvas: options.canvas,
-      antialias: true,
-      alpha: true,
-      logarithmicDepthBuffer: true,
-    })
-    installShaderWarmup(this.renderer)
+    this.renderer =
+      options.backend?.renderer ??
+      new THREE.WebGLRenderer({
+        canvas: options.canvas,
+        antialias: true,
+        alpha: true,
+        logarithmicDepthBuffer: true,
+      })
+    this.backend = rendererBackend(this.renderer)
+    options.canvas.dataset.renderer = this.backend
+    console.info(`Nabla renderer: ${this.backend}`)
+    if (this.backend === 'webgl') installShaderWarmup(this.renderer)
     configureWorldRenderer(this.renderer)
-    if (options.onDiagnostics) this.renderer.info.autoReset = false
+    if (options.onDiagnostics) {
+      this.renderer.info.autoReset = false
+      const gl = this.renderer.getContext()
+      if (gl instanceof WebGL2RenderingContext) {
+        this.pipeline.gpuTiming = createGpuTiming(gl)
+      }
+    }
     this.applyPixelRatio()
     this.renderer.shadowMap.enabled = this.quality.shadows > 0
     this.renderer.shadowMap.type = THREE.PCFShadowMap
@@ -1090,7 +1117,10 @@ export class GameRuntime {
             options.tiles.baseUrl,
             options.tiles.apiUrl ?? '/prepare',
             options.tiles.mode ?? 'static',
-            options.tiles,
+            // WebGPU loads Atlas packages in a worker; WebGL keeps the main-thread path unchanged.
+            this.backend === 'webgpu'
+              ? { ...options.tiles, packageLoader: workerAtlasPackageLoader() }
+              : options.tiles,
           )
         : null
     if (this.world) {
@@ -2466,18 +2496,25 @@ export class GameRuntime {
         this.stallLog.join('\n')
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    if (this.options.onDiagnostics)
+    if (this.options.onDiagnostics) {
+      const gpuTiming = this.pipeline.gpuTiming?.finish()
       this.options.onDiagnostics({
         frameMs,
         cpuMs: performance.now() - cpuStart,
         physicsMs,
         installMs,
-        calls: this.renderer.info.render.calls,
+        calls: frameDrawCalls(this.renderer),
         triangles: this.renderer.info.render.triangles,
         width: this.renderer.domElement.width,
         height: this.renderer.domElement.height,
         droppedSeconds: sim.stats.droppedSeconds,
+        gpuTiming,
+        backend: this.backend,
+        ...(this.backend === 'webgpu'
+          ? { webgpuSkipped: webgpuSkippedMaterials(this.renderer) }
+          : {}),
       })
+    }
     this.xrSystem?.recordStats(
       time,
       performance.now() - cpuStart,
@@ -4315,7 +4352,8 @@ export class GameRuntime {
               const start = performance.now()
               for (let pass = 0; pass < 3; pass++) this.renderAttractFrame()
               // One-pixel readback waits for the queued GPU work: a CPU+GPU proxy, not a GPU timer.
-              gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
+              if (gl instanceof WebGL2RenderingContext || gl instanceof WebGLRenderingContext)
+                gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
               const work = performance.now() - start
               const interval = last === null ? work : Math.max(work, time - last)
               last = time

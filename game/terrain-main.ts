@@ -1,10 +1,15 @@
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
-import { showControlHints } from './control-hints.js'
 import { bindVR, preloadVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
-import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
+import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
+import {
+  projectGroundPhoto,
+  setHiddenTileLayers,
+  setTileClusterCulling,
+  parseClusterCulling,
+} from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { assignVehicleColor, sceneHasPresetModel } from './vehicle-colors.js'
 import { hasVehiclePreset, presetEntities } from '@nabla/engine/vehicles'
@@ -42,6 +47,7 @@ import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
+import { fpsReadout } from './fps-readout.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()
@@ -113,8 +119,22 @@ try {
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   const layerDefaults = bootHiddenLayers(boot)
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
+  // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
+  setTileClusterCulling(parseClusterCulling(location.search))
   bootLog('GameRuntime construct start')
+  // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
+  const rendererPreference = parseRendererPreference(location.search)
+  const backend =
+    rendererPreference === 'webgl'
+      ? undefined
+      : await createRenderBackend(rendererPreference, {
+          canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+          antialias: true,
+          alpha: true,
+          logarithmicDepthBuffer: true,
+        })
   runtime = new GameRuntime({
+    backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
@@ -184,12 +204,16 @@ try {
       // OSM road asphalt: hidden + non-colliding unless &osmRoads=1 (bridges always drawn).
       osmRoads: config.osmRoads,
     },
-    onDiagnostics: params.has('diagnostics')
-      ? (sample) =>
-          document
-            .getElementById('game-canvas')!
-            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
-      : undefined,
+    // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
+    onDiagnostics: fpsReadout(
+      () => document.getElementById('controls-hint'),
+      params.has('diagnostics')
+        ? (sample) =>
+            document
+              .getElementById('game-canvas')!
+              .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+        : undefined,
+    ),
     onProgress(_status, tiles) {
       // Always a Spanish loading state with what is in flight and the last error, never silent.
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
@@ -198,8 +222,6 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      if (runtime)
-        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showCells()
       showLocation(frame.location)

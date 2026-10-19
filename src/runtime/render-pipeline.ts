@@ -9,6 +9,8 @@ import { DepthOfField } from '../render/effects/depth-of-field.js'
 import { renderPortals, type ExternalPortalView } from '../render/portal/portals.js'
 import { portalEnvironment } from '../render/portal/environment.js'
 import type { VehicleMonitors } from './vehicle-monitors.js'
+import type { GpuTimingBackend } from '../diagnostics/gpu-timing.js'
+import { isWebGPU } from '../render/backend.js'
 
 export interface GameRenderFrame {
   renderer: THREE.WebGLRenderer
@@ -62,10 +64,13 @@ export class GameRenderPipeline {
   private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
   private shadowMapsBlank = false
+  /** Optional GPU timing backend; set externally when diagnostics are enabled. */
+  gpuTiming: GpuTimingBackend | null = null
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
     this.depthOfField.dispose()
     this.fsr.dispose()
+    this.gpuTiming?.dispose()
   }
   /**
    * Render auxiliary views before the main scene and optional depth of field.
@@ -74,6 +79,8 @@ export class GameRenderPipeline {
    * ownership of supplied scene resources and the animation clock.
    */
   render(frame: GameRenderFrame): void {
+    // GLSL-only objects are hidden inside the WebGPU renderer itself (render/backend.ts).
+    if (isWebGPU(frame.renderer)) return this.renderWebGPU(frame)
     const { renderer, scene, camera, view, sky, origin, eye, monitors } = frame
     this.shaderPasses.clear()
     let lastProgramId = this.diagnostics ? latestProgramId(renderer.info.programs ?? []) : -1
@@ -88,6 +95,7 @@ export class GameRenderPipeline {
     let phasePrograms = renderer.info.programs?.length ?? 0
     const target = renderer.getRenderTarget(),
       autoClear = renderer.autoClear
+    this.gpuTiming?.beginFrame()
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
     // Shadows switched off: the lit programs still sample each light's shadow map, so the maps
     // must exist (a missing one leaves a non-shadow texture on the shadow sampler: GL errors and
@@ -116,6 +124,7 @@ export class GameRenderPipeline {
         surface,
         live: surface.mesh.material.uniforms.live.value,
       }))
+      this.gpuTiming?.beginPass('mirrors')
       try {
         for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
         view.renderMirrors(
@@ -134,11 +143,13 @@ export class GameRenderPipeline {
         for (const { surface, live } of portalStates)
           surface.mesh.material.uniforms.live.value = live
       }
+      this.gpuTiming?.endPass('mirrors')
       recordShaders('mirrors')
       this.timings.mirrorsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.mirrorPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('portals')
       this.renderedPortals = renderPortals(
         view.portals,
         renderer,
@@ -169,11 +180,13 @@ export class GameRenderPipeline {
         },
         frame.externalViews,
       )
+      this.gpuTiming?.endPass('portals')
       recordShaders('portals')
       this.timings.portalsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.portalPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('main')
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
@@ -203,11 +216,13 @@ export class GameRenderPipeline {
       } finally {
         if (flare) flare.visible = flareVisible
       }
+      this.gpuTiming?.endPass('main')
       recordShaders('main-scene-sky-shadows')
       this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.mainPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('post')
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
@@ -234,6 +249,8 @@ export class GameRenderPipeline {
         }
       }
       if (upscale) this.fsr.present(renderer)
+      this.gpuTiming?.endPass('post')
+      this.gpuTiming?.endFrame()
       recordShaders('postprocessing')
       this.timings.postMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.postPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
@@ -243,6 +260,53 @@ export class GameRenderPipeline {
         shadow.autoUpdate = auto
         shadow.needsUpdate = needs
       }
+      monitors.finish()
+      for (const { object, visible } of overlays) object.visible = visible
+      renderer.setRenderTarget(target)
+      renderer.autoClear = autoClear
+    }
+  }
+  /**
+   * WebGPU frame: mirrors, then the main scene. GLSL passes (sky dome, clouds, portals, depth of
+   * field, FSR, lens flare) have no node-material port yet and are skipped; see docs/webgpu.md.
+   */
+  private renderWebGPU(frame: GameRenderFrame): void {
+    const { renderer, scene, camera, view, eye, monitors } = frame
+    const target = renderer.getRenderTarget(),
+      autoClear = renderer.autoClear
+    const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
+    this.renderedPortals = 0
+    const started = this.diagnostics ? performance.now() : 0
+    try {
+      for (const { object } of overlays) object.visible = false
+      if (frame.mirrorVehicle) frame.cull(eye)
+      // SceneView keeps the authored glass under WebGPU (no Reflector capture).
+      view.renderMirrors(renderer, scene, camera, frame.mirrorVehicle, frame.time)
+      const mirrorsDone = this.diagnostics ? performance.now() : 0
+      this.timings.mirrorsMs = mirrorsDone - started
+      this.timings.portalsMs = 0
+      for (const { object, visible } of overlays) object.visible = visible
+      if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
+      frame.cull(eye)
+      frame.beforeMain?.()
+      frame.sky.setViewAspect(camera.aspect)
+      renderer.autoClear = true
+      frame.shadows.update(camera, frame.origin)
+      monitors.prepare(camera)
+      renderer.shadowMap.needsUpdate = frame.shadowsEnabled || !!frame.localShadowUpdate
+      // No GLSL sky dome under WebGPU: clear to the same backdrop the mirrors use.
+      const background = scene.background
+      if (!background && frame.skyVisible !== false)
+        scene.background = scene.fog?.color ?? webgpuBackdrop
+      try {
+        renderer.render(scene, camera)
+      } finally {
+        scene.background = background
+      }
+      monitors.finish()
+      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - mirrorsDone
+      this.timings.postMs = 0
+    } finally {
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible
       renderer.setRenderTarget(target)
@@ -266,6 +330,9 @@ export class GameRenderPipeline {
     }
   }
 }
+
+/** Sky stand-in under WebGPU, matching the mirror capture backdrop. */
+const webgpuBackdrop = new THREE.Color('#a6bbd5')
 
 /** A shadow-casting light whose map the renderer has not created yet. */
 function missingShadowMap(lights: readonly THREE.DirectionalLight[]): boolean {

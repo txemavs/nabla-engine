@@ -1,3 +1,9 @@
+import {
+  installTileClusterCulling,
+  isClusterableTileMesh,
+  tileClusterCullingEnabled,
+  tileClustersTried,
+} from './cluster-culling.js'
 import { Z16Updates } from './z16-updates.js'
 import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
@@ -23,6 +29,7 @@ import {
   type OsmChartRoad,
 } from '../../planet/osm-snapshot.js'
 import { StaticTileError, fetchTileManifest } from './static-tiles.js'
+import type { AtlasPackageLoader } from './atlas-package-loader.js'
 import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/atlas-z15.js'
 import { fetchOsmSnapshot } from './osm-roads.js'
 import { NO_ASPHALT_MASK, asphaltMaskTexture } from './asphalt-mask.js'
@@ -30,6 +37,8 @@ import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker for WebGPU. */
+  packageLoader?: AtlasPackageLoader
   /** Coarsest published mesh LOD. Static/Atlas sources default to Z15, dynamic sources to Z13.
    * Set 12 only after publishing native coarse mesh manifests; absence must not create holes. */
   meshMinZoom?: 12 | 13 | 14 | 15
@@ -1222,6 +1231,7 @@ export class PlanetWorld {
             cors: true,
             missingStatuses: [403, 404],
             onMissing: (value) => (status = value),
+            packageLoader: this.sourceOptions.packageLoader,
             atlas: this.sourceOptions.atlas && {
               ...this.sourceOptions.atlas,
               photo: this.photoQuality(tile),
@@ -1634,8 +1644,25 @@ export class PlanetWorld {
     }
     this.status = `GLB planetarios · ${this.visible.length} baldosas · z/${[...new Set(this.visible.map((k) => k.split('/')[1]))].join(', ')}${this.requests.size ? ' · cargando…' : ''}`
   }
+  /**
+   * Cluster culling (opt-in): reorder shown tile meshes a few at a time (about 4 ms per frame,
+   * at least one mesh), so a burst of installs never hitches.
+   */
+  private clusterTileMeshes() {
+    if (!tileClusterCullingEnabled()) return
+    const start = performance.now()
+    for (const r of this.resident.values()) {
+      if (!r.group.visible) continue
+      for (const child of r.group.children) {
+        if (!child.visible || tileClustersTried(child) || !isClusterableTileMesh(child)) continue
+        installTileClusterCulling(child)
+        if (performance.now() - start > 4) return
+      }
+    }
+  }
   renderUpdate(origin: THREE.Vector3, buildings: boolean, sim: Simulation | null) {
     this.simulation = sim
+    this.clusterTileMeshes()
     this.originOffset.copy(origin)
     this.root.position.copy(origin).negate()
     if (this.buildings !== buildings) {
