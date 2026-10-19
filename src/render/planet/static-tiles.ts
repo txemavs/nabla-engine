@@ -27,10 +27,13 @@ import {
   adaptAtlasManifest,
   atlasPackageRef,
   atlasPackageUrl,
-  validateAtlasZ15Package,
   type AtlasZ15Options,
 } from '../../planet/atlas-z15.js'
-import { sha256 } from '../../util/sha256.js'
+import {
+  AtlasPackageFailure,
+  mainThreadAtlasPackageLoader,
+  type AtlasPackageLoader,
+} from './atlas-package-loader.js'
 
 export interface StaticTileProviderOptions {
   /** Application-owned tile origin. Use `/` (or normalized empty string) for this origin. */
@@ -54,6 +57,8 @@ export interface StaticTileProviderOptions {
   missingStatuses?: readonly number[]
   /** Called with the status when a tile is reported missing. */
   onMissing?: (status: number) => void
+  /** Where Atlas packages are fetched and verified. Default: on the main thread. */
+  packageLoader?: AtlasPackageLoader
 }
 
 export interface StaticTileResult {
@@ -210,22 +215,16 @@ async function adaptWithAtlasPackage(
   try {
     const ref = atlasPackageRef(manifest)!
     url = atlasPackageUrl(options.baseUrl, tile, ref)
-    const timeout = AbortSignal.timeout(15000)
-    const response = await fetch(url, {
-      method: 'GET',
-      mode: options.cors === false ? undefined : 'cors',
-      signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
-    })
-    if (!response.ok) throw fail(describeHttp(response.status), 'http', url, response.status)
-    const bytes = await response.arrayBuffer()
-    if (bytes.byteLength !== ref.bytes)
-      throw fail('size does not match manifest.json', 'invalid', url)
-    if ((await sha256(bytes)) !== ref.sha256)
-      throw fail('SHA-256 does not match manifest.json', 'invalid', url)
-    const pkg = validateAtlasZ15Package(JSON.parse(new TextDecoder().decode(bytes)), tile)
+    const loader = options.packageLoader ?? mainThreadAtlasPackageLoader
+    const pkg = await loader.load(
+      { url, tile, bytes: ref.bytes, sha256: ref.sha256, cors: options.cors },
+      options.signal,
+    )
     return adaptAtlasManifest(manifest, pkg, options.atlas)
   } catch (error) {
     if (error instanceof StaticTileError || options.signal?.aborted) throw error
+    if (error instanceof AtlasPackageFailure && error.kind === 'http')
+      throw fail(describeHttp(error.status!), 'http', url, error.status)
     throw fail(error instanceof Error ? error.message : String(error), 'invalid', url)
   }
 }
