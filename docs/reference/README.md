@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **535 modules; 6247 executable function definitions**.
+Coverage: **536 modules; 6259 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -34,6 +34,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/fps-readout.ts](game/fps-readout.ts.md) | 2 |
 | [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
+| [game/gravity-ui.ts](game/gravity-ui.ts.md) | 7 |
 | [game/headset.ts](game/headset.ts.md) | 9 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
@@ -370,7 +371,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 457 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 459 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -507,7 +508,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 269 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 272 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
