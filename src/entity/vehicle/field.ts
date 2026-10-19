@@ -470,6 +470,10 @@ export const vehicleField = z
      * the vehicle class default (`rideSmoothingDefaults`). Presentation only.
      */
     rideSmoothing: finite.min(0).max(1).optional(),
+    /** Ride-smoothing defaults to use; omitted: two wheels = motorcycle, >4 or ≥3.5 t = truck. */
+    rideSmoothingClass: z.enum(['off', 'car', 'truck', 'motorcycle']).optional(),
+    /** Paint palette a new vehicle picks its colour from (`vehicleAppearanceDefaults`). */
+    colorPalette: z.enum(['car', 'motorcycle']).optional(),
     /** Neutral eye orientation relative to the chassis, authored in the body GLB. */
     headRotation: rotation.optional(),
     /** Authored carrier display surfaces; dimensions are metres in chassis space. */

@@ -126,7 +126,8 @@
         "emissionRate": 32,
         "capacity": 96
       }
-    }
+    },
+    "colorPalette": "car"
   },
   "visual": {
     "presentation": "nabla.s3",

@@ -22,7 +22,9 @@ export type RideSmoothingClass = keyof typeof rideSmoothingDefaults
 export function rideSmoothingClass(e: Pick<Entity, 'vehicle' | 'mass'>): RideSmoothingClass {
   const v = e.vehicle
   if (!v || v.flight || v.plane || v.boat || v.garage || v.passive) return 'off'
-  if (v.twoWheeled) return 'motorcycle'
+  // Data first (`vehicle.rideSmoothingClass`); otherwise the wheel count and mass decide.
+  if (v.rideSmoothingClass) return v.rideSmoothingClass
+  if (v.hubs.length === 2) return 'motorcycle'
   if (v.hubs.length > 4 || (e.mass ?? 0) >= 3500) return 'truck'
   return 'car'
 }

@@ -112,7 +112,9 @@
       "smoke": {
         "amount": "load"
       }
-    }
+    },
+    "rideSmoothingClass": "motorcycle",
+    "colorPalette": "motorcycle"
   },
   "visual": {
     "body": {

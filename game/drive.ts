@@ -16,7 +16,7 @@ import {
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
-import { assignVehicleColor } from './vehicle-colors.js'
+import { assignVehicleColor, sceneHasPresetModel } from './vehicle-colors.js'
 import { headingRotation, installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { showTelemetry } from './telemetry.js'
@@ -187,7 +187,7 @@ try {
   const noTerrainTest = ['/test.html', '/xr.html'].includes(location.pathname)
 
   if (noTerrainTest) {
-    if (!solo && !scene.entities.some((entity) => entity.vehicle?.twoWheeled))
+    if (!solo && !sceneHasPresetModel(scene.entities, 'vfr800'))
       scene.entities.push(...presetEntities('vfr800', 'demo-vfr800', [-4, 2, 0]))
     // Space the test fleet explicitly; attached parts retain local transforms.
     const testPositions: Record<string, [number, number, number]> = {
