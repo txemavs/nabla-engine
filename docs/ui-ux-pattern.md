@@ -71,7 +71,15 @@ Rules:
     `smoke.amount: "manual"`; the position sliders follow the first, the quantity slider the
     second). `GameRuntime.occupiedVehicle.options` (`vehicleOptions`, derived from the vehicle's
     data and what its model bound) drives this, and `game/vehicle-group.ts` decides what shows.
-11. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
+11. **Tab tree** (the full list is in [settings menu](settings-menu.md)):
+    - Mundo: the world itself (time, map, layers, weather, sea, street lights, signs, labels).
+    - Configuración: how the game runs for this player: Pantalla (quality, sharpness, shadows,
+      distances, performance), Efectos (smoke, muzzle flash), Cámara (incl. field of view),
+      Conducción, Controles, Sonido, Gestión.
+    - Objetos: Vehículos (add, placed objects), the occupied vehicle's group, Arma.
+    - Desarrollo: tuning and diagnostics that a player does not need.
+      Rendering quality never goes in Mundo; a visible effect is not a Desarrollo option.
+12. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
     navigation group inside «Mundo» and of an older name of «Configuración»; do not use it for
     the tab.
 

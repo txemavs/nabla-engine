@@ -1,4 +1,4 @@
-/** Ajustes → Vídeo → Postproceso: «Filtrado anisotrópico» for the asphalt and road markings. */
+/** Configuración → Pantalla: «Filtrado anisotrópico» for the asphalt and road markings. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
 export const ANISOTROPY_STORAGE_KEY = 'nabla.anisotropy'

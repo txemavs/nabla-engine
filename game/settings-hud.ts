@@ -60,8 +60,6 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['terrain-position', 'planet'],
   ['terrain-layers', 'planet'],
   ['settings-layer-air', 'planet'],
-  ['settings-sharpness', 'planet'],
-  ['quality-shadows', 'planet'],
   ['road-style', 'planet'],
   ['settings-planet-air', 'planet'],
   ['settings-planet-sea', 'planet'],
@@ -70,10 +68,14 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-traffic-signs', 'planet'],
   ['settings-options-labels', 'planet'],
   ['display-quality-section', 'options'],
+  ['settings-sharpness', 'options'],
+  ['quality-shadows', 'options'],
   ['settings-distances', 'options'],
   ['display-performance', 'options'],
   ['settings-effects', 'options'],
+  ['settings-muzzle-flash', 'options'],
   ['camera-extras', 'options'],
+  ['settings-camera-fov', 'options'],
   ['settings-action-cam', 'options'],
   ['driving-extras', 'options'],
   ['settings-controls', 'options'],
@@ -83,13 +85,13 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['scene-vehicles', 'objects'],
   ['settings-placed-objects', 'objects'],
   ['settings-object-layout', 'objects'],
-  ['settings-options-sidearm', 'dev'],
-  ['settings-weapon-poses', 'dev'],
-  ['settings-muzzle-flash', 'dev'],
   ['settings-options-driver', 'objects'],
   ['settings-car-beams', 'objects'],
   ['settings-vehicle-sound', 'objects'],
   ['settings-truck-exhaust', 'objects'],
+  ['settings-weapon', 'objects'],
+  ['settings-options-sidearm', 'dev'],
+  ['settings-weapon-poses', 'dev'],
   ['settings-light', 'dev'],
   ['settings-rear-light-nudge', 'dev'],
   ['settings-sign-shadows', 'dev'],
@@ -122,7 +124,9 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-planet-air': 'Climatología',
   'quality-shadows': 'Sombras del sol',
   'camera-extras': 'Opciones',
-  'settings-management': 'Ajustes',
+  'settings-management': 'Gestión',
+  'settings-camera-fov': 'Campo de visión',
+  'settings-weapon': 'Rueda de armas',
   'settings-options-sidearm': 'Apuntado',
   'settings-muzzle-flash': 'Fogonazo',
   'settings-config-planet': 'Planeta',
@@ -584,6 +588,48 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       'Ajusta la posición de las luces, no la geometría del piloto. Se guarda por modelo en este navegador. Compartir copia los valores para convertirlos después en valores de fábrica.'
     section.append(reset, share, exported, note)
     refreshVehicleLights()
+    place(section)
+  }
+
+  // Cámara → field of view: the same offset as the J menu (`nabla.cameraFov`).
+  let refreshCameraFov = () => {}
+  if (typeof runtime.setCameraFovOffset === 'function') {
+    const section = fieldset('settings-camera-fov', 'Campo de visión')
+    const label = doc.createElement('label'),
+      slider = doc.createElement('input'),
+      value = doc.createElement('output')
+    slider.type = 'range'
+    const range = runtime.cameraFovRange
+    slider.min = String(range.min)
+    slider.max = String(range.max)
+    slider.step = '1'
+    slider.setAttribute('aria-label', 'Campo de visión (°)')
+    slider.addEventListener('input', () => {
+      const offset = runtime.setCameraFovOffset(Number(slider.value))
+      value.textContent = `${offset > 0 ? '+' : ''}${offset}°`
+    })
+    label.append('Campo de visión ', slider, value)
+    section.append(label)
+    refreshCameraFov = () => {
+      if (doc.activeElement === slider) return
+      const offset = runtime.cameraFovOffset ?? 0
+      slider.value = String(offset)
+      value.textContent = `${offset > 0 ? '+' : ''}${offset}°`
+    }
+    refreshCameraFov()
+    place(section)
+  }
+
+  // Objetos → Arma: put the aiming weapon wheel (moved with the mouse wheel) back to default.
+  if (typeof runtime.resetWeaponWheel === 'function') {
+    const section = fieldset('settings-weapon', 'Rueda de armas')
+    const note = doc.createElement('p')
+    note.textContent = 'La rueda del ratón mientras apuntas mueve el arma; aquí vuelve a su sitio.'
+    const reset = doc.createElement('button')
+    reset.type = 'button'
+    reset.textContent = 'Restablecer rueda de armas'
+    reset.addEventListener('click', () => runtime.resetWeaponWheel())
+    section.append(note, reset)
     place(section)
   }
 
@@ -1350,8 +1396,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       id: 'world-options',
       label: 'Opciones',
       sections: [
-        'settings-sharpness',
-        'quality-shadows',
         'road-style',
         'settings-planet-air',
         'settings-planet-sea',
@@ -1363,26 +1407,40 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     },
     {
       tab: 'options',
-      id: 'video',
-      label: 'Vídeo',
+      id: 'display',
+      label: 'Pantalla',
       sections: [
         'display-quality-section',
+        'settings-sharpness',
+        'quality-shadows',
         'settings-distances',
         'display-performance',
-        'settings-effects',
       ],
     },
     {
       tab: 'options',
-      id: 'cameras',
-      label: 'Cámaras',
-      sections: ['camera-extras', 'settings-action-cam'],
+      id: 'effects',
+      label: 'Efectos',
+      sections: ['settings-effects', 'settings-muzzle-flash'],
     },
+    {
+      tab: 'options',
+      id: 'cameras',
+      label: 'Cámara',
+      sections: ['camera-extras', 'settings-camera-fov', 'settings-action-cam'],
+    },
+    { tab: 'options', id: 'driving', label: 'Conducción', sections: ['driving-extras'] },
     {
       tab: 'options',
       id: 'controls',
       label: 'Controles',
-      sections: ['driving-extras', 'settings-controls', 'settings-usb'],
+      sections: ['settings-controls', 'settings-usb'],
+    },
+    {
+      tab: 'objects',
+      id: 'vehicles',
+      label: 'Vehículos',
+      sections: ['scene-vehicles', 'settings-placed-objects', 'settings-object-layout'],
     },
     {
       tab: 'objects',
@@ -1390,11 +1448,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       label: 'Vehículo actual',
       sections: [...vehicleGroupSections],
     },
+    { tab: 'objects', id: 'weapon', label: 'Arma', sections: ['settings-weapon'] },
     {
       tab: 'dev',
       id: 'weapons',
       label: 'Armas',
-      sections: ['settings-options-sidearm', 'settings-weapon-poses', 'settings-muzzle-flash'],
+      sections: ['settings-options-sidearm', 'settings-weapon-poses'],
     },
   ]
   const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
@@ -1644,6 +1703,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     refreshVehicleLights()
     refreshRearNudge()
     refreshVehicleSound()
+    refreshCameraFov()
     if (runtime.skyClock)
       toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))
     if (!win.hidden && activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')

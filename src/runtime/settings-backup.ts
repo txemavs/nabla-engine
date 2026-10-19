@@ -13,6 +13,7 @@ export const preferenceKeys = new Set([
   'nabla.shadowsEnabled',
   'nabla.truckExhaustOffset',
   'nabla.truckExhaustAmount',
+  'nabla.reverseAlarm',
   'nabla.audioMix',
   'nabla.cameraFov',
   'nabla.driverPose',
@@ -64,6 +65,7 @@ export const isPreferenceKey = (key: string): boolean =>
   preferenceKeys.has(key) ||
   key.startsWith('nabla.mirrors:') ||
   key.startsWith('nabla.vehicle-lights.') ||
+  key.startsWith('nabla.vehicle-preferences/1:') ||
   key.startsWith('nabla.steeringWheel:')
 export const isCalibrationKey = (key: string): boolean =>
   key === 'nabla.usb.controllers.v1' ||

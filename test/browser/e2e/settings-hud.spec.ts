@@ -98,6 +98,13 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
         Object.assign(runtime.audioMix, patch)
         return runtime.audioMix
       },
+      cameraFovRange: { min: -20, max: 20 },
+      cameraFovOffset: 0,
+      setCameraFovOffset: (offset: number) => (runtime.cameraFovOffset = offset),
+      weaponWheelResets: 0,
+      resetWeaponWheel: () => {
+        runtime.weaponWheelResets++
+      },
       reverseAlarmEnabled: true,
       setReverseAlarmEnabled: (enabled: boolean) => {
         runtime.reverseAlarmEnabled = enabled
@@ -261,7 +268,6 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'settings-map',
       'terrain-position',
       'terrain-layers',
-      'quality-shadows',
       'road-style',
       'settings-planet-sea',
       'settings-planet-air',
@@ -276,15 +282,19 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'settings-controls',
       'display-quality-section',
       'settings-effects',
+      // Rendering quality and the muzzle flash live in Configuración (Pantalla, Efectos).
+      'quality-shadows',
+      'settings-muzzle-flash',
     ]),
   )
+  expect(result.planet).not.toContain('quality-shadows')
+  expect(result.dev).not.toContain('settings-muzzle-flash')
   expect(result.dev).toEqual(
     expect.arrayContaining([
       'settings-config-planet',
       'terrain-source',
       'settings-options-sidearm',
       'settings-weapon-poses',
-      'settings-muzzle-flash',
     ]),
   )
   expect(result.places).toBe('settings-pane-planet')
@@ -323,7 +333,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
     ),
   ).toHaveCount(1)
-  await page.getByRole('button', { name: 'Ajustes', exact: true }).click()
+  await page.getByRole('button', { name: 'Gestión', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }),
   ).toBeVisible()
@@ -395,6 +405,24 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     name: 'Luz trasera: arriba / abajo (m)',
     exact: true,
   })
+  // Objetos → Arma resets the weapon wheel.
+  await page.getByRole('button', { name: 'Rueda de armas', exact: true }).click()
+  await page.getByRole('button', { name: 'Restablecer rueda de armas' }).click()
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { weaponWheelResets: number } }).__rt.weaponWheelResets,
+    ),
+  ).toBe(1)
+  // Configuración → Cámara → field of view.
+  await page.getByRole('tab', { name: 'Configuración', exact: true }).click()
+  await page.getByRole('button', { name: 'Campo de visión', exact: true }).click()
+  await page.getByRole('slider', { name: 'Campo de visión (°)' }).fill('6')
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { cameraFovOffset: number } }).__rt.cameraFovOffset,
+    ),
+  ).toBe(6)
+  await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
   // Sounds: the engine volume follows the mix; a motorcycle has no reversing alarm.
   await page.getByRole('button', { name: 'Sonido', exact: true }).click()
   const engineVolume = page.getByRole('slider', { name: 'Volumen del motor', exact: true })

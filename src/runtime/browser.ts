@@ -34,6 +34,12 @@ import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
 import { vehicleOptions } from './vehicle-options.js'
+import {
+  normalizeVehiclePreferences,
+  readVehiclePreferences,
+  writeVehiclePreferences,
+  type VehiclePreferences,
+} from './vehicle-preferences.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
 import { XRLoadout } from './xr-loadout.js'
 import { XRGrab } from './xr-grab.js'
@@ -149,6 +155,7 @@ import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer
 import type { MusicTrack } from '../audio/music.js'
 import {
   cameraFovFor,
+  cameraFovRange,
   nextCameraFovOffset,
   readCameraFovOffset,
   writeCameraFovOffset,
@@ -991,7 +998,8 @@ export class GameRuntime {
     this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
-    this.effects.reverseAlarmEnabled = browserStorage()?.getItem('nabla.reverseAlarm') !== '0'
+    this.effects.reverseAlarmEnabled = (entity) =>
+      this.vehiclePreferences(entity.visual?.body.url ?? entity.id).reverseAlarm
     this.effects.audio.setEnabled(options.audio !== false)
     this.effects.audio.setMusic(options.music)
     if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
@@ -3236,15 +3244,55 @@ export class GameRuntime {
       }),
     }
   }
-  /** Whether a vehicle with a reversing alarm sounds it (the player's choice, saved). */
+  /** Saved per-model choices (exhaust, reversing alarm), cached until changed. */
+  private readonly preferenceCache = new Map<string, VehiclePreferences>()
+  private vehiclePreferences(model: string): VehiclePreferences {
+    let value = this.preferenceCache.get(model)
+    if (!value)
+      this.preferenceCache.set(model, (value = readVehiclePreferences(browserStorage(), model)))
+    return value
+  }
+  /** Change and save the occupied model's choices; null on foot. */
+  setVehiclePreferences(patch: Partial<VehiclePreferences>): VehiclePreferences | null {
+    this.assertAlive()
+    const model = this.occupiedVehicle?.model
+    if (!model) return null
+    const next = writeVehiclePreferences(browserStorage(), model, patch)
+    this.preferenceCache.set(model, next)
+    return next
+  }
+  /** The occupied model's choices (defaults on foot). */
+  get occupiedVehiclePreferences(): VehiclePreferences {
+    const model = this.occupiedVehicle?.model
+    return model ? { ...this.vehiclePreferences(model) } : normalizeVehiclePreferences({})
+  }
+  /** Whether the occupied vehicle sounds its reversing alarm (saved per model). */
   get reverseAlarmEnabled(): boolean {
-    return this.effects.reverseAlarmEnabled
+    return this.occupiedVehiclePreferences.reverseAlarm
   }
   setReverseAlarmEnabled(enabled: boolean): void {
+    this.setVehiclePreferences({ reverseAlarm: enabled })
+  }
+  /** Allowed FOV offset, degrees. */
+  get cameraFovRange(): { readonly min: number; readonly max: number } {
+    return cameraFovRange
+  }
+  /** Player FOV offset in degrees (also in the J menu), saved as `nabla.cameraFov`. */
+  get cameraFovOffset(): number {
+    return this.fovOffset
+  }
+  setCameraFovOffset(offset: number): number {
     this.assertAlive()
-    this.effects.reverseAlarmEnabled = enabled
+    this.applyCameraFov(offset)
+    writeCameraFovOffset(browserStorage(), this.fovOffset)
+    return this.fovOffset
+  }
+  /** Put the aiming weapon wheel back to its default and forget the saved one. */
+  resetWeaponWheel(): void {
+    this.assertAlive()
+    this.weaponWheel = normalizeWeaponWheel()
     try {
-      browserStorage()?.setItem('nabla.reverseAlarm', enabled ? '1' : '0')
+      browserStorage()?.setItem('nabla.weaponWheel', JSON.stringify(this.weaponWheel))
     } catch {
       /* Optional storage. */
     }
