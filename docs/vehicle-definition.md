@@ -307,12 +307,14 @@ name `Llanta 2`). A plain car without `visual.presentation` gets no mirrors (sec
   - `direction`: smoke direction `[x, y, z]`. `offset`: `[x, y, z]` nudge (±1 m) of every outlet.
   - `smoke`: `amount` (`full` default, `load`, `rpm`, `manual`), `emissionRate`, `capacity`,
     `color`, `clearColor`, `clearAtKmh`, `size`.
-  - `adjustable`: the «Humo del camión» panel moves this vehicle's outlets (and, with
+  - `adjustable`: the «Escape y humo» panel moves this vehicle's outlets (and, with
     `smoke.amount: "manual"`, sets its quantity).
     The VFR uses the anchor plus `offset` and `amount: "load"`; the S3 lists two `outlets` with
     `amount: "rpm"`; the truck lists one outlet, `manual` and `adjustable`.
-- The amount of smoke (trucks) is adjusted in Settings → Objetos → _vehicle name_ → «Humo del
-  camión»; the section is listed only for a vehicle that has exhaust.
+- Settings → Objetos → _vehicle name_ → «Escape y humo» is listed only for a vehicle whose
+  exhaust is `adjustable` (position sliders) or `smoke.amount: "manual"` (quantity slider);
+  «Sonido» lists the engine volume and, with `reverseAlarm`, a switch for the reversing alarm;
+  «Luces» needs a bound lamp; the mirrors row needs mirror glass.
 
 ## 8. Instruments and sound
 

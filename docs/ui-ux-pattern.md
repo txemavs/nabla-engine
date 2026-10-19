@@ -64,6 +64,13 @@ Rules:
     group, and a vehicle sees only what it has: a motorcycle has no exhaust-smoke section and
     lists only the lamps its model binds. Defaults of these options come from the vehicle's JSON
     (see [vehicle definition](vehicle-definition.md)); the player's choice is saved per model.
+    The sections are Conductor y espejos (the mirrors row only when the model has mirror glass),
+    Luces (only when a front or rear lamp is bound), Sonido (engine volume, the same mix as
+    Configuración → Sonido; the reversing-alarm switch only when the vehicle data has
+    `reverseAlarm`) and Escape y humo (only when `vehicle.exhaust.adjustable` or
+    `smoke.amount: "manual"`; the position sliders follow the first, the quantity slider the
+    second). `GameRuntime.occupiedVehicle.options` (`vehicleOptions`, derived from the vehicle's
+    data and what its model bound) drives this, and `game/vehicle-group.ts` decides what shows.
 11. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
     navigation group inside «Mundo» and of an older name of «Configuración»; do not use it for
     the tab.

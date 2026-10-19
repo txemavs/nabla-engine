@@ -2,14 +2,18 @@ import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
 import { browserStorage } from './entry.js'
 
-/** Temporary live controls for truck exhaust position and quantity. */
+/**
+ * Live controls for the exhaust of vehicles whose data lets the player adjust it
+ * (`vehicle.exhaust.adjustable`: outlet position; `smoke.amount: "manual"`: quantity). The rows
+ * are tagged `data-exhaust-group` so the settings can show only those that apply.
+ */
 export function bindExhaustControls(
   runtime: Pick<
     GameRuntime,
     'truckExhaustOffset' | 'setTruckExhaustOffset' | 'truckExhaustAmount' | 'setTruckExhaustAmount'
   >,
 ): void {
-  const group = menuSection('settings-truck-exhaust', 'Vehículo · humo del camión')
+  const group = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
   const storage = browserStorage()
   const key = 'nabla.truckExhaustOffset'
   const amountKey = 'nabla.truckExhaustAmount'
@@ -38,6 +42,7 @@ export function bindExhaustControls(
     }
     refresh()
   })
+  amountLabel.dataset.exhaustGroup = 'amount'
   amountLabel.append('Cantidad ', amountSlider, ' ', amountOutput)
   group.append(amountLabel)
   try {
@@ -81,6 +86,7 @@ export function bindExhaustControls(
       }
       refresh()
     })
+    label.dataset.exhaustGroup = 'position'
     label.append(`${title} `, slider, ' ', output)
     rows.push({ slider, output })
     group.append(label)

@@ -184,7 +184,7 @@ export class SceneView {
   >()
   private truckOffset: readonly [number, number, number] = [0, 0, 0]
   private truckAmount = 1
-  /** The «Humo del camión» quantity, for vehicles whose exhaust is `smoke.amount: "manual"`. */
+  /** The «Escape y humo» quantity, for vehicles whose exhaust is `smoke.amount: "manual"`. */
   setTruckExhaustAmount(amount: number): void {
     this.truckAmount = amount
   }

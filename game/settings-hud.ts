@@ -12,6 +12,7 @@ import {
   skyTime,
 } from '@nabla/engine/planet/sky'
 import { createWheelStepper } from './clock-wheel.js'
+import { vehicleGroupSections, vehicleGroupVisibility } from './vehicle-group.js'
 import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls'
 /**
  * Full-screen HTML monitor for the desktop game. Navigation remounts the existing controls;
@@ -86,9 +87,10 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-weapon-poses', 'dev'],
   ['settings-muzzle-flash', 'dev'],
   ['settings-options-driver', 'objects'],
+  ['settings-car-beams', 'objects'],
+  ['settings-vehicle-sound', 'objects'],
   ['settings-truck-exhaust', 'objects'],
   ['settings-light', 'dev'],
-  ['settings-car-beams', 'objects'],
   ['settings-rear-light-nudge', 'dev'],
   ['settings-sign-shadows', 'dev'],
   ['settings-experimental-light-shadows', 'dev'],
@@ -111,7 +113,8 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'scene-vehicles': 'Añadir',
   'settings-car-beams': 'Luces',
   'settings-rear-light-nudge': 'Luz trasera (ajuste fino)',
-  'settings-truck-exhaust': 'Humo del camión',
+  'settings-truck-exhaust': 'Escape y humo',
+  'settings-vehicle-sound': 'Sonido',
   'settings-options-driver': 'Conductor y espejos',
   'display-quality-section': 'Calidad',
   'settings-options-labels': 'Nombres de lugares',
@@ -581,6 +584,52 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       'Ajusta la posición de las luces, no la geometría del piloto. Se guarda por modelo en este navegador. Compartir copia los valores para convertirlos después en valores de fábrica.'
     section.append(reset, share, exported, note)
     refreshVehicleLights()
+    place(section)
+  }
+
+  // The occupied vehicle's own sounds: its engine volume (the same mix as Configuración → Sonido)
+  // and the reversing alarm, for vehicles that have one.
+  let refreshVehicleSound = () => {}
+  {
+    const section = fieldset('settings-vehicle-sound', 'Vehículo · sonido')
+    const status = doc.createElement('p')
+    const engineLabel = doc.createElement('label'),
+      engine = doc.createElement('input'),
+      engineValue = doc.createElement('output')
+    engine.type = 'range'
+    engine.min = '0'
+    engine.max = '100'
+    engine.step = '1'
+    engine.setAttribute('aria-label', 'Volumen del motor')
+    engine.addEventListener('input', () => {
+      const mix = runtime.setAudioMix({ engine: Number(engine.value) / 100 })
+      engineValue.textContent = `${Math.round(mix.engine * 100)}%`
+    })
+    engineLabel.append('Motor ', engine, engineValue)
+    const alarmLabel = doc.createElement('label'),
+      alarm = doc.createElement('input')
+    alarm.type = 'checkbox'
+    alarm.setAttribute('aria-label', 'Aviso de marcha atrás')
+    alarm.addEventListener('change', () => runtime.setReverseAlarmEnabled(alarm.checked))
+    alarmLabel.append(alarm, ' Aviso de marcha atrás')
+    section.append(status, engineLabel, alarmLabel)
+    refreshVehicleSound = () => {
+      const occupied = runtime.occupiedVehicle ?? null
+      const show = vehicleGroupVisibility(occupied)
+      status.textContent = occupied
+        ? occupied.name + ' · el volumen del motor es el mismo de Configuración → Sonido'
+        : 'Entra en un vehículo para ajustar su sonido.'
+      engine.disabled = !occupied
+      alarm.disabled = !occupied
+      alarmLabel.hidden = !show.reverseAlarm
+      // Follow the mix without fighting a slider being dragged.
+      if (doc.activeElement !== engine) {
+        engine.value = String(Math.round((runtime.audioMix?.engine ?? 1) * 100))
+        engineValue.textContent = `${engine.value}%`
+      }
+      alarm.checked = runtime.reverseAlarmEnabled !== false
+    }
+    refreshVehicleSound()
     place(section)
   }
 
@@ -1339,7 +1388,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       tab: 'objects',
       id: 'current-vehicle',
       label: 'Vehículo actual',
-      sections: ['settings-options-driver', 'settings-car-beams', 'settings-truck-exhaust'],
+      sections: [...vehicleGroupSections],
     },
     {
       tab: 'dev',
@@ -1570,20 +1619,31 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const summary = group.querySelector('summary')
     const label = occupied?.name ?? 'Vehículo actual'
     if (summary && summary.textContent !== label) summary.textContent = label
-    const exhaust = group.querySelector<HTMLButtonElement>(
-      'button[data-section="settings-truck-exhaust"]',
-    )
-    if (!exhaust) return
-    const hide = !!occupied && !occupied.exhaust
-    exhaust.hidden = hide
-    exhaust.style.display = hide ? 'none' : ''
-    if (hide && sections.get('objects')?.active === 'settings-truck-exhaust')
-      chooseSection('objects', 'settings-car-beams')
+    const show = vehicleGroupVisibility(occupied)
+    // A section the vehicle cannot use disappears from the list; rows inside follow its options.
+    for (const id of vehicleGroupSections) {
+      const button = group.querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
+      if (!button) continue
+      const visible = show.sections[id]
+      button.hidden = !visible
+      button.style.display = visible ? '' : 'none'
+      if (!visible && sections.get('objects')?.active === id) {
+        const next = vehicleGroupSections.find((candidate) => show.sections[candidate])
+        if (next) chooseSection('objects', next)
+      }
+    }
+    const mirrorsGroup = doc.getElementById('scene-mirrors')
+    if (mirrorsGroup) mirrorsGroup.hidden = !show.mirrors
+    for (const row of doc.querySelectorAll<HTMLElement>('[data-exhaust-group]'))
+      row.hidden = !(row.dataset.exhaustGroup === 'amount'
+        ? show.exhaustAmount
+        : show.exhaustPosition)
   }
   const updateClock = () => {
     refreshVehicleGroup()
     refreshVehicleLights()
     refreshRearNudge()
+    refreshVehicleSound()
     if (runtime.skyClock)
       toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))
     if (!win.hidden && activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')

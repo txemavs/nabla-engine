@@ -43,6 +43,12 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     check(menuSection('road-style', 'Asfalto'), 'asphalt')
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
     check(menuSection('scene-vehicles', 'Vehículos'), 'vehicles')
+    // Bound by exhaust-ui.ts in the game; rows carry data-exhaust-group.
+    const exhaust = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
+    const exhaustRow = document.createElement('label')
+    exhaustRow.dataset.exhaustGroup = 'position'
+    exhaustRow.textContent = 'Escape posición'
+    exhaust.append(exhaustRow)
     const layer = { sky: true, sun: true, clouds: true, sea: true }
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
@@ -80,6 +86,21 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
         lamps: { front: true, rear: true },
         mirrors: true,
         exhaust: false,
+        options: {
+          lamps: { front: true, rear: true },
+          mirrors: true,
+          exhaust: null,
+          sound: { engine: true, reverseAlarm: false },
+        },
+      } as { name: string; options: object },
+      audioMix: { master: 1, engine: 0.5, music: 1, musicMuted: false },
+      setAudioMix: (patch: object) => {
+        Object.assign(runtime.audioMix, patch)
+        return runtime.audioMix
+      },
+      reverseAlarmEnabled: true,
+      setReverseAlarmEnabled: (enabled: boolean) => {
+        runtime.reverseAlarmEnabled = enabled
       },
       setVehicleLightAdjustment: (patch: object) => {
         Object.assign(runtime.vehicleLightAdjustment.values, patch)
@@ -146,6 +167,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
     localStorage.setItem('euskadi.irun-signs', JSON.stringify({ enabled: false }))
+    ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
     roll.value = '2'
@@ -373,6 +395,42 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     name: 'Luz trasera: arriba / abajo (m)',
     exact: true,
   })
+  // Sounds: the engine volume follows the mix; a motorcycle has no reversing alarm.
+  await page.getByRole('button', { name: 'Sonido', exact: true }).click()
+  const engineVolume = page.getByRole('slider', { name: 'Volumen del motor', exact: true })
+  await expect(engineVolume).toHaveValue('50')
+  await engineVolume.fill('80')
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { audioMix: { engine: number } } }).__rt.audioMix.engine,
+    ),
+  ).toBeCloseTo(0.8)
+  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeHidden()
+  // The exhaust section only exists for vehicles whose data adjusts it.
+  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeHidden()
+  // A vehicle with a reversing alarm and adjustable exhaust lists both.
+  await page.evaluate(() => {
+    const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
+    rt.occupiedVehicle.options = {
+      lamps: { front: false, rear: false },
+      mirrors: false,
+      exhaust: { position: true, amount: false, follows: 'load' },
+      sound: { engine: true, reverseAlarm: true },
+    }
+  })
+  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Luces', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
+    rt.occupiedVehicle.options = {
+      lamps: { front: true, rear: true },
+      mirrors: true,
+      exhaust: null,
+      sound: { engine: true, reverseAlarm: false },
+    }
+  })
+  await page.getByRole('button', { name: 'Luces', exact: true }).click()
   await rearHeight.fill('0.12')
   await page.getByRole('button', { name: 'Compartir ajustes de luces' }).click()
   const shared = page.getByRole('textbox', { name: 'Ajustes de luces para compartir' })

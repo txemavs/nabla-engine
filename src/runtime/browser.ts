@@ -33,6 +33,7 @@ import {
 import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
 import { XRMotorcycle } from './xr-motorcycle.js'
+import { vehicleOptions } from './vehicle-options.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
 import { XRLoadout } from './xr-loadout.js'
 import { XRGrab } from './xr-grab.js'
@@ -990,6 +991,7 @@ export class GameRuntime {
     this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
+    this.effects.reverseAlarmEnabled = browserStorage()?.getItem('nabla.reverseAlarm') !== '0'
     this.effects.audio.setEnabled(options.audio !== false)
     this.effects.audio.setMusic(options.music)
     if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
@@ -3227,6 +3229,24 @@ export class GameRuntime {
       lamps: this.view.vehicleLamps(id),
       mirrors: this.view.mirrorModel(id) !== undefined,
       exhaust: this.view.hasExhaust(id),
+      options: vehicleOptions(entity.vehicle, {
+        lamps: this.view.vehicleLamps(id),
+        mirrors: this.view.mirrorModel(id) !== undefined,
+        exhaust: this.view.hasExhaust(id),
+      }),
+    }
+  }
+  /** Whether a vehicle with a reversing alarm sounds it (the player's choice, saved). */
+  get reverseAlarmEnabled(): boolean {
+    return this.effects.reverseAlarmEnabled
+  }
+  setReverseAlarmEnabled(enabled: boolean): void {
+    this.assertAlive()
+    this.effects.reverseAlarmEnabled = enabled
+    try {
+      browserStorage()?.setItem('nabla.reverseAlarm', enabled ? '1' : '0')
+    } catch {
+      /* Optional storage. */
     }
   }
   /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */

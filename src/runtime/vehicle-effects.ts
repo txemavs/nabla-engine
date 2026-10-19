@@ -20,6 +20,8 @@ export class VehicleEffects {
   readonly audio: VehicleAudio
   private readonly ownsAudio: boolean
   private disposed = false
+  /** Player switch for the reversing alarm of vehicles that have one. */
+  reverseAlarmEnabled = true
   private shiftVehicleId: string | null = null
   private shiftCount = 0
   private gearChangeCount = 0
@@ -86,7 +88,12 @@ export class VehicleEffects {
       { turbo: sound.turbo, engine: sound.engine, braking: car?.braking ?? false },
     )
     this.audio.reverseAlarm(
-      !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),
+      !!(
+        this.reverseAlarmEnabled &&
+        piloted?.vehicle?.reverseAlarm &&
+        car?.reversing &&
+        car.helm !== 'off'
+      ),
     )
   }
 

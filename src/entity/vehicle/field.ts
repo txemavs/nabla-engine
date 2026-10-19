@@ -31,7 +31,7 @@ const lampColour = z.string().regex(/^#[0-9a-fA-F]{6}$/)
  * Outlets are the model's node tagged `extras.nabla.anchor = "exhaust"`, or `outlets` (chassis
  * model space, metres) when the model has none. `offset` nudges every outlet (chassis frame).
  * `smoke.amount` says what the smoke quantity follows: `load` (engine load), `rpm` (engine speed
- * and load), `manual` (the «Humo del camión» sliders) or `full` (constant, the default).
+ * and load), `manual` (the «Escape y humo» sliders) or `full` (constant, the default).
  * `adjustable` lets that panel move the outlets too.
  */
 export const vehicleExhaustField = z
