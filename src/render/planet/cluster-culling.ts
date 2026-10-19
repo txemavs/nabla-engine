@@ -71,15 +71,117 @@ function clusterOf(x: number, z: number, box: THREE.Box3, grid: number): number 
   return cz * grid + (cz % 2 === 0 ? cx : grid - 1 - cx)
 }
 
+/** Index arrays a tile geometry may use. */
+export type ClusterIndexArray = Uint8Array | Uint16Array | Uint32Array
+/** Any typed array a vertex attribute may hold. */
+export type ClusterAttributeArray = Exclude<THREE.TypedArray, BigInt64Array | BigUint64Array>
+
 /**
- * Reorder a geometry's triangles by cluster and return its cluster table. New index or attribute
- * arrays replace the old ones on the geometry (whose renderer buffers are disposed); arrays already shared elsewhere (collision, caches)
- * are never mutated. Returns undefined for geometries that are not plain triangle lists.
+ * Plain-array input of {@link computeTileClusters}: everything it reads, nothing from three.js, so
+ * the same function runs on the main thread or in a loading worker.
  */
-export function buildTileClusters(
+export interface TileClusterInput {
+  /** Vertex positions, packed xyz (already denormalized). */
+  positions: Float32Array | Float64Array
+  /** Index of an indexed geometry. */
+  index?: ClusterIndexArray
+  /** Every attribute of a non-indexed geometry (positions included), moved whole triangles at a time. */
+  attributes?: { name: string; array: ClusterAttributeArray; itemSize: number }[]
+  /** Geometry bounding box: min xyz, max xyz. */
+  box: [number, number, number, number, number, number]
+  grid: number
+}
+
+/** Result of {@link computeTileClusters}: the table plus the reordered arrays (new arrays, inputs untouched). */
+export interface TileClusterOutput {
+  clusters: TileClusters
+  index?: ClusterIndexArray
+  attributes?: { name: string; array: ClusterAttributeArray }[]
+}
+
+/** Reorder triangles by cluster. Pure: never mutates its input arrays. */
+export function computeTileClusters(input: TileClusterInput): TileClusterOutput {
+  const { positions, index, grid } = input
+  const box = new THREE.Box3(
+    new THREE.Vector3(input.box[0], input.box[1], input.box[2]),
+    new THREE.Vector3(input.box[3], input.box[4], input.box[5]),
+  )
+  const elements = index ? index.length : positions.length / 3
+  const triangles = Math.floor(elements / 3)
+  const clusters = grid * grid
+  const vertexOf = (corner: number) => (index ? index[corner] : corner)
+  const cluster = new Uint16Array(triangles)
+  const counts = new Uint32Array(clusters)
+  const bounds = new Float32Array(clusters * 6)
+  for (let c = 0; c < clusters; c++) {
+    bounds.set([Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity], c * 6)
+  }
+  for (let t = 0; t < triangles; t++) {
+    let x = 0,
+      z = 0
+    for (let k = 0; k < 3; k++) {
+      const v = vertexOf(t * 3 + k)
+      x += positions[v * 3]
+      z += positions[v * 3 + 2]
+    }
+    const c = clusterOf(x / 3, z / 3, box, grid)
+    cluster[t] = c
+    counts[c] += 3
+    const o = c * 6
+    for (let k = 0; k < 3; k++) {
+      const v = vertexOf(t * 3 + k)
+      const px = positions[v * 3],
+        py = positions[v * 3 + 1],
+        pz = positions[v * 3 + 2]
+      if (px < bounds[o]) bounds[o] = px
+      if (py < bounds[o + 1]) bounds[o + 1] = py
+      if (pz < bounds[o + 2]) bounds[o + 2] = pz
+      if (px > bounds[o + 3]) bounds[o + 3] = px
+      if (py > bounds[o + 4]) bounds[o + 4] = py
+      if (pz > bounds[o + 5]) bounds[o + 5] = pz
+    }
+  }
+  const starts = new Uint32Array(clusters)
+  for (let c = 1; c < clusters; c++) starts[c] = starts[c - 1] + counts[c - 1]
+  const cursor = starts.slice()
+  const table = { starts, counts, bounds, total: elements }
+  if (index) {
+    const reordered = new (index.constructor as Uint32ArrayConstructor)(elements)
+    for (let t = 0; t < triangles; t++) {
+      const at = cursor[cluster[t]]
+      reordered[at] = index[t * 3]
+      reordered[at + 1] = index[t * 3 + 1]
+      reordered[at + 2] = index[t * 3 + 2]
+      cursor[cluster[t]] += 3
+    }
+    return { clusters: table, index: reordered }
+  }
+  // Non-indexed triangle list: move whole triangles (all attributes) to their cluster's span.
+  const order = new Uint32Array(triangles)
+  for (let t = 0; t < triangles; t++) {
+    order[cursor[cluster[t]] / 3] = t
+    cursor[cluster[t]] += 3
+  }
+  const attributes = (input.attributes ?? []).map(({ name, array: from, itemSize: size }) => {
+    const to = new (from.constructor as Float32ArrayConstructor)(from.length)
+    for (let n = 0; n < triangles; n++) {
+      const t = order[n]
+      to.set(from.subarray(t * 3 * size, (t + 1) * 3 * size), n * 3 * size)
+    }
+    return { name, array: to as ClusterAttributeArray }
+  })
+  return { clusters: table, attributes }
+}
+
+/**
+ * Read a geometry into a {@link TileClusterInput}, or undefined when it is not a plain triangle
+ * list worth clustering. With `copy`, arrays are copies safe to transfer to a worker.
+ */
+export function tileClusterInput(
   geometry: THREE.BufferGeometry,
   grid = TILE_CLUSTER_GRID,
-): TileClusters | undefined {
+  copy = false,
+): TileClusterInput | undefined {
   const position = geometry.getAttribute('position') as THREE.BufferAttribute | undefined
   const interleaved = Object.values(geometry.attributes).some(
     (attribute) =>
@@ -92,77 +194,93 @@ export function buildTileClusters(
   if (triangles < TILE_CLUSTER_MIN_TRIANGLES || elements % 3 !== 0) return undefined
   if (geometry.groups.length > 1) return undefined
   if (!geometry.boundingBox) geometry.computeBoundingBox()
-  const box = geometry.boundingBox!
-  const clusters = grid * grid
-  const vertexOf = (corner: number) => (index ? index.getX(corner) : corner)
-  const cluster = new Uint16Array(triangles)
-  const counts = new Uint32Array(clusters)
-  const bounds = new Float32Array(clusters * 6)
-  for (let c = 0; c < clusters; c++) {
-    bounds.set([Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity], c * 6)
-  }
-  for (let t = 0; t < triangles; t++) {
-    let x = 0,
-      z = 0
-    for (let k = 0; k < 3; k++) {
-      const v = vertexOf(t * 3 + k)
-      x += position.getX(v)
-      z += position.getZ(v)
-    }
-    const c = clusterOf(x / 3, z / 3, box, grid)
-    cluster[t] = c
-    counts[c] += 3
-    const o = c * 6
-    for (let k = 0; k < 3; k++) {
-      const v = vertexOf(t * 3 + k)
-      const px = position.getX(v),
-        py = position.getY(v),
-        pz = position.getZ(v)
-      if (px < bounds[o]) bounds[o] = px
-      if (py < bounds[o + 1]) bounds[o + 1] = py
-      if (pz < bounds[o + 2]) bounds[o + 2] = pz
-      if (px > bounds[o + 3]) bounds[o + 3] = px
-      if (py > bounds[o + 4]) bounds[o + 4] = py
-      if (pz > bounds[o + 5]) bounds[o + 5] = pz
+  const b = geometry.boundingBox!
+  // Same values `position.getX/Y/Z` returns; the raw array when it already is packed xyz floats.
+  let positions: Float32Array | Float64Array
+  if (position.array instanceof Float32Array && position.itemSize === 3 && !position.normalized)
+    positions = copy ? position.array.slice() : position.array
+  else {
+    positions = new Float64Array(position.count * 3)
+    for (let v = 0; v < position.count; v++) {
+      positions[v * 3] = position.getX(v)
+      positions[v * 3 + 1] = position.getY(v)
+      positions[v * 3 + 2] = position.getZ(v)
     }
   }
-  // Free the renderer's copies of the old buffers now; otherwise they stay alive (GPU memory) until
-  // the tile is removed. The reordered buffers upload on the next draw.
+  const array = <T extends ClusterAttributeArray>(a: T): T => (copy ? (a.slice() as T) : a)
+  return {
+    positions,
+    ...(index
+      ? { index: array(index.array as ClusterIndexArray) }
+      : {
+          attributes: Object.entries(geometry.attributes).map(([name, attribute]) => ({
+            name,
+            array: array((attribute as THREE.BufferAttribute).array as ClusterAttributeArray),
+            itemSize: attribute.itemSize,
+          })),
+        }),
+    box: [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z],
+    grid,
+  }
+}
+
+/**
+ * Put the reordered arrays of a {@link computeTileClusters} result on the geometry. The renderer's
+ * copies of the old buffers are freed first (otherwise they stay in GPU memory until the tile is
+ * removed); the reordered buffers upload on the next draw. Normalization is kept per attribute.
+ */
+export function applyTileClusters(
+  geometry: THREE.BufferGeometry,
+  output: TileClusterOutput,
+): TileClusters {
   geometry.dispose()
-  const starts = new Uint32Array(clusters)
-  for (let c = 1; c < clusters; c++) starts[c] = starts[c - 1] + counts[c - 1]
-  const cursor = starts.slice()
-  if (index) {
-    const source = index.array
-    const reordered = new (source.constructor as Uint32ArrayConstructor)(elements)
-    for (let t = 0; t < triangles; t++) {
-      const at = cursor[cluster[t]]
-      reordered[at] = source[t * 3]
-      reordered[at + 1] = source[t * 3 + 1]
-      reordered[at + 2] = source[t * 3 + 2]
-      cursor[cluster[t]] += 3
-    }
-    geometry.setIndex(new THREE.BufferAttribute(reordered, 1))
-  } else {
-    // Non-indexed triangle list: move whole triangles (all attributes) to their cluster's span.
-    const order = new Uint32Array(triangles)
-    for (let t = 0; t < triangles; t++) {
-      order[cursor[cluster[t]] / 3] = t
-      cursor[cluster[t]] += 3
-    }
-    for (const [name, attribute] of Object.entries(geometry.attributes)) {
-      const source = attribute as THREE.BufferAttribute
-      const size = source.itemSize
-      const from = source.array
-      const to = new (from.constructor as Float32ArrayConstructor)(from.length)
-      for (let n = 0; n < triangles; n++) {
-        const t = order[n]
-        to.set(from.subarray(t * 3 * size, (t + 1) * 3 * size), n * 3 * size)
-      }
-      geometry.setAttribute(name, new THREE.BufferAttribute(to, size, source.normalized))
-    }
+  if (output.index) geometry.setIndex(new THREE.BufferAttribute(output.index, 1))
+  for (const { name, array } of output.attributes ?? []) {
+    const source = geometry.getAttribute(name) as THREE.BufferAttribute
+    geometry.setAttribute(
+      name,
+      new THREE.BufferAttribute(array, source.itemSize, source.normalized),
+    )
   }
-  return { starts, counts, bounds, total: elements }
+  return output.clusters
+}
+
+/**
+ * Reorder a geometry's triangles by cluster and return its cluster table. New index or attribute
+ * arrays replace the old ones on the geometry (whose renderer buffers are disposed); arrays already shared elsewhere (collision, caches)
+ * are never mutated. Returns undefined for geometries that are not plain triangle lists.
+ */
+export function buildTileClusters(
+  geometry: THREE.BufferGeometry,
+  grid = TILE_CLUSTER_GRID,
+): TileClusters | undefined {
+  const input = tileClusterInput(geometry, grid)
+  return input && applyTileClusters(geometry, computeTileClusters(input))
+}
+
+/** Runs {@link computeTileClusters} somewhere else (a loading worker). */
+export type TileClusterRunner = (input: TileClusterInput) => Promise<TileClusterOutput>
+
+/**
+ * {@link buildTileClusters} with the reorder done by `run` (a worker). The geometry is left alone when `keep()` is false or
+ * if its index or attributes changed while the job ran.
+ */
+export async function buildTileClustersWith(
+  geometry: THREE.BufferGeometry,
+  run: TileClusterRunner,
+  grid = TILE_CLUSTER_GRID,
+  keep: () => boolean = () => true,
+): Promise<TileClusters | undefined> {
+  const input = tileClusterInput(geometry, grid, true)
+  if (!input) return undefined
+  const index = geometry.index
+  const attributes = { ...geometry.attributes }
+  const output = await run(input)
+  const same =
+    geometry.index === index &&
+    Object.keys(attributes).length === Object.keys(geometry.attributes).length &&
+    Object.entries(attributes).every(([name, a]) => geometry.attributes[name] === a)
+  return same && keep() ? applyTileClusters(geometry, output) : undefined
 }
 
 const frustum = new THREE.Frustum()
@@ -207,6 +325,31 @@ export function installTileClusterCulling(mesh: THREE.Mesh): boolean {
   const clusters = buildTileClusters(mesh.geometry) ?? null
   tried.set(mesh, clusters)
   if (!clusters) return false
+  narrowPerCamera(mesh, clusters)
+  return true
+}
+
+/**
+ * {@link installTileClusterCulling} with the reorder done off the main thread by `run`. The mesh
+ * counts as tried right away (so it is not queued twice) and draws in full until the job lands.
+ */
+export async function installTileClusterCullingWith(
+  mesh: THREE.Mesh,
+  run: TileClusterRunner,
+): Promise<boolean> {
+  if (tried.has(mesh)) return !!tried.get(mesh)
+  tried.set(mesh, null)
+  const clusters =
+    (await buildTileClustersWith(mesh.geometry, run, TILE_CLUSTER_GRID, () => !!mesh.parent).catch(
+      () => undefined,
+    )) ?? null
+  tried.set(mesh, clusters)
+  if (!clusters) return false
+  narrowPerCamera(mesh, clusters)
+  return true
+}
+
+function narrowPerCamera(mesh: THREE.Mesh, clusters: TileClusters): void {
   const range = mesh.geometry.drawRange
   let saved: [number, number] | null = null
   const narrow = (camera: THREE.Camera) => {
@@ -258,7 +401,6 @@ export function installTileClusterCulling(mesh: THREE.Mesh): boolean {
     restore()
     afterShadow.call(this, renderer, object, camera, shadowCamera, geometry, material, group)
   }
-  return true
 }
 
 /** Planet tile meshes worth clustering: terrain, photo drapes and buildings. */
