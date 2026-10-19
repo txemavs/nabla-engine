@@ -14,6 +14,37 @@ import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
 
 /** Bounded one-hop ray transport: window barriers stop bodies, but gallery shots cross them. */
+/**
+ * Order raycast hits on hand-handled scenery for a shot: nearest first. Hits closer together than
+ * `tolerance` (coplanar or back-to-back plates a few millimetres apart, double-sided instanced
+ * batches) count as the same distance, and then the face turned to the shooter wins, so the plate
+ * the player sees takes the mark, sound and knock instead of the one behind it.
+ */
+export function orderSceneryHits(
+  hits: THREE.Intersection[],
+  direction: THREE.Vector3,
+  tolerance = 0.005,
+): THREE.Intersection[] {
+  const facing = (hit: THREE.Intersection) => {
+    if (!hit.face) return 1
+    const world = hit.object.matrixWorld.clone()
+    if (hit.instanceId !== undefined && hit.object instanceof THREE.InstancedMesh) {
+      const instance = new THREE.Matrix4()
+      hit.object.getMatrixAt(hit.instanceId, instance)
+      world.multiply(instance)
+    }
+    const normal = hit.face.normal.clone().transformDirection(world)
+    const material = (hit.object as THREE.Mesh).material
+    const side = Array.isArray(material) ? material[0]?.side : material?.side
+    // A BackSide hit is on the geometry's back face: its visible side faces the other way.
+    const dot = normal.dot(direction) * (side === THREE.BackSide ? -1 : 1)
+    return dot < 0 ? 0 : 1
+  }
+  return [...hits].sort((a, b) =>
+    Math.abs(a.distance - b.distance) > tolerance ? a.distance - b.distance : facing(a) - facing(b),
+  )
+}
+
 export function shotView(
   sim: Simulation,
   document: SceneDocument,
@@ -212,7 +243,10 @@ export class Gallery {
     view.root.traverseVisible((object) => {
       if (typeof object.userData.sceneryShot === 'function') scenery.push(object)
     })
-    for (const surface of sceneryRay.intersectObjects(scenery, false)) {
+    for (const surface of orderSceneryHits(
+      sceneryRay.intersectObjects(scenery, false),
+      ray.ray.direction,
+    )) {
       if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) {
         // Hand-handled scenery (instanced signs) rings as the mesh says, else as a sign.
         const kind = surface.object.userData.impactSurface

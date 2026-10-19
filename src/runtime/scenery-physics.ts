@@ -196,9 +196,18 @@ export class SceneryLayer {
 
   /**
    * Ask for a body for the pole `key` standing on `ground` at (`x`, `z`). Ignored when physics is
-   * off, the pole is outside the radius, or the layer is full.
+   * off, the pole is outside the radius, or the layer is full. `yaw` (radians, three.js Y
+   * rotation) turns the square collider to match the rendered post.
    */
-  add(key: string, x: number, ground: number, z: number, height: number, halfWidth?: number): void {
+  add(
+    key: string,
+    x: number,
+    ground: number,
+    z: number,
+    height: number,
+    halfWidth?: number,
+    yaw = 0,
+  ): void {
     const world = this.options.world
     if (!world && !this.owner.enabled) return
     const simulation = this.owner.bodies()
@@ -220,17 +229,30 @@ export class SceneryLayer {
       ? simulation!.createSceneryPole(center, height, this.options.movable, {
           half: [halfWidth ?? 0.09, height / 2, halfWidth ?? 0.09],
           solid: true,
+          ...(yaw ? { yaw } : {}),
           ...(this.options.surface ? { surface: this.options.surface } : {}),
         })
       : simulation!.createSceneryPole(
           center,
           height,
           this.options.movable,
-          this.options.surface ? { surface: this.options.surface } : undefined,
+          yaw || this.options.surface
+            ? {
+                ...(yaw ? { yaw } : {}),
+                ...(this.options.surface ? { surface: this.options.surface } : {}),
+              }
+            : undefined,
         )
     const saved = this.fallen.get(key)
+    // Layer matrices are in layer space: undo the body's rest pose (position and yaw) so only
+    // the motion since rest is applied to them.
     const base =
-      saved?.base ?? (world ? identity : new THREE.Matrix4().makeTranslation(-x, -center[1], -z))
+      saved?.base ??
+      (world
+        ? identity
+        : new THREE.Matrix4()
+            .makeRotationY(-yaw)
+            .multiply(new THREE.Matrix4().makeTranslation(-x, -center[1], -z)))
     if (saved) handle.restore(saved.pose.position, saved.pose.rotation)
     this.active.set(key, { handle, base })
   }

@@ -359,4 +359,31 @@ describe('world layer (lamp posts and tree trunks)', () => {
     trees.add('t', 1, 0, 1, 3)
     expect(lastShape()[3]).toEqual({ half: [0.09, 1.5, 0.09], solid: true })
   })
+
+  it('turns the collider with the post and keeps the layer matrices at rest', () => {
+    const { simulation, handles } = fakeSimulation()
+    const physics = new SceneryPhysics(() => simulation)
+    const signs = physics.layer('signs', { movable: true })
+    const yaw = Math.PI / 4
+    signs.begin()
+    signs.add('a', 1, 0, 2, 3, undefined, yaw)
+    signs.end()
+    expect(simulation.createSceneryPole).toHaveBeenCalledWith([1, 1.5, 2], 3, true, {
+      yaw,
+      surface: sceneryPhysicsDefaults.surface,
+    })
+    // The body rests at the yawed pose: transform() must leave the rendered post unchanged.
+    const pose = handles[0].pose()
+    pose.rotation = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
+      .toArray() as Pose['rotation']
+    const post = new THREE.Matrix4().compose(
+      new THREE.Vector3(1, 1.5, 2),
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw),
+      new THREE.Vector3(0.055, 3, 0.055),
+    )
+    const matrix = post.clone()
+    signs.transform('a', matrix)
+    matrix.elements.forEach((v, i) => expect(v).toBeCloseTo(post.elements[i], 6))
+  })
 })

@@ -294,12 +294,14 @@ export class Simulation {
   /**
    * Static or dynamic scenery pole. `shape.half` overrides the default box (a thin sign post);
    * `shape.solid` gives it the same surface as the planet's static colliders (trees, lamp posts).
+   * `shape.yaw` turns the box about the vertical axis (radians, three.js Y rotation) so a square
+   * post matches the orientation of the mesh it stands for.
    */
   createSceneryPole(
     position: Vec3Tuple,
     height: number,
     movable: boolean,
-    shape?: { half?: Vec3Tuple; solid?: boolean; surface?: ImpactSurface },
+    shape?: { half?: Vec3Tuple; solid?: boolean; surface?: ImpactSurface; yaw?: number },
   ) {
     if (
       this.disposed ||
@@ -318,6 +320,7 @@ export class Simulation {
       linearDamping: 0.15,
       angularDamping: 0.2,
     })
+    if (shape?.yaw) body.quaternion.setFromEuler(0, shape.yaw, 0)
     this.world.addBody(body)
     if (shape?.surface) this.bodySurfaces.set(body, shape.surface)
     body.preserveSleep = movable
