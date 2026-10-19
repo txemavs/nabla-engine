@@ -200,9 +200,27 @@ Explicit throws in this body:
 
 - `new Error('Invalid clock minute offset')`
 
+## shiftSkyClockKeepingRate
+
+[Implementation, line 103](../../../../src/planet/sky.ts#L103)
+
+`shiftSkyClockMinutes` that keeps a running speed: a clock at ×rate keeps running at that rate
+from the shifted instant (a clock at ×1 becomes fixed, like setting the time by hand).
+
+```ts
+shiftSkyClockKeepingRate(clock: SkyClock | undefined, minutes: number, now = Date.now()): SkyClock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Date.now`
+- `shiftSkyClockMinutes`
+- `skyClockAtRate`
+- `skyRate`
+
 ## atmosphere
 
-[Implementation, line 101](../../../../src/planet/sky.ts#L101)
+[Implementation, line 114](../../../../src/planet/sky.ts#L114)
 
 ```ts
 atmosphere(height: number, sunElevation: number, visibility = 220): inferred by TypeScript; see implementation
@@ -217,7 +235,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mapFogRange
 
-[Implementation, line 121](../../../../src/planet/sky.ts#L121)
+[Implementation, line 134](../../../../src/planet/sky.ts#L134)
 
 Camera distance. Altitude must not push the fade out.
 

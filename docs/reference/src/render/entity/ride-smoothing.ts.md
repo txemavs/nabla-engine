@@ -35,7 +35,7 @@ rideSmoothingClass(e: Pick<Entity, 'vehicle' | 'mass'>): RideSmoothingClass
 
 ## rideSmoothingSettings
 
-[Implementation, line 31](../../../../../src/render/entity/ride-smoothing.ts#L31)
+[Implementation, line 33](../../../../../src/render/entity/ride-smoothing.ts#L33)
 
 Settings for a vehicle: its class defaults, with `vehicle.rideSmoothing` as the strength.
 
@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Follower.snap
 
-[Implementation, line 48](../../../../../src/render/entity/ride-smoothing.ts#L48)
+[Implementation, line 50](../../../../../src/render/entity/ride-smoothing.ts#L50)
 
 Critically damped follower with target-velocity feed-forward for one scalar.
 
@@ -59,7 +59,7 @@ snap(target: number): void
 
 ## Follower.step
 
-[Implementation, line 52](../../../../../src/render/entity/ride-smoothing.ts#L52)
+[Implementation, line 54](../../../../../src/render/entity/ride-smoothing.ts#L54)
 
 Critically damped follower with target-velocity feed-forward for one scalar.
 
@@ -73,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Follower.clamp
 
-[Implementation, line 62](../../../../../src/render/entity/ride-smoothing.ts#L62)
+[Implementation, line 64](../../../../../src/render/entity/ride-smoothing.ts#L64)
 
 Keep the value within `limit` of the target; the rate follows the target when it binds.
 
@@ -89,7 +89,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Follower.place
 
-[Implementation, line 68](../../../../../src/render/entity/ride-smoothing.ts#L68)
+[Implementation, line 70](../../../../../src/render/entity/ride-smoothing.ts#L70)
 
 Put the value at `value`, moving with the target (no extra rate of its own).
 
@@ -99,7 +99,7 @@ place(value: number): void
 
 ## RideSmoothing.update
 
-[Implementation, line 91](../../../../../src/render/entity/ride-smoothing.ts#L91)
+[Implementation, line 93](../../../../../src/render/entity/ride-smoothing.ts#L93)
 
 Advance with the vehicle's interpolated pose. `bypass` (crash, rollover, fallen bike) or a
 zero strength follows the real pose exactly and restarts the filter.
@@ -138,12 +138,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.fromArray`
 - `this.up.forEach`
 
-## RideSmoothing.update.callback@116
+## RideSmoothing.update.callback@118
 
-[Implementation, line 116](../../../../../src/render/entity/ride-smoothing.ts#L116)
+[Implementation, line 118](../../../../../src/render/entity/ride-smoothing.ts#L118)
 
 ```ts
-callback@116(f, i): inferred by TypeScript; see implementation
+callback@118(f, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -151,12 +151,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bodyUp.getComponent`
 - `f.snap`
 
-## RideSmoothing.update.callback@125
+## RideSmoothing.update.callback@127
 
-[Implementation, line 125](../../../../../src/render/entity/ride-smoothing.ts#L125)
+[Implementation, line 127](../../../../../src/render/entity/ride-smoothing.ts#L127)
 
 ```ts
-callback@125(f, i): inferred by TypeScript; see implementation
+callback@127(f, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -164,12 +164,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bodyUp.getComponent`
 - `f.step`
 
-## RideSmoothing.update.callback@136
+## RideSmoothing.update.callback@138
 
-[Implementation, line 136](../../../../../src/render/entity/ride-smoothing.ts#L136)
+[Implementation, line 138](../../../../../src/render/entity/ride-smoothing.ts#L138)
 
 ```ts
-callback@136(f, i): inferred by TypeScript; see implementation
+callback@138(f, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -179,7 +179,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RideSmoothing.offset
 
-[Implementation, line 145](../../../../../src/render/entity/ride-smoothing.ts#L145)
+[Implementation, line 147](../../../../../src/render/entity/ride-smoothing.ts#L147)
 
 Smoothed-minus-real vehicle position for `id` (zero when it is not the one smoothed).
 
@@ -195,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RideSmoothing.apply
 
-[Implementation, line 153](../../../../../src/render/entity/ride-smoothing.ts#L153)
+[Implementation, line 155](../../../../../src/render/entity/ride-smoothing.ts#L155)
 
 Move a world pose rigidly attached to the real vehicle `id` (the driver's eye, the seated
 avatar) onto the smoothed vehicle, in place. Returns false (pose untouched) for any other id.
@@ -213,7 +213,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RideSmoothing.reset
 
-[Implementation, line 160](../../../../../src/render/entity/ride-smoothing.ts#L160)
+[Implementation, line 162](../../../../../src/render/entity/ride-smoothing.ts#L162)
 
 Ride smoothing of the player's vehicle (one at a time).
 

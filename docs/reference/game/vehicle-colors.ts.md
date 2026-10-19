@@ -8,12 +8,14 @@
 
 - `@nabla/engine/scene`
 - `@nabla/engine/config/vehicle-appearance`
+- `@nabla/engine/vehicles`
 
 ## assignVehicleColor
 
-[Implementation, line 5](../../../game/vehicle-colors.ts#L5)
+[Implementation, line 9](../../../game/vehicle-colors.ts#L9)
 
-Choose once when creating a car or motorcycle; rendering only reads the saved colour.
+Choose once when creating a vehicle whose data names a paint palette
+(`vehicle.colorPalette`: `car` or `motorcycle`); rendering only reads the saved colour.
 
 ```ts
 assignVehicleColor(entity: Entity, random: () => number = Math.random): void
@@ -25,3 +27,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `random`
+
+## sceneHasPresetModel
+
+[Implementation, line 26](../../../game/vehicle-colors.ts#L26)
+
+Whether the scene already holds a vehicle of the model a preset would add (same body GLB), so
+a demo vehicle is not added twice. Decided by the model, never by the vehicle class.
+
+```ts
+sceneHasPresetModel(entities: readonly Entity[], presetId: string): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entities.some`
+- `presetEntities`
+
+## sceneHasPresetModel.callback@28
+
+[Implementation, line 28](../../../game/vehicle-colors.ts#L28)
+
+```ts
+callback@28(entity): inferred by TypeScript; see implementation
+```

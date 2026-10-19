@@ -34,9 +34,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `Object.keys`
 
+## nudgeRearLight
+
+[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-tuning.ts#L44)
+
+`values` with `key` moved by `delta` (metres, or × for intensity and reach), clamped and rounded to 1 mm.
+
+```ts
+nudgeRearLight(values: Partial<VehicleLightTuning>, key: (typeof rearLightKeys)[number], delta: number): VehicleLightTuning
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+- `normalizeVehicleLights`
+
+## rearLightJson
+
+[Implementation, line 53](../../../../../src/render/vehicle-presentation/light-tuning.ts#L53)
+
+The `vehicle.lights.tuning` fragment of the vehicle JSON for the current rear-lamp values.
+
+```ts
+rearLightJson(values: Partial<VehicleLightTuning>): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `JSON.stringify`
+- `Object.fromEntries`
+- `normalizeVehicleLights`
+- `rearLightKeys.map`
+
+## rearLightJson.callback@55
+
+[Implementation, line 55](../../../../../src/render/vehicle-presentation/light-tuning.ts#L55)
+
+```ts
+callback@55(key): inferred by TypeScript; see implementation
+```
+
 ## readVehicleLights
 
-[Implementation, line 36](../../../../../src/render/vehicle-presentation/light-tuning.ts#L36)
+[Implementation, line 59](../../../../../src/render/vehicle-presentation/light-tuning.ts#L59)
 
 Calibration of a model: engine defaults, then the vehicle's own defaults, then the saved choice.
 
@@ -56,7 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## writeVehicleLights
 
-[Implementation, line 52](../../../../../src/render/vehicle-presentation/light-tuning.ts#L52)
+[Implementation, line 75](../../../../../src/render/vehicle-presentation/light-tuning.ts#L75)
 
 Saves a patch for the model, or without one clears the saved choice back to the defaults.
 

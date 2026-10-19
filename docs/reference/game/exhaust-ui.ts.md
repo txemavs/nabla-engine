@@ -8,61 +8,67 @@
 
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
-- `./entry.js`
 
 ## bindExhaustControls
 
-[Implementation, line 6](../../../game/exhaust-ui.ts#L6)
+[Implementation, line 9](../../../game/exhaust-ui.ts#L9)
 
-Temporary live controls for truck exhaust position and quantity.
+Live controls for the exhaust of vehicles whose data lets the player adjust it
+(`vehicle.exhaust.adjustable`: outlet position; `smoke.amount: "manual"`: quantity). The rows
+are tagged `data-exhaust-group` so the settings can show only those that apply.
 
 ```ts
-bindExhaustControls(runtime: Pick< GameRuntime, 'truckExhaustOffset' | 'setTruckExhaustOffset' | 'truckExhaustAmount' | 'setTruckExhaustAmount' >): void
+bindExhaustControls(runtime: Pick< GameRuntime, | 'truckExhaustOffset' | 'setTruckExhaustOffset' | 'truckExhaustAmount' | 'setTruckExhaustAmount' | 'occupiedVehicle' | 'occupiedVehiclePreferences' | 'setVehiclePreferences' >): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Array.isArray`
-- `JSON.parse`
-- `Number`
-- `Number.isFinite`
 - `amountLabel.append`
 - `amountOutput.htmlFor.add`
 - `amountSlider.addEventListener`
-- `browserStorage`
 - `document.createElement`
+- `followModel`
 - `group.append`
 - `label.append`
 - `menuSection`
 - `output.htmlFor.add`
-- `refresh`
 - `reset.addEventListener`
 - `rows.push`
-- `runtime.setTruckExhaustAmount`
-- `runtime.setTruckExhaustOffset`
-- `saved.every`
+- `setInterval`
 - `slider.addEventListener`
-- `storage?.getItem`
 
-## bindExhaustControls.callback@32
+## bindExhaustControls.followModel
 
-[Implementation, line 32](../../../game/exhaust-ui.ts#L32)
+[Implementation, line 25](../../../game/exhaust-ui.ts#L25)
 
 ```ts
-callback@32(): inferred by TypeScript; see implementation
+followModel(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `refresh`
+- `runtime.setTruckExhaustAmount`
+- `runtime.setTruckExhaustOffset`
+
+## bindExhaustControls.callback@43
+
+[Implementation, line 43](../../../game/exhaust-ui.ts#L43)
+
+```ts
+callback@43(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number`
-- `String`
 - `refresh`
 - `runtime.setTruckExhaustAmount`
-- `storage?.setItem`
+- `runtime.setVehiclePreferences`
 
 ## bindExhaustControls.refresh
 
-[Implementation, line 51](../../../game/exhaust-ui.ts#L51)
+[Implementation, line 52](../../../game/exhaust-ui.ts#L52)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -74,12 +80,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `runtime.truckExhaustOffset.forEach`
 
-## bindExhaustControls.refresh.callback@54
+## bindExhaustControls.refresh.callback@55
 
-[Implementation, line 54](../../../game/exhaust-ui.ts#L54)
+[Implementation, line 55](../../../game/exhaust-ui.ts#L55)
 
 ```ts
-callback@54(value, i): inferred by TypeScript; see implementation
+callback@55(value, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,28 +93,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.round`
 - `String`
 
-## bindExhaustControls.callback@73
+## bindExhaustControls.callback@74
 
-[Implementation, line 73](../../../game/exhaust-ui.ts#L73)
+[Implementation, line 74](../../../game/exhaust-ui.ts#L74)
 
 ```ts
-callback@73(): inferred by TypeScript; see implementation
+callback@74(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `JSON.stringify`
 - `Number`
 - `refresh`
 - `runtime.setTruckExhaustOffset`
-- `storage?.setItem`
+- `runtime.setVehiclePreferences`
 
-## bindExhaustControls.callback@91
+## bindExhaustControls.callback@89
 
-[Implementation, line 91](../../../game/exhaust-ui.ts#L91)
+[Implementation, line 89](../../../game/exhaust-ui.ts#L89)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@89(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -116,4 +121,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime.setTruckExhaustAmount`
 - `runtime.setTruckExhaustOffset`
-- `storage?.setItem`
+- `runtime.setVehiclePreferences`

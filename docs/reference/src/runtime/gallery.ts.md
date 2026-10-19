@@ -7,18 +7,69 @@
 ## Module dependencies
 
 - `three`
+- `../config/gameplay-tuning.js`
 - `./messages.js`
 - `../entity/schema.js`
+- `../config/impact-sounds.js`
 - `../scene/document.js`
 - `../entity/portal/portal.js`
 - `../simulation/simulation.js`
 - `../render/entity/view.js`
 
-## shotView
+## orderSceneryHits
 
-[Implementation, line 10](../../../../src/runtime/gallery.ts#L10)
+[Implementation, line 23](../../../../src/runtime/gallery.ts#L23)
 
 Bounded one-hop ray transport: window barriers stop bodies, but gallery shots cross them.
+
+Order raycast hits on hand-handled scenery for a shot: nearest first. Hits closer together than
+`tolerance` (coplanar or back-to-back plates a few millimetres apart, double-sided instanced
+batches) count as the same distance, and then the face turned to the shooter wins, so the plate
+the player sees takes the mark, sound and knock instead of the one behind it.
+
+```ts
+orderSceneryHits(hits: THREE.Intersection[], direction: THREE.Vector3, tolerance = 0.005): THREE.Intersection[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `[...hits].sort`
+
+## orderSceneryHits.facing
+
+[Implementation, line 28](../../../../src/runtime/gallery.ts#L28)
+
+```ts
+facing(hit: THREE.Intersection): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.isArray`
+- `THREE.Matrix4`
+- `hit.face.normal.clone`
+- `hit.face.normal.clone().transformDirection`
+- `hit.object.getMatrixAt`
+- `hit.object.matrixWorld.clone`
+- `normal.dot`
+- `world.multiply`
+
+## orderSceneryHits.callback@43
+
+[Implementation, line 43](../../../../src/runtime/gallery.ts#L43)
+
+```ts
+callback@43(a, b): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `facing`
+
+## shotView
+
+[Implementation, line 48](../../../../src/runtime/gallery.ts#L48)
 
 ```ts
 shotView(sim: Simulation, document: SceneDocument, camera: THREE.PerspectiveCamera, range = 150): { camera: THREE.PerspectiveCamera; range: number; throughPortal: boolean }
@@ -54,25 +105,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.portalState`
 - `sim.shoot`
 
-## shotView.callback@20
+## shotView.callback@58
 
-[Implementation, line 20](../../../../src/runtime/gallery.ts#L20)
+[Implementation, line 58](../../../../src/runtime/gallery.ts#L58)
 
 ```ts
-callback@20(e): inferred by TypeScript; see implementation
+callback@58(e): inferred by TypeScript; see implementation
 ```
 
-## shotView.callback@53
+## shotView.callback@91
 
-[Implementation, line 53](../../../../src/runtime/gallery.ts#L53)
+[Implementation, line 91](../../../../src/runtime/gallery.ts#L91)
 
 ```ts
-callback@53(e): inferred by TypeScript; see implementation
+callback@91(e): inferred by TypeScript; see implementation
 ```
 
 ## Gallery.constructor
 
-[Implementation, line 77](../../../../src/runtime/gallery.ts#L77)
+[Implementation, line 118](../../../../src/runtime/gallery.ts#L118)
 
 ```ts
 constructor(viewport: HTMLElement, private readonly text: RuntimeText = createRuntimeText()): instance
@@ -86,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.dispose
 
-[Implementation, line 98](../../../../src/runtime/gallery.ts#L98)
+[Implementation, line 139](../../../../src/runtime/gallery.ts#L139)
 
 ```ts
 dispose(): void
@@ -99,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.reset
 
-[Implementation, line 102](../../../../src/runtime/gallery.ts#L102)
+[Implementation, line 143](../../../../src/runtime/gallery.ts#L143)
 
 ```ts
 reset(): void
@@ -111,7 +162,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.update
 
-[Implementation, line 110](../../../../src/runtime/gallery.ts#L110)
+[Implementation, line 151](../../../../src/runtime/gallery.ts#L151)
 
 ```ts
 update(view: SceneView, playing: boolean, dt: number): void
@@ -127,20 +178,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.text`
 - `view.document.entities.filter`
 
-## Gallery.update.callback@111
+## Gallery.update.callback@152
 
-[Implementation, line 111](../../../../src/runtime/gallery.ts#L111)
+[Implementation, line 152](../../../../src/runtime/gallery.ts#L152)
 
 ```ts
-callback@111(e): inferred by TypeScript; see implementation
+callback@152(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.update.callback@116
+## Gallery.update.callback@157
 
-[Implementation, line 116](../../../../src/runtime/gallery.ts#L116)
+[Implementation, line 157](../../../../src/runtime/gallery.ts#L157)
 
 ```ts
-callback@116(e, i): inferred by TypeScript; see implementation
+callback@157(e, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -151,7 +202,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Gallery.shoot
 
-[Implementation, line 130](../../../../src/runtime/gallery.ts#L130)
+[Implementation, line 171](../../../../src/runtime/gallery.ts#L171)
 
 ```ts
 shoot(sim: Simulation, view: SceneView, camera: THREE.PerspectiveCamera, range = 150, impulse = 12, damage = 0): boolean
@@ -167,12 +218,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `foreground.setFromCamera`
 - `glassPoint.clone`
 - `glassPoint.clone().sub`
+- `isImpactSurface`
 - `new THREE.Matrix3().getNormalMatrix`
 - `normal.dot`
 - `normal.negate`
 - `normal.toArray`
 - `object.updateWorldMatrix`
+- `orderSceneryHits`
 - `point.toArray`
+- `popped.point.toArray`
 - `ray.ray.direction.clone`
 - `ray.ray.direction.toArray`
 - `ray.ray.origin.clone`
@@ -182,6 +236,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `ray.setFromCamera`
 - `sceneryRay.intersectObjects`
 - `shotView`
+- `sim.blast`
 - `sim.damageVehicle`
 - `sim.entityTransform`
 - `sim.shoot`
@@ -189,9 +244,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `skinRay.intersectObject`
 - `skinRay.intersectObject(object, true).find`
 - `surface.object.userData.sceneryShot`
+- `surface.point.clone`
+- `surface.point.clone().sub`
+- `surface.point.clone().sub(view.root.position).toArray`
 - `this.respawn.set`
 - `view.brokenGlass.hit`
 - `view.destruction.balloons.hit`
+- `view.destruction.balloons.shoot`
+- `view.destruction.burst`
 - `view.destruction.glass`
 - `view.document.entities.find`
 - `view.document.entities.some`
@@ -202,82 +262,82 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.objects.get`
 - `view.root.traverseVisible`
 
-## Gallery.shoot.callback@156
+## Gallery.shoot.callback@198
 
-[Implementation, line 156](../../../../src/runtime/gallery.ts#L156)
+[Implementation, line 198](../../../../src/runtime/gallery.ts#L198)
 
 ```ts
-callback@156(e): inferred by TypeScript; see implementation
+callback@198(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@159
+## Gallery.shoot.callback@201
 
-[Implementation, line 159](../../../../src/runtime/gallery.ts#L159)
+[Implementation, line 201](../../../../src/runtime/gallery.ts#L201)
 
 ```ts
-callback@159(e): inferred by TypeScript; see implementation
+callback@201(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@167
+## Gallery.shoot.callback@209
 
-[Implementation, line 167](../../../../src/runtime/gallery.ts#L167)
+[Implementation, line 209](../../../../src/runtime/gallery.ts#L209)
 
 ```ts
-callback@167(e): inferred by TypeScript; see implementation
+callback@209(e): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@188
+## Gallery.shoot.callback@243
 
-[Implementation, line 188](../../../../src/runtime/gallery.ts#L188)
+[Implementation, line 243](../../../../src/runtime/gallery.ts#L243)
 
 ```ts
-callback@188(object): inferred by TypeScript; see implementation
+callback@243(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `scenery.push`
 
-## Gallery.shoot.callback@196
+## Gallery.shoot.callback@264
 
-[Implementation, line 196](../../../../src/runtime/gallery.ts#L196)
+[Implementation, line 264](../../../../src/runtime/gallery.ts#L264)
 
 ```ts
-callback@196(entity): inferred by TypeScript; see implementation
+callback@264(entity): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@197
+## Gallery.shoot.callback@265
 
-[Implementation, line 197](../../../../src/runtime/gallery.ts#L197)
+[Implementation, line 265](../../../../src/runtime/gallery.ts#L265)
 
 ```ts
-callback@197(entity): inferred by TypeScript; see implementation
+callback@265(entity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `view.objects.get`
 
-## Gallery.shoot.callback@198
+## Gallery.shoot.callback@266
 
-[Implementation, line 198](../../../../src/runtime/gallery.ts#L198)
+[Implementation, line 266](../../../../src/runtime/gallery.ts#L266)
 
 ```ts
-callback@198(object): object is THREE.Group
+callback@266(object): object is THREE.Group
 ```
 
-## Gallery.shoot.callback@225
+## Gallery.shoot.callback@294
 
-[Implementation, line 225](../../../../src/runtime/gallery.ts#L225)
+[Implementation, line 294](../../../../src/runtime/gallery.ts#L294)
 
 ```ts
-callback@225(entity): inferred by TypeScript; see implementation
+callback@294(entity): inferred by TypeScript; see implementation
 ```
 
-## Gallery.shoot.callback@238
+## Gallery.shoot.callback@308
 
-[Implementation, line 238](../../../../src/runtime/gallery.ts#L238)
+[Implementation, line 308](../../../../src/runtime/gallery.ts#L308)
 
 ```ts
-callback@238(candidate): inferred by TypeScript; see implementation
+callback@308(candidate): inferred by TypeScript; see implementation
 ```

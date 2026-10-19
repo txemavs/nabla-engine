@@ -243,7 +243,7 @@ Explicit throws in this body:
 
 ## bindMotorcycleRig.update
 
-[Implementation, line 227](../../../../../src/render/vehicle-presentation/motorcycle-rig.ts#L227)
+[Implementation, line 230](../../../../../src/render/vehicle-presentation/motorcycle-rig.ts#L230)
 
 ```ts
 update(pose: MotorcyclePose = {}): MotorcycleRigState
@@ -254,7 +254,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `Math.asin`
 - `Number.isFinite`
-- `Quaternion`
 - `arm.quaternion.copy`
 - `arm.quaternion.copy(turn.setFromAxisAngle(axisMinusX, theta)).multiply`
 - `b.sub`
@@ -263,15 +262,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `clamp`
 - `front.quaternion.copy`
 - `front.quaternion.copy(spin.setFromAxisAngle(axisX, frontRoll)).multiply`
-- `lower.clone`
-- `lower.clone().sub`
-- `lower.clone().sub(top).normalize`
 - `lower.distanceTo`
-- `lowerOnArm.clone`
-- `lowerOnArm.clone().applyQuaternion`
-- `lowerOnArm.clone().applyQuaternion(arm.quaternion).add`
 - `moved.applyMatrix4`
-- `new Quaternion().setFromUnitVectors`
 - `rear.quaternion.copy`
 - `rear.quaternion.copy(spin.setFromAxisAngle(axisX, rearRoll)).multiply`
 - `rest.rearPosition.clone`
@@ -280,6 +272,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `restHubParent.clone`
 - `restHubParent.clone().applyMatrix4`
 - `root.updateMatrixWorld`
+- `scratchLower.copy`
+- `scratchLower.copy(lowerOnArm).applyQuaternion`
+- `scratchLower.copy(lowerOnArm).applyQuaternion(arm.quaternion).add`
+- `scratchShock.copy`
+- `scratchShock.copy(lower).sub`
+- `scratchShock.copy(lower).sub(top).normalize`
+- `scratchSwing.setFromUnitVectors`
 - `shockBody.quaternion.copy`
 - `shockBody.quaternion.copy(swing).multiply`
 - `shockRod.position.copy`
@@ -299,7 +298,7 @@ Explicit throws in this body:
 
 ## bindMotorcycleRig.dispose
 
-[Implementation, line 278](../../../../../src/render/vehicle-presentation/motorcycle-rig.ts#L278)
+[Implementation, line 284](../../../../../src/render/vehicle-presentation/motorcycle-rig.ts#L284)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation

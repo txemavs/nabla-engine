@@ -12,12 +12,23 @@
 - `../render/entity/tire-marks.js`
 - `../render/entity/tire-smoke.js`
 - `../scene/document.js`
+- `../entity/schema.js`
 - `../simulation/simulation.js`
 - `../simulation/vehicles/wheeled/contracts.js`
 
+## VehicleEffects.reverseAlarmEnabled
+
+[Implementation, line 25](../../../../src/runtime/vehicle-effects.ts#L25)
+
+Player switch for the reversing alarm of vehicles that have one (per model, by the host).
+
+```ts
+reverseAlarmEnabled(): inferred by TypeScript; see implementation
+```
+
 ## VehicleEffects.constructor
 
-[Implementation, line 27](../../../../src/runtime/vehicle-effects.ts#L27)
+[Implementation, line 31](../../../../src/runtime/vehicle-effects.ts#L31)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -32,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleEffects.updateAudio
 
-[Implementation, line 33](../../../../src/runtime/vehicle-effects.ts#L33)
+[Implementation, line 37](../../../../src/runtime/vehicle-effects.ts#L37)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -43,7 +54,6 @@ updateAudio(sim: Simulation | null, document: SceneDocument, eye: Vector3, world
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
-- `Vector3`
 - `document.entities.find`
 - `eye.distanceTo`
 - `resolveVehicleSound`
@@ -60,34 +70,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.audio.setVehiclePosition`
 - `this.audio.turbine`
 - `this.playGearChanges`
+- `this.reverseAlarmEnabled`
+- `this.turbineScratch.fromArray`
 
-## VehicleEffects.updateAudio.callback@46
+## VehicleEffects.updateAudio.callback@50
 
-[Implementation, line 46](../../../../src/runtime/vehicle-effects.ts#L46)
+[Implementation, line 50](../../../../src/runtime/vehicle-effects.ts#L50)
 
 ```ts
-callback@46(v): inferred by TypeScript; see implementation
+callback@50(v): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateAudio.callback@62
+## VehicleEffects.updateAudio.callback@66
 
-[Implementation, line 62](../../../../src/runtime/vehicle-effects.ts#L62)
+[Implementation, line 66](../../../../src/runtime/vehicle-effects.ts#L66)
 
 ```ts
-callback@62(v): inferred by TypeScript; see implementation
+callback@66(v): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateAudio.callback@64
+## VehicleEffects.updateAudio.callback@68
 
-[Implementation, line 64](../../../../src/runtime/vehicle-effects.ts#L64)
+[Implementation, line 68](../../../../src/runtime/vehicle-effects.ts#L68)
 
 ```ts
-callback@64(entity): inferred by TypeScript; see implementation
+callback@68(entity): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.playGearChanges
 
-[Implementation, line 99](../../../../src/runtime/vehicle-effects.ts#L99)
+[Implementation, line 108](../../../../src/runtime/vehicle-effects.ts#L108)
 
 Gear-change sound per the vehicle's `audio.gearShift`. `clack` (default): one clack per
 audible change (D/R engagement or manual shift, never an automatic shift). `click`: one
@@ -105,7 +117,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleEffects.updateTires
 
-[Implementation, line 127](../../../../src/runtime/vehicle-effects.ts#L127)
+[Implementation, line 136](../../../../src/runtime/vehicle-effects.ts#L136)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 
@@ -127,33 +139,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.smoke.clear`
 - `this.smoke.update`
 
-## VehicleEffects.updateTires.callback@135
+## VehicleEffects.updateTires.callback@144
 
-[Implementation, line 135](../../../../src/runtime/vehicle-effects.ts#L135)
+[Implementation, line 144](../../../../src/runtime/vehicle-effects.ts#L144)
 
 ```ts
-callback@135(wheel): inferred by TypeScript; see implementation
+callback@144(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@139
+## VehicleEffects.updateTires.callback@148
 
-[Implementation, line 139](../../../../src/runtime/vehicle-effects.ts#L139)
+[Implementation, line 148](../../../../src/runtime/vehicle-effects.ts#L148)
 
 ```ts
-callback@139(wheel): inferred by TypeScript; see implementation
+callback@148(wheel): inferred by TypeScript; see implementation
 ```
 
-## VehicleEffects.updateTires.callback@140
+## VehicleEffects.updateTires.callback@149
 
-[Implementation, line 140](../../../../src/runtime/vehicle-effects.ts#L140)
+[Implementation, line 149](../../../../src/runtime/vehicle-effects.ts#L149)
 
 ```ts
-callback@140(wheel): inferred by TypeScript; see implementation
+callback@149(wheel): inferred by TypeScript; see implementation
 ```
 
 ## VehicleEffects.dispose
 
-[Implementation, line 150](../../../../src/runtime/vehicle-effects.ts#L150)
+[Implementation, line 159](../../../../src/runtime/vehicle-effects.ts#L159)
 
 Shared audio/effects orchestration. Supplied audio remains owned by the host.
 

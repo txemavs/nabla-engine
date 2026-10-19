@@ -6,47 +6,7 @@
 
 ## Module dependencies
 
-- `./session.js`
-- `./game.js`
-- `./placement.js`
-- `./frame-loop.js`
-- `./resolution-scale.js`
-- `./splash.js`
-- `./messages.js`
-- `./hud.js`
-- `../diagnostics/wheel-debug.js`
-- `./vehicle-effects.js`
-- `./game-camera.js`
-- `./start-cameras.js`
-- `./input.js`
-- `./ground.js`
-- `./presentation-warmup.js`
-- `./vehicle-monitors.js`
-- `./helm-touch.js`
-- `./vehicle-menu.js`
-- `./steering-wheel-offsets.js`
-- `./mirror-adjustment.js`
-- `./touch-driving.js`
-- `./control-profiles.js`
-- `./touch-flight.js`
-- `./touch-walk.js`
-- `./scenery-physics.js`
-- `../config/scenery-physics.js`
-- `./streaming.js`
-- `./sidearm.js`
-- `./gallery.js`
-- `./shooting.js`
-- `../examples/gallery.js`
-- `../catalog/placeables.js`
-- `./render-pipeline.js`
-- `./performance.js`
-- `./water.js`
-- `./field-lighting.js`
-- `../render/entity/field-lights.js`
-- `./world-content.js`
-- `../render/portal/remote.js`
-- `../config/camera.js`
-- `./planet-settings-panel.js`
+- `./core.js`
 - `./xr.js`
 - `./xr-input.js`
 - `./xr-session.js`
@@ -55,12 +15,5 @@
 - `./xr-rc-controls.js`
 - `./xr-room-physics.js`
 - `./xr-object-grab.js`
-- `../config/input-bindings.js`
-- `./usb/controllers.js`
-- `./usb/settings-panel.js`
-- `./usb/feedback.js`
-- `./usb/wizard.js`
-- `./usb/wizard-panel.js`
-- `./settings-backup.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.
