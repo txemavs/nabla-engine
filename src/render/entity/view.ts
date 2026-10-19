@@ -1,4 +1,5 @@
 import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
+import { isWebGPU } from '../backend.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
   VehiclePresentationResolver,
@@ -2038,6 +2039,9 @@ export class SceneView {
       renderer.domElement.dataset.mirrorActive = 'false'
       return
     }
+    // Live mirrors use the WebGL-only `Reflector` addon: under WebGPU every car keeps its
+    // authored glass (no capture) until the mirrors are ported to the TSL reflector node.
+    if (isWebGPU(renderer)) vehicleId = null
     // Inactive cars are processed first so diagnostics describe the occupied car.
     for (const [id, mirrors] of [...this.carMirrors].sort(
       ([a], [b]) => Number(a === vehicleId) - Number(b === vehicleId),

@@ -1,12 +1,12 @@
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
-import { showControlHints } from './control-hints.js'
 import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR, preloadVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime/core'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
+import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
 import {
   createFlatTestScene,
   createFlatTestGround,
@@ -25,12 +25,18 @@ import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
+import { fpsReadout } from './fps-readout.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
-import { parseLayerSpec, setHiddenTileLayers } from '@nabla/engine/render'
+import {
+  parseLayerSpec,
+  setHiddenTileLayers,
+  setTileClusterCulling,
+  parseClusterCulling,
+} from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
@@ -217,11 +223,25 @@ try {
   setHiddenTileLayers(
     parseLayerSpec(new URLSearchParams(location.search).get('layers'), bootHiddenLayers(boot)),
   )
+  // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
+  setTileClusterCulling(parseClusterCulling(location.search))
   const loading = new LoadingScreen(boot.splash)
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
+  // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
+  const rendererPreference = parseRendererPreference(location.search)
+  const backend =
+    rendererPreference === 'webgl'
+      ? undefined
+      : await createRenderBackend(rendererPreference, {
+          canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+          antialias: true,
+          alpha: true,
+          logarithmicDepthBuffer: true,
+        })
   runtime = new GameRuntime({
+    backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
@@ -290,12 +310,16 @@ try {
               }),
             }),
           },
-    onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
-      ? (sample) =>
-          document
-            .getElementById('game-canvas')!
-            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
-      : undefined,
+    // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
+    onDiagnostics: fpsReadout(
+      () => document.getElementById('controls-hint'),
+      new URLSearchParams(location.search).has('diagnostics')
+        ? (sample) =>
+            document
+              .getElementById('game-canvas')!
+              .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+        : undefined,
+    ),
     onProgress(status, tiles) {
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
       loading.setStatus(runtime?.cellStats ? text.status : status)
@@ -303,8 +327,6 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      if (runtime)
-        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showLocation(frame.location)
     },

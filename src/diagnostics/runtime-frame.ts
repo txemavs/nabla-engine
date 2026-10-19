@@ -1,3 +1,5 @@
+import type { GpuFrameTimings } from './gpu-timing.js'
+
 /** Optional browser-runtime measurements. CPU durations are submission time, never GPU time. */
 export interface RuntimeFrameSample {
   /** Uncapped animation interval in milliseconds; zero for the first frame. */
@@ -16,4 +18,14 @@ export interface RuntimeFrameSample {
   height: number
   /** Accumulated physics time discarded by the bounded catch-up policy, seconds. */
   droppedSeconds: number
+  /**
+   * GPU timing from EXT_disjoint_timer_query_webgl2 (WebGL2) or timestamp queries (WebGPU).
+   * Results arrive 2-3 frames after the render; undefined when the extension is unavailable,
+   * queries are still in flight, or a disjoint event invalidated the measurement.
+   */
+  gpuTiming?: GpuFrameTimings
+  /** Backend that drew the frame (`?renderer=`); absent means the default WebGL renderer. */
+  backend?: 'webgl' | 'webgpu'
+  /** WebGPU only: GLSL-only materials hidden so far because they have no node-material port. */
+  webgpuSkipped?: string[]
 }

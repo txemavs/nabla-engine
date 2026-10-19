@@ -1,3 +1,10 @@
+import {
+  installTileClusterCulling,
+  installTileClusterCullingWith,
+  isClusterableTileMesh,
+  tileClusterCullingEnabled,
+  tileClustersTried,
+} from './cluster-culling.js'
 import { Z16Updates } from './z16-updates.js'
 import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
@@ -14,7 +21,6 @@ import {
   type PlanetPayload,
   type PlanetCollisionTile,
 } from '../../planet/index.js'
-import type { PlanetPhoto } from '../../planet/contract.js'
 import {
   osmSnapshotHighways,
   osmSnapshotPavedAreas,
@@ -23,13 +29,18 @@ import {
   type OsmChartRoad,
 } from '../../planet/osm-snapshot.js'
 import { StaticTileError, fetchTileManifest } from './static-tiles.js'
+import type { AtlasPackageLoader } from './atlas-package-loader.js'
+import { mainThreadLoading, type TileLoading } from './loading-workers.js'
 import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/atlas-z15.js'
 import { fetchOsmSnapshot } from './osm-roads.js'
 import { NO_ASPHALT_MASK, asphaltMaskTexture } from './asphalt-mask.js'
-import { sha256 } from '../../util/sha256.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
+  packageLoader?: AtlasPackageLoader
+  /** Package photo decode and cluster-culling reorder. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
+  loading?: TileLoading
   /** Coarsest published mesh LOD. Static/Atlas sources default to Z15, dynamic sources to Z13.
    * Set 12 only after publishing native coarse mesh manifests; absence must not create holes. */
   meshMinZoom?: 12 | 13 | 14 | 15
@@ -147,30 +158,6 @@ function drapeBias(id: string): number {
   if (id === 'roads') return -20
   return -(drapeLayers.find((layer) => layer.id === id)?.ground ?? 1)
 }
-/** Decode a verified package orthophoto, flipped so the texture needs no `flipY` (north-up, v up). */
-async function loadPackagePhoto(
-  url: string,
-  photo: PlanetPhoto,
-  mark?: (name: string, ms: number) => void,
-): Promise<ImageBitmap> {
-  let started = performance.now()
-  const lap = (name: string) => {
-    const now = performance.now()
-    mark?.(name, now - started)
-    started = now
-  }
-  const response = await fetch(url, { signal: AbortSignal.timeout(60000) })
-  if (!response.ok) throw new Error(`Photo ${url}: HTTP ${response.status}`)
-  const bytes = await response.arrayBuffer()
-  lap('photoFetch')
-  if (bytes.byteLength !== photo.bytes) throw new Error(`Photo ${url}: size mismatch`)
-  if ((await sha256(bytes)) !== photo.sha256) throw new Error(`Photo ${url}: checksum mismatch`)
-  lap('photoVerify')
-  const bitmap = await createImageBitmap(new Blob([bytes]), { imageOrientation: 'flipY' })
-  lap('photoDecode')
-  return bitmap
-}
-
 /**
  * Roof photos float a hand above the roof so the tiles never z-fight with the building. Photos of
  * the ground must NOT: the physics ground is the unlifted surface, and a 15 cm lift made every wheel
@@ -193,6 +180,8 @@ export function dressSatelliteRoofs(
   mark?: (name: string, ms: number) => void,
   /** Drape geometry and photo already prepared by the worker; absent = build and fetch here. */
   prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap; roofPhoto?: ImageBitmap },
+  /** Where a package photo not prepared by the tile worker is fetched and decoded. */
+  loading: TileLoading = mainThreadLoading,
 ) {
   const tile = manifest.tile
   if ((tile.z !== 15 && tile.z !== 16) || imagery === 'none') return
@@ -330,9 +319,9 @@ export function dressSatelliteRoofs(
       ? groundUrl.slice(0, groundUrl.lastIndexOf('/') + 1) + manifest.roofPhoto.path
       : undefined
     Promise.all([
-      loadPackagePhoto(groundUrl, manifest.photo!, mark),
+      loading.photo(groundUrl, manifest.photo!, mark),
       manifest.roofPhoto && roofUrl
-        ? loadPackagePhoto(roofUrl, manifest.roofPhoto, mark)
+        ? loading.photo(roofUrl, manifest.roofPhoto, mark)
         : Promise.resolve(undefined),
     ])
       .then(([bitmap, roofBmp]) => {
@@ -1222,6 +1211,7 @@ export class PlanetWorld {
             cors: true,
             missingStatuses: [403, 404],
             onMissing: (value) => (status = value),
+            packageLoader: this.sourceOptions.packageLoader,
             atlas: this.sourceOptions.atlas && {
               ...this.sourceOptions.atlas,
               photo: this.photoQuality(tile),
@@ -1422,6 +1412,7 @@ export class PlanetWorld {
         photo: payload.drape.photo,
         roofPhoto: payload.drape.roofPhoto,
       },
+      this.sourceOptions.loading,
     )
     if (payload.drape?.error) {
       console.warn('Foto del terreno no disponible · ' + payload.drape.error)
@@ -1634,8 +1625,33 @@ export class PlanetWorld {
     }
     this.status = `GLB planetarios · ${this.visible.length} baldosas · z/${[...new Set(this.visible.map((k) => k.split('/')[1]))].join(', ')}${this.requests.size ? ' · cargando…' : ''}`
   }
+  /**
+   * Cluster culling (opt-in): reorder shown tile meshes a few at a time (about 4 ms per frame,
+   * at least one mesh), so a burst of installs never hitches.
+   */
+  private clusterTileMeshes() {
+    if (!tileClusterCullingEnabled()) return
+    const start = performance.now()
+    for (const r of this.resident.values()) {
+      if (!r.group.visible) continue
+      for (const child of r.group.children) {
+        if (!child.visible || tileClustersTried(child) || !isClusterableTileMesh(child)) continue
+        const loading = this.sourceOptions.loading
+        if (loading && loading !== mainThreadLoading) {
+          // Off-thread reorder: queue every mesh now, apply each when its job lands.
+          installTileClusterCullingWith(child, (input) => loading.clusters(input)).then(
+            (installed) => installed && this.changed(),
+          )
+          continue
+        }
+        installTileClusterCulling(child)
+        if (performance.now() - start > 4) return
+      }
+    }
+  }
   renderUpdate(origin: THREE.Vector3, buildings: boolean, sim: Simulation | null) {
     this.simulation = sim
+    this.clusterTileMeshes()
     this.originOffset.copy(origin)
     this.root.position.copy(origin).negate()
     if (this.buildings !== buildings) {

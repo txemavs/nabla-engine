@@ -90,7 +90,7 @@ terrainDefaults(defaultCellPublished: boolean, base: string = DEFAULT_TERRAIN_QU
 [Implementation, line 93](../../../game/terrain.ts#L93)
 
 True when the folder publishes the default start cell. This asks for one manifest, like the engine
-does for any tile; no index file is needed.
+does for any tile; no index file is needed. An HTML fallback page is not a manifest.
 
 ```ts
 probeTerrainFolder(base: string = DEFAULT_TERRAIN_QUERY.terrain, cell: string = DEFAULT_TERRAIN_QUERY.tile): Promise<boolean>
@@ -98,13 +98,12 @@ probeTerrainFolder(base: string = DEFAULT_TERRAIN_QUERY.terrain, cell: string = 
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(response.headers.get('content-type') ?? '').includes`
 - `fetch`
-- `response.headers.get`
+- `response.json`
 
 ## parseTimeParam
 
-[Implementation, line 138](../../../game/terrain.ts#L138)
+[Implementation, line 141](../../../game/terrain.ts#L141)
 
 Parse `&time=`: `HH:MM` (also `H`, `HH.MM`) or `ahora`/`now` for the real clock.
 
@@ -125,7 +124,7 @@ Explicit throws in this body:
 
 ## parseTimeSpeedParam
 
-[Implementation, line 148](../../../game/terrain.ts#L148)
+[Implementation, line 151](../../../game/terrain.ts#L151)
 
 Parse `&timeSpeed=`: live clock multiplier, 1–24.
 
@@ -147,7 +146,7 @@ Explicit throws in this body:
 
 ## parseSeaParam
 
-[Implementation, line 158](../../../game/terrain.ts#L158)
+[Implementation, line 161](../../../game/terrain.ts#L161)
 
 Parse `&sea=`: metres within the engine's sea-surface range.
 
@@ -170,7 +169,7 @@ Explicit throws in this body:
 
 ## wantsTerrain
 
-[Implementation, line 168](../../../game/terrain.ts#L168)
+[Implementation, line 171](../../../game/terrain.ts#L171)
 
 True when the URL asks for the terrain-folder example.
 
@@ -186,7 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finite
 
-[Implementation, line 173](../../../game/terrain.ts#L173)
+[Implementation, line 176](../../../game/terrain.ts#L176)
 
 ```ts
 finite(params: URLSearchParams, key: string): number | undefined
@@ -206,7 +205,7 @@ Explicit throws in this body:
 
 ## parseTerrainConfig
 
-[Implementation, line 182](../../../game/terrain.ts#L182)
+[Implementation, line 185](../../../game/terrain.ts#L185)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
 
@@ -253,7 +252,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 261](../../../game/terrain.ts#L261)
+[Implementation, line 264](../../../game/terrain.ts#L264)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -274,7 +273,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 273](../../../game/terrain.ts#L273)
+[Implementation, line 276](../../../game/terrain.ts#L276)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
@@ -284,7 +283,7 @@ formatCells(stats: { loaded: number; missing: number; pending: number }): string
 
 ## portalsConfig
 
-[Implementation, line 282](../../../game/terrain.ts#L282)
+[Implementation, line 285](../../../game/terrain.ts#L285)
 
 `portals` only when the host listed some, so configs without portals keep their shape.
 
@@ -299,7 +298,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineModeParam
 
-[Implementation, line 288](../../../game/terrain.ts#L288)
+[Implementation, line 291](../../../game/terrain.ts#L291)
 
 `&engineMode=normal|beast` (or `bestia`): the start mode of cars with engine modes.
 

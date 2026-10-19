@@ -201,8 +201,9 @@
         font-size: 2rem;
         font-weight: 600;
       }
-      /* Top-left key help line (Euskadi Online placement); the bottom stays free for the FPS area. */
-      #controls-hint {
+      /* The bottom line is the fps readout; the engine HUD's key help sits at the top left
+         (Euskadi Online placement). */
+      .nabla-game-hud-hint {
         position: fixed;
         left: 20px;
         top: 52px;
@@ -216,13 +217,18 @@
         color: #eee;
         text-shadow: 0 1px 4px #000;
       }
-      @media (pointer: coarse) {
-        #controls-hint {
-          display: none;
-        }
+      .nabla-game-hud {
+        bottom: 36px !important;
       }
-      body:has(.touch-driving[data-visibility='always']) #controls-hint {
-        display: none;
+      #controls-hint {
+        position: fixed;
+        left: 16px;
+        bottom: 12px;
+        font: 13px system-ui;
+        font-variant-numeric: tabular-nums;
+        color: white;
+        text-shadow: 0 1px 3px black;
+        z-index: 31;
       }
       #road-hidden-hint {
         position: fixed;
@@ -252,9 +258,11 @@
         cursor: pointer;
       }
       #controls-hint kbd {
-        font:
-          700 16px/20px Arial,
-          sans-serif;
+        display: inline-block;
+        padding: 2px 6px;
+        background: #333;
+        border-radius: 4px;
+        margin: 0 2px;
       }
       #error-message {
         position: fixed;
