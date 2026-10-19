@@ -81,9 +81,128 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 
+## computeTileClusters
+
+[Implementation, line 103](../../../../../src/render/planet/cluster-culling.ts#L103)
+
+Reorder triangles by cluster. Pure: never mutates its input arrays.
+
+```ts
+computeTileClusters(input: TileClusterInput): TileClusterOutput
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(index.constructor as Uint32ArrayConstructor)`
+- `(input.attributes ?? []).map`
+- `Float32Array`
+- `Math.floor`
+- `THREE.Box3`
+- `THREE.Vector3`
+- `Uint16Array`
+- `Uint32Array`
+- `bounds.set`
+- `clusterOf`
+- `starts.slice`
+- `vertexOf`
+
+## computeTileClusters.vertexOf
+
+[Implementation, line 112](../../../../../src/render/planet/cluster-culling.ts#L112)
+
+```ts
+vertexOf(corner: number): inferred by TypeScript; see implementation
+```
+
+## computeTileClusters.callback@165
+
+[Implementation, line 165](../../../../../src/render/planet/cluster-culling.ts#L165)
+
+```ts
+callback@165({ name, array: from, itemSize: size }): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(from.constructor as Float32ArrayConstructor)`
+- `from.subarray`
+- `to.set`
+
+## tileClusterInput
+
+[Implementation, line 180](../../../../../src/render/planet/cluster-culling.ts#L180)
+
+```ts
+tileClusterInput(geometry: THREE.BufferGeometry, grid = TILE_CLUSTER_GRID, copy = false): TileClusterInput | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float64Array`
+- `Math.floor`
+- `Object.entries`
+- `Object.entries(geometry.attributes).map`
+- `Object.values`
+- `Object.values(geometry.attributes).some`
+- `array`
+- `geometry.computeBoundingBox`
+- `geometry.getAttribute`
+- `position.array.slice`
+- `position.getX`
+- `position.getY`
+- `position.getZ`
+
+## tileClusterInput.callback@187
+
+[Implementation, line 187](../../../../../src/render/planet/cluster-culling.ts#L187)
+
+```ts
+callback@187(attribute): inferred by TypeScript; see implementation
+```
+
+## tileClusterInput.array
+
+[Implementation, line 210](../../../../../src/render/planet/cluster-culling.ts#L210)
+
+```ts
+array(a: T): T
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `a.slice`
+
+## tileClusterInput.callback@216
+
+[Implementation, line 216](../../../../../src/render/planet/cluster-culling.ts#L216)
+
+```ts
+callback@216([name, attribute]): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `array`
+
+## applyTileClusters
+
+[Implementation, line 232](../../../../../src/render/planet/cluster-culling.ts#L232)
+
+```ts
+applyTileClusters(geometry: THREE.BufferGeometry, output: TileClusterOutput): TileClusters
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.BufferAttribute`
+- `geometry.dispose`
+- `geometry.getAttribute`
+- `geometry.setAttribute`
+- `geometry.setIndex`
+
 ## buildTileClusters
 
-[Implementation, line 79](../../../../../src/render/planet/cluster-culling.ts#L79)
+[Implementation, line 253](../../../../../src/render/planet/cluster-culling.ts#L253)
 
 Reorder a geometry's triangles by cluster and return its cluster table. New index or attribute
 arrays replace the old ones on the geometry (whose renderer buffers are disposed); arrays already shared elsewhere (collision, caches)
@@ -95,54 +214,47 @@ buildTileClusters(geometry: THREE.BufferGeometry, grid = TILE_CLUSTER_GRID): Til
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(from.constructor as Float32ArrayConstructor)`
-- `(source.constructor as Uint32ArrayConstructor)`
-- `Float32Array`
-- `Math.floor`
-- `Object.entries`
-- `Object.values`
-- `Object.values(geometry.attributes).some`
-- `THREE.BufferAttribute`
-- `Uint16Array`
-- `Uint32Array`
-- `bounds.set`
-- `clusterOf`
-- `from.subarray`
-- `geometry.computeBoundingBox`
-- `geometry.dispose`
-- `geometry.getAttribute`
-- `geometry.setAttribute`
-- `geometry.setIndex`
-- `position.getX`
-- `position.getY`
-- `position.getZ`
-- `starts.slice`
-- `to.set`
-- `vertexOf`
+- `applyTileClusters`
+- `computeTileClusters`
+- `tileClusterInput`
 
-## buildTileClusters.callback@85
+## buildTileClustersWith
 
-[Implementation, line 85](../../../../../src/render/planet/cluster-culling.ts#L85)
+[Implementation, line 268](../../../../../src/render/planet/cluster-culling.ts#L268)
 
 ```ts
-callback@85(attribute): inferred by TypeScript; see implementation
-```
-
-## buildTileClusters.vertexOf
-
-[Implementation, line 97](../../../../../src/render/planet/cluster-culling.ts#L97)
-
-```ts
-vertexOf(corner: number): inferred by TypeScript; see implementation
+buildTileClustersWith(geometry: THREE.BufferGeometry, run: TileClusterRunner, grid = TILE_CLUSTER_GRID, keep: () => boolean = () => true): Promise<TileClusters | undefined>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `index.getX`
+- `Object.entries`
+- `Object.entries(attributes).every`
+- `Object.keys`
+- `applyTileClusters`
+- `keep`
+- `run`
+- `tileClusterInput`
+
+## buildTileClustersWith.callback@272
+
+[Implementation, line 272](../../../../../src/render/planet/cluster-culling.ts#L272)
+
+```ts
+callback@272(): inferred by TypeScript; see implementation
+```
+
+## buildTileClustersWith.callback@282
+
+[Implementation, line 282](../../../../../src/render/planet/cluster-culling.ts#L282)
+
+```ts
+callback@282([name, a]): inferred by TypeScript; see implementation
+```
 
 ## visibleClusterSpan
 
-[Implementation, line 173](../../../../../src/render/planet/cluster-culling.ts#L173)
+[Implementation, line 291](../../../../../src/render/planet/cluster-culling.ts#L291)
 
 First/last visible cluster span for a camera, in draw-range units: [start, count].
 
@@ -161,7 +273,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installTileClusterCulling
 
-[Implementation, line 205](../../../../../src/render/planet/cluster-culling.ts#L205)
+[Implementation, line 323](../../../../../src/render/planet/cluster-culling.ts#L323)
 
 Reorder a tile mesh into clusters and narrow its draw range per camera. Returns false when the
 mesh is unsuitable (too small, interleaved, multi-group) and was left untouched.
@@ -173,13 +285,55 @@ installTileClusterCulling(mesh: THREE.Mesh): boolean
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `buildTileClusters`
+- `narrowPerCamera`
 - `tried.get`
 - `tried.has`
 - `tried.set`
 
-## installTileClusterCulling.narrow
+## installTileClusterCullingWith
 
-[Implementation, line 212](../../../../../src/render/planet/cluster-culling.ts#L212)
+[Implementation, line 336](../../../../../src/render/planet/cluster-culling.ts#L336)
+
+```ts
+installTileClusterCullingWith(mesh: THREE.Mesh, run: TileClusterRunner): Promise<boolean>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `buildTileClustersWith`
+- `buildTileClustersWith(mesh.geometry, run, TILE_CLUSTER_GRID, () => !!mesh.parent).catch`
+- `narrowPerCamera`
+- `tried.get`
+- `tried.has`
+- `tried.set`
+
+## installTileClusterCullingWith.callback@343
+
+[Implementation, line 343](../../../../../src/render/planet/cluster-culling.ts#L343)
+
+```ts
+callback@343(): inferred by TypeScript; see implementation
+```
+
+## installTileClusterCullingWith.callback@344
+
+[Implementation, line 344](../../../../../src/render/planet/cluster-culling.ts#L344)
+
+```ts
+callback@344(): inferred by TypeScript; see implementation
+```
+
+## narrowPerCamera
+
+[Implementation, line 352](../../../../../src/render/planet/cluster-culling.ts#L352)
+
+```ts
+narrowPerCamera(mesh: THREE.Mesh, clusters: TileClusters): void
+```
+
+## narrowPerCamera.narrow
+
+[Implementation, line 355](../../../../../src/render/planet/cluster-culling.ts#L355)
 
 ```ts
 narrow(camera: THREE.Camera): inferred by TypeScript; see implementation
@@ -191,20 +345,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `visibleClusterSpan`
 
-## installTileClusterCulling.restore
+## narrowPerCamera.restore
 
-[Implementation, line 220](../../../../../src/render/planet/cluster-culling.ts#L220)
+[Implementation, line 363](../../../../../src/render/planet/cluster-culling.ts#L363)
 
 ```ts
 restore(): inferred by TypeScript; see implementation
 ```
 
-## installTileClusterCulling.callback@229
+## narrowPerCamera.callback@372
 
-[Implementation, line 229](../../../../../src/render/planet/cluster-culling.ts#L229)
+[Implementation, line 372](../../../../../src/render/planet/cluster-culling.ts#L372)
 
 ```ts
-callback@229(renderer, scene, camera, geometry, material, group): inferred by TypeScript; see implementation
+callback@372(renderer, scene, camera, geometry, material, group): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -212,12 +366,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `beforeRender.call`
 - `narrow`
 
-## installTileClusterCulling.callback@233
+## narrowPerCamera.callback@376
 
-[Implementation, line 233](../../../../../src/render/planet/cluster-culling.ts#L233)
+[Implementation, line 376](../../../../../src/render/planet/cluster-culling.ts#L376)
 
 ```ts
-callback@233(renderer, scene, camera, geometry, material, group): inferred by TypeScript; see implementation
+callback@376(renderer, scene, camera, geometry, material, group): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -225,12 +379,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `afterRender.call`
 - `restore`
 
-## installTileClusterCulling.callback@237
+## narrowPerCamera.callback@380
 
-[Implementation, line 237](../../../../../src/render/planet/cluster-culling.ts#L237)
+[Implementation, line 380](../../../../../src/render/planet/cluster-culling.ts#L380)
 
 ```ts
-callback@237(renderer, object, camera, shadowCamera, geometry, material, group): inferred by TypeScript; see implementation
+callback@380(renderer, object, camera, shadowCamera, geometry, material, group): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -238,12 +392,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `beforeShadow.call`
 - `narrow`
 
-## installTileClusterCulling.callback@249
+## narrowPerCamera.callback@392
 
-[Implementation, line 249](../../../../../src/render/planet/cluster-culling.ts#L249)
+[Implementation, line 392](../../../../../src/render/planet/cluster-culling.ts#L392)
 
 ```ts
-callback@249(renderer, object, camera, shadowCamera, geometry, material, group): inferred by TypeScript; see implementation
+callback@392(renderer, object, camera, shadowCamera, geometry, material, group): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -253,7 +407,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isClusterableTileMesh
 
-[Implementation, line 265](../../../../../src/render/planet/cluster-culling.ts#L265)
+[Implementation, line 407](../../../../../src/render/planet/cluster-culling.ts#L407)
 
 Planet tile meshes worth clustering: terrain, photo drapes and buildings.
 
