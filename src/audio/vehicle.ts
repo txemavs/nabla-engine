@@ -5,6 +5,7 @@ import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
 import { WeaponHandling, type WeaponSound } from './weapon-handling.js'
 import { MetalImpact } from './metal-impact.js'
+import { ImpactVoicePool, impactVoiceLimit } from './impact-voices.js'
 import { impactSounds, vehicleImpactSurface, type ImpactSurface } from '../config/impact-sounds.js'
 import { CasingTinkle } from './casing-tinkle.js'
 import { Powertrain } from './powertrain.js'
@@ -44,9 +45,8 @@ export class VehicleAudio {
   private weaponHandling?: WeaponHandling
   private readonly metalVoices: MetalImpact[] = []
   private readonly metalEmitters: SpatialEmitter[] = []
-  private nextMetal = 0
+  private readonly impactVoices = new ImpactVoicePool<ImpactSurface>(impactVoiceLimit)
   private lastMetalTimbre = -1
-  private readonly lastImpactAt = new Map<ImpactSurface, number>()
   private weaponClickVoice?: GearClick
   private vehicleEngine?: SpatialEmitter
   private turbineEmitter?: SpatialEmitter
@@ -367,9 +367,8 @@ export class VehicleAudio {
     const sound = impactSounds[surface]
     // Rate limit per surface: a burst of hits rings as one flurry, not as a wall of voices.
     const now = this.context!.currentTime
-    if (now - (this.lastImpactAt.get(surface) ?? -Infinity) < sound.minInterval) return
-    this.lastImpactAt.set(surface, now)
-    const index = this.nextMetal++ % this.metalEmitters.length
+    const index = this.impactVoices.take(surface, now, sound.minInterval)
+    if (index === null || index >= this.metalEmitters.length) return
     const emitter = this.metalEmitters[index]
     emitter.setPosition(position)
     emitter.setListener(this.eye, this.orientation)
@@ -451,7 +450,7 @@ export class VehicleAudio {
     }
     this.context = context
     this.prepareCasings(context, noise)
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < impactVoiceLimit; i++) {
       const emitter = new SpatialEmitter(context, audioBus(context), {
         referenceDistance: 2,
         maxDistance: 150,

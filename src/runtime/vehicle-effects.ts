@@ -22,6 +22,7 @@ export class VehicleEffects {
   private disposed = false
   /** Player switch for the reversing alarm of vehicles that have one. */
   reverseAlarmEnabled = true
+  private readonly turbineScratch = new Vector3()
   private shiftVehicleId: string | null = null
   private shiftCount = 0
   private gearChangeCount = 0
@@ -46,7 +47,7 @@ export class VehicleEffects {
         const info = sim.vehicleInfo(entity.id)
         if (!info.flightMode) continue
         const position = sim.entityTransform(entity.id, true).position.map((v) => v * worldScale)
-        const distance = eye.distanceTo(new Vector3(...position))
+        const distance = eye.distanceTo(this.turbineScratch.fromArray(position))
         const level =
           sim.player.vehicleId === entity.id || sim.player.interiorId === entity.id
             ? 0.55

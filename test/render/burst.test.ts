@@ -35,3 +35,22 @@ it('bursts are bounded and ignore a bad scale', () => {
   expect(fireballs(space)).toHaveLength(0)
   effect.dispose()
 })
+
+it('bursts reuse their fireball material instead of creating and disposing one each time', () => {
+  const space = new THREE.Group()
+  const effect = new VehicleDestruction(space)
+  effect.burst(new THREE.Vector3(), 0.2)
+  const [first] = fireballs(space)
+  let disposed = 0
+  ;(first.material as THREE.Material).addEventListener('dispose', () => disposed++)
+  for (let i = 0; i < 5; i++) effect.update(0.1, true)
+  expect(fireballs(space)).toHaveLength(0)
+  effect.burst(new THREE.Vector3(4, 0, 0), 0.2)
+  const [second] = fireballs(space)
+  expect(second).toBe(first)
+  expect(second.material).toBe(first.material)
+  expect((second.material as THREE.MeshBasicMaterial).opacity).toBe(1)
+  expect(disposed).toBe(0)
+  effect.dispose()
+  expect(disposed).toBe(1)
+})

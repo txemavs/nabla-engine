@@ -190,9 +190,9 @@ export class Gallery {
       solid ? ray.ray.origin.distanceTo(new THREE.Vector3(...solid.point)) : rayView.range,
     )
     if (popped) {
-      const { scale, damagesVehicles } = balloonTuning.burst
+      const { scale, damagesVehicles, vehiclePush } = balloonTuning.burst
       view.destruction.burst(popped.point, scale)
-      sim.blast(popped.point.toArray(), scale, damagesVehicles)
+      sim.blast(popped.point.toArray(), scale, damagesVehicles, vehiclePush)
       this.lastBurst = { point: popped.point.toArray() as Vec3Tuple, scale }
       return true
     }

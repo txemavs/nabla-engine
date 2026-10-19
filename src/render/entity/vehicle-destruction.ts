@@ -89,6 +89,12 @@ export class VehicleDestruction {
     age: number
     scale: number
   }[] = []
+  /**
+   * Burst fireballs not in use. A burst reuses one instead of creating and disposing a material,
+   * so the shader program stays alive between bursts (no recompile hitch). At most 24 exist.
+   */
+  private readonly burstPool: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = []
+  private readonly burstClocks = new WeakMap<THREE.Mesh, { value: number }>()
   private readonly burns = new Map<
     string,
     {
@@ -212,7 +218,14 @@ export class VehicleDestruction {
   burst(position: THREE.Vector3, scale = 1): void {
     if (!Number.isFinite(scale) || scale <= 0) return
     if (this.bursts.length >= 24) this.removeBurst(0)
-    const { fire, clock } = this.createFire()
+    let fire = this.burstPool.pop()
+    let clock = fire && this.burstClocks.get(fire)
+    if (!fire || !clock) {
+      ;({ fire, clock } = this.createFire())
+      this.burstClocks.set(fire, clock)
+    }
+    clock.value = 0
+    fire.material.opacity = 1
     fire.position.copy(position)
     fire.scale.setScalar(0.2 * scale)
     this.space.add(fire)
@@ -221,7 +234,7 @@ export class VehicleDestruction {
   private removeBurst(index: number): void {
     const [burst] = this.bursts.splice(index, 1)
     burst.fire.removeFromParent()
-    burst.fire.material.dispose()
+    this.burstPool.push(burst.fire)
   }
   private createFire() {
     const fire = new THREE.Mesh(
@@ -565,6 +578,8 @@ export class VehicleDestruction {
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
+    for (const fire of this.burstPool) fire.material.dispose()
+    this.burstPool.length = 0
     this.warmFire?.material.dispose()
     this.warmFlames?.material.dispose()
     this.warmSmoke?.dispose()

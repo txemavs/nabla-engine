@@ -151,44 +151,80 @@ export class Simulation {
   }
   /**
    * A shockwave at `position`: the vehicle-explosion blast, `scale` times its radius and push
-   * (1 = a vehicle). Every dynamic body in range is lifted away from the centre; with `damage`,
-   * other vehicles in range are damaged in proportion to the pressure. Visual and sound are the
-   * host's: this only moves bodies.
+   * (1 = a vehicle). Every dynamic body in range is lifted away from the centre; vehicles take
+   * `vehiclePush` of that push (0 = vehicles are not moved, as for a popped balloon); with
+   * `damage`, other vehicles in range are damaged in proportion to the pressure. Visual and sound
+   * are the host's: this only moves bodies.
    */
-  blast(position: Vec3Tuple, scale = 1, damage = false): void {
+  blast(position: Vec3Tuple, scale = 1, damage = false, vehiclePush = 1): void {
     if (this.disposed || !position.every(Number.isFinite) || !Number.isFinite(scale) || scale <= 0)
       return
-    this.applyBlast(new Vec3(...position), scale, null, damage)
+    this.applyBlast(
+      this.blastCentre.set(position[0], position[1], position[2]),
+      scale,
+      null,
+      damage,
+      Number.isFinite(vehiclePush) ? Math.max(0, vehiclePush) : 1,
+    )
   }
-  private applyBlast(centre: Vec3, scale: number, sourceId: string | null, damage: boolean): void {
+  private readonly blastCentre = new Vec3()
+  private readonly blastDirection = new Vec3()
+  private readonly blastUp = new Vec3()
+  private readonly blastApplication = new Vec3()
+  private applyBlast(
+    centre: Vec3,
+    scale: number,
+    sourceId: string | null,
+    damage: boolean,
+    vehiclePush = 1,
+  ): void {
     const radius = explosionTuning.radiusMetres * scale
-    const up = this.radialUpAt(centre)
+    const radiusSquared = radius * radius
+    const up = this.blastUp.copy(this.radialUpAt(centre))
+    const direction = this.blastDirection
+    const application = this.blastApplication
+    let vehicleBodies: Map<Body, string> | undefined
     for (const body of this.world.bodies) {
       if (!body.mass) continue
-      const direction = body.position.vsub(centre)
-      const distance = direction.length()
-      if (distance >= radius) continue
+      // Cheap reject before any vector work.
+      const dx = body.position.x - centre.x,
+        dy = body.position.y - centre.y,
+        dz = body.position.z - centre.z
+      const distanceSquared = dx * dx + dy * dy + dz * dz
+      if (distanceSquared >= radiusSquared) continue
+      vehicleBodies ??= new Map([...this.vehicles].map(([id, v]) => [v.body, id]))
+      const vehicleId = vehicleBodies.get(body)
+      const push = vehicleId === undefined ? 1 : vehiclePush
+      const distance = Math.sqrt(distanceSquared)
       const strength = 1 - distance / radius
-      if (distance > 0.1) direction.normalize()
-      else direction.copy(up)
-      direction.vadd(up.scale(0.45), direction)
-      body.wakeUp()
-      // Uneven pressure hits away from the centre of mass, producing real tumble.
-      const application = new Vec3(
-        (Math.random() - 0.5) * explosionTuning.offsetX,
-        (Math.random() - 0.5) * explosionTuning.offsetY,
-        (Math.random() - 0.5) * explosionTuning.offsetZ,
-      )
-      direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
-      direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
-      body.applyImpulse(
-        direction.scale(body.mass * explosionTuning.impulseSpeed * scale * strength),
-        application,
-      )
-      if (damage)
-        for (const [otherId, other] of this.vehicles)
-          if (other.body === body && otherId !== sourceId && !other.definition.passive)
-            this.damage.apply(otherId, strength * 45)
+      if (push > 0) {
+        direction.set(dx, dy, dz)
+        if (distance > 0.1) direction.scale(1 / distance, direction)
+        else direction.copy(up)
+        direction.x += up.x * 0.45
+        direction.y += up.y * 0.45
+        direction.z += up.z * 0.45
+        body.wakeUp()
+        // Uneven pressure hits away from the centre of mass, producing real tumble.
+        application.set(
+          (Math.random() - 0.5) * explosionTuning.offsetX,
+          (Math.random() - 0.5) * explosionTuning.offsetY,
+          (Math.random() - 0.5) * explosionTuning.offsetZ,
+        )
+        direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
+        direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
+        body.applyImpulse(
+          direction.scale(
+            body.mass * explosionTuning.impulseSpeed * scale * strength * push,
+            direction,
+          ),
+          application,
+        )
+      }
+      if (damage && vehicleId !== undefined && vehicleId !== sourceId) {
+        const other = this.vehicles.get(vehicleId)
+        if (other && !other.definition.passive) this.damage.apply(vehicleId, strength * 45)
+      }
     }
   }
   private resolveExplosions(cause: 'weapon' | 'impact' = 'weapon'): void {

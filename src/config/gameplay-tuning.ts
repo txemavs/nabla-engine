@@ -217,6 +217,11 @@ export const balloonTuning = {
     hitRadius: 0.2,
     /** Whether the shockwave also damages vehicles in range. A popped balloon does not. */
     damagesVehicles: false,
+    /**
+     * Share of the shockwave's push vehicles take (0–1). 0: balloons come out of the trunk, so a
+     * popped balloon must not shove the car it came from (or any other vehicle).
+     */
+    vehiclePush: 0,
   },
 }
 

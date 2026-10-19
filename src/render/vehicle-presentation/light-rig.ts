@@ -126,7 +126,9 @@ export class VehicleLightRig {
         vehicle.worldToLocal(this.world)
         this.world.z += 0.04
       }
-      this.world.add(new Vector3(tuning.rearX, tuning.rearY, tuning.rearZ))
+      this.world.x += tuning.rearX
+      this.world.y += tuning.rearY
+      this.world.z += tuning.rearZ
       vehicle.localToWorld(this.world)
       light.position.copy(this.root.worldToLocal(this.world))
       light.color.set('#ff2410')

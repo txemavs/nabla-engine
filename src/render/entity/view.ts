@@ -162,6 +162,8 @@ export interface SceneViewOptions {
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
+const WORLD_UP = new THREE.Vector3(0, 1, 0)
+
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly shipLights = new Map<string, ShipLights>()
@@ -558,6 +560,9 @@ export class SceneView {
   private disposed = false
   private pendingMapMeshes: Entity[] = []
   private readonly mapInstallEye = new THREE.Vector3()
+  /** Scratch values for per-frame work (sync, ride smoothing, sparks, lamp capture): no garbage. */
+  private readonly scratchVectors = Array.from({ length: 6 }, () => new THREE.Vector3())
+  private readonly scratchQuaternions = Array.from({ length: 4 }, () => new THREE.Quaternion())
   get headLightMount(): THREE.Object3D {
     return this.monitor
   }
@@ -1881,30 +1886,23 @@ export class SceneView {
       this.avatar.visible = !cockpit
     } else {
       // Smoothed like the cameras (no lag at steady speed); a thrown rider tumbles.
-      this.avatarFollow.update(
-        new THREE.Vector3().fromArray(sim.renderPlayerPosition),
-        sim.player.yaw,
-        elapsed,
-      )
+      const [v0, v1, v2] = this.scratchVectors
+      const [q0, q1, q2, q3] = this.scratchQuaternions
+      this.avatarFollow.update(v0.fromArray(sim.renderPlayerPosition), sim.player.yaw, elapsed)
       this.avatar.position.copy(this.avatarFollow.position)
-      const frame = new THREE.Quaternion().fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
+      const frame = q0.fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
       this.avatar.quaternion
         .copy(frame)
-        .multiply(
-          new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            this.avatarFollow.heading,
-          ),
-        )
+        .multiply(q1.setFromAxisAngle(WORLD_UP, this.avatarFollow.heading))
       this.monitor.scale.setScalar(0.825)
       this.monitor.position.set(0, 0, 0)
       this.monitorMotion.update(
         this.monitor,
         sim.playerFrame
-          ? this.avatar.position
-              .clone()
-              .sub(new THREE.Vector3(...sim.playerFrame.position))
-              .applyQuaternion(new THREE.Quaternion(...sim.playerFrame.rotation).invert())
+          ? v1
+              .copy(this.avatar.position)
+              .sub(v2.fromArray(sim.playerFrame.position))
+              .applyQuaternion(q2.fromArray(sim.playerFrame.rotation).invert())
           : this.avatar.position,
         this.avatarFollow.heading,
         elapsed,
@@ -1913,7 +1911,9 @@ export class SceneView {
       this.ejectionTumble.update(
         this.monitor,
         sim.playerEjection,
-        this.avatarFollow.velocity.clone().applyQuaternion(this.avatar.quaternion.clone().invert()),
+        v2
+          .copy(this.avatarFollow.velocity)
+          .applyQuaternion(q3.copy(this.avatar.quaternion).invert()),
         elapsed,
         sim.options.playerMode === 'hover' ? 0 : simulationDefaults.playerHalfHeight - 0.2,
       )
@@ -1943,9 +1943,9 @@ export class SceneView {
     const entity = this.document.entities.find((e) => e.id === vehicleId)
     const transform = sim.entityTransform(vehicleId, true)
     const pose = sim.twoWheeledPose(vehicleId)
-    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
-      new THREE.Quaternion().fromArray(transform.rotation),
-    )
+    const up = this.scratchVectors[3]
+      .copy(WORLD_UP)
+      .applyQuaternion(this.scratchQuaternions[0].fromArray(transform.rotation))
     const bypass =
       sim.vehicleInfo(vehicleId).flightMode ||
       (pose ? pose.crashed || pose.fallen : up.y < Math.cos(THREE.MathUtils.degToRad(40)))
@@ -1994,8 +1994,8 @@ export class SceneView {
         continue
       }
       group.updateWorldMatrix(true, false)
-      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
       if (last && now - last.time < 33) continue
+      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
       const velocity =
         last && now > last.time
           ? point
@@ -2092,23 +2092,26 @@ export class SceneView {
     )
     if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
     // Vehicle-space offsets of a lamp's light, as vectors in the light rig's frame.
-    const rigOffset = (x: number, y: number, z: number) => {
-      const result = new THREE.Vector3(x, y, z)
+    // Two scratch results (front, rear): capture() reads them at once and keeps neither.
+    const rigOffset = (result: THREE.Vector3, x: number, y: number, z: number) => {
+      result.set(x, y, z)
       if (group) {
-        result.applyMatrix4(group.matrixWorld).sub(group.getWorldPosition(new THREE.Vector3()))
-        result.applyQuaternion(
-          this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert(),
-        )
+        result
+          .applyMatrix4(group.matrixWorld)
+          .sub(group.getWorldPosition(this.scratchVectors[3]))
+          .applyQuaternion(
+            this.vehicleLights.root.getWorldQuaternion(this.scratchQuaternions[0]).invert(),
+          )
       }
       return result
     }
     this.vehicleLights.capture(
       authored?.spots ?? [],
       [...(authored?.points ?? []), ...courtesy],
-      rigOffset(tuning.frontX, tuning.frontY, tuning.frontZ),
+      rigOffset(this.scratchVectors[4], tuning.frontX, tuning.frontY, tuning.frontZ),
       authored && {
         lights: authored.rear,
-        offset: rigOffset(tuning.rearX, tuning.rearY, tuning.rearZ),
+        offset: rigOffset(this.scratchVectors[5], tuning.rearX, tuning.rearY, tuning.rearZ),
       },
     )
     if (
