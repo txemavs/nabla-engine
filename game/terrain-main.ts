@@ -5,7 +5,12 @@ import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
-import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
+import {
+  projectGroundPhoto,
+  setHiddenTileLayers,
+  setTileClusterCulling,
+  parseClusterCulling,
+} from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { assignVehicleColor } from './vehicle-colors.js'
 import { hasVehiclePreset, presetEntities } from '@nabla/engine/vehicles'
@@ -117,6 +122,8 @@ try {
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   const layerDefaults = bootHiddenLayers(boot)
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
+  // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
+  setTileClusterCulling(parseClusterCulling(location.search))
   bootLog('GameRuntime construct start')
   // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
   const rendererPreference = parseRendererPreference(location.search)
