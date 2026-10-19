@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **523 modules; 6125 executable function definitions**.
+Coverage: **524 modules; 6127 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -101,7 +101,7 @@ Coverage: **523 modules; 6125 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 58 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 59 |
 | [src/audio/weapon-handling.ts](src/audio/weapon-handling.ts.md) | 3 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
@@ -364,6 +364,7 @@ Coverage: **523 modules; 6125 executable function definitions**.
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
+| [src/runtime/engine-version.ts](src/runtime/engine-version.ts.md) | 1 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
