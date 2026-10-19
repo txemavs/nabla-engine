@@ -266,6 +266,7 @@ import { hiddenTileLayers, setHiddenTileLayers } from '../render/planet/tile-lay
 import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
+import { workerAtlasPackageLoader } from '../render/planet/atlas-package-loader.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
@@ -1116,7 +1117,10 @@ export class GameRuntime {
             options.tiles.baseUrl,
             options.tiles.apiUrl ?? '/prepare',
             options.tiles.mode ?? 'static',
-            options.tiles,
+            // WebGPU loads Atlas packages in a worker; WebGL keeps the main-thread path unchanged.
+            this.backend === 'webgpu'
+              ? { ...options.tiles, packageLoader: workerAtlasPackageLoader() }
+              : options.tiles,
           )
         : null
     if (this.world) {
