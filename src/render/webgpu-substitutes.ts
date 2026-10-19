@@ -4,6 +4,8 @@ import type * as THREE from 'three'
 export interface NodeKit {
   webgpu: typeof import('three/webgpu')
   tsl: typeof import('three/tsl')
+  /** The renderer was created with `logarithmicDepthBuffer` (custom depth writes must match). */
+  logarithmicDepth?: boolean
 }
 
 /**

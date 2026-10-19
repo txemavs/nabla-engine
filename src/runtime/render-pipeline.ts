@@ -308,6 +308,7 @@ export class GameRenderPipeline {
       } finally {
         scene.background = background
       }
+      if (skyDrawn) frame.sky.renderClouds(renderer, camera)
       monitors.finish()
       this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - mirrorsDone
       this.timings.postMs = 0

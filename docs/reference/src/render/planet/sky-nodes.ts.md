@@ -12,7 +12,7 @@
 
 ## sunDiscDome
 
-[Implementation, line 14](../../../../../src/render/planet/sky-nodes.ts#L14)
+[Implementation, line 15](../../../../../src/render/planet/sky-nodes.ts#L15)
 
 TSL equivalents of the GLSL sky (dome + sun disc, air glow, moon, Milky Way, stars), drawn by the
 WebGPU backend only. Each mirrors its GLSL source line by line; see sky.ts, sun-disc.ts and
@@ -26,12 +26,12 @@ Sky dome `MeshBasicMaterial` with the `addSunDisc` patch.
 sunDiscDome(base: THREE.MeshBasicMaterial, direction: THREE.Vector3, sunColor: THREE.Color): inferred by TypeScript; see implementation
 ```
 
-## sunDiscDome.callback@19
+## sunDiscDome.callback@20
 
-[Implementation, line 19](../../../../../src/render/planet/sky-nodes.ts#L19)
+[Implementation, line 20](../../../../../src/render/planet/sky-nodes.ts#L20)
 
 ```ts
-callback@19({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@20({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -62,9 +62,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uniform`
 - `webgpu.MeshBasicNodeMaterial`
 
-## sunDiscDome.callback@19.sync
+## sunDiscDome.callback@20.sync
 
-[Implementation, line 37](../../../../../src/render/planet/sky-nodes.ts#L37)
+[Implementation, line 38](../../../../../src/render/planet/sky-nodes.ts#L38)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -76,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## airGlow
 
-[Implementation, line 42](../../../../../src/render/planet/sky-nodes.ts#L42)
+[Implementation, line 43](../../../../../src/render/planet/sky-nodes.ts#L43)
 
 `createAirGlow`: additive grazing glow around the globe.
 
@@ -84,12 +84,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 airGlow(base: THREE.Material, sunDirection: THREE.Vector3): inferred by TypeScript; see implementation
 ```
 
-## airGlow.callback@43
+## airGlow.callback@44
 
-[Implementation, line 43](../../../../../src/render/planet/sky-nodes.ts#L43)
+[Implementation, line 44](../../../../../src/render/planet/sky-nodes.ts#L44)
 
 ```ts
-callback@43({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@44({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -99,12 +99,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uniform`
 - `webgpu.MeshBasicNodeMaterial`
 
-## airGlow.callback@43.callback@57
+## airGlow.callback@44.callback@58
 
-[Implementation, line 57](../../../../../src/render/planet/sky-nodes.ts#L57)
+[Implementation, line 58](../../../../../src/render/planet/sky-nodes.ts#L58)
 
 ```ts
-callback@57(): inferred by TypeScript; see implementation
+callback@58(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -130,12 +130,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vec3`
 - `vec4`
 
-## airGlow.callback@43.callback@57.callback@67
+## airGlow.callback@44.callback@58.callback@68
 
-[Implementation, line 67](../../../../../src/render/planet/sky-nodes.ts#L67)
+[Implementation, line 68](../../../../../src/render/planet/sky-nodes.ts#L68)
 
 ```ts
-callback@67(): inferred by TypeScript; see implementation
+callback@68(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -144,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## moonDisc
 
-[Implementation, line 78](../../../../../src/render/planet/sky-nodes.ts#L78)
+[Implementation, line 79](../../../../../src/render/planet/sky-nodes.ts#L79)
 
 `moonMaterial`: lit lunar albedo that washes into the day sky.
 
@@ -152,12 +152,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 moonDisc(base: THREE.ShaderMaterial & { uniforms: { sun: { value: THREE.Vector3 } map: { value: THREE.Texture } daylight: { value: number } skyTint: { value: THREE.Color } } }): inferred by TypeScript; see implementation
 ```
 
-## moonDisc.callback@88
+## moonDisc.callback@89
 
-[Implementation, line 88](../../../../../src/render/planet/sky-nodes.ts#L88)
+[Implementation, line 89](../../../../../src/render/planet/sky-nodes.ts#L89)
 
 ```ts
-callback@88({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@89({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -181,9 +181,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vec3`
 - `webgpu.MeshBasicNodeMaterial`
 
-## moonDisc.callback@88.sync
+## moonDisc.callback@89.sync
 
-[Implementation, line 108](../../../../../src/render/planet/sky-nodes.ts#L108)
+[Implementation, line 109](../../../../../src/render/planet/sky-nodes.ts#L109)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -191,7 +191,7 @@ sync(): inferred by TypeScript; see implementation
 
 ## milkyWay
 
-[Implementation, line 118](../../../../../src/render/planet/sky-nodes.ts#L118)
+[Implementation, line 119](../../../../../src/render/planet/sky-nodes.ts#L119)
 
 Night-sky Milky Way band (`ShaderMaterial`, no tone mapping, raw output).
 
@@ -199,12 +199,12 @@ Night-sky Milky Way band (`ShaderMaterial`, no tone mapping, raw output).
 milkyWay(base: THREE.Material, opacity: { value: number }, galacticPole: { value: THREE.Vector3 }, galacticCenter: { value: THREE.Vector3 }): inferred by TypeScript; see implementation
 ```
 
-## milkyWay.callback@124
+## milkyWay.callback@125
 
-[Implementation, line 124](../../../../../src/render/planet/sky-nodes.ts#L124)
+[Implementation, line 125](../../../../../src/render/planet/sky-nodes.ts#L125)
 
 ```ts
-callback@124({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@125({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -226,12 +226,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uniform`
 - `webgpu.MeshBasicNodeMaterial`
 
-## milkyWay.callback@124.callback@141
+## milkyWay.callback@125.callback@142
 
-[Implementation, line 141](../../../../../src/render/planet/sky-nodes.ts#L141)
+[Implementation, line 142](../../../../../src/render/planet/sky-nodes.ts#L142)
 
 ```ts
-callback@141(): inferred by TypeScript; see implementation
+callback@142(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -242,21 +242,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mix`
 - `vec3`
 
-## milkyWay.callback@124.callback@141.callback@142
+## milkyWay.callback@125.callback@142.callback@143
 
-[Implementation, line 142](../../../../../src/render/planet/sky-nodes.ts#L142)
+[Implementation, line 143](../../../../../src/render/planet/sky-nodes.ts#L143)
 
 ```ts
-callback@142(): inferred by TypeScript; see implementation
+callback@143(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Discard`
 
-## milkyWay.callback@124.sync
+## milkyWay.callback@125.sync
 
-[Implementation, line 152](../../../../../src/render/planet/sky-nodes.ts#L152)
+[Implementation, line 153](../../../../../src/render/planet/sky-nodes.ts#L153)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -264,7 +264,7 @@ sync(): inferred by TypeScript; see implementation
 
 ## starSprites
 
-[Implementation, line 160](../../../../../src/render/planet/sky-nodes.ts#L160)
+[Implementation, line 161](../../../../../src/render/planet/sky-nodes.ts#L161)
 
 Stars: `Points` whose patched `PointsMaterial` sets `gl_PointSize = starSize` (pixels, not
 scaled by the pixel ratio). WebGPU draws 1 px points only, so this is a sprite per star.
@@ -273,12 +273,12 @@ scaled by the pixel ratio). WebGPU draws 1 px points only, so this is a sprite p
 starSprites(points: THREE.Points): inferred by TypeScript; see implementation
 ```
 
-## starSprites.callback@161
+## starSprites.callback@162
 
-[Implementation, line 161](../../../../../src/render/planet/sky-nodes.ts#L161)
+[Implementation, line 162](../../../../../src/render/planet/sky-nodes.ts#L162)
 
 ```ts
-callback@161({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@162({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -293,9 +293,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `webgpu.PointsNodeMaterial`
 - `webgpu.Sprite`
 
-## starSprites.callback@161.instanced
+## starSprites.callback@162.instanced
 
-[Implementation, line 169](../../../../../src/render/planet/sky-nodes.ts#L169)
+[Implementation, line 170](../../../../../src/render/planet/sky-nodes.ts#L170)
 
 ```ts
 instanced(source: THREE.BufferAttribute): inferred by TypeScript; see implementation
@@ -305,9 +305,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `webgpu.InstancedBufferAttribute`
 
-## starSprites.callback@161.sync
+## starSprites.callback@162.sync
 
-[Implementation, line 185](../../../../../src/render/planet/sky-nodes.ts#L185)
+[Implementation, line 186](../../../../../src/render/planet/sky-nodes.ts#L186)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -319,7 +319,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## encodedTwin
 
-[Implementation, line 202](../../../../../src/render/planet/sky-nodes.ts#L202)
+[Implementation, line 203](../../../../../src/render/planet/sky-nodes.ts#L203)
 
 Built-in `MeshBasicMaterial` / `MeshLambertMaterial` of the sky scene (earth, planets, rings) as
 a node twin that encodes its own output. Colour, map and opacity follow the original each frame.
@@ -329,12 +329,12 @@ The earth's `onBeforeCompile` cloud/night-light patch is not ported: its twin is
 encodedTwin(base: THREE.MeshBasicMaterial | THREE.MeshLambertMaterial): inferred by TypeScript; see implementation
 ```
 
-## encodedTwin.callback@203
+## encodedTwin.callback@204
 
-[Implementation, line 203](../../../../../src/render/planet/sky-nodes.ts#L203)
+[Implementation, line 204](../../../../../src/render/planet/sky-nodes.ts#L204)
 
 ```ts
-callback@203({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@204({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -344,9 +344,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `webgpu.MeshBasicNodeMaterial`
 - `webgpu.MeshLambertNodeMaterial`
 
-## encodedTwin.callback@203.sync
+## encodedTwin.callback@204.sync
 
-[Implementation, line 207](../../../../../src/render/planet/sky-nodes.ts#L207)
+[Implementation, line 208](../../../../../src/render/planet/sky-nodes.ts#L208)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -359,7 +359,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeDisplay
 
-[Implementation, line 226](../../../../../src/render/planet/sky-nodes.ts#L226)
+[Implementation, line 227](../../../../../src/render/planet/sky-nodes.ts#L227)
 
 Inverse of the renderer's ACES Filmic + sRGB output transform, so an image already in display
 values comes out of the frame's final encode unchanged (to 8-bit precision). Mirrors
@@ -390,7 +390,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUSkyPass.constructor
 
-[Implementation, line 252](../../../../../src/render/planet/sky-nodes.ts#L252)
+[Implementation, line 253](../../../../../src/render/planet/sky-nodes.ts#L253)
 
 The WebGPU sky pass: draws the sky scene in display space into an 8-bit target, then
 composites it under the frame through `decodeDisplay`.
@@ -411,7 +411,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUSkyPass.render
 
-[Implementation, line 265](../../../../../src/render/planet/sky-nodes.ts#L265)
+[Implementation, line 266](../../../../../src/render/planet/sky-nodes.ts#L266)
 
 The WebGPU sky pass: draws the sky scene in display space into an 8-bit target, then
 composites it under the frame through `decodeDisplay`.
@@ -427,12 +427,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `gpu.getRenderTarget`
 - `gpu.render`
 - `gpu.setRenderTarget`
+- `skyFog.color.value.copy`
 - `this.quad.render`
 - `this.target.setSize`
 
 ## WebGPUSkyPass.dispose
 
-[Implementation, line 277](../../../../../src/render/planet/sky-nodes.ts#L277)
+[Implementation, line 287](../../../../../src/render/planet/sky-nodes.ts#L287)
 
 The WebGPU sky pass: draws the sky scene in display space into an 8-bit target, then
 composites it under the frame through `decodeDisplay`.
@@ -448,7 +449,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## encodeOutput
 
-[Implementation, line 288](../../../../../src/render/planet/sky-nodes.ts#L288)
+[Implementation, line 298](../../../../../src/render/planet/sky-nodes.ts#L298)
 
 Material output in display values: optional ACES Filmic, then sRGB encode (WebGL's order).
 `shade` edits the linear lit colour first, like code spliced after `outgoingLight`.
@@ -461,13 +462,42 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `acesFilmicToneMapping`
 - `asVec3`
+- `mix`
 - `sRGBTransferOETF`
 - `shade`
+- `skyFogNodes`
+- `tsl.rangeFogFactor`
+- `tsl.rangeFogFactor(fog.near, fog.far).mul`
 - `vec4`
+
+## makeSkyFog
+
+[Implementation, line 326](../../../../../src/render/planet/sky-nodes.ts#L326)
+
+```ts
+makeSkyFog(tsl: NodeKit['tsl']): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Color`
+- `tsl.uniform`
+
+## skyFogNodes
+
+[Implementation, line 334](../../../../../src/render/planet/sky-nodes.ts#L334)
+
+```ts
+skyFogNodes(tsl: NodeKit['tsl']): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `makeSkyFog`
 
 ## earthGlobe
 
-[Implementation, line 308](../../../../../src/render/planet/sky-nodes.ts#L308)
+[Implementation, line 342](../../../../../src/render/planet/sky-nodes.ts#L342)
 
 The earth globe: `encodedTwin` Lambert plus `shadeEarthWithClouds` (cloud shadows and city
 lights), line by line from the GLSL patch in artistic-clouds.ts.
@@ -476,12 +506,12 @@ lights), line by line from the GLSL patch in artistic-clouds.ts.
 earthGlobe(base: THREE.MeshLambertMaterial, sunDirection: THREE.Vector3, coverage: { value: number }, dayHours: { value: number }, amount: { value: number }, nightMap: { value: THREE.Texture | null }): inferred by TypeScript; see implementation
 ```
 
-## earthGlobe.callback@316
+## earthGlobe.callback@350
 
-[Implementation, line 316](../../../../../src/render/planet/sky-nodes.ts#L316)
+[Implementation, line 350](../../../../../src/render/planet/sky-nodes.ts#L350)
 
 ```ts
-callback@316(kit: NodeKit): WebGPUSubstitute
+callback@350(kit: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -496,9 +526,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `webgpu.DataTexture`
 - `webgpu.MeshLambertNodeMaterial`
 
-## earthGlobe.callback@316.sync
+## earthGlobe.callback@350.sync
 
-[Implementation, line 330](../../../../../src/render/planet/sky-nodes.ts#L330)
+[Implementation, line 364](../../../../../src/render/planet/sky-nodes.ts#L364)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -509,12 +539,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `copyState`
 - `material.color.copy`
 
-## earthGlobe.callback@316.callback@343
+## earthGlobe.callback@350.callback@377
 
-[Implementation, line 343](../../../../../src/render/planet/sky-nodes.ts#L343)
+[Implementation, line 377](../../../../../src/render/planet/sky-nodes.ts#L377)
 
 ```ts
-callback@343(outgoing): inferred by TypeScript; see implementation
+callback@377(outgoing): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -555,23 +585,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## invert3
 
-[Implementation, line 365](../../../../../src/render/planet/sky-nodes.ts#L365)
+[Implementation, line 399](../../../../../src/render/planet/sky-nodes.ts#L399)
 
 ```ts
 invert3(m: number[]): number[]
 ```
 
-## invert3.callback@391
+## invert3.callback@425
 
-[Implementation, line 391](../../../../../src/render/planet/sky-nodes.ts#L391)
+[Implementation, line 425](../../../../../src/render/planet/sky-nodes.ts#L425)
 
 ```ts
-callback@391(x): inferred by TypeScript; see implementation
+callback@425(x): inferred by TypeScript; see implementation
 ```
 
 ## asVec3
 
-[Implementation, line 403](../../../../../src/render/planet/sky-nodes.ts#L403)
+[Implementation, line 437](../../../../../src/render/planet/sky-nodes.ts#L437)
 
 TSL's typings cannot see that a colour uniform or a buffer attribute is a vec3.
 
@@ -581,7 +611,7 @@ asVec3(node: unknown): inferred by TypeScript; see implementation
 
 ## copyState
 
-[Implementation, line 408](../../../../../src/render/planet/sky-nodes.ts#L408)
+[Implementation, line 442](../../../../../src/render/planet/sky-nodes.ts#L442)
 
 Blend/depth/visibility state shared by a GLSL original and its node twin.
 

@@ -10,7 +10,7 @@
 
 ## setWebGPUSubstitute
 
-[Implementation, line 28](../../../../src/render/webgpu-substitutes.ts#L28)
+[Implementation, line 30](../../../../src/render/webgpu-substitutes.ts#L30)
 
 Register a TSL equivalent for a GLSL-only object. WebGL never calls `factory`: the object keeps
 drawing exactly as before. Under WebGPU it is built once, on the first frame that shows `object`.
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuSubstitute
 
-[Implementation, line 37](../../../../src/render/webgpu-substitutes.ts#L37)
+[Implementation, line 39](../../../../src/render/webgpu-substitutes.ts#L39)
 
 The built substitute of `object` for this kit, or undefined when it has none.
 
@@ -43,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasWebGPUSubstitute
 
-[Implementation, line 50](../../../../src/render/webgpu-substitutes.ts#L50)
+[Implementation, line 52](../../../../src/render/webgpu-substitutes.ts#L52)
 
 ```ts
 hasWebGPUSubstitute(object: THREE.Object3D): boolean

@@ -114,9 +114,82 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rotate(p, 0.8, 0.6, -0.6, 0.8).mul`
 - `v.addAssign`
 
-## noiseNodes.hash
+## noiseNodes.cumulus
 
 [Implementation, line 44](../../../../../src/render/planet/noise-nodes.ts#L44)
+
+```ts
+cumulus(xz: V2, hours: F, thresh: F): F
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `bank.mul`
+- `bank.mul(0.82).add`
+- `edge.mul`
+- `hours.mul`
+- `lump.mul`
+- `mix`
+- `noise`
+- `p.mul`
+- `p.mul(4.2).add`
+- `rotate`
+- `rotate(p, 0.8, 0.6, -0.6, 0.8).mul`
+- `rotate(p, 0.8, 0.6, -0.6, 0.8).mul(2.15).add`
+- `smoothstep`
+- `thresh.add`
+- `vec2`
+- `xz.add`
+- `xz.add(vec2(hours.mul(28800), hours.mul(9000))).mul`
+
+## noiseNodes.alto
+
+[Implementation, line 53](../../../../../src/render/planet/noise-nodes.ts#L53)
+
+```ts
+alto(xz: V2, hours: F, thresh: F): F
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hours.mul`
+- `noise`
+- `noise(p.mul(2.05).add(vec2(2, 7))).mul`
+- `p.mul`
+- `p.mul(2.05).add`
+- `rotate`
+- `rotate(p0, 0.9, 0.44, -0.44, 0.9).mul`
+- `smoothstep`
+- `thresh.add`
+- `thresh.sub`
+- `vec2`
+- `xz.add`
+
+## noiseNodes.cirrus
+
+[Implementation, line 61](../../../../../src/render/planet/noise-nodes.ts#L61)
+
+```ts
+cirrus(xz: V2, hours: F, thresh: F): F
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `hours.mul`
+- `noise`
+- `noise(p.mul(vec2(2.6, 1.05)).add(vec2(8, 3))).mul`
+- `p.mul`
+- `p.mul(vec2(2.6, 1.05)).add`
+- `rotate`
+- `rotate(p0, 0.62, 0.78, -0.78, 0.62).mul`
+- `smoothstep`
+- `thresh.add`
+- `vec2`
+- `xz.add`
+
+## noiseNodes.hash
+
+[Implementation, line 74](../../../../../src/render/planet/noise-nodes.ts#L74)
 
 ```ts
 hash(p: unknown): F
@@ -128,7 +201,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## noiseNodes.noise
 
-[Implementation, line 45](../../../../../src/render/planet/noise-nodes.ts#L45)
+[Implementation, line 75](../../../../../src/render/planet/noise-nodes.ts#L75)
 
 ```ts
 noise(p: unknown): F
@@ -140,7 +213,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## noiseNodes.fbm
 
-[Implementation, line 46](../../../../../src/render/planet/noise-nodes.ts#L46)
+[Implementation, line 76](../../../../../src/render/planet/noise-nodes.ts#L76)
 
 ```ts
 fbm(p: unknown): F

@@ -82,7 +82,11 @@ export async function createRenderBackend(
     const [webgpu, tsl] = await Promise.all([import('three/webgpu'), import('three/tsl')])
     const gpu = new webgpu.WebGPURenderer({ ...parameters, forceWebGL: false })
     await gpu.init()
-    const renderer = webglSurface(gpu, { webgpu, tsl })
+    const renderer = webglSurface(gpu, {
+      webgpu,
+      tsl,
+      logarithmicDepth: !!parameters.logarithmicDepthBuffer,
+    })
     backends.set(renderer, 'webgpu')
     return { kind: 'webgpu', renderer, requested: preference }
   } catch (error) {
