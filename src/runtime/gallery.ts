@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { balloonTuning } from '../config/gameplay-tuning.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import { type Entity, type Vec3Tuple } from '../entity/schema.js'
 import {
@@ -74,6 +75,8 @@ export class Gallery {
   lastGlassImpact: [number, number, number] | null = null
   /** Where the last shot rang a surface, and which kind (`config/impact-sounds.ts`); null when silent. */
   lastImpact: { point: [number, number, number]; surface: ImpactSurface } | null = null
+  /** Where the last shot burst a balloon and how big the explosion is (1 = a vehicle); null when none. */
+  lastBurst: { point: [number, number, number]; scale: number } | null = null
   private elapsed = 0
   private remaining = 60
   private started = false
@@ -144,6 +147,7 @@ export class Gallery {
   ): boolean {
     this.lastGlassImpact = null
     this.lastImpact = null
+    this.lastBurst = null
     let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
     foreground.setFromCamera(new THREE.Vector2(), camera)
@@ -177,6 +181,19 @@ export class Gallery {
         this.respawn.set(id, this.elapsed + 1.5)
         sprite.object.visible = false
       }
+      return true
+    }
+    // Trunk balloons are render-only: a shot that reaches one first bursts it like a small explosion.
+    const popped = view.destruction.balloons.shoot(
+      ray.ray.origin,
+      ray.ray.direction,
+      solid ? ray.ray.origin.distanceTo(new THREE.Vector3(...solid.point)) : rayView.range,
+    )
+    if (popped) {
+      const { scale, damagesVehicles } = balloonTuning.burst
+      view.destruction.burst(popped.point, scale)
+      sim.blast(popped.point.toArray(), scale, damagesVehicles)
+      this.lastBurst = { point: popped.point.toArray() as Vec3Tuple, scale }
       return true
     }
     // Host instanced scenery can handle exact visible-surface hits (including instance id).

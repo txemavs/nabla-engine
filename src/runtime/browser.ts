@@ -4753,6 +4753,12 @@ export class GameRuntime {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot?.fired && this.gallery.lastGlassImpact)
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
+      if (shot?.fired && this.gallery.lastBurst)
+        this.effects.audio.destruction(
+          this.gallery.lastBurst.point,
+          false,
+          this.gallery.lastBurst.scale,
+        )
       if (shot) events.push(shot)
       if (shot?.fired) {
         this.effects.audio.weaponSound('hammer', weaponPosition)

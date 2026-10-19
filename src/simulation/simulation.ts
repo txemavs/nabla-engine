@@ -149,6 +149,48 @@ export class Simulation {
   }[] {
     return this.explosions.splice(0)
   }
+  /**
+   * A shockwave at `position`: the vehicle-explosion blast, `scale` times its radius and push
+   * (1 = a vehicle). Every dynamic body in range is lifted away from the centre; with `damage`,
+   * other vehicles in range are damaged in proportion to the pressure. Visual and sound are the
+   * host's: this only moves bodies.
+   */
+  blast(position: Vec3Tuple, scale = 1, damage = false): void {
+    if (this.disposed || !position.every(Number.isFinite) || !Number.isFinite(scale) || scale <= 0)
+      return
+    this.applyBlast(new Vec3(...position), scale, null, damage)
+  }
+  private applyBlast(centre: Vec3, scale: number, sourceId: string | null, damage: boolean): void {
+    const radius = explosionTuning.radiusMetres * scale
+    const up = this.radialUpAt(centre)
+    for (const body of this.world.bodies) {
+      if (!body.mass) continue
+      const direction = body.position.vsub(centre)
+      const distance = direction.length()
+      if (distance >= radius) continue
+      const strength = 1 - distance / radius
+      if (distance > 0.1) direction.normalize()
+      else direction.copy(up)
+      direction.vadd(up.scale(0.45), direction)
+      body.wakeUp()
+      // Uneven pressure hits away from the centre of mass, producing real tumble.
+      const application = new Vec3(
+        (Math.random() - 0.5) * explosionTuning.offsetX,
+        (Math.random() - 0.5) * explosionTuning.offsetY,
+        (Math.random() - 0.5) * explosionTuning.offsetZ,
+      )
+      direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
+      direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
+      body.applyImpulse(
+        direction.scale(body.mass * explosionTuning.impulseSpeed * scale * strength),
+        application,
+      )
+      if (damage)
+        for (const [otherId, other] of this.vehicles)
+          if (other.body === body && otherId !== sourceId && !other.definition.passive)
+            this.damage.apply(otherId, strength * 45)
+    }
+  }
   private resolveExplosions(cause: 'weapon' | 'impact' = 'weapon'): void {
     let pending = this.damage.drain()
     while (pending.length) {
@@ -164,34 +206,8 @@ export class Simulation {
         this.bikeMountHold = null
         if (this.vehicleId === id) this.ejectRider(v)
         const centre = v.body.position.clone()
-        const up = this.radialUp(v.body)
         this.explosions.push({ entityId: id, position: vec(centre), cause, occupied })
-        for (const body of this.world.bodies) {
-          if (!body.mass) continue
-          const direction = body.position.vsub(centre)
-          const distance = direction.length()
-          if (distance >= explosionTuning.radiusMetres) continue
-          const strength = 1 - distance / explosionTuning.radiusMetres
-          if (distance > 0.1) direction.normalize()
-          else direction.copy(up)
-          direction.vadd(up.scale(0.45), direction)
-          body.wakeUp()
-          // Uneven pressure hits away from the centre of mass, producing real tumble.
-          const application = new Vec3(
-            (Math.random() - 0.5) * explosionTuning.offsetX,
-            (Math.random() - 0.5) * explosionTuning.offsetY,
-            (Math.random() - 0.5) * explosionTuning.offsetZ,
-          )
-          direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
-          direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
-          body.applyImpulse(
-            direction.scale(body.mass * explosionTuning.impulseSpeed * strength),
-            application,
-          )
-          for (const [otherId, other] of this.vehicles)
-            if (other.body === body && otherId !== id && !other.definition.passive)
-              this.damage.apply(otherId, strength * 45)
-        }
+        this.applyBlast(centre, 1, id, true)
       }
       pending = this.damage.drain()
     }
@@ -1899,8 +1915,11 @@ export class Simulation {
   }
 
   private radialUp(body: Body): Vec3 {
+    return this.radialUpAt(body.position)
+  }
+  private radialUpAt(position: Vec3): Vec3 {
     if (!this.document.geography) return new Vec3(0, 1, 0)
-    const p = body.position.vadd(new Vec3(0, EARTH_RADIUS + this.document.geography.altitude, 0))
+    const p = position.vadd(new Vec3(0, EARTH_RADIUS + this.document.geography.altitude, 0))
     p.normalize()
     return p
   }

@@ -30,3 +30,31 @@ it('opens only for rear shots, emits for 30 seconds, closes and restores the lid
   expect(lid.position.distanceTo(original)).toBeLessThan(1e-6)
   effect.dispose()
 })
+
+it('a shot pops the nearest balloon on the ray and removes it', () => {
+  const space = new Group()
+  const car = new Group()
+  space.add(car)
+  const lid = new Mesh(new BoxGeometry(1.2, 0.15, 0.7), new MeshStandardMaterial())
+  lid.name = 'Maletero'
+  lid.position.set(0, 1, 1.7)
+  car.add(lid)
+  const effect = new TrunkBalloons(space)
+  expect(effect.hit(car, new Vector3(0, 1, 3), new Vector3(0, 0, -1))).toBe(true)
+  for (let i = 0; i < 20; i++) effect.update(0.1)
+  const before = effect.root.children.length
+  expect(before).toBeGreaterThan(1)
+  const target = effect.root.children[0].position.clone()
+  const origin = target.clone().add(new Vector3(0, 0, 6))
+  const direction = new Vector3(0, 0, -1)
+  // A shot that passes beside the balloon, or stops short of it, misses.
+  expect(effect.shoot(origin.clone().add(new Vector3(2, 0, 0)), direction, 20)).toBeNull()
+  expect(effect.shoot(origin, direction, 2)).toBeNull()
+  expect(effect.root.children.length).toBe(before)
+  const popped = effect.shoot(origin, direction, 20)
+  expect(popped).not.toBeNull()
+  expect(popped!.point.distanceTo(target)).toBeLessThan(1e-6)
+  expect(effect.root.children.length).toBe(before - 1)
+  expect(effect.shoot(origin, direction, 20)?.point.equals(target) ?? false).toBe(false)
+  effect.dispose()
+})

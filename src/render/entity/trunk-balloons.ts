@@ -82,6 +82,36 @@ export class TrunkBalloons {
     trunk.remaining = balloonTuning.emissionSeconds
     return true
   }
+  /**
+   * Pop the nearest balloon on a ray in this frame (scene space), if one is within `maxDistance`.
+   * The balloon is removed; returns where it was and how far along the ray. Render-only balloons
+   * have no physics body, so the shot path asks here before it asks the world.
+   */
+  shoot(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    maxDistance: number,
+  ): { point: THREE.Vector3; distance: number } | null {
+    const ray = new THREE.Ray(origin, direction)
+    const sphere = new THREE.Sphere()
+    const point = new THREE.Vector3()
+    let best = -1
+    let bestDistance = maxDistance
+    this.balloons.forEach((balloon, index) => {
+      sphere.set(balloon.mesh.position, balloonTuning.burst.hitRadius * balloon.mesh.scale.x)
+      if (!ray.intersectSphere(sphere, point)) return
+      const distance = point.distanceTo(origin)
+      if (distance <= bestDistance) {
+        best = index
+        bestDistance = distance
+      }
+    })
+    if (best < 0) return null
+    const [burst] = this.balloons.splice(best, 1)
+    const where = burst.mesh.position.clone()
+    burst.mesh.removeFromParent()
+    return { point: where, distance: bestDistance }
+  }
   update(dt: number): void {
     for (const [object, trunk] of this.trunks) {
       if (!trunk.saved[0].node.visible || !trunk.pivot.visible) trunk.remaining = 0

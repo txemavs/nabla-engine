@@ -209,6 +209,15 @@ export const balloonTuning = {
   maxCount: 240,
   openingRadians: 1.15,
   openingRate: 5,
+  /** A shot balloon bursts as the vehicle explosion, `scale` times its size (0–1). */
+  burst: {
+    /** Size of the visual, shockwave radius, push and sound relative to a vehicle explosion. */
+    scale: 0.18,
+    /** Radius a shot has to cross to hit a balloon, metres (the balloon is ~0.16 × 0.2 m). */
+    hitRadius: 0.2,
+    /** Whether the shockwave also damages vehicles in range. A popped balloon does not. */
+    damagesVehicles: false,
+  },
 }
 
 /** Tilting car carrier cargo positions, metres. */

@@ -56,13 +56,14 @@ export class VehicleAudio {
   private nextCasing = 0
   private readonly destructionVoices: { voice: DestructionSound; emitter: SpatialEmitter }[] = []
   private nextDestruction = 0
-  destruction(position: readonly number[], glass = false): void {
+  /** An explosion (or glass break) at `position`; `scale` sizes an explosion, 1 = a vehicle. */
+  destruction(position: readonly number[], glass = false, scale = 1): void {
     const frame = this.frame()
     if (!frame?.audible || !this.context) return
     const entry = this.destructionVoices[this.nextDestruction++ % this.destructionVoices.length]
     entry.emitter.setPosition(position)
     entry.emitter.setListener(this.eye, this.orientation)
-    entry.voice.trigger(frame.time, glass)
+    entry.voice.trigger(frame.time, glass, scale)
   }
   private eye: readonly number[] = [0, 0, 0]
   private orientation: readonly number[] = [0, 0, 0, 1]
