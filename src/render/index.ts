@@ -46,3 +46,17 @@ export {
   type AircraftRigDefinition,
   type AircraftPose,
 } from './entity/aircraft.js'
+export {
+  createRenderBackend,
+  frameDrawCalls,
+  isWebGPU,
+  parseRendererPreference,
+  rendererBackend,
+  webgpuAvailable,
+  WebGPUCompatibility,
+  webgpuSkippedMaterials,
+  type RenderBackend,
+  type RenderBackendKind,
+  type RenderBackendParameters,
+  type RendererPreference,
+} from './backend.js'

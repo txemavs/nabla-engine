@@ -24,4 +24,8 @@ export interface RuntimeFrameSample {
    * queries are still in flight, or a disjoint event invalidated the measurement.
    */
   gpuTiming?: GpuFrameTimings
+  /** Backend that drew the frame (`?renderer=`); absent means the default WebGL renderer. */
+  backend?: 'webgl' | 'webgpu'
+  /** WebGPU only: GLSL-only materials hidden so far because they have no node-material port. */
+  webgpuSkipped?: string[]
 }

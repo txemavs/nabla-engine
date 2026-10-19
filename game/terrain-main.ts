@@ -4,6 +4,7 @@ import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
+import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
 import { assignVehicleColor } from './vehicle-colors.js'
@@ -117,7 +118,19 @@ try {
   const layerDefaults = bootHiddenLayers(boot)
   setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
   bootLog('GameRuntime construct start')
+  // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
+  const rendererPreference = parseRendererPreference(location.search)
+  const backend =
+    rendererPreference === 'webgl'
+      ? undefined
+      : await createRenderBackend(rendererPreference, {
+          canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+          antialias: true,
+          alpha: true,
+          logarithmicDepthBuffer: true,
+        })
   runtime = new GameRuntime({
+    backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',

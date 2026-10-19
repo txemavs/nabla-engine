@@ -18,10 +18,11 @@
 - `../render/portal/environment.js`
 - `./vehicle-monitors.js`
 - `../diagnostics/gpu-timing.js`
+- `../render/backend.js`
 
 ## GameRenderPipeline.dispose
 
-[Implementation, line 69](../../../../src/runtime/render-pipeline.ts#L69)
+[Implementation, line 70](../../../../src/runtime/render-pipeline.ts#L70)
 
 Release owned postprocessing resources; scene, renderer and monitors remain host-owned.
 
@@ -37,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRenderPipeline.render
 
-[Implementation, line 80](../../../../src/runtime/render-pipeline.ts#L80)
+[Implementation, line 81](../../../../src/runtime/render-pipeline.ts#L81)
 
 Render auxiliary views before the main scene and optional depth of field.
 Restore render target, auto-clear and overlay visibility even when a pass throws.
@@ -57,6 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `frame.cull`
 - `frame.lights.map`
 - `frame.shadows.update`
+- `isWebGPU`
 - `latestProgramId`
 - `missingShadowMap`
 - `monitors.finish`
@@ -84,13 +86,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.gpuTiming?.beginPass`
 - `this.gpuTiming?.endFrame`
 - `this.gpuTiming?.endPass`
+- `this.renderWebGPU`
 - `this.shaderPasses.clear`
 - `view.portals.values`
 - `view.renderMirrors`
 
 ## GameRenderPipeline.render.recordShaders
 
-[Implementation, line 84](../../../../src/runtime/render-pipeline.ts#L84)
+[Implementation, line 87](../../../../src/runtime/render-pipeline.ts#L87)
 
 ```ts
 recordShaders(pass: string): inferred by TypeScript; see implementation
@@ -101,36 +104,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `latestProgramId`
 - `this.shaderPasses.set`
 
-## GameRenderPipeline.render.callback@96
+## GameRenderPipeline.render.callback@99
 
-[Implementation, line 96](../../../../src/runtime/render-pipeline.ts#L96)
+[Implementation, line 99](../../../../src/runtime/render-pipeline.ts#L99)
 
 ```ts
-callback@96(object): inferred by TypeScript; see implementation
+callback@99(object): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@107
+## GameRenderPipeline.render.callback@110
 
-[Implementation, line 107](../../../../src/runtime/render-pipeline.ts#L107)
+[Implementation, line 110](../../../../src/runtime/render-pipeline.ts#L110)
 
 ```ts
-callback@107(light): inferred by TypeScript; see implementation
+callback@110(light): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@120
+## GameRenderPipeline.render.callback@123
 
-[Implementation, line 120](../../../../src/runtime/render-pipeline.ts#L120)
+[Implementation, line 123](../../../../src/runtime/render-pipeline.ts#L123)
 
 ```ts
-callback@120(surface): inferred by TypeScript; see implementation
+callback@123(surface): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.render.callback@134
+## GameRenderPipeline.render.callback@137
 
-[Implementation, line 134](../../../../src/runtime/render-pipeline.ts#L134)
+[Implementation, line 137](../../../../src/runtime/render-pipeline.ts#L137)
 
 ```ts
-callback@134(reflection): inferred by TypeScript; see implementation
+callback@137(reflection): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -139,12 +142,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `reflection.position.clone().add`
 - `sky.render`
 
-## GameRenderPipeline.render.callback@155
+## GameRenderPipeline.render.callback@158
 
-[Implementation, line 155](../../../../src/runtime/render-pipeline.ts#L155)
+[Implementation, line 158](../../../../src/runtime/render-pipeline.ts#L158)
 
 ```ts
-callback@155(remote): inferred by TypeScript; see implementation
+callback@158(remote): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -160,9 +163,43 @@ Explicit throws in this body:
 
 - `error`
 
+## GameRenderPipeline.renderWebGPU
+
+[Implementation, line 273](../../../../src/runtime/render-pipeline.ts#L273)
+
+WebGPU frame: mirrors, then the main scene. GLSL passes (sky dome, clouds, portals, depth of
+field, FSR, lens flare) have no node-material port yet and are skipped; see docs/webgpu.md.
+
+```ts
+renderWebGPU(frame: GameRenderFrame): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(frame.overlays ?? []).map`
+- `frame.beforeMain`
+- `frame.cull`
+- `frame.shadows.update`
+- `frame.sky.setViewAspect`
+- `monitors.finish`
+- `monitors.prepare`
+- `performance.now`
+- `renderer.getRenderTarget`
+- `renderer.render`
+- `renderer.setRenderTarget`
+- `view.renderMirrors`
+
+## GameRenderPipeline.renderWebGPU.callback@277
+
+[Implementation, line 277](../../../../src/runtime/render-pipeline.ts#L277)
+
+```ts
+callback@277(object): inferred by TypeScript; see implementation
+```
+
 ## GameRenderPipeline.blankShadowMaps
 
-[Implementation, line 267](../../../../src/runtime/render-pipeline.ts#L267)
+[Implementation, line 317](../../../../src/runtime/render-pipeline.ts#L317)
 
 Clear every shadow map to its far depth (fully lit); the current render target is kept.
 
@@ -178,7 +215,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## missingShadowMap
 
-[Implementation, line 285](../../../../src/runtime/render-pipeline.ts#L285)
+[Implementation, line 338](../../../../src/runtime/render-pipeline.ts#L338)
 
 A shadow-casting light whose map the renderer has not created yet.
 
@@ -190,10 +227,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `lights.some`
 
-## missingShadowMap.callback@286
+## missingShadowMap.callback@339
 
-[Implementation, line 286](../../../../src/runtime/render-pipeline.ts#L286)
+[Implementation, line 339](../../../../src/runtime/render-pipeline.ts#L339)
 
 ```ts
-callback@286(light): inferred by TypeScript; see implementation
+callback@339(light): inferred by TypeScript; see implementation
 ```
