@@ -1,5 +1,6 @@
 import type * as THREE from 'three'
 import type { NodeKit, WebGPUSubstitute } from '../webgpu-substitutes.js'
+import { noiseNodes } from './noise-nodes.js'
 
 /**
  * TSL equivalents of the GLSL sky (dome + sun disc, air glow, moon, Milky Way, stars), drawn by the
@@ -280,15 +281,85 @@ export class WebGPUSkyPass {
   }
 }
 
-/** Material output in display values: optional ACES Filmic, then sRGB encode (WebGL's order). */
-function encodeOutput(material: THREE.Material, toneMapped: boolean, tsl: NodeKit['tsl']) {
+/**
+ * Material output in display values: optional ACES Filmic, then sRGB encode (WebGL's order).
+ * `shade` edits the linear lit colour first, like code spliced after `outgoingLight`.
+ */
+function encodeOutput(
+  material: THREE.Material,
+  toneMapped: boolean,
+  tsl: NodeKit['tsl'],
+  shade?: (linear: ReturnType<NodeKit['tsl']['vec3']>) => unknown,
+) {
   const { output, vec4, sRGBTransferOETF, acesFilmicToneMapping, toneMappingExposure } = tsl
-  const linear = asVec3(output.rgb)
+  const lit = asVec3(output.rgb)
+  const linear = shade ? asVec3(shade(lit)) : lit
   const mapped = toneMapped ? acesFilmicToneMapping(linear, toneMappingExposure) : linear
   ;(material as THREE.Material & { outputNode: unknown }).outputNode = vec4(
     sRGBTransferOETF(mapped) as ReturnType<NodeKit['tsl']['vec3']>,
     output.a,
   )
+}
+
+/**
+ * The earth globe: `encodedTwin` Lambert plus `shadeEarthWithClouds` (cloud shadows and city
+ * lights), line by line from the GLSL patch in artistic-clouds.ts.
+ */
+export function earthGlobe(
+  base: THREE.MeshLambertMaterial,
+  sunDirection: THREE.Vector3,
+  coverage: { value: number },
+  dayHours: { value: number },
+  amount: { value: number },
+  nightMap: { value: THREE.Texture | null },
+) {
+  return (kit: NodeKit): WebGPUSubstitute => {
+    const { webgpu, tsl } = kit
+    const { uniform, texture, uv, normalize, positionLocal, transpose, mat3, modelWorldMatrix } =
+      tsl
+    const { dot, max, atan, vec2, vec3, mix, smoothstep, float } = tsl
+    const { fbm } = noiseNodes(tsl)
+    const material = new webgpu.MeshLambertNodeMaterial()
+    const sun = uniform(sunDirection)
+    const coverageU = uniform(coverage.value)
+    const hoursU = uniform(dayHours.value)
+    const amountU = uniform(amount.value)
+    const black = new webgpu.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1)
+    black.needsUpdate = true
+    const night = texture(nightMap.value ?? black, uv())
+    const sync = () => {
+      copyState(base, material)
+      material.color.copy(base.color)
+      if (material.map !== base.map) {
+        material.map = base.map
+        material.needsUpdate = true
+      }
+      coverageU.value = coverage.value
+      hoursU.value = dayHours.value
+      amountU.value = amount.value
+      night.value = nightMap.value ?? black
+    }
+    sync()
+    encodeOutput(material, base.toneMapped, tsl, (outgoing) => {
+      const n = normalize(positionLocal)
+      const s = normalize(transpose(mat3(modelWorldMatrix)).mul(sun))
+      const mu = dot(n, s)
+      const shadowN = normalize(n.add(s.mul(float(0.018).div(max(mu, 0.12)))))
+      const p = vec2(atan(shadowN.z, shadowN.x), shadowN.y).mul(4.2)
+      const wind = hoursU.mul(0.12)
+      const f = fbm(p.add(vec2(wind, wind.mul(0.35))))
+      const thresh = mix(0.92, 0.18, amountU)
+      const cloud = smoothstep(thresh, thresh.add(0.16), f)
+      const shadow = cloud.mul(smoothstep(0, 0.2, mu)).mul(coverageU)
+      const shaded = outgoing.mul(mix(1, 0.42, shadow))
+      const nightColor = night.rgb
+      const city = max(nightColor.r.sub(nightColor.b), 0)
+      const dark = smoothstep(-0.16, 0.06, mu).oneMinus()
+      const veil = cloud.mul(coverageU).mul(0.5).oneMinus()
+      return shaded.add(vec3(1, 0.92, 0.8).mul(city.mul(1.5).mul(dark).mul(veil)))
+    })
+    return { material, sync }
+  }
 }
 
 function invert3(m: number[]): number[] {

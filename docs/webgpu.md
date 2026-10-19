@@ -21,7 +21,6 @@ of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is 
 | Feature                                             | Under WebGPU                       |
 | --------------------------------------------------- | ---------------------------------- |
 | Sky dome, atmosphere, sun disc, night sky           | TSL port (`sky-nodes.ts`)          |
-| Earth cloud shadows / city lights (globe patch)     | Plain lit globe                    |
 | Clouds (volumetric and artistic)                    | Not drawn                          |
 | Lens flare                                          | Not drawn                          |
 | Ocean sheet                                         | Not drawn                          |

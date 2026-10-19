@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **536 modules; 6281 executable function definitions**.
+Coverage: **537 modules; 6294 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -312,13 +312,14 @@ Coverage: **536 modules; 6281 executable function definitions**.
 | [src/render/planet/loading.worker.ts](src/render/planet/loading.worker.ts.md) | 0 |
 | [src/render/planet/map-artifact.ts](src/render/planet/map-artifact.ts.md) | 2 |
 | [src/render/planet/night-sky.ts](src/render/planet/night-sky.ts.md) | 11 |
+| [src/render/planet/noise-nodes.ts](src/render/planet/noise-nodes.ts.md) | 9 |
 | [src/render/planet/ocean-sheet.ts](src/render/planet/ocean-sheet.ts.md) | 14 |
 | [src/render/planet/osm-roads.ts](src/render/planet/osm-roads.ts.md) | 1 |
 | [src/render/planet/package-photo.ts](src/render/planet/package-photo.ts.md) | 2 |
 | [src/render/planet/place-label.ts](src/render/planet/place-label.ts.md) | 2 |
 | [src/render/planet/provider.ts](src/render/planet/provider.ts.md) | 38 |
 | [src/render/planet/road-batches.ts](src/render/planet/road-batches.ts.md) | 7 |
-| [src/render/planet/sky-nodes.ts](src/render/planet/sky-nodes.ts.md) | 31 |
+| [src/render/planet/sky-nodes.ts](src/render/planet/sky-nodes.ts.md) | 35 |
 | [src/render/planet/sky.ts](src/render/planet/sky.ts.md) | 41 |
 | [src/render/planet/startup-tiles.ts](src/render/planet/startup-tiles.ts.md) | 5 |
 | [src/render/planet/static-tiles.ts](src/render/planet/static-tiles.ts.md) | 12 |

@@ -2,7 +2,7 @@ import { createArtisticClouds, createGlobeClouds, shadeEarthWithClouds } from '.
 import { NightSky } from './night-sky.js'
 import { cloudHours, createCloudLayer } from './clouds.js'
 import { addSunDisc } from './sun-disc.js'
-import { airGlow, encodedTwin, moonDisc, sunDiscDome, WebGPUSkyPass } from './sky-nodes.js'
+import { airGlow, earthGlobe, moonDisc, sunDiscDome, WebGPUSkyPass } from './sky-nodes.js'
 import { webgpuNodeKit } from '../backend.js'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { createLensFlare } from './lens-flare.js'
@@ -201,7 +201,6 @@ export class GeographicView {
       this.backdrop,
       sunDiscDome(this.backdrop.material, this.sunDirection, this.sunDisc.value),
     )
-    setWebGPUSubstitute(this.earth, encodedTwin(this.earth.material as THREE.MeshLambertMaterial))
     setWebGPUSubstitute(this.moon, moonDisc(this.moon.material as Parameters<typeof moonDisc>[0]))
     this.clouds = createCloudLayer(this.sunDirection)
     this.artistic = createArtisticClouds(this.sunDirection)
@@ -215,6 +214,17 @@ export class GeographicView {
       this.globe.dayHours,
       this.globe.amount,
       this.earthNightMap,
+    )
+    setWebGPUSubstitute(
+      this.earth,
+      earthGlobe(
+        this.earth.material as THREE.MeshLambertMaterial,
+        this.sunDirection,
+        this.globe.coverage,
+        this.globe.dayHours,
+        this.globe.amount,
+        this.earthNightMap,
+      ),
     )
     this.air = createAirGlow(this.sunDirection, earthRadius + 0.14)
     this.flare = createLensFlare(this.sunDirection)

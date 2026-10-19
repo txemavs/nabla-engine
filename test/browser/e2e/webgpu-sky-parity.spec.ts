@@ -25,7 +25,31 @@ const views = [
   { name: 'day-sun', at: '2026-06-21T18:00:00Z', look: 'sun', maxMean: 6 },
   // Night over Irun, looking up: stars, Milky Way, planets and the moon.
   { name: 'night-sky', at: '2026-06-21T23:30:00Z', look: 'up', maxMean: 2 },
-] as const
+  // 400 km above Irun, looking at the horizon: earth texture, cloud shadows and city lights.
+  {
+    name: 'earth-day',
+    at: '2026-06-21T12:00:00Z',
+    look: 'horizon',
+    eye: 400000,
+    textures: true,
+    maxMean: 2,
+  },
+  {
+    name: 'earth-night',
+    at: '2026-06-21T23:30:00Z',
+    look: 'horizon',
+    eye: 400000,
+    textures: true,
+    maxMean: 2,
+  },
+] as Array<{
+  name: string
+  at: string
+  look: 'sun' | 'up' | 'horizon'
+  maxMean: number
+  eye?: number
+  textures?: boolean
+}>
 
 for (const view of views) {
   test(`WebGPU sky matches WebGL: ${view.name}`, async ({ page }) => {
@@ -76,20 +100,23 @@ for (const view of views) {
             geography: { latitude: 43.3383, longitude: -1.7894, altitude: 20, imagery: 'offline' },
             entities: [],
           }
-          const sky = new GeographicView(doc, () => {}, false, { textures: false })
+          const sky = new GeographicView(doc, () => {}, false, { textures: view.textures ?? false })
           sky.setLayers({ sky: true, planets: true, sun: true, moon: true, clouds: false })
           const clock = { mode: 'fixed', at: view.at }
-          sky.update([0, 2, 0], new T.Vector3(), clock)
+          const eye = view.eye ?? 2
+          sky.update([0, eye, 0], new T.Vector3(), clock)
           const camera = new T.PerspectiveCamera(60, 480 / 320, 0.1, 1e6)
-          camera.position.set(0, 2, 0)
+          camera.position.set(0, eye, 0)
           const target =
             view.look === 'sun'
               ? sky.sunDirection.clone().add(camera.position)
-              : new T.Vector3(0.3, 2.9, -0.4)
+              : view.look === 'horizon'
+                ? new T.Vector3(0, eye - 0.2, -1)
+                : new T.Vector3(0.3, 2.9, -0.4)
           camera.lookAt(target)
           camera.updateMatrixWorld()
           // WebGPU compiles pipelines asynchronously: keep drawing until they are ready.
-          for (let i = 0; i < 8; i++) {
+          for (let i = 0; i < (view.textures ? 20 : 8); i++) {
             sky.render(renderer, camera, camera.position)
             await new Promise((r) => setTimeout(r, 250))
           }
