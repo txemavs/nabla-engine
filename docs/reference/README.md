@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **524 modules; 6127 executable function definitions**.
+Coverage: **525 modules; 6128 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -381,6 +381,7 @@ Coverage: **524 modules; 6127 executable function definitions**.
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
+| [src/runtime/interface-style.ts](src/runtime/interface-style.ts.md) | 1 |
 | [src/runtime/interface-theme.ts](src/runtime/interface-theme.ts.md) | 0 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |

@@ -41,7 +41,7 @@ export class WeaponControls {
         icon +
         '</svg>'
       button.style.cssText =
-        'width:44px;height:44px;display:grid;place-items:center;padding:0;border:2px solid #395e79;border-radius:12px;background:#142735;color:#c6e6ff;touch-action:none;cursor:pointer'
+        'width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--button,#252525);color:var(--ink,#eee);touch-action:none;cursor:pointer'
       button.addEventListener(
         'pointerdown',
         (event) => {
