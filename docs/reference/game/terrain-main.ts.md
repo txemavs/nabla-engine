@@ -9,7 +9,6 @@
 - `./vr-entry.js`
 - `./fsr-settings.js`
 - `./startup-light-settings.js`
-- `./control-hints.js`
 - `./vr-ui.js`
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/render`
@@ -46,10 +45,11 @@
 - `./host-vehicles.js`
 - `./host-portals.js`
 - `./loading-text.js`
+- `./fps-readout.js`
 
 ## bootLog
 
-[Implementation, line 48](../../../game/terrain-main.ts#L48)
+[Implementation, line 54](../../../game/terrain-main.ts#L54)
 
 ```ts
 bootLog(label: string): inferred by TypeScript; see implementation
@@ -63,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showCells
 
-[Implementation, line 58](../../../game/terrain-main.ts#L58)
+[Implementation, line 64](../../../game/terrain-main.ts#L64)
 
 HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan".
 
@@ -78,25 +78,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.getElementById('location-display')!.after`
 - `formatCells`
 
-## callback@91
+## callback@97
 
-[Implementation, line 91](../../../game/terrain-main.ts#L91)
+[Implementation, line 97](../../../game/terrain-main.ts#L97)
 
 ```ts
-callback@91(entity): inferred by TypeScript; see implementation
+callback@97(entity): inferred by TypeScript; see implementation
 ```
 
-## callback@96
+## callback@102
 
-[Implementation, line 96](../../../game/terrain-main.ts#L96)
+[Implementation, line 102](../../../game/terrain-main.ts#L102)
 
 ```ts
-callback@96(entity): inferred by TypeScript; see implementation
+callback@102(entity): inferred by TypeScript; see implementation
 ```
 
 ## onResolutionScale
 
-[Implementation, line 148](../../../game/terrain-main.ts#L148)
+[Implementation, line 168](../../../game/terrain-main.ts#L168)
 
 ```ts
 onResolutionScale(state): inferred by TypeScript; see implementation
@@ -106,12 +106,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `CustomEvent`
 
-## callback@190
+## callback@211
 
-[Implementation, line 190](../../../game/terrain-main.ts#L190)
+[Implementation, line 211](../../../game/terrain-main.ts#L211)
 
 ```ts
-callback@190(sample): inferred by TypeScript; see implementation
+callback@211(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.getElementById`
+
+## callback@213
+
+[Implementation, line 213](../../../game/terrain-main.ts#L213)
+
+```ts
+callback@213(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -120,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 195](../../../game/terrain-main.ts#L195)
+[Implementation, line 219](../../../game/terrain-main.ts#L219)
 
 ```ts
 onProgress(_status, tiles): inferred by TypeScript; see implementation
@@ -135,7 +147,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 202](../../../game/terrain-main.ts#L202)
+[Implementation, line 226](../../../game/terrain-main.ts#L226)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -143,15 +155,13 @@ onFrame(frame): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `document.getElementById`
 - `showCells`
-- `showControlHints`
 - `showLocation`
 - `showTelemetry`
 
 ## onError
 
-[Implementation, line 209](../../../game/terrain-main.ts#L209)
+[Implementation, line 231](../../../game/terrain-main.ts#L231)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -164,7 +174,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 212](../../../game/terrain-main.ts#L212)
+[Implementation, line 234](../../../game/terrain-main.ts#L234)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -176,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nablaGroundAudit
 
-[Implementation, line 220](../../../game/terrain-main.ts#L220)
+[Implementation, line 242](../../../game/terrain-main.ts#L242)
 
 ```ts
 nablaGroundAudit(): inferred by TypeScript; see implementation
@@ -186,24 +196,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime?.groundAudit`
 
-## callback@222
+## callback@244
 
-[Implementation, line 222](../../../game/terrain-main.ts#L222)
+[Implementation, line 244](../../../game/terrain-main.ts#L244)
 
 ```ts
-callback@222(): inferred by TypeScript; see implementation
+callback@244(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime?.dispose`
 
-## callback@232
+## callback@254
 
-[Implementation, line 232](../../../game/terrain-main.ts#L232)
+[Implementation, line 254](../../../game/terrain-main.ts#L254)
 
 ```ts
-callback@232(): inferred by TypeScript; see implementation
+callback@254(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -211,17 +221,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bootLog`
 - `installHostVehicles`
 
-## callback@272
+## callback@294
 
-[Implementation, line 272](../../../game/terrain-main.ts#L272)
+[Implementation, line 294](../../../game/terrain-main.ts#L294)
 
 ```ts
-callback@272(action): inferred by TypeScript; see implementation
+callback@294(action): inferred by TypeScript; see implementation
 ```
 
-## callback@272.onClick
+## callback@294.onClick
 
-[Implementation, line 274](../../../game/terrain-main.ts#L274)
+[Implementation, line 296](../../../game/terrain-main.ts#L296)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation

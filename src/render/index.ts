@@ -33,6 +33,11 @@ export {
   type TileLayer,
   type LayerStorage,
 } from './planet/tile-layers.js'
+export {
+  setTileClusterCulling,
+  tileClusterCullingEnabled,
+  parseClusterCulling,
+} from './planet/cluster-culling.js'
 
 export {
   assetQualityForDevice,
@@ -46,3 +51,17 @@ export {
   type AircraftRigDefinition,
   type AircraftPose,
 } from './entity/aircraft.js'
+export {
+  createRenderBackend,
+  frameDrawCalls,
+  isWebGPU,
+  parseRendererPreference,
+  rendererBackend,
+  webgpuAvailable,
+  WebGPUCompatibility,
+  webgpuSkippedMaterials,
+  type RenderBackend,
+  type RenderBackendKind,
+  type RenderBackendParameters,
+  type RendererPreference,
+} from './backend.js'
