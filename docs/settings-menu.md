@@ -9,7 +9,7 @@ los menús de los monitores XR/AR ni los parámetros de simulación.
 
 ## Navegación
 
-Las pestañas superiores son Mundo, Opciones, Objetos y Desarrollo. Cada pestaña tiene una
+Las pestañas superiores son Mundo, Configuración, Objetos y Desarrollo. Cada pestaña tiene una
 navegación izquierda y una única sección visible a la derecha. Se conserva la última sección
 seleccionada de cada pestaña. Armas agrupa Apuntado, Posturas y animaciones, y Fogonazo.
 

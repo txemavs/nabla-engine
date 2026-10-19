@@ -24,6 +24,54 @@ const steeringPart = assetPart
   })
   .strict()
 
+const lampColour = z.string().regex(/^#[0-9a-fA-F]{6}$/)
+
+/**
+ * Per-vehicle lamp data, common to every vehicle. `tuning` holds the defaults of the per-model
+ * calibration sliders (schema `nabla.vehicle-lights/1`; offsets in metres in vehicle space, beam
+ * cutoffs in degrees). The player's own choice, saved per model, is applied on top of it.
+ * `lensEmissive` is the colour a lamp lens glows with while that lamp is lit, per lamp channel
+ * (the lens material is the one named `nabla.light.<role>`); channels left out keep the asset's
+ * authored emissive colour.
+ */
+export const vehicleLightsField = z
+  .object({
+    tuning: z
+      .object({
+        low: finite.min(-5).max(5),
+        high: finite.min(-5).max(5),
+        frontX: finite.min(-2).max(2),
+        frontY: finite.min(-2).max(2),
+        frontZ: finite.min(-2).max(2),
+        rearX: finite.min(-2).max(2),
+        rearY: finite.min(-2).max(2),
+        rearZ: finite.min(-2).max(2),
+        rearIntensity: finite.min(0).max(3),
+        rearReach: finite.min(0).max(3),
+      })
+      .partial()
+      .strict()
+      .optional(),
+    lensEmissive: z
+      .object({
+        position: lampColour,
+        brake: lampColour,
+        'tail-stop': lampColour,
+        reverse: lampColour,
+        signal: lampColour,
+        marker: lampColour,
+        'front-signal': lampColour,
+        low: lampColour,
+        high: lampColour,
+        fog: lampColour,
+        cabin: lampColour,
+      })
+      .partial()
+      .strict()
+      .optional(),
+  })
+  .strict()
+
 /**
  * Single-track (two-wheeled) vehicle: a motorcycle or scooter. Its presence selects the
  * two-wheeled controller (`simulation/vehicles/two-wheeled`) and requires exactly two hubs,
@@ -439,6 +487,8 @@ export const vehicleField = z
           .strict(),
       )
       .optional(),
+    /** Lamp calibration defaults and lens glow colours (see `vehicleLightsField`). */
+    lights: vehicleLightsField.optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
     /**

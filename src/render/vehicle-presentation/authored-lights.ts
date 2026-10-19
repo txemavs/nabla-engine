@@ -34,6 +34,40 @@ function channel(value?: string): VehicleLightChannel {
   return channels[value ?? ''] ?? 'position'
 }
 
+/** Lamp roles in a material name `nabla.light.<role>[.l|.r]`, and the channel each one drives. */
+export const lampMaterialRoles: Readonly<Record<string, VehicleLightChannel>> = Object.freeze({
+  position: 'position',
+  low: 'low',
+  high: 'high',
+  fog: 'fog',
+  brake: 'brake',
+  tail: 'tail-stop',
+  reverse: 'reverse',
+  indicator: 'signal',
+  marker: 'marker',
+  cabin: 'cabin',
+})
+
+/**
+ * The lamp a material is named for (`nabla.light.low`, `nabla.light.indicator.l`, …), or
+ * undefined for any other name. This is the convention that tells the engine what a material lights;
+ * the older `extras.vehicleLightChannel` marker still works but is deprecated.
+ */
+export function lampFromMaterialName(
+  name: string,
+): { channel: VehicleLightChannel; side: number } | undefined {
+  const match = /^nabla\.light\.([a-z]+)(?:\.(l|r))?(?:\.[A-Za-z0-9_-]+)*$/.exec(name)
+  const lamp = match && lampMaterialRoles[match[1]]
+  if (!lamp) return undefined
+  return { channel: lamp, side: match[2] === 'l' ? -1 : match[2] === 'r' ? 1 : 0 }
+}
+
+/** Per-vehicle data for the lamp path (from `vehicle.lights`). */
+export interface AuthoredLightOptions {
+  /** Emissive colour of the lens of each lamp channel while lit; others keep the asset colour. */
+  lensEmissive?: Partial<Record<VehicleLightChannel, string>>
+}
+
 const beamCutoff = { low: 0, high: 1 }
 const beamMasks = new Map<DataTexture, boolean>()
 
@@ -116,8 +150,13 @@ export class AuthoredVehicleLights {
   constructor(
     model: Object3D,
     readonly controller = new VehicleLightController(),
+    private readonly options: AuthoredLightOptions = {},
   ) {
     this.absorb(model)
+  }
+  /** Lamp channels this model binds (lights and glowing lenses). */
+  channels(): ReadonlySet<VehicleLightChannel> {
+    return new Set([...this.lamps, ...this.emitters].map((entry) => entry.channel))
   }
   /** Bind lamps from another GLB (a cargo box) onto this vehicle's light controller. */
   absorb(model: Object3D): void {
@@ -126,19 +165,26 @@ export class AuthoredVehicleLights {
         for (const material of Array.isArray(node.material) ? node.material : [node.material])
           if (
             material instanceof MeshStandardMaterial &&
-            (node.userData.role === 'vehicle-emitter' || material.userData.vehicleLightChannel)
+            (node.userData.role === 'vehicle-emitter' ||
+              material.userData.vehicleLightChannel ||
+              lampFromMaterialName(material.name))
           ) {
             if (this.emitters.some((entry) => entry.material === material)) continue
+            const named = lampFromMaterialName(material.name)
+            const lamp = named?.channel ?? channel(material.userData.vehicleLightChannel)
+            const lens = this.options.lensEmissive?.[lamp]
+            if (lens) material.emissive.set(lens)
             this.emitters.push({
               material,
               intensity: material.emissiveIntensity,
-              channel: channel(material.userData.vehicleLightChannel),
+              channel: lamp,
               side:
-                material.userData.vehicleLightSide === 'L'
+                named?.side ??
+                (material.userData.vehicleLightSide === 'L'
                   ? -1
                   : material.userData.vehicleLightSide === 'R'
                     ? 1
-                    : 0,
+                    : 0),
             })
             material.emissiveIntensity = 0
           }
