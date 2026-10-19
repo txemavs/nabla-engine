@@ -1,4 +1,4 @@
-import { balloonTuning } from '../../config/gameplay-tuning.js'
+import { balloonTuning, explosionTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
 
 /** Rear-hit easter egg. Balloons live in the scene frame, independently of the car. */
@@ -29,6 +29,8 @@ export class TrunkBalloons {
   private readonly balloons: {
     mesh: THREE.Group
     velocity: THREE.Vector3
+    /** Extra velocity from nearby bursts; decays with `burst.balloonPush.damping`. */
+    push: THREE.Vector3
     age: number
     phase: number
   }[] = []
@@ -110,7 +112,32 @@ export class TrunkBalloons {
     const [burst] = this.balloons.splice(best, 1)
     const where = burst.mesh.position.clone()
     burst.mesh.removeFromParent()
+    this.blast(where)
     return { point: where, distance: bestDistance }
+  }
+  /**
+   * Shockwave of a burst at `point` (scene space) on the remaining balloons: an outward kick that
+   * falls off linearly to 0 at the burst's shockwave radius; the closest ones may pop with it.
+   */
+  blast(point: THREE.Vector3): void {
+    const { scale, balloonPush } = balloonTuning.burst
+    const radius = explosionTuning.radiusMetres * scale
+    const away = new THREE.Vector3()
+    for (let i = this.balloons.length - 1; i >= 0; i--) {
+      const balloon = this.balloons[i]
+      away.subVectors(balloon.mesh.position, point)
+      const distance = away.length()
+      if (distance >= radius) continue
+      if (distance < balloonPush.chainPopRadius) {
+        balloon.mesh.removeFromParent()
+        this.balloons.splice(i, 1)
+        continue
+      }
+      // A balloon at the burst point has no direction of its own: push it straight up.
+      if (distance < 1e-6) away.set(0, 1, 0)
+      else away.divideScalar(distance)
+      balloon.push.addScaledVector(away, balloonPush.speed * (1 - distance / radius))
+    }
   }
   update(dt: number): void {
     for (const [object, trunk] of this.trunks) {
@@ -144,6 +171,7 @@ export class TrunkBalloons {
             0.9 + Math.random() * 0.6,
             (Math.random() - 0.5) * 0.45,
           ),
+          push: new THREE.Vector3(),
           age: 0,
           phase: Math.random() * 6.28,
         })
@@ -152,7 +180,8 @@ export class TrunkBalloons {
     for (let i = this.balloons.length - 1; i >= 0; i--) {
       const b = this.balloons[i]
       b.age += dt
-      b.mesh.position.addScaledVector(b.velocity, dt)
+      b.mesh.position.addScaledVector(b.velocity, dt).addScaledVector(b.push, dt)
+      b.push.multiplyScalar(Math.exp(-balloonTuning.burst.balloonPush.damping * dt))
       b.mesh.position.x += Math.sin(b.age * 1.7 + b.phase) * dt * 0.12
       b.mesh.rotation.z = Math.sin(b.age * 2 + b.phase) * 0.12
       b.mesh.scale.setScalar(Math.min(1, (balloonTuning.lifetimeSeconds - b.age) / 2))

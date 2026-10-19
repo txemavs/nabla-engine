@@ -222,6 +222,18 @@ export const balloonTuning = {
      * popped balloon must not shove the car it came from (or any other vehicle).
      */
     vehiclePush: 0,
+    /**
+     * The shockwave on the other (render-only) balloons. Range is the burst's shockwave radius,
+     * `explosionTuning.radiusMetres × scale`; the kick falls off linearly to 0 at that range.
+     */
+    balloonPush: {
+      /** Outward speed given to a balloon at the burst point, m/s. */
+      speed: 5,
+      /** Exponential decay of that extra speed, 1/s (air drag on a light balloon). */
+      damping: 2.5,
+      /** Balloons closer than this to the burst pop with it, metres. 0 disables chain pops. */
+      chainPopRadius: 0,
+    },
   },
 }
 
