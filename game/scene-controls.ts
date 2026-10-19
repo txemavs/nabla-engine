@@ -18,7 +18,7 @@ import {
   type SkyClock,
 } from '@nabla/engine/planet/sky'
 import { presetEntities, vehiclePresets } from '@nabla/engine/vehicles'
-import { createPlaceable, placeables, type PlaceableId } from '@nabla/engine/runtime'
+import { createPlaceable, placeables, type PlaceableId } from '@nabla/engine/runtime/core'
 import type { Entity } from '@nabla/engine/scene'
 import { menuSection, menuSubtitle } from './menu.js'
 import { steeringWheelControls, type SteeringWheelRuntime } from './steering-wheel-controls.js'
@@ -487,6 +487,11 @@ export function bindSceneControls(
       showTime()
     })
     showTime()
+    // The menu clock button changes the time with the mouse wheel; follow it here and in the address.
+    window.addEventListener('nabla-sky-clock', () => {
+      remember({ time: formatClockTime(localMinutes(skyTime(runtime.skyClock))) })
+      showTime()
+    })
 
     sky.box.checked = runtime.planetLayers.sky
     sun.box.checked = runtime.planetLayers.sun

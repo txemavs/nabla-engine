@@ -223,6 +223,9 @@ export function bindMotorcycleRig(
   const spin = new Quaternion(),
     turn = new Quaternion()
   const toChain = new Matrix4()
+  const scratchLower = new Vector3(),
+    scratchShock = new Vector3(),
+    scratchSwing = new Quaternion()
 
   function update(pose: MotorcyclePose = {}): MotorcycleRigState {
     const steeringAngle = pose.steeringAngle ?? 0,
@@ -242,8 +245,11 @@ export function bindMotorcycleRig(
     arm.quaternion.copy(turn.setFromAxisAngle(axisMinusX, theta)).multiply(rest.arm)
     front.quaternion.copy(spin.setFromAxisAngle(axisX, frontRoll)).multiply(rest.front)
     rear.quaternion.copy(spin.setFromAxisAngle(axisX, rearRoll)).multiply(rest.rear)
-    const lower = lowerOnArm.clone().applyQuaternion(arm.quaternion).add(arm.position)
-    const swing = new Quaternion().setFromUnitVectors(restShock, lower.clone().sub(top).normalize())
+    const lower = scratchLower.copy(lowerOnArm).applyQuaternion(arm.quaternion).add(arm.position)
+    const swing = scratchSwing.setFromUnitVectors(
+      restShock,
+      scratchShock.copy(lower).sub(top).normalize(),
+    )
     shockBody.quaternion.copy(swing).multiply(rest.shockBody)
     shockRod.quaternion.copy(swing).multiply(rest.shockRod)
     shockRod.position.copy(lower)

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-/** «Distancias»: one section in Configuración → Vídeo with every draw/fog/road/collision distance in km. */
+/** «Distancias»: one section in Configuración → Pantalla with every draw/fog/road/collision distance in km. */
 test('distances section gathers existing and new controls and applies them live', async ({
   page,
 }) => {
@@ -116,7 +116,7 @@ test('distances section gathers existing and new controls and applies them live'
   }, process.cwd())
   expect(result.untouched).toBe(0)
   expect(result.hidden).toBe(false)
-  expect(result.navGroup).toBe('Vídeo')
+  expect(result.navGroup).toBe('Pantalla')
   expect(result.adopted).toBe(true)
   expect(result.labels[0]).toContain('Distancia de dibujo del terreno')
   expect(result.labels.some((label) => label?.startsWith('Niebla'))).toBe(true)

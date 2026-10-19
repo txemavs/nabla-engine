@@ -12,9 +12,19 @@ audio context is unlocked. Hosts pass several encodings; the first the browser c
 ## Module dependencies
 
 
+## musicMayStart
+
+[Implementation, line 31](../../../../src/audio/music.ts#L31)
+
+Whether `track` may start: a `startOn: "host"` track waits until the host released it.
+
+```ts
+musicMayStart(track: Pick<MusicTrack, 'startOn'>, released: boolean): boolean
+```
+
 ## pickMusicSource
 
-[Implementation, line 33](../../../../src/audio/music.ts#L33)
+[Implementation, line 44](../../../../src/audio/music.ts#L44)
 
 First source the element can play, or undefined.
 
@@ -26,12 +36,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `sources.find`
 
-## pickMusicSource.callback@37
+## pickMusicSource.callback@48
 
-[Implementation, line 37](../../../../src/audio/music.ts#L37)
+[Implementation, line 48](../../../../src/audio/music.ts#L48)
 
 ```ts
-callback@37(source): inferred by TypeScript; see implementation
+callback@48(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -40,18 +50,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.constructor
 
-[Implementation, line 49](../../../../src/audio/music.ts#L49)
+[Implementation, line 60](../../../../src/audio/music.ts#L60)
 
 ```ts
 constructor(readonly track: MusicTrack, private readonly createElement: () => MediaLike = () => new Audio()): instance
 ```
 
-## BackgroundMusic.constructor.callback@51
+## BackgroundMusic.constructor.callback@62
 
-[Implementation, line 51](../../../../src/audio/music.ts#L51)
+[Implementation, line 62](../../../../src/audio/music.ts#L62)
 
 ```ts
-callback@51(): inferred by TypeScript; see implementation
+callback@62(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.playing
 
-[Implementation, line 55](../../../../src/audio/music.ts#L55)
+[Implementation, line 66](../../../../src/audio/music.ts#L66)
 
 True once the element exists and is playing.
 
@@ -70,7 +80,7 @@ playing(): boolean
 
 ## BackgroundMusic.start
 
-[Implementation, line 63](../../../../src/audio/music.ts#L63)
+[Implementation, line 74](../../../../src/audio/music.ts#L74)
 
 Create the element on first call (after a gesture), route it into `bus` and play.
 Later calls only resume. Never throws.
@@ -89,12 +99,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.createElement`
 - `this.sync`
 
-## BackgroundMusic.start.callback@68
+## BackgroundMusic.start.callback@79
 
-[Implementation, line 68](../../../../src/audio/music.ts#L68)
+[Implementation, line 79](../../../../src/audio/music.ts#L79)
 
 ```ts
-callback@68(t): inferred by TypeScript; see implementation
+callback@79(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -103,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.halted
 
-[Implementation, line 88](../../../../src/audio/music.ts#L88)
+[Implementation, line 99](../../../../src/audio/music.ts#L99)
 
 True while a fade-out runs or after it: the track stays off until `restart`.
 
@@ -113,7 +123,7 @@ halted(): boolean
 
 ## BackgroundMusic.fadeOut
 
-[Implementation, line 96](../../../../src/audio/music.ts#L96)
+[Implementation, line 107](../../../../src/audio/music.ts#L107)
 
 Fade the track out over `seconds`, then pause it and rewind. It stays off (mix changes and
 gestures do not bring it back) until `restart`. A track not started yet never starts.
@@ -128,12 +138,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.finishFade`
 
-## BackgroundMusic.fadeOut.callback@107
+## BackgroundMusic.fadeOut.callback@118
 
-[Implementation, line 107](../../../../src/audio/music.ts#L107)
+[Implementation, line 118](../../../../src/audio/music.ts#L118)
 
 ```ts
-callback@107(): inferred by TypeScript; see implementation
+callback@118(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -142,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.restart
 
-[Implementation, line 111](../../../../src/audio/music.ts#L111)
+[Implementation, line 122](../../../../src/audio/music.ts#L122)
 
 Play the track again from the start at full level (the bus level still applies).
 
@@ -158,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.finishFade
 
-[Implementation, line 121](../../../../src/audio/music.ts#L121)
+[Implementation, line 132](../../../../src/audio/music.ts#L132)
 
 ```ts
 finishFade(): void
@@ -171,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.stop
 
-[Implementation, line 131](../../../../src/audio/music.ts#L131)
+[Implementation, line 142](../../../../src/audio/music.ts#L142)
 
 Stop playback (mute); `start` resumes it.
 
@@ -185,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.setHidden
 
-[Implementation, line 137](../../../../src/audio/music.ts#L137)
+[Implementation, line 148](../../../../src/audio/music.ts#L148)
 
 Pause while the page is hidden without forgetting that it should play.
 
@@ -199,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.dispose
 
-[Implementation, line 142](../../../../src/audio/music.ts#L142)
+[Implementation, line 153](../../../../src/audio/music.ts#L153)
 
 ```ts
 dispose(): void
@@ -212,7 +222,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## BackgroundMusic.sync
 
-[Implementation, line 151](../../../../src/audio/music.ts#L151)
+[Implementation, line 162](../../../../src/audio/music.ts#L162)
 
 ```ts
 sync(): void
@@ -224,10 +234,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `element.play`
 - `element.play().catch`
 
-## BackgroundMusic.sync.callback@157
+## BackgroundMusic.sync.callback@168
 
-[Implementation, line 157](../../../../src/audio/music.ts#L157)
+[Implementation, line 168](../../../../src/audio/music.ts#L168)
 
 ```ts
-callback@157(): inferred by TypeScript; see implementation
+callback@168(): inferred by TypeScript; see implementation
 ```

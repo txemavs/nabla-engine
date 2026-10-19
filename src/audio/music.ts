@@ -19,6 +19,17 @@ export interface MusicTrack {
   title?: string
   /** Vehicle menu entry (car monitor «MUSICA» page): ASCII, up to 11 characters. */
   menuLabel?: string
+  /**
+   * What starts the track. `gesture` (default): the first user gesture that unlocks audio (any
+   * click or key, loading included). `host`: only the host's `GameRuntime.startMusic()` (for
+   * example after the player confirms a start screen); gestures before that stay silent.
+   */
+  startOn?: 'gesture' | 'host'
+}
+
+/** Whether `track` may start: a `startOn: "host"` track waits until the host released it. */
+export function musicMayStart(track: Pick<MusicTrack, 'startOn'>, released: boolean): boolean {
+  return track.startOn !== 'host' || released
 }
 
 type MediaLike = Pick<HTMLAudioElement, 'canPlayType' | 'play' | 'pause' | 'paused'> & {

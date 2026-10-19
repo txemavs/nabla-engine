@@ -30,13 +30,18 @@ import {
   controlsHint,
   type InputContext,
 } from '../config/input-bindings.js'
-import { XRForklift } from './xr-forklift.js'
 import { readXRQuality } from './xr-quality.js'
-import { XRMotorcycle } from './xr-motorcycle.js'
+import type { GameXR, XRForklift, XRGrab, XRLoadout, XRMotorcycle } from './xr-runtime-parts.js'
+
+type XRParts = typeof import('./xr-runtime-parts.js')
+import { vehicleOptions } from './vehicle-options.js'
+import {
+  normalizeVehiclePreferences,
+  readVehiclePreferences,
+  writeVehiclePreferences,
+  type VehiclePreferences,
+} from './vehicle-preferences.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
-import { XRLoadout } from './xr-loadout.js'
-import { XRGrab } from './xr-grab.js'
-import { GameXR } from './xr.js'
 import { normalizeWeaponWheel, stepWeaponWheel } from './weapon-wheel.js'
 import { normalViewTuning, smokeTuning, actionCamTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
@@ -148,6 +153,7 @@ import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer
 import type { MusicTrack } from '../audio/music.js'
 import {
   cameraFovFor,
+  cameraFovRange,
   nextCameraFovOffset,
   readCameraFovOffset,
   writeCameraFovOffset,
@@ -491,7 +497,30 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 }
 
 export class GameRuntime {
-  readonly xr: GameXR
+  /** XR system once `loadXR()` resolved; null on a page that never asked for XR. */
+  private xrSystem: GameXR | null = null
+  private xrParts: XRParts | null = null
+  private xrLoading: Promise<GameXR> | null = null
+  /**
+   * The XR system. XR code is loaded on demand: call `await runtime.loadXR()` first (XR / AR
+   * pages do it before their UI); reading this before throws.
+   */
+  get xr(): GameXR {
+    if (!this.xrSystem) throw new Error('XR is not loaded: await runtime.loadXR() first')
+    return this.xrSystem
+  }
+  /** True once the XR code is loaded. */
+  get xrLoaded(): boolean {
+    return !!this.xrSystem
+  }
+  /** True while an XR session runs (false while XR is not loaded). */
+  private get xrActive(): boolean {
+    return this.xrSystem?.active ?? false
+  }
+  /** XR quality settings: the live ones once loaded, else the saved ones. */
+  private get xrQuality() {
+    return this.xrSystem?.quality ?? readXRQuality()
+  }
   readonly game = new SharedGameRuntime()
   readonly session = this.game.session
   /** The one scenery-physics service: sign and traffic-light poles register layers here. */
@@ -596,10 +625,10 @@ export class GameRuntime {
   private aimLean = 0
   private weaponDrawn = false
   private fireRequested = false
-  private readonly xrForklift = new XRForklift()
+  private xrForklift: XRForklift | null = null
   private xrMotorcycle: XRMotorcycle | null = null
   private xrLoadout: XRLoadout | null = null
-  private xrGrab!: XRGrab
+  private xrGrab: XRGrab | null = null
   private triggerReleased = false
   /**
    * Left button held (on foot, pistol drawn). `fireRequested` is a one-frame edge cleared every
@@ -990,6 +1019,8 @@ export class GameRuntime {
     this.syncPlanet()
     this.effects = new VehicleEffects(this.scene)
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
+    this.effects.reverseAlarmEnabled = (entity) =>
+      this.vehiclePreferences(entity.visual?.body.url ?? entity.id).reverseAlarm
     this.effects.audio.setEnabled(options.audio !== false)
     this.effects.audio.setMusic(options.music)
     if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
@@ -1105,11 +1136,36 @@ export class GameRuntime {
         this.options.onError?.(error)
       }
     })
+    this.loop.setMaxFps(this.display.maxFps)
+    this.originalTabIndex = options.canvas.getAttribute('tabindex')
+    options.canvas.tabIndex = 0
+    this.bindInput()
+    this.observer = new ResizeObserver(() => this.resize())
+    this.observer.observe(options.canvas)
+    this.resize()
+  }
+
+  /**
+   * Load the XR code (dynamic import) and create the XR system; resolves to the same instance on
+   * every call. Desktop pages never call it, so they do not download the headset code.
+   */
+  loadXR(): Promise<GameXR> {
+    this.assertAlive()
+    this.xrLoading ??= import('./xr-runtime-parts.js').then((parts) => {
+      if (this.disposed) throw new Error('GameRuntime was disposed')
+      this.xrParts = parts
+      this.xrSystem = this.createXR(parts)
+      return this.xrSystem
+    })
+    return this.xrLoading
+  }
+  private createXR(parts: XRParts): GameXR {
     let desktopView:
       Pick<GameCameraState, 'mode' | 'firstPerson' | 'bodycam' | 'pitch' | 'headPitch'> | undefined
     const desktopSunVisible = this.sun.visible
-    this.xrGrab = new XRGrab(this.scene)
-    this.xr = new GameXR(
+    this.xrGrab = new parts.XRGrab(this.scene)
+    this.xrForklift = new parts.XRForklift()
+    const xr = new parts.GameXR(
       this.renderer,
       this.camera,
       this.scene,
@@ -1131,12 +1187,12 @@ export class GameRuntime {
           this.renderer.setAnimationLoop((time, frame) => {
             if (!frame || this.disposed) return
             try {
-              this.xr.update(frame)
+              xr.update(frame)
               this.frameXR(time)
             } catch (error) {
               this.pause()
               this.options.onError?.(error)
-              void this.xr.exit()
+              void xr.exit()
             }
           })
         } else {
@@ -1156,13 +1212,7 @@ export class GameRuntime {
       },
       (error) => this.options.onError?.(error),
     )
-    this.loop.setMaxFps(this.display.maxFps)
-    this.originalTabIndex = options.canvas.getAttribute('tabindex')
-    options.canvas.tabIndex = 0
-    this.bindInput()
-    this.observer = new ResizeObserver(() => this.resize())
-    this.observer.observe(options.canvas)
-    this.resize()
+    return xr
   }
 
   /** Prepare usable terrain and presentation before starting physics; reject cancelled/failed loads. */
@@ -1287,7 +1337,7 @@ export class GameRuntime {
       this.effects.audio.setSuspended(globalThis.document.hidden)
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
       this.lastTime = null
-      if (this.options.clock !== 'manual' && !this.xr.active) this.loop.start()
+      if (this.options.clock !== 'manual' && !this.xrActive) this.loop.start()
     } catch (error) {
       if (this.loading === controller) this.stop()
       throw error
@@ -1317,7 +1367,7 @@ export class GameRuntime {
     this.game.resume()
     this.effects.audio.setSuspended(document.hidden)
     this.lastTime = null
-    if (this.session.state === 'playing' && this.options.clock !== 'manual' && !this.xr.active)
+    if (this.session.state === 'playing' && this.options.clock !== 'manual' && !this.xrActive)
       this.loop.start()
   }
   /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
@@ -1370,7 +1420,7 @@ export class GameRuntime {
   tick(time: number): void {
     this.assertAlive()
     if (this.options.clock !== 'manual') throw new Error('tick requires a manual clock')
-    if (!this.xr.active) this.frame(time)
+    if (!this.xrActive) this.frame(time)
   }
   /** Fit renderer and projection to canvas CSS dimensions; ignore notifications after disposal. */
   resize(): void {
@@ -1390,7 +1440,7 @@ export class GameRuntime {
     this.stop()
     this.disposed = true
     this.renderer.setAnimationLoop(null)
-    this.xr.dispose()
+    this.xrSystem?.dispose()
     this.lifetime.abort()
     this.observer.disconnect()
     this.game.dispose()
@@ -1398,7 +1448,7 @@ export class GameRuntime {
     setPlanetCharts(() => [])
     setNavigationPlaces(() => [])
     setNavigationRoads(() => [])
-    this.xrGrab.dispose()
+    this.xrGrab?.dispose()
     this.xrLoadout?.pistols[1]?.weapon.dispose()
     this.xrLoadout?.dispose()
     this.sidearm?.dispose()
@@ -1438,10 +1488,14 @@ export class GameRuntime {
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
   private frameXR(time: number): void {
+    const xr = this.xrSystem!
+    const parts = this.xrParts!
+    const xrGrab = this.xrGrab!
+    const xrForklift = this.xrForklift!
     const started = performance.now()
     const sim = this.session.simulation
     if (!sim || this.session.state !== 'playing') return
-    const enabled = this.xr.visible
+    const enabled = xr.visible
     const dt =
       enabled && this.lastTime !== null
         ? Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
@@ -1450,21 +1504,21 @@ export class GameRuntime {
     if (!enabled) this.releaseInput()
     const vehicle = sim.player.vehicleId
     const info = vehicle ? sim.vehicleInfo(vehicle) : null
-    this.xr.reservedInput = (source) =>
+    xr.reservedInput = (source) =>
       (this.xrMotorcycle?.owns(source) ?? false) ||
-      this.xrForklift.owns(source) ||
-      this.xr.grabHands.some(
+      xrForklift.owns(source) ||
+      xr.grabHands.some(
         (hand) =>
           hand.source === source &&
           !!this.xrLoadout?.occupied(hand) &&
           !this.xrLoadout.pistols.some((pistol) => pistol.holder?.source === source),
       )
-    this.xr.interactCalibration(enabled, (source) => {
+    xr.interactCalibration(enabled, (source) => {
       const pistol = this.xrLoadout?.pistols.find((p) => p.holder?.source === source)
       return pistol?.weapon.worldMuzzle() ?? null
     })
-    const controls = this.xr.input.read(
-      this.xr.gameplaySources,
+    const controls = xr.input.read(
+      xr.gameplaySources,
       !!info?.flightMode,
       !!vehicle,
       enabled,
@@ -1472,15 +1526,15 @@ export class GameRuntime {
     )
     if (vehicle && !info?.flightMode && this.xrLoadout) {
       const freeTrigger = (side: string) => {
-        const hand = this.xr.grabHands.find((h) => h.source?.handedness === side)
-        return hand && !this.xrLoadout!.occupied(hand) && !this.xr.calibrationOwns(hand.source)
+        const hand = xr.grabHands.find((h) => h.source?.handedness === side)
+        return hand && !this.xrLoadout!.occupied(hand) && !xr.calibrationOwns(hand.source)
           ? (hand.source?.gamepad?.buttons[0]?.value ?? 0)
           : 0
       }
       controls.touch.forward = freeTrigger('right') - freeTrigger('left')
     }
     for (const code of controls.actions) {
-      if (code === 'xr.menu') this.xr.toggleMenu()
+      if (code === 'xr.menu') xr.toggleMenu()
       else this.action(code)
     }
     // Keep a stable body heading. Head orientation belongs exclusively to WebXR.
@@ -1508,18 +1562,18 @@ export class GameRuntime {
     this.view.flushMapInstall(
       streamingDefaults.mapInstallBudgetMs,
       streamingDefaults.mapInstallCount,
-      this.xr.rig.position,
+      xr.rig.position,
     )
     const bike =
       !!sim.player.vehicleId &&
       !!this.document.entities.find((e) => e.id === sim.player.vehicleId)?.vehicle?.twoWheeled
-    this.xrMotorcycle ??= new XRMotorcycle(this.xr.calibration)
+    this.xrMotorcycle ??= new parts.XRMotorcycle(xr.calibration)
     const motorcycleInput = this.xrMotorcycle.update(
-      this.xr.grabHands.filter(
+      xr.grabHands.filter(
         (hand) =>
           !this.xrLoadout?.occupied(hand) &&
-          !this.xr.calibrationOwns(hand.source) &&
-          !this.xrForklift.owns(hand.source),
+          !xr.calibrationOwns(hand.source) &&
+          !xrForklift.owns(hand.source),
       ),
       bike ? this.view.motorcycleGrab(sim.player.vehicleId!) : null,
       info?.steer ?? 0,
@@ -1533,31 +1587,40 @@ export class GameRuntime {
     const forklift =
       vehicle && this.document.entities.find((e) => e.id === vehicle)?.vehicle?.forklift
     sim.setForkliftInput(
-      this.xrForklift.update(
+      xrForklift.update(
         enabled
-          ? this.xr.grabHands.filter(
-              (h) => !this.xrLoadout?.occupied(h) && !this.xr.calibrationOwns(h.source),
+          ? xr.grabHands.filter(
+              (h) => !this.xrLoadout?.occupied(h) && !xr.calibrationOwns(h.source),
             )
           : [],
         forklift ? (this.view.objects.get(vehicle!) ?? null) : null,
       ),
     )
-    const wheelInput = this.xrGrab.wheel(
+    const wheelInput = xrGrab.wheel(
       enabled
-        ? this.xr.grabHands.filter(
+        ? xr.grabHands.filter(
             (hand) =>
               !this.xrLoadout?.occupied(hand) &&
-              !this.xr.calibrationOwns(hand.source) &&
-              !this.xrForklift.owns(hand.source),
+              !xr.calibrationOwns(hand.source) &&
+              !xrForklift.owns(hand.source),
           )
         : [],
       vehicle ? this.view.steeringGrab(vehicle) : null,
       info?.steer ?? 0,
     )
     if (wheelInput !== null) controls.touch.right = wheelInput
+    // Tethered PC VR keeps the desktop devices: the USB wheel and pedals, a standard gamepad and
+    // the keyboard drive exactly as on the desktop (the same polling, mapping and bindings).
+    // Standalone headsets have none of these, so nothing changes there.
+    // Unlike the desktop frame, losing focus must not release input here: that would also drop
+    // the headset controllers' state. Held keys are simply ignored until the canvas has focus.
+    this.keys.expire(performance.now())
+    const pad = this.pollGamepad()
     const input = this.game.readInput(dt, {
-      keys: new Set(),
-      yaw: this.cameraState.yaw + (sim.player.vehicleId ? 0 : this.xr.headYaw),
+      keys: this.hasInput() ? this.keys.values : new Set(),
+      yaw: this.cameraState.yaw + (sim.player.vehicleId ? 0 : xr.headYaw),
+      pad,
+      usb: this.usbFrame,
       touch: controls.touch,
       enabled,
     })
@@ -1574,9 +1637,9 @@ export class GameRuntime {
     const physicsMs = performance.now() - physicsStarted
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.sync(sim, dt, true, 0, 0)
-    this.game.updateCamera(this.view, this.xr.anchorCamera, time, dt)
-    const eye = this.xr.anchorCamera.position.clone()
-    const rotation = this.xr.anchorCamera.quaternion.clone()
+    this.game.updateCamera(this.view, xr.anchorCamera, time, dt)
+    const eye = xr.anchorCamera.position.clone()
+    const rotation = xr.anchorCamera.quaternion.clone()
     this.origin.set(0, 0, 0)
     if (
       new THREE.Vector3(...sim.player.position).length() > streamingDefaults.floatingOriginDistance
@@ -1602,8 +1665,8 @@ export class GameRuntime {
     this.scene.fog = new THREE.Fog(this.scene.background, this.quality.fog * 0.75, this.quality.fog)
     this.sun.visible = true
     this.cull(eye)
-    this.xr.anchor(eye.clone().sub(this.origin), rotation)
-    this.xr.calibrationScreen?.sync(this.camera, this.origin, enabled, time)
+    xr.anchor(eye.clone().sub(this.origin), rotation)
+    xr.calibrationScreen?.sync(this.camera, this.origin, enabled, time)
     const head = this.camera.getWorldPosition(new THREE.Vector3()).add(this.origin)
     this.effects.audio.setListener(
       head.toArray(),
@@ -1612,9 +1675,9 @@ export class GameRuntime {
     )
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
-    this.view.impacts.setLimit(this.xr.quality.impactLimit)
-    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
-    this.view.sparks.enabled = this.xr.quality.sparks
+    this.view.impacts.setLimit(xr.quality.impactLimit)
+    this.casingMotion?.setLimit(xr.quality.casingLimit)
+    this.view.sparks.enabled = xr.quality.sparks
     this.view.sparks.update(time)
     this.view.destruction.update(dt, this.smokeOn, (from, direction, length, excludeEntityId) => {
       const hit = sim.shoot(
@@ -1629,21 +1692,21 @@ export class GameRuntime {
         : null
     })
     if (this.sidearm) {
-      this.xrLoadout ??= new XRLoadout(
+      this.xrLoadout ??= new parts.XRLoadout(
         this.scene,
         [this.sidearm, this.createSidearm(this.sidearm.preset!)],
-        this.xr.calibration,
+        xr.calibration,
       )
       const loadout = this.xrLoadout
-      loadout.showVest = this.xr.quality.showVest
+      loadout.showVest = xr.quality.showVest
       const height = this.renderer.getDrawingBufferSize(new THREE.Vector2()).y
       const events = loadout.update(
-        this.xr.grabHands.filter(
+        xr.grabHands.filter(
           (hand) =>
             loadout.occupied(hand) ||
-            (!this.xr.calibrationOwns(hand.source) &&
+            (!xr.calibrationOwns(hand.source) &&
               !this.xrMotorcycle?.owns(hand.source) &&
-              !this.xrForklift.owns(hand.source)),
+              !xrForklift.owns(hand.source)),
         ),
         this.camera,
         this.origin,
@@ -1673,7 +1736,7 @@ export class GameRuntime {
           pistol.gripMode === 'handle' &&
           !!pistol.holder?.source?.gamepad?.buttons[0]?.pressed &&
           !loadout.slideHeld(pistol) &&
-          !this.xr.calibrationOwns(pistol.holder?.source ?? null)
+          !xr.calibrationOwns(pistol.holder?.source ?? null)
         this.fireRequested = down && !pistol.triggerDown
         this.triggerReleased = !down
         this.triggerDown = pistol.triggerDown = down
@@ -1706,7 +1769,7 @@ export class GameRuntime {
     this.updateHeadlamp(this.camera)
     this.renderer.info.reset()
     const shadowEnabled = this.renderer.shadowMap.enabled
-    const xrShadows = this.xr.quality.shadows && this.shadows.enabled
+    const xrShadows = xr.quality.shadows && this.shadows.enabled
     this.renderer.shadowMap.enabled = xrShadows
     const shadowLights = this.shadows.lights.map((light) => ({ light, visible: light.visible }))
     for (const { light } of shadowLights) light.visible = xrShadows
@@ -1721,12 +1784,12 @@ export class GameRuntime {
       this.renderer.shadowMap.needsUpdate = true
     }
     const hiddenWheels =
-      this.xr.quality.hideOwnWheels && sim.player.vehicleId
+      xr.quality.hideOwnWheels && sim.player.vehicleId
         ? (this.view.wheels.get(sim.player.vehicleId) ?? []).filter((wheel) => wheel.visible)
         : []
     for (const wheel of hiddenWheels) wheel.visible = false
     const sparkVisible = this.view.sparks.root.visible
-    this.view.sparks.root.visible = this.xr.quality.sparks && sparkVisible
+    this.view.sparks.root.visible = xr.quality.sparks && sparkVisible
     try {
       this.renderer.render(this.scene, this.camera)
     } finally {
@@ -1741,7 +1804,7 @@ export class GameRuntime {
     this.options.canvas.dataset.xrCalls = String(this.renderer.info.render.calls)
     this.effects.updateAudio(sim, this.document, eye)
     if (enabled)
-      this.xr.recordStats(
+      xr.recordStats(
         time,
         performance.now() - started,
         physicsMs,
@@ -1761,7 +1824,7 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (this.disposed || !sim || this.session.state !== 'playing') return
     if (!Number.isFinite(time)) throw new Error('Invalid frame time')
-    const measuring = !!this.options.onDiagnostics || !!this.xr.onStats
+    const measuring = !!this.options.onDiagnostics || !!this.xrSystem?.onStats
     const cpuStart = performance.now()
     const programsBefore = this.renderer.info.programs?.length ?? 0
     const programIdBefore = this.options.performanceLog
@@ -2015,9 +2078,9 @@ export class GameRuntime {
     this.gallery.update(this.view, true, dt)
     this.view.tracers.update(time)
     this.view.scrapeSparks(sim, time)
-    this.view.impacts.setLimit(this.xr.quality.impactLimit)
-    this.casingMotion?.setLimit(this.xr.quality.casingLimit)
-    this.view.sparks.enabled = this.xr.quality.sparks
+    this.view.impacts.setLimit(this.xrQuality.impactLimit)
+    this.casingMotion?.setLimit(this.xrQuality.casingLimit)
+    this.view.sparks.enabled = this.xrQuality.sparks
     this.view.sparks.update(time)
     const replacement = playing ? this.accidentReplacement?.step(dt) : null
     if (replacement && this.world) {
@@ -2410,7 +2473,7 @@ export class GameRuntime {
         height: this.renderer.domElement.height,
         droppedSeconds: sim.stats.droppedSeconds,
       })
-    this.xr.recordStats(
+    this.xrSystem?.recordStats(
       time,
       performance.now() - cpuStart,
       physicsMs,
@@ -3227,6 +3290,64 @@ export class GameRuntime {
       lamps: this.view.vehicleLamps(id),
       mirrors: this.view.mirrorModel(id) !== undefined,
       exhaust: this.view.hasExhaust(id),
+      options: vehicleOptions(entity.vehicle, {
+        lamps: this.view.vehicleLamps(id),
+        mirrors: this.view.mirrorModel(id) !== undefined,
+        exhaust: this.view.hasExhaust(id),
+      }),
+    }
+  }
+  /** Saved per-model choices (exhaust, reversing alarm), cached until changed. */
+  private readonly preferenceCache = new Map<string, VehiclePreferences>()
+  private vehiclePreferences(model: string): VehiclePreferences {
+    let value = this.preferenceCache.get(model)
+    if (!value)
+      this.preferenceCache.set(model, (value = readVehiclePreferences(browserStorage(), model)))
+    return value
+  }
+  /** Change and save the occupied model's choices; null on foot. */
+  setVehiclePreferences(patch: Partial<VehiclePreferences>): VehiclePreferences | null {
+    this.assertAlive()
+    const model = this.occupiedVehicle?.model
+    if (!model) return null
+    const next = writeVehiclePreferences(browserStorage(), model, patch)
+    this.preferenceCache.set(model, next)
+    return next
+  }
+  /** The occupied model's choices (defaults on foot). */
+  get occupiedVehiclePreferences(): VehiclePreferences {
+    const model = this.occupiedVehicle?.model
+    return model ? { ...this.vehiclePreferences(model) } : normalizeVehiclePreferences({})
+  }
+  /** Whether the occupied vehicle sounds its reversing alarm (saved per model). */
+  get reverseAlarmEnabled(): boolean {
+    return this.occupiedVehiclePreferences.reverseAlarm
+  }
+  setReverseAlarmEnabled(enabled: boolean): void {
+    this.setVehiclePreferences({ reverseAlarm: enabled })
+  }
+  /** Allowed FOV offset, degrees. */
+  get cameraFovRange(): { readonly min: number; readonly max: number } {
+    return cameraFovRange
+  }
+  /** Player FOV offset in degrees (also in the J menu), saved as `nabla.cameraFov`. */
+  get cameraFovOffset(): number {
+    return this.fovOffset
+  }
+  setCameraFovOffset(offset: number): number {
+    this.assertAlive()
+    this.applyCameraFov(offset)
+    writeCameraFovOffset(browserStorage(), this.fovOffset)
+    return this.fovOffset
+  }
+  /** Put the aiming weapon wheel back to its default and forget the saved one. */
+  resetWeaponWheel(): void {
+    this.assertAlive()
+    this.weaponWheel = normalizeWeaponWheel()
+    try {
+      browserStorage()?.setItem('nabla.weaponWheel', JSON.stringify(this.weaponWheel))
+    } catch {
+      /* Optional storage. */
     }
   }
   /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */
@@ -4238,9 +4359,13 @@ export class GameRuntime {
     this.assertAlive()
     this.revealTasks.push(task)
   }
-  /** Start the background music now if the browser allows it; otherwise the next gesture does. */
+  /**
+   * Start the background music now if the browser allows it; otherwise the next gesture does.
+   * A track with `startOn: "host"` never starts before this call.
+   */
   startMusic(): void {
     this.assertAlive()
+    this.effects.audio.releaseMusic()
     this.effects.audio.unlock()
   }
   /**
@@ -4753,12 +4878,21 @@ export class GameRuntime {
       const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
       if (shot?.fired && this.gallery.lastGlassImpact)
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
+      if (shot?.fired && this.gallery.lastBurst)
+        this.effects.audio.destruction(
+          this.gallery.lastBurst.point,
+          false,
+          this.gallery.lastBurst.scale,
+        )
       if (shot) events.push(shot)
       if (shot?.fired) {
         this.effects.audio.weaponSound('hammer', weaponPosition)
         this.effects.audio.gunshot(weaponPosition, !!shot.locked)
-        if (this.gallery.lastMetalImpact)
-          this.effects.audio.metalImpact(this.gallery.lastMetalImpact)
+        if (this.gallery.lastImpact)
+          this.effects.audio.metalImpact(
+            this.gallery.lastImpact.point,
+            this.gallery.lastImpact.surface,
+          )
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)
@@ -4855,7 +4989,7 @@ export class GameRuntime {
   private ejectCartridge(_sim: Simulation, eyes: boolean, sidearm = this.sidearm): void {
     const casing = sidearm?.preset?.casing
     if (!sidearm || !casing) return
-    if (this.xr.active && this.xrLoadout) {
+    if (this.xrActive && this.xrLoadout) {
       const pose = this.ejectionPose(eyes, sidearm)
       if (!pose) return
       const item = this.xrLoadout.addCartridge(sidearm, pose.position)
@@ -4893,7 +5027,7 @@ export class GameRuntime {
     this.ensureCasingMeshes()
     const pose = this.ejectionPose(eyes, sidearm)
     if (!pose) return
-    this.casingMotion.setLimit(this.xr.quality.casingLimit)
+    this.casingMotion.setLimit(this.xrQuality.casingLimit)
     this.casingMotion.eject(
       pose.position.toArray() as Vec3Tuple,
       pose.right.toArray() as Vec3Tuple,
@@ -5112,6 +5246,8 @@ export class GameRuntime {
     }
   }
   private cycleCamera(): void {
+    // The headset owns the view in XR: the camera action (key, USB or gamepad) does nothing there.
+    if (this.xrActive) return
     // The camera action during the start sequence hands the view to the player (a held engine starts).
     const sim = this.session.simulation
     if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
@@ -5275,7 +5411,7 @@ export class GameRuntime {
       return
     }
     if (
-      this.xr.active &&
+      this.xrActive &&
       this.weaponDrawn &&
       [
         'weapon.magazine',

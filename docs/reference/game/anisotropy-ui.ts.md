@@ -4,7 +4,7 @@
 
 [Source](../../../game/anisotropy-ui.ts)
 
-Ajustes → Vídeo → Postproceso: «Filtrado anisotrópico» for the asphalt and road markings.
+Configuración → Pantalla: «Filtrado anisotrópico» for the asphalt and road markings.
 
 ## Module dependencies
 

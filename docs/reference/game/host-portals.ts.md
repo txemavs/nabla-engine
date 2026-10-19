@@ -26,7 +26,7 @@ Example (two linked portals 300 m apart):
 
 - `@nabla/engine`
 - `@nabla/engine/planet/lat-lon`
-- `@nabla/engine/runtime`
+- `@nabla/engine/runtime/core`
 - `@nabla/engine/scene`
 - `./host-vehicles.js`
 

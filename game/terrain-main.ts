@@ -2,11 +2,11 @@ import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
-import { bindVR } from './vr-ui.js'
+import { bindVR, preloadVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
-import { assignVehicleColor } from './vehicle-colors.js'
+import { assignVehicleColor, sceneHasPresetModel } from './vehicle-colors.js'
 import { hasVehiclePreset, presetEntities } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
@@ -85,11 +85,7 @@ try {
     longitude: config.start!.longitude,
     includeDemoFleet: !solo && config.vehicles.length === 0,
   })
-  if (
-    !solo &&
-    config.vehicles.length === 0 &&
-    !scene.entities.some((entity) => entity.vehicle?.twoWheeled)
-  ) {
+  if (!solo && config.vehicles.length === 0 && !sceneHasPresetModel(scene.entities, 'vfr800')) {
     const motorcycle = presetEntities('vfr800', 'demo-vfr800', [4, 0, 0])
     motorcycle[0].transform.rotation = [
       ...scene.entities.find((entity) => entity.id === 'player-vehicle')!.transform.rotation,
@@ -222,6 +218,7 @@ try {
     Object.assign(window, { nablaGroundAudit: () => runtime?.groundAudit(), nablaRuntime: runtime })
   mountVREntry(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
+  preloadVR(runtime)
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )

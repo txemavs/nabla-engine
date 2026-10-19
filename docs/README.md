@@ -21,6 +21,7 @@ Spanish interface; UI labels are quoted where needed to locate a control.
 | Guide                                            | Read it to…                                                      |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
 | [Visibility distances](visibility-settings.md)   | Find draw, fog, road and collision distances in the menu         |
+| [Impact sounds](impact-sounds.md)                | Know what rings when a shot hits metal, and add a surface kind   |
 | [Controls](controls.md)                          | Edit, drive, latch cargo, fly and select location/time           |
 | [Vehicle control profiles](vehicle-controls.md)  | Pick the touch rig and HUD per vehicle; register new types       |
 | [Videotiro review](videotiro-review.md)          | Understand the original layered scenarios and proposed reuse     |

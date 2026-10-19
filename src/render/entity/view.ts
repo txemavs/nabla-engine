@@ -21,7 +21,13 @@ import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import { withinMapDistance } from '../planet/visibility.js'
 import { CarrierThrusters } from './carrier-thrusters.js'
 import { ShipLights, type ShipSwitch } from './ship-lights.js'
-import { ExhaustSmoke, s3SmokeAmount } from './exhaust-smoke.js'
+import { ExhaustSmoke } from './exhaust-smoke.js'
+import {
+  exhaustOutlets,
+  exhaustSmokeAmount,
+  exhaustSmokeOptions,
+  type ExhaustData,
+} from '../vehicle-presentation/exhaust.js'
 import { MotorcycleSideStand } from './motorcycle-side-stand.js'
 import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
@@ -43,7 +49,7 @@ import {
   type MotorcycleRigBinding,
 } from '../vehicle-presentation/motorcycle-rig.js'
 import { MotorcycleInstruments } from '../vehicle-presentation/motorcycle-instruments.js'
-import { motorcycleMirrorLenses } from '../vehicle-presentation/motorcycle-mirrors.js'
+import { mirrorPartLenses } from '../vehicle-presentation/mirror-parts.js'
 import {
   applyVehicleEnvironment,
   type ReflectionEnvironment,
@@ -156,6 +162,8 @@ export interface SceneViewOptions {
 }
 
 /** Bare renderer. The public package SceneView supplies stock presentation recipes. */
+const WORLD_UP = new THREE.Vector3(0, 1, 0)
+
 export class SceneView {
   private readonly thrusters = new Map<string, CarrierThrusters>()
   private readonly shipLights = new Map<string, ShipLights>()
@@ -168,39 +176,38 @@ export class SceneView {
   private readonly motorcycleRigs = new Map<string, MotorcycleRigBinding>()
   private readonly motorcycleClusters = new Map<string, MotorcycleInstruments>()
   private readonly exhaustSmoke = new Map<string, ExhaustSmoke[]>()
-  private readonly s3Outlets = new Map<string, { outlet: THREE.Object3D; base: THREE.Vector3 }[]>()
-  private readonly motorcycleOutlets = new Map<
+  /** Outlets of each vehicle with exhaust, from `vehicle.exhaust` or the GLB anchor, and its data. */
+  private readonly exhaustOutlets = new Map<
     string,
-    { outlet: THREE.Object3D; base: THREE.Vector3 }[]
-  >()
-  private readonly truckOutlets = new Map<
-    string,
-    { outlet: THREE.Object3D; base: THREE.Vector3 }[]
+    {
+      outlets: { outlet: THREE.Object3D; base: THREE.Vector3 }[]
+      data: ExhaustData | undefined
+    }
   >()
   private truckOffset: readonly [number, number, number] = [0, 0, 0]
   private truckAmount = 1
+  /** The «Escape y humo» quantity, for vehicles whose exhaust is `smoke.amount: "manual"`. */
   setTruckExhaustAmount(amount: number): void {
     this.truckAmount = amount
   }
-  /** Provisional motorcycle exhaust positioning, metres in the chassis frame. */
+  /** Live outlet offset of vehicles whose exhaust is `adjustable`, metres in the chassis frame. */
   setTruckExhaustOffset(offset: readonly [number, number, number]): void {
     this.truckOffset = offset
-    for (const id of this.truckOutlets.keys()) this.applyExhaustOffset(id)
+    for (const [id, entry] of this.exhaustOutlets)
+      if (entry.data?.adjustable) this.applyExhaustOffset(id)
   }
   private applyExhaustOffset(id: string): void {
     const chassis = this.objects.get(id)
-    if (!chassis) return
+    const entry = this.exhaustOutlets.get(id)
+    if (!chassis || !entry) return
     chassis.updateWorldMatrix(true, true)
-    const motorcycle = this.motorcycleOutlets.has(id)
-    const truck = this.truckOutlets.has(id)
-    for (const { outlet, base } of (motorcycle
-      ? this.motorcycleOutlets
-      : truck
-        ? this.truckOutlets
-        : this.s3Outlets
-    ).get(id) ?? []) {
+    const fixed = entry.data?.offset ?? [0, 0, 0]
+    const live = entry.data?.adjustable ? this.truckOffset : [0, 0, 0]
+    for (const { outlet, base } of entry.outlets) {
       const shift = new THREE.Vector3(
-        ...(motorcycle ? [0, -0.05, -0.05] : truck ? this.truckOffset : [0.088, -0.015, -0.025]),
+        fixed[0] + live[0],
+        fixed[1] + live[1],
+        fixed[2] + live[2],
       ).applyQuaternion(chassis.getWorldQuaternion(new THREE.Quaternion()))
       if (outlet.parent)
         shift
@@ -395,7 +402,10 @@ export class SceneView {
     const car = this.carLights.has(id)
     return {
       front: car || (['low', 'high', 'fog'] as const).some((name) => channels?.has(name)),
-      rear: car || (['tail-stop', 'brake', 'reverse'] as const).some((name) => channels?.has(name)),
+      rear:
+        car ||
+        (['tail-stop', 'brake', 'reverse'] as const).some((name) => channels?.has(name)) ||
+        !!(this.objects.get(id) && this.rearLampAnchor(this.objects.get(id)!)),
     }
   }
   /** True when the vehicle has exhaust outlets that smoke. */
@@ -550,6 +560,9 @@ export class SceneView {
   private disposed = false
   private pendingMapMeshes: Entity[] = []
   private readonly mapInstallEye = new THREE.Vector3()
+  /** Scratch values for per-frame work (sync, ride smoothing, sparks, lamp capture): no garbage. */
+  private readonly scratchVectors = Array.from({ length: 6 }, () => new THREE.Vector3())
+  private readonly scratchQuaternions = Array.from({ length: 4 }, () => new THREE.Quaternion())
   get headLightMount(): THREE.Object3D {
     return this.monitor
   }
@@ -798,9 +811,7 @@ export class SceneView {
     this.instruments.get(id)?.dispose()
     this.motorcycleClusters.get(id)?.dispose()
     this.exhaustSmoke.get(id)?.forEach((smoke) => smoke.dispose())
-    this.s3Outlets.delete(id)
-    this.motorcycleOutlets.delete(id)
-    this.truckOutlets.delete(id)
+    this.exhaustOutlets.delete(id)
     this.shipHuds.get(id)?.dispose()
     this.authoredLights.get(id)?.dispose()
     if (group) {
@@ -1227,12 +1238,12 @@ export class SceneView {
     )
   }
   /**
-   * Live rear-view mirrors for a motorcycle GLB (`mirror_L` / `mirror_R` glass), the same as the
-   * cars': cockpit-only reflections, per-side «Espejos» adjustment and `vehicle.mirrorAim` /
-   * `vehicle.mirrorTilt` (0° default: the glass as modelled).
+   * Live rear-view mirrors for any GLB with mirror parts (`extras.nabla.part` `mirror_L` /
+   * `mirror_R`, their glass): cockpit-only reflections, per-side «Espejos» adjustment and
+   * `vehicle.mirrorAim` / `vehicle.mirrorTilt` (0° default: the glass as modelled).
    */
-  private motorcycleMirrors(model: THREE.Object3D, e: Entity): CarMirrors | undefined {
-    const lenses = motorcycleMirrorLenses(model)
+  private partMirrors(model: THREE.Object3D, e: Entity): CarMirrors | undefined {
+    const lenses = mirrorPartLenses(model)
     if (!lenses.length) return undefined
     model.updateWorldMatrix(true, true)
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
@@ -1283,48 +1294,48 @@ export class SceneView {
       }
       adapter?.preparePart?.(model, 'body')
       environment.add(model)
-      const exhaust = equipment?.exhaust
-      if (exhaust) {
-        if (e.visual?.presentation === 'nabla.truck') {
-          this.truckOutlets.set(
-            e.id,
-            [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map((outlet) => ({
-              outlet,
-              base: outlet.position.clone(),
-            })),
-          )
-          this.applyExhaustOffset(e.id)
-        }
-        if (e.visual?.presentation === 'nabla.s3') {
-          this.s3Outlets.set(
-            e.id,
-            [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map((outlet) => ({
-              outlet,
-              base: outlet.position.clone(),
-            })),
-          )
-          this.applyExhaustOffset(e.id)
-        }
-        const emitters = [exhaust.outlet, ...(exhaust.additionalOutlets ?? [])].map(
+      // Outlets come from the vehicle's data and its model; an adapter may still supply them.
+      const exhaustData = e.vehicle?.exhaust
+      const sockets = exhaustOutlets(model, exhaustData)
+      const outlets = sockets.length
+        ? sockets
+        : equipment?.exhaust
+          ? [equipment.exhaust.outlet, ...(equipment.exhaust.additionalOutlets ?? [])]
+          : []
+      if (outlets.length) {
+        this.exhaustOutlets.set(e.id, {
+          outlets: outlets.map((outlet) => ({ outlet, base: outlet.position.clone() })),
+          data: exhaustData,
+        })
+        this.applyExhaustOffset(e.id)
+        const emitters = outlets.map(
           (outlet, index) =>
             new ExhaustSmoke(outlet, this.root, {
-              ...exhaust.options,
-              ...(e.visual?.presentation === 'nabla.s3' ? { emissionRate: 32, capacity: 96 } : {}),
-              emissionPhase: index / (1 + (exhaust.additionalOutlets?.length ?? 0)),
+              ...(sockets.length ? {} : equipment?.exhaust?.options),
+              ...exhaustSmokeOptions(exhaustData),
+              emissionPhase: index / outlets.length,
             }),
         )
         this.exhaustSmoke.set(e.id, emitters)
         this.root.add(...emitters.map((smoke) => smoke.root))
       }
       const twoWheeled = e.vehicle?.twoWheeled
-      if (twoWheeled && hasMotorcycleRig(model))
+      // Articulation parts (`extras.nabla.part`) and gauge anchors (`extras.nabla.gauge`) bind
+      // wherever the model has them, whatever the vehicle class.
+      if (hasMotorcycleRig(model))
         this.motorcycleRigs.set(
           e.id,
           bindMotorcycleRig(
             model,
-            motorcycleRigFromModel(model, { steerLimit: twoWheeled.steerLimit }),
+            motorcycleRigFromModel(model, { steerLimit: twoWheeled?.steerLimit }),
           ),
         )
+      const cluster = MotorcycleInstruments.bind(model, {
+        ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
+        ...e.vehicle?.cluster,
+      })
+      if (cluster) this.motorcycleClusters.set(e.id, cluster)
+      // The side stand belongs to the single-track physics (parked and leaning), not to a model.
       if (twoWheeled) {
         const bottom = Math.min(
           ...definition.hubs.map(
@@ -1338,32 +1349,9 @@ export class SceneView {
         const stand = new MotorcycleSideStand(bottom)
         group.add(stand.root)
         this.motorcycleStands.set(e.id, stand)
-        // `extras.nabla.anchor = 'exhaust'` marks the outlet; the old node name is deprecated.
-        const outlet =
-          anchoredNode(model, 'exhaust') ?? model.getObjectByName('Exhaust_Outlet_Closure')
-        if (outlet) {
-          const socket = new THREE.Object3D()
-          socket.name = 'Motorcycle smoke socket'
-          if (outlet instanceof THREE.Mesh) {
-            outlet.geometry.computeBoundingBox()
-            outlet.geometry.boundingBox?.getCenter(socket.position)
-          }
-          outlet.add(socket)
-          this.motorcycleOutlets.set(e.id, [{ outlet: socket, base: socket.position.clone() }])
-          this.applyExhaustOffset(e.id)
-          const smoke = new ExhaustSmoke(socket, this.root)
-          this.exhaustSmoke.set(e.id, [smoke])
-          this.root.add(smoke.root)
-        }
-        const cluster = MotorcycleInstruments.bind(model, {
-          ...(e.vehicle?.powertrain?.maxRpm ? { redlineRpm: e.vehicle.powertrain.maxRpm } : {}),
-          ...e.vehicle?.cluster,
-        })
-        if (cluster) this.motorcycleClusters.set(e.id, cluster)
       }
       if (equipment?.lights) this.carLights.set(e.id, equipment.lights)
-      const mirrors =
-        equipment?.mirrors ?? (twoWheeled ? this.motorcycleMirrors(model, e) : undefined)
+      const mirrors = equipment?.mirrors ?? this.partMirrors(model, e)
       if (mirrors) {
         this.carMirrors.set(e.id, mirrors)
         const mirrorModel = mirrorModelKey(visual.body.url, visual.steering?.url)
@@ -1753,13 +1741,11 @@ export class SceneView {
       const info = sim.vehicleInfo(id)
       for (const smoke of emitters) {
         smoke.setAmount(
-          this.s3Outlets.has(id)
-            ? s3SmokeAmount(info.rpm, info.engineLoad)
-            : this.motorcycleOutlets.has(id)
-              ? THREE.MathUtils.lerp(0.1, 1, THREE.MathUtils.clamp(info.engineLoad, 0, 1))
-              : this.truckOutlets.has(id)
-                ? this.truckAmount
-                : 1,
+          exhaustSmokeAmount(
+            this.exhaustOutlets.get(id)?.data?.smoke?.amount,
+            info,
+            this.truckAmount,
+          ),
         )
         smoke.setEnabled(this.smokeEnabled)
         smoke.update(
@@ -1900,30 +1886,23 @@ export class SceneView {
       this.avatar.visible = !cockpit
     } else {
       // Smoothed like the cameras (no lag at steady speed); a thrown rider tumbles.
-      this.avatarFollow.update(
-        new THREE.Vector3().fromArray(sim.renderPlayerPosition),
-        sim.player.yaw,
-        elapsed,
-      )
+      const [v0, v1, v2] = this.scratchVectors
+      const [q0, q1, q2, q3] = this.scratchQuaternions
+      this.avatarFollow.update(v0.fromArray(sim.renderPlayerPosition), sim.player.yaw, elapsed)
       this.avatar.position.copy(this.avatarFollow.position)
-      const frame = new THREE.Quaternion().fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
+      const frame = q0.fromArray(sim.playerFrame?.rotation ?? [0, 0, 0, 1])
       this.avatar.quaternion
         .copy(frame)
-        .multiply(
-          new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            this.avatarFollow.heading,
-          ),
-        )
+        .multiply(q1.setFromAxisAngle(WORLD_UP, this.avatarFollow.heading))
       this.monitor.scale.setScalar(0.825)
       this.monitor.position.set(0, 0, 0)
       this.monitorMotion.update(
         this.monitor,
         sim.playerFrame
-          ? this.avatar.position
-              .clone()
-              .sub(new THREE.Vector3(...sim.playerFrame.position))
-              .applyQuaternion(new THREE.Quaternion(...sim.playerFrame.rotation).invert())
+          ? v1
+              .copy(this.avatar.position)
+              .sub(v2.fromArray(sim.playerFrame.position))
+              .applyQuaternion(q2.fromArray(sim.playerFrame.rotation).invert())
           : this.avatar.position,
         this.avatarFollow.heading,
         elapsed,
@@ -1932,7 +1911,9 @@ export class SceneView {
       this.ejectionTumble.update(
         this.monitor,
         sim.playerEjection,
-        this.avatarFollow.velocity.clone().applyQuaternion(this.avatar.quaternion.clone().invert()),
+        v2
+          .copy(this.avatarFollow.velocity)
+          .applyQuaternion(q3.copy(this.avatar.quaternion).invert()),
         elapsed,
         sim.options.playerMode === 'hover' ? 0 : simulationDefaults.playerHalfHeight - 0.2,
       )
@@ -1962,9 +1943,9 @@ export class SceneView {
     const entity = this.document.entities.find((e) => e.id === vehicleId)
     const transform = sim.entityTransform(vehicleId, true)
     const pose = sim.twoWheeledPose(vehicleId)
-    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(
-      new THREE.Quaternion().fromArray(transform.rotation),
-    )
+    const up = this.scratchVectors[3]
+      .copy(WORLD_UP)
+      .applyQuaternion(this.scratchQuaternions[0].fromArray(transform.rotation))
     const bypass =
       sim.vehicleInfo(vehicleId).flightMode ||
       (pose ? pose.crashed || pose.fallen : up.y < Math.cos(THREE.MathUtils.degToRad(40)))
@@ -2013,8 +1994,8 @@ export class SceneView {
         continue
       }
       group.updateWorldMatrix(true, false)
-      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
       if (last && now - last.time < 33) continue
+      const point = group.localToWorld(new THREE.Vector3(...pose.scrapePoint))
       const velocity =
         last && now > last.time
           ? point
@@ -2083,6 +2064,22 @@ export class SceneView {
     })
   }
   private readonly rearLampAnchors = new WeakMap<THREE.Object3D, THREE.Object3D | null>()
+  /** The node that says where a model's tail lamp is (`nabla.anchor = "light.tail.brake"`), if any. */
+  private rearLampAnchor(object: THREE.Object3D): THREE.Object3D | undefined {
+    if (!this.rearLampAnchors.has(object)) {
+      let anchor: THREE.Object3D | null = null
+      object.traverse((node) => {
+        if (
+          node.userData.nabla?.anchor === 'light.tail.brake' ||
+          node.name === 'light.tail.brake' ||
+          node.name === 'light_tail_brake'
+        )
+          anchor = node
+      })
+      this.rearLampAnchors.set(object, anchor)
+    }
+    return this.rearLampAnchors.get(object) ?? undefined
+  }
   private captureOccupiedLights(vehicleId: string | null, sim: Simulation): void {
     const authored = vehicleId ? this.authoredLights.get(vehicleId)?.illuminators() : undefined
     const courtesy = vehicleId ? (this.carLights.get(vehicleId)?.courtesyLights ?? []) : []
@@ -2094,17 +2091,28 @@ export class SceneView {
       entity?.vehicle?.lights?.tuning,
     )
     if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
-    const offset = new THREE.Vector3(tuning.frontX, tuning.frontY, tuning.frontZ)
-    if (group) {
-      offset.applyMatrix4(group.matrixWorld).sub(group.getWorldPosition(new THREE.Vector3()))
-      offset.applyQuaternion(
-        this.vehicleLights.root.getWorldQuaternion(new THREE.Quaternion()).invert(),
-      )
+    // Vehicle-space offsets of a lamp's light, as vectors in the light rig's frame.
+    // Two scratch results (front, rear): capture() reads them at once and keeps neither.
+    const rigOffset = (result: THREE.Vector3, x: number, y: number, z: number) => {
+      result.set(x, y, z)
+      if (group) {
+        result
+          .applyMatrix4(group.matrixWorld)
+          .sub(group.getWorldPosition(this.scratchVectors[3]))
+          .applyQuaternion(
+            this.vehicleLights.root.getWorldQuaternion(this.scratchQuaternions[0]).invert(),
+          )
+      }
+      return result
     }
     this.vehicleLights.capture(
       authored?.spots ?? [],
       [...(authored?.points ?? []), ...courtesy],
-      offset,
+      rigOffset(this.scratchVectors[4], tuning.frontX, tuning.frontY, tuning.frontZ),
+      authored && {
+        lights: authored.rear,
+        offset: rigOffset(this.scratchVectors[5], tuning.rearX, tuning.rearY, tuning.rearZ),
+      },
     )
     if (
       vehicleId &&
@@ -2121,23 +2129,14 @@ export class SceneView {
           (entity.id !== vehicleId && sim.vehicleInfo(entity.id).towVehicleId !== vehicleId)
         )
           continue
-        const bike = !!entity.vehicle.twoWheeled
-        const truck = entity.visual?.presentation === 'nabla.truck'
+        const flagged = !!entity.vehicle.lights?.rearWash
         const trailer = sim.vehicleInfo(entity.id).towVehicleId === vehicleId
         const object = this.objects.get(entity.id)
-        if (object && (bike || truck || trailer)) {
-          if (!this.rearLampAnchors.has(object)) {
-            let anchor: THREE.Object3D | null = null
-            object.traverse((node) => {
-              if (
-                node.userData.nabla?.anchor === 'light.tail.brake' ||
-                node.name === 'light.tail.brake' ||
-                node.name === 'light_tail_brake'
-              )
-                anchor = node
-            })
-            this.rearLampAnchors.set(object, anchor)
-          }
+        if (object) {
+          const anchor = this.rearLampAnchor(object)
+          // Any model that names its tail lamp gets the wash on its anchor; the S3 path above is
+          // the only one without an anchor.
+          if (!(flagged || trailer || (anchor && !this.carLights.has(entity.id)))) continue
           this.vehicleLights.rearGroundGlow(
             object,
             entity.size[0],
@@ -2145,7 +2144,7 @@ export class SceneView {
             1,
             sim.vehicleInfo(vehicleId).braking,
             readVehicleLights(entity.visual?.body.url ?? entity.id, entity.vehicle?.lights?.tuning),
-            this.rearLampAnchors.get(object) ?? undefined,
+            anchor,
           )
         }
       }
@@ -2158,9 +2157,7 @@ export class SceneView {
     this.streetlights.dispose()
     for (const emitters of this.exhaustSmoke.values()) for (const smoke of emitters) smoke.dispose()
     this.exhaustSmoke.clear()
-    this.s3Outlets.clear()
-    this.motorcycleOutlets.clear()
-    this.truckOutlets.clear()
+    this.exhaustOutlets.clear()
     for (const hud of this.shipHuds.values()) hud.dispose()
     for (const mirrors of this.carMirrors.values()) mirrors.dispose()
     this.carMirrors.clear()
@@ -2207,13 +2204,4 @@ export function riderHeadOffset(
     y + (base[1] + eye[1] - y) * t,
     z + (base[2] + eye[2] - z) * t,
   ]
-}
-
-/** First node of a model tagged `extras.nabla.anchor = name`, if any. */
-function anchoredNode(root: THREE.Object3D, name: string): THREE.Object3D | undefined {
-  let found: THREE.Object3D | undefined
-  root.traverse((node) => {
-    if (!found && node.userData.nabla?.anchor === name) found = node
-  })
-  return found
 }

@@ -4,6 +4,7 @@ import { resolveVehicleSound, type ResolvedVehicleSound } from '../audio/vehicle
 import { TireMarks } from '../render/entity/tire-marks.js'
 import { TireSmoke } from '../render/entity/tire-smoke.js'
 import type { SceneDocument } from '../scene/document.js'
+import type { Entity } from '../entity/schema.js'
 import type { Simulation } from '../simulation/simulation.js'
 import type { GearClackProfile } from '../simulation/vehicles/wheeled/contracts.js'
 
@@ -20,6 +21,9 @@ export class VehicleEffects {
   readonly audio: VehicleAudio
   private readonly ownsAudio: boolean
   private disposed = false
+  /** Player switch for the reversing alarm of vehicles that have one (per model, by the host). */
+  reverseAlarmEnabled: (entity: Entity) => boolean = () => true
+  private readonly turbineScratch = new Vector3()
   private shiftVehicleId: string | null = null
   private shiftCount = 0
   private gearChangeCount = 0
@@ -44,7 +48,7 @@ export class VehicleEffects {
         const info = sim.vehicleInfo(entity.id)
         if (!info.flightMode) continue
         const position = sim.entityTransform(entity.id, true).position.map((v) => v * worldScale)
-        const distance = eye.distanceTo(new Vector3(...position))
+        const distance = eye.distanceTo(this.turbineScratch.fromArray(position))
         const level =
           sim.player.vehicleId === entity.id || sim.player.interiorId === entity.id
             ? 0.55
@@ -86,7 +90,12 @@ export class VehicleEffects {
       { turbo: sound.turbo, engine: sound.engine, braking: car?.braking ?? false },
     )
     this.audio.reverseAlarm(
-      !!(piloted?.vehicle?.reverseAlarm && car?.reversing && car.helm !== 'off'),
+      !!(
+        piloted?.vehicle?.reverseAlarm &&
+        this.reverseAlarmEnabled(piloted) &&
+        car?.reversing &&
+        car.helm !== 'off'
+      ),
     )
   }
 

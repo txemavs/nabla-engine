@@ -35,6 +35,9 @@
         "closeAngle": 0,
         "loadAngle": 0.105
       }
+    },
+    "lights": {
+      "rearWash": true
     }
   },
   "visual": {

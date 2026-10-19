@@ -1,3 +1,4 @@
+import { balloonTuning } from '../../src/config/gameplay-tuning.js'
 import { expect, it } from 'vitest'
 import { VehicleDamage } from '../../src/simulation/vehicle-damage.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
@@ -131,3 +132,41 @@ it.each(['car', 'white-truck', 'vfr800'])(
     }
   },
 )
+
+it('a scaled blast pushes bodies in a proportionally smaller radius and only damages on request', () => {
+  const sim = new Simulation({
+    version: 1,
+    name: 'Scaled blast',
+    entities: [
+      createEntity('spawn', 'spawn', [20, 1, 0]),
+      presetVehicle('car', 'near', [1, 1, 0]),
+      presetVehicle('car', 'mid', [5, 1, 0]),
+    ],
+  })
+  try {
+    const bodies = (id: string) =>
+      (sim as unknown as { vehicles: Map<string, Vehicle> }).vehicles.get(id)!.body
+    const push = (id: string) => bodies(id).velocity.length()
+    // A balloon burst (vehiclePush 0, balloonTuning) right behind the car does not move it.
+    sim.blast([0, 1, 0], balloonTuning.burst.scale, false, balloonTuning.burst.vehiclePush)
+    expect(push('near')).toBe(0)
+    expect(sim.vehicleDamage('near').health).toBe(100)
+    sim.blast([0, 1, 0], 0.18)
+    // 12 m × 0.18 = 2.2 m: the car 1 m away is pushed, the one 5 m away is not.
+    expect(push('near')).toBeGreaterThan(0.1)
+    expect(push('mid')).toBe(0)
+    expect(sim.vehicleDamage('near').health).toBe(100)
+    expect(sim.consumeExplosions()).toEqual([])
+    // A full-size blast reaches the far car, with damage on request.
+    sim.blast([0, 1, 0], 1, true)
+    expect(push('mid')).toBeGreaterThan(0.1)
+    expect(sim.vehicleDamage('mid').health).toBeLessThan(100)
+    // Bad input does nothing.
+    const before = push('near')
+    sim.blast([Number.NaN, 0, 0], 1)
+    sim.blast([0, 1, 0], 0)
+    expect(push('near')).toBe(before)
+  } finally {
+    sim.dispose()
+  }
+})

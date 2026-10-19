@@ -19,7 +19,7 @@ to it. `?mirrors=` wins over the build value; a present empty `mirrors=` means n
 
 - `@nabla/engine/vehicles`
 - `@nabla/engine/vehicle-presentation`
-- `@nabla/engine/runtime`
+- `@nabla/engine/runtime/core`
 
 ## parseHostMirrors
 

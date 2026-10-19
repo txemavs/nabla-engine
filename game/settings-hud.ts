@@ -1,10 +1,18 @@
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
-import { createUsbSettingsPanel } from '@nabla/engine/runtime'
+import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
 import { settingsNavigationStyles } from './settings-navigation-styles.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
-import { formatClockTime, localMinutes, skyTime } from '@nabla/engine/planet/sky'
+import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
+import {
+  formatClockTime,
+  localMinutes,
+  shiftSkyClockKeepingRate,
+  skyTime,
+} from '@nabla/engine/planet/sky'
+import { createWheelStepper } from './clock-wheel.js'
+import { vehicleGroupSections, vehicleGroupVisibility } from './vehicle-group.js'
 import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls'
 /**
  * Full-screen HTML monitor for the desktop game. Navigation remounts the existing controls;
@@ -52,8 +60,6 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['terrain-position', 'planet'],
   ['terrain-layers', 'planet'],
   ['settings-layer-air', 'planet'],
-  ['settings-sharpness', 'planet'],
-  ['quality-shadows', 'planet'],
   ['road-style', 'planet'],
   ['settings-planet-air', 'planet'],
   ['settings-planet-sea', 'planet'],
@@ -62,10 +68,14 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-traffic-signs', 'planet'],
   ['settings-options-labels', 'planet'],
   ['display-quality-section', 'options'],
+  ['settings-sharpness', 'options'],
+  ['quality-shadows', 'options'],
   ['settings-distances', 'options'],
   ['display-performance', 'options'],
   ['settings-effects', 'options'],
+  ['settings-muzzle-flash', 'options'],
   ['camera-extras', 'options'],
+  ['settings-camera-fov', 'options'],
   ['settings-action-cam', 'options'],
   ['driving-extras', 'options'],
   ['settings-controls', 'options'],
@@ -75,13 +85,15 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['scene-vehicles', 'objects'],
   ['settings-placed-objects', 'objects'],
   ['settings-object-layout', 'objects'],
+  ['settings-options-driver', 'objects'],
+  ['settings-car-beams', 'objects'],
+  ['settings-vehicle-sound', 'objects'],
+  ['settings-truck-exhaust', 'objects'],
+  ['settings-weapon', 'objects'],
   ['settings-options-sidearm', 'dev'],
   ['settings-weapon-poses', 'dev'],
-  ['settings-muzzle-flash', 'dev'],
-  ['settings-options-driver', 'objects'],
-  ['settings-truck-exhaust', 'objects'],
   ['settings-light', 'dev'],
-  ['settings-car-beams', 'objects'],
+  ['settings-rear-light-nudge', 'dev'],
   ['settings-sign-shadows', 'dev'],
   ['settings-experimental-light-shadows', 'dev'],
   ['settings-config-planet', 'dev'],
@@ -102,7 +114,9 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'road-style': 'Contraste del asfalto',
   'scene-vehicles': 'Añadir',
   'settings-car-beams': 'Luces',
-  'settings-truck-exhaust': 'Humo del camión',
+  'settings-rear-light-nudge': 'Luz trasera (ajuste fino)',
+  'settings-truck-exhaust': 'Escape y humo',
+  'settings-vehicle-sound': 'Sonido',
   'settings-options-driver': 'Conductor y espejos',
   'display-quality-section': 'Calidad',
   'settings-options-labels': 'Nombres de lugares',
@@ -110,7 +124,9 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-planet-air': 'Climatología',
   'quality-shadows': 'Sombras del sol',
   'camera-extras': 'Opciones',
-  'settings-management': 'Ajustes',
+  'settings-management': 'Gestión',
+  'settings-camera-fov': 'Campo de visión',
+  'settings-weapon': 'Rueda de armas',
   'settings-options-sidearm': 'Apuntado',
   'settings-muzzle-flash': 'Fogonazo',
   'settings-config-planet': 'Planeta',
@@ -155,7 +171,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   toggle.type = 'button'
   toggle.id = 'settings-toggle'
   toggle.className = 'settings-toggle'
-  toggle.title = 'Abrir menú'
+  toggle.title = 'Abrir menú · rueda: ±1 h'
   toggle.classList.add('settings-clock')
   toggle.setAttribute('aria-label', 'Abrir ajustes')
   toggle.setAttribute('aria-expanded', 'false')
@@ -572,6 +588,187 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       'Ajusta la posición de las luces, no la geometría del piloto. Se guarda por modelo en este navegador. Compartir copia los valores para convertirlos después en valores de fábrica.'
     section.append(reset, share, exported, note)
     refreshVehicleLights()
+    place(section)
+  }
+
+  // Cámara → field of view: the same offset as the J menu (`nabla.cameraFov`).
+  let refreshCameraFov = () => {}
+  if (typeof runtime.setCameraFovOffset === 'function') {
+    const section = fieldset('settings-camera-fov', 'Campo de visión')
+    const label = doc.createElement('label'),
+      slider = doc.createElement('input'),
+      value = doc.createElement('output')
+    slider.type = 'range'
+    const range = runtime.cameraFovRange
+    slider.min = String(range.min)
+    slider.max = String(range.max)
+    slider.step = '1'
+    slider.setAttribute('aria-label', 'Campo de visión (°)')
+    slider.addEventListener('input', () => {
+      const offset = runtime.setCameraFovOffset(Number(slider.value))
+      value.textContent = `${offset > 0 ? '+' : ''}${offset}°`
+    })
+    label.append('Campo de visión ', slider, value)
+    section.append(label)
+    refreshCameraFov = () => {
+      if (doc.activeElement === slider) return
+      const offset = runtime.cameraFovOffset ?? 0
+      slider.value = String(offset)
+      value.textContent = `${offset > 0 ? '+' : ''}${offset}°`
+    }
+    refreshCameraFov()
+    place(section)
+  }
+
+  // Objetos → Arma: put the aiming weapon wheel (moved with the mouse wheel) back to default.
+  if (typeof runtime.resetWeaponWheel === 'function') {
+    const section = fieldset('settings-weapon', 'Rueda de armas')
+    const note = doc.createElement('p')
+    note.textContent = 'La rueda del ratón mientras apuntas mueve el arma; aquí vuelve a su sitio.'
+    const reset = doc.createElement('button')
+    reset.type = 'button'
+    reset.textContent = 'Restablecer rueda de armas'
+    reset.addEventListener('click', () => runtime.resetWeaponWheel())
+    section.append(note, reset)
+    place(section)
+  }
+
+  // The occupied vehicle's own sounds: its engine volume (the same mix as Configuración → Sonido)
+  // and the reversing alarm, for vehicles that have one.
+  let refreshVehicleSound = () => {}
+  {
+    const section = fieldset('settings-vehicle-sound', 'Vehículo · sonido')
+    const status = doc.createElement('p')
+    const engineLabel = doc.createElement('label'),
+      engine = doc.createElement('input'),
+      engineValue = doc.createElement('output')
+    engine.type = 'range'
+    engine.min = '0'
+    engine.max = '100'
+    engine.step = '1'
+    engine.setAttribute('aria-label', 'Volumen del motor')
+    engine.addEventListener('input', () => {
+      const mix = runtime.setAudioMix({ engine: Number(engine.value) / 100 })
+      engineValue.textContent = `${Math.round(mix.engine * 100)}%`
+    })
+    engineLabel.append('Motor ', engine, engineValue)
+    const alarmLabel = doc.createElement('label'),
+      alarm = doc.createElement('input')
+    alarm.type = 'checkbox'
+    alarm.setAttribute('aria-label', 'Aviso de marcha atrás')
+    alarm.addEventListener('change', () => runtime.setReverseAlarmEnabled(alarm.checked))
+    alarmLabel.append(alarm, ' Aviso de marcha atrás')
+    section.append(status, engineLabel, alarmLabel)
+    refreshVehicleSound = () => {
+      const occupied = runtime.occupiedVehicle ?? null
+      const show = vehicleGroupVisibility(occupied)
+      status.textContent = occupied
+        ? occupied.name + ' · el volumen del motor es el mismo de Configuración → Sonido'
+        : 'Entra en un vehículo para ajustar su sonido.'
+      engine.disabled = !occupied
+      alarm.disabled = !occupied
+      alarmLabel.hidden = !show.reverseAlarm
+      // Follow the mix without fighting a slider being dragged.
+      if (doc.activeElement !== engine) {
+        engine.value = String(Math.round((runtime.audioMix?.engine ?? 1) * 100))
+        engineValue.textContent = `${engine.value}%`
+      }
+      alarm.checked = runtime.reverseAlarmEnabled !== false
+    }
+    refreshVehicleSound()
+    place(section)
+  }
+
+  // Development: nudge where the tail lamp's light lands in small steps, then copy the JSON.
+  let refreshRearNudge = () => {}
+  {
+    const section = fieldset('settings-rear-light-nudge', 'Luz trasera (ajuste fino)')
+    const status = doc.createElement('p')
+    section.append(status)
+    const rows = [
+      ['rearX', 'Derecha / izquierda (m)', 0.01, 0.05],
+      ['rearY', 'Arriba / abajo (m)', 0.01, 0.05],
+      ['rearZ', 'Atrás / delante (m)', 0.01, 0.05],
+      ['rearIntensity', 'Intensidad (×)', 0.05, 0.25],
+      ['rearReach', 'Alcance (×)', 0.05, 0.25],
+    ] as const
+    const outputs = new Map<string, HTMLOutputElement>()
+    const buttons: HTMLButtonElement[] = []
+    for (const [key, title, small, large] of rows) {
+      const row = doc.createElement('div')
+      row.className = 'settings-nudge-row'
+      const name = doc.createElement('span')
+      name.textContent = title
+      const output = doc.createElement('output')
+      outputs.set(key, output)
+      row.append(name)
+      const steps = [-large, -small, small, large]
+      const make = (delta: number) => {
+        const button = doc.createElement('button')
+        button.type = 'button'
+        button.textContent = (delta > 0 ? '+' : '−') + Math.abs(delta)
+        button.setAttribute('aria-label', `${title} ${delta > 0 ? '+' : '−'}${Math.abs(delta)}`)
+        button.addEventListener('click', () => {
+          const current = runtime.vehicleLightAdjustment
+          if (!current) return
+          runtime.setVehicleLightAdjustment(nudgeRearLight(current.values, key, delta))
+          refreshVehicleLights()
+          refreshRearNudge()
+        })
+        buttons.push(button)
+        return button
+      }
+      row.append(make(steps[0]), make(steps[1]), output, make(steps[2]), make(steps[3]))
+      section.append(row)
+    }
+    const copy = doc.createElement('button'),
+      reset = doc.createElement('button')
+    copy.type = reset.type = 'button'
+    copy.textContent = 'Copiar JSON'
+    reset.textContent = 'Restablecer'
+    const exported = doc.createElement('textarea')
+    exported.readOnly = true
+    exported.hidden = true
+    exported.setAttribute('aria-label', 'JSON de la luz trasera')
+    copy.addEventListener('click', async () => {
+      const current = runtime.vehicleLightAdjustment
+      if (!current) return
+      const text = rearLightJson(current.values)
+      exported.value = text
+      exported.hidden = false
+      try {
+        await navigator.clipboard.writeText(text)
+        copy.textContent = 'JSON copiado'
+      } catch {
+        exported.focus()
+        exported.select()
+      }
+    })
+    reset.addEventListener('click', () => {
+      runtime.setVehicleLightAdjustment()
+      refreshVehicleLights()
+      refreshRearNudge()
+    })
+    let previous = ''
+    refreshRearNudge = () => {
+      const current = runtime.vehicleLightAdjustment
+      const signature = JSON.stringify(current)
+      if (signature === previous) return
+      previous = signature
+      const usable = !!current?.lamps.rear
+      status.textContent = usable
+        ? current!.name + ' · pega el JSON en vehicle.lights.tuning del vehículo'
+        : 'Entra en un vehículo con luz trasera para ajustarla.'
+      for (const button of [...buttons, copy, reset]) button.disabled = !usable
+      for (const [key, output] of outputs)
+        output.textContent = current
+          ? current.values[key as keyof typeof current.values].toFixed(3)
+          : '–'
+      exported.hidden = true
+      copy.textContent = 'Copiar JSON'
+    }
+    section.append(copy, reset, exported)
+    refreshRearNudge()
     place(section)
   }
 
@@ -1199,8 +1396,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       id: 'world-options',
       label: 'Opciones',
       sections: [
-        'settings-sharpness',
-        'quality-shadows',
         'road-style',
         'settings-planet-air',
         'settings-planet-sea',
@@ -1212,38 +1407,53 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     },
     {
       tab: 'options',
-      id: 'video',
-      label: 'Vídeo',
+      id: 'display',
+      label: 'Pantalla',
       sections: [
         'display-quality-section',
+        'settings-sharpness',
+        'quality-shadows',
         'settings-distances',
         'display-performance',
-        'settings-effects',
       ],
     },
     {
       tab: 'options',
-      id: 'cameras',
-      label: 'Cámaras',
-      sections: ['camera-extras', 'settings-action-cam'],
+      id: 'effects',
+      label: 'Efectos',
+      sections: ['settings-effects', 'settings-muzzle-flash'],
     },
+    {
+      tab: 'options',
+      id: 'cameras',
+      label: 'Cámara',
+      sections: ['camera-extras', 'settings-camera-fov', 'settings-action-cam'],
+    },
+    { tab: 'options', id: 'driving', label: 'Conducción', sections: ['driving-extras'] },
     {
       tab: 'options',
       id: 'controls',
       label: 'Controles',
-      sections: ['driving-extras', 'settings-controls', 'settings-usb'],
+      sections: ['settings-controls', 'settings-usb'],
+    },
+    {
+      tab: 'objects',
+      id: 'vehicles',
+      label: 'Vehículos',
+      sections: ['scene-vehicles', 'settings-placed-objects', 'settings-object-layout'],
     },
     {
       tab: 'objects',
       id: 'current-vehicle',
       label: 'Vehículo actual',
-      sections: ['settings-options-driver', 'settings-car-beams', 'settings-truck-exhaust'],
+      sections: [...vehicleGroupSections],
     },
+    { tab: 'objects', id: 'weapon', label: 'Arma', sections: ['settings-weapon'] },
     {
       tab: 'dev',
       id: 'weapons',
       label: 'Armas',
-      sections: ['settings-options-sidearm', 'settings-weapon-poses', 'settings-muzzle-flash'],
+      sections: ['settings-options-sidearm', 'settings-weapon-poses'],
     },
   ]
   const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
@@ -1411,7 +1621,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (legacy) legacy.open = true
     toggle.setAttribute('aria-expanded', 'true')
     toggle.setAttribute('aria-label', 'Recoger menú')
-    toggle.title = 'Recoger menú'
+    toggle.title = 'Recoger menú · rueda: ±1 h'
     doc.body.classList.add('settings-is-open')
     if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
       mapSection.refresh()
@@ -1426,7 +1636,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (legacy) legacy.open = false
     toggle.setAttribute('aria-expanded', 'false')
     toggle.setAttribute('aria-label', 'Abrir menú')
-    toggle.title = 'Abrir menú'
+    toggle.title = 'Abrir menú · rueda: ±1 h'
     doc.body.classList.remove('settings-is-open')
     doc.getElementById('game-canvas')?.focus()
   }
@@ -1468,19 +1678,32 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const summary = group.querySelector('summary')
     const label = occupied?.name ?? 'Vehículo actual'
     if (summary && summary.textContent !== label) summary.textContent = label
-    const exhaust = group.querySelector<HTMLButtonElement>(
-      'button[data-section="settings-truck-exhaust"]',
-    )
-    if (!exhaust) return
-    const hide = !!occupied && !occupied.exhaust
-    exhaust.hidden = hide
-    exhaust.style.display = hide ? 'none' : ''
-    if (hide && sections.get('objects')?.active === 'settings-truck-exhaust')
-      chooseSection('objects', 'settings-car-beams')
+    const show = vehicleGroupVisibility(occupied)
+    // A section the vehicle cannot use disappears from the list; rows inside follow its options.
+    for (const id of vehicleGroupSections) {
+      const button = group.querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
+      if (!button) continue
+      const visible = show.sections[id]
+      button.hidden = !visible
+      button.style.display = visible ? '' : 'none'
+      if (!visible && sections.get('objects')?.active === id) {
+        const next = vehicleGroupSections.find((candidate) => show.sections[candidate])
+        if (next) chooseSection('objects', next)
+      }
+    }
+    const mirrorsGroup = doc.getElementById('scene-mirrors')
+    if (mirrorsGroup) mirrorsGroup.hidden = !show.mirrors
+    for (const row of doc.querySelectorAll<HTMLElement>('[data-exhaust-group]'))
+      row.hidden = !(row.dataset.exhaustGroup === 'amount'
+        ? show.exhaustAmount
+        : show.exhaustPosition)
   }
   const updateClock = () => {
     refreshVehicleGroup()
     refreshVehicleLights()
+    refreshRearNudge()
+    refreshVehicleSound()
+    refreshCameraFov()
     if (runtime.skyClock)
       toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))
     if (!win.hidden && activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
@@ -1488,6 +1711,18 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   updateClock()
   const clockTimer = window.setInterval(updateClock, 1000)
+  // Mouse wheel over the clock button: one hour per notch, up = later.
+  const wheel = createWheelStepper()
+  const onClockWheel = (event: WheelEvent) => {
+    const steps = wheel.push(event.deltaY, event.deltaMode)
+    event.preventDefault()
+    if (!steps) return
+    runtime.setSkyClock(shiftSkyClockKeepingRate(runtime.skyClock, steps * 60))
+    // The time controls of the planet panel and the address listen for this to follow.
+    window.dispatchEvent(new Event('nabla-sky-clock'))
+    updateClock()
+  }
+  toggle.addEventListener('wheel', onClockWheel, { passive: false })
   const onKeyDown = (event: KeyboardEvent) => {
     if (
       menuNavigationKey(event.code) === 'focus' &&
@@ -1551,6 +1786,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       observer?.disconnect()
       planetPanel?.destroy()
       planetPanel = null
+      toggle.removeEventListener('wheel', onClockWheel)
       toggle.remove()
       win.remove()
       style.remove()

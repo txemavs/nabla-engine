@@ -43,10 +43,23 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     check(menuSection('road-style', 'Asfalto'), 'asphalt')
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
     check(menuSection('scene-vehicles', 'Vehículos'), 'vehicles')
+    // Bound by exhaust-ui.ts in the game; rows carry data-exhaust-group.
+    const exhaust = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
+    const exhaustRow = document.createElement('label')
+    exhaustRow.dataset.exhaustGroup = 'position'
+    exhaustRow.textContent = 'Escape posición'
+    exhaust.append(exhaustRow)
     const layer = { sky: true, sun: true, clouds: true, sea: true }
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      skyClock: { mode: 'fixed', at: new Date(2026, 9, 16, 12, 30).toISOString() } as {
+        mode: 'fixed'
+        at: string
+      },
+      setSkyClock: (clock: { mode: 'fixed'; at: string }) => {
+        runtime.skyClock = clock
+      },
       usbControllers: new UsbControllers(null),
       getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
       vehicleLightAdjustment: {
@@ -73,6 +86,28 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
         lamps: { front: true, rear: true },
         mirrors: true,
         exhaust: false,
+        options: {
+          lamps: { front: true, rear: true },
+          mirrors: true,
+          exhaust: null,
+          sound: { engine: true, reverseAlarm: false },
+        },
+      } as { name: string; options: object },
+      audioMix: { master: 1, engine: 0.5, music: 1, musicMuted: false },
+      setAudioMix: (patch: object) => {
+        Object.assign(runtime.audioMix, patch)
+        return runtime.audioMix
+      },
+      cameraFovRange: { min: -20, max: 20 },
+      cameraFovOffset: 0,
+      setCameraFovOffset: (offset: number) => (runtime.cameraFovOffset = offset),
+      weaponWheelResets: 0,
+      resetWeaponWheel: () => {
+        runtime.weaponWheelResets++
+      },
+      reverseAlarmEnabled: true,
+      setReverseAlarmEnabled: (enabled: boolean) => {
+        runtime.reverseAlarmEnabled = enabled
       },
       setVehicleLightAdjustment: (patch: object) => {
         Object.assign(runtime.vehicleLightAdjustment.values, patch)
@@ -139,6 +174,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
     localStorage.setItem('euskadi.irun-signs', JSON.stringify({ enabled: false }))
+    ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
     roll.value = '2'
@@ -232,7 +268,6 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'settings-map',
       'terrain-position',
       'terrain-layers',
-      'quality-shadows',
       'road-style',
       'settings-planet-sea',
       'settings-planet-air',
@@ -247,15 +282,19 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'settings-controls',
       'display-quality-section',
       'settings-effects',
+      // Rendering quality and the muzzle flash live in Configuración (Pantalla, Efectos).
+      'quality-shadows',
+      'settings-muzzle-flash',
     ]),
   )
+  expect(result.planet).not.toContain('quality-shadows')
+  expect(result.dev).not.toContain('settings-muzzle-flash')
   expect(result.dev).toEqual(
     expect.arrayContaining([
       'settings-config-planet',
       'terrain-source',
       'settings-options-sidearm',
       'settings-weapon-poses',
-      'settings-muzzle-flash',
     ]),
   )
   expect(result.places).toBe('settings-pane-planet')
@@ -294,7 +333,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
     ),
   ).toHaveCount(1)
-  await page.getByRole('button', { name: 'Ajustes', exact: true }).click()
+  await page.getByRole('button', { name: 'Gestión', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }),
   ).toBeVisible()
@@ -366,12 +405,84 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     name: 'Luz trasera: arriba / abajo (m)',
     exact: true,
   })
+  // Objetos → Arma resets the weapon wheel.
+  await page.getByRole('button', { name: 'Rueda de armas', exact: true }).click()
+  await page.getByRole('button', { name: 'Restablecer rueda de armas' }).click()
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { weaponWheelResets: number } }).__rt.weaponWheelResets,
+    ),
+  ).toBe(1)
+  // Configuración → Cámara → field of view.
+  await page.getByRole('tab', { name: 'Configuración', exact: true }).click()
+  await page.getByRole('button', { name: 'Campo de visión', exact: true }).click()
+  await page.getByRole('slider', { name: 'Campo de visión (°)' }).fill('6')
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { cameraFovOffset: number } }).__rt.cameraFovOffset,
+    ),
+  ).toBe(6)
+  await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
+  // Sounds: the engine volume follows the mix; a motorcycle has no reversing alarm.
+  await page.getByRole('button', { name: 'Sonido', exact: true }).click()
+  const engineVolume = page.getByRole('slider', { name: 'Volumen del motor', exact: true })
+  await expect(engineVolume).toHaveValue('50')
+  await engineVolume.fill('80')
+  expect(
+    await page.evaluate(
+      () => (window as never as { __rt: { audioMix: { engine: number } } }).__rt.audioMix.engine,
+    ),
+  ).toBeCloseTo(0.8)
+  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeHidden()
+  // The exhaust section only exists for vehicles whose data adjusts it.
+  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeHidden()
+  // A vehicle with a reversing alarm and adjustable exhaust lists both.
+  await page.evaluate(() => {
+    const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
+    rt.occupiedVehicle.options = {
+      lamps: { front: false, rear: false },
+      mirrors: false,
+      exhaust: { position: true, amount: false, follows: 'load' },
+      sound: { engine: true, reverseAlarm: true },
+    }
+  })
+  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Luces', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
+    rt.occupiedVehicle.options = {
+      lamps: { front: true, rear: true },
+      mirrors: true,
+      exhaust: null,
+      sound: { engine: true, reverseAlarm: false },
+    }
+  })
+  await page.getByRole('button', { name: 'Luces', exact: true }).click()
   await rearHeight.fill('0.12')
   await page.getByRole('button', { name: 'Compartir ajustes de luces' }).click()
   const shared = page.getByRole('textbox', { name: 'Ajustes de luces para compartir' })
   expect(JSON.parse(await shared.inputValue())).toMatchObject({
     model: '/test-bike.glb',
     values: { rearY: 0.12 },
+  })
+  // The wheel over the clock button moves the time by one hour per notch (up = later).
+  const clock = page.locator('#settings-toggle')
+  await expect(clock).toHaveText('12:30')
+  await clock.dispatchEvent('wheel', { deltaY: -100 })
+  await expect(clock).toHaveText('13:30')
+  await clock.dispatchEvent('wheel', { deltaY: 100 })
+  await clock.dispatchEvent('wheel', { deltaY: 100 })
+  await expect(clock).toHaveText('11:30')
+  await page.getByRole('tab', { name: 'Desarrollo', exact: true }).click()
+  await page.getByRole('button', { name: 'Luz trasera (ajuste fino)', exact: true }).click()
+  await page.getByRole('button', { name: 'Atrás / delante (m) +0.01' }).click()
+  await page.getByRole('button', { name: 'Atrás / delante (m) +0.05' }).click()
+  await page.getByRole('button', { name: 'Copiar JSON' }).click()
+  const nudged = page.getByRole('textbox', { name: 'JSON de la luz trasera' })
+  expect(JSON.parse(await nudged.inputValue()).vehicle.lights.tuning).toMatchObject({
+    rearY: 0.12,
+    rearZ: 0.06,
   })
   await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()

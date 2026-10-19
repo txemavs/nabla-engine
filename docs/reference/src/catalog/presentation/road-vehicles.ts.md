@@ -18,23 +18,9 @@
 - `../../render/vehicle-presentation/screen-mounts.js`
 - `./motorcycle-paint.js`
 
-## exhaustSocket
-
-[Implementation, line 15](../../../../../src/catalog/presentation/road-vehicles.ts#L15)
-
-```ts
-exhaustSocket(model: THREE.Object3D, position: readonly [number, number, number]): THREE.Object3D
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.Object3D`
-- `model.add`
-- `socket.position.fromArray`
-
 ## paintWhiteBody
 
-[Implementation, line 25](../../../../../src/catalog/presentation/road-vehicles.ts#L25)
+[Implementation, line 15](../../../../../src/catalog/presentation/road-vehicles.ts#L15)
 
 ```ts
 paintWhiteBody(model: THREE.Object3D, color: string): void
@@ -44,12 +30,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## paintWhiteBody.callback@26
+## paintWhiteBody.callback@16
 
-[Implementation, line 26](../../../../../src/catalog/presentation/road-vehicles.ts#L26)
+[Implementation, line 16](../../../../../src/catalog/presentation/road-vehicles.ts#L16)
 
 ```ts
-callback@26(node): inferred by TypeScript; see implementation
+callback@16(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shineVehicle
 
-[Implementation, line 34](../../../../../src/catalog/presentation/road-vehicles.ts#L34)
+[Implementation, line 24](../../../../../src/catalog/presentation/road-vehicles.ts#L24)
 
 ```ts
 shineVehicle(model: THREE.Object3D): void
@@ -70,12 +56,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## shineVehicle.callback@35
+## shineVehicle.callback@25
 
-[Implementation, line 35](../../../../../src/catalog/presentation/road-vehicles.ts#L35)
+[Implementation, line 25](../../../../../src/catalog/presentation/road-vehicles.ts#L25)
 
 ```ts
-callback@35(object): inferred by TypeScript; see implementation
+callback@25(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mount
 
-[Implementation, line 56](../../../../../src/catalog/presentation/road-vehicles.ts#L56)
+[Implementation, line 46](../../../../../src/catalog/presentation/road-vehicles.ts#L46)
 
 ```ts
 mount(model, e, definition, policy): inferred by TypeScript; see implementation
@@ -102,19 +88,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `console.warn`
 - `createA3Lights`
 - `createA3Mounts`
-- `exhaustSocket`
 - `instruments.menu.items.filter`
 - `model.getWorldQuaternion`
 - `model.traverse`
 - `model.updateWorldMatrix`
 - `new THREE.Vector3(0, 1, 0).applyQuaternion`
 
-## mount.callback@57
+## mount.callback@47
 
-[Implementation, line 57](../../../../../src/catalog/presentation/road-vehicles.ts#L57)
+[Implementation, line 47](../../../../../src/catalog/presentation/road-vehicles.ts#L47)
 
 ```ts
-callback@57(object): inferred by TypeScript; see implementation
+callback@47(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -122,12 +107,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `materials.map`
 
-## mount.callback@57.callback@60
+## mount.callback@47.callback@50
 
-[Implementation, line 60](../../../../../src/catalog/presentation/road-vehicles.ts#L60)
+[Implementation, line 50](../../../../../src/catalog/presentation/road-vehicles.ts#L50)
 
 ```ts
-callback@60(material): inferred by TypeScript; see implementation
+callback@50(material): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -135,29 +120,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `/^pintura/i.test`
 - `THREE.MeshPhysicalMaterial`
 
-## mount.callback@83
+## mount.callback@73
 
-[Implementation, line 83](../../../../../src/catalog/presentation/road-vehicles.ts#L83)
+[Implementation, line 73](../../../../../src/catalog/presentation/road-vehicles.ts#L73)
 
 ```ts
-callback@83(o): inferred by TypeScript; see implementation
+callback@73(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `candidates.push`
 
-## mount.callback@96
+## mount.callback@86
 
-[Implementation, line 96](../../../../../src/catalog/presentation/road-vehicles.ts#L96)
+[Implementation, line 86](../../../../../src/catalog/presentation/road-vehicles.ts#L86)
 
 ```ts
-callback@96(item): inferred by TypeScript; see implementation
+callback@86(item): inferred by TypeScript; see implementation
 ```
 
 ## preparePart
 
-[Implementation, line 116](../../../../../src/catalog/presentation/road-vehicles.ts#L116)
+[Implementation, line 101](../../../../../src/catalog/presentation/road-vehicles.ts#L101)
 
 ```ts
 preparePart(model): inferred by TypeScript; see implementation
@@ -169,7 +154,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## paint
 
-[Implementation, line 119](../../../../../src/catalog/presentation/road-vehicles.ts#L119)
+[Implementation, line 104](../../../../../src/catalog/presentation/road-vehicles.ts#L104)
 
 ```ts
 paint(model, color, finish = 'paint'): inferred by TypeScript; see implementation
@@ -179,12 +164,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## paint.callback@120
+## paint.callback@105
 
-[Implementation, line 120](../../../../../src/catalog/presentation/road-vehicles.ts#L120)
+[Implementation, line 105](../../../../../src/catalog/presentation/road-vehicles.ts#L105)
 
 ```ts
-callback@120(node): inferred by TypeScript; see implementation
+callback@105(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -196,7 +181,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mount
 
-[Implementation, line 136](../../../../../src/catalog/presentation/road-vehicles.ts#L136)
+[Implementation, line 121](../../../../../src/catalog/presentation/road-vehicles.ts#L121)
 
 ```ts
 mount(model, e): inferred by TypeScript; see implementation
@@ -206,12 +191,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## mount.callback@137
+## mount.callback@122
 
-[Implementation, line 137](../../../../../src/catalog/presentation/road-vehicles.ts#L137)
+[Implementation, line 122](../../../../../src/catalog/presentation/road-vehicles.ts#L122)
 
 ```ts
-callback@137(object): inferred by TypeScript; see implementation
+callback@122(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -221,7 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## paint
 
-[Implementation, line 157](../../../../../src/catalog/presentation/road-vehicles.ts#L157)
+[Implementation, line 142](../../../../../src/catalog/presentation/road-vehicles.ts#L142)
 
 ```ts
 paint(model, color): inferred by TypeScript; see implementation
@@ -231,12 +216,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## paint.callback@158
+## paint.callback@143
 
-[Implementation, line 158](../../../../../src/catalog/presentation/road-vehicles.ts#L158)
+[Implementation, line 143](../../../../../src/catalog/presentation/road-vehicles.ts#L143)
 
 ```ts
-callback@158(node): inferred by TypeScript; see implementation
+callback@143(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -246,7 +231,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mount
 
-[Implementation, line 167](../../../../../src/catalog/presentation/road-vehicles.ts#L167)
+[Implementation, line 152](../../../../../src/catalog/presentation/road-vehicles.ts#L152)
 
 ```ts
 mount(model): inferred by TypeScript; see implementation
@@ -258,7 +243,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mount
 
-[Implementation, line 175](../../../../../src/catalog/presentation/road-vehicles.ts#L175)
+[Implementation, line 158](../../../../../src/catalog/presentation/road-vehicles.ts#L158)
+
+```ts
+mount(model, entity): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.paint`
+
+## paint
+
+[Implementation, line 162](../../../../../src/catalog/presentation/road-vehicles.ts#L162)
+
+```ts
+paint(model, color): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `paintMotorcycle`
+
+## mount
+
+[Implementation, line 170](../../../../../src/catalog/presentation/road-vehicles.ts#L170)
 
 ```ts
 mount(model, entity, definition, policy): inferred by TypeScript; see implementation
@@ -273,7 +282,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `authoredMirrorLenses`
 - `authoredMirrorSurfaces`
 - `authoredScreenMounts`
-- `exhaustSocket`
 - `model.getWorldQuaternion`
 - `model.updateWorldMatrix`
 - `new THREE.Vector3(0, 1, 0).applyQuaternion`
@@ -281,7 +289,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## paint
 
-[Implementation, line 214](../../../../../src/catalog/presentation/road-vehicles.ts#L214)
+[Implementation, line 199](../../../../../src/catalog/presentation/road-vehicles.ts#L199)
 
 ```ts
 paint(model, color): inferred by TypeScript; see implementation
@@ -291,33 +299,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `paintWhiteBody`
 
-## mount
-
-[Implementation, line 224](../../../../../src/catalog/presentation/road-vehicles.ts#L224)
-
-```ts
-mount(model, entity): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.paint`
-
-## paint
-
-[Implementation, line 228](../../../../../src/catalog/presentation/road-vehicles.ts#L228)
-
-```ts
-paint(model, color): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `paintMotorcycle`
-
 ## stockVehiclePresentation
 
-[Implementation, line 232](../../../../../src/catalog/presentation/road-vehicles.ts#L232)
+[Implementation, line 209](../../../../../src/catalog/presentation/road-vehicles.ts#L209)
 
 ```ts
 stockVehiclePresentation(entity): inferred by TypeScript; see implementation

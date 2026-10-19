@@ -11,7 +11,7 @@
 
 ## update
 
-[Implementation, line 11](../../../game/headset.ts#L11)
+[Implementation, line 13](../../../game/headset.ts#L13)
 
 ```ts
 update(): inferred by TypeScript; see implementation
@@ -23,12 +23,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `URLSearchParams`
 - `query.set`
 
-## callback@45
+## callback@47
 
-[Implementation, line 45](../../../game/headset.ts#L45)
+[Implementation, line 47](../../../game/headset.ts#L47)
 
 ```ts
-callback@45(): inferred by TypeScript; see implementation
+callback@47(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -39,18 +39,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## prepareAR
 
-[Implementation, line 51](../../../game/headset.ts#L51)
+[Implementation, line 53](../../../game/headset.ts#L53)
 
 ```ts
 prepareAR(): Promise<void>
 ```
 
-## prepareAR.callback@52
+## prepareAR.callback@54
 
-[Implementation, line 52](../../../game/headset.ts#L52)
+[Implementation, line 54](../../../game/headset.ts#L54)
 
 ```ts
-callback@52(): inferred by TypeScript; see implementation
+callback@54(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,36 +66,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `panel.querySelector('#status')?.remove`
 - `template.querySelector`
 
-## prepareAR.callback@52.callback@65
+## prepareAR.callback@54.callback@67
 
-[Implementation, line 65](../../../game/headset.ts#L65)
+[Implementation, line 67](../../../game/headset.ts#L67)
 
 ```ts
-callback@65(active): inferred by TypeScript; see implementation
+callback@67(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `enter.focus`
 
-## prepareAR.callback@72
+## prepareAR.callback@74
 
-[Implementation, line 72](../../../game/headset.ts#L72)
+[Implementation, line 74](../../../game/headset.ts#L74)
 
 ```ts
-callback@72(error): inferred by TypeScript; see implementation
+callback@74(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## callback@77
+## callback@79
 
-[Implementation, line 77](../../../game/headset.ts#L77)
+[Implementation, line 79](../../../game/headset.ts#L79)
 
 ```ts
-callback@77(event): inferred by TypeScript; see implementation
+callback@79(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## checkSupport
 
-[Implementation, line 80](../../../game/headset.ts#L80)
+[Implementation, line 82](../../../game/headset.ts#L82)
 
 ```ts
 checkSupport(): inferred by TypeScript; see implementation
@@ -121,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## checkSupport.supported
 
-[Implementation, line 81](../../../game/headset.ts#L81)
+[Implementation, line 83](../../../game/headset.ts#L83)
 
 ```ts
 supported(mode: XRSessionMode): inferred by TypeScript; see implementation

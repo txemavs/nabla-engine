@@ -37,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MetalImpact.constructor
 
-[Implementation, line 34](../../../../src/audio/metal-impact.ts#L34)
+[Implementation, line 40](../../../../src/audio/metal-impact.ts#L40)
 
 ```ts
 constructor(context: AudioContext, noise: AudioBufferSourceNode): instance
@@ -60,10 +60,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MetalImpact.trigger
 
-[Implementation, line 56](../../../../src/audio/metal-impact.ts#L56)
+[Implementation, line 62](../../../../src/audio/metal-impact.ts#L62)
 
 ```ts
-trigger(time: number, variant?: number): void
+trigger(time: number, variant?: number, tone: MetalTone = {}): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -78,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MetalImpact.trigger.strike
 
-[Implementation, line 61](../../../../src/audio/metal-impact.ts#L61)
+[Implementation, line 70](../../../../src/audio/metal-impact.ts#L70)
 
 ```ts
 strike(gain: AudioParam, peak: number, decay: number, delay = 0): inferred by TypeScript; see implementation
@@ -91,12 +91,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `gain.linearRampToValueAtTime`
 - `gain.setValueAtTime`
 
-## MetalImpact.trigger.callback@68
+## MetalImpact.trigger.callback@77
 
-[Implementation, line 68](../../../../src/audio/metal-impact.ts#L68)
+[Implementation, line 77](../../../../src/audio/metal-impact.ts#L77)
 
 ```ts
-callback@68(hz, i): inferred by TypeScript; see implementation
+callback@77(hz, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MetalImpact.silence
 
-[Implementation, line 83](../../../../src/audio/metal-impact.ts#L83)
+[Implementation, line 92](../../../../src/audio/metal-impact.ts#L92)
 
 ```ts
 silence(time: number): void

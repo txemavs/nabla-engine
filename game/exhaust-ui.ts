@@ -1,24 +1,35 @@
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
-import { browserStorage } from './entry.js'
 
-/** Temporary live controls for truck exhaust position and quantity. */
+/**
+ * Live controls for the exhaust of vehicles whose data lets the player adjust it
+ * (`vehicle.exhaust.adjustable`: outlet position; `smoke.amount: "manual"`: quantity). The rows
+ * are tagged `data-exhaust-group` so the settings can show only those that apply.
+ */
 export function bindExhaustControls(
   runtime: Pick<
     GameRuntime,
-    'truckExhaustOffset' | 'setTruckExhaustOffset' | 'truckExhaustAmount' | 'setTruckExhaustAmount'
+    | 'truckExhaustOffset'
+    | 'setTruckExhaustOffset'
+    | 'truckExhaustAmount'
+    | 'setTruckExhaustAmount'
+    | 'occupiedVehicle'
+    | 'occupiedVehiclePreferences'
+    | 'setVehiclePreferences'
   >,
 ): void {
-  const group = menuSection('settings-truck-exhaust', 'Vehículo · humo del camión')
-  const storage = browserStorage()
-  const key = 'nabla.truckExhaustOffset'
-  const amountKey = 'nabla.truckExhaustAmount'
-  try {
-    const saved = storage?.getItem(amountKey)
-    if (saved !== null && saved !== undefined && Number.isFinite(Number(saved)))
-      runtime.setTruckExhaustAmount(Number(saved))
-  } catch {
-    /* Optional storage. */
+  const group = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
+  // Saved per vehicle model (runtime.setVehiclePreferences), like the lights: entering another
+  // model loads its own offset and quantity.
+  let model: string | null | undefined
+  const followModel = () => {
+    const next = runtime.occupiedVehicle?.model ?? null
+    if (next === model) return
+    model = next
+    const saved = runtime.occupiedVehiclePreferences
+    runtime.setTruckExhaustOffset(saved.exhaustOffset)
+    runtime.setTruckExhaustAmount(saved.exhaustAmount)
+    refresh()
   }
   const amountLabel = document.createElement('label')
   const amountSlider = document.createElement('input')
@@ -31,22 +42,12 @@ export function bindExhaustControls(
   amountOutput.htmlFor.add(amountSlider.id)
   amountSlider.addEventListener('input', () => {
     const value = runtime.setTruckExhaustAmount(Number(amountSlider.value) / 100)
-    try {
-      storage?.setItem(amountKey, String(value))
-    } catch {
-      /* Optional storage. */
-    }
+    runtime.setVehiclePreferences({ exhaustAmount: value })
     refresh()
   })
+  amountLabel.dataset.exhaustGroup = 'amount'
   amountLabel.append('Cantidad ', amountSlider, ' ', amountOutput)
   group.append(amountLabel)
-  try {
-    const saved = JSON.parse(storage?.getItem(key) ?? 'null')
-    if (Array.isArray(saved) && saved.length === 3 && saved.every(Number.isFinite))
-      runtime.setTruckExhaustOffset(saved as [number, number, number])
-  } catch {
-    /* Optional local preference. */
-  }
   const rows: { slider: HTMLInputElement; output: HTMLOutputElement }[] = []
   const refresh = () => {
     amountSlider.value = String(Math.round(runtime.truckExhaustAmount * 100))
@@ -74,13 +75,10 @@ export function bindExhaustControls(
       const offset = runtime.truckExhaustOffset
       offset[i] = Number(slider.value) / 1000
       const next = runtime.setTruckExhaustOffset(offset)
-      try {
-        storage?.setItem(key, JSON.stringify(next))
-      } catch {
-        /* Optional storage. */
-      }
+      runtime.setVehiclePreferences({ exhaustOffset: next })
       refresh()
     })
+    label.dataset.exhaustGroup = 'position'
     label.append(`${title} `, slider, ' ', output)
     rows.push({ slider, output })
     group.append(label)
@@ -91,14 +89,10 @@ export function bindExhaustControls(
   reset.addEventListener('click', () => {
     runtime.setTruckExhaustOffset([0, 0, 0])
     runtime.setTruckExhaustAmount(1)
-    try {
-      storage?.setItem(key, '[0,0,0]')
-      storage?.setItem(amountKey, '1')
-    } catch {
-      /* Optional storage. */
-    }
+    runtime.setVehiclePreferences({ exhaustOffset: [0, 0, 0], exhaustAmount: 1 })
     refresh()
   })
   group.append(reset)
-  refresh()
+  followModel()
+  setInterval(followModel, 1000)
 }

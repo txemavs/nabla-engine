@@ -23,7 +23,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.constructor
 
-[Implementation, line 35](../../../../../src/render/entity/trunk-balloons.ts#L35)
+[Implementation, line 37](../../../../../src/render/entity/trunk-balloons.ts#L37)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -37,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.hit
 
-[Implementation, line 39](../../../../../src/render/entity/trunk-balloons.ts#L39)
+[Implementation, line 41](../../../../../src/render/entity/trunk-balloons.ts#L41)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -72,12 +72,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.trunks.get`
 - `this.trunks.set`
 
-## TrunkBalloons.hit.callback@47
+## TrunkBalloons.hit.callback@49
 
-[Implementation, line 47](../../../../../src/render/entity/trunk-balloons.ts#L47)
+[Implementation, line 49](../../../../../src/render/entity/trunk-balloons.ts#L49)
 
 ```ts
-callback@47(node): inferred by TypeScript; see implementation
+callback@49(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,29 +87,88 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `inverse.clone().multiply`
 - `node.geometry.computeBoundingBox`
 
-## TrunkBalloons.hit.callback@64
-
-[Implementation, line 64](../../../../../src/render/entity/trunk-balloons.ts#L64)
-
-```ts
-callback@64(n): n is THREE.Object3D
-```
-
 ## TrunkBalloons.hit.callback@66
 
 [Implementation, line 66](../../../../../src/render/entity/trunk-balloons.ts#L66)
 
 ```ts
-callback@66(node): inferred by TypeScript; see implementation
+callback@66(n): n is THREE.Object3D
+```
+
+## TrunkBalloons.hit.callback@68
+
+[Implementation, line 68](../../../../../src/render/entity/trunk-balloons.ts#L68)
+
+```ts
+callback@68(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `node.matrix.clone`
 
+## TrunkBalloons.shoot
+
+[Implementation, line 92](../../../../../src/render/entity/trunk-balloons.ts#L92)
+
+Pop the nearest balloon on a ray in this frame (scene space), if one is within `maxDistance`.
+The balloon is removed; returns where it was and how far along the ray. Render-only balloons
+have no physics body, so the shot path asks here before it asks the world.
+
+```ts
+shoot(origin: THREE.Vector3, direction: THREE.Vector3, maxDistance: number): { point: THREE.Vector3; distance: number } | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Ray`
+- `THREE.Sphere`
+- `THREE.Vector3`
+- `burst.mesh.position.clone`
+- `burst.mesh.removeFromParent`
+- `this.balloons.forEach`
+- `this.balloons.splice`
+- `this.blast`
+
+## TrunkBalloons.shoot.callback@102
+
+[Implementation, line 102](../../../../../src/render/entity/trunk-balloons.ts#L102)
+
+```ts
+callback@102(balloon, index): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `point.distanceTo`
+- `ray.intersectSphere`
+- `sphere.set`
+
+## TrunkBalloons.blast
+
+[Implementation, line 122](../../../../../src/render/entity/trunk-balloons.ts#L122)
+
+Shockwave of a burst at `point` (scene space) on the remaining balloons: an outward kick that
+falls off linearly to 0 at the burst's shockwave radius; the closest ones may pop with it.
+
+```ts
+blast(point: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `away.divideScalar`
+- `away.length`
+- `away.set`
+- `away.subVectors`
+- `balloon.mesh.removeFromParent`
+- `balloon.push.addScaledVector`
+- `this.balloons.splice`
+
 ## TrunkBalloons.update
 
-[Implementation, line 85](../../../../../src/render/entity/trunk-balloons.ts#L85)
+[Implementation, line 142](../../../../../src/render/entity/trunk-balloons.ts#L142)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -119,6 +178,7 @@ update(dt: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.exp`
 - `Math.floor`
 - `Math.max`
 - `Math.min`
@@ -130,8 +190,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Mesh`
 - `THREE.Vector3`
 - `b.mesh.position.addScaledVector`
+- `b.mesh.position.addScaledVector(b.velocity, dt).addScaledVector`
 - `b.mesh.removeFromParent`
 - `b.mesh.scale.setScalar`
+- `b.push.multiplyScalar`
 - `mesh.add`
 - `mesh.position.copy`
 - `object.localToWorld`
@@ -142,7 +204,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.warmMeshes
 
-[Implementation, line 136](../../../../../src/render/entity/trunk-balloons.ts#L136)
+[Implementation, line 195](../../../../../src/render/entity/trunk-balloons.ts#L195)
 
 Include the balloon materials in the existing loading-time shader compilation.
 
@@ -159,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.clear
 
-[Implementation, line 142](../../../../../src/render/entity/trunk-balloons.ts#L142)
+[Implementation, line 201](../../../../../src/render/entity/trunk-balloons.ts#L201)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -178,7 +240,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TrunkBalloons.dispose
 
-[Implementation, line 154](../../../../../src/render/entity/trunk-balloons.ts#L154)
+[Implementation, line 213](../../../../../src/render/entity/trunk-balloons.ts#L213)
 
 Rear-hit easter egg. Balloons live in the scene frame, independently of the car.
 
@@ -195,12 +257,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.stringGeometry.dispose`
 - `this.stringMaterial.dispose`
 
-## TrunkBalloons.dispose.callback@160
+## TrunkBalloons.dispose.callback@219
 
-[Implementation, line 160](../../../../../src/render/entity/trunk-balloons.ts#L160)
+[Implementation, line 219](../../../../../src/render/entity/trunk-balloons.ts#L219)
 
 ```ts
-callback@160(material): inferred by TypeScript; see implementation
+callback@219(material): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

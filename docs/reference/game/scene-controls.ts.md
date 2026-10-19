@@ -14,7 +14,7 @@ choices (`&time=`, `&timeSpeed=`, `&sea=`) so a link repeats them.
 
 - `@nabla/engine/planet/sky`
 - `@nabla/engine/vehicles`
-- `@nabla/engine/runtime`
+- `@nabla/engine/runtime/core`
 - `@nabla/engine/scene`
 - `./menu.js`
 - `./steering-wheel-controls.js`
@@ -652,24 +652,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `showTime`
 - `skyRate`
 
-## bindSceneControls.callback@436.callback@493
+## bindSceneControls.callback@436.callback@491
 
-[Implementation, line 493](../../../game/scene-controls.ts#L493)
+[Implementation, line 491](../../../game/scene-controls.ts#L491)
 
 ```ts
-callback@493(): inferred by TypeScript; see implementation
+callback@491(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `formatClockTime`
+- `localMinutes`
+- `remember`
+- `showTime`
+- `skyTime`
+
+## bindSceneControls.callback@436.callback@498
+
+[Implementation, line 498](../../../game/scene-controls.ts#L498)
+
+```ts
+callback@498(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.setPlanetLayers`
 
-## bindSceneControls.callback@436.callback@494
+## bindSceneControls.callback@436.callback@499
 
-[Implementation, line 494](../../../game/scene-controls.ts#L494)
+[Implementation, line 499](../../../game/scene-controls.ts#L499)
 
 ```ts
-callback@494(): inferred by TypeScript; see implementation
+callback@499(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -678,7 +694,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSceneControls.callback@436.showSea
 
-[Implementation, line 496](../../../game/scene-controls.ts#L496)
+[Implementation, line 501](../../../game/scene-controls.ts#L501)
 
 ```ts
 showSea(syncFields: boolean): inferred by TypeScript; see implementation
@@ -693,7 +709,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSceneControls.callback@436.setLevel
 
-[Implementation, line 509](../../../game/scene-controls.ts#L509)
+[Implementation, line 514](../../../game/scene-controls.ts#L514)
 
 ```ts
 setLevel(level: number): inferred by TypeScript; see implementation
@@ -708,32 +724,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setWater`
 - `showSea`
 
-## bindSceneControls.callback@436.callback@516
-
-[Implementation, line 516](../../../game/scene-controls.ts#L516)
-
-```ts
-callback@516(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `runtime.setPlanetLayers`
-- `showSea`
-
-## bindSceneControls.callback@436.callback@520
-
-[Implementation, line 520](../../../game/scene-controls.ts#L520)
-
-```ts
-callback@520(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Number`
-- `setLevel`
-
 ## bindSceneControls.callback@436.callback@521
 
 [Implementation, line 521](../../../game/scene-controls.ts#L521)
@@ -744,17 +734,43 @@ callback@521(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `runtime.setPlanetLayers`
+- `showSea`
+
+## bindSceneControls.callback@436.callback@525
+
+[Implementation, line 525](../../../game/scene-controls.ts#L525)
+
+```ts
+callback@525(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `setLevel`
+
+## bindSceneControls.callback@436.callback@526
+
+[Implementation, line 526](../../../game/scene-controls.ts#L526)
+
+```ts
+callback@526(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `Number`
 - `seaInput.value.trim`
 - `setLevel`
 - `showSea`
 
-## bindSceneControls.callback@436.callback@524
+## bindSceneControls.callback@436.callback@529
 
-[Implementation, line 524](../../../game/scene-controls.ts#L524)
+[Implementation, line 529](../../../game/scene-controls.ts#L529)
 
 ```ts
-callback@524(): inferred by TypeScript; see implementation
+callback@529(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -765,7 +781,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSceneControls.callback@436.showClouds
 
-[Implementation, line 531](../../../game/scene-controls.ts#L531)
+[Implementation, line 536](../../../game/scene-controls.ts#L536)
 
 ```ts
 showClouds(): inferred by TypeScript; see implementation
@@ -776,12 +792,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.round`
 - `String`
 
-## bindSceneControls.callback@436.callback@539
+## bindSceneControls.callback@436.callback@544
 
-[Implementation, line 539](../../../game/scene-controls.ts#L539)
+[Implementation, line 544](../../../game/scene-controls.ts#L544)
 
 ```ts
-callback@539(): inferred by TypeScript; see implementation
+callback@544(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -789,12 +805,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setPlanetLayers`
 - `showClouds`
 
-## bindSceneControls.callback@436.callback@543
+## bindSceneControls.callback@436.callback@548
 
-[Implementation, line 543](../../../game/scene-controls.ts#L543)
+[Implementation, line 548](../../../game/scene-controls.ts#L548)
 
 ```ts
-callback@543(): inferred by TypeScript; see implementation
+callback@548(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -802,12 +818,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setCloudStyle`
 - `showClouds`
 
-## bindSceneControls.callback@436.callback@547
+## bindSceneControls.callback@436.callback@552
 
-[Implementation, line 547](../../../game/scene-controls.ts#L547)
+[Implementation, line 552](../../../game/scene-controls.ts#L552)
 
 ```ts
-callback@547(): inferred by TypeScript; see implementation
+callback@552(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -816,12 +832,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setCloudWeather`
 - `showClouds`
 
-## bindSceneControls.callback@436.callback@556
+## bindSceneControls.callback@436.callback@561
 
-[Implementation, line 556](../../../game/scene-controls.ts#L556)
+[Implementation, line 561](../../../game/scene-controls.ts#L561)
 
 ```ts
-callback@556(): inferred by TypeScript; see implementation
+callback@561(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -832,12 +848,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `showSea`
 - `showTime`
 
-## bindSceneControls.callback@436.callback@563
+## bindSceneControls.callback@436.callback@568
 
-[Implementation, line 563](../../../game/scene-controls.ts#L563)
+[Implementation, line 568](../../../game/scene-controls.ts#L568)
 
 ```ts
-callback@563(): inferred by TypeScript; see implementation
+callback@568(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -846,7 +862,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSceneControls.callback@436.renderList
 
-[Implementation, line 565](../../../game/scene-controls.ts#L565)
+[Implementation, line 570](../../../game/scene-controls.ts#L570)
 
 ```ts
 renderList(): inferred by TypeScript; see implementation
@@ -863,12 +879,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehicleList.append`
 - `vehicleList.replaceChildren`
 
-## bindSceneControls.callback@436.renderList.callback@573
+## bindSceneControls.callback@436.renderList.callback@578
 
-[Implementation, line 573](../../../game/scene-controls.ts#L573)
+[Implementation, line 578](../../../game/scene-controls.ts#L578)
 
 ```ts
-callback@573(): inferred by TypeScript; see implementation
+callback@578(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -876,24 +892,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `renderList`
 - `runtime.removeSpawnedVehicle`
 
-## bindSceneControls.callback@436.renderList.callback@589
+## bindSceneControls.callback@436.renderList.callback@594
 
-[Implementation, line 589](../../../game/scene-controls.ts#L589)
+[Implementation, line 594](../../../game/scene-controls.ts#L594)
 
 ```ts
-callback@589(): inferred by TypeScript; see implementation
+callback@594(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.setTrailerPlatform!`
 
-## bindSceneControls.callback@436.renderList.callback@603
+## bindSceneControls.callback@436.renderList.callback@608
 
-[Implementation, line 603](../../../game/scene-controls.ts#L603)
+[Implementation, line 608](../../../game/scene-controls.ts#L608)
 
 ```ts
-callback@603(): inferred by TypeScript; see implementation
+callback@608(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -904,7 +920,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSceneControls.callback@436.groundError
 
-[Implementation, line 617](../../../game/scene-controls.ts#L617)
+[Implementation, line 622](../../../game/scene-controls.ts#L622)
 
 ```ts
 groundError(error: unknown, what: string): inferred by TypeScript; see implementation
@@ -915,12 +931,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `/ground/i.test`
 - `String`
 
-## bindSceneControls.callback@436.callback@621
+## bindSceneControls.callback@436.callback@626
 
-[Implementation, line 621](../../../game/scene-controls.ts#L621)
+[Implementation, line 626](../../../game/scene-controls.ts#L626)
 
 ```ts
-callback@621(): inferred by TypeScript; see implementation
+callback@626(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -938,28 +954,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehicleChoices`
 - `vehicleChoices().find`
 
-## bindSceneControls.callback@436.callback@621.callback@622
+## bindSceneControls.callback@436.callback@626.callback@627
 
-[Implementation, line 622](../../../game/scene-controls.ts#L622)
+[Implementation, line 627](../../../game/scene-controls.ts#L627)
 
 ```ts
-callback@622(item): inferred by TypeScript; see implementation
+callback@627(item): inferred by TypeScript; see implementation
 ```
 
-## bindSceneControls.callback@436.callback@621.callback@644
+## bindSceneControls.callback@436.callback@626.callback@649
 
-[Implementation, line 644](../../../game/scene-controls.ts#L644)
+[Implementation, line 649](../../../game/scene-controls.ts#L649)
 
 ```ts
-callback@644(item): inferred by TypeScript; see implementation
+callback@649(item): inferred by TypeScript; see implementation
 ```
 
-## bindSceneControls.callback@436.callback@664
+## bindSceneControls.callback@436.callback@669
 
-[Implementation, line 664](../../../game/scene-controls.ts#L664)
+[Implementation, line 669](../../../game/scene-controls.ts#L669)
 
 ```ts
-callback@664(): inferred by TypeScript; see implementation
+callback@669(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -972,17 +988,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `navigator.clipboard.writeText(json).then`
 - `runtime.vehiclePlacements`
 
-## bindSceneControls.callback@436.callback@664.done
+## bindSceneControls.callback@436.callback@669.done
 
-[Implementation, line 674](../../../game/scene-controls.ts#L674)
+[Implementation, line 679](../../../game/scene-controls.ts#L679)
 
 ```ts
 done(): inferred by TypeScript; see implementation
 ```
 
-## bindSceneControls.callback@436.callback@664.fallback
+## bindSceneControls.callback@436.callback@669.fallback
 
-[Implementation, line 675](../../../game/scene-controls.ts#L675)
+[Implementation, line 680](../../../game/scene-controls.ts#L680)
 
 ```ts
 fallback(): inferred by TypeScript; see implementation

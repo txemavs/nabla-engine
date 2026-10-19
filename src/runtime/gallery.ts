@@ -1,12 +1,50 @@
 import * as THREE from 'three'
+import { balloonTuning } from '../config/gameplay-tuning.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
-import { type Entity } from '../entity/schema.js'
+import { type Entity, type Vec3Tuple } from '../entity/schema.js'
+import {
+  isImpactSurface,
+  sceneryImpactSurface,
+  vehicleImpactSurface,
+  type ImpactSurface,
+} from '../config/impact-sounds.js'
 import { type SceneDocument } from '../scene/document.js'
 import { portalMapping, portalLocal } from '../entity/portal/portal.js'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
 
 /** Bounded one-hop ray transport: window barriers stop bodies, but gallery shots cross them. */
+/**
+ * Order raycast hits on hand-handled scenery for a shot: nearest first. Hits closer together than
+ * `tolerance` (coplanar or back-to-back plates a few millimetres apart, double-sided instanced
+ * batches) count as the same distance, and then the face turned to the shooter wins, so the plate
+ * the player sees takes the mark, sound and knock instead of the one behind it.
+ */
+export function orderSceneryHits(
+  hits: THREE.Intersection[],
+  direction: THREE.Vector3,
+  tolerance = 0.005,
+): THREE.Intersection[] {
+  const facing = (hit: THREE.Intersection) => {
+    if (!hit.face) return 1
+    const world = hit.object.matrixWorld.clone()
+    if (hit.instanceId !== undefined && hit.object instanceof THREE.InstancedMesh) {
+      const instance = new THREE.Matrix4()
+      hit.object.getMatrixAt(hit.instanceId, instance)
+      world.multiply(instance)
+    }
+    const normal = hit.face.normal.clone().transformDirection(world)
+    const material = (hit.object as THREE.Mesh).material
+    const side = Array.isArray(material) ? material[0]?.side : material?.side
+    // A BackSide hit is on the geometry's back face: its visible side faces the other way.
+    const dot = normal.dot(direction) * (side === THREE.BackSide ? -1 : 1)
+    return dot < 0 ? 0 : 1
+  }
+  return [...hits].sort((a, b) =>
+    Math.abs(a.distance - b.distance) > tolerance ? a.distance - b.distance : facing(a) - facing(b),
+  )
+}
+
 export function shotView(
   sim: Simulation,
   document: SceneDocument,
@@ -66,7 +104,10 @@ export function shotView(
 
 export class Gallery {
   lastGlassImpact: [number, number, number] | null = null
-  lastMetalImpact: [number, number, number] | null = null
+  /** Where the last shot rang a surface, and which kind (`config/impact-sounds.ts`); null when silent. */
+  lastImpact: { point: [number, number, number]; surface: ImpactSurface } | null = null
+  /** Where the last shot burst a balloon and how big the explosion is (1 = a vehicle); null when none. */
+  lastBurst: { point: [number, number, number]; scale: number } | null = null
   private elapsed = 0
   private remaining = 60
   private started = false
@@ -136,7 +177,8 @@ export class Gallery {
     damage = 0,
   ): boolean {
     this.lastGlassImpact = null
-    this.lastMetalImpact = null
+    this.lastImpact = null
+    this.lastBurst = null
     let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
     foreground.setFromCamera(new THREE.Vector2(), camera)
@@ -172,6 +214,19 @@ export class Gallery {
       }
       return true
     }
+    // Trunk balloons are render-only: a shot that reaches one first bursts it like a small explosion.
+    const popped = view.destruction.balloons.shoot(
+      ray.ray.origin,
+      ray.ray.direction,
+      solid ? ray.ray.origin.distanceTo(new THREE.Vector3(...solid.point)) : rayView.range,
+    )
+    if (popped) {
+      const { scale, damagesVehicles, vehiclePush } = balloonTuning.burst
+      view.destruction.burst(popped.point, scale)
+      sim.blast(popped.point.toArray(), scale, damagesVehicles, vehiclePush)
+      this.lastBurst = { point: popped.point.toArray() as Vec3Tuple, scale }
+      return true
+    }
     // Host instanced scenery can handle exact visible-surface hits (including instance id).
     const sceneryRay = new THREE.Raycaster(
       ray.ray.origin.clone().add(view.root.position),
@@ -188,8 +243,21 @@ export class Gallery {
     view.root.traverseVisible((object) => {
       if (typeof object.userData.sceneryShot === 'function') scenery.push(object)
     })
-    for (const surface of sceneryRay.intersectObjects(scenery, false)) {
-      if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) return true
+    for (const surface of orderSceneryHits(
+      sceneryRay.intersectObjects(scenery, false),
+      ray.ray.direction,
+    )) {
+      if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) {
+        // Hand-handled scenery (instanced signs) rings as the mesh says, else as a sign.
+        const kind = surface.object.userData.impactSurface
+        const ringing = kind === null ? null : isImpactSurface(kind) ? kind : sceneryImpactSurface
+        if (ringing)
+          this.lastImpact = {
+            point: surface.point.clone().sub(view.root.position).toArray() as Vec3Tuple,
+            surface: ringing,
+          }
+        return true
+      }
     }
     const glassPoint = view.brokenGlass.hit(
       view.document.entities
@@ -220,11 +288,13 @@ export class Gallery {
       // Planet buildings and other static colliders have no entity id — anchor in
       // view.root, which shares the floating-origin shift with world meshes.
       const object = hit.entityId ? view.objects.get(hit.entityId) : undefined
-      if (
-        hit.entityId &&
+      const surface =
+        hit.surface ??
+        (hit.entityId &&
         view.document.entities.some((entity) => entity.id === hit.entityId && entity.vehicle)
-      )
-        this.lastMetalImpact = [...hit.point] as [number, number, number]
+          ? vehicleImpactSurface
+          : null)
+      if (surface) this.lastImpact = { point: [...hit.point] as Vec3Tuple, surface }
       if (object && hit.entityId) {
         // Physics hulls can sit inside truck/trailer bodywork. Find the visible skin
         // along the same shot instead of leaving the mark hidden inside that hull.

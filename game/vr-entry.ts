@@ -1,5 +1,10 @@
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
+/** The page was opened as PC VR (`?vr=pc`, from the headset page). */
+export function pcVRRequested(search = location.search): boolean {
+  return new URLSearchParams(search).get('vr') === 'pc'
+}
+
 /** Enter the current world, keeping the user gesture required by WebXR. */
 export function mountVREntry(runtime: GameRuntime): void {
   const button = document.createElement('button')
@@ -26,13 +31,28 @@ export function mountVREntry(runtime: GameRuntime): void {
       supported = false
     }
     if (disposed) return
+    // Load the XR code as soon as the device can use it, so the click enters at once (WebXR
+    // needs the user gesture) instead of waiting for the download.
+    if (supported) void runtime.loadXR().catch(() => {})
     if (supported) place()
     else button.remove()
+    // Opened from the headset page's PC VR link: point at the button. WebXR needs a click, so
+    // the session cannot start by itself.
+    if (supported && pcVRRequested()) {
+      button.style.outline = '3px solid var(--accent,#ffb000)'
+      button.focus()
+    }
   }
   button.onclick = () => {
     button.disabled = true
-    void runtime.xr
-      .enter()
+    void runtime
+      .loadXR()
+      .then((xr) => xr.enter())
+      .then(() => {
+        button.style.outline = ''
+        // Keyboard, USB wheel/pedals and gamepad follow canvas focus, as on the desktop.
+        document.querySelector<HTMLCanvasElement>('#game-canvas')?.focus()
+      })
       .catch((error) => {
         const message = document.getElementById('game-message')
         if (message) message.textContent = `No se pudo entrar en VR: ${String(error)}`

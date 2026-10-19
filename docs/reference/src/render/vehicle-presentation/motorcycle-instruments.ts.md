@@ -101,19 +101,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## anchorOf
 
-[Implementation, line 139](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L139)
+[Implementation, line 144](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L144)
 
 ```ts
-anchorOf(model: THREE.Object3D, name: string): Anchor | null
+anchorOf(model: THREE.Object3D, legacyName: string, matches: (tag: Tag) => boolean): Anchor | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `model.getObjectByName`
+- `model.traverse`
+
+## anchorOf.callback@150
+
+[Implementation, line 150](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L150)
+
+```ts
+callback@150(candidate): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `matches`
 
 ## canvasAvailable
 
-[Implementation, line 145](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L145)
+[Implementation, line 159](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L159)
 
 ```ts
 canvasAvailable(): inferred by TypeScript; see implementation
@@ -121,7 +134,7 @@ canvasAvailable(): inferred by TypeScript; see implementation
 
 ## makeCanvas
 
-[Implementation, line 146](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L146)
+[Implementation, line 160](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L160)
 
 ```ts
 makeCanvas(w: number, h: number): inferred by TypeScript; see implementation
@@ -133,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## backlit
 
-[Implementation, line 154](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L154)
+[Implementation, line 168](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L168)
 
 ```ts
 backlit(params: THREE.MeshBasicMaterialParameters): inferred by TypeScript; see implementation
@@ -145,7 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## drawDial
 
-[Implementation, line 158](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L158)
+[Implementation, line 172](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L172)
 
 Draw a round dial face: ticks every minor step, numbers every major step.
 
@@ -172,7 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## drawDial.at
 
-[Implementation, line 182](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L182)
+[Implementation, line 196](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L196)
 
 ```ts
 at(v: number): inferred by TypeScript; see implementation
@@ -184,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Dial.constructor
 
-[Implementation, line 222](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L222)
+[Implementation, line 236](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L236)
 
 A round dial with a needle on one anchor.
 
@@ -206,24 +219,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `dialTexture`
 - `needle.add`
 
-## Dial.constructor.callback@230
+## Dial.constructor.callback@244
 
-[Implementation, line 230](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L230)
+[Implementation, line 244](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L244)
 
 ```ts
-callback@230(canvas): inferred by TypeScript; see implementation
+callback@244(canvas): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `draw`
 
-## Dial.constructor.callback@232
+## Dial.constructor.callback@246
 
-[Implementation, line 232](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L232)
+[Implementation, line 246](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L246)
 
 ```ts
-callback@232(canvas): inferred by TypeScript; see implementation
+callback@246(canvas): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -232,7 +245,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Dial.set
 
-[Implementation, line 263](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L263)
+[Implementation, line 277](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L277)
 
 A round dial with a needle on one anchor.
 
@@ -251,7 +264,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## dialTexture
 
-[Implementation, line 282](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L282)
+[Implementation, line 296](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L296)
 
 ```ts
 dialTexture(draw: (canvas: HTMLCanvasElement) => void): inferred by TypeScript; see implementation
@@ -266,7 +279,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Lamp.constructor
 
-[Implementation, line 297](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L297)
+[Implementation, line 311](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L311)
 
 A round tell-tale: dim tint when off, full colour when lit.
 
@@ -287,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Lamp.set
 
-[Implementation, line 309](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L309)
+[Implementation, line 323](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L323)
 
 A round tell-tale: dim tint when off, full colour when lit.
 
@@ -301,7 +314,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Lamp.lit
 
-[Implementation, line 312](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L312)
+[Implementation, line 326](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L326)
 
 A round tell-tale: dim tint when off, full colour when lit.
 
@@ -315,7 +328,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Lcd.constructor
 
-[Implementation, line 322](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L322)
+[Implementation, line 336](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L336)
 
 Portrait LCD: clock, big gear digit, odometer and trip; redrawn only when the text changes.
 
@@ -337,7 +350,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Lcd.draw
 
-[Implementation, line 337](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L337)
+[Implementation, line 351](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L351)
 
 Portrait LCD: clock, big gear digit, odometer and trip; redrawn only when the text changes.
 
@@ -354,7 +367,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleInstruments.constructor
 
-[Implementation, line 367](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L367)
+[Implementation, line 381](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L381)
 
 The cluster bound to one model.
 
@@ -364,7 +377,7 @@ constructor(private readonly options: MotorcycleClusterOptions, private readonly
 
 ## MotorcycleInstruments.bind
 
-[Implementation, line 377](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L377)
+[Implementation, line 391](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L391)
 
 Bind to a model with the instrument anchors; null when it has none.
 
@@ -381,21 +394,45 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lamp`
 - `o.lamps.map`
 
-## MotorcycleInstruments.bind.callback@390
+## MotorcycleInstruments.bind.callback@397
 
-[Implementation, line 390](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L390)
+[Implementation, line 397](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L397)
 
 ```ts
-callback@390(canvas, night): inferred by TypeScript; see implementation
+callback@397(tag): inferred by TypeScript; see implementation
+```
+
+## MotorcycleInstruments.bind.callback@398
+
+[Implementation, line 398](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L398)
+
+```ts
+callback@398(tag): inferred by TypeScript; see implementation
+```
+
+## MotorcycleInstruments.bind.callback@399
+
+[Implementation, line 399](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L399)
+
+```ts
+callback@399(tag): inferred by TypeScript; see implementation
+```
+
+## MotorcycleInstruments.bind.callback@404
+
+[Implementation, line 404](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L404)
+
+```ts
+callback@404(canvas, night): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `drawDial`
 
-## MotorcycleInstruments.bind.callback@390.label
+## MotorcycleInstruments.bind.callback@404.label
 
-[Implementation, line 397](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L397)
+[Implementation, line 411](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L411)
 
 ```ts
 label(v): inferred by TypeScript; see implementation
@@ -405,21 +442,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `String`
 
-## MotorcycleInstruments.bind.callback@409
+## MotorcycleInstruments.bind.callback@423
 
-[Implementation, line 409](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L409)
+[Implementation, line 423](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L423)
 
 ```ts
-callback@409(canvas, night): inferred by TypeScript; see implementation
+callback@423(canvas, night): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `drawDial`
 
-## MotorcycleInstruments.bind.callback@409.label
+## MotorcycleInstruments.bind.callback@423.label
 
-[Implementation, line 417](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L417)
+[Implementation, line 431](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L431)
 
 ```ts
 label(v): inferred by TypeScript; see implementation
@@ -431,10 +468,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleInstruments.bind.lamp
 
-[Implementation, line 426](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L426)
+[Implementation, line 440](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L440)
 
 ```ts
-lamp(name: string, color: string): inferred by TypeScript; see implementation
+lamp(name: string, color: string, matches: (tag: Tag) => boolean): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -442,21 +479,45 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Lamp`
 - `anchorOf`
 
-## MotorcycleInstruments.bind.callback@436
+## MotorcycleInstruments.bind.callback@450
 
-[Implementation, line 436](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L436)
+[Implementation, line 450](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L450)
 
 ```ts
-callback@436(kind, i): inferred by TypeScript; see implementation
+callback@450(tag): inferred by TypeScript; see implementation
+```
+
+## MotorcycleInstruments.bind.callback@451
+
+[Implementation, line 451](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L451)
+
+```ts
+callback@451(tag): inferred by TypeScript; see implementation
+```
+
+## MotorcycleInstruments.bind.callback@453
+
+[Implementation, line 453](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L453)
+
+```ts
+callback@453(kind, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `lamp`
 
+## MotorcycleInstruments.bind.callback@453.callback@457
+
+[Implementation, line 457](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L457)
+
+```ts
+callback@457(tag): inferred by TypeScript; see implementation
+```
+
 ## MotorcycleInstruments.dispose
 
-[Implementation, line 444](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L444)
+[Implementation, line 467](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L467)
 
 Release the canvas textures (meshes and materials go with the model).
 
@@ -470,7 +531,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleInstruments.update
 
-[Implementation, line 449](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L449)
+[Implementation, line 472](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L472)
 
 The cluster bound to one model.
 
@@ -491,12 +552,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `warningLampStates`
 - `warningLampStates(this.options.lamps, inputs).forEach`
 
-## MotorcycleInstruments.update.callback@459
+## MotorcycleInstruments.update.callback@482
 
-[Implementation, line 459](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L459)
+[Implementation, line 482](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L482)
 
 ```ts
-callback@459(lit, i): inferred by TypeScript; see implementation
+callback@482(lit, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -505,7 +566,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MotorcycleInstruments.lampStates
 
-[Implementation, line 463](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L463)
+[Implementation, line 486](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L486)
 
 Lit state of every lamp (signals left/right, then warnings), for tests and debugging.
 
@@ -517,17 +578,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.warnings.map`
 
-## MotorcycleInstruments.lampStates.callback@466
+## MotorcycleInstruments.lampStates.callback@489
 
-[Implementation, line 466](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L466)
+[Implementation, line 489](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L489)
 
 ```ts
-callback@466(l): inferred by TypeScript; see implementation
+callback@489(l): inferred by TypeScript; see implementation
 ```
 
 ## MotorcycleInstruments.needleAngles
 
-[Implementation, line 471](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L471)
+[Implementation, line 494](../../../../../src/render/vehicle-presentation/motorcycle-instruments.ts#L494)
 
 Needle angles (radians, clockwise from 12 o'clock) for tests and debugging.
 

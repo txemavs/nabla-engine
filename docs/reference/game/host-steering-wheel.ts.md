@@ -18,7 +18,7 @@ to it. `?wheel=` wins over the build value; a present empty `wheel=` means no ho
 ## Module dependencies
 
 - `@nabla/engine/vehicles`
-- `@nabla/engine/runtime`
+- `@nabla/engine/runtime/core`
 
 ## parseHostSteeringWheels
 

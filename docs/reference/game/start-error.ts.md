@@ -8,7 +8,7 @@ What the player sees when the terrain cannot start: Spanish text and, over a hol
 
 ## Module dependencies
 
-- `@nabla/engine/runtime`
+- `@nabla/engine/runtime/core`
 - `@nabla/engine/scene`
 - `./terrain.js`
 

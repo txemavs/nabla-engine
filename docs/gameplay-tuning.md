@@ -134,7 +134,11 @@ See [vehicle destruction](vehicle-damage.md) for wheel detachment, disappearing
 panels, asymmetric blast and black smoke. Rear shots on intact cars with a named
 `Maletero`/`Trunk` open the trunk and emit balloons for 30 seconds; another rear hit
 restarts the timer, then the lid closes. Exploding stops emission. Balloons are
-bounded cosmetic objects, not physics bodies. Glass intercepts a shot before the
+bounded cosmetic objects, not physics bodies, but a shot that reaches one first bursts it:
+the balloon is removed and the vehicle explosion plays at `balloonTuning.burst.scale` times its
+size (flash and light from `VehicleDestruction.burst`, shockwave from `Simulation.blast`, sound
+from `blastVoice`; scale 1 is a vehicle). The shockwave pushes nearby bodies but does not damage
+vehicles unless `burst.damagesVehicles` is set. Glass intercepts a shot before the
 chassis interaction. Source geometry and moving-part node bindings remain in the
 reviewed GLB and `assets/rigs/weapons/hk-compact.rig.json`; do not regenerate the
 reviewed model with the legacy authoring script. Mechanical weapon specifications

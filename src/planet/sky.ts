@@ -96,6 +96,19 @@ export function shiftSkyClockMinutes(
   at.setMinutes(at.getMinutes() + Math.round(minutes), 0, 0)
   return { mode: 'fixed', at: at.toISOString() }
 }
+/**
+ * `shiftSkyClockMinutes` that keeps a running speed: a clock at ×rate keeps running at that rate
+ * from the shifted instant (a clock at ×1 becomes fixed, like setting the time by hand).
+ */
+export function shiftSkyClockKeepingRate(
+  clock: SkyClock | undefined,
+  minutes: number,
+  now = Date.now(),
+): SkyClock {
+  const shifted = shiftSkyClockMinutes(clock, minutes, now)
+  const rate = skyRate(clock)
+  return rate === 1 ? shifted : skyClockAtRate(shifted, rate, now)
+}
 const FOG_CEILING = 100
 
 export function atmosphere(height: number, sunElevation: number, visibility = 220) {

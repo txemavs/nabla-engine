@@ -1,7 +1,16 @@
 import { expect, it } from 'vitest'
-import { PerspectiveCamera, Vector3 } from 'three'
+import {
+  BackSide,
+  InstancedMesh,
+  Matrix4,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Raycaster,
+  Vector3,
+} from 'three'
 import { createGallery } from '../../src/examples/gallery.js'
-import { shotView } from '../../src/runtime/gallery.js'
+import { orderSceneryHits, shotView } from '../../src/runtime/gallery.js'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { parseScene } from '../../src/scene/document.js'
@@ -79,4 +88,40 @@ it('starts oblique window shots beyond the exit barrier and preserves their rang
   expect(result.camera.position.z).toBeLessThan(-0.145 / 2)
   expect(result.range).toBeLessThan(15 - Math.sqrt(17))
   sim.dispose()
+})
+
+it('a shot through two back-to-back sign plates takes the nearest, visible plate', () => {
+  // Two instanced plate batches, front (FrontSide) and back (BackSide), as the sign layers use.
+  const front = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial(), 2)
+  const back = new InstancedMesh(
+    new PlaneGeometry(1, 1),
+    new MeshBasicMaterial({ side: BackSide }),
+    2,
+  )
+  // Plate 0 faces the shooter at z = 0.03; plate 1 faces away at z = -0.03.
+  const plate0 = new Matrix4().makeTranslation(0, 0, 0.03)
+  const plate1 = new Matrix4()
+    .makeRotationY(Math.PI)
+    .premultiply(new Matrix4().makeTranslation(0, 0, -0.03))
+  for (const mesh of [front, back]) {
+    mesh.setMatrixAt(0, plate0)
+    mesh.setMatrixAt(1, plate1)
+    mesh.computeBoundingSphere()
+    mesh.updateMatrixWorld()
+  }
+  const direction = new Vector3(0, 0, -1)
+  // Registration order must not matter: back batch first, then front.
+  const hits = new Raycaster(new Vector3(0, 0, 5), direction).intersectObjects([back, front], false)
+  const ordered = orderSceneryHits(hits, direction)
+  expect(ordered[0].object).toBe(front)
+  expect(ordered[0].instanceId).toBe(0)
+  // Coplanar tie (same distance): the face turned to the shooter wins over the reversed plate.
+  const tie = orderSceneryHits(
+    [
+      { ...ordered[0], object: back, distance: 4.97, instanceId: 0 },
+      { ...ordered[0], distance: 4.971 },
+    ],
+    direction,
+  )
+  expect(tie[0].object).toBe(front)
 })

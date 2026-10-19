@@ -4,11 +4,8 @@
 
 [Source](../../../../src/config/scenery-physics.ts)
 
-Scenery physics: bodies for small streamed scenery (sign posts, traffic-light poles) that
-only exist near the player. Code-only defaults; the player's choices live in the menu
-(Mundo → Opciones → Física de señalización) and are applied through `SceneryPhysics`.
-
 ## Module dependencies
 
+- `./impact-sounds.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

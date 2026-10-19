@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { expect, it, vi } from 'vitest'
 import { vehicleLightsField } from '../../src/entity/vehicle/field.js'
 import {
+  nudgeRearLight,
+  rearLightJson,
   normalizeVehicleLights,
   readVehicleLights,
   writeVehicleLights,
@@ -69,4 +71,27 @@ it('rejects unknown or out of range vehicle light data', () => {
   expect(() => vehicleLightsField.parse({ tuning: { sideways: 1 } })).toThrow()
   expect(() => vehicleLightsField.parse({ lensEmissive: { low: 'white' } })).toThrow()
   expect(vehicleLightsField.parse({})).toEqual({})
+})
+
+it('nudges one rear value in small steps within its range and writes the JSON fragment', () => {
+  let values = nudgeRearLight({}, 'rearY', -0.01)
+  values = nudgeRearLight(values, 'rearY', -0.01)
+  expect(values.rearY).toBeCloseTo(-0.02, 6)
+  expect(values.rearZ).toBe(0)
+  expect(nudgeRearLight({ rearX: 1.99 }, 'rearX', 0.05).rearX).toBe(2)
+  expect(nudgeRearLight({}, 'rearIntensity', -5).rearIntensity).toBe(0)
+  // Floating point drift does not accumulate: values stay on the millimetre.
+  let drift = vehicleLightDefaults
+  for (let i = 0; i < 30; i++) drift = nudgeRearLight(drift, 'rearZ', 0.01)
+  expect(drift.rearZ).toBe(0.3)
+  expect(JSON.parse(rearLightJson({ rearY: -0.2, rearZ: 0.99, low: 3 }))).toEqual({
+    vehicle: {
+      lights: {
+        tuning: { rearX: 0, rearY: -0.2, rearZ: 0.99, rearIntensity: 1, rearReach: 1 },
+      },
+    },
+  })
+  // What the panel copies is valid vehicle data.
+  const parsed = JSON.parse(rearLightJson({ rearY: -0.2 }))
+  expect(vehicleLightsField.parse(parsed.vehicle.lights).tuning).toMatchObject({ rearY: -0.2 })
 })

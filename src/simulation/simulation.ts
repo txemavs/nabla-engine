@@ -110,6 +110,7 @@ const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
+import type { ImpactSurface } from '../config/impact-sounds.js'
 import { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -148,6 +149,84 @@ export class Simulation {
   }[] {
     return this.explosions.splice(0)
   }
+  /**
+   * A shockwave at `position`: the vehicle-explosion blast, `scale` times its radius and push
+   * (1 = a vehicle). Every dynamic body in range is lifted away from the centre; vehicles take
+   * `vehiclePush` of that push (0 = vehicles are not moved, as for a popped balloon); with
+   * `damage`, other vehicles in range are damaged in proportion to the pressure. Visual and sound
+   * are the host's: this only moves bodies.
+   */
+  blast(position: Vec3Tuple, scale = 1, damage = false, vehiclePush = 1): void {
+    if (this.disposed || !position.every(Number.isFinite) || !Number.isFinite(scale) || scale <= 0)
+      return
+    this.applyBlast(
+      this.blastCentre.set(position[0], position[1], position[2]),
+      scale,
+      null,
+      damage,
+      Number.isFinite(vehiclePush) ? Math.max(0, vehiclePush) : 1,
+    )
+  }
+  private readonly blastCentre = new Vec3()
+  private readonly blastDirection = new Vec3()
+  private readonly blastUp = new Vec3()
+  private readonly blastApplication = new Vec3()
+  private applyBlast(
+    centre: Vec3,
+    scale: number,
+    sourceId: string | null,
+    damage: boolean,
+    vehiclePush = 1,
+  ): void {
+    const radius = explosionTuning.radiusMetres * scale
+    const radiusSquared = radius * radius
+    const up = this.blastUp.copy(this.radialUpAt(centre))
+    const direction = this.blastDirection
+    const application = this.blastApplication
+    let vehicleBodies: Map<Body, string> | undefined
+    for (const body of this.world.bodies) {
+      if (!body.mass) continue
+      // Cheap reject before any vector work.
+      const dx = body.position.x - centre.x,
+        dy = body.position.y - centre.y,
+        dz = body.position.z - centre.z
+      const distanceSquared = dx * dx + dy * dy + dz * dz
+      if (distanceSquared >= radiusSquared) continue
+      vehicleBodies ??= new Map([...this.vehicles].map(([id, v]) => [v.body, id]))
+      const vehicleId = vehicleBodies.get(body)
+      const push = vehicleId === undefined ? 1 : vehiclePush
+      const distance = Math.sqrt(distanceSquared)
+      const strength = 1 - distance / radius
+      if (push > 0) {
+        direction.set(dx, dy, dz)
+        if (distance > 0.1) direction.scale(1 / distance, direction)
+        else direction.copy(up)
+        direction.x += up.x * 0.45
+        direction.y += up.y * 0.45
+        direction.z += up.z * 0.45
+        body.wakeUp()
+        // Uneven pressure hits away from the centre of mass, producing real tumble.
+        application.set(
+          (Math.random() - 0.5) * explosionTuning.offsetX,
+          (Math.random() - 0.5) * explosionTuning.offsetY,
+          (Math.random() - 0.5) * explosionTuning.offsetZ,
+        )
+        direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
+        direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
+        body.applyImpulse(
+          direction.scale(
+            body.mass * explosionTuning.impulseSpeed * scale * strength * push,
+            direction,
+          ),
+          application,
+        )
+      }
+      if (damage && vehicleId !== undefined && vehicleId !== sourceId) {
+        const other = this.vehicles.get(vehicleId)
+        if (other && !other.definition.passive) this.damage.apply(vehicleId, strength * 45)
+      }
+    }
+  }
   private resolveExplosions(cause: 'weapon' | 'impact' = 'weapon'): void {
     let pending = this.damage.drain()
     while (pending.length) {
@@ -163,34 +242,8 @@ export class Simulation {
         this.bikeMountHold = null
         if (this.vehicleId === id) this.ejectRider(v)
         const centre = v.body.position.clone()
-        const up = this.radialUp(v.body)
         this.explosions.push({ entityId: id, position: vec(centre), cause, occupied })
-        for (const body of this.world.bodies) {
-          if (!body.mass) continue
-          const direction = body.position.vsub(centre)
-          const distance = direction.length()
-          if (distance >= explosionTuning.radiusMetres) continue
-          const strength = 1 - distance / explosionTuning.radiusMetres
-          if (distance > 0.1) direction.normalize()
-          else direction.copy(up)
-          direction.vadd(up.scale(0.45), direction)
-          body.wakeUp()
-          // Uneven pressure hits away from the centre of mass, producing real tumble.
-          const application = new Vec3(
-            (Math.random() - 0.5) * explosionTuning.offsetX,
-            (Math.random() - 0.5) * explosionTuning.offsetY,
-            (Math.random() - 0.5) * explosionTuning.offsetZ,
-          )
-          direction.x += (Math.random() - 0.5) * explosionTuning.directionJitter
-          direction.z += (Math.random() - 0.5) * explosionTuning.directionJitter
-          body.applyImpulse(
-            direction.scale(body.mass * explosionTuning.impulseSpeed * strength),
-            application,
-          )
-          for (const [otherId, other] of this.vehicles)
-            if (other.body === body && otherId !== id && !other.definition.passive)
-              this.damage.apply(otherId, strength * 45)
-        }
+        this.applyBlast(centre, 1, id, true)
       }
       pending = this.damage.drain()
     }
@@ -241,12 +294,14 @@ export class Simulation {
   /**
    * Static or dynamic scenery pole. `shape.half` overrides the default box (a thin sign post);
    * `shape.solid` gives it the same surface as the planet's static colliders (trees, lamp posts).
+   * `shape.yaw` turns the box about the vertical axis (radians, three.js Y rotation) so a square
+   * post matches the orientation of the mesh it stands for.
    */
   createSceneryPole(
     position: Vec3Tuple,
     height: number,
     movable: boolean,
-    shape?: { half?: Vec3Tuple; solid?: boolean },
+    shape?: { half?: Vec3Tuple; solid?: boolean; surface?: ImpactSurface; yaw?: number },
   ) {
     if (
       this.disposed ||
@@ -265,7 +320,9 @@ export class Simulation {
       linearDamping: 0.15,
       angularDamping: 0.2,
     })
+    if (shape?.yaw) body.quaternion.setFromEuler(0, shape.yaw, 0)
     this.world.addBody(body)
+    if (shape?.surface) this.bodySurfaces.set(body, shape.surface)
     body.preserveSleep = movable
     if (movable) body.setBreakawayAnchor(true)
     let removed = false
@@ -357,6 +414,8 @@ export class Simulation {
     return m ? { lift: m.lift, tilt: m.tilt, side: m.side } : null
   }
   private readonly bodies = new Map<string, Body>()
+  /** Impact-sound surface of tagged bodies (scenery poles); see `config/impact-sounds.ts`. */
+  private readonly bodySurfaces = new WeakMap<Body, ImpactSurface>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
   private readonly mapCollision = new MapCollisions(this.world)
@@ -1621,7 +1680,13 @@ export class Simulation {
     range = 150,
     impulse = 12,
     excludeEntityId?: string,
-  ): { point: Vec3Tuple; normal: Vec3Tuple; entityId: string | null } | null {
+  ): {
+    point: Vec3Tuple
+    normal: Vec3Tuple
+    entityId: string | null
+    /** What the hit body presents to a shot (scenery layers tag their poles); null when untagged. */
+    surface: ImpactSurface | null
+  } | null {
     const ray = new Vec3(...direction)
     if (
       !Number.isFinite(range) ||
@@ -1663,6 +1728,7 @@ export class Simulation {
       point: vec(impact),
       normal: vec(normal),
       entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
+      surface: this.bodySurfaces.get(target) ?? null,
     }
   }
 
@@ -1888,8 +1954,11 @@ export class Simulation {
   }
 
   private radialUp(body: Body): Vec3 {
+    return this.radialUpAt(body.position)
+  }
+  private radialUpAt(position: Vec3): Vec3 {
     if (!this.document.geography) return new Vec3(0, 1, 0)
-    const p = body.position.vadd(new Vec3(0, EARTH_RADIUS + this.document.geography.altitude, 0))
+    const p = position.vadd(new Vec3(0, EARTH_RADIUS + this.document.geography.altitude, 0))
     p.normalize()
     return p
   }

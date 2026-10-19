@@ -1,7 +1,7 @@
 import { vehicleLightDefaults, type VehicleLightTuning } from './light-tuning.js'
 /** Fixed renderer lights for the occupied vehicle. GLB lamps stay hidden so light count never changes. */
 import { Group, PointLight, SpotLight, Vector3, type Light, type Object3D } from 'three'
-import { lightingDefaults } from '../../config/lighting.js'
+import { lightingDefaults, vehicleRearWash } from '../../config/lighting.js'
 import { lowBeamMask } from './authored-lights.js'
 
 export const vehicleLightBudget = Object.freeze({
@@ -46,8 +46,17 @@ export class VehicleLightRig {
     return [...this.spots, ...this.points]
   }
 
-  /** Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. */
-  capture(spots: readonly SpotLight[], points: readonly PointLight[], offset?: Vector3): void {
+  /**
+   * Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. `offset` moves
+   * the light of the head lamps, `rear.offset` the light of the lamps in `rear.lights`; both are
+   * rig-frame vectors, and the lamp nodes and lenses in the model do not move.
+   */
+  capture(
+    spots: readonly SpotLight[],
+    points: readonly PointLight[],
+    offset?: Vector3,
+    rear?: { lights: ReadonlySet<Light>; offset: Vector3 },
+  ): void {
     this.nextGroundPoint = points.length
     this.root.updateWorldMatrix(true, false)
     const mapped = spots.filter((light) => light.map)
@@ -56,17 +65,20 @@ export class VehicleLightRig {
       plain.length < this.spots.length - vehicleLightBudget.mappedSpots
         ? this.spots[this.spots.length - 1]
         : undefined
-    for (let i = 0; i < this.spots.length; i++)
-      this.copy(
-        this.spots[i],
-        i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots],
-      )
-    if (offset)
-      for (const light of this.spots) {
-        light.position.add(offset)
-        light.target.position.add(offset)
+    for (let i = 0; i < this.spots.length; i++) {
+      const source =
+        i < vehicleLightBudget.mappedSpots ? mapped[i] : plain[i - vehicleLightBudget.mappedSpots]
+      this.copy(this.spots[i], source)
+      const moved = source && rear?.lights.has(source) ? rear.offset : offset
+      if (moved) {
+        this.spots[i].position.add(moved)
+        this.spots[i].target.position.add(moved)
       }
-    for (let i = 0; i < this.points.length; i++) this.copy(this.points[i], points[i])
+    }
+    for (let i = 0; i < this.points.length; i++) {
+      this.copy(this.points[i], points[i])
+      if (points[i] && rear?.lights.has(points[i])) this.points[i].position.add(rear.offset)
+    }
   }
 
   /** Subtle downward road wash, using a spare unmapped slot rather than another light. */
@@ -78,17 +90,21 @@ export class VehicleLightRig {
     const light = this.freeGroundSlot
     if (!light || light === this.pedestrianLight) return
     vehicle.updateWorldMatrix(true, false)
-    this.world.set(tuning.rearX, tuning.rearY, 1.8 + tuning.rearZ)
+    const wash = vehicleRearWash.spot
+    const boost = braking ? vehicleRearWash.brakingBoost : 1
+    const [ox, oy, oz] = wash.origin
+    const [tx, ty, tz] = wash.target
+    this.world.set(ox + tuning.rearX, oy + tuning.rearY, oz + tuning.rearZ)
     vehicle.localToWorld(this.world)
     light.position.copy(this.root.worldToLocal(this.world))
-    this.world.set(tuning.rearX, -1 + tuning.rearY, 2.6 + tuning.rearZ)
+    this.world.set(tx + tuning.rearX, ty + tuning.rearY, tz + tuning.rearZ)
     vehicle.localToWorld(this.world)
     light.target.position.copy(this.root.worldToLocal(this.world))
-    light.color.set('#ff2410')
-    light.intensity = 4.8 * tuning.rearIntensity * (braking ? 1.32 : 1)
-    light.distance = 5 * tuning.rearReach * (braking ? 1.32 : 1)
+    light.color.set(vehicleRearWash.colour)
+    light.intensity = wash.intensity * tuning.rearIntensity * boost
+    light.distance = wash.reach * tuning.rearReach * boost
     light.decay = 1
-    light.angle = 1.3
+    light.angle = wash.angle
     light.penumbra = 1
     // This slot is never the pedestrian shadow slot.
     light.castShadow = false
@@ -105,21 +121,30 @@ export class VehicleLightRig {
     anchor?: Object3D,
   ): void {
     vehicle.updateWorldMatrix(true, false)
+    const wash = vehicleRearWash.point
+    const boost = braking ? vehicleRearWash.brakingBoost : 1
     for (let i = 0; i < count; i++) {
       const light = this.points[this.nextGroundPoint++]
       if (!light) return
-      this.world.set(count === 1 ? 0 : (i ? 1 : -1) * width * 0.35, -0.25, length / 2 - 0.2)
+      this.world.set(
+        count === 1 ? 0 : (i ? 1 : -1) * width * wash.spread,
+        wash.height,
+        length / 2 - wash.inset,
+      )
       if (anchor) {
         anchor.getWorldPosition(this.world)
         vehicle.worldToLocal(this.world)
-        this.world.z += 0.04
+        this.world.z += wash.anchorStep
       }
-      this.world.add(new Vector3(tuning.rearX, tuning.rearY, tuning.rearZ))
+      this.world.x += tuning.rearX
+      this.world.y += tuning.rearY
+      this.world.z += tuning.rearZ
       vehicle.localToWorld(this.world)
       light.position.copy(this.root.worldToLocal(this.world))
-      light.color.set('#ff2410')
-      light.intensity = (count === 1 ? 1.8 : 1.2) * tuning.rearIntensity * (braking ? 1.32 : 1)
-      light.distance = 3 * tuning.rearReach * (braking ? 1.32 : 1)
+      light.color.set(vehicleRearWash.colour)
+      light.intensity =
+        (count === 1 ? wash.intensity.single : wash.intensity.pair) * tuning.rearIntensity * boost
+      light.distance = wash.reach * tuning.rearReach * boost
       light.decay = 1
       light.castShadow = false
     }

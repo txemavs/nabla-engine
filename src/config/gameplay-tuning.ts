@@ -209,6 +209,32 @@ export const balloonTuning = {
   maxCount: 240,
   openingRadians: 1.15,
   openingRate: 5,
+  /** A shot balloon bursts as the vehicle explosion, `scale` times its size (0–1). */
+  burst: {
+    /** Size of the visual, shockwave radius, push and sound relative to a vehicle explosion. */
+    scale: 0.18,
+    /** Radius a shot has to cross to hit a balloon, metres (the balloon is ~0.16 × 0.2 m). */
+    hitRadius: 0.2,
+    /** Whether the shockwave also damages vehicles in range. A popped balloon does not. */
+    damagesVehicles: false,
+    /**
+     * Share of the shockwave's push vehicles take (0–1). 0: balloons come out of the trunk, so a
+     * popped balloon must not shove the car it came from (or any other vehicle).
+     */
+    vehiclePush: 0,
+    /**
+     * The shockwave on the other (render-only) balloons. Range is the burst's shockwave radius,
+     * `explosionTuning.radiusMetres × scale`; the kick falls off linearly to 0 at that range.
+     */
+    balloonPush: {
+      /** Outward speed given to a balloon at the burst point, m/s. */
+      speed: 5,
+      /** Exponential decay of that extra speed, 1/s (air drag on a light balloon). */
+      damping: 2.5,
+      /** Balloons closer than this to the burst pop with it, metres. 0 disables chain pops. */
+      chainPopRadius: 0,
+    },
+  },
 }
 
 /** Tilting car carrier cargo positions, metres. */

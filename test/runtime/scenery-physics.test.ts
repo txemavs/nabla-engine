@@ -93,11 +93,12 @@ describe('SceneryPhysics', () => {
     const signs = physics.layer('signs', { movable: true })
     signs.begin()
     signs.add('a', 1, 2, 3, 4)
-    expect(simulation.createSceneryPole).toHaveBeenCalledWith([1, 4, 3], 4, true)
+    const ping = { surface: sceneryPhysicsDefaults.surface }
+    expect(simulation.createSceneryPole).toHaveBeenCalledWith([1, 4, 3], 4, true, ping)
     const fixed = physics.layer('fixed', { movable: false })
     fixed.begin()
     fixed.add('b', 1, 0, 1, 3.3)
-    expect(simulation.createSceneryPole).toHaveBeenLastCalledWith([1, 1.65, 1], 3.3, false)
+    expect(simulation.createSceneryPole).toHaveBeenLastCalledWith([1, 1.65, 1], 3.3, false, ping)
   })
 
   it('caps live bodies per layer', () => {
@@ -328,11 +329,61 @@ describe('world layer (lamp posts and tree trunks)', () => {
     }
   })
 
-  it('does not change the two-argument body call of sign layers', () => {
+  it('keeps the default box of sign layers and only tags their impact sound', () => {
     const { simulation, physics } = world([[0, 0, 0]])
     const signs = physics.layer('signs', { movable: true })
     signs.begin()
     signs.add('s', 1, 0, 1, 3)
-    expect(simulation.createSceneryPole).toHaveBeenLastCalledWith([1, 1.5, 1], 3, true)
+    expect(simulation.createSceneryPole).toHaveBeenLastCalledWith([1, 1.5, 1], 3, true, {
+      surface: 'metal-sign',
+    })
+  })
+
+  it('rings as a sign by default, can be silent or another kind, and world layers are silent', () => {
+    const { simulation, physics } = world([[0, 0, 0]])
+    const lastShape = () => simulation.createSceneryPole.mock.calls.at(-1)! as unknown as unknown[]
+    const silent = physics.layer('silent', { movable: false, surface: null })
+    silent.begin()
+    silent.add('a', 1, 0, 1, 3)
+    expect(lastShape()[3]).toBeUndefined()
+    const body = physics.layer('body', { movable: false, surface: 'metal-body' })
+    body.begin()
+    body.add('b', 1, 0, 1, 3)
+    expect(lastShape()[3]).toEqual({ surface: 'metal-body' })
+    const trees = physics.layer('trees', {
+      movable: false,
+      maxBodies: Infinity,
+      world: { reach: 65, budgetMs: 3 },
+    })
+    trees.begin()
+    trees.add('t', 1, 0, 1, 3)
+    expect(lastShape()[3]).toEqual({ half: [0.09, 1.5, 0.09], solid: true })
+  })
+
+  it('turns the collider with the post and keeps the layer matrices at rest', () => {
+    const { simulation, handles } = fakeSimulation()
+    const physics = new SceneryPhysics(() => simulation)
+    const signs = physics.layer('signs', { movable: true })
+    const yaw = Math.PI / 4
+    signs.begin()
+    signs.add('a', 1, 0, 2, 3, undefined, yaw)
+    signs.end()
+    expect(simulation.createSceneryPole).toHaveBeenCalledWith([1, 1.5, 2], 3, true, {
+      yaw,
+      surface: sceneryPhysicsDefaults.surface,
+    })
+    // The body rests at the yawed pose: transform() must leave the rendered post unchanged.
+    const pose = handles[0].pose()
+    pose.rotation = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw)
+      .toArray() as Pose['rotation']
+    const post = new THREE.Matrix4().compose(
+      new THREE.Vector3(1, 1.5, 2),
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw),
+      new THREE.Vector3(0.055, 3, 0.055),
+    )
+    const matrix = post.clone()
+    signs.transform('a', matrix)
+    matrix.elements.forEach((v, i) => expect(v).toBeCloseTo(post.elements[i], 6))
   })
 })

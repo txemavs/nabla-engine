@@ -244,14 +244,17 @@ export class AuthoredVehicleLights {
     })
   }
   /** Hidden GLB lamps. A shared rig copies the occupied vehicle into a fixed renderer budget. */
-  illuminators(): { spots: SpotLight[]; points: PointLight[] } {
+  illuminators(): { spots: SpotLight[]; points: PointLight[]; rear: Set<Light> } {
     const spots: SpotLight[] = []
     const points: PointLight[] = []
-    for (const { light } of this.lamps) {
+    const rear = new Set<Light>()
+    for (const { light, channel } of this.lamps) {
       if (light instanceof SpotLight) spots.push(light)
       else if (light instanceof PointLight) points.push(light)
+      // The rear offset (`rearX/Y/Z`) places the light of these lamps, never their lens or node.
+      if (channel === 'brake' || channel === 'tail-stop' || channel === 'reverse') rear.add(light)
     }
-    return { spots, points }
+    return { spots, points, rear }
   }
   /** Null means this asset has no controllable authored light sources. */
   toggle(): boolean | null {

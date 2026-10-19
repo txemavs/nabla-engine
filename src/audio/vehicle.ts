@@ -5,6 +5,8 @@ import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
 import { WeaponHandling, type WeaponSound } from './weapon-handling.js'
 import { MetalImpact } from './metal-impact.js'
+import { ImpactVoicePool, impactVoiceLimit } from './impact-voices.js'
+import { impactSounds, vehicleImpactSurface, type ImpactSurface } from '../config/impact-sounds.js'
 import { CasingTinkle } from './casing-tinkle.js'
 import { Powertrain } from './powertrain.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
@@ -16,7 +18,7 @@ import { ReverseAlarm } from './reverse-alarm.js'
 import { AudioMixer, audioBus, withAudioOutputs, type AudioMixLevels } from './mixer.js'
 import { SpatialEmitter } from './positional.js'
 import { DestructionSound } from './destruction.js'
-import { BackgroundMusic, type MusicTrack } from './music.js'
+import { BackgroundMusic, musicMayStart, type MusicTrack } from './music.js'
 
 /**
  * One browser audio context, nine independent voices (the powertrain one picks a road-car
@@ -43,7 +45,7 @@ export class VehicleAudio {
   private weaponHandling?: WeaponHandling
   private readonly metalVoices: MetalImpact[] = []
   private readonly metalEmitters: SpatialEmitter[] = []
-  private nextMetal = 0
+  private readonly impactVoices = new ImpactVoicePool<ImpactSurface>(impactVoiceLimit)
   private lastMetalTimbre = -1
   private weaponClickVoice?: GearClick
   private vehicleEngine?: SpatialEmitter
@@ -54,13 +56,14 @@ export class VehicleAudio {
   private nextCasing = 0
   private readonly destructionVoices: { voice: DestructionSound; emitter: SpatialEmitter }[] = []
   private nextDestruction = 0
-  destruction(position: readonly number[], glass = false): void {
+  /** An explosion (or glass break) at `position`; `scale` sizes an explosion, 1 = a vehicle. */
+  destruction(position: readonly number[], glass = false, scale = 1): void {
     const frame = this.frame()
     if (!frame?.audible || !this.context) return
     const entry = this.destructionVoices[this.nextDestruction++ % this.destructionVoices.length]
     entry.emitter.setPosition(position)
     entry.emitter.setListener(this.eye, this.orientation)
-    entry.voice.trigger(frame.time, glass)
+    entry.voice.trigger(frame.time, glass, scale)
   }
   private eye: readonly number[] = [0, 0, 0]
   private orientation: readonly number[] = [0, 0, 0, 1]
@@ -99,6 +102,7 @@ export class VehicleAudio {
    */
   playMusic(): boolean {
     if (!this.music) return false
+    this.musicReleased = true
     this.music.restart()
     this.unlock()
     this.syncMusic()
@@ -127,9 +131,18 @@ export class VehicleAudio {
     this.music?.setHidden(hidden)
   }
 
+  /** Let a `startOn: "host"` track start (the host's start confirmation). */
+  releaseMusic(): void {
+    this.musicReleased = true
+    this.syncMusic()
+  }
+
+  private musicReleased = false
+
   private syncMusic(): void {
     if (!this.music) return
-    if (!this.context || !this.enabled || this.mixer.levels.musicMuted) this.music.stop()
+    const held = !musicMayStart(this.music.track, this.musicReleased)
+    if (held || !this.context || !this.enabled || this.mixer.levels.musicMuted) this.music.stop()
     else this.music.start(this.context, audioBus(this.context, 'music'))
   }
 
@@ -359,16 +372,20 @@ export class VehicleAudio {
   }
 
   /** A metal target rings at the hit point; independent emitters preserve previous tails. */
-  metalImpact(position: readonly number[]): void {
+  metalImpact(position: readonly number[], surface: ImpactSurface = vehicleImpactSurface): void {
     if (!this.frame()?.audible || !this.metalEmitters.length) return
-    const index = this.nextMetal++ % this.metalEmitters.length
+    const sound = impactSounds[surface]
+    // Rate limit per surface: a burst of hits rings as one flurry, not as a wall of voices.
+    const now = this.context!.currentTime
+    const index = this.impactVoices.take(surface, now, sound.minInterval)
+    if (index === null || index >= this.metalEmitters.length) return
     const emitter = this.metalEmitters[index]
     emitter.setPosition(position)
     emitter.setListener(this.eye, this.orientation)
     // Voice allocation stays predictable for overlap; timbre does not follow the pool cycle.
     const choices = [0, 1, 2, 3].filter((value) => value !== this.lastMetalTimbre)
     this.lastMetalTimbre = choices[Math.floor(Math.random() * choices.length)]
-    this.metalVoices[index].trigger(this.context!.currentTime, this.lastMetalTimbre)
+    this.metalVoices[index].trigger(now, this.lastMetalTimbre, sound)
   }
 
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */
@@ -443,7 +460,7 @@ export class VehicleAudio {
     }
     this.context = context
     this.prepareCasings(context, noise)
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < impactVoiceLimit; i++) {
       const emitter = new SpatialEmitter(context, audioBus(context), {
         referenceDistance: 2,
         maxDistance: 150,

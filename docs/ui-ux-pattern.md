@@ -64,7 +64,22 @@ Rules:
     group, and a vehicle sees only what it has: a motorcycle has no exhaust-smoke section and
     lists only the lamps its model binds. Defaults of these options come from the vehicle's JSON
     (see [vehicle definition](vehicle-definition.md)); the player's choice is saved per model.
-11. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
+    The sections are Conductor y espejos (the mirrors row only when the model has mirror glass),
+    Luces (only when a front or rear lamp is bound), Sonido (engine volume, the same mix as
+    Configuración → Sonido; the reversing-alarm switch only when the vehicle data has
+    `reverseAlarm`) and Escape y humo (only when `vehicle.exhaust.adjustable` or
+    `smoke.amount: "manual"`; the position sliders follow the first, the quantity slider the
+    second). `GameRuntime.occupiedVehicle.options` (`vehicleOptions`, derived from the vehicle's
+    data and what its model bound) drives this, and `game/vehicle-group.ts` decides what shows.
+11. **Tab tree** (the full list is in [settings menu](settings-menu.md)):
+    - Mundo: the world itself (time, map, layers, weather, sea, street lights, signs, labels).
+    - Configuración: how the game runs for this player: Pantalla (quality, sharpness, shadows,
+      distances, performance), Efectos (smoke, muzzle flash), Cámara (incl. field of view),
+      Conducción, Controles, Sonido, Gestión.
+    - Objetos: Vehículos (add, placed objects), the occupied vehicle's group, Arma.
+    - Desarrollo: tuning and diagnostics that a player does not need.
+      Rendering quality never goes in Mundo; a visible effect is not a Desarrollo option.
+12. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
     navigation group inside «Mundo» and of an older name of «Configuración»; do not use it for
     the tab.
 
@@ -72,8 +87,10 @@ Rules:
 
 In Euskadi Online the Menú button (`#settings-toggle`, class `euskadi-menu-clock`, restyled by
 `euskadi-hud.ts`) **shows the game clock `HH:MM`** as its label. Clicking it opens the menu;
-while open it shows a down arrow to close. The mouse wheel over the clock moves the hour (±1 h,
-keeps speed). The clock group (`#euskadi-clock-group`) also holds the vertical time-of-day
+while open it shows a down arrow to close. The mouse wheel over this button moves the game
+clock by one hour per notch (up = later; a trackpad's small deltas add up to a notch), keeping a
+running speed; the engine's settings HUD does it (`game/clock-wheel.ts`), so every host gets it.
+The planet panel's time controls and the `&time=` address follow. The clock group (`#euskadi-clock-group`) also holds the vertical time-of-day
 slider and the «Hora real» control. The standalone engine game shows the engine's own gear
 button (`game/settings-hud.ts` toggle); it is hidden by the host.
 

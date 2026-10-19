@@ -1,5 +1,5 @@
 /** What the player sees when the terrain cannot start: Spanish text and, over a hole, a way out. */
-import type { GroundMissingError } from '@nabla/engine/runtime'
+import type { GroundMissingError } from '@nabla/engine/runtime/core'
 import { type MapTile } from '@nabla/engine/scene'
 import {
   DEFAULT_TERRAIN_QUERY,

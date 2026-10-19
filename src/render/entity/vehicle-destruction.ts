@@ -82,6 +82,19 @@ export class VehicleDestruction {
   private warmFire?: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
   private warmSmoke?: ExhaustSmoke
   private warmFlames?: ReturnType<VehicleDestruction['createFlames']>
+  /** Short flashes of `burst()`: they live 0.4 s, like the flash phase of a vehicle explosion. */
+  private readonly bursts: {
+    fire: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
+    clock: { value: number }
+    age: number
+    scale: number
+  }[] = []
+  /**
+   * Burst fireballs not in use. A burst reuses one instead of creating and disposing a material,
+   * so the shader program stays alive between bursts (no recompile hitch). At most 24 exist.
+   */
+  private readonly burstPool: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>[] = []
+  private readonly burstClocks = new WeakMap<THREE.Mesh, { value: number }>()
   private readonly burns = new Map<
     string,
     {
@@ -196,6 +209,32 @@ export class VehicleDestruction {
     flames.position.y += 0.3
     this.root.add(smoke.root)
     this.burns.set(id, { object, fire, flames, flameMaterial, smoke, age: 0, clock })
+  }
+  /**
+   * The vehicle explosion's fireball, light and lens flash at `position` (scene space), `scale`
+   * times its size (1 = a vehicle). No wreck, flames or smoke follow: it is the flash only, for
+   * small things that burst (a shot balloon). Bounded: the oldest flash is recycled past 24.
+   */
+  burst(position: THREE.Vector3, scale = 1): void {
+    if (!Number.isFinite(scale) || scale <= 0) return
+    if (this.bursts.length >= 24) this.removeBurst(0)
+    let fire = this.burstPool.pop()
+    let clock = fire && this.burstClocks.get(fire)
+    if (!fire || !clock) {
+      ;({ fire, clock } = this.createFire())
+      this.burstClocks.set(fire, clock)
+    }
+    clock.value = 0
+    fire.material.opacity = 1
+    fire.position.copy(position)
+    fire.scale.setScalar(0.2 * scale)
+    this.space.add(fire)
+    this.bursts.push({ fire, clock, age: 0, scale: Math.min(1, scale) })
+  }
+  private removeBurst(index: number): void {
+    const [burst] = this.bursts.splice(index, 1)
+    burst.fire.removeFromParent()
+    this.burstPool.push(burst.fire)
   }
   private createFire() {
     const fire = new THREE.Mesh(
@@ -440,6 +479,31 @@ export class VehicleDestruction {
       )
       burn.smoke.update(dt, burn.age < explosionTuning.smokeSeconds, 0.8)
     }
+    for (let i = this.bursts.length - 1; i >= 0; i--) {
+      const burst = this.bursts[i]
+      burst.age += dt
+      if (burst.age >= 0.4) {
+        this.removeBurst(i)
+        continue
+      }
+      burst.clock.value = burst.age
+      // Same curve as the vehicle's flash phase (growth, fade, light, lens flare), times `scale`.
+      burst.fire.scale.setScalar((0.2 + burst.age * 8) * burst.scale)
+      burst.fire.material.opacity = 1 - burst.age
+      const intensity = 40 * burst.scale * (1 - burst.age / 0.4)
+      if (intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        this.light.position.copy(burst.fire.position)
+      }
+      if (burst.age < 0.25) {
+        const flare = 3 * burst.scale * (1 - burst.age / 0.25)
+        if (flare > this.flare.intensity.value) {
+          this.flare.intensity.value = flare
+          this.flarePoint.copy(burst.fire.position)
+          this.flarePoint.y += 0.4 * burst.scale
+        }
+      }
+    }
     const dummy = new THREE.Object3D()
     for (let i = this.shards.length - 1; i >= 0; i--) {
       const shard = this.shards[i]
@@ -477,6 +541,7 @@ export class VehicleDestruction {
     }
     this.damageSmoke.clear()
     this.balloons.clear()
+    while (this.bursts.length) this.removeBurst(0)
     for (const [part, visible] of this.hiddenWreckParts) part.visible = visible
     this.hiddenWreckParts.clear()
     this.debris.clear()
@@ -513,6 +578,8 @@ export class VehicleDestruction {
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
+    for (const fire of this.burstPool) fire.material.dispose()
+    this.burstPool.length = 0
     this.warmFire?.material.dispose()
     this.warmFlames?.material.dispose()
     this.warmSmoke?.dispose()

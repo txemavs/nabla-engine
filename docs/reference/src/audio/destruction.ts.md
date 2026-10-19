@@ -4,14 +4,32 @@
 
 [Source](../../../../src/audio/destruction.ts)
 
-Preallocated noise and bass voice for explosions and sharp glass breaks.
+Shape of an explosion `scale` times a vehicle's (1 = a vehicle, the default). Smaller blasts are
+quieter, shorter and higher-pitched; never louder than a vehicle.
 
 ## Module dependencies
 
 
+## blastVoice
+
+[Implementation, line 5](../../../../src/audio/destruction.ts#L5)
+
+Shape of an explosion `scale` times a vehicle's (1 = a vehicle, the default). Smaller blasts are
+quieter, shorter and higher-pitched; never louder than a vehicle.
+
+```ts
+blastVoice(scale = 1): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+
 ## DestructionSound.constructor
 
-[Implementation, line 7](../../../../src/audio/destruction.ts#L7)
+[Implementation, line 27](../../../../src/audio/destruction.ts#L27)
 
 Preallocated noise and bass voice for explosions and sharp glass breaks.
 
@@ -33,16 +51,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DestructionSound.trigger
 
-[Implementation, line 21](../../../../src/audio/destruction.ts#L21)
+[Implementation, line 42](../../../../src/audio/destruction.ts#L42)
 
-Preallocated noise and bass voice for explosions and sharp glass breaks.
+`scale` sizes an explosion (see `blastVoice`); glass breaks ignore it.
 
 ```ts
-trigger(time: number, glass = false): void
+trigger(time: number, glass = false, scale = 1): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `blastVoice`
 - `gain.cancelScheduledValues`
 - `gain.exponentialRampToValueAtTime`
 - `gain.linearRampToValueAtTime`
@@ -54,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DestructionSound.silence
 
-[Implementation, line 39](../../../../src/audio/destruction.ts#L39)
+[Implementation, line 61](../../../../src/audio/destruction.ts#L61)
 
 Preallocated noise and bass voice for explosions and sharp glass breaks.
 

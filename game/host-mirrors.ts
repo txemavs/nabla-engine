@@ -12,7 +12,7 @@
  */
 import { hasVehiclePreset, vehiclePreset } from '@nabla/engine/vehicles'
 import { mirrorModelKey } from '@nabla/engine/vehicle-presentation'
-import type { MirrorStorage } from '@nabla/engine/runtime'
+import type { MirrorStorage } from '@nabla/engine/runtime/core'
 
 /** Host default per mirror model, degrees per side. */
 export type HostMirrors = Record<string, Record<string, { yaw: number; tilt: number }>>

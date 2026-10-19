@@ -25,7 +25,10 @@
     "stiffness": 110,
     "engineForce": 1,
     "brakeForce": 120,
-    "cameraDistance": 24
+    "cameraDistance": 24,
+    "lights": {
+      "rearWash": true
+    }
   },
   "visual": {
     "body": {

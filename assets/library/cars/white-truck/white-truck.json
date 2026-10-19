@@ -88,6 +88,21 @@
         "jake": false,
         "airBrake": true
       }
+    },
+    "lights": {
+      "rearWash": true
+    },
+    "exhaust": {
+      "outlets": [[-1.08, 1.86, -0.72]],
+      "direction": [0, 1, 0],
+      "adjustable": true,
+      "smoke": {
+        "amount": "manual",
+        "color": "#111111",
+        "clearColor": "#888888",
+        "clearAtKmh": 60,
+        "size": 650
+      }
     }
   },
   "visual": {

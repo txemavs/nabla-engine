@@ -63,3 +63,34 @@ it('builds a static pole with its own half size and the solid surface', () => {
   plain.dispose()
   sim.dispose()
 })
+
+it('tells a shot what the pole it hit is made of', () => {
+  const sim = new Simulation(
+    { version: 1, name: 'Ringing pole', entities: [createEntity('spawn', 'spawn', [20, 1, 20])] },
+    { playerMode: 'walk' },
+  )
+  const sign = sim.createSceneryPole([0, 1.5, 0], 3, false, { surface: 'metal-sign' })
+  const plain = sim.createSceneryPole([10, 1.5, 0], 3, false)
+  expect(sim.shoot([0, 1.5, 5], [0, 0, -1], 20, 0)?.surface).toBe('metal-sign')
+  const quiet = sim.shoot([10, 1.5, 5], [0, 0, -1], 20, 0)
+  expect(quiet).not.toBeNull()
+  expect(quiet?.surface).toBeNull()
+  sign.dispose()
+  plain.dispose()
+  sim.dispose()
+})
+
+it('turns the pole box by shape.yaw', () => {
+  const sim = new Simulation(
+    { version: 1, name: 'Yawed pole', entities: [createEntity('spawn', 'spawn', [20, 1, 20])] },
+    { playerMode: 'walk' },
+  )
+  const pole = sim.createSceneryPole([0, 1.5, 0], 3, false, { yaw: Math.PI / 4 })
+  const [x, y, z, w] = pole.pose().rotation
+  expect(x).toBeCloseTo(0, 6)
+  expect(z).toBeCloseTo(0, 6)
+  expect(y).toBeCloseTo(Math.sin(Math.PI / 8), 6)
+  expect(w).toBeCloseTo(Math.cos(Math.PI / 8), 6)
+  pole.dispose()
+  sim.dispose()
+})

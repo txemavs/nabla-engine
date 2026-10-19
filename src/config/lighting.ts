@@ -75,3 +75,33 @@ export const lightingDefaults = Object.freeze({
   streetSpots: 0,
   streetPoints: 0,
 })
+
+/**
+ * Rear road wash of the occupied vehicle (`VehicleLightRig.groundGlow` / `rearGroundGlow`),
+ * common to every vehicle. Positions are vehicle space, metres (+Z rearward); the per-model
+ * `vehicle.lights.tuning` (`rearX/Y/Z`, `rearIntensity`, `rearReach`) is applied on top.
+ */
+export const vehicleRearWash = Object.freeze({
+  colour: '#ff2410',
+  /** Brake lamps multiply intensity and reach by this. */
+  brakingBoost: 1.32,
+  /** Spot wash of a car without a named tail-lamp anchor. */
+  spot: Object.freeze({
+    origin: Object.freeze([0, 0, 1.8] as const),
+    target: Object.freeze([0, -1, 2.6] as const),
+    intensity: 4.8,
+    reach: 5,
+    angle: 1.3,
+  }),
+  /** Point wash behind the tail lamp anchor, or at the rear corners without one. */
+  point: Object.freeze({
+    /** Without an anchor: lateral spread (share of width), height, inset from the rear (m). */
+    spread: 0.35,
+    height: -0.25,
+    inset: 0.2,
+    /** With an anchor: rearward step from the lamp node (m). */
+    anchorStep: 0.04,
+    intensity: Object.freeze({ single: 1.8, pair: 1.2 }),
+    reach: 3,
+  }),
+})
