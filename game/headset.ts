@@ -5,6 +5,8 @@ import { mountXRDeviceInfo } from './xr-device-info.js'
 const place = document.querySelector<HTMLSelectElement>('#xr-place')!
 const vehicle = document.querySelector<HTMLSelectElement>('#xr-vehicle')!
 const ride = document.querySelector<HTMLAnchorElement>('#ride-xr')!
+// Tethered PC VR opens the full desktop game, which enters VR from its own VR button.
+const pcVR = document.querySelector<HTMLAnchorElement>('#ride-pcvr')!
 const launcher = document.querySelector<HTMLElement>('#headset-launcher')!
 const enter = document.querySelector<HTMLButtonElement>('#enter')!
 const status = document.querySelector<HTMLElement>('#status')!
@@ -89,6 +91,7 @@ async function checkSupport() {
   ride.setAttribute('aria-disabled', String(!vr))
   ride.tabIndex = vr ? 0 : -1
   ride.textContent = vr ? 'Entrar en realidad virtual' : 'VR no compatible en este navegador'
+  pcVR.hidden = !vr
   if (ar) {
     enter.textContent = 'Preparando realidad aumentada…'
     await prepareAR()

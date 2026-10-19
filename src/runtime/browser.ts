@@ -1609,9 +1609,18 @@ export class GameRuntime {
       info?.steer ?? 0,
     )
     if (wheelInput !== null) controls.touch.right = wheelInput
+    // Tethered PC VR keeps the desktop devices: the USB wheel and pedals, a standard gamepad and
+    // the keyboard drive exactly as on the desktop (the same polling, mapping and bindings).
+    // Standalone headsets have none of these, so nothing changes there.
+    // Unlike the desktop frame, losing focus must not release input here: that would also drop
+    // the headset controllers' state. Held keys are simply ignored until the canvas has focus.
+    this.keys.expire(performance.now())
+    const pad = this.pollGamepad()
     const input = this.game.readInput(dt, {
-      keys: new Set(),
+      keys: this.hasInput() ? this.keys.values : new Set(),
       yaw: this.cameraState.yaw + (sim.player.vehicleId ? 0 : xr.headYaw),
+      pad,
+      usb: this.usbFrame,
       touch: controls.touch,
       enabled,
     })
@@ -5237,6 +5246,8 @@ export class GameRuntime {
     }
   }
   private cycleCamera(): void {
+    // The headset owns the view in XR: the camera action (key, USB or gamepad) does nothing there.
+    if (this.xrActive) return
     // The camera action during the start sequence hands the view to the player (a held engine starts).
     const sim = this.session.simulation
     if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
