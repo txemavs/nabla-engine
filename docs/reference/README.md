@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **517 modules; 6069 executable function definitions**.
+Coverage: **521 modules; 6110 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -283,6 +283,8 @@ Coverage: **517 modules; 6069 executable function definitions**.
 | [src/render/monitors/menu.ts](src/render/monitors/menu.ts.md) | 7 |
 | [src/render/planet/artistic-clouds.ts](src/render/planet/artistic-clouds.ts.md) | 11 |
 | [src/render/planet/asphalt-mask.ts](src/render/planet/asphalt-mask.ts.md) | 3 |
+| [src/render/planet/atlas-package-loader.ts](src/render/planet/atlas-package-loader.ts.md) | 15 |
+| [src/render/planet/atlas-package.worker.ts](src/render/planet/atlas-package.worker.ts.md) | 0 |
 | [src/render/planet/baked.ts](src/render/planet/baked.ts.md) | 5 |
 | [src/render/planet/building-batches.ts](src/render/planet/building-batches.ts.md) | 11 |
 | [src/render/planet/cache.ts](src/render/planet/cache.ts.md) | 33 |
@@ -489,7 +491,9 @@ Coverage: **517 modules; 6069 executable function definitions**.
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 265 |
+| [src/simulation/simulation-worker-host.ts](src/simulation/simulation-worker-host.ts.md) | 24 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 267 |
+| [src/simulation/simulation.worker.ts](src/simulation/simulation.worker.ts.md) | 0 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
