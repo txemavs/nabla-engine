@@ -1021,8 +1021,9 @@ export class GameRuntime {
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
     this.effects.reverseAlarmEnabled = (entity) =>
       this.vehiclePreferences(entity.visual?.body.url ?? entity.id).reverseAlarm
-    this.effects.audio.setEnabled(options.audio !== false)
+    // Music first: a `startOn: "host"` track must hold the audio before setEnabled() unlocks it.
     this.effects.audio.setMusic(options.music)
+    this.effects.audio.setEnabled(options.audio !== false)
     if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
     const touchActions = {
       engage: () => {
