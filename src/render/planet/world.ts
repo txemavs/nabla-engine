@@ -37,9 +37,9 @@ import { NO_ASPHALT_MASK, asphaltMaskTexture } from './asphalt-mask.js'
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
-  /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker for WebGPU. */
+  /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
   packageLoader?: AtlasPackageLoader
-  /** Package photo decode and cluster-culling reorder. Default: main thread; a worker for WebGPU. */
+  /** Package photo decode and cluster-culling reorder. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
   loading?: TileLoading
   /** Coarsest published mesh LOD. Static/Atlas sources default to Z15, dynamic sources to Z13.
    * Set 12 only after publishing native coarse mesh manifests; absence must not create holes. */

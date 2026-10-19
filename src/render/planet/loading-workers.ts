@@ -10,7 +10,7 @@ import type { AtlasPackagePort } from './atlas-package-loader.js'
 /**
  * Tile loading work that may leave the main thread: package photo download + SHA-256 + decode, and
  * the cluster-culling reorder. {@link mainThreadLoading} runs it in place (WebGL, unchanged);
- * {@link WorkerLoading} runs the very same functions in a module worker (WebGPU only).
+ * {@link WorkerLoading} runs the very same functions in a module worker (default; see {@link loadingWorkersEnabled}).
  */
 export interface TileLoading {
   photo(
@@ -121,6 +121,16 @@ export class WorkerLoading implements TileLoading {
   async clusters(input: TileClusterInput) {
     return (await this.run({ type: 'clusters', input }, clusterBuffers(input))) as TileClusterOutput
   }
+}
+
+/**
+ * Loading workers are on by default (WebGL and WebGPU). `?loadingWorkers=0|false|off` is the kill
+ * switch back to the main-thread path; so is a context without `Worker`.
+ */
+export function loadingWorkersEnabled(search: string): boolean {
+  if (typeof Worker === 'undefined') return false
+  const value = new URLSearchParams(search).get('loadingWorkers')
+  return value === null || !['0', 'false', 'off'].includes(value.toLowerCase())
 }
 
 let shared: WorkerLoading | undefined

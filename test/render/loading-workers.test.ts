@@ -144,3 +144,19 @@ describe('loading workers: package photo', () => {
     }
   })
 })
+
+describe('loading workers: kill switch', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it('is on by default and off with ?loadingWorkers=0|false|off or without Worker', async () => {
+    const { loadingWorkersEnabled } = await import('../../src/render/planet/loading-workers.js')
+    vi.stubGlobal('Worker', class {})
+    expect(loadingWorkersEnabled('')).toBe(true)
+    expect(loadingWorkersEnabled('?renderer=webgl&clusterCulling=1')).toBe(true)
+    expect(loadingWorkersEnabled('?loadingWorkers=1')).toBe(true)
+    for (const off of ['0', 'false', 'OFF'])
+      expect(loadingWorkersEnabled(`?loadingWorkers=${off}`)).toBe(false)
+    vi.unstubAllGlobals()
+    vi.stubGlobal('Worker', undefined)
+    expect(loadingWorkersEnabled('')).toBe(false)
+  })
+})

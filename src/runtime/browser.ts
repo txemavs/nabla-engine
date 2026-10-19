@@ -267,7 +267,7 @@ import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { workerAtlasPackageLoader } from '../render/planet/atlas-package-loader.js'
-import { workerLoading } from '../render/planet/loading-workers.js'
+import { loadingWorkersEnabled, workerLoading } from '../render/planet/loading-workers.js'
 import { VehicleEffects } from './vehicle-effects.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 
@@ -1118,8 +1118,9 @@ export class GameRuntime {
             options.tiles.baseUrl,
             options.tiles.apiUrl ?? '/prepare',
             options.tiles.mode ?? 'static',
-            // WebGPU loads Atlas packages in a worker; WebGL keeps the main-thread path unchanged.
-            this.backend === 'webgpu'
+            // Loading workers (Atlas packages, package photos, cluster prep) on by default for
+            // every backend; `?loadingWorkers=0` keeps all of it on the main thread.
+            loadingWorkersEnabled(globalThis.location?.search ?? '')
               ? {
                   ...options.tiles,
                   packageLoader: workerAtlasPackageLoader(),
