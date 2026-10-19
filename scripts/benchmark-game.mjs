@@ -7,11 +7,20 @@
  *
  * Usage:
  *   node scripts/benchmark-game.mjs [output.json] [--headed] [--cold] [--irun]
+ *     [--renderer=webgl|webgpu] [--runs=N] [--quality=<preset>]
  *
  * Options:
  *   --headed   Visible window with GPU rendering (requires display and GPU).
  *   --cold     Cold cache run (clear cache before each quality level).
- *   --irun     Use Irun/Ventas geographic terrain instead of flat example.
+ *   --irun     Use Irun/Ventas geographic terrain instead of flat example: the Atlas package
+ *              folder through the dev server's same-origin /tiles proxy, spawn cell 16224/11998 (Zaisa).
+ *              Override the folder with NABLA_BENCH_TERRAIN.
+ *   --renderer Backend under test (`?renderer=`); default webgl.
+ *   --runs     Warm runs per quality; the report adds the median of each metric.
+ *   --quality  Quality preset (default custom).
+ *   NABLA_BENCH_VIEWPORT  CSS viewport, default 1920x1080.
+ *   NABLA_BENCH_QUERY  extra query parameters, e.g. `photo=lo`.
+ *   NABLA_BENCH_WARMUP / NABLA_BENCH_FRAMES / NABLA_BENCH_LOAD_TIMEOUT  frame counts and load timeout.
  *
  * Output: JSON + markdown in docs/benchmarks/<YYYY-MM-DD>/ when no output path given.
  *
@@ -28,6 +37,12 @@ const outputArg = args.find((a) => !a.startsWith('--'))
 const headed = args.includes('--headed')
 const coldCache = args.includes('--cold')
 const useIrun = args.includes('--irun')
+const option = (name, fallback) =>
+  args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback
+const rendererParam = option('renderer', 'webgl')
+const runs = Math.max(1, Number(option('runs', '1')))
+// NABLA_BENCH_VIEWPORT=1280x720 for memory-limited software runs; default 1920x1080.
+const viewport = (process.env.NABLA_BENCH_VIEWPORT ?? '1920x1080').split('x').map(Number)
 
 const dateString = new Date().toISOString().slice(0, 10)
 const outputDir = join('docs', 'benchmarks', dateString)
@@ -38,7 +53,17 @@ const browserArgs = headed
       '--disable-renderer-backgrounding',
       '--disable-background-timer-throttling',
     ]
-  : ['--enable-unsafe-swiftshader']
+  : rendererParam === 'webgpu'
+    ? [
+        '--enable-unsafe-swiftshader',
+        '--enable-unsafe-webgpu',
+        '--enable-features=Vulkan',
+        '--use-vulkan=swiftshader',
+        '--use-angle=swiftshader',
+        '--use-webgpu-adapter=swiftshader',
+        '--disable-vulkan-surface',
+      ]
+    : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist']
 
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
@@ -47,14 +72,17 @@ const browser = await chromium.launch({
 })
 
 const baseUrl = process.env.NABLA_BENCH_URL ?? 'http://127.0.0.1:5174/'
-const sceneParam = useIrun ? '' : 'example=flat'
-const qualities = ['custom']
+const terrainBase = process.env.NABLA_BENCH_TERRAIN ?? '/tiles'
+const sceneParam = useIrun
+  ? `terrain=${encodeURIComponent(terrainBase)}&tile=16224/11998`
+  : 'example=flat'
+const qualities = [option('quality', 'custom')]
 
 const results = []
 
 async function runBenchmark(quality, warmRun) {
   const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: viewport[0], height: viewport[1] },
     deviceScaleFactor: 1,
   })
 
@@ -66,17 +94,18 @@ async function runBenchmark(quality, warmRun) {
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
 
-  const url = `${baseUrl}?${sceneParam}&diagnostics=1&quality=${quality}`
+  const url = `${baseUrl}?${sceneParam}&diagnostics=1&quality=${quality}&renderer=${rendererParam}${process.env.NABLA_BENCH_QUERY ? '&' + process.env.NABLA_BENCH_QUERY : ''}`
   console.log(`[${warmRun ? 'warm' : 'cold'}] Loading: ${url}`)
 
   const loadStart = Date.now()
   await page.goto(url)
 
   const hudVisible = page.locator('#game-hud:not(.hidden)')
-  await hudVisible.waitFor({ timeout: 120000 })
+  await hudVisible.waitFor({ timeout: Number(process.env.NABLA_BENCH_LOAD_TIMEOUT ?? 120000) })
   const timeToHud = Date.now() - loadStart
 
-  await page.locator('#game-canvas').click()
+  // Focus without a click: a slow software frame can block Playwright's actionability checks.
+  await page.evaluate(() => document.getElementById('game-canvas').focus())
   await page.keyboard.press('KeyC')
   await page.keyboard.press('KeyC')
 
@@ -90,13 +119,16 @@ async function runBenchmark(quality, warmRun) {
           reject(new Error('Timed out collecting runtime diagnostics'))
         }, 180000)
 
-        const gl = canvas.getContext('webgl2')
-        const extension = gl.getExtension('WEBGL_debug_renderer_info')
-        const renderer = extension
-          ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL)
-          : gl.getParameter(gl.RENDERER)
+        // A WebGPU canvas has no WebGL context to query.
+        const gl = canvas.dataset.renderer === 'webgpu' ? null : canvas.getContext('webgl2')
+        const extension = gl?.getExtension('WEBGL_debug_renderer_info')
+        const renderer = !gl
+          ? 'WebGPU'
+          : extension
+            ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL)
+            : gl.getParameter(gl.RENDERER)
 
-        const timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2')
+        const timerExt = gl?.getExtension('EXT_disjoint_timer_query_webgl2') ?? null
         const gpuTimingAvailable = timerExt !== null
 
         const rendererInfo = window.nablaRuntime?.renderer?.info
@@ -140,7 +172,10 @@ async function runBenchmark(quality, warmRun) {
         }
         canvas.addEventListener('nabla:frame', listener)
       }),
-    { warmupFrames: headed ? 120 : 90, sampleFrames: headed ? 300 : 180 },
+    {
+      warmupFrames: Number(process.env.NABLA_BENCH_WARMUP ?? (headed ? 120 : 90)),
+      sampleFrames: Number(process.env.NABLA_BENCH_FRAMES ?? (headed ? 300 : 180)),
+    },
   )
 
   if (errors.length) {
@@ -179,6 +214,7 @@ async function runBenchmark(quality, warmRun) {
   }
 
   const result = {
+    backend: data.samples[0].backend ?? 'webgl',
     quality,
     cacheState: warmRun ? 'warm' : 'cold',
     renderer: data.renderer,
@@ -226,16 +262,34 @@ try {
       console.log(JSON.stringify(coldResult, null, 2))
     }
 
-    const warmResult = await runBenchmark(quality, true)
-    results.push(warmResult)
-    console.log(JSON.stringify(warmResult, null, 2))
+    for (let run = 0; run < runs; run++) {
+      const warmResult = await runBenchmark(quality, true)
+      results.push(warmResult)
+      console.log(JSON.stringify(warmResult, null, 2))
+    }
   }
 } finally {
   await browser.close()
 }
 
+const median = (values) => {
+  const sorted = values.filter((v) => typeof v === 'number').sort((a, b) => a - b)
+  return sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : null
+}
+const warm = results.filter((r) => r.cacheState === 'warm')
+const medians = Object.fromEntries(
+  ['fps', 'frameP50Ms', 'cpuMeanMs', 'calls', 'triangles'].map((key) => [
+    key,
+    median(warm.map((r) => r[key])),
+  ]),
+)
+medians.gpuFrameMeanMs = median(warm.map((r) => r.gpu?.frameMeanMs))
+
 const report = {
   timestamp: new Date().toISOString(),
+  renderer: rendererParam,
+  runs,
+  medians,
   mode: headed ? 'headed' : 'headless',
   scene: useIrun ? 'irun-ventas' : 'flat',
   scenario: headed
@@ -268,6 +322,9 @@ function generateMarkdown(report) {
     `**Mode:** ${report.mode}`,
     `**Scene:** ${report.scene}`,
     `**Scenario:** ${report.scenario}`,
+    `**Renderer:** ${report.renderer} (${report.runs} warm run(s))`,
+    ``,
+    `**Medians:** ${JSON.stringify(report.medians)}`,
     ``,
     `## Results`,
     ``,
