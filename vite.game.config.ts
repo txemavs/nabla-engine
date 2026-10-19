@@ -57,6 +57,8 @@ export default defineConfig(({ mode }) => {
           target: 'https://atlas.chained.world',
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/atlas-live/, ''),
+          // The tile host answers 403 to requests without a User-Agent (Node's proxy sends none).
+          headers: { 'user-agent': 'nabla-engine-dev-tiles-proxy' },
         },
         ...(env.NABLA_STUDIO_UPSTREAM
           ? Object.fromEntries(
