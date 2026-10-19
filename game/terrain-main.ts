@@ -118,8 +118,10 @@ try {
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
-    // Desktop prepares its visible streaming footprint before gameplay begins.
-    startupTerrain: params.has('xr') || location.pathname === '/xr.html' ? 'nearby' : 'area',
+    // Until the game is shown only the spawn cell and its three neighbours stream; reveal then lifts
+    // the startup restriction and the full streaming radius follows (one ~40 MB cell at a time
+    // instead of the whole area at once).
+    startupTerrain: 'nearby',
     fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
