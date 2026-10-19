@@ -26,7 +26,7 @@ export class AtlasPackageFailure extends Error {
 /**
  * Fetches, size- and SHA-256-verifies, parses and validates an Atlas package.
  * {@link mainThreadAtlasPackageLoader} is the default; {@link WorkerAtlasPackageLoader} does the
- * same work off the main thread and is only chosen for the WebGPU backend.
+ * same work off the main thread and is the runtime default (`?loadingWorkers=0` turns it off).
  */
 export interface AtlasPackageLoader {
   load(request: AtlasPackageRequest, signal?: AbortSignal): Promise<AtlasZ15Package>

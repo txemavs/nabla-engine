@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **531 modules; 6211 executable function definitions**.
+Coverage: **534 modules; 6245 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -296,7 +296,7 @@ Coverage: **531 modules; 6211 executable function definitions**.
 | [src/render/planet/catch-floor.ts](src/render/planet/catch-floor.ts.md) | 12 |
 | [src/render/planet/chart.ts](src/render/planet/chart.ts.md) | 5 |
 | [src/render/planet/clouds.ts](src/render/planet/clouds.ts.md) | 4 |
-| [src/render/planet/cluster-culling.ts](src/render/planet/cluster-culling.ts.md) | 18 |
+| [src/render/planet/cluster-culling.ts](src/render/planet/cluster-culling.ts.md) | 31 |
 | [src/render/planet/convert-mesh.ts](src/render/planet/convert-mesh.ts.md) | 2 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 10 |
@@ -308,10 +308,13 @@ Coverage: **531 modules; 6211 executable function definitions**.
 | [src/render/planet/instances.ts](src/render/planet/instances.ts.md) | 4 |
 | [src/render/planet/landcover-batches.ts](src/render/planet/landcover-batches.ts.md) | 9 |
 | [src/render/planet/lens-flare.ts](src/render/planet/lens-flare.ts.md) | 3 |
+| [src/render/planet/loading-workers.ts](src/render/planet/loading-workers.ts.md) | 19 |
+| [src/render/planet/loading.worker.ts](src/render/planet/loading.worker.ts.md) | 0 |
 | [src/render/planet/map-artifact.ts](src/render/planet/map-artifact.ts.md) | 2 |
 | [src/render/planet/night-sky.ts](src/render/planet/night-sky.ts.md) | 11 |
 | [src/render/planet/ocean-sheet.ts](src/render/planet/ocean-sheet.ts.md) | 14 |
 | [src/render/planet/osm-roads.ts](src/render/planet/osm-roads.ts.md) | 1 |
+| [src/render/planet/package-photo.ts](src/render/planet/package-photo.ts.md) | 2 |
 | [src/render/planet/place-label.ts](src/render/planet/place-label.ts.md) | 2 |
 | [src/render/planet/provider.ts](src/render/planet/provider.ts.md) | 38 |
 | [src/render/planet/road-batches.ts](src/render/planet/road-batches.ts.md) | 7 |
