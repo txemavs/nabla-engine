@@ -1374,6 +1374,10 @@ export class Simulation {
       })
     return parts
   }
+  /** Ids of every entity in the live scene, in document order. */
+  entityIds(): string[] {
+    return this.document.entities.map((e) => e.id)
+  }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
     if (body) return interpolated ? this.displayedPose(body) : pose(body)
