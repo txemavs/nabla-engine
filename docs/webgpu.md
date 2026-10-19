@@ -11,19 +11,25 @@ diagnostics samples (`backend`, `webgpuSkipped`).
 ## Known gaps under WebGPU
 
 GLSL `ShaderMaterial`s cannot compile on the node backend. Under WebGPU the renderer hides every
-object that uses one (in frames, mirror captures and warmups), and the pipeline skips GLSL passes:
+object that uses one (in frames, mirror captures and warmups) unless a TSL twin is registered with
+`setWebGPUSubstitute` (`src/render/webgpu-substitutes.ts`), and the pipeline skips GLSL passes.
 
-| Feature                                             | Under WebGPU                        |
-| --------------------------------------------------- | ----------------------------------- |
-| Sky dome, atmosphere, sun disc, night sky           | Not drawn; flat fog-colour backdrop |
-| Clouds (volumetric and artistic)                    | Not drawn                           |
-| Lens flare                                          | Not drawn                           |
-| Ocean sheet                                         | Not drawn                           |
-| Portals (remote views)                              | Not drawn                           |
-| Car mirrors (`Reflector` addon)                     | Authored glass, no live reflection  |
-| Depth of field, FSR 1 upscaling                     | Disabled                            |
-| Exhaust, tyre, muzzle smoke, tyre marks, shot laser | Not drawn                           |
-| GPU timer queries (benchmark)                       | WebGL only                          |
+The sky scene renders in display space into an 8-bit target and is composited through the inverse
+of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is checked by
+`test/browser/e2e/webgpu-sky-parity.spec.ts` (screenshots with `NABLA_PARITY_SHOTS=<dir>`).
+
+| Feature                                             | Under WebGPU                       |
+| --------------------------------------------------- | ---------------------------------- |
+| Sky dome, atmosphere, sun disc, night sky           | TSL port (`sky-nodes.ts`)          |
+| Earth cloud shadows / city lights (globe patch)     | Plain lit globe                    |
+| Clouds (volumetric and artistic)                    | Not drawn                          |
+| Lens flare                                          | Not drawn                          |
+| Ocean sheet                                         | Not drawn                          |
+| Portals (remote views)                              | Not drawn                          |
+| Car mirrors (`Reflector` addon)                     | Authored glass, no live reflection |
+| Depth of field, FSR 1 upscaling                     | Disabled                           |
+| Exhaust, tyre, muzzle smoke, tyre marks, shot laser | Not drawn                          |
+| GPU timer queries (benchmark)                       | WebGL only                         |
 
 Materials patched with `onBeforeCompile` draw as their base three.js material (the patch is
 ignored): ground/terrain blend, water, vegetation wind, CSM shadow tweaks, avatar, billboard,

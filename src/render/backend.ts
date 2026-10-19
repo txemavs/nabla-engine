@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { hasWebGPUSubstitute, webgpuSubstitute, type NodeKit } from './webgpu-substitutes.js'
 
 /** Renderer requested by the page: `auto` picks WebGPU when an adapter exists, else WebGL. */
 export type RendererPreference = 'webgl' | 'webgpu' | 'auto'
@@ -78,10 +79,10 @@ export async function createRenderBackend(
   if (preference === 'webgl') return webgl()
   if (!(await webgpuAvailable())) return webgl('No WebGPU adapter')
   try {
-    const { WebGPURenderer } = await import('three/webgpu')
-    const gpu = new WebGPURenderer({ ...parameters, forceWebGL: false })
+    const [webgpu, tsl] = await Promise.all([import('three/webgpu'), import('three/tsl')])
+    const gpu = new webgpu.WebGPURenderer({ ...parameters, forceWebGL: false })
     await gpu.init()
-    const renderer = webglSurface(gpu)
+    const renderer = webglSurface(gpu, { webgpu, tsl })
     backends.set(renderer, 'webgpu')
     return { kind: 'webgpu', renderer, requested: preference }
   } catch (error) {
@@ -119,15 +120,16 @@ export function webgpuSkippedMaterials(renderer: object): string[] {
  * `compileAsync` through {@link WebGPUCompatibility} so no pass, warmup or mirror capture draws a
  * GLSL `ShaderMaterial` with the node backend's default material. Everything else is shared API.
  */
-function webglSurface(gpu: WebGPURendererLike): THREE.WebGLRenderer {
+function webglSurface(gpu: WebGPURendererLike, kit?: NodeKit): THREE.WebGLRenderer {
   const target = gpu as WebGPURendererLike & {
     capabilities?: { getMaxAnisotropy(): number }
     forceContextLoss?: () => void
   }
   target.capabilities ??= { getMaxAnisotropy: () => gpu.getMaxAnisotropy() }
   target.forceContextLoss ??= () => {}
-  const guard = new WebGPUCompatibility()
+  const guard = new WebGPUCompatibility(kit)
   compatibility.set(gpu, guard)
+  if (kit) Object.defineProperty(gpu, NODE_KIT, { value: kit })
   const render = gpu.render.bind(gpu)
   target.render = (scene, camera) => {
     guard.apply(scene)
@@ -152,6 +154,14 @@ function webglSurface(gpu: WebGPURendererLike): THREE.WebGLRenderer {
 }
 
 /** Material built from GLSL (or patched GLSL) that the WebGPU node backend cannot compile. */
+/** The node kit of a WebGPU renderer made by `createRenderBackend`, or undefined under WebGL. */
+export function webgpuNodeKit(renderer: object): NodeKit | undefined {
+  // Kept on the renderer itself, so it survives a second instance of this module (tests, HMR).
+  return (renderer as { [NODE_KIT]?: NodeKit })[NODE_KIT]
+}
+
+const NODE_KIT = Symbol.for('nabla.webgpuNodeKit')
+
 export function glslOnlyMaterial(material: THREE.Material): boolean {
   if ((material as { isNodeMaterial?: boolean }).isNodeMaterial) return false
   return (
@@ -169,29 +179,65 @@ export function glslOnlyMaterial(material: THREE.Material): boolean {
 export class WebGPUCompatibility {
   /** Objects hidden by this guard and the visibility their owner last set. */
   private readonly hidden = new Map<THREE.Object3D, boolean>()
+  /** Materials swapped for their TSL substitute, with the GLSL original to put back. */
+  private readonly swapped = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>()
+  /** Replacement objects added next to their (hidden) original for this frame. */
+  private readonly added: THREE.Object3D[] = []
   /** Distinct GLSL-only material names met, for the gap list in diagnostics. */
   readonly skipped = new Set<string>()
   /** Nested apply/restore pairs (a mirror capture inside a frame); restore at the outermost. */
   private depth = 0
-  /** Hide incompatible objects before a frame; call {@link restore} after it. */
+  /** `kit` enables registered TSL substitutes (see `setWebGPUSubstitute`); without it they hide. */
+  constructor(readonly kit?: NodeKit) {}
+  /** Hide incompatible objects (or swap in their TSL substitute) before a frame; then {@link restore}. */
   apply(root: THREE.Object3D): void {
     this.depth++
+    const found: THREE.Object3D[] = []
     root.traverseVisible((object) => {
       const material = (object as THREE.Mesh).material as
         THREE.Material | THREE.Material[] | undefined
       if (!material) return
       const materials = Array.isArray(material) ? material : [material]
-      if (!materials.some(glslOnlyMaterial)) return
-      this.skipped.add(materials.find(glslOnlyMaterial)!.name || object.name || object.type)
-      this.hidden.set(object, object.visible)
-      object.visible = false
+      if (materials.some(glslOnlyMaterial) || hasWebGPUSubstitute(object)) found.push(object)
     })
+    for (const object of found) {
+      const substitute = this.kit && webgpuSubstitute(object, this.kit)
+      if (substitute?.material && !this.swapped.has(object as THREE.Mesh)) {
+        const mesh = object as THREE.Mesh
+        substitute.sync?.()
+        this.swapped.set(mesh, mesh.material)
+        mesh.material = substitute.material
+        continue
+      }
+      if (substitute?.object && object.parent) {
+        substitute.sync?.()
+        const replacement = substitute.object
+        replacement.position.copy(object.position)
+        replacement.quaternion.copy(object.quaternion)
+        replacement.scale.copy(object.scale)
+        replacement.renderOrder = object.renderOrder
+        object.parent.add(replacement)
+        this.added.push(replacement)
+      } else if (!substitute) {
+        const material = (object as THREE.Mesh).material as THREE.Material | THREE.Material[]
+        const materials = Array.isArray(material) ? material : [material]
+        const glsl = materials.find(glslOnlyMaterial)
+        if (!glsl) continue
+        this.skipped.add(glsl.name || object.name || object.type)
+      }
+      if (!this.hidden.has(object)) this.hidden.set(object, object.visible)
+      object.visible = false
+    }
   }
-  /** Give hidden objects back the visibility their owner set. */
+  /** Give hidden objects back the visibility (and swapped meshes the material) their owner set. */
   restore(): void {
     if (this.depth > 0) this.depth--
     if (this.depth > 0) return
     for (const [object, visible] of this.hidden) object.visible = visible
     this.hidden.clear()
+    for (const [mesh, material] of this.swapped) mesh.material = material
+    this.swapped.clear()
+    for (const object of this.added) object.removeFromParent()
+    this.added.length = 0
   }
 }

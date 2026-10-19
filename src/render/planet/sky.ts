@@ -2,6 +2,9 @@ import { createArtisticClouds, createGlobeClouds, shadeEarthWithClouds } from '.
 import { NightSky } from './night-sky.js'
 import { cloudHours, createCloudLayer } from './clouds.js'
 import { addSunDisc } from './sun-disc.js'
+import { airGlow, encodedTwin, moonDisc, sunDiscDome, WebGPUSkyPass } from './sky-nodes.js'
+import { webgpuNodeKit } from '../backend.js'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { createLensFlare } from './lens-flare.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../../planet/sky.js'
 import * as THREE from 'three'
@@ -109,6 +112,7 @@ function createAirGlow(sun: THREE.Vector3, radius: number) {
   mesh.name = 'Air'
   mesh.frustumCulled = false
   mesh.renderOrder = 2
+  setWebGPUSubstitute(mesh, airGlow(material, sun))
   return mesh
 }
 
@@ -152,6 +156,7 @@ export class GeographicView {
   private readonly air: THREE.Mesh
   private readonly cloudPass = new THREE.Scene()
   private moonSize = 9
+  private webgpuPass?: WebGPUSkyPass
   private cloudStyle: 'low' | 'artistic' = 'artistic'
   private cloudsWanted = true
   private readonly flare: ReturnType<typeof createLensFlare>
@@ -191,6 +196,13 @@ export class GeographicView {
     this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 48, 36), moonMaterial(this.moonSun))
     this.moon.scale.setScalar(this.moonSize)
     this.sunDisc = addSunDisc(this.backdrop.material, this.sunDirection)
+    // WebGPU only: TSL twins of the GLSL dome/sun disc and moon (see sky-nodes.ts).
+    setWebGPUSubstitute(
+      this.backdrop,
+      sunDiscDome(this.backdrop.material, this.sunDirection, this.sunDisc.value),
+    )
+    setWebGPUSubstitute(this.earth, encodedTwin(this.earth.material as THREE.MeshLambertMaterial))
+    setWebGPUSubstitute(this.moon, moonDisc(this.moon.material as Parameters<typeof moonDisc>[0]))
     this.clouds = createCloudLayer(this.sunDirection)
     this.artistic = createArtisticClouds(this.sunDirection)
     this.cloudPass.add(this.artistic.deck)
@@ -545,7 +557,9 @@ export class GeographicView {
     this.globe.mesh.quaternion.copy(this.earth.quaternion)
     this.air.position.copy(this.earth.position)
     this.flare.aspect.value = camera.aspect
-    renderer.render(this.space, this.camera)
+    const kit = webgpuNodeKit(renderer)
+    if (kit) (this.webgpuPass ??= new WebGPUSkyPass(kit)).render(renderer, this.space, this.camera)
+    else renderer.render(this.space, this.camera)
   }
   /** After the world, so the sheets composite over terrain and sea. */
   renderClouds(renderer: THREE.WebGLRenderer, camera: THREE.Camera) {

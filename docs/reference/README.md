@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **534 modules; 6245 executable function definitions**.
+Coverage: **536 modules; 6281 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -227,7 +227,7 @@ Coverage: **534 modules; 6245 executable function definitions**.
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
 | [src/planet/tiles.ts](src/planet/tiles.ts.md) | 6 |
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
-| [src/render/backend.ts](src/render/backend.ts.md) | 17 |
+| [src/render/backend.ts](src/render/backend.ts.md) | 19 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 8 |
 | [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
@@ -318,6 +318,7 @@ Coverage: **534 modules; 6245 executable function definitions**.
 | [src/render/planet/place-label.ts](src/render/planet/place-label.ts.md) | 2 |
 | [src/render/planet/provider.ts](src/render/planet/provider.ts.md) | 38 |
 | [src/render/planet/road-batches.ts](src/render/planet/road-batches.ts.md) | 7 |
+| [src/render/planet/sky-nodes.ts](src/render/planet/sky-nodes.ts.md) | 31 |
 | [src/render/planet/sky.ts](src/render/planet/sky.ts.md) | 41 |
 | [src/render/planet/startup-tiles.ts](src/render/planet/startup-tiles.ts.md) | 5 |
 | [src/render/planet/static-tiles.ts](src/render/planet/static-tiles.ts.md) | 12 |
@@ -359,6 +360,7 @@ Coverage: **534 modules; 6245 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
+| [src/render/webgpu-substitutes.ts](src/render/webgpu-substitutes.ts.md) | 3 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/action-cam-settings.ts](src/runtime/action-cam-settings.ts.md) | 1 |
 | [src/runtime/action-cam.ts](src/runtime/action-cam.ts.md) | 6 |

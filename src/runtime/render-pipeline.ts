@@ -294,9 +294,14 @@ export class GameRenderPipeline {
       frame.shadows.update(camera, frame.origin)
       monitors.prepare(camera)
       renderer.shadowMap.needsUpdate = frame.shadowsEnabled || !!frame.localShadowUpdate
-      // No GLSL sky dome under WebGPU: clear to the same backdrop the mirrors use.
+      // The sky scene draws first, as under WebGL; its GLSL pieces have TSL twins (sky-nodes.ts).
       const background = scene.background
-      if (!background && frame.skyVisible !== false)
+      const skyDrawn = frame.sky.enabled && frame.skyVisible !== false
+      if (skyDrawn) {
+        frame.sky.render(renderer, camera, eye)
+        renderer.autoClear = false
+        renderer.clearDepth()
+      } else if (!background && frame.skyVisible !== false)
         scene.background = scene.fog?.color ?? webgpuBackdrop
       try {
         renderer.render(scene, camera)
