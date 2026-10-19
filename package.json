@@ -123,6 +123,10 @@
       "types": "./dist/planet/lat-lon.d.ts",
       "import": "./dist/planet/lat-lon.js"
     },
+    "./render/entity/navigation-places": {
+      "types": "./dist/render/entity/navigation-places.d.ts",
+      "import": "./dist/render/entity/navigation-places.js"
+    },
     "./planet/sky": {
       "types": "./dist/planet/sky.d.ts",
       "import": "./dist/planet/sky.js"

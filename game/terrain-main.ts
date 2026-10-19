@@ -1,4 +1,5 @@
 import { mountVREntry } from './vr-entry.js'
+import { setHudRuntime } from './default-hud.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
@@ -212,6 +213,7 @@ try {
     },
   })
   bootLog('GameRuntime construct done')
+  setHudRuntime(runtime)
   bindTerrainCache(runtime)
   // Headless checks read where vehicles and the player sit against the ground.
   if (params.has('diagnostics'))

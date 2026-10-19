@@ -25,11 +25,11 @@
       }
       /* Host skins override these variables (see docs/boot-and-splash.md). */
       #loading-screen {
-        --splash-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        --splash-bg: #000;
         --splash-fg: #eee;
         --splash-muted: #888;
-        --splash-accent: #4a9eff;
-        --splash-accent-2: #7c3aed;
+        --splash-accent: #eee;
+        --splash-accent-2: #a6a6a6;
         --splash-track: #333;
         --splash-logo-height: 72px;
         position: fixed;
@@ -155,8 +155,9 @@
       .tile-indicator {
         width: 24px;
         height: 24px;
-        background: #333;
-        border-radius: 4px;
+        background: #252525;
+        border: 1px solid #444;
+        border-radius: 2px;
         transition: background 0.3s;
       }
       .tile-indicator.loaded {
@@ -248,8 +249,9 @@
       #controls-hint kbd {
         display: inline-block;
         padding: 2px 6px;
-        background: #333;
-        border-radius: 4px;
+        background: #252525;
+        border: 1px solid #444;
+        border-radius: 2px;
         margin: 0 2px;
       }
       #error-message {
