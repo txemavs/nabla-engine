@@ -67,6 +67,10 @@
       "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js"
     },
+    "./runtime/core": {
+      "types": "./dist/runtime/core.d.ts",
+      "import": "./dist/runtime/core.js"
+    },
     "./runtime/session": {
       "types": "./dist/runtime/session.d.ts",
       "import": "./dist/runtime/session.js"

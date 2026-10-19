@@ -35,6 +35,14 @@ export default defineConfig(({ mode }) => {
           mixedRealityRC: 'game/ar-rc.html',
           questDemo: 'game/xr-demo.html',
         },
+        output: {
+          // Shared chunks are named after one of their modules; the one carrying the physics
+          // engine is the core every page loads, so give it a name that says so.
+          chunkFileNames: (chunk: { moduleIds: readonly string[] }) =>
+            chunk.moduleIds.some((id) => id.includes('rapier3d'))
+              ? 'assets/engine-core-[hash].js'
+              : 'assets/[name]-[hash].js',
+        },
       },
     },
     server: {

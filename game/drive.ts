@@ -4,8 +4,8 @@ import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
 import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
-import { bindVR } from './vr-ui.js'
-import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime'
+import { bindVR, preloadVR } from './vr-ui.js'
+import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime/core'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
   createFlatTestScene,
@@ -316,6 +316,7 @@ try {
     },
   })
   mountVREntry(runtime)
+  preloadVR(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   bindTerrainCache(runtime)
   if (new URLSearchParams(location.search).has('diagnostics'))

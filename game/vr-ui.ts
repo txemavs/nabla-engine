@@ -1,14 +1,37 @@
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
-/** Mount immersive controls only for an explicit XR entry; desktop keeps its own UI. */
-export function bindVR(runtime: GameRuntime): void {
-  const immersiveEntry =
+/** An explicit XR entry: the XR page, the demo, or any page opened with `?xr`. */
+export function isImmersiveEntry(): boolean {
+  return (
     location.pathname === '/xr.html' ||
     location.pathname === '/xr-demo.html' ||
     new URLSearchParams(location.search).has('xr')
-  if (!immersiveEntry) return
+  )
+}
 
+/**
+ * Start loading the XR code as soon as the runtime exists on an explicit XR entry, so the XR
+ * system is ready before `play()` resolves (as when it was bundled statically).
+ */
+export function preloadVR(runtime: GameRuntime): void {
+  if (isImmersiveEntry())
+    void runtime.loadXR().catch((error) => console.error('XR could not be loaded', error))
+}
+
+/** Mount immersive controls only for an explicit XR entry; desktop keeps its own UI. */
+export function bindVR(runtime: GameRuntime): void {
+  if (!isImmersiveEntry()) return
+  // Already loaded (preloadVR): mount synchronously, exactly as before the lazy split.
+  if (runtime.xrLoaded) return mountVR(runtime)
+  // XR code is loaded on demand; only an explicit XR entry pays for it.
+  void runtime
+    .loadXR()
+    .then(() => mountVR(runtime))
+    .catch((error) => console.error('XR could not be loaded', error))
+}
+
+function mountVR(runtime: GameRuntime): void {
   if (new URLSearchParams(location.search).has('xr'))
     void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
       console.warn('No se pudieron cargar los guantes; se mantienen las manos básicas.', error)

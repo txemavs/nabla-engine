@@ -27,16 +27,21 @@ describe('desktop and immersive interface separation', () => {
     ['/xr.html', ''],
     ['/xr-demo.html', ''],
     ['/test.html', '?xr=1'],
-  ])('mounts immersive controls for %s %s', (pathname, search) => {
+  ])('mounts immersive controls for %s %s', async (pathname, search) => {
     vi.stubGlobal('location', { pathname, search })
-    const runtime = {
-      xr: {
-        setHandModel: vi.fn().mockResolvedValue(undefined),
-        enableCalibrationScreen: () => {
-          throw new Error('XR interface mounted')
-        },
-      },
+    const mounted = vi.fn(() => {
+      throw new Error('XR interface mounted')
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const xr = {
+      setHandModel: vi.fn().mockResolvedValue(undefined),
+      enableCalibrationScreen: mounted,
     }
-    expect(() => bindVR(runtime as unknown as GameRuntime)).toThrow('XR interface mounted')
+    // XR code is loaded on demand: the immersive UI mounts once loadXR resolves.
+    const runtime = { xr, loadXR: vi.fn(async () => xr) }
+    expect(() => bindVR(runtime as unknown as GameRuntime)).not.toThrow()
+    await vi.waitFor(() => expect(mounted).toHaveBeenCalled())
+    expect(runtime.loadXR).toHaveBeenCalledOnce()
+    error.mockRestore()
   })
 })

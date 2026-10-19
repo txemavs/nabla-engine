@@ -11,7 +11,7 @@
  * to it. `?wheel=` wins over the build value; a present empty `wheel=` means no host defaults.
  */
 import { hasVehiclePreset, vehiclePreset } from '@nabla/engine/vehicles'
-import type { SteeringWheelStorage } from '@nabla/engine/runtime'
+import type { SteeringWheelStorage } from '@nabla/engine/runtime/core'
 
 /** Host default per steering model (GLB URL), metres. */
 export type HostSteeringWheels = Record<string, { distance: number; height: number }>

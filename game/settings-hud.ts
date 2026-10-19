@@ -1,6 +1,6 @@
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
-import { createUsbSettingsPanel } from '@nabla/engine/runtime'
+import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
 import { settingsNavigationStyles } from './settings-navigation-styles.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'

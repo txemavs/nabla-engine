@@ -26,13 +26,17 @@ export function mountVREntry(runtime: GameRuntime): void {
       supported = false
     }
     if (disposed) return
+    // Load the XR code as soon as the device can use it, so the click enters at once (WebXR
+    // needs the user gesture) instead of waiting for the download.
+    if (supported) void runtime.loadXR().catch(() => {})
     if (supported) place()
     else button.remove()
   }
   button.onclick = () => {
     button.disabled = true
-    void runtime.xr
-      .enter()
+    void runtime
+      .loadXR()
+      .then((xr) => xr.enter())
       .catch((error) => {
         const message = document.getElementById('game-message')
         if (message) message.textContent = `No se pudo entrar en VR: ${String(error)}`

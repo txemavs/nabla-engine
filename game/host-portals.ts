@@ -19,7 +19,7 @@
  */
 import { geoToLocal, type GeoPoint } from '@nabla/engine'
 import { isValidLatLon } from '@nabla/engine/planet/lat-lon'
-import { createPlaceablePortal } from '@nabla/engine/runtime'
+import { createPlaceablePortal } from '@nabla/engine/runtime/core'
 import type { Entity, Vec3Tuple } from '@nabla/engine/scene'
 import { headingYaw } from './host-vehicles.js'
 

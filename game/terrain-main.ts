@@ -2,7 +2,7 @@ import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { showControlHints } from './control-hints.js'
-import { bindVR } from './vr-ui.js'
+import { bindVR, preloadVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { projectGroundPhoto, setHiddenTileLayers } from '@nabla/engine/render'
 import { createTerrainDriveScene } from '@nabla/engine/examples/terrain-drive'
@@ -218,6 +218,7 @@ try {
     Object.assign(window, { nablaGroundAudit: () => runtime?.groundAudit(), nablaRuntime: runtime })
   mountVREntry(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
+  preloadVR(runtime)
   loading.setStatus(
     config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
   )
