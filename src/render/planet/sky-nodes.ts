@@ -1,4 +1,5 @@
 import type * as THREE from 'three'
+import { Color } from 'three'
 import type { NodeKit, WebGPUSubstitute } from '../webgpu-substitutes.js'
 import { noiseNodes } from './noise-nodes.js'
 
@@ -267,6 +268,15 @@ export class WebGPUSkyPass {
     const size = gpu.getDrawingBufferSize(this.size)
     if (this.target.width !== size.x || this.target.height !== size.y)
       this.target.setSize(size.x, size.y)
+    const fog = scene.fog as THREE.Fog | null
+    if (skyFog) {
+      skyFog.on.value = fog && (fog as THREE.Fog).isFog ? 1 : 0
+      if (fog && fog.isFog) {
+        skyFog.color.value.copy(fog.color)
+        skyFog.near.value = fog.near
+        skyFog.far.value = fog.far
+      }
+    }
     const previous = gpu.getRenderTarget()
     gpu.setRenderTarget(this.target)
     gpu.clear()
@@ -285,20 +295,44 @@ export class WebGPUSkyPass {
  * Material output in display values: optional ACES Filmic, then sRGB encode (WebGL's order).
  * `shade` edits the linear lit colour first, like code spliced after `outgoingLight`.
  */
-function encodeOutput(
+export function encodeOutput(
   material: THREE.Material,
   toneMapped: boolean,
   tsl: NodeKit['tsl'],
   shade?: (linear: ReturnType<NodeKit['tsl']['vec3']>) => unknown,
 ) {
-  const { output, vec4, sRGBTransferOETF, acesFilmicToneMapping, toneMappingExposure } = tsl
+  const { output, vec4, sRGBTransferOETF, acesFilmicToneMapping, toneMappingExposure, mix } = tsl
   const lit = asVec3(output.rgb)
   const linear = shade ? asVec3(shade(lit)) : lit
   const mapped = toneMapped ? acesFilmicToneMapping(linear, toneMappingExposure) : linear
-  ;(material as THREE.Material & { outputNode: unknown }).outputNode = vec4(
-    sRGBTransferOETF(mapped) as ReturnType<NodeKit['tsl']['vec3']>,
-    output.a,
-  )
+  let color: unknown = sRGBTransferOETF(mapped)
+  if ((material as { fog?: boolean }).fog) {
+    // WebGL applies <fog_fragment> after tone mapping and the sRGB encode, with the fog colour
+    // uniform already in the output colour space: mix it into the display value, with the sky pass's scene fog (see `WebGPUSkyPass`).
+    const fog = skyFogNodes(tsl)
+    color = mix(
+      asVec3(color),
+      asVec3(sRGBTransferOETF(asVec3(fog.color))),
+      tsl.rangeFogFactor(fog.near, fog.far).mul(fog.on),
+    )
+    ;(material as { fog?: boolean }).fog = false
+    material.userData.nablaManualFog = true
+  }
+  ;(material as THREE.Material & { outputNode: unknown }).outputNode = vec4(asVec3(color), output.a)
+}
+
+/** Scene fog of the sky pass as uniforms, shared by every twin that fogs itself. */
+let skyFog: ReturnType<typeof makeSkyFog> | undefined
+function makeSkyFog(tsl: NodeKit['tsl']) {
+  return {
+    color: tsl.uniform(new Color()),
+    near: tsl.uniform(1),
+    far: tsl.uniform(2),
+    on: tsl.uniform(0),
+  }
+}
+function skyFogNodes(tsl: NodeKit['tsl']) {
+  return (skyFog ??= makeSkyFog(tsl))
 }
 
 /**
@@ -405,7 +439,7 @@ function asVec3(node: unknown) {
 }
 
 /** Blend/depth/visibility state shared by a GLSL original and its node twin. */
-function copyState(from: THREE.Material, to: THREE.Material) {
+export function copyState(from: THREE.Material, to: THREE.Material) {
   to.transparent = from.transparent
   to.opacity = from.opacity
   to.depthWrite = from.depthWrite
@@ -413,6 +447,6 @@ function copyState(from: THREE.Material, to: THREE.Material) {
   to.blending = from.blending
   to.side = from.side
   to.toneMapped = from.toneMapped
-  ;(to as { fog?: boolean }).fog = (from as { fog?: boolean }).fog
+  if (!to.userData.nablaManualFog) (to as { fog?: boolean }).fog = (from as { fog?: boolean }).fog
   to.visible = from.visible
 }

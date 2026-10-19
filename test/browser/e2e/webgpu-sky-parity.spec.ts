@@ -21,11 +21,19 @@ test.use({
 const shots = process.env.NABLA_PARITY_SHOTS
 const views = [
   // Late afternoon over Irun, looking at the sun: dome colour, sun disc, halo and glare.
-  // Mean bound 6: the earth below the horizon lacks the GLSL cloud/night-light patch (not ported).
-  { name: 'day-sun', at: '2026-06-21T18:00:00Z', look: 'sun', maxMean: 6 },
+  { name: 'day-sun', at: '2026-06-21T18:00:00Z', look: 'sun', maxMean: 2 },
   // Night over Irun, looking up: stars, Milky Way, planets and the moon.
   { name: 'night-sky', at: '2026-06-21T23:30:00Z', look: 'up', maxMean: 2 },
   // 400 km above Irun, looking at the horizon: earth texture, cloud shadows and city lights.
+  // Clouds over Irun: the artistic ray-marched decks (drawn after the world) and the low puffs.
+  {
+    name: 'clouds-artistic',
+    at: '2026-06-21T10:00:00Z',
+    look: 'horizon-up',
+    clouds: 'artistic',
+    maxMean: 2,
+  },
+  { name: 'clouds-low', at: '2026-06-21T10:00:00Z', look: 'horizon-up', clouds: 'low', maxMean: 2 },
   {
     name: 'earth-day',
     at: '2026-06-21T12:00:00Z',
@@ -45,10 +53,11 @@ const views = [
 ] as Array<{
   name: string
   at: string
-  look: 'sun' | 'up' | 'horizon'
+  look: 'sun' | 'up' | 'horizon' | 'horizon-up'
   maxMean: number
   eye?: number
   textures?: boolean
+  clouds?: 'artistic' | 'low'
 }>
 
 for (const view of views) {
@@ -101,7 +110,11 @@ for (const view of views) {
             entities: [],
           }
           const sky = new GeographicView(doc, () => {}, false, { textures: view.textures ?? false })
-          sky.setLayers({ sky: true, planets: true, sun: true, moon: true, clouds: false })
+          sky.setLayers({ sky: true, planets: true, sun: true, moon: true, clouds: !!view.clouds })
+          if (view.clouds) {
+            sky.setCloudStyle(view.clouds)
+            sky.setCloudWeather(0.7, 0.1)
+          }
           const clock = { mode: 'fixed', at: view.at }
           const eye = view.eye ?? 2
           sky.update([0, eye, 0], new T.Vector3(), clock)
@@ -110,18 +123,29 @@ for (const view of views) {
           const target =
             view.look === 'sun'
               ? sky.sunDirection.clone().add(camera.position)
-              : view.look === 'horizon'
-                ? new T.Vector3(0, eye - 0.2, -1)
-                : new T.Vector3(0.3, 2.9, -0.4)
+              : view.look === 'horizon-up'
+                ? new T.Vector3(0, eye + 0.25, -1)
+                : view.look === 'horizon'
+                  ? new T.Vector3(0, eye - 0.2, -1)
+                  : new T.Vector3(0.3, 2.9, -0.4)
           camera.lookAt(target)
           camera.updateMatrixWorld()
           // WebGPU compiles pipelines asynchronously: keep drawing until they are ready.
-          for (let i = 0; i < (view.textures ? 20 : 8); i++) {
+          const frame = () => {
             sky.render(renderer, camera, camera.position)
+            if (!view.clouds) return
+            const clear = renderer.autoClear
+            renderer.autoClear = false
+            renderer.clearDepth()
+            sky.renderClouds(renderer, camera)
+            renderer.autoClear = clear
+          }
+          for (let i = 0; i < (view.textures ? 20 : 8); i++) {
+            frame()
             await new Promise((r) => setTimeout(r, 250))
           }
           // Read the canvas in the same task as its last frame (before the swap chain drops it).
-          sky.render(renderer, camera, camera.position)
+          frame()
           images.push(canvas.toDataURL('image/png').split(',')[1])
         }
         return { kinds, images }

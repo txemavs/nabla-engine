@@ -4,6 +4,7 @@ import { cloudHours, createCloudLayer } from './clouds.js'
 import { addSunDisc } from './sun-disc.js'
 import { airGlow, earthGlobe, moonDisc, sunDiscDome, WebGPUSkyPass } from './sky-nodes.js'
 import { webgpuNodeKit } from '../backend.js'
+import { artisticCloudDeck, globeCloudSkin, lowCloudDome } from './cloud-nodes.js'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { createLensFlare } from './lens-flare.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../../planet/sky.js'
@@ -205,8 +206,20 @@ export class GeographicView {
     this.clouds = createCloudLayer(this.sunDirection)
     this.artistic = createArtisticClouds(this.sunDirection)
     this.cloudPass.add(this.artistic.deck)
+    setWebGPUSubstitute(
+      this.artistic.deck,
+      artisticCloudDeck(this.artistic.deck.material as THREE.ShaderMaterial),
+    )
+    setWebGPUSubstitute(
+      this.clouds.mesh,
+      lowCloudDome(this.clouds.mesh.material as THREE.ShaderMaterial),
+    )
     const earthRadius = EARTH_RADIUS * SCALE
     this.globe = createGlobeClouds(this.sunDirection, earthRadius + 0.02)
+    setWebGPUSubstitute(
+      this.globe.mesh,
+      globeCloudSkin(this.globe.mesh.material as THREE.ShaderMaterial),
+    )
     shadeEarthWithClouds(
       this.earth.material as THREE.MeshLambertMaterial,
       this.sunDirection,
