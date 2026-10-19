@@ -41,6 +41,9 @@ export class GameHud {
     this.root.style.cssText =
       'position:absolute;left:16px;bottom:16px;z-index:30;pointer-events:none;color:white;text-shadow:0 1px 3px black;font:14px system-ui;white-space:pre-line'
     this.telemetry.style.fontSize = '24px'
+    // Key help line at the top left (Euskadi Online placement); the bottom stays free for the FPS area.
+    this.hint.style.cssText =
+      'position:fixed;left:20px;top:52px;max-width:calc(100vw - 40px);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:16px/20px Arial,sans-serif;color:#eee;text-shadow:0 1px 4px #000'
     this.root.append(this.telemetry, this.hint, this.debug)
     host.append(this.root)
   }
