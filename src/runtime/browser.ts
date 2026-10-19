@@ -3,6 +3,7 @@ import {
   writeVehicleLights,
   type VehicleLightTuning,
 } from '../render/vehicle-presentation/light-tuning.js'
+import { mountEngineVersionLabel } from './engine-version.js'
 import {
   getVehicleBeamCutoff,
   setVehicleBeamCutoff,
@@ -497,6 +498,7 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 }
 
 export class GameRuntime {
+  private readonly versionLabel: HTMLElement | null
   /** XR system once `loadXR()` resolved; null on a page that never asked for XR. */
   private xrSystem: GameXR | null = null
   private xrParts: XRParts | null = null
@@ -1011,6 +1013,7 @@ export class GameRuntime {
     }
     this.monitors.rebuild(this.document)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
+    this.versionLabel = mountEngineVersionLabel(options.canvas.parentElement!)
     this.sky = new GeographicView(this.document, () => {})
     // Reattach after Play extraction: viewer still parents the flare; game must too.
     this.scene.add(this.sky.lensFlare)
@@ -1021,8 +1024,9 @@ export class GameRuntime {
     this.effects.audio.mixer.set(readAudioMix(browserStorage()) ?? {})
     this.effects.reverseAlarmEnabled = (entity) =>
       this.vehiclePreferences(entity.visual?.body.url ?? entity.id).reverseAlarm
-    this.effects.audio.setEnabled(options.audio !== false)
+    // Music first: a `startOn: "host"` track must hold the audio before setEnabled() unlocks it.
     this.effects.audio.setMusic(options.music)
+    this.effects.audio.setEnabled(options.audio !== false)
     if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
     const touchActions = {
       engage: () => {
@@ -1433,6 +1437,7 @@ export class GameRuntime {
   }
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
+    this.versionLabel?.remove()
     this.usbFeedback.dispose()
     this.usbControllers.reset()
     if (this.disposed) return

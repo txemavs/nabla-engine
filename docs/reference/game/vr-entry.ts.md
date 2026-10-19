@@ -25,9 +25,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountVREntry
 
-[Implementation, line 9](../../../game/vr-entry.ts#L9)
+[Implementation, line 14](../../../game/vr-entry.ts#L14)
 
-Enter the current world, keeping the user gesture required by WebXR.
+Enter the current world, keeping the user gesture required by WebXR. Only for the PC VR entry
+(`?vr=pc`, from the headset page): the normal game boot never touches `navigator.xr`, never
+checks session support and never loads the XR code, because an installed OpenXR runtime
+(Quest Link, SteamVR) can stall that boot.
 
 ```ts
 mountVREntry(runtime: GameRuntime): void
@@ -41,11 +44,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.createElement`
 - `navigator.xr?.addEventListener`
 - `observer.observe`
+- `pcVRRequested`
 - `window.addEventListener`
 
 ## mountVREntry.place
 
-[Implementation, line 21](../../../game/vr-entry.ts#L21)
+[Implementation, line 27](../../../game/vr-entry.ts#L27)
 
 ```ts
 place(): inferred by TypeScript; see implementation
@@ -58,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountVREntry.check
 
-[Implementation, line 27](../../../game/vr-entry.ts#L27)
+[Implementation, line 33](../../../game/vr-entry.ts#L33)
 
 ```ts
 check(): inferred by TypeScript; see implementation
@@ -69,40 +73,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.focus`
 - `button.remove`
 - `navigator.xr.isSessionSupported`
-- `pcVRRequested`
 - `place`
 - `runtime.loadXR`
 - `runtime.loadXR().catch`
 
-## mountVREntry.check.callback@36
+## mountVREntry.check.callback@42
 
-[Implementation, line 36](../../../game/vr-entry.ts#L36)
-
-```ts
-callback@36(): inferred by TypeScript; see implementation
-```
-
-## mountVREntry.callback@46
-
-[Implementation, line 46](../../../game/vr-entry.ts#L46)
+[Implementation, line 42](../../../game/vr-entry.ts#L42)
 
 ```ts
-callback@46(): inferred by TypeScript; see implementation
+callback@42(): inferred by TypeScript; see implementation
 ```
 
-## mountVREntry.callback@46.callback@50
-
-[Implementation, line 50](../../../game/vr-entry.ts#L50)
-
-```ts
-callback@50(xr): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `xr.enter`
-
-## mountVREntry.callback@46.callback@51
+## mountVREntry.callback@51
 
 [Implementation, line 51](../../../game/vr-entry.ts#L51)
 
@@ -110,17 +93,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@51(): inferred by TypeScript; see implementation
 ```
 
+## mountVREntry.callback@51.callback@55
+
+[Implementation, line 55](../../../game/vr-entry.ts#L55)
+
+```ts
+callback@55(xr): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `xr.enter`
+
+## mountVREntry.callback@51.callback@56
+
+[Implementation, line 56](../../../game/vr-entry.ts#L56)
+
+```ts
+callback@56(): inferred by TypeScript; see implementation
+```
+
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `document.querySelector`
 - `document.querySelector<HTMLCanvasElement>('#game-canvas')?.focus`
 
-## mountVREntry.callback@46.callback@56
+## mountVREntry.callback@51.callback@61
 
-[Implementation, line 56](../../../game/vr-entry.ts#L56)
+[Implementation, line 61](../../../game/vr-entry.ts#L61)
 
 ```ts
-callback@56(error): inferred by TypeScript; see implementation
+callback@61(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,20 +131,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `document.getElementById`
 
-## mountVREntry.callback@46.callback@60
+## mountVREntry.callback@51.callback@65
 
-[Implementation, line 60](../../../game/vr-entry.ts#L60)
+[Implementation, line 65](../../../game/vr-entry.ts#L65)
 
 ```ts
-callback@60(): inferred by TypeScript; see implementation
+callback@65(): inferred by TypeScript; see implementation
 ```
 
-## mountVREntry.callback@68
+## mountVREntry.callback@73
 
-[Implementation, line 68](../../../game/vr-entry.ts#L68)
+[Implementation, line 73](../../../game/vr-entry.ts#L73)
 
 ```ts
-callback@68(): inferred by TypeScript; see implementation
+callback@73(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

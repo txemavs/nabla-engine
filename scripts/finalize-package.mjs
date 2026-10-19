@@ -44,3 +44,12 @@ for (const [file, name, sources] of [
     `// Generated stock catalog. Do not edit.\nexport function ${name}() { return ${JSON.stringify(stock)} }\n`,
   )
 }
+
+// Engine version label: inject package.json "version" (semantic version only, no SHA).
+{
+  const { version } = JSON.parse(
+    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  )
+  const file = new URL('runtime/engine-version.js', root)
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('__NABLA_ENGINE_VERSION__', version))
+}
