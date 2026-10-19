@@ -30,7 +30,7 @@ export interface MissingTilesOptions {
   /** Storage key; use one per tile host. Without storage the list lives for the session. */
   key?: string
   storage?: MissingStorage
-  /** A tile seen missing less than this long ago is not requested again. Default 10 minutes. */
+  /** A tile seen missing less than this long ago is not requested again. Default 1 hour. */
   retryAfterMs?: number
   /** Oldest entries are dropped beyond this many. Default 2000. */
   max?: number
@@ -70,7 +70,7 @@ export class MissingTiles {
   constructor(options: MissingTilesOptions = {}) {
     this.key = options.key ?? MISSING_TILES_KEY
     this.storage = options.storage
-    this.retryAfterMs = options.retryAfterMs ?? 10 * 60_000
+    this.retryAfterMs = options.retryAfterMs ?? 60 * 60_000
     this.max = options.max ?? 2000
     this.now = options.now ?? Date.now
     try {

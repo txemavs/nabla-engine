@@ -105,7 +105,7 @@ the tile is a **hole**: an empty gap in the map, not an error, and loading does 
   `nabla.terrain.missing:<base>` (at most 2000 entries). `GameRuntime.missingTiles` returns the list,
   `clearMissingTiles()` forgets it, and the Terreno menu shows it (`Celdas que faltan`, `Volver a pedirlas`)
   as `15/16210/12003 403 2026-10-05T…Z` lines that can be sent to Atlas (the producer) to publish them.
-- **Negative cache**: a tile seen missing is not asked for again for 10 minutes (no 404/403 spam while
+- **Negative cache**: a tile seen missing is not asked for again for 1 hour (no 404/403 spam while
   streaming); after that it is asked once more and, if it turned up, removed from the list.
 - A start position over a hole fails at once (`GroundMissingError`, naming the cell) instead of waiting. The
   page says so in Spanish (`No hay terreno en la celda x/y …`) and offers a button to the nearest cell of the
