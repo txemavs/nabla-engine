@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **526 modules; 6154 executable function definitions**.
+Coverage: **527 modules; 6173 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -226,6 +226,7 @@ Coverage: **526 modules; 6154 executable function definitions**.
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
 | [src/planet/tiles.ts](src/planet/tiles.ts.md) | 6 |
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
+| [src/render/backend.ts](src/render/backend.ts.md) | 17 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 8 |
 | [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
@@ -398,7 +399,7 @@ Coverage: **526 modules; 6154 executable function definitions**.
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
-| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 11 |
+| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 13 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |

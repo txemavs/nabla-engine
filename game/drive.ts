@@ -7,6 +7,7 @@ import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR, preloadVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime/core'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
+import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
 import {
   createFlatTestScene,
   createFlatTestGround,
@@ -221,7 +222,19 @@ try {
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
+  // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
+  const rendererPreference = parseRendererPreference(location.search)
+  const backend =
+    rendererPreference === 'webgl'
+      ? undefined
+      : await createRenderBackend(rendererPreference, {
+          canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
+          antialias: true,
+          alpha: true,
+          logarithmicDepthBuffer: true,
+        })
   runtime = new GameRuntime({
+    backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
