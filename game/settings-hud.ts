@@ -5,7 +5,13 @@ import { settingsNavigationStyles } from './settings-navigation-styles.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
 import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
-import { formatClockTime, localMinutes, skyTime } from '@nabla/engine/planet/sky'
+import {
+  formatClockTime,
+  localMinutes,
+  shiftSkyClockKeepingRate,
+  skyTime,
+} from '@nabla/engine/planet/sky'
+import { createWheelStepper } from './clock-wheel.js'
 import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls'
 /**
  * Full-screen HTML monitor for the desktop game. Navigation remounts the existing controls;
@@ -158,7 +164,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   toggle.type = 'button'
   toggle.id = 'settings-toggle'
   toggle.className = 'settings-toggle'
-  toggle.title = 'Abrir menú'
+  toggle.title = 'Abrir menú · rueda: ±1 h'
   toggle.classList.add('settings-clock')
   toggle.setAttribute('aria-label', 'Abrir ajustes')
   toggle.setAttribute('aria-expanded', 'false')
@@ -1507,7 +1513,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (legacy) legacy.open = true
     toggle.setAttribute('aria-expanded', 'true')
     toggle.setAttribute('aria-label', 'Recoger menú')
-    toggle.title = 'Recoger menú'
+    toggle.title = 'Recoger menú · rueda: ±1 h'
     doc.body.classList.add('settings-is-open')
     if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
       mapSection.refresh()
@@ -1522,7 +1528,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (legacy) legacy.open = false
     toggle.setAttribute('aria-expanded', 'false')
     toggle.setAttribute('aria-label', 'Abrir menú')
-    toggle.title = 'Abrir menú'
+    toggle.title = 'Abrir menú · rueda: ±1 h'
     doc.body.classList.remove('settings-is-open')
     doc.getElementById('game-canvas')?.focus()
   }
@@ -1585,6 +1591,18 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   updateClock()
   const clockTimer = window.setInterval(updateClock, 1000)
+  // Mouse wheel over the clock button: one hour per notch, up = later.
+  const wheel = createWheelStepper()
+  const onClockWheel = (event: WheelEvent) => {
+    const steps = wheel.push(event.deltaY, event.deltaMode)
+    event.preventDefault()
+    if (!steps) return
+    runtime.setSkyClock(shiftSkyClockKeepingRate(runtime.skyClock, steps * 60))
+    // The time controls of the planet panel and the address listen for this to follow.
+    window.dispatchEvent(new Event('nabla-sky-clock'))
+    updateClock()
+  }
+  toggle.addEventListener('wheel', onClockWheel, { passive: false })
   const onKeyDown = (event: KeyboardEvent) => {
     if (
       menuNavigationKey(event.code) === 'focus' &&
@@ -1648,6 +1666,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       observer?.disconnect()
       planetPanel?.destroy()
       planetPanel = null
+      toggle.removeEventListener('wheel', onClockWheel)
       toggle.remove()
       win.remove()
       style.remove()

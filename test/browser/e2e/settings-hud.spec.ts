@@ -47,6 +47,13 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      skyClock: { mode: 'fixed', at: new Date(2026, 9, 16, 12, 30).toISOString() } as {
+        mode: 'fixed'
+        at: string
+      },
+      setSkyClock: (clock: { mode: 'fixed'; at: string }) => {
+        runtime.skyClock = clock
+      },
       usbControllers: new UsbControllers(null),
       getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
       vehicleLightAdjustment: {
@@ -373,6 +380,14 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     model: '/test-bike.glb',
     values: { rearY: 0.12 },
   })
+  // The wheel over the clock button moves the time by one hour per notch (up = later).
+  const clock = page.locator('#settings-toggle')
+  await expect(clock).toHaveText('12:30')
+  await clock.dispatchEvent('wheel', { deltaY: -100 })
+  await expect(clock).toHaveText('13:30')
+  await clock.dispatchEvent('wheel', { deltaY: 100 })
+  await clock.dispatchEvent('wheel', { deltaY: 100 })
+  await expect(clock).toHaveText('11:30')
   await page.getByRole('tab', { name: 'Desarrollo', exact: true }).click()
   await page.getByRole('button', { name: 'Luz trasera (ajuste fino)', exact: true }).click()
   await page.getByRole('button', { name: 'Atrás / delante (m) +0.01' }).click()

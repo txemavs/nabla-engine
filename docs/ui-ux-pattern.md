@@ -72,8 +72,10 @@ Rules:
 
 In Euskadi Online the Menú button (`#settings-toggle`, class `euskadi-menu-clock`, restyled by
 `euskadi-hud.ts`) **shows the game clock `HH:MM`** as its label. Clicking it opens the menu;
-while open it shows a down arrow to close. The mouse wheel over the clock moves the hour (±1 h,
-keeps speed). The clock group (`#euskadi-clock-group`) also holds the vertical time-of-day
+while open it shows a down arrow to close. The mouse wheel over this button moves the game
+clock by one hour per notch (up = later; a trackpad's small deltas add up to a notch), keeping a
+running speed; the engine's settings HUD does it (`game/clock-wheel.ts`), so every host gets it.
+The planet panel's time controls and the `&time=` address follow. The clock group (`#euskadi-clock-group`) also holds the vertical time-of-day
 slider and the «Hora real» control. The standalone engine game shows the engine's own gear
 button (`game/settings-hud.ts` toggle); it is hidden by the host.
 

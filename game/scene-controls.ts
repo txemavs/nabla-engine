@@ -487,6 +487,11 @@ export function bindSceneControls(
       showTime()
     })
     showTime()
+    // The menu clock button changes the time with the mouse wheel; follow it here and in the address.
+    window.addEventListener('nabla-sky-clock', () => {
+      remember({ time: formatClockTime(localMinutes(skyTime(runtime.skyClock))) })
+      showTime()
+    })
 
     sky.box.checked = runtime.planetLayers.sky
     sun.box.checked = runtime.planetLayers.sun
