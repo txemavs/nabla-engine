@@ -44,6 +44,7 @@ import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
 import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { bindAnisotropySelect, bindGroundDetailSelect } from './anisotropy-ui.js'
+import { bindDistances } from './distances-ui.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
@@ -354,6 +355,7 @@ try {
   const roadStyle = bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   bindAnisotropySelect(runtime, roadStyle)
   bindGroundDetailSelect(runtime, roadStyle)
+  bindDistances(runtime)
   mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()

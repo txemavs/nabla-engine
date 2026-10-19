@@ -107,7 +107,9 @@ import {
   performancePresets,
   streamBudget,
   tileBudget,
+  visibilityChoices,
   type PerformanceSettings,
+  type VisibilitySettings,
 } from './performance.js'
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
@@ -3556,6 +3558,32 @@ export class GameRuntime {
   /** Current load radius (metres) and cells kept in memory. */
   get streaming(): { distance: number; cells: number } {
     return { distance: this.quality.distance, cells: this.world?.maxCells ?? 0 }
+  }
+  /** Quality profile name and the visibility distances in force (metres; `buildings` 0/1; `relief` in cells). */
+  get visibility(): VisibilitySettings & { preset: string } {
+    const { preset, roads, fog, collisions, relief, buildings } = this.quality
+    return { preset, roads, fog, collisions, relief, buildings }
+  }
+  /**
+   * Change the fog distance, road and building visibility, collision radius and far-relief span live.
+   * Values must be one of `visibilityChoices`; unset fields keep their value. The terrain load
+   * radius is separate (`setStreaming`). Nothing here touches colours or lighting: it only moves
+   * the distances the quality profile already chose.
+   */
+  setVisibility(options: Partial<VisibilitySettings>): void {
+    this.assertAlive()
+    const next: Partial<VisibilitySettings> = {}
+    for (const key of Object.keys(visibilityChoices) as (keyof VisibilitySettings)[]) {
+      const value = options[key]
+      if (value === undefined) continue
+      if (!(visibilityChoices[key] as readonly number[]).includes(value))
+        throw new Error(`Unsupported ${key} value: ${value}`)
+      next[key] = value
+    }
+    this.quality = { ...this.quality, ...next }
+    if (next.relief !== undefined) this.world?.setRelief(next.relief)
+    if (next.collisions !== undefined)
+      this.session.simulation?.setCollisionDistance(next.collisions)
   }
   /** What the loading screen needs: requests in flight, failures, holes and the last error. */
   get loadDiagnostics(): LoadDiagnostics | null {

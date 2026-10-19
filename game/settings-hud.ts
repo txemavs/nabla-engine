@@ -62,6 +62,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-traffic-signs', 'planet'],
   ['settings-options-labels', 'planet'],
   ['display-quality-section', 'options'],
+  ['settings-distances', 'options'],
   ['display-performance', 'options'],
   ['settings-effects', 'options'],
   ['camera-extras', 'options'],
@@ -1213,7 +1214,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       tab: 'options',
       id: 'video',
       label: 'Vídeo',
-      sections: ['display-quality-section', 'display-performance', 'settings-effects'],
+      sections: [
+        'display-quality-section',
+        'settings-distances',
+        'display-performance',
+        'settings-effects',
+      ],
     },
     {
       tab: 'options',
