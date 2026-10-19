@@ -33,6 +33,11 @@ export {
   type TileLayer,
   type LayerStorage,
 } from './planet/tile-layers.js'
+export {
+  setTileClusterCulling,
+  tileClusterCullingEnabled,
+  parseClusterCulling,
+} from './planet/cluster-culling.js'
 
 export {
   assetQualityForDevice,

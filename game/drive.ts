@@ -31,7 +31,12 @@ import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
 import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
-import { parseLayerSpec, setHiddenTileLayers } from '@nabla/engine/render'
+import {
+  parseLayerSpec,
+  setHiddenTileLayers,
+  setTileClusterCulling,
+  parseClusterCulling,
+} from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
@@ -218,6 +223,8 @@ try {
   setHiddenTileLayers(
     parseLayerSpec(new URLSearchParams(location.search).get('layers'), bootHiddenLayers(boot)),
   )
+  // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
+  setTileClusterCulling(parseClusterCulling(location.search))
   const loading = new LoadingScreen(boot.splash)
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
