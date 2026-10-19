@@ -5,8 +5,14 @@ export function pcVRRequested(search = location.search): boolean {
   return new URLSearchParams(search).get('vr') === 'pc'
 }
 
-/** Enter the current world, keeping the user gesture required by WebXR. */
+/**
+ * Enter the current world, keeping the user gesture required by WebXR. Only for the PC VR entry
+ * (`?vr=pc`, from the headset page): the normal game boot never touches `navigator.xr`, never
+ * checks session support and never loads the XR code, because an installed OpenXR runtime
+ * (Quest Link, SteamVR) can stall that boot.
+ */
 export function mountVREntry(runtime: GameRuntime): void {
+  if (!pcVRRequested()) return
   const button = document.createElement('button')
   button.type = 'button'
   button.id = 'euskadi-enter-vr'
@@ -36,9 +42,8 @@ export function mountVREntry(runtime: GameRuntime): void {
     if (supported) void runtime.loadXR().catch(() => {})
     if (supported) place()
     else button.remove()
-    // Opened from the headset page's PC VR link: point at the button. WebXR needs a click, so
-    // the session cannot start by itself.
-    if (supported && pcVRRequested()) {
+    // Point at the button: WebXR needs a click, so the session cannot start by itself.
+    if (supported) {
       button.style.outline = '3px solid var(--accent,#ffb000)'
       button.focus()
     }

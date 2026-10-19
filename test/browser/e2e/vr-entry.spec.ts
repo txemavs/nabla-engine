@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test'
-test('VR entry appears before the clock only with immersive VR support', async ({ page }) => {
-  await page.route('**/vr-entry-check', (r) =>
+test('PC VR entry appears before the clock only with ?vr=pc and immersive VR support', async ({
+  page,
+}) => {
+  await page.route('**/vr-entry-check?vr=pc', (r) =>
     r.fulfill({
       contentType: 'text/html',
       body: '<div id="euskadi-clock-group"><span id="clock">12:00</span></div>',
     }),
   )
-  await page.goto('/vr-entry-check')
+  await page.goto('/vr-entry-check?vr=pc')
   await page.evaluate(async (root) => {
     const system = new EventTarget() as any
     system.isSessionSupported = async () => true
@@ -30,5 +32,40 @@ test('VR entry appears before the clock only with immersive VR support', async (
     ;(navigator.xr as any).isSessionSupported = async () => false
     navigator.xr!.dispatchEvent(new Event('devicechange'))
   })
+  await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
+})
+
+test('the normal game never touches navigator.xr', async ({ page }) => {
+  await page.route('**/vr-entry-check', (r) =>
+    r.fulfill({
+      contentType: 'text/html',
+      body: '<div id="euskadi-clock-group"><span id="clock">12:00</span></div>',
+    }),
+  )
+  await page.goto('/vr-entry-check')
+  const touched = await page.evaluate(async (root) => {
+    let reads = 0
+    Object.defineProperty(navigator, 'xr', {
+      configurable: true,
+      get() {
+        reads++
+        return undefined
+      },
+    })
+    const { mountVREntry } = await import(`/@fs/${root}/game/vr-entry.ts`)
+    mountVREntry(
+      new Proxy(
+        {},
+        {
+          get() {
+            throw new Error('touched the runtime')
+          },
+        },
+      ) as any,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    return reads
+  }, process.cwd())
+  expect(touched).toBe(0)
   await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
 })
