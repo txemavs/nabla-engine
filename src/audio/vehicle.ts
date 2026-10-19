@@ -139,6 +139,15 @@ export class VehicleAudio {
 
   private musicReleased = false
 
+  /**
+   * A `startOn: "host"` track holds the whole audio graph until the host starts it: no
+   * AudioContext is created or resumed before that (browsers warn on every attempt without a
+   * user gesture), so the host's start confirmation is the first audio call.
+   */
+  private get held(): boolean {
+    return !!this.music && !musicMayStart(this.music.track, this.musicReleased)
+  }
+
   private syncMusic(): void {
     if (!this.music) return
     const held = !musicMayStart(this.music.track, this.musicReleased)
@@ -178,7 +187,7 @@ export class VehicleAudio {
    * browser suspended it. Safe to call every frame; construction runs once.
    */
   unlock(): void {
-    if (!this.enabled) return
+    if (!this.enabled || this.held) return
     try {
       if (!this.context) this.build()
       if (this.context?.state === 'suspended') void this.context.resume().catch(() => {})
@@ -191,7 +200,7 @@ export class VehicleAudio {
 
   /** Build the silent common graph during loading; playback still requires unlock(). */
   prepare(): void {
-    if (!this.enabled || this.context) return
+    if (!this.enabled || this.context || this.held) return
     try {
       this.build()
     } catch {
