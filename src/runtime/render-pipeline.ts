@@ -9,6 +9,7 @@ import { DepthOfField } from '../render/effects/depth-of-field.js'
 import { renderPortals, type ExternalPortalView } from '../render/portal/portals.js'
 import { portalEnvironment } from '../render/portal/environment.js'
 import type { VehicleMonitors } from './vehicle-monitors.js'
+import type { GpuTimingBackend } from '../diagnostics/gpu-timing.js'
 
 export interface GameRenderFrame {
   renderer: THREE.WebGLRenderer
@@ -62,10 +63,13 @@ export class GameRenderPipeline {
   private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
   private shadowMapsBlank = false
+  /** Optional GPU timing backend; set externally when diagnostics are enabled. */
+  gpuTiming: GpuTimingBackend | null = null
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
     this.depthOfField.dispose()
     this.fsr.dispose()
+    this.gpuTiming?.dispose()
   }
   /**
    * Render auxiliary views before the main scene and optional depth of field.
@@ -88,6 +92,7 @@ export class GameRenderPipeline {
     let phasePrograms = renderer.info.programs?.length ?? 0
     const target = renderer.getRenderTarget(),
       autoClear = renderer.autoClear
+    this.gpuTiming?.beginFrame()
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
     // Shadows switched off: the lit programs still sample each light's shadow map, so the maps
     // must exist (a missing one leaves a non-shadow texture on the shadow sampler: GL errors and
@@ -116,6 +121,7 @@ export class GameRenderPipeline {
         surface,
         live: surface.mesh.material.uniforms.live.value,
       }))
+      this.gpuTiming?.beginPass('mirrors')
       try {
         for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
         view.renderMirrors(
@@ -134,11 +140,13 @@ export class GameRenderPipeline {
         for (const { surface, live } of portalStates)
           surface.mesh.material.uniforms.live.value = live
       }
+      this.gpuTiming?.endPass('mirrors')
       recordShaders('mirrors')
       this.timings.mirrorsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.mirrorPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('portals')
       this.renderedPortals = renderPortals(
         view.portals,
         renderer,
@@ -169,11 +177,13 @@ export class GameRenderPipeline {
         },
         frame.externalViews,
       )
+      this.gpuTiming?.endPass('portals')
       recordShaders('portals')
       this.timings.portalsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.portalPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('main')
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
@@ -203,11 +213,13 @@ export class GameRenderPipeline {
       } finally {
         if (flare) flare.visible = flareVisible
       }
+      this.gpuTiming?.endPass('main')
       recordShaders('main-scene-sky-shadows')
       this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.mainPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
+      this.gpuTiming?.beginPass('post')
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
       monitors.finish()
@@ -234,6 +246,8 @@ export class GameRenderPipeline {
         }
       }
       if (upscale) this.fsr.present(renderer)
+      this.gpuTiming?.endPass('post')
+      this.gpuTiming?.endFrame()
       recordShaders('postprocessing')
       this.timings.postMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
       this.timings.postPrograms = (renderer.info.programs?.length ?? 0) - phasePrograms

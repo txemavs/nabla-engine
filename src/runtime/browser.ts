@@ -120,6 +120,7 @@ import {
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
+import { createGpuTiming } from '../diagnostics/gpu-timing.js'
 import { Sidearm } from './sidearm.js'
 import {
   normalizeWeaponPoses,
@@ -900,7 +901,13 @@ export class GameRuntime {
     })
     installShaderWarmup(this.renderer)
     configureWorldRenderer(this.renderer)
-    if (options.onDiagnostics) this.renderer.info.autoReset = false
+    if (options.onDiagnostics) {
+      this.renderer.info.autoReset = false
+      const gl = this.renderer.getContext()
+      if (gl instanceof WebGL2RenderingContext) {
+        this.pipeline.gpuTiming = createGpuTiming(gl)
+      }
+    }
     this.applyPixelRatio()
     this.renderer.shadowMap.enabled = this.quality.shadows > 0
     this.renderer.shadowMap.type = THREE.PCFShadowMap
@@ -2466,7 +2473,8 @@ export class GameRuntime {
         this.stallLog.join('\n')
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
-    if (this.options.onDiagnostics)
+    if (this.options.onDiagnostics) {
+      const gpuTiming = this.pipeline.gpuTiming?.finish()
       this.options.onDiagnostics({
         frameMs,
         cpuMs: performance.now() - cpuStart,
@@ -2477,7 +2485,9 @@ export class GameRuntime {
         width: this.renderer.domElement.width,
         height: this.renderer.domElement.height,
         droppedSeconds: sim.stats.droppedSeconds,
+        gpuTiming,
       })
+    }
     this.xrSystem?.recordStats(
       time,
       performance.now() - cpuStart,
