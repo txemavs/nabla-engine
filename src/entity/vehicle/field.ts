@@ -27,6 +27,37 @@ const steeringPart = assetPart
 const lampColour = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 
 /**
+ * Where a vehicle's exhaust smoke comes out and how it behaves; the same for every vehicle.
+ * Outlets are the model's node tagged `extras.nabla.anchor = "exhaust"`, or `outlets` (chassis
+ * model space, metres) when the model has none. `offset` nudges every outlet (chassis frame).
+ * `smoke.amount` says what the smoke quantity follows: `load` (engine load), `rpm` (engine speed
+ * and load), `manual` (the «Humo del camión» sliders) or `full` (constant, the default).
+ * `adjustable` lets that panel move the outlets too.
+ */
+export const vehicleExhaustField = z
+  .object({
+    outlets: z.array(vector).min(1).max(4).optional(),
+    direction: vector.optional(),
+    offset: z
+      .tuple([finite.min(-1).max(1), finite.min(-1).max(1), finite.min(-1).max(1)])
+      .optional(),
+    smoke: z
+      .object({
+        amount: z.enum(['full', 'load', 'rpm', 'manual']).optional(),
+        emissionRate: finite.positive().max(200).optional(),
+        capacity: z.number().int().min(8).max(512).optional(),
+        color: lampColour.optional(),
+        clearColor: lampColour.optional(),
+        clearAtKmh: finite.min(0).max(300).optional(),
+        size: finite.positive().max(5000).optional(),
+      })
+      .strict()
+      .optional(),
+    adjustable: z.boolean().optional(),
+  })
+  .strict()
+
+/**
  * Per-vehicle lamp data, common to every vehicle. `tuning` holds the defaults of the per-model
  * calibration sliders (schema `nabla.vehicle-lights/1`; offsets in metres in vehicle space, beam
  * cutoffs in degrees). The player's own choice, saved per model, is applied on top of it.
@@ -36,6 +67,12 @@ const lampColour = z.string().regex(/^#[0-9a-fA-F]{6}$/)
  */
 export const vehicleLightsField = z
   .object({
+    /**
+     * Draw the rear road wash of this vehicle's tail lamp even when its model has no
+     * `light.tail.brake` anchor (it then sits at the back of the body box). A model with the
+     * anchor always gets it. Omitted: only the anchor.
+     */
+    rearWash: z.boolean().optional(),
     tuning: z
       .object({
         low: finite.min(-5).max(5),
@@ -489,12 +526,15 @@ export const vehicleField = z
       .optional(),
     /** Lamp calibration defaults and lens glow colours (see `vehicleLightsField`). */
     lights: vehicleLightsField.optional(),
+    /** Exhaust outlets and smoke (see `vehicleExhaustField`). Omitted: the GLB outlet anchor, if any. */
+    exhaust: vehicleExhaustField.optional(),
     /** Enable the audible warning while this vehicle has reverse gear engaged. */
     reverseAlarm: z.boolean().optional(),
     /**
-     * Motorcycle instrument cluster drawn on the GLB anchors `gauge_speedo`, `gauge_tacho`,
-     * `gauge_lcd`, `lamp_signal_l|r` and `lamp_warning_1…n` (two-wheelers only). Omitted fields
-     * use `motorcycleClusterDefaults`; the red zone defaults to `powertrain.maxRpm`.
+     * Analogue instrument cluster drawn on the GLB anchors tagged `extras.nabla.gauge`
+     * (`speedometer`, `tachometer`, `lcd`) and `extras.nabla.lamp` (`signal-left`, `signal-right`,
+     * `warning` + `slot`); any vehicle whose model has them gets one. Omitted fields use
+     * `motorcycleClusterDefaults`; the red zone defaults to `powertrain.maxRpm`.
      */
     cluster: z
       .object({

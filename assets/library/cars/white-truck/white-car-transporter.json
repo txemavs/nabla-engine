@@ -50,6 +50,9 @@
           "angleStep": 0.05235987756
         }
       }
+    },
+    "lights": {
+      "rearWash": true
     }
   },
   "visual": {

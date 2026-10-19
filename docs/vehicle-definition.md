@@ -90,6 +90,7 @@ anchors of the body GLB (wheel anchors, `driver.seat`, `driver.eyes`; see
 | `mirrors`, `mirrorTilt`, `mirrorAim`                                                                            | Mirrors (section 6).                                                                                                                            |
 | `cluster`, `clusterOffset`                                                                                      | Instruments (section 8).                                                                                                                        |
 | `lights`                                                                                                        | Lamps (section 5).                                                                                                                              |
+| `exhaust`                                                                                                       | Exhaust outlets, offset and smoke behaviour (section 7).                                                                                        |
 | `audio`                                                                                                         | Sound (section 8).                                                                                                                              |
 | `paintFinish`, `reverseAlarm`, `monitorMounts`                                                                  | Body finish, reverse beeper, extra display surfaces.                                                                                            |
 | `tow`, `hitch`, `towAnchor`, `passive`, `interior`, `garage`, `flight`, `plane`, `aircraft`, `boat`, `forklift` | Towing, trailers, interiors, aircraft, boats: see [creating-a-vehicle.md](creating-a-vehicle.md).                                               |
@@ -140,16 +141,18 @@ off. Resolution lives in `lampFromMaterialName` (`authored-lights.ts`).
 Nodes are tagged with `extras.nabla.<kind> = <name>`. Node names themselves are free; only the
 extras are read.
 
-| Extras                                                                                                             | Used for                                                    |
-| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| `nabla.anchor`: `wheel.fl`, `wheel.fr`, `wheel.rl`, `wheel.rr` (`wheel.r2l`, `wheel.r2r` for six wheels)           | Hubs (rig extraction)                                       |
-| `nabla.anchor`: `steering`, `driver.seat`, `driver.eyes`                                                           | Steering wheel, seat, eye                                   |
-| `nabla.anchor`: `tow.hitch`, `tow.anchor`                                                                          | Towing                                                      |
-| `nabla.anchor`: `light.tail.brake`                                                                                 | Where the rear lamp is (road wash is placed relative to it) |
-| `nabla.anchor`: `exhaust`                                                                                          | Exhaust outlet of a two-wheeler (smoke socket)              |
-| `nabla.mirror`: `left`, `right`, …                                                                                 | Mirror lens mesh of that side (aim keys of `mirrorAim`)     |
-| `nabla.mount`: `instrument.cluster`, `instrument.menu.N`, `instrument.navigator.N`                                 | Display mounts of a car cluster                             |
-| `nabla.gauge`: `speedometer`, `tachometer`, `lcd`; `nabla.lamp`: `signal-left`, `signal-right`, `warning` (`slot`) | Motorcycle cluster                                          |
+| Extras                                                                                                               | Used for                                                      |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `nabla.anchor`: `wheel.fl`, `wheel.fr`, `wheel.rl`, `wheel.rr` (`wheel.r2l`, `wheel.r2r` for six wheels)             | Hubs (rig extraction)                                         |
+| `nabla.anchor`: `steering`, `driver.seat`, `driver.eyes`                                                             | Steering wheel, seat, eye                                     |
+| `nabla.anchor`: `tow.hitch`, `tow.anchor`                                                                            | Towing                                                        |
+| `nabla.anchor`: `light.tail.brake`                                                                                   | Where the rear lamp is (road wash is placed relative to it)   |
+| `nabla.anchor`: `exhaust`                                                                                            | Exhaust outlet of any vehicle (smoke socket)                  |
+| `nabla.gauge`: `speedometer`, `tachometer`, `lcd`; `nabla.lamp`: `signal-left`, `signal-right`, `warning` (+ `slot`) | Instrument cluster anchors of any vehicle (`vehicle.cluster`) |
+| `nabla.part`: `mirror_L`, `mirror_R`                                                                                 | Mirror parts of any vehicle; their glass becomes live mirrors |
+| `nabla.mirror`: `left`, `right`, …                                                                                   | Mirror lens mesh of that side (aim keys of `mirrorAim`)       |
+| `nabla.mount`: `instrument.cluster`, `instrument.menu.N`, `instrument.navigator.N`                                   | Display mounts of a car cluster                               |
+| `nabla.gauge`: `speedometer`, `tachometer`, `lcd`; `nabla.lamp`: `signal-left`, `signal-right`, `warning` (`slot`)   | Motorcycle cluster                                            |
 
 KHR punctual lights of a model are bound by their node `extras`: `role: "vehicle-light"`,
 `channel` (the same channel names as in the deprecated fallback), `side`, `onIntensity` and
@@ -265,9 +268,10 @@ other material.
   code is involved.
 
 The values are the generic `nabla.vehicle-lights/1` ones; none is motorcycle specific. The
-anchored rear wash is drawn for every vehicle whose model has the `light.tail.brake` anchor
-(and for trucks, trailers and two-wheelers as before); S3-style cars keep `groundGlow`, which
-uses the same offset. A vehicle with neither an anchor nor a car adapter has no tail wash, so its
+anchored rear wash is drawn for every vehicle whose model has the `light.tail.brake` anchor,
+for every towed trailer, and for a vehicle whose JSON says `vehicle.lights.rearWash: true` (no
+anchor needed: the wash then sits at the back of the body box; the white truck and its trailers
+use this). S3-style cars keep `groundGlow`, which uses the same offset. A vehicle with neither an anchor nor a car adapter has no tail wash, so its
 `rear*` numbers only move its authored rear emitters, if any.
 
 **Finding the numbers.** In the game open Settings → Desarrollo → _Luz trasera (ajuste fino)_
@@ -286,7 +290,9 @@ Objetos.
 - `mirrorTilt` (degrees, default −2; 0 on two-wheelers) tilts every mirror; `mirrorAim`
   adds a baked aim per side (`yaw` + outward, `tilt` + up, optional `viewYaw`), written by
   `scripts/bake-mirror-aim.mjs`; the driver's «Espejos» sliders are added on top.
-- Two-wheelers: mirror parts `mirror_L` / `mirror_R` are tagged automatically.
+- **Any vehicle** whose GLB has the parts `extras.nabla.part = "mirror_L" | "mirror_R"` gets live
+  mirrors from their reflective glass; there is no motorcycle switch. `mirrorTilt` defaults to 0
+  for these (the glass as modelled).
 
 **Not data-driven yet:** mirrors of a _car_ are only mounted by a presentation adapter
 (`nabla.truck` has the generic authored-lens path; `nabla.s3` finds its lens by the material
@@ -294,18 +300,26 @@ name `Llanta 2`). A plain car without `visual.presentation` gets no mirrors (sec
 
 ## 7. Exhaust and smoke
 
-- **Two-wheelers:** the outlet is the node tagged `extras.nabla.anchor = "exhaust"`. The
-  deprecated fallback is a node named `Exhaust_Outlet_Closure` (the VFR still uses it).
-- **Cars and trucks:** outlets are positions in code inside the presentation adapters
-  (`nabla.s3`: two outlets, `nabla.truck`: one outlet and its smoke options). **Not data-driven
-  yet.** Proposed: `vehicle.exhaust: { outlets: [{ position, direction }], … }`.
+- **Any vehicle:** `vehicle.exhaust` (all optional, strict):
+  - `outlets`: `[x, y, z]` positions (1–4, chassis model space, metres) where the engine creates
+    smoke sockets. Omitted: the outlet is the node tagged `extras.nabla.anchor = "exhaust"` (the
+    deprecated node name `Exhaust_Outlet_Closure` still works); none of them: no exhaust.
+  - `direction`: smoke direction `[x, y, z]`. `offset`: `[x, y, z]` nudge (±1 m) of every outlet.
+  - `smoke`: `amount` (`full` default, `load`, `rpm`, `manual`), `emissionRate`, `capacity`,
+    `color`, `clearColor`, `clearAtKmh`, `size`.
+  - `adjustable`: the «Humo del camión» panel moves this vehicle's outlets (and, with
+    `smoke.amount: "manual"`, sets its quantity).
+    The VFR uses the anchor plus `offset` and `amount: "load"`; the S3 lists two `outlets` with
+    `amount: "rpm"`; the truck lists one outlet, `manual` and `adjustable`.
 - The amount of smoke (trucks) is adjusted in Settings → Objetos → _vehicle name_ → «Humo del
   camión»; the section is listed only for a vehicle that has exhaust.
 
 ## 8. Instruments and sound
 
-- **Motorcycle cluster:** GLB anchors `gauge_speedo`, `gauge_tacho`, `gauge_lcd`,
-  `lamp_signal_l|r`, `lamp_warning_N` (extras `nabla.gauge` / `nabla.lamp`) and the
+- **Analogue cluster (any vehicle):** GLB anchors tagged `extras.nabla.gauge` (`speedometer`,
+  `tachometer`, `lcd`) and `extras.nabla.lamp` (`signal-left`, `signal-right`, `warning` with
+  `slot` N), each with its size in metres; the old node names `gauge_speedo`, `gauge_tacho`,
+  `gauge_lcd`, `lamp_signal_l|r`, `lamp_warning_N` are a deprecated fallback. The
   `vehicle.cluster` block (`speedoMaxKmh`, `speedoStepKmh`, `tachoMaxRpm`, `redlineRpm`, `sweep`,
   `lamps`: `neutral`, `high-beam`, `oil`, `fi`).
 - **Car cluster and menus:** mounts `instrument.cluster`, `instrument.menu.N`,
@@ -324,11 +338,11 @@ Each item is a follow-up. "Adapter" means a `visual.presentation` id registered 
 
 | Element                        | Today                                                                                                                                                           | Proposed data form                                                                                     |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Car and truck exhaust outlets  | Fixed positions in the `nabla.s3` / `nabla.truck` adapters                                                                                                      | `vehicle.exhaust.outlets[]` (position, direction, smoke options)                                       |
+| Car and truck exhaust outlets  | **Moved to data**: `vehicle.exhaust` (S3 and truck JSON carry what the adapters used to)                                                                        | Done                                                                                                   |
 | Car mirrors                    | Only through an adapter (S3 finds `Llanta 2`; truck uses authored lenses)                                                                                       | A stock adapter (e.g. `nabla.road`) that every car can name, or mirrors for every vehicle              |
 | Car cluster / menu mounts      | Adapter (`createA3Mounts`)                                                                                                                                      | Same stock adapter + `extras.nabla.mount`                                                              |
 | S3 lamps                       | `createA3Lights` selects meshes by Spanish node names and materials (`luz izquierda`, `foco derecho`, `Foco 5`, `FocoC`, `LED`, …) with position-masked shaders | Rename to `nabla.light.*` and drop the code                                                            |
-| Rear road wash path            | `view.ts` limits the anchored rear wash to bikes, `nabla.truck` and trailers; other cars use `groundGlow`                                                       | Use the anchor wherever the model has `light.tail.brake`                                               |
+| Rear road wash path            | **Moved to data**: any model with the `light.tail.brake` anchor, or `vehicle.lights.rearWash` (trucks, trailers), plus every towed trailer                      | Done                                                                                                   |
 | Paint materials                | Adapters match `Pintura*`, `Llanta*`, `Cromo*`, `White paint*`, `fh_paint`, `fh_glass` by name                                                                  | `nabla.paint`, `nabla.paint.chrome`, … naming + one generic paint path                                 |
 | Per-vehicle options mounts     | `visual.attachments` already means cargo GLBs                                                                                                                   | A new `mounts` list (anchor + options) so lights, mirrors, exhaust, sounds and smoke are one mechanism |
 | Other sounds / smoke           | `audio` covers engine and gearbox only                                                                                                                          | Extend the same `audio` block                                                                          |
@@ -336,18 +350,19 @@ Each item is a follow-up. "Adapter" means a `visual.presentation` id registered 
 
 ### Hard-coded per-model names in the engine (audit)
 
-| Where                                                                                | What                                                                                                                                      | Status                                                       |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `src/render/entity/view.ts` (bike mount)                                             | Node `Exhaust_Outlet_Closure`                                                                                                             | **Migrated**: `nabla.anchor = exhaust`, old name deprecated  |
-| `src/render/vehicle-presentation/light-tuning.ts`                                    | A regex of the VFR model URL with fixed rear values                                                                                       | **Removed**: now `vehicle.lights.tuning` data                |
-| `src/render/vehicle-presentation/authored-lights.ts`                                 | Lamp roles only from `extras.vehicleLightChannel`                                                                                         | **Migrated**: `nabla.light.*` names; extras deprecated       |
-| `src/render/entity/view.ts` (exhaust setup, `s3Outlets`, `truckOutlets`, smoke rate) | `presentation === 'nabla.s3'` / `'nabla.truck'` branches                                                                                  | Open (section 9)                                             |
-| `src/render/entity/view.ts` (rear wash)                                              | `presentation === 'nabla.truck'`, bikes and trailers get the anchored rear wash, and so does any model with the `light.tail.brake` anchor | Mostly migrated: the truck/bike/trailer flags remain until B |
-| `src/catalog/presentation/road-vehicles.ts`, `a3-lamps.ts`, `a3-mounts.ts`           | Spanish node/material names of the S3, `Llanta 2`, paint materials by regex                                                               | Open                                                         |
-| `src/simulation/simulation.ts` (≈ line 2886)                                         | `body.url.endsWith('trailer.transporter.glb')`                                                                                            | Open: should be a vehicle JSON flag                          |
-| `src/render/entity/view.ts` (≈ line 1131)                                            | `body.url.includes('ship.container')` for the interior                                                                                    | Open: use `vehicle.interior`                                 |
-| `src/runtime/ar/vehicles.ts`, `xr-rc-controls.ts`, `game/ar.ts`                      | AR demo `kind` switch (`vfr`, `s3`, `truck`, `f14`, `forklift`)                                                                           | Demo harness, open                                           |
-| `src/runtime/random-vehicle.ts`                                                      | `presetVehicle('vfr800', …)` as the random bike                                                                                           | Fine (names a preset, not a branch)                          |
+| Where                                                                                       | What                                                                                | Status                                                                                                         |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/render/entity/view.ts` (bike mount)                                                    | Node `Exhaust_Outlet_Closure`                                                       | **Migrated**: `nabla.anchor = exhaust`, old name deprecated                                                    |
+| `src/render/vehicle-presentation/light-tuning.ts`                                           | A regex of the VFR model URL with fixed rear values                                 | **Removed**: now `vehicle.lights.tuning` data                                                                  |
+| `src/render/vehicle-presentation/authored-lights.ts`                                        | Lamp roles only from `extras.vehicleLightChannel`                                   | **Migrated**: `nabla.light.*` names; extras deprecated                                                         |
+| `src/render/entity/view.ts` (exhaust setup, smoke rate)                                     | `presentation === 'nabla.s3'` / `'nabla.truck'` branches                            | **Removed**: `vehicle.exhaust` data                                                                            |
+| `src/render/entity/view.ts` (rear wash)                                                     | Bikes and `nabla.truck` decided who got the anchored rear wash                      | **Removed**: anchor or `lights.rearWash`                                                                       |
+| `src/render/entity/view.ts` (instruments, mirrors, rig) and `road-vehicles.ts` (bike paint) | `if (twoWheeled)` binding of the cluster, the mirror parts and the motorcycle paint | **Removed**: bound wherever the GLB has the `nabla.*` tags; paint is `visual.presentation: "nabla.motorcycle"` |
+| `src/catalog/presentation/road-vehicles.ts`, `a3-lamps.ts`, `a3-mounts.ts`                  | Spanish node/material names of the S3, `Llanta 2`, paint materials by regex         | Open                                                                                                           |
+| `src/simulation/simulation.ts` (≈ line 2886)                                                | `body.url.endsWith('trailer.transporter.glb')`                                      | Open: should be a vehicle JSON flag                                                                            |
+| `src/render/entity/view.ts` (≈ line 1131)                                                   | `body.url.includes('ship.container')` for the interior                              | Open: use `vehicle.interior`                                                                                   |
+| `src/runtime/ar/vehicles.ts`, `xr-rc-controls.ts`, `game/ar.ts`                             | AR demo `kind` switch (`vfr`, `s3`, `truck`, `f14`, `forklift`)                     | Demo harness, open                                                                                             |
+| `src/runtime/random-vehicle.ts`                                                             | `presetVehicle('vfr800', …)` as the random bike                                     | Fine (names a preset, not a branch)                                                                            |
 
 ### GLB files that must be renamed to comply
 
@@ -369,9 +384,9 @@ The Ferrari J50 is the proof that a car works from the S3 file with a new model.
 
 1. Change `id`, `label`, `name`, `color`, `size`, `mass`, `clearance`.
 2. Remove `visual.presentation` (`"nabla.s3"`). That id pulls in S3-only code (Spanish lamp
-   selectors, the `Llanta 2` mirror lens, two exhaust outlets at fixed positions). Without it the
-   vehicle is a plain, data-driven one: physics, sound, wheels, steering wheel and the lights of
-   section 5 work; mirrors, cluster and exhaust smoke need the adapters of section 9.
+   selectors, the `Llanta 2` mirror lens). Without it the vehicle is a plain, data-driven one:
+   physics, sound, wheels, steering wheel, the lights of section 5, `vehicle.exhaust` and mirror
+   parts work; car mirrors and the car cluster need the adapters of section 9.
 3. Point `visual.body.url` at the new body GLB; set `visual.wheel(s)` and `visual.steering`.
    Give the GLB the anchors of section 3 (wheels, `steering`, `driver.seat`, `driver.eyes`) and
    keep `"rig": "glb"` so the rig is extracted.

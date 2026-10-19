@@ -136,8 +136,22 @@ interface Anchor {
   node: THREE.Object3D
   size: { diameter?: number; width?: number; height?: number }
 }
-const anchorOf = (model: THREE.Object3D, name: string): Anchor | null => {
-  const node = model.getObjectByName(name)
+type Tag = { gauge?: string; lamp?: string; slot?: number }
+/**
+ * The anchor tagged `extras.nabla.gauge` / `extras.nabla.lamp` that `matches`; a node named
+ * `legacyName` is the deprecated fallback for models that predate the tags.
+ */
+const anchorOf = (
+  model: THREE.Object3D,
+  legacyName: string,
+  matches: (tag: Tag) => boolean,
+): Anchor | null => {
+  let node: THREE.Object3D | undefined
+  model.traverse((candidate) => {
+    const tag = (candidate.userData as { nabla?: Tag }).nabla
+    if (!node && tag && matches(tag)) node = candidate
+  })
+  node ??= model.getObjectByName(legacyName)
   if (!node) return null
   const extras = (node.userData as { nabla?: Anchor['size'] }).nabla ?? {}
   return { node, size: extras }
@@ -380,9 +394,9 @@ export class MotorcycleInstruments {
   ): MotorcycleInstruments | null {
     const o: MotorcycleClusterOptions = { ...motorcycleClusterDefaults, ...overrides }
     owned = []
-    const speedoAnchor = anchorOf(model, 'gauge_speedo'),
-      tachoAnchor = anchorOf(model, 'gauge_tacho'),
-      lcdAnchor = anchorOf(model, 'gauge_lcd')
+    const speedoAnchor = anchorOf(model, 'gauge_speedo', (tag) => tag.gauge === 'speedometer'),
+      tachoAnchor = anchorOf(model, 'gauge_tacho', (tag) => tag.gauge === 'tachometer'),
+      lcdAnchor = anchorOf(model, 'gauge_lcd', (tag) => tag.gauge === 'lcd')
     if (!speedoAnchor && !tachoAnchor && !lcdAnchor) return null
     const speedo = speedoAnchor
       ? new Dial(
@@ -423,8 +437,8 @@ export class MotorcycleInstruments {
           '#e0141c',
         )
       : null
-    const lamp = (name: string, color: string) => {
-      const anchor = anchorOf(model, name)
+    const lamp = (name: string, color: string, matches: (tag: Tag) => boolean) => {
+      const anchor = anchorOf(model, name, matches)
       return anchor ? new Lamp(anchor, color) : null
     }
     const cluster = new MotorcycleInstruments(
@@ -432,8 +446,17 @@ export class MotorcycleInstruments {
       speedo,
       tacho,
       lcdAnchor ? new Lcd(lcdAnchor) : null,
-      [lamp('lamp_signal_l', '#22e85a'), lamp('lamp_signal_r', '#22e85a')],
-      o.lamps.map((kind, i) => lamp(`lamp_warning_${i + 1}`, warningLampColors[kind])),
+      [
+        lamp('lamp_signal_l', '#22e85a', (tag) => tag.lamp === 'signal-left'),
+        lamp('lamp_signal_r', '#22e85a', (tag) => tag.lamp === 'signal-right'),
+      ],
+      o.lamps.map((kind, i) =>
+        lamp(
+          `lamp_warning_${i + 1}`,
+          warningLampColors[kind],
+          (tag) => tag.lamp === 'warning' && tag.slot === i + 1,
+        ),
+      ),
     )
     cluster.textures = owned
     owned = []

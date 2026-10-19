@@ -22,7 +22,7 @@ import {
   reflectionEnvironmentTexture,
 } from '../../src/render/vehicle-presentation/reflection-environment.js'
 import { CarMirrors } from '../../src/render/entity/car-mirrors.js'
-import { motorcycleMirrorLenses } from '../../src/render/vehicle-presentation/motorcycle-mirrors.js'
+import { mirrorPartLenses } from '../../src/render/vehicle-presentation/mirror-parts.js'
 
 const bytes = readFileSync('assets/library/motorcycles/vfr800fi-1999/vfr800fi-1999.glb')
 const load = async () => (await loadTexturedGlb(bytes)).scene
@@ -398,7 +398,7 @@ describe('vfr800 rear-view mirrors', () => {
 
   it('turns the mirror_L / mirror_R glass into live mirrors the «Espejos» sliders adjust', async () => {
     const root = await load()
-    const lenses = motorcycleMirrorLenses(root)
+    const lenses = mirrorPartLenses(root)
     expect(lenses.map((l) => [l.parent!.name, l.userData.nabla.mirror])).toEqual([
       ['mirror_L', 'left'],
       ['mirror_R', 'right'],
