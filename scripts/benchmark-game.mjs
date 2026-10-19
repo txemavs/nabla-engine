@@ -53,17 +53,17 @@ const browserArgs = headed
       '--disable-renderer-backgrounding',
       '--disable-background-timer-throttling',
     ]
-  : rendererParam === 'webgpu'
-    ? [
-        '--enable-unsafe-swiftshader',
-        '--enable-unsafe-webgpu',
-        '--enable-features=Vulkan',
-        '--use-vulkan=swiftshader',
-        '--use-angle=swiftshader',
-        '--use-webgpu-adapter=swiftshader',
-        '--disable-vulkan-surface',
-      ]
-    : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist']
+  : // Same SwiftShader (Vulkan) setup for both backends so software runs compare like for like.
+    [
+      '--enable-unsafe-swiftshader',
+      '--enable-unsafe-webgpu',
+      '--enable-features=Vulkan',
+      '--use-vulkan=swiftshader',
+      '--use-angle=swiftshader',
+      '--use-webgpu-adapter=swiftshader',
+      '--disable-vulkan-surface',
+      '--ignore-gpu-blocklist',
+    ]
 
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
