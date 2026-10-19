@@ -6,6 +6,8 @@ export interface NodeKit {
   tsl: typeof import('three/tsl')
   /** The renderer was created with `logarithmicDepthBuffer` (custom depth writes must match). */
   logarithmicDepth?: boolean
+  /** `three/addons/csm/CSMShadowNode.js`, for cascaded shadows under WebGPU (shadows.ts). */
+  CSMShadowNode?: typeof import('three/addons/csm/CSMShadowNode.js').CSMShadowNode
 }
 
 /**

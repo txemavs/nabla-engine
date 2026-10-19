@@ -20,6 +20,7 @@ import {
   type RenderBackend,
   type RenderBackendKind,
   webgpuSkippedMaterials,
+  webgpuNodeKit,
 } from '../render/backend.js'
 import { atlasFieldLightSource } from '../render/planet/instance-lights.js'
 import { UsbFeedback } from './usb/feedback.js'
@@ -1104,6 +1105,7 @@ export class GameRuntime {
         scene: this.scene,
         lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
         tier: shadowTiers[this.quality.shadows]!,
+        nodeKit: webgpuNodeKit(this.renderer),
       })
     this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
     this.view.setupMaterials((material) => this.shadows.setupMaterial(material))

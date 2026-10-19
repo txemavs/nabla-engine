@@ -104,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## frameDrawCalls
 
-[Implementation, line 99](../../../../src/render/backend.ts#L99)
+[Implementation, line 104](../../../../src/render/backend.ts#L104)
 
 Draw calls of the last frame: WebGPU counts them in `drawCalls`, WebGL in `calls`.
 
@@ -118,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuSkippedMaterials
 
-[Implementation, line 117](../../../../src/render/backend.ts#L117)
+[Implementation, line 122](../../../../src/render/backend.ts#L122)
 
 GLSL-only material names a WebGPU renderer has skipped so far; empty under WebGL.
 
@@ -132,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webglSurface
 
-[Implementation, line 127](../../../../src/render/backend.ts#L127)
+[Implementation, line 132](../../../../src/render/backend.ts#L132)
 
 ```ts
 webglSurface(gpu: WebGPURendererLike, kit?: NodeKit): THREE.WebGLRenderer
@@ -148,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webglSurface.getMaxAnisotropy
 
-[Implementation, line 132](../../../../src/render/backend.ts#L132)
+[Implementation, line 137](../../../../src/render/backend.ts#L137)
 
 ```ts
 getMaxAnisotropy(): inferred by TypeScript; see implementation
@@ -158,20 +158,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `gpu.getMaxAnisotropy`
 
-## webglSurface.callback@133
-
-[Implementation, line 133](../../../../src/render/backend.ts#L133)
-
-```ts
-callback@133(): inferred by TypeScript; see implementation
-```
-
 ## webglSurface.callback@138
 
 [Implementation, line 138](../../../../src/render/backend.ts#L138)
 
 ```ts
-callback@138(scene, camera): inferred by TypeScript; see implementation
+callback@138(): inferred by TypeScript; see implementation
+```
+
+## webglSurface.callback@143
+
+[Implementation, line 143](../../../../src/render/backend.ts#L143)
+
+```ts
+callback@143(scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -180,12 +180,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `guard.restore`
 - `render`
 
-## webglSurface.callback@148
+## webglSurface.callback@153
 
-[Implementation, line 148](../../../../src/render/backend.ts#L148)
+[Implementation, line 153](../../../../src/render/backend.ts#L153)
 
 ```ts
-callback@148(object, camera, targetScene): inferred by TypeScript; see implementation
+callback@153(object, camera, targetScene): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -196,7 +196,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuNodeKit
 
-[Implementation, line 162](../../../../src/render/backend.ts#L162)
+[Implementation, line 167](../../../../src/render/backend.ts#L167)
 
 Material built from GLSL (or patched GLSL) that the WebGPU node backend cannot compile.
 
@@ -208,7 +208,7 @@ webgpuNodeKit(renderer: object): NodeKit | undefined
 
 ## glslOnlyMaterial
 
-[Implementation, line 169](../../../../src/render/backend.ts#L169)
+[Implementation, line 174](../../../../src/render/backend.ts#L174)
 
 ```ts
 glslOnlyMaterial(material: THREE.Material): boolean
@@ -216,7 +216,7 @@ glslOnlyMaterial(material: THREE.Material): boolean
 
 ## WebGPUCompatibility.constructor
 
-[Implementation, line 195](../../../../src/render/backend.ts#L195)
+[Implementation, line 200](../../../../src/render/backend.ts#L200)
 
 `kit` enables registered TSL substitutes (see `setWebGPUSubstitute`); without it they hide.
 
@@ -226,7 +226,7 @@ constructor(readonly kit?: NodeKit): instance
 
 ## WebGPUCompatibility.apply
 
-[Implementation, line 197](../../../../src/render/backend.ts#L197)
+[Implementation, line 202](../../../../src/render/backend.ts#L202)
 
 WebGPU-only guard: hide meshes whose material is GLSL `ShaderMaterial` (the node backend would
 draw them with a default white material). Hidden objects are tracked so a later visibility
@@ -255,12 +255,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.swapped.set`
 - `webgpuSubstitute`
 
-## WebGPUCompatibility.apply.callback@200
+## WebGPUCompatibility.apply.callback@205
 
-[Implementation, line 200](../../../../src/render/backend.ts#L200)
+[Implementation, line 205](../../../../src/render/backend.ts#L205)
 
 ```ts
-callback@200(object): inferred by TypeScript; see implementation
+callback@205(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -272,7 +272,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUCompatibility.restore
 
-[Implementation, line 237](../../../../src/render/backend.ts#L237)
+[Implementation, line 242](../../../../src/render/backend.ts#L242)
 
 Give hidden objects back the visibility (and swapped meshes the material) their owner set.
 

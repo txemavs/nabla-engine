@@ -30,6 +30,11 @@ of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is 
 | Exhaust, tyre, muzzle smoke, tyre marks, shot laser | Not drawn                          |
 | GPU timer queries (benchmark)                       | WebGL only                         |
 
+Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowManager` with
+`nodeKit`): same cuts, margin, radius, fade, per-texel bias and bound padding as the WebGL CSM addon.
+The WebGL-only chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) are not
+ported; `webgpu-shadow-parity.spec.ts` measures the remaining edge differences.
+
 Materials patched with `onBeforeCompile` draw as their base three.js material (the patch is
 ignored): ground/terrain blend, water, vegetation wind, CSM shadow tweaks, avatar, billboard,
 vehicle lamps, destruction fire. They render, but without the custom look.
