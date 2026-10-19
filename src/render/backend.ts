@@ -79,13 +79,18 @@ export async function createRenderBackend(
   if (preference === 'webgl') return webgl()
   if (!(await webgpuAvailable())) return webgl('No WebGPU adapter')
   try {
-    const [webgpu, tsl] = await Promise.all([import('three/webgpu'), import('three/tsl')])
+    const [webgpu, tsl, csm] = await Promise.all([
+      import('three/webgpu'),
+      import('three/tsl'),
+      import('three/addons/csm/CSMShadowNode.js'),
+    ])
     const gpu = new webgpu.WebGPURenderer({ ...parameters, forceWebGL: false })
     await gpu.init()
     const renderer = webglSurface(gpu, {
       webgpu,
       tsl,
       logarithmicDepth: !!parameters.logarithmicDepthBuffer,
+      CSMShadowNode: csm.CSMShadowNode,
     })
     backends.set(renderer, 'webgpu')
     return { kind: 'webgpu', renderer, requested: preference }
