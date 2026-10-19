@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **516 modules; 6065 executable function definitions**.
+Coverage: **517 modules; 6069 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -25,11 +25,12 @@ Coverage: **516 modules; 6065 executable function definitions**.
 | [game/config.ts](game/config.ts.md) | 5 |
 | [game/control-hints.ts](game/control-hints.ts.md) | 1 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
-| [game/drive.ts](game/drive.ts.md) | 17 |
+| [game/drive.ts](game/drive.ts.md) | 18 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 3 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 6 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
+| [game/fps-readout.ts](game/fps-readout.ts.md) | 2 |
 | [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
 | [game/headset.ts](game/headset.ts.md) | 9 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
@@ -61,7 +62,7 @@ Coverage: **516 modules; 6065 executable function definitions**.
 | [game/steering-wheel-controls.ts](game/steering-wheel-controls.ts.md) | 11 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
-| [game/terrain-main.ts](game/terrain-main.ts.md) | 16 |
+| [game/terrain-main.ts](game/terrain-main.ts.md) | 17 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 14 |
 | [game/vehicle-colors.ts](game/vehicle-colors.ts.md) | 1 |

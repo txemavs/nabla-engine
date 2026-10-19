@@ -1,7 +1,6 @@
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
-import { showControlHints } from './control-hints.js'
 import { bindVR } from './vr-ui.js'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
@@ -47,6 +46,7 @@ import { formatCells, parseTerrainConfig, startFromIndex } from './terrain.js'
 import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
+import { fpsReadout } from './fps-readout.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()
@@ -207,12 +207,16 @@ try {
       // OSM road asphalt: hidden + non-colliding unless &osmRoads=1 (bridges always drawn).
       osmRoads: config.osmRoads,
     },
-    onDiagnostics: params.has('diagnostics')
-      ? (sample) =>
-          document
-            .getElementById('game-canvas')!
-            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
-      : undefined,
+    // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
+    onDiagnostics: fpsReadout(
+      () => document.getElementById('controls-hint'),
+      params.has('diagnostics')
+        ? (sample) =>
+            document
+              .getElementById('game-canvas')!
+              .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+        : undefined,
+    ),
     onProgress(_status, tiles) {
       // Always a Spanish loading state with what is in flight and the last error, never silent.
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
@@ -221,8 +225,6 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      if (runtime)
-        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showCells()
       showLocation(frame.location)

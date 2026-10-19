@@ -1,7 +1,6 @@
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
-import { showControlHints } from './control-hints.js'
 import { controlsHint } from '@nabla/engine/config/controls'
 import palletSpec from '../assets/library/cars/forklift-rc/pallet.specs.json'
 import { bindVR } from './vr-ui.js'
@@ -26,6 +25,7 @@ import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { showLocation } from './position.js'
 import { describeLoading } from './loading-text.js'
+import { fpsReadout } from './fps-readout.js'
 import { bindTerrainSelector } from './terrain-selector.js'
 import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
@@ -309,12 +309,16 @@ try {
               }),
             }),
           },
-    onDiagnostics: new URLSearchParams(location.search).has('diagnostics')
-      ? (sample) =>
-          document
-            .getElementById('game-canvas')!
-            .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
-      : undefined,
+    // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
+    onDiagnostics: fpsReadout(
+      () => document.getElementById('controls-hint'),
+      new URLSearchParams(location.search).has('diagnostics')
+        ? (sample) =>
+            document
+              .getElementById('game-canvas')!
+              .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
+        : undefined,
+    ),
     onProgress(status, tiles) {
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
       loading.setStatus(runtime?.cellStats ? text.status : status)
@@ -322,8 +326,6 @@ try {
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
-      if (runtime)
-        showControlHints(document.getElementById('controls-hint'), runtime.controlContext)
       showTelemetry(frame)
       showLocation(frame.location)
     },
