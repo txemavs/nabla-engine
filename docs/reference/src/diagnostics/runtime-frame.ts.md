@@ -4,9 +4,8 @@
 
 [Source](../../../../src/diagnostics/runtime-frame.ts)
 
-Optional browser-runtime measurements. CPU durations are submission time, never GPU time.
-
 ## Module dependencies
 
+- `./gpu-timing.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.
