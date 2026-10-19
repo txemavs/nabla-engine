@@ -12,13 +12,13 @@ test('VR entry appears before the clock only with immersive VR support', async (
     system.isSessionSupported = async () => true
     Object.defineProperty(navigator, 'xr', { configurable: true, value: system })
     const { mountVREntry } = await import(`/@fs/${root}/game/vr-entry.ts`)
-    mountVREntry({
-      xr: {
-        enter: async () => {
-          document.body.dataset.entered = 'true'
-        },
+    // XR code loads on demand: the runtime hands the XR system out through loadXR().
+    const xr = {
+      enter: async () => {
+        document.body.dataset.entered = 'true'
       },
-    } as any)
+    }
+    mountVREntry({ loadXR: async () => xr } as any)
   }, process.cwd())
   await expect(page.locator('#euskadi-clock-group > :first-child')).toHaveAttribute(
     'id',
