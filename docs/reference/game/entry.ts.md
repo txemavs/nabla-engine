@@ -19,16 +19,26 @@ Which game mode a page runs and with which query: the URL first, then the rememb
 browserStorage(): SourceStorage | undefined
 ```
 
-## resolveEntry
+## configuredPackagesUrl
 
-[Implementation, line 38](../../../game/entry.ts#L38)
+[Implementation, line 39](../../../game/entry.ts#L39)
 
 URL parameters win (they keep every old link working). A URL that names no source uses the
 remembered choice; with none remembered, the package folder when it publishes the default start
 cell (one manifest request; no index file), else the flat tile.
 
+Default package base: the build's tile route (VITE_NABLA_TILES_URL), else the folder mount.
+
 ```ts
-resolveEntry(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder): Promise<Entry>
+configuredPackagesUrl(): string
+```
+
+## resolveEntry
+
+[Implementation, line 46](../../../game/entry.ts#L46)
+
+```ts
+resolveEntry(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder, packagesUrl: string = configuredPackagesUrl()): Promise<Entry>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -37,6 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `['tile', 'lat', 'lon', 'll'].some`
 - `browserStorage`
 - `chooseTerrainSource`
+- `configuredPackagesUrl`
 - `loadTerrainSource`
 - `merged.delete`
 - `merged.set`
@@ -51,12 +62,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wantsTerrain`
 - `withTerrainSource`
 
-## resolveEntry.callback@61
+## resolveEntry.callback@73
 
-[Implementation, line 61](../../../game/entry.ts#L61)
+[Implementation, line 73](../../../game/entry.ts#L73)
 
 ```ts
-callback@61(key): inferred by TypeScript; see implementation
+callback@73(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

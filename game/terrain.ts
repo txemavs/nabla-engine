@@ -96,7 +96,8 @@ export async function probeTerrainFolder(
 ): Promise<boolean> {
   try {
     const response = await fetch(`${base}/z/15/${cell}/manifest.json`)
-    return response.ok
+    // A dev server without the folder mount answers with its HTML page (200): not a manifest.
+    return response.ok && !(response.headers.get('content-type') ?? '').includes('text/html')
   } catch {
     return false
   }

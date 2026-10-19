@@ -107,3 +107,19 @@ describe('tile URL suggestion', () => {
     )
   })
 })
+
+describe('configured tile route', () => {
+  it('a bare URL starts on the build tile route (same-origin Atlas proxy) when it publishes the start cell', async () => {
+    const seen: string[] = []
+    const probe = async (base: string) => (seen.push(base), base === '/tiles')
+    const entry = await resolveEntry(
+      '',
+      { getItem: () => null, setItem: () => {} },
+      probe,
+      '/tiles',
+    )
+    expect(seen).toEqual(['/tiles'])
+    expect(entry.mode).toBe('terrain')
+    expect(new URLSearchParams(entry.search).get('terrain')).toBe('/tiles')
+  })
+})
