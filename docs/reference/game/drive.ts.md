@@ -9,7 +9,6 @@
 - `./vr-entry.js`
 - `./fsr-settings.js`
 - `./startup-light-settings.js`
-- `./control-hints.js`
 - `@nabla/engine/config/controls`
 - `../assets/library/cars/forklift-rc/pallet.specs.json`
 - `./vr-ui.js`
@@ -29,6 +28,7 @@
 - `./entry.js`
 - `./position.js`
 - `./loading-text.js`
+- `./fps-readout.js`
 - `./terrain-selector.js`
 - `./scene-controls.js`
 - `./terrain-cache.js`
@@ -145,12 +145,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `mapTileAt`
 
-## callback@314
+## callback@315
 
-[Implementation, line 314](../../../game/drive.ts#L314)
+[Implementation, line 315](../../../game/drive.ts#L315)
 
 ```ts
-callback@314(sample): inferred by TypeScript; see implementation
+callback@315(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.getElementById`
+
+## callback@317
+
+[Implementation, line 317](../../../game/drive.ts#L317)
+
+```ts
+callback@317(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -159,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 319](../../../game/drive.ts#L319)
+[Implementation, line 323](../../../game/drive.ts#L323)
 
 ```ts
 onProgress(status, tiles): inferred by TypeScript; see implementation
@@ -174,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 325](../../../game/drive.ts#L325)
+[Implementation, line 329](../../../game/drive.ts#L329)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -182,14 +194,12 @@ onFrame(frame): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `document.getElementById`
-- `showControlHints`
 - `showLocation`
 - `showTelemetry`
 
 ## onError
 
-[Implementation, line 331](../../../game/drive.ts#L331)
+[Implementation, line 333](../../../game/drive.ts#L333)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -202,7 +212,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 334](../../../game/drive.ts#L334)
+[Implementation, line 336](../../../game/drive.ts#L336)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -212,12 +222,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `document.getElementById`
 
-## callback@340
+## callback@342
 
-[Implementation, line 340](../../../game/drive.ts#L340)
+[Implementation, line 342](../../../game/drive.ts#L342)
 
 ```ts
-callback@340(): inferred by TypeScript; see implementation
+callback@342(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
