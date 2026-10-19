@@ -1640,21 +1640,25 @@ export class PlanetWorld {
     }
     this.status = `GLB planetarios · ${this.visible.length} baldosas · z/${[...new Set(this.visible.map((k) => k.split('/')[1]))].join(', ')}${this.requests.size ? ' · cargando…' : ''}`
   }
-  /** Cluster culling (opt-in): reorder at most one shown tile mesh per frame, so installs never hitch. */
-  private clusterNextTileMesh() {
+  /**
+   * Cluster culling (opt-in): reorder shown tile meshes a few at a time (about 4 ms per frame,
+   * at least one mesh), so a burst of installs never hitches.
+   */
+  private clusterTileMeshes() {
     if (!tileClusterCullingEnabled()) return
+    const start = performance.now()
     for (const r of this.resident.values()) {
       if (!r.group.visible) continue
       for (const child of r.group.children) {
         if (!child.visible || tileClustersTried(child) || !isClusterableTileMesh(child)) continue
         installTileClusterCulling(child)
-        return
+        if (performance.now() - start > 4) return
       }
     }
   }
   renderUpdate(origin: THREE.Vector3, buildings: boolean, sim: Simulation | null) {
     this.simulation = sim
-    this.clusterNextTileMesh()
+    this.clusterTileMeshes()
     this.originOffset.copy(origin)
     this.root.position.copy(origin).negate()
     if (this.buildings !== buildings) {
