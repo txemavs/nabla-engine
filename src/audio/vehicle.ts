@@ -18,7 +18,7 @@ import { ReverseAlarm } from './reverse-alarm.js'
 import { AudioMixer, audioBus, withAudioOutputs, type AudioMixLevels } from './mixer.js'
 import { SpatialEmitter } from './positional.js'
 import { DestructionSound } from './destruction.js'
-import { BackgroundMusic, type MusicTrack } from './music.js'
+import { BackgroundMusic, musicMayStart, type MusicTrack } from './music.js'
 
 /**
  * One browser audio context, nine independent voices (the powertrain one picks a road-car
@@ -102,6 +102,7 @@ export class VehicleAudio {
    */
   playMusic(): boolean {
     if (!this.music) return false
+    this.musicReleased = true
     this.music.restart()
     this.unlock()
     this.syncMusic()
@@ -130,9 +131,18 @@ export class VehicleAudio {
     this.music?.setHidden(hidden)
   }
 
+  /** Let a `startOn: "host"` track start (the host's start confirmation). */
+  releaseMusic(): void {
+    this.musicReleased = true
+    this.syncMusic()
+  }
+
+  private musicReleased = false
+
   private syncMusic(): void {
     if (!this.music) return
-    if (!this.context || !this.enabled || this.mixer.levels.musicMuted) this.music.stop()
+    const held = !musicMayStart(this.music.track, this.musicReleased)
+    if (held || !this.context || !this.enabled || this.mixer.levels.musicMuted) this.music.stop()
     else this.music.start(this.context, audioBus(this.context, 'music'))
   }
 

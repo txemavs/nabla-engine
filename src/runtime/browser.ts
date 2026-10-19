@@ -4306,9 +4306,13 @@ export class GameRuntime {
     this.assertAlive()
     this.revealTasks.push(task)
   }
-  /** Start the background music now if the browser allows it; otherwise the next gesture does. */
+  /**
+   * Start the background music now if the browser allows it; otherwise the next gesture does.
+   * A track with `startOn: "host"` never starts before this call.
+   */
   startMusic(): void {
     this.assertAlive()
+    this.effects.audio.releaseMusic()
     this.effects.audio.unlock()
   }
   /**
