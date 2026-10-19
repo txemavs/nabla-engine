@@ -501,6 +501,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         refreshVehicleLights()
       })
       controls.set(key, input)
+      label.dataset.lampGroup = key.startsWith('rear') ? 'rear' : 'front'
       label.append(title, input, output)
       section.append(label)
     }
@@ -519,7 +520,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       const text = JSON.stringify(
         {
           schema: 'nabla.vehicle-lights/1',
-          ...current,
+          model: current.model,
+          name: current.name,
+          values: current.values,
           units: { position: 'metres', cutoff: 'degrees' },
         },
         null,
@@ -544,8 +547,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       status.textContent = current
         ? current.name + ' · ajustes guardados para este modelo'
         : 'Entra en un vehículo para ajustar sus luces.'
+      // Only the lamps the occupied vehicle actually has are listed.
+      const lamps = current?.lamps ?? { front: true, rear: true }
       for (const [key, input] of controls) {
         input.disabled = !current
+        const group = input.parentElement!.dataset.lampGroup === 'rear' ? 'rear' : 'front'
+        input.parentElement!.hidden = !lamps[group]
         if (current) {
           input.value = String(current.values[key as keyof typeof current.values])
           input.nextElementSibling!.textContent = Number(input.value).toFixed(2)
@@ -1450,7 +1457,29 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     selectTab(TABS[index].id)
     doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
   })
+  /**
+   * Every per-vehicle option lives in one group of the Objetos tab, titled with the occupied
+   * vehicle's name; options the vehicle cannot use (exhaust smoke on a bike) are not listed.
+   */
+  const refreshVehicleGroup = () => {
+    const occupied = runtime.occupiedVehicle ?? null
+    const group = doc.querySelector<HTMLDetailsElement>('details[data-nav-group="current-vehicle"]')
+    if (!group) return
+    const summary = group.querySelector('summary')
+    const label = occupied?.name ?? 'Vehículo actual'
+    if (summary && summary.textContent !== label) summary.textContent = label
+    const exhaust = group.querySelector<HTMLButtonElement>(
+      'button[data-section="settings-truck-exhaust"]',
+    )
+    if (!exhaust) return
+    const hide = !!occupied && !occupied.exhaust
+    exhaust.hidden = hide
+    exhaust.style.display = hide ? 'none' : ''
+    if (hide && sections.get('objects')?.active === 'settings-truck-exhaust')
+      chooseSection('objects', 'settings-car-beams')
+  }
   const updateClock = () => {
+    refreshVehicleGroup()
     refreshVehicleLights()
     if (runtime.skyClock)
       toggle.textContent = formatClockTime(localMinutes(skyTime(runtime.skyClock)))

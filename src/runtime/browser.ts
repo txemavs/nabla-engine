@@ -139,7 +139,7 @@ import {
 } from './control-profiles.js'
 import { TouchFlight } from './touch-flight.js'
 import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
-import { SceneryPhysics } from './scenery-physics.js'
+import { SceneryPhysics, type SceneryLayer } from './scenery-physics.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
 import { createEntity } from '../entity/schema.js'
@@ -510,6 +510,8 @@ export class GameRuntime {
   private readonly remoteViews: RemotePortalViews
   private readonly worldContent: WorldContent | undefined
   private readonly fieldLighting: FieldLighting | null
+  /** Static bodies of lamp posts and tree trunks: a world layer of the scenery-physics service. */
+  private readonly fieldPoles: SceneryLayer | null
   private display: DisplaySettings
   private readonly adaptive: AdaptiveResolutionScale
   private probing: Promise<unknown> | null = null
@@ -900,6 +902,14 @@ export class GameRuntime {
         })
       : null
     if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
+    // Same colliders as before the unification: 65 m around every actor, no cap, 3 ms per frame.
+    this.fieldPoles = this.fieldLighting
+      ? this.sceneryPhysics.layer('field-lights', {
+          movable: false,
+          maxBodies: Infinity,
+          world: { reach: 65, budgetMs: 3 },
+        })
+      : null
     this.view = new SceneView(this.document, false, false, {
       assetQuality:
         this.options.assetQuality ??
@@ -2287,7 +2297,7 @@ export class GameRuntime {
       time,
       heightAt: (p) => this.world?.groundHeight(p),
       tiles: this.world?.collectActiveMapTiles(this.fieldLightTiles) ?? [],
-      simulation: sim,
+      scenery: this.fieldPoles,
     })
     this.camera.position.sub(this.origin)
     this.updateHeadlamp(this.camera, eyes)
@@ -2575,7 +2585,7 @@ export class GameRuntime {
       time,
       heightAt: (p) => this.world?.groundHeight(p),
       tiles: this.world?.collectActiveMapTiles(this.fieldLightTiles) ?? [],
-      simulation: sim,
+      scenery: this.fieldPoles,
     })
     this.camera.position.sub(this.origin)
     const scissor = this.renderer.getScissor(new THREE.Vector4()),
@@ -3187,15 +3197,37 @@ export class GameRuntime {
   }
   /** Light calibration for the occupied vehicle model; null on foot. */
   get vehicleLightAdjustment() {
-    const id = this.session.simulation?.player.vehicleId
-    const entity = this.document.entities.find((item) => item.id === id)
-    if (!entity) return null
-    const model = entity.visual?.body.url ?? entity.id
-    return { model, name: entity.name ?? entity.id, values: readVehicleLights(model) }
+    const occupied = this.occupiedVehicle
+    if (!occupied) return null
+    return {
+      model: occupied.model,
+      name: occupied.name,
+      lamps: occupied.lamps,
+      values: readVehicleLights(occupied.model, occupied.lightDefaults),
+    }
   }
   setVehicleLightAdjustment(patch?: Partial<VehicleLightTuning>): void {
-    const current = this.vehicleLightAdjustment
-    if (current) writeVehicleLights(current.model, patch)
+    const occupied = this.occupiedVehicle
+    if (occupied) writeVehicleLights(occupied.model, patch, occupied.lightDefaults)
+  }
+  /**
+   * The occupied vehicle as the per-vehicle settings see it (null on foot): its name, model, which
+   * lamp groups it can light and whether it has mirrors or exhaust. The menu groups every
+   * per-vehicle option under this name and shows only what applies.
+   */
+  get occupiedVehicle() {
+    const id = this.session.simulation?.player.vehicleId
+    const entity = this.document.entities.find((item) => item.id === id)
+    if (!id || !entity) return null
+    return {
+      id,
+      name: entity.name ?? entity.id,
+      model: entity.visual?.body.url ?? entity.id,
+      lightDefaults: entity.vehicle?.lights?.tuning,
+      lamps: this.view.vehicleLamps(id),
+      mirrors: this.view.mirrorModel(id) !== undefined,
+      exhaust: this.view.hasExhaust(id),
+    }
   }
   /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */
   get mirrors(): MirrorState | null {

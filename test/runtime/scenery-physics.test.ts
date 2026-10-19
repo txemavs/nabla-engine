@@ -214,3 +214,125 @@ describe('SceneryPhysics with the real simulation', () => {
     sim.dispose()
   })
 })
+
+describe('world layer (lamp posts and tree trunks)', () => {
+  const handle = () => ({
+    impact: vi.fn(),
+    pose: () => ({
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }),
+    restore: vi.fn(),
+    dispose: vi.fn(),
+  })
+  function world(actors: [number, number, number][]) {
+    const handles: ReturnType<typeof handle>[] = []
+    const simulation = {
+      renderPlayerPosition: actors[0],
+      sceneryActors: () => actors,
+      createSceneryPole: vi.fn(() => {
+        const h = handle()
+        handles.push(h)
+        return h
+      }),
+    }
+    const physics = new SceneryPhysics(() => simulation as never)
+    const layer = physics.layer('field-lights', {
+      movable: false,
+      maxBodies: Infinity,
+      world: { reach: 65, budgetMs: 3 },
+    })
+    return { simulation, handles, physics, layer }
+  }
+
+  it('creates static solid bodies with their own half size, uncapped', () => {
+    const { simulation, layer } = world([[0, 0, 0]])
+    // A frozen clock: the creation budget is covered by its own test.
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    layer.begin()
+    for (let i = 0; i < 200; i++)
+      layer.add('p' + i, (i % 50) * 0.5, 0, Math.floor(i / 50), 3.6, 0.07)
+    layer.end()
+    expect(layer.stats().active).toBe(200)
+    clock.mockRestore()
+    expect(simulation.createSceneryPole).toHaveBeenCalledWith([0, 1.8, 0], 3.6, false, {
+      half: [0.07, 1.8, 0.07],
+      solid: true,
+    })
+  })
+
+  it('ignores the shared on/off switch and the editable radius', () => {
+    const { physics, layer } = world([[0, 0, 0]])
+    physics.setEnabled(false)
+    physics.setRadius(5)
+    layer.begin()
+    layer.add('far', 60, 0, 0, 3, 0.6)
+    layer.end()
+    expect(layer.stats().active).toBe(1)
+  })
+
+  it('selects by the distance of the pole box to ANY actor, 65 m, like the trimesh set', () => {
+    const { layer } = world([
+      [0, 0, 0],
+      [200, 0, 0],
+    ])
+    layer.begin()
+    layer.add('near-player', 64, 0, 0, 3, 0.6)
+    layer.add('near-vehicle', 190, 0, 0, 3, 0.6)
+    layer.add('too-far', 100, 0, 0, 3, 0.6)
+    layer.add('over-the-edge', 66, 0, 0, 3, 0.6)
+    layer.add('box-reaches', 65.4, 0, 0, 3, 0.6)
+    layer.end()
+    expect(layer.stats().active).toBe(3)
+    expect(layer.actors()).toHaveLength(2)
+  })
+
+  it('retires posts that stream out and never remembers poses', () => {
+    const { handles, layer } = world([[0, 0, 0]])
+    layer.begin()
+    layer.add('a', 1, 0, 1, 3, 0.6)
+    layer.end()
+    layer.begin()
+    layer.end()
+    expect(handles[0]!.dispose).toHaveBeenCalled()
+    expect(layer.stats()).toMatchObject({ active: 0, fallen: 0 })
+  })
+
+  it('builds at most the time budget per refresh, nearest first, and reports what is pending', () => {
+    const { simulation, layer } = world([[0, 0, 0]])
+    let now = 1000
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now)
+    try {
+      simulation.createSceneryPole.mockImplementation(() => {
+        now += 2
+        return handle()
+      })
+      layer.begin()
+      for (let i = 0; i < 5; i++) layer.add('p' + i, i, 0, 0, 3, 0.6)
+      layer.end()
+      // 3 ms budget, 2 ms per body: the first is always built, then one more fits.
+      expect(layer.stats().active).toBe(2)
+      expect(layer.pending).toBe(3)
+      layer.begin()
+      for (let i = 0; i < 5; i++) layer.add('p' + i, i, 0, 0, 3, 0.6)
+      layer.end()
+      expect(layer.stats().active).toBe(4)
+      expect(layer.pending).toBe(1)
+      layer.begin()
+      for (let i = 0; i < 5; i++) layer.add('p' + i, i, 0, 0, 3, 0.6)
+      layer.end()
+      expect(layer.stats().active).toBe(5)
+      expect(layer.pending).toBe(0)
+    } finally {
+      clock.mockRestore()
+    }
+  })
+
+  it('does not change the two-argument body call of sign layers', () => {
+    const { simulation, physics } = world([[0, 0, 0]])
+    const signs = physics.layer('signs', { movable: true })
+    signs.begin()
+    signs.add('s', 1, 0, 1, 3)
+    expect(simulation.createSceneryPole).toHaveBeenLastCalledWith([1, 1.5, 1], 3, true)
+  })
+})

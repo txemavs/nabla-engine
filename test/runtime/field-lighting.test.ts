@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { Vector3, SpotLight } from 'three'
 import { FieldLighting } from '../../src/runtime/field-lighting.js'
+import { SceneryPhysics } from '../../src/runtime/scenery-physics.js'
 import { FieldLights, type FieldLightMark } from '../../src/render/entity/field-lights.js'
 const origin = { latitude: 0, longitude: 0, altitude: 0 },
   tile = { z: 15, x: 16384, y: 16384 }
@@ -13,7 +14,27 @@ it('keeps light settings independent and hands grounded lamp posts to physics', 
   const b = new FieldLighting({ source: async () => [], layers: { navigation: false } })
   a.lights.look.reach = 10
   expect(b.lights.look.reach).toBe(28)
-  let poles: ReturnType<FieldLights['poles']> = []
+  const created: { position: number[]; height: number; shape: { half: number[] } }[] = []
+  const physics = new SceneryPhysics(
+    () =>
+      ({
+        renderPlayerPosition: [0, 0, 0],
+        createSceneryPole: (
+          position: number[],
+          height: number,
+          _movable: boolean,
+          shape: never,
+        ) => {
+          created.push({ position, height, shape })
+          return { impact() {}, pose: () => ({}), restore() {}, dispose() {} }
+        },
+      }) as never,
+  )
+  const layer = physics.layer('field-lights', {
+    movable: false,
+    maxBodies: Infinity,
+    world: { reach: 65, budgetMs: 3 },
+  })
   const tick = (height: number | undefined) =>
     a.update({
       origin,
@@ -23,18 +44,17 @@ it('keeps light settings independent and hands grounded lamp posts to physics', 
       time: 0,
       heightAt: () => height,
       tiles: [tile],
-      simulation: {
-        setPoles: (value) => {
-          poles = value
-        },
-      },
+      scenery: layer,
     })
   tick(undefined)
   await settle()
   tick(undefined)
   tick(12)
-  expect(poles[0].position[1]).toBeCloseTo(13.8)
-  expect(poles[0].half[1]).toBeCloseTo(1.8)
+  const post = created.at(-1)!
+  expect(post.position[1]).toBeCloseTo(13.8)
+  expect(post.height).toBeCloseTo(3.6)
+  expect(post.shape.half[0]).toBeCloseTo(0.07)
+  expect(post.shape.half[1]).toBeCloseTo(1.8)
   expect(a.lights.root.position.x).toBe(-100)
   expect(a.lights.root.children.some((x) => x instanceof SpotLight && x.intensity > 0)).toBe(true)
   b.update({

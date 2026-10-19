@@ -58,6 +58,15 @@ Rules:
    toolbar, touch rigs and the Menú button); the same button becomes the close control, and
    `Escape` closes too. Both return focus to the game.
 9. Grid of the window: header row, tab bar, content (section list + pane), bottom action row.
+10. **Per-vehicle options live in one group of the «Objetos» tab, titled with the occupied
+    vehicle's name** (for example «Honda VFR800FI 1999»; «Vehículo actual» only while on
+    foot). Lights, driver, mirrors, exhaust smoke and any later per-vehicle option go in that
+    group, and a vehicle sees only what it has: a motorcycle has no exhaust-smoke section and
+    lists only the lamps its model binds. Defaults of these options come from the vehicle's JSON
+    (see [vehicle definition](vehicle-definition.md)); the player's choice is saved per model.
+11. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
+    navigation group inside «Mundo» and of an older name of «Configuración»; do not use it for
+    the tab.
 
 ## 2. The clock is the Menú button
 

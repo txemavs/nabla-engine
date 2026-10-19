@@ -8,11 +8,11 @@
 
 - `../render/entity/field-lights.js`
 - `three`
-- `../simulation/simulation.js`
+- `./scenery-physics.js`
 
 ## FieldLighting.constructor
 
-[Implementation, line 9](../../../../src/runtime/field-lighting.ts#L9)
+[Implementation, line 10](../../../../src/runtime/field-lighting.ts#L10)
 
 Own a light collection; omitted navigation settings follow the first observed night.
 
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## FieldLighting.setNavigation
 
-[Implementation, line 14](../../../../src/runtime/field-lighting.ts#L14)
+[Implementation, line 15](../../../../src/runtime/field-lighting.ts#L15)
 
 Apply an explicit navigation-light preference and stop automatic night activation.
 
@@ -36,26 +36,157 @@ setNavigation(enabled: boolean): void
 
 ## FieldLighting.update
 
-[Implementation, line 19](../../../../src/runtime/field-lighting.ts#L19)
+[Implementation, line 20](../../../../src/runtime/field-lighting.ts#L20)
 
 Update geographic placement, compensate the floating origin and copy pole collisions to physics.
 
 ```ts
-update(args: { origin: Parameters<FieldLights['update']>[0] eye: Vector3 renderOrigin: Vector3 night: boolean time: number heightAt: Parameters<FieldLights['update']>[4] tiles?: Parameters<FieldLights['update']>[5] simulation?: Pick<Simulation, 'setPoles'> | null }): void
+update(args: { origin: Parameters<FieldLights['update']>[0] eye: Vector3 renderOrigin: Vector3 night: boolean time: number heightAt: Parameters<FieldLights['update']>[4] tiles?: Parameters<FieldLights['update']>[5] /** The scenery-physics layer that gives lamp posts and tree trunks their static bodies. */ scenery?: SceneryLayer | null }): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `args.eye.toArray`
-- `args.simulation?.setPoles`
-- `this.lights.poles`
+- `this.feed`
 - `this.lights.root.position.copy`
 - `this.lights.root.position.copy(args.renderOrigin).negate`
 - `this.lights.update`
 
+## FieldLighting.feed
+
+[Implementation, line 51](../../../../src/runtime/field-lighting.ts#L51)
+
+Hand the posts to the layer. The refresh is skipped while the posts, the actor cells (8 m grid)
+and the simulation are unchanged and nothing is waiting for the creation budget.
+
+```ts
+feed(layer: SceneryLayer): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `actors.map`
+- `actors.map((p) => p.map((n) => Math.floor(n / 8)).join(',')).join`
+- `layer.actors`
+- `layer.add`
+- `layer.begin`
+- `layer.end`
+- `pole.position.map`
+- `pole.position.map((n) => n.toFixed(2)).join`
+- `poles.map`
+- `poles.map((p) => p.position.map((n) => Math.round(n * 50) / 50).join(',')).join`
+- `this.lights.poles`
+
+## FieldLighting.feed.callback@56
+
+[Implementation, line 56](../../../../src/runtime/field-lighting.ts#L56)
+
+```ts
+callback@56(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `p.position.map`
+- `p.position.map((n) => Math.round(n * 50) / 50).join`
+
+## FieldLighting.feed.callback@56.callback@56
+
+[Implementation, line 56](../../../../src/runtime/field-lighting.ts#L56)
+
+```ts
+callback@56(n): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+
+## FieldLighting.feed.callback@58
+
+[Implementation, line 58](../../../../src/runtime/field-lighting.ts#L58)
+
+```ts
+callback@58(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `p.map`
+- `p.map((n) => Math.floor(n / 8)).join`
+
+## FieldLighting.feed.callback@58.callback@58
+
+[Implementation, line 58](../../../../src/runtime/field-lighting.ts#L58)
+
+```ts
+callback@58(n): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+
+## FieldLighting.feed.nearest
+
+[Implementation, line 61](../../../../src/runtime/field-lighting.ts#L61)
+
+```ts
+nearest(p: { position: readonly number[] }): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `actors.map`
+
+## FieldLighting.feed.nearest.callback@62
+
+[Implementation, line 62](../../../../src/runtime/field-lighting.ts#L62)
+
+```ts
+callback@62(a): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`
+
+## FieldLighting.feed.callback@64
+
+[Implementation, line 64](../../../../src/runtime/field-lighting.ts#L64)
+
+```ts
+callback@64(pole): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `nearest`
+
+## FieldLighting.feed.callback@65
+
+[Implementation, line 65](../../../../src/runtime/field-lighting.ts#L65)
+
+```ts
+callback@65(a, b): inferred by TypeScript; see implementation
+```
+
+## FieldLighting.feed.callback@69
+
+[Implementation, line 69](../../../../src/runtime/field-lighting.ts#L69)
+
+```ts
+callback@69(n): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `n.toFixed`
+
 ## FieldLighting.dispose
 
-[Implementation, line 45](../../../../src/runtime/field-lighting.ts#L45)
+[Implementation, line 79](../../../../src/runtime/field-lighting.ts#L79)
 
 Cancel outstanding light loads and release the owned render resources.
 

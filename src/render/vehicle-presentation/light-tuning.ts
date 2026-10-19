@@ -1,4 +1,8 @@
-/** Per-model vehicle light calibration; offsets are metres in vehicle space. */
+/**
+ * Vehicle light calibration shared by every vehicle; offsets are metres in vehicle space, beam
+ * cutoffs are degrees. A vehicle's JSON (`vehicle.lights.tuning`) overrides these defaults and the
+ * player's saved choice (per model, schema `nabla.vehicle-lights/1`) overrides both.
+ */
 export const vehicleLightDefaults = {
   low: 0,
   high: 1,
@@ -12,11 +16,6 @@ export const vehicleLightDefaults = {
   rearReach: 1,
 }
 export type VehicleLightTuning = typeof vehicleLightDefaults
-function modelDefaults(model: string): VehicleLightTuning {
-  return /(?:^|\/)vfr800fi-1999(?:-quest)?\.glb(?:[?#].*)?$/.test(model)
-    ? { ...vehicleLightDefaults, rearY: -0.09, rearZ: 0.08 }
-    : { ...vehicleLightDefaults }
-}
 const cache = new Map<string, VehicleLightTuning>()
 const key = (model: string) => 'nabla.vehicle-lights.' + model
 export function normalizeVehicleLights(value: Partial<VehicleLightTuning>): VehicleLightTuning {
@@ -33,7 +32,11 @@ export function normalizeVehicleLights(value: Partial<VehicleLightTuning>): Vehi
   }
   return result
 }
-export function readVehicleLights(model: string): VehicleLightTuning {
+/** Calibration of a model: engine defaults, then the vehicle's own defaults, then the saved choice. */
+export function readVehicleLights(
+  model: string,
+  defaults: Partial<VehicleLightTuning> = {},
+): VehicleLightTuning {
   if (!cache.has(model)) {
     let value = {}
     try {
@@ -41,17 +44,19 @@ export function readVehicleLights(model: string): VehicleLightTuning {
     } catch {
       /* Optional storage. */
     }
-    cache.set(model, normalizeVehicleLights({ ...modelDefaults(model), ...value }))
+    cache.set(model, normalizeVehicleLights({ ...vehicleLightDefaults, ...defaults, ...value }))
   }
   return { ...cache.get(model)! }
 }
+/** Saves a patch for the model, or without one clears the saved choice back to the defaults. */
 export function writeVehicleLights(
   model: string,
   patch?: Partial<VehicleLightTuning>,
+  defaults: Partial<VehicleLightTuning> = {},
 ): VehicleLightTuning {
   const value = patch
-    ? normalizeVehicleLights({ ...readVehicleLights(model), ...patch })
-    : modelDefaults(model)
+    ? normalizeVehicleLights({ ...readVehicleLights(model, defaults), ...patch })
+    : normalizeVehicleLights({ ...vehicleLightDefaults, ...defaults })
   cache.set(model, value)
   try {
     if (patch) globalThis.localStorage?.setItem(key(model), JSON.stringify(value))

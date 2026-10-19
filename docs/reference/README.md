@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **514 modules; 6013 executable function definitions**.
+Coverage: **514 modules; 6032 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -51,7 +51,7 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 70 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 95 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 96 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
 | [game/settings-navigation-styles.ts](game/settings-navigation-styles.ts.md) | 0 |
@@ -194,7 +194,7 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [src/planet/buildings/roofs.ts](src/planet/buildings/roofs.ts.md) | 29 |
 | [src/planet/catch-floor.ts](src/planet/catch-floor.ts.md) | 0 |
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
-| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 25 |
+| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 19 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
 | [src/planet/contract.ts](src/planet/contract.ts.md) | 32 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
@@ -270,7 +270,7 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 11 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 22 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 150 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 156 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
@@ -329,12 +329,12 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
 | [src/render/shadows.ts](src/render/shadows.ts.md) | 29 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
-| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 21 |
+| [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 24 |
 | [src/render/vehicle-presentation/index.ts](src/render/vehicle-presentation/index.ts.md) | 0 |
 | [src/render/vehicle-presentation/landing-gear.ts](src/render/vehicle-presentation/landing-gear.ts.md) | 7 |
 | [src/render/vehicle-presentation/light-controller.ts](src/render/vehicle-presentation/light-controller.ts.md) | 15 |
 | [src/render/vehicle-presentation/light-rig.ts](src/render/vehicle-presentation/light-rig.ts.md) | 10 |
-| [src/render/vehicle-presentation/light-tuning.ts](src/render/vehicle-presentation/light-tuning.ts.md) | 5 |
+| [src/render/vehicle-presentation/light-tuning.ts](src/render/vehicle-presentation/light-tuning.ts.md) | 4 |
 | [src/render/vehicle-presentation/mirror-lenses.ts](src/render/vehicle-presentation/mirror-lenses.ts.md) | 2 |
 | [src/render/vehicle-presentation/motorcycle-instruments.ts](src/render/vehicle-presentation/motorcycle-instruments.ts.md) | 35 |
 | [src/render/vehicle-presentation/motorcycle-mirrors.ts](src/render/vehicle-presentation/motorcycle-mirrors.ts.md) | 5 |
@@ -355,10 +355,10 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 439 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 440 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
-| [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 4 |
+| [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
@@ -391,7 +391,7 @@ Coverage: **514 modules; 6013 executable function definitions**.
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 11 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
-| [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 22 |
+| [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
 | [src/runtime/settings-backup.ts](src/runtime/settings-backup.ts.md) | 11 |
 | [src/runtime/shader-diagnostics.ts](src/runtime/shader-diagnostics.ts.md) | 4 |

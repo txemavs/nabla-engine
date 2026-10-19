@@ -120,15 +120,15 @@ Everything below is created from the vehicle's **presentation** when its entity 
 ([equipment guide](architecture/vehicle-equipment.md), `src/catalog/presentation/`,
 `src/render/vehicle-presentation/`).
 
-| Thing                                       | Source of its position                                                                                                                     | Code                                                                                                                |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Headlamps, tail/brake, indicators, reverse  | Authored in the GLB: nodes with `extras.nabla.anchor`, emissive materials with `vehicleLightChannel` (`Tail_Stop`, …), KHR punctual lights | `authored-lights.ts`, `car-lights.ts`, `headlamp.ts`                                                                |
-| Road wash of lamps (ground glow, rear glow) | **Code constants** from the chassis `size` (not from GLB anchors)                                                                          | `render/vehicle-presentation/light-rig.ts`                                                                          |
-| Mirrors                                     | Lens meshes in the GLB (cars: lens material/anchor or `vehicle.mirrors`; bikes: `mirror_L`/`mirror_R` parts) + JSON aim                    | `render/entity/car-mirrors.ts`, `render/vehicle-presentation/motorcycle-mirrors.ts`, `vehicle.mirrorAim/mirrorTilt` |
-| Instruments                                 | Named GLB anchors + recipe                                                                                                                 | `car-instruments.ts`, `motorcycle-instruments.ts`                                                                   |
-| Steering wheel / driver                     | Presentation adapter + driver pose controls                                                                                                | `steering-wheel.ts`, `rider-head.ts`                                                                                |
-| Weapons                                     | Held by the avatar/driver, not by the vehicle; `Q` is reserved for weapons                                                                 | `src/simulation/weapons/`, `src/catalog/weapons/`                                                                   |
-| Touch controls / HUD                        | Control profile of the seat                                                                                                                | `touch-driving.ts`, `touch-walk.ts`, `game-toolbar.ts`                                                              |
+| Thing                                       | Source of its position                                                                                                                                                                                                                                                | Code                                                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Headlamps, tail/brake, indicators, reverse  | Authored in the GLB: emissive materials named `nabla.light.<role>` (deprecated: `extras.vehicleLightChannel`), nodes with `extras.nabla.anchor`, KHR punctual lights; defaults and lens glow colour in `vehicle.lights` ([vehicle definition](vehicle-definition.md)) | `authored-lights.ts`, `car-lights.ts`, `headlamp.ts`                                                                |
+| Road wash of lamps (ground glow, rear glow) | Rear wash: the `light.tail.brake` anchor plus the offsets of `vehicle.lights.tuning` (two-wheelers, trucks, trailers); other cars: code constants from the chassis `size`                                                                                             | `render/vehicle-presentation/light-rig.ts`                                                                          |
+| Mirrors                                     | Lens meshes in the GLB (cars: lens material/anchor or `vehicle.mirrors`; bikes: `mirror_L`/`mirror_R` parts) + JSON aim                                                                                                                                               | `render/entity/car-mirrors.ts`, `render/vehicle-presentation/motorcycle-mirrors.ts`, `vehicle.mirrorAim/mirrorTilt` |
+| Instruments                                 | Named GLB anchors + recipe                                                                                                                                                                                                                                            | `car-instruments.ts`, `motorcycle-instruments.ts`                                                                   |
+| Steering wheel / driver                     | Presentation adapter + driver pose controls                                                                                                                                                                                                                           | `steering-wheel.ts`, `rider-head.ts`                                                                                |
+| Weapons                                     | Held by the avatar/driver, not by the vehicle; `Q` is reserved for weapons                                                                                                                                                                                            | `src/simulation/weapons/`, `src/catalog/weapons/`                                                                   |
+| Touch controls / HUD                        | Control profile of the seat                                                                                                                                                                                                                                           | `touch-driving.ts`, `touch-walk.ts`, `game-toolbar.ts`                                                              |
 
 ### Scenery physics (signs, traffic lights)
 
@@ -141,9 +141,19 @@ and `end()`. The service gives a body only to poles inside the shared radius aro
 (default 30 m, editable 5–150 m under Mundo → Opciones → Señales de tráfico, defaults in
 `src/config/scenery-physics.ts`), caps bodies per layer (48), remembers knocked-down poses
 of movable layers while they stream out, and returns the live pose for rendering
-(`transform(key, matrix)`). Bodies come from `Simulation.createSceneryPole`. Street-lamp and tree
-posts are still static colliders through `Simulation.setPoles`; see
-[generalization candidates](generalization-candidates.md).
+(`transform(key, matrix)`). Bodies come from `Simulation.createSceneryPole`.
+
+Lamp posts and tree trunks use the same service as a third, **world** layer (`field-lights`, created
+by the runtime when field lights are on; `FieldLighting.update({ scenery })` feeds it from
+`FieldLights.poles()`). A world layer is always solid and differs from the sign layers only by its
+options: it ignores the on/off switch and the editable radius (they are for signs and traffic
+lights), selects poles within 65 m of **any** actor (the player and every vehicle, 3D box distance,
+as the planet trimesh set does), has no body cap, builds at most 3 ms of bodies per refresh nearest
+first, and gives each pole its own half size and the planet's static surface material
+(`createSceneryPole(..., { half, solid })`). `Simulation.setPoles` and the pole path inside
+`PlanetCollisions` are gone; tile-provided poles in `PlanetCollisionTile.poles` are unchanged.
+The street-light **budget** (`Streetlights`, how many lamps cast light) is rendering and stays
+separate. See [generalization candidates](generalization-candidates.md).
 
 Colour, lighting and material values are not per-vehicle code: they are shared tuning
 (`src/config/lighting.ts`, `light-tuning.ts`) and the GLB. See
