@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { sceneryPhysicsDefaults } from '../config/scenery-physics.js'
+import type { ImpactSurface } from '../config/impact-sounds.js'
 import type { Simulation } from '../simulation/simulation.js'
 
 type Vec3 = [number, number, number]
@@ -50,12 +51,19 @@ export interface SceneryLayerOptions {
    * Without it the layer follows the shared settings and the player only, like signs.
    */
   world?: { reach: number; budgetMs: number }
+  /**
+   * What a shot hears when it hits one of this layer's bodies (`config/impact-sounds.ts`).
+   * Defaults to `sceneryPhysicsDefaults.surface` for signs and traffic lights; world layers
+   * (trees, lamp posts) are silent unless they set it. `null` is silent.
+   */
+  surface?: ImpactSurface | null
 }
 
 interface LayerConfig {
   movable: boolean
   maxBodies: number
   world: { reach: number; budgetMs: number } | null
+  surface: ImpactSurface | null
 }
 
 const identity = new THREE.Matrix4()
@@ -106,6 +114,12 @@ export class SceneryPhysics {
       movable: options.movable,
       maxBodies: options.maxBodies ?? sceneryPhysicsDefaults.maxBodies,
       world: options.world ?? null,
+      surface:
+        options.surface !== undefined
+          ? options.surface
+          : options.world
+            ? null
+            : sceneryPhysicsDefaults.surface,
     })
     this.layers.add(layer)
     return layer
@@ -206,8 +220,14 @@ export class SceneryLayer {
       ? simulation!.createSceneryPole(center, height, this.options.movable, {
           half: [halfWidth ?? 0.09, height / 2, halfWidth ?? 0.09],
           solid: true,
+          ...(this.options.surface ? { surface: this.options.surface } : {}),
         })
-      : simulation!.createSceneryPole(center, height, this.options.movable)
+      : simulation!.createSceneryPole(
+          center,
+          height,
+          this.options.movable,
+          this.options.surface ? { surface: this.options.surface } : undefined,
+        )
     const saved = this.fallen.get(key)
     const base =
       saved?.base ?? (world ? identity : new THREE.Matrix4().makeTranslation(-x, -center[1], -z))

@@ -110,6 +110,7 @@ const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
+import type { ImpactSurface } from '../config/impact-sounds.js'
 import { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 const vec = (v: Vec3): Vec3Tuple => [v.x, v.y, v.z]
 const pose = (b: Body): Transform => ({
@@ -246,7 +247,7 @@ export class Simulation {
     position: Vec3Tuple,
     height: number,
     movable: boolean,
-    shape?: { half?: Vec3Tuple; solid?: boolean },
+    shape?: { half?: Vec3Tuple; solid?: boolean; surface?: ImpactSurface },
   ) {
     if (
       this.disposed ||
@@ -266,6 +267,7 @@ export class Simulation {
       angularDamping: 0.2,
     })
     this.world.addBody(body)
+    if (shape?.surface) this.bodySurfaces.set(body, shape.surface)
     body.preserveSleep = movable
     if (movable) body.setBreakawayAnchor(true)
     let removed = false
@@ -357,6 +359,8 @@ export class Simulation {
     return m ? { lift: m.lift, tilt: m.tilt, side: m.side } : null
   }
   private readonly bodies = new Map<string, Body>()
+  /** Impact-sound surface of tagged bodies (scenery poles); see `config/impact-sounds.ts`. */
+  private readonly bodySurfaces = new WeakMap<Body, ImpactSurface>()
   private mapBuildingsEnabled = true
   private collisionDistance = 400
   private readonly mapCollision = new MapCollisions(this.world)
@@ -1621,7 +1625,13 @@ export class Simulation {
     range = 150,
     impulse = 12,
     excludeEntityId?: string,
-  ): { point: Vec3Tuple; normal: Vec3Tuple; entityId: string | null } | null {
+  ): {
+    point: Vec3Tuple
+    normal: Vec3Tuple
+    entityId: string | null
+    /** What the hit body presents to a shot (scenery layers tag their poles); null when untagged. */
+    surface: ImpactSurface | null
+  } | null {
     const ray = new Vec3(...direction)
     if (
       !Number.isFinite(range) ||
@@ -1663,6 +1673,7 @@ export class Simulation {
       point: vec(impact),
       normal: vec(normal),
       entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
+      surface: this.bodySurfaces.get(target) ?? null,
     }
   }
 

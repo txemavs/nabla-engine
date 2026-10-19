@@ -4757,8 +4757,11 @@ export class GameRuntime {
       if (shot?.fired) {
         this.effects.audio.weaponSound('hammer', weaponPosition)
         this.effects.audio.gunshot(weaponPosition, !!shot.locked)
-        if (this.gallery.lastMetalImpact)
-          this.effects.audio.metalImpact(this.gallery.lastMetalImpact)
+        if (this.gallery.lastImpact)
+          this.effects.audio.metalImpact(
+            this.gallery.lastImpact.point,
+            this.gallery.lastImpact.surface,
+          )
         canvas.dataset.gunshots = String(this.effects.audio.gunshotCount)
         if (shot.impactJoules !== undefined)
           canvas.dataset.lastImpactJoules = shot.impactJoules.toFixed(0)

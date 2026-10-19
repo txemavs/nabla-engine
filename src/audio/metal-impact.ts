@@ -26,6 +26,12 @@ export function metalStrike(random: () => number = Math.random) {
     })),
   }
 }
+/** Per-surface shift of the strike (`config/impact-sounds.ts`); omitted fields keep 1. */
+export interface MetalTone {
+  pitch?: number
+  level?: number
+  decay?: number
+}
 export class MetalImpact {
   private readonly oscillators: OscillatorNode[] = []
   private readonly levels: GainNode[] = []
@@ -53,9 +59,12 @@ export class MetalImpact {
     noise.connect(band)
     band.connect(this.tick)
   }
-  trigger(time: number, variant?: number): void {
+  trigger(time: number, variant?: number, tone: MetalTone = {}): void {
     const profile = metalImpactProfiles[(variant ?? Math.floor(Math.random() * 4)) % 4]
     const variation = metalStrike()
+    variation.pitch *= tone.pitch ?? 1
+    variation.strength *= tone.level ?? 1
+    variation.damping *= tone.decay ?? 1
     this.band.frequency.setValueAtTime(variation.filter, time)
     this.band.Q.setValueAtTime(variation.q, time)
     const strike = (gain: AudioParam, peak: number, decay: number, delay = 0) => {

@@ -1,3 +1,5 @@
+import type { ImpactSurface } from './impact-sounds.js'
+
 /**
  * Scenery physics: bodies for small streamed scenery (sign posts, traffic-light poles) that
  * only exist near the player. Code-only defaults; the player's choices live in the menu
@@ -13,4 +15,6 @@ export const sceneryPhysicsDefaults = Object.freeze({
   radiusMax: 150,
   /** Most live bodies per layer (signs, traffic lights, …). */
   maxBodies: 48,
+  /** What a shot hears from a non-world layer's poles (see `config/impact-sounds.ts`). */
+  surface: 'metal-sign' as ImpactSurface,
 })

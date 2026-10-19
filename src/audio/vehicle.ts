@@ -5,6 +5,7 @@ import { loopingNoise } from './graph.js'
 import { Gunshot } from './gunshot.js'
 import { WeaponHandling, type WeaponSound } from './weapon-handling.js'
 import { MetalImpact } from './metal-impact.js'
+import { impactSounds, vehicleImpactSurface, type ImpactSurface } from '../config/impact-sounds.js'
 import { CasingTinkle } from './casing-tinkle.js'
 import { Powertrain } from './powertrain.js'
 import type { ResolvedEngineVoice } from './vehicle-sound.js'
@@ -45,6 +46,7 @@ export class VehicleAudio {
   private readonly metalEmitters: SpatialEmitter[] = []
   private nextMetal = 0
   private lastMetalTimbre = -1
+  private readonly lastImpactAt = new Map<ImpactSurface, number>()
   private weaponClickVoice?: GearClick
   private vehicleEngine?: SpatialEmitter
   private turbineEmitter?: SpatialEmitter
@@ -359,8 +361,13 @@ export class VehicleAudio {
   }
 
   /** A metal target rings at the hit point; independent emitters preserve previous tails. */
-  metalImpact(position: readonly number[]): void {
+  metalImpact(position: readonly number[], surface: ImpactSurface = vehicleImpactSurface): void {
     if (!this.frame()?.audible || !this.metalEmitters.length) return
+    const sound = impactSounds[surface]
+    // Rate limit per surface: a burst of hits rings as one flurry, not as a wall of voices.
+    const now = this.context!.currentTime
+    if (now - (this.lastImpactAt.get(surface) ?? -Infinity) < sound.minInterval) return
+    this.lastImpactAt.set(surface, now)
     const index = this.nextMetal++ % this.metalEmitters.length
     const emitter = this.metalEmitters[index]
     emitter.setPosition(position)
@@ -368,7 +375,7 @@ export class VehicleAudio {
     // Voice allocation stays predictable for overlap; timbre does not follow the pool cycle.
     const choices = [0, 1, 2, 3].filter((value) => value !== this.lastMetalTimbre)
     this.lastMetalTimbre = choices[Math.floor(Math.random() * choices.length)]
-    this.metalVoices[index].trigger(this.context!.currentTime, this.lastMetalTimbre)
+    this.metalVoices[index].trigger(now, this.lastMetalTimbre, sound)
   }
 
   /** Reverse-warning voice, gated by the vehicle profile, gear and global audio preference. */

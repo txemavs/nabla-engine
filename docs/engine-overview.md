@@ -155,6 +155,10 @@ first, and gives each pole its own half size and the planet's static surface mat
 The street-light **budget** (`Streetlights`, how many lamps cast light) is rendering and stays
 separate. See [generalization candidates](generalization-candidates.md).
 
+A shot that hits a sign or traffic-light pole rings metal: each layer carries an impact surface
+kind (`surface`, default `metal-sign`) that `Simulation.shoot()` reports and the shot path maps to
+a procedural sound; see [impact sounds](impact-sounds.md).
+
 Colour, lighting and material values are not per-vehicle code: they are shared tuning
 (`src/config/lighting.ts`, `light-tuning.ts`) and the GLB. See
 [generalization candidates](generalization-candidates.md) for what is still ad hoc here and a

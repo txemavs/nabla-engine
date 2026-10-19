@@ -1,6 +1,12 @@
 import * as THREE from 'three'
 import { createRuntimeText, type RuntimeText } from './messages.js'
-import { type Entity } from '../entity/schema.js'
+import { type Entity, type Vec3Tuple } from '../entity/schema.js'
+import {
+  isImpactSurface,
+  sceneryImpactSurface,
+  vehicleImpactSurface,
+  type ImpactSurface,
+} from '../config/impact-sounds.js'
 import { type SceneDocument } from '../scene/document.js'
 import { portalMapping, portalLocal } from '../entity/portal/portal.js'
 import type { Simulation } from '../simulation/simulation.js'
@@ -66,7 +72,8 @@ export function shotView(
 
 export class Gallery {
   lastGlassImpact: [number, number, number] | null = null
-  lastMetalImpact: [number, number, number] | null = null
+  /** Where the last shot rang a surface, and which kind (`config/impact-sounds.ts`); null when silent. */
+  lastImpact: { point: [number, number, number]; surface: ImpactSurface } | null = null
   private elapsed = 0
   private remaining = 60
   private started = false
@@ -136,7 +143,7 @@ export class Gallery {
     damage = 0,
   ): boolean {
     this.lastGlassImpact = null
-    this.lastMetalImpact = null
+    this.lastImpact = null
     let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
     foreground.setFromCamera(new THREE.Vector2(), camera)
@@ -189,7 +196,17 @@ export class Gallery {
       if (typeof object.userData.sceneryShot === 'function') scenery.push(object)
     })
     for (const surface of sceneryRay.intersectObjects(scenery, false)) {
-      if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) return true
+      if (surface.object.userData.sceneryShot(surface, ray.ray.direction, impulse)) {
+        // Hand-handled scenery (instanced signs) rings as the mesh says, else as a sign.
+        const kind = surface.object.userData.impactSurface
+        const ringing = kind === null ? null : isImpactSurface(kind) ? kind : sceneryImpactSurface
+        if (ringing)
+          this.lastImpact = {
+            point: surface.point.clone().sub(view.root.position).toArray() as Vec3Tuple,
+            surface: ringing,
+          }
+        return true
+      }
     }
     const glassPoint = view.brokenGlass.hit(
       view.document.entities
@@ -220,11 +237,13 @@ export class Gallery {
       // Planet buildings and other static colliders have no entity id — anchor in
       // view.root, which shares the floating-origin shift with world meshes.
       const object = hit.entityId ? view.objects.get(hit.entityId) : undefined
-      if (
-        hit.entityId &&
+      const surface =
+        hit.surface ??
+        (hit.entityId &&
         view.document.entities.some((entity) => entity.id === hit.entityId && entity.vehicle)
-      )
-        this.lastMetalImpact = [...hit.point] as [number, number, number]
+          ? vehicleImpactSurface
+          : null)
+      if (surface) this.lastImpact = { point: [...hit.point] as Vec3Tuple, surface }
       if (object && hit.entityId) {
         // Physics hulls can sit inside truck/trailer bodywork. Find the visible skin
         // along the same shot instead of leaving the mark hidden inside that hull.

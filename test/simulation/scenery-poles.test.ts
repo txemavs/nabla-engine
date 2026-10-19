@@ -63,3 +63,19 @@ it('builds a static pole with its own half size and the solid surface', () => {
   plain.dispose()
   sim.dispose()
 })
+
+it('tells a shot what the pole it hit is made of', () => {
+  const sim = new Simulation(
+    { version: 1, name: 'Ringing pole', entities: [createEntity('spawn', 'spawn', [20, 1, 20])] },
+    { playerMode: 'walk' },
+  )
+  const sign = sim.createSceneryPole([0, 1.5, 0], 3, false, { surface: 'metal-sign' })
+  const plain = sim.createSceneryPole([10, 1.5, 0], 3, false)
+  expect(sim.shoot([0, 1.5, 5], [0, 0, -1], 20, 0)?.surface).toBe('metal-sign')
+  const quiet = sim.shoot([10, 1.5, 5], [0, 0, -1], 20, 0)
+  expect(quiet).not.toBeNull()
+  expect(quiet?.surface).toBeNull()
+  sign.dispose()
+  plain.dispose()
+  sim.dispose()
+})
