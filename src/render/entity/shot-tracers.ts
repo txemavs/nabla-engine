@@ -3,72 +3,82 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 import { analyticParticles } from './gpu-particles.js'
 import { LegacyShotTracers } from './legacy-particles.js'
 
-/** Longest a tracer lives, ms (a far shot is clipped to this). */
-const LIFE_MS = 90
+/** How long an air thread lingers after the shot, ms. */
+const LIFE_MS = 160
 const MAX = 24
-/** Apparent travel speed of the streak along the shot, m/s (slowed from muzzle velocity so a
- * 60 Hz frame still shows it moving rather than a full-length line). */
+/** Apparent travel speed of the wake front along the shot, m/s (so a 60 Hz frame sees it grow). */
 export const TRACER_SPEED = 320
-/** Streak length per m/s of travel, s (the motion-blur shutter: 320 m/s gives 3.2 m). */
-export const TRACER_SHUTTER = 0.01
+/** Thread width at birth and once diffused, m. */
+const WIDTH: [number, number] = [0.004, 0.014]
+/** Peak opacity of the thread: a faint, desaturated haze lighter than the background. */
+export const TRACER_ALPHA = 0.1
 
 const VERTEX = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
-attribute vec3 tracerEnd; attribute vec2 tracerData;
-uniform float tracerNow;
-varying float vAlong; varying float vFade;
+attribute vec2 corner; attribute vec3 tracerStart; attribute vec3 tracerEnd; attribute float tracerBirth;
+uniform float tracerNow; uniform float pixelScale;
+varying vec2 vQuad; varying float vAlpha;
 void main(){
-  // tracerData: birth (ms, epoch-relative), head flag. The head travels at TRACER_SPEED from
-  // origin to end; the tail trails it by the shutter, both clamped to the segment.
-  float age = (tracerNow - tracerData.x) / 1000.0;
-  float span = length(tracerEnd - position);
-  float head = clamp(age * ${TRACER_SPEED.toFixed(1)}, 0.0, span);
-  float tail = clamp(head - ${(TRACER_SPEED * TRACER_SHUTTER).toFixed(3)}, 0.0, span);
-  if (age < 0.0 || age * 1000.0 > ${LIFE_MS.toFixed(1)} || tail >= span) {
-    gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return;
-  }
-  float d = tracerData.y > 0.5 ? head : tail;
-  vec3 p = position + (tracerEnd - position) * (span > 0.0 ? d / span : 0.0);
-  vAlong = tracerData.y;
-  vFade = 1.0 - age * 1000.0 / ${LIFE_MS.toFixed(1)};
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  // corner: x along (0 muzzle side, 1 front), y side (-1, 1). The wake runs from the muzzle to a
+  // front moving at TRACER_SPEED, clamped to the impact, and the whole thread fades and widens.
+  float age = (tracerNow - tracerBirth) / 1000.0;
+  float k = age * 1000.0 / ${LIFE_MS.toFixed(1)};
+  if (age < 0.0 || k > 1.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  vec3 span = tracerEnd - tracerStart;
+  float len = length(span);
+  float front = len > 0.0 ? min(1.0, age * ${TRACER_SPEED.toFixed(1)} / len) : 1.0;
+  vec4 a = modelViewMatrix * vec4(tracerStart, 1.0);
+  vec4 b = modelViewMatrix * vec4(tracerStart + span * front, 1.0);
+  vec4 p = mix(a, b, corner.x);
+  vec2 axis = b.xy / max(0.05, -b.z) - a.xy / max(0.05, -a.z);
+  axis = length(axis) > 1e-6 ? normalize(axis) : vec2(1.0, 0.0);
+  float width = mix(${WIDTH[0].toFixed(4)}, ${WIDTH[1].toFixed(4)}, sqrt(k));
+  // At least ~1.5 px wide; a thinner thread keeps its light by lowering opacity, not by aliasing.
+  float minWidth = 1.5 * max(0.05, -p.z) / pixelScale;
+  float w = max(width, minWidth);
+  p.xy += vec2(-axis.y, axis.x) * corner.y * 0.5 * w;
+  vQuad = vec2(corner.x, corner.y);
+  vAlpha = ${TRACER_ALPHA.toFixed(3)} * (width / w) * (1.0 - k) * (1.0 - k);
+  gl_Position = projectionMatrix * p;
   #include <logdepthbuf_vertex>
 }
 `
 const FRAGMENT = /* glsl */ `
 #include <logdepthbuf_pars_fragment>
-varying float vAlong; varying float vFade;
+varying vec2 vQuad; varying float vAlpha;
 void main(){
   #include <logdepthbuf_fragment>
-  // Hot white core at the head fading to a warm tail; HDR so bloom (if on) picks it up.
-  vec3 c = mix(vec3(1.0, 0.55, 0.18), vec3(1.0, 0.95, 0.8) * 2.5, vAlong);
-  gl_FragColor = vec4(c * (0.25 + 0.75 * vAlong) * (0.4 + 0.6 * vFade), 1.0);
+  // Soft across the thread, thinning out at both ends; pale neutral grey, no glow.
+  float across = 1.0 - vQuad.y * vQuad.y;
+  float ends = smoothstep(0.0, 0.15, vQuad.x) * smoothstep(1.0, 0.85, vQuad.x);
+  gl_FragColor = vec4(vec3(0.86, 0.88, 0.9), vAlpha * across * across * ends);
 }
 `
 
 /**
- * Muzzle-to-impact streaks for sidearm shots: a short bright segment that travels along the shot
- * with a length tied to its speed, evaluated on the GPU from each shot's origin, end and birth.
- * One additive draw for all live tracers; JS only writes the two vertices of a new shot.
+ * Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+ * that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+ * expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+ * them, and JS only writes one instance per shot. No refraction (no scene texture is available).
  */
 class AnalyticShotTracers {
   readonly root = new THREE.Group()
-  private readonly geometry = new THREE.BufferGeometry()
+  private readonly geometry = new THREE.InstancedBufferGeometry()
   private readonly now = { value: 0 }
+  private readonly pixelScale = { value: 600 }
   private readonly material = new THREE.ShaderMaterial({
-    uniforms: { tracerNow: this.now },
+    uniforms: { tracerNow: this.now, pixelScale: this.pixelScale },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
     toneMapped: false,
   })
-  private readonly line: THREE.LineSegments
-  private readonly positions = new Float32Array(MAX * 6)
-  private readonly ends = new Float32Array(MAX * 6)
-  private readonly data = new Float32Array(MAX * 4).fill(-1e30)
+  private readonly mesh: THREE.Mesh
+  private readonly starts = new Float32Array(MAX * 3)
+  private readonly ends = new Float32Array(MAX * 3)
+  private readonly data = new Float32Array(MAX).fill(-1e30)
   private readonly births = new Float64Array(MAX).fill(-Infinity)
   private epoch = 0
   private next = 0
@@ -76,16 +86,29 @@ class AnalyticShotTracers {
 
   constructor() {
     this.root.name = 'Shot tracers'
-    for (let v = 0; v < MAX * 2; v++) this.data[v * 2 + 1] = v % 2
-    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
-    this.geometry.setAttribute('tracerEnd', new THREE.BufferAttribute(this.ends, 3))
-    this.geometry.setAttribute('tracerData', new THREE.BufferAttribute(this.data, 2))
-    this.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity)
-    this.line = new THREE.LineSegments(this.geometry, this.material)
-    this.line.frustumCulled = false
-    this.line.renderOrder = 4
-    this.line.visible = false
-    this.root.add(this.line)
+    const g = this.geometry
+    g.setAttribute(
+      'corner',
+      new THREE.BufferAttribute(new Float32Array([0, -1, 1, -1, 1, 1, 0, 1]), 2),
+    )
+    // three needs a `position` attribute to size the draw; the shader ignores it.
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3))
+    g.setIndex([0, 1, 2, 0, 2, 3])
+    g.setAttribute('tracerStart', new THREE.InstancedBufferAttribute(this.starts, 3))
+    g.setAttribute('tracerEnd', new THREE.InstancedBufferAttribute(this.ends, 3))
+    g.setAttribute('tracerBirth', new THREE.InstancedBufferAttribute(this.data, 1))
+    g.instanceCount = MAX
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity)
+    this.mesh = new THREE.Mesh(g, this.material)
+    this.mesh.frustumCulled = false
+    this.mesh.renderOrder = 4
+    this.mesh.visible = false
+    this.mesh.onBeforeRender = (renderer, _scene, camera) => {
+      const height = renderer.getDrawingBufferSize(scratch).y
+      const fov = (camera as THREE.PerspectiveCamera).fov ?? 55
+      this.pixelScale.value = height / (2 * Math.tan((fov * Math.PI) / 360))
+    }
+    this.root.add(this.mesh)
     this.root.raycast = () => undefined
   }
 
@@ -101,15 +124,12 @@ class AnalyticShotTracers {
     if (now - this.epoch > 60000 || this.count(now) === 0) this.rebase(now)
     const slot = this.next++ % MAX
     this.births[slot] = now
-    for (let k = 0; k < 2; k++) {
-      const v = slot * 2 + k
-      this.positions.set(origin, v * 3)
-      this.ends.set(end, v * 3)
-      this.data[v * 2] = now - this.epoch
-    }
-    for (const name of ['position', 'tracerEnd', 'tracerData'] as const) {
+    this.starts.set(origin, slot * 3)
+    this.ends.set(end, slot * 3)
+    this.data[slot] = now - this.epoch
+    for (const name of ['tracerStart', 'tracerEnd', 'tracerBirth'] as const) {
       const attribute = this.geometry.getAttribute(name) as THREE.BufferAttribute
-      attribute.addUpdateRange(slot * 2 * attribute.itemSize, 2 * attribute.itemSize)
+      attribute.addUpdateRange(slot * attribute.itemSize, attribute.itemSize)
       attribute.needsUpdate = true
     }
   }
@@ -117,12 +137,12 @@ class AnalyticShotTracers {
   update(now: number): void {
     if (this.disposed) return
     this.now.value = now - this.epoch
-    this.line.visible = this.count(now) > 0
+    this.mesh.visible = this.count(now) > 0
   }
 
   clear(): void {
     this.births.fill(-Infinity)
-    this.line.visible = false
+    this.mesh.visible = false
   }
 
   dispose(): void {
@@ -137,12 +157,14 @@ class AnalyticShotTracers {
   private rebase(now: number): void {
     const shift = this.epoch - now
     this.epoch = now
-    for (let v = 0; v < MAX * 2; v++) if (this.data[v * 2] > -1e29) this.data[v * 2] += shift
-    const attribute = this.geometry.getAttribute('tracerData') as THREE.BufferAttribute
+    for (let v = 0; v < MAX; v++) if (this.data[v] > -1e29) this.data[v] += shift
+    const attribute = this.geometry.getAttribute('tracerBirth') as THREE.BufferAttribute
     attribute.clearUpdateRanges()
     attribute.needsUpdate = true
   }
 }
+
+const scratch = new THREE.Vector2()
 
 /** GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts). */
 export class ShotTracers {

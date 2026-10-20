@@ -338,6 +338,7 @@ export class XRARWeapons {
       if (!glass)
         this.sparks.add(hit.point.toArray(), now, normal.toArray(), {
           surface: normal.y > 0.7 ? 'ground' : 'concrete',
+          incoming: this.ray.ray.direction.toArray(),
         })
       if (!handled) this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
     }
