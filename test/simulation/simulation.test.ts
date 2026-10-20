@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../src/config/simulation.js'
 import { boxSolid } from '../../src/math/solid/mesh.js'
 import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
@@ -150,10 +151,11 @@ describe('shared simulation', () => {
     expect(() => sim.step(NaN)).toThrow()
     expect(() => sim.step(-1)).toThrow()
     sim.step(1)
-    expect(sim.stats.ticks).toBe(4)
-    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - 4 / 60)
+    const cap = simulationDefaults.maxSubsteps
+    expect(sim.stats.ticks).toBe(cap)
+    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - cap / 60)
     sim.step(1 / 60)
-    expect(sim.stats.ticks).toBe(5)
+    expect(sim.stats.ticks).toBe(cap + 1)
     sim.dispose()
   })
   it('moves the camera before a wall', () => {
@@ -433,4 +435,41 @@ it('does not reposition frozen actors when an in-flight tile finishes during ins
   restore()
   expect(sim.entityTransform('resting').position).toEqual([0, 1, 0])
   sim.dispose()
+})
+
+describe('world gravity scale', () => {
+  it('scales world gravity live and clamps to the supported range', () => {
+    const sim = new Simulation(scene())
+    expect(sim.gravityScale).toBe(1)
+    expect(sim.setGravityScale(2)).toBe(2)
+    expect(sim.setGravityScale(10)).toBe(simulationDefaults.gravityScaleRange.max)
+    expect(sim.setGravityScale(0.1)).toBe(simulationDefaults.gravityScaleRange.min)
+    sim.dispose()
+  })
+})
+
+describe('spawn ground guard', () => {
+  it('holds a spawn until ground collision is under it and settles it on that surface', () => {
+    const sim = new Simulation(scene())
+    finishStartUp(sim)
+    const before = sim.player.position[1]
+    // The render-mesh sample said the ground was 2 m lower than the collider (a buried spawn).
+    sim.holdForGround(-2)
+    expect(sim.groundHeld).toBe(true)
+    sim.step(1 / 60)
+    expect(sim.groundHeld).toBe(false)
+    expect(sim.player.position[1]).toBeCloseTo(before + 2, 2)
+  })
+  it('keeps a spawn frozen while there is no ground collision under it', () => {
+    const sim = new Simulation({
+      version: 1,
+      name: 'Void',
+      entities: [createEntity('spawn', 'spawn', [0, 5, 0])],
+    })
+    const before = sim.player.position[1]
+    sim.holdForGround(4)
+    advance(sim, 1)
+    expect(sim.groundHeld).toBe(true)
+    expect(sim.player.position[1]).toBe(before)
+  })
 })

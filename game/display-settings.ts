@@ -1,6 +1,7 @@
 /** Demo-owned display controls; Engine owns validation, frame pacing and buffer resizing. */
 import { resolveDisplaySettings, type DisplaySettings } from '@nabla/engine/config/display'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
+import { readQualityPreset, saveQualityPreset } from '@nabla/engine/runtime/quality-preset'
 
 /**
  * Read shareable URL overrides, falling back to Engine defaults for invalid input.
@@ -10,7 +11,7 @@ import type { GameRuntime } from '@nabla/engine/runtime/browser'
 export function readDisplaySettings(search = location.search): DisplaySettings {
   const params = new URLSearchParams(search)
   const scale = params.get('scale')
-  const preset = params.get('quality') ?? 'custom'
+  const preset = readQualityPreset(search)
   try {
     return resolveDisplaySettings(
       {
@@ -69,7 +70,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   sync()
   // Auto mode moves the scale live; keep the slider and label honest.
   document.getElementById('game-canvas')?.addEventListener('nabla:resolution-scale', () => sync())
-  quality.value = new URLSearchParams(location.search).get('quality') ?? 'custom'
+  quality.value = readQualityPreset()
   if (!quality.value) quality.value = 'custom'
   // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
   const releaseFocus = () => document.getElementById('game-canvas')?.blur()
@@ -125,6 +126,8 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
     persist()
   })
   document.getElementById('display-apply-quality')!.addEventListener('click', () => {
+    // Saved, not only put in the URL: hosts that strip the query (Euskadi) would lose it.
+    saveQualityPreset(quality.value)
     const url = new URL(location.href)
     url.searchParams.set('quality', quality.value)
     location.assign(url.href)

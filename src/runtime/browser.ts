@@ -21,6 +21,7 @@ import {
   type RenderBackend,
   type RenderBackendKind,
   webgpuSkippedMaterials,
+  webgpuNodeKit,
 } from '../render/backend.js'
 import { atlasFieldLightSource } from '../render/planet/instance-lights.js'
 import { UsbFeedback } from './usb/feedback.js'
@@ -128,7 +129,11 @@ import {
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
-import { createGpuTiming } from '../diagnostics/gpu-timing.js'
+import {
+  createGpuTiming,
+  WebGPUGpuTiming,
+  type TimestampRenderer,
+} from '../diagnostics/gpu-timing.js'
 import { Sidearm } from './sidearm.js'
 import {
   normalizeWeaponPoses,
@@ -194,6 +199,7 @@ import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
 import { mirrorPolicyForQuality } from '../render/entity/car-mirrors.js'
 import { GeographicView } from '../render/planet/sky.js'
+import { reuseFog } from '../render/planet/fog.js'
 import {
   PlanetWorld,
   type TileTiming,
@@ -454,6 +460,8 @@ export interface GameRuntimeOptions {
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
+  /** World gravity multiplier (see `simulationDefaults.gravityScaleRange`, default 1 = 9.81 m/s²). */
+  gravityScale?: number
   /**
    * Factor on the quality tier's texel-scaled shadow bias, 0..3 (default 1). Higher removes
    * residual shadow stripes (acne) at the cost of slightly detached shadows; live via `setShadowBias`.
@@ -603,6 +611,7 @@ export class GameRuntime {
   }
   private spawned: string[] = []
   private spawnSequence = 0
+  private worldGravityScale = 1
   private accidentReplacement?: AccidentReplacement
   private exhaustOffset: Vec3Tuple = [0, 0, 0]
   private readonly idleCinematic = new IdleCinematic()
@@ -809,6 +818,7 @@ export class GameRuntime {
     this.text = createRuntimeText(options.locale, options.messages)
     this.game.text = this.text
     this.game.recover.snapToRoad = options.recoverToRoad !== false
+    this.worldGravityScale = options.gravityScale ?? simulationDefaults.gravityScaleRange.default
     this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
     this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
     this.toolbar = new GameToolbar(
@@ -925,9 +935,14 @@ export class GameRuntime {
     configureWorldRenderer(this.renderer)
     if (options.onDiagnostics) {
       this.renderer.info.autoReset = false
-      const gl = this.renderer.getContext()
-      if (gl instanceof WebGL2RenderingContext) {
-        this.pipeline.gpuTiming = createGpuTiming(gl)
+      if (this.backend === 'webgpu') {
+        const timing = new WebGPUGpuTiming(this.renderer as unknown as TimestampRenderer)
+        this.pipeline.gpuTiming = timing.available ? timing : null
+      } else {
+        const gl = this.renderer.getContext()
+        if (gl instanceof WebGL2RenderingContext) {
+          this.pipeline.gpuTiming = createGpuTiming(gl)
+        }
       }
     }
     this.applyPixelRatio()
@@ -1106,6 +1121,7 @@ export class GameRuntime {
         scene: this.scene,
         lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
         tier: shadowTiers[this.quality.shadows]!,
+        nodeKit: webgpuNodeKit(this.renderer),
       })
     this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
     this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
@@ -1132,6 +1148,11 @@ export class GameRuntime {
           )
         : null
     if (this.world) {
+      const renderer = this.renderer
+      this.world.gpu = {
+        initTexture: (texture) => renderer.initTexture(texture),
+        compileAsync: (object) => renderer.compileAsync(object, this.camera, this.scene),
+      }
       let announced: string | undefined
       let painted = false
       this.world.beforeInstall = (key) => {
@@ -1269,6 +1290,7 @@ export class GameRuntime {
       this.options.startupTerrain === 'nearby' ? 4 : 1,
     )
     const document = structuredClone(this.document)
+    let spawnGround: number | undefined
     try {
       if (this.world) {
         const progress = (status: string) =>
@@ -1309,6 +1331,7 @@ export class GameRuntime {
           }
         }
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
+        spawnGround = ground
         if (this.options.restParkedOnGround) {
           const authored = new Map(
             this.document.entities.map((entity) => [entity.id, entity.transform.position[1]]),
@@ -1346,6 +1369,10 @@ export class GameRuntime {
         planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
+      this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
+      // Frames step the simulation from here on, while the reveal still prepares. Hold the
+      // actor until its ground collision is active, then settle it on that surface.
+      if (spawnGround !== undefined) simulation.holdForGround(spawnGround)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.startSequence =
@@ -1361,6 +1388,19 @@ export class GameRuntime {
       // vehicle and sidearm models, shader programs, and any host gate (an intro sequence).
       this.options.onProgress?.('Preparing…')
       await this.prepareReveal(controller.signal)
+      // Never reveal an actor that is still waiting for its ground collision.
+      const holdStarted = performance.now()
+      while (!simulation.settleGround(performance.now() - holdStarted > 30_000)) {
+        controller.signal.throwIfAborted()
+        await new Promise((resolve) => setTimeout(resolve, 16))
+      }
+      if (spawnGround !== undefined && this.world) {
+        // Diagnostics: actor height above the rendered ground at reveal (negative: buried).
+        const at = simulation.player.position
+        const below = groundAtSeam(this.world, at)
+        this.options.canvas.dataset.spawnGap =
+          below === undefined ? 'none' : (at[1] - below).toFixed(2)
+      }
       if (options.vehicleId) this.drivingPrepared.add(options.vehicleId)
       controller.signal.throwIfAborted()
       const first = this.startSequence?.steps[0]
@@ -1705,7 +1745,12 @@ export class GameRuntime {
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     // A solid background is stereo-safe; the desktop atmosphere/DOF/mirrors render to 2D targets.
     this.scene.background = new THREE.Color(this.view.night ? '#101827' : '#93b7cd')
-    this.scene.fog = new THREE.Fog(this.scene.background, this.quality.fog * 0.75, this.quality.fog)
+    this.scene.fog = reuseFog(
+      this.scene.fog,
+      this.scene.background,
+      this.quality.fog * 0.75,
+      this.quality.fog,
+    )
     this.sun.visible = true
     this.cull(eye)
     xr.anchor(eye.clone().sub(this.origin), rotation)
@@ -2371,7 +2416,12 @@ export class GameRuntime {
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
-      this.scene.fog = new THREE.Fog('#a6bbd5', this.quality.fog * 0.75, this.quality.fog)
+      this.scene.fog = reuseFog(
+        this.scene.fog,
+        '#a6bbd5',
+        this.quality.fog * 0.75,
+        this.quality.fog,
+      )
     }
     if (this.camera.far !== previousFar) this.camera.updateProjectionMatrix()
     this.view.root.position.copy(this.origin).negate()
@@ -3829,6 +3879,19 @@ export class GameRuntime {
   setFlipCinematicEnabled(enabled: boolean): void {
     this.assertAlive()
     this.flipCinematic.enabled = enabled
+  }
+  /** World gravity multiplier (1 = 9.81 m/s²). */
+  get gravityScale(): number {
+    return this.worldGravityScale
+  }
+  /** Scale world gravity live (clamped to `simulationDefaults.gravityScaleRange`). Returns the value used. */
+  setGravityScale(scale: number): number {
+    this.assertAlive()
+    const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
+    this.worldGravityScale = Number.isFinite(scale) ? Math.min(max, Math.max(min, scale)) : fallback
+    const simulation = this.session.simulation
+    if (simulation) this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
+    return this.worldGravityScale
   }
   /** Whether R reset snaps to the nearest road/vía (default on). */
   get recoverToRoadEnabled(): boolean {

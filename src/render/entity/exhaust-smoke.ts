@@ -2,6 +2,8 @@ import { laserSmokePools } from './laser-smoke.js'
 import { smokeDensity } from './smoke-density.js'
 /** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { exhaustSmokeSprites } from './particle-nodes.js'
 export interface ExhaustSmokeOptions {
   /** Fixed emission rate at 100% quantity; omitted uses engine load. */
   lifetime?: number
@@ -93,6 +95,7 @@ export class ExhaustSmoke {
     }
     laserSmokePools.add(this.smokePool)
     this.root.name = 'Engine exhaust smoke'
+    setWebGPUSubstitute(this.root, exhaustSmokeSprites(this.root))
     this.root.frustumCulled = false
     this.root.visible = false
   }

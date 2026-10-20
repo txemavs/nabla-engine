@@ -9,10 +9,30 @@
 - `three`
 - `../../config/lighting.js`
 - `../../render/entity/car-lights.js`
+- `../../render/webgpu-substitutes.js`
+
+## lampMaskNodes
+
+[Implementation, line 15](../../../../../src/catalog/presentation/a3-lamps.ts#L15)
+
+WebGPU twin of the `masked` patch: outside the region a signal lens is discarded (colour pass
+only, as the GLSL depth material is not patched) and the other lenses emit nothing.
+
+```ts
+lampMaskNodes(twin: THREE.Material, { tsl }: NodeKit, kind: 'brake' | 'reverse' | 'signal', lit: LampCondition): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `inside.select`
+- `lit`
+- `t.bool`
+- `t.varying`
+- `t.vec3`
 
 ## createA3Lights
 
-[Implementation, line 5](../../../../../src/catalog/presentation/a3-lamps.ts#L5)
+[Implementation, line 30](../../../../../src/catalog/presentation/a3-lamps.ts#L30)
 
 ```ts
 createA3Lights(model: THREE.Object3D): CarLights
@@ -27,23 +47,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createA3Lights.masked
 
-[Implementation, line 7](../../../../../src/catalog/presentation/a3-lamps.ts#L7)
+[Implementation, line 32](../../../../../src/catalog/presentation/a3-lamps.ts#L32)
 
 ```ts
-masked(material: THREE.MeshStandardMaterial, kind: 'brake' | 'reverse' | 'signal', color: string, condition: string, side: number): void
+masked(material: THREE.MeshStandardMaterial, kind: 'brake' | 'reverse' | 'signal', color: string, condition: string, side: number, lit: LampCondition): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `addWebGPUMaterialNodes`
 - `lamps.push`
 - `material.emissive.set`
 
-## createA3Lights.masked.callback@16
+## createA3Lights.masked.callback@43
 
-[Implementation, line 16](../../../../../src/catalog/presentation/a3-lamps.ts#L16)
+[Implementation, line 43](../../../../../src/catalog/presentation/a3-lamps.ts#L43)
 
 ```ts
-callback@16(shader): inferred by TypeScript; see implementation
+callback@43(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -51,20 +72,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `shader.fragmentShader.replace`
 - `shader.vertexShader.replace`
 
-## createA3Lights.masked.callback@30
+## createA3Lights.masked.callback@57
 
-[Implementation, line 30](../../../../../src/catalog/presentation/a3-lamps.ts#L30)
+[Implementation, line 57](../../../../../src/catalog/presentation/a3-lamps.ts#L57)
 
 ```ts
-callback@30(): inferred by TypeScript; see implementation
+callback@57(): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@33
+## createA3Lights.masked.callback@58
 
-[Implementation, line 33](../../../../../src/catalog/presentation/a3-lamps.ts#L33)
+[Implementation, line 58](../../../../../src/catalog/presentation/a3-lamps.ts#L58)
 
 ```ts
-callback@33(object): inferred by TypeScript; see implementation
+callback@58(kit, twin): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `lampMaskNodes`
+
+## createA3Lights.callback@61
+
+[Implementation, line 61](../../../../../src/catalog/presentation/a3-lamps.ts#L61)
+
+```ts
+callback@61(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -96,41 +129,93 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `source.getAttribute`
 - `source.getIndex`
 
-## createA3Lights.callback@33.callback@43
+## createA3Lights.callback@61.callback@71
 
-[Implementation, line 43](../../../../../src/catalog/presentation/a3-lamps.ts#L43)
+[Implementation, line 71](../../../../../src/catalog/presentation/a3-lamps.ts#L71)
 
 ```ts
-callback@43(n): inferred by TypeScript; see implementation
+callback@71(n): inferred by TypeScript; see implementation
 ```
 
-## createA3Lights.callback@33.callback@130
+## createA3Lights.callback@61.callback@144
 
-[Implementation, line 130](../../../../../src/catalog/presentation/a3-lamps.ts#L130)
+[Implementation, line 144](../../../../../src/catalog/presentation/a3-lamps.ts#L144)
 
 ```ts
-callback@130(j): inferred by TypeScript; see implementation
+callback@144(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `p.x.greaterThan`
+- `p.x.lessThan`
+- `p.x.lessThan(0.21).or`
+- `p.y.lessThan`
+
+## createA3Lights.callback@61.callback@155
+
+[Implementation, line 155](../../../../../src/catalog/presentation/a3-lamps.ts#L155)
+
+```ts
+callback@155(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(right ? p.y.negate() : p.y).lessThan`
+- `p.y.negate`
+
+## createA3Lights.callback@61.callback@165
+
+[Implementation, line 165](../../../../../src/catalog/presentation/a3-lamps.ts#L165)
+
+```ts
+callback@165(j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `index.getX`
 
-## createA3Lights.callback@33.callback@131
+## createA3Lights.callback@61.callback@166
 
-[Implementation, line 131](../../../../../src/catalog/presentation/a3-lamps.ts#L131)
+[Implementation, line 166](../../../../../src/catalog/presentation/a3-lamps.ts#L166)
 
 ```ts
-callback@131(sum, id): inferred by TypeScript; see implementation
+callback@166(sum, id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `pos.getY`
 
+## createA3Lights.callback@61.callback@187
+
+[Implementation, line 187](../../../../../src/catalog/presentation/a3-lamps.ts#L187)
+
+```ts
+callback@187(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `p.x.lessThan`
+
+## createA3Lights.callback@61.callback@192
+
+[Implementation, line 192](../../../../../src/catalog/presentation/a3-lamps.ts#L192)
+
+```ts
+callback@192(p): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `p.x.greaterThanEqual`
+
 ## headBeams
 
-[Implementation, line 183](../../../../../src/catalog/presentation/a3-lamps.ts#L183)
+[Implementation, line 222](../../../../../src/catalog/presentation/a3-lamps.ts#L222)
 
 ```ts
 headBeams(model: THREE.Object3D): THREE.SpotLight[]
@@ -155,12 +240,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `owner.position.copy`
 - `owner.position.copy(center).add`
 
-## headBeams.callback@187
+## headBeams.callback@226
 
-[Implementation, line 187](../../../../../src/catalog/presentation/a3-lamps.ts#L187)
+[Implementation, line 226](../../../../../src/catalog/presentation/a3-lamps.ts#L226)
 
 ```ts
-callback@187(object): inferred by TypeScript; see implementation
+callback@226(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

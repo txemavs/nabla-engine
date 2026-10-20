@@ -2,7 +2,15 @@
  * Nearby GLB triangles as static trimeshes.
  * The old set stays until the replacement is built.
  */
-import { Body, Box, Material, Quaternion, Trimesh, Vec3, World } from '../../simulation/physics.js'
+import {
+  Body,
+  Box,
+  Material,
+  Quaternion,
+  Trimesh,
+  Vec3,
+  type World,
+} from '../../simulation/physics.js'
 import type { QuatTuple, Transform, Vec3Tuple } from '../../math/frame/vectors.js'
 import type { PlanetCollisionChunk } from '../contract.js'
 
@@ -19,7 +27,14 @@ export interface PlanetCollisionTile {
   poles?: PlanetPole[]
 }
 
-/** Nearby trimeshes use the GLB vertices, including roads and the curved ground. */
+/** A chunk this close to an actor (metres, to its bounds) is built at once, never deferred. */
+export const URGENT_CHUNK_DISTANCE = 4
+
+/**
+ * Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+ * Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+ * update with their colliders disabled, and the complete set is switched on together.
+ */
 export class PlanetCollisions {
   private tiles: PlanetCollisionTile[] = []
   private built = new Map<string, Body>()
@@ -38,6 +53,8 @@ export class PlanetCollisions {
   constructor(
     private world: World,
     private material: Material,
+    /** Staged: mount disabled bodies, never switch them on; the owner commits them. */
+    private staged = false,
   ) {}
   setTiles(tiles: PlanetCollisionTile[]) {
     const key = tiles
@@ -124,36 +141,59 @@ export class PlanetCollisions {
     }
     const candidates = this.candidates
     const end = performance.now() + budgetMs
-    do {
-      const next = candidates.find((c) => !this.built.has(c.key))
-      if (!next) break
+    let trimeshes = 0
+    for (const next of candidates) {
+      if (this.built.has(next.key)) continue
+      // Chunks under an actor are built now; the rest at most one trimesh per update.
+      const urgent = next.distance <= URGENT_CHUNK_DISTANCE
+      if (!urgent && (trimeshes > 0 || performance.now() >= end)) break
       const body = new Body({ mass: 0, material: this.material })
       body.position.set(...(next.tile.pose.position as Vec3Tuple))
       body.quaternion.set(...(next.tile.pose.rotation as QuatTuple))
       if (next.pole) {
         body.addShape(new Box(new Vec3(...next.pole.half)), new Vec3(...next.pole.center))
-        this.built.set(next.key, body)
-        continue
+      } else {
+        const count = next.chunk!.triangles.length / 3
+        if (count >= 3) {
+          const indices = new Uint32Array(count)
+          for (let i = 0; i < count; i++) indices[i] = i
+          body.addShape(new Trimesh(next.chunk!.triangles, indices))
+          trimeshes++
+        }
       }
-      const count = next.chunk!.triangles.length / 3
-      if (count < 3) {
-        this.built.set(next.key, body)
-        continue
-      }
-      const indices = new Uint32Array(count)
-      for (let i = 0; i < count; i++) indices[i] = i
-      body.addShape(new Trimesh(next.chunk!.triangles, indices))
+      body.setCollisionEnabled(false)
+      this.world.addBody(body, false)
       this.built.set(next.key, body)
-    } while (performance.now() < end)
+    }
+    // Nothing active yet (start-up, teleport): the chunks under an actor collide now instead of
+    // waiting for the whole set, or the actor falls through while the rest is cooked.
+    if (!this.staged && ![...this.built.values()].some((b) => b.collisionEnabled)) {
+      let enabled = false
+      for (const c of candidates) {
+        if (c.distance > URGENT_CHUNK_DISTANCE) break
+        const body = this.built.get(c.key)
+        if (body && !body.collisionEnabled) {
+          body.setCollisionEnabled(true)
+          enabled = true
+        }
+      }
+      if (enabled) this.world.raw.updateSceneQueries()
+    }
     this.ready = candidates.every((c) => this.built.has(c.key))
     // Swap complete nearby coverage atomically; never collide with both LODs.
-    if (this.ready) {
+    if (this.ready && !this.staged) {
+      let changed = false
       for (const [key, body] of this.built) {
         if (!this.wanted.has(key)) {
-          if (body.world) this.world.removeBody(body)
+          if (body.world) this.world.removeBody(body, false)
           this.built.delete(key)
-        } else if (!body.world) this.world.addBody(body)
+          changed = true
+        } else if (!body.collisionEnabled) {
+          body.setCollisionEnabled(true)
+          changed = true
+        }
       }
+      if (changed) this.world.raw.updateSceneQueries()
     }
   }
   private replacement: { id: string; staged: PlanetCollisions } | undefined
@@ -167,7 +207,11 @@ export class PlanetCollisions {
   ): (() => void) | undefined {
     if (this.replacement?.id !== tile.id) {
       this.discardReplacement()
-      this.replacement = { id: tile.id, staged: new PlanetCollisions(new World(), this.material) }
+      // Cooked in the live world, disabled, so the commit only switches colliders.
+      this.replacement = {
+        id: tile.id,
+        staged: new PlanetCollisions(this.world, this.material, true),
+      }
     }
     const staged = this.replacement.staged
     staged.setTiles([tile])
@@ -176,15 +220,15 @@ export class PlanetCollisions {
     return () => {
       for (const [key, body] of this.built)
         if (key.startsWith(previousId + ':')) {
-          if (body.world) this.world.removeBody(body)
+          if (body.world) this.world.removeBody(body, false)
           this.built.delete(key)
         }
       for (const [key, body] of staged.built) {
-        if (body.world) staged.world.removeBody(body)
-        this.world.addBody(body)
+        body.setCollisionEnabled(true)
         this.built.set(key, body)
       }
       staged.built.clear()
+      this.world.raw.updateSceneQueries()
       this.tiles = this.tiles.map((existing) => (existing.id === previousId ? tile : existing))
       this.tileKey = ''
       this.selectionKey = ''
@@ -192,15 +236,13 @@ export class PlanetCollisions {
     }
   }
   discardReplacement(): void {
-    if (this.replacement) {
-      this.replacement.staged.dispose()
-      this.replacement.staged.world.raw.free()
-    }
+    this.replacement?.staged.dispose()
     this.replacement = undefined
   }
   dispose() {
     this.discardReplacement()
-    for (const body of this.built.values()) if (body.world) this.world.removeBody(body)
+    for (const body of this.built.values()) if (body.world) this.world.removeBody(body, false)
+    if (this.built.size) this.world.raw.updateSceneQueries()
     this.built.clear()
     this.tiles = []
   }

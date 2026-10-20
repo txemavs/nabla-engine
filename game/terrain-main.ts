@@ -16,6 +16,7 @@ import { hasVehiclePreset, presetEntities } from '@nabla/engine/vehicles'
 import { mapTileId } from '@nabla/engine/scene'
 import { MissingTiles } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
+import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { LoadingScreen, showError } from './loading.js'
 import { startError } from './start-error.js'
 import { bindPosition, showLocation } from './position.js'
@@ -33,6 +34,7 @@ import { bindLightControls } from './light-ui.js'
 import { bindExhaustControls } from './exhaust-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
+import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
 import {
   hostSteeringWheelsFromSearch,
   steeringWheelStorage,
@@ -145,6 +147,7 @@ try {
     fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
+    gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
@@ -178,7 +181,7 @@ try {
     restParkedOnGround: true,
     // Same streaming as Studio's ground mode: the cells around the player first, the rest by distance.
     performance: {
-      preset: params.get('quality') ?? 'custom',
+      preset: readQualityPreset(),
       ...(params.has('xr') ? { buildings: 1 } : {}),
     },
     tiles: {
@@ -273,6 +276,7 @@ try {
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
+  bindGravityScaleSlider(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
   const roadStyle = bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   bindAnisotropySelect(runtime, roadStyle)

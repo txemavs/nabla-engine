@@ -9,6 +9,8 @@ import {
 import { planetTileFrame } from '../../planet/tiles.js'
 import type { MapTile } from '../../scene/mercator.js'
 import { SURFACE_COLORS } from '../../planet/land/surface.js'
+import { addWebGPUMaterialNodes } from '../webgpu-substitutes.js'
+import { seaNodes } from './surface-nodes.js'
 /** Coastline tiles render independently of building/road arrivals. */
 export class SeaWater {
   readonly root = new THREE.Group()
@@ -47,6 +49,7 @@ export class SeaWater {
     // Adapted from Streets GL (StrandedKitty, MIT): three drifting normal samples.
     // License: assets/licenses/streets-gl-MIT.txt. No reflection camera or wave physics.
     this.material.onBeforeCompile = (shader) => this.shade(shader)
+    this.seaNodes(this.material)
     this.plane.rotateX(-Math.PI / 2)
     this.sea = new THREE.InstancedMesh(this.plane, this.material, 441)
     this.sea.count = 0
@@ -89,6 +92,7 @@ export class SeaWater {
     const material = this.material.clone()
     material.defines = {}
     material.onBeforeCompile = (shader) => this.shade(shader)
+    this.seaNodes(material)
     return material
   }
   /** Cascades darken the flat colour. The solar glint stays out of the shadow. */
@@ -205,6 +209,19 @@ export class SeaWater {
       this.sea.setMatrixAt(index, matrix)
     })
     this.sea.instanceMatrix.needsUpdate = true
+  }
+  /** The WebGPU twin of `shade`. */
+  private seaNodes(material: THREE.MeshStandardMaterial): void {
+    addWebGPUMaterialNodes(material, (kit, twin) =>
+      seaNodes(
+        twin as never,
+        kit,
+        this.texture,
+        this.time,
+        this.solarDirection,
+        this.solarStrength,
+      ),
+    )
   }
   private shade(shader: {
     vertexShader: string

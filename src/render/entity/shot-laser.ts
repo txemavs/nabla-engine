@@ -1,6 +1,8 @@
 import { laserTuning } from '../../config/gameplay-tuning.js'
 import { sampleLaserSmoke } from './laser-smoke.js'
 import * as THREE from 'three'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { laserBeamMaterial, laserHaloMaterial } from './shot-laser-nodes.js'
 import type { Vec3Tuple } from '../../entity/schema.js'
 
 /** World-space laser sight: thin beam from muzzle to aim point plus a surface pin. */
@@ -98,6 +100,11 @@ export class ShotLaser {
       this.halo.quaternion.copy(camera.quaternion)
       this.halo.updateMatrixWorld()
     }
+    setWebGPUSubstitute(this.beam, laserBeamMaterial(this.beamMat, laserTuning.beamWidthPixels * 2))
+    setWebGPUSubstitute(
+      this.halo,
+      laserHaloMaterial(this.halo.material as THREE.ShaderMaterial, laserTuning.haloOpacity),
+    )
     this.root.add(this.beam, this.pin, this.halo)
     this.root.visible = false
     this.root.raycast = () => undefined
