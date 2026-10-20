@@ -150,36 +150,7 @@ export class GameRenderPipeline {
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
       this.gpuTiming?.beginPass('portals')
-      this.renderedPortals = renderPortals(
-        view.portals,
-        renderer,
-        scene,
-        camera,
-        (remote) => {
-          const remoteEye = remote.position.clone().add(origin)
-          frame.cull(remoteEye)
-          if (!sky.enabled) return
-          const restore = portalEnvironment(
-            sky,
-            scene,
-            remoteEye,
-            eye,
-            origin,
-            frame.clock,
-            frame.ambient,
-            frame.lights,
-          )
-          try {
-            sky.render(renderer, remote, remoteEye)
-            renderer.autoClear = false
-          } catch (error) {
-            restore()
-            throw error
-          }
-          return restore
-        },
-        frame.externalViews,
-      )
+      this.renderedPortals = this.renderPortals(frame)
       this.gpuTiming?.endPass('portals')
       recordShaders('portals')
       this.timings.portalsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
@@ -266,8 +237,42 @@ export class GameRenderPipeline {
       renderer.autoClear = autoClear
     }
   }
+  /** Remote portal views, each with its destination's sky and environment (`portalEnvironment`). */
+  private renderPortals(frame: GameRenderFrame): number {
+    const { renderer, scene, camera, view, sky, origin, eye } = frame
+    return renderPortals(
+      view.portals,
+      renderer,
+      scene,
+      camera,
+      (remote) => {
+        const remoteEye = remote.position.clone().add(origin)
+        frame.cull(remoteEye)
+        if (!sky.enabled) return
+        const restore = portalEnvironment(
+          sky,
+          scene,
+          remoteEye,
+          eye,
+          origin,
+          frame.clock,
+          frame.ambient,
+          frame.lights,
+        )
+        try {
+          sky.render(renderer, remote, remoteEye)
+          renderer.autoClear = false
+        } catch (error) {
+          restore()
+          throw error
+        }
+        return restore
+      },
+      frame.externalViews,
+    )
+  }
   /**
-   * WebGPU frame: mirrors, then the main scene. GLSL passes without a node-material port yet are
+   * WebGPU frame: mirrors, portals, then the main scene. GLSL passes without a node-material port yet are
    * skipped; see docs/webgpu.md.
    */
   private renderWebGPU(frame: GameRenderFrame): void {
@@ -281,21 +286,37 @@ export class GameRenderPipeline {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
       // Mirrors capture through the TSL reflector twin (mirror-nodes.ts), with the sky pass painted
-      // into each capture as under WebGL.
-      view.renderMirrors(
-        renderer,
-        scene,
-        camera,
-        frame.mirrorVehicle,
-        frame.time,
-        frame.sky.enabled && frame.skyVisible !== false
-          ? (reflection) =>
-              frame.sky.render(renderer, reflection, reflection.position.clone().add(frame.origin))
-          : undefined,
-      )
+      // into each capture as under WebGL; portals show black inside mirror captures there too.
+      const portalStates = [...view.portals.values()].map((surface) => ({
+        surface,
+        live: surface.mesh.material.uniforms.live.value,
+      }))
+      for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
+      try {
+        view.renderMirrors(
+          renderer,
+          scene,
+          camera,
+          frame.mirrorVehicle,
+          frame.time,
+          frame.sky.enabled && frame.skyVisible !== false
+            ? (reflection) =>
+                frame.sky.render(
+                  renderer,
+                  reflection,
+                  reflection.position.clone().add(frame.origin),
+                )
+            : undefined,
+        )
+      } finally {
+        for (const { surface, live } of portalStates)
+          surface.mesh.material.uniforms.live.value = live
+      }
       const mirrorsDone = this.diagnostics ? performance.now() : 0
       this.timings.mirrorsMs = mirrorsDone - started
-      this.timings.portalsMs = 0
+      this.renderedPortals = this.renderPortals(frame)
+      const portalsDone = this.diagnostics ? performance.now() : 0
+      this.timings.portalsMs = portalsDone - mirrorsDone
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
@@ -321,7 +342,7 @@ export class GameRenderPipeline {
       }
       if (skyDrawn) frame.sky.renderClouds(renderer, camera)
       monitors.finish()
-      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - mirrorsDone
+      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - portalsDone
       this.timings.postMs = 0
     } finally {
       monitors.finish()

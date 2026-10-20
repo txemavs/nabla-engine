@@ -101,7 +101,7 @@ export function displayBlend(
 }
 
 /** True while the renderer draws to the canvas (through its output pass), false into a target. */
-const onScreen = (t: N) =>
+export const onScreen = (t: N) =>
   t
     .uniform(1)
     .onRenderUpdate(({ renderer }: N) => {
