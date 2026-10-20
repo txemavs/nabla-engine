@@ -6,7 +6,7 @@ export class GameToolbar {
   private readonly lifetime = new AbortController()
   static styleButton(button: HTMLButtonElement): void {
     button.style.cssText =
-      'width:44px;height:44px;flex:none;display:grid;place-items:center;padding:0;border:2px solid #395e79;border-radius:12px;background:#142735;color:#c6e6ff;touch-action:none;cursor:pointer'
+      'width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--button,#252525);color:var(--ink,#eee);touch-action:none;cursor:pointer'
   }
   constructor(
     host: HTMLElement,
@@ -48,7 +48,7 @@ export class GameToolbar {
     const panel = document.createElement('div')
     panel.hidden = true
     panel.style.cssText =
-      'position:absolute;right:54px;bottom:0;width:76px;padding:8px;border:1px solid #395e79;border-radius:10px;background:#142735;color:#c6e6ff;font:14px system-ui'
+      'position:absolute;right:46px;bottom:0;width:76px;padding:8px;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--surface,#1e1e1e);color:var(--ink,#eee);font:14px Arial,sans-serif'
     const label = document.createElement('label')
     const output = document.createElement('span')
     const input = document.createElement('input')

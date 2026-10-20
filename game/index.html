@@ -180,11 +180,12 @@
         z-index: 10;
         pointer-events: none;
       }
+      /* Hidden by default (as in Euskadi Online): speed lives on the in-car dashboard. */
       #game-hud {
         position: fixed;
         top: 20px;
         left: 20px;
-        display: flex;
+        display: none !important;
         flex-direction: column;
         gap: 8px;
         font-size: 14px;
@@ -200,9 +201,21 @@
         font-size: 2rem;
         font-weight: 600;
       }
-      /* The bottom line is the fps readout; the engine HUD's key help is hidden. */
+      /* The bottom line is the fps readout; the engine HUD's key help sits at the top left
+         (Euskadi Online placement). */
       .nabla-game-hud-hint {
-        display: none;
+        position: fixed;
+        left: 20px;
+        top: 52px;
+        max-width: calc(100vw - 40px);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font:
+          16px/20px Arial,
+          sans-serif;
+        color: #eee;
+        text-shadow: 0 1px 4px #000;
       }
       .nabla-game-hud {
         bottom: 36px !important;
