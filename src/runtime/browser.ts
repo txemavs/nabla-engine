@@ -3,6 +3,7 @@ import {
   writeVehicleLights,
   type VehicleLightTuning,
 } from '../render/vehicle-presentation/light-tuning.js'
+import { detectCompressedTextureSupport } from '../render/planet/tile-compression.js'
 import { installInterfaceStyles } from './interface-style.js'
 import { mountEngineVersionLabel } from './engine-version.js'
 import {
@@ -1215,6 +1216,8 @@ export class GameRuntime {
         initTexture: (texture) => renderer.initTexture(texture),
         compileAsync: (object) => renderer.compileAsync(object, this.camera, this.scene),
       }
+      // KTX2 tile textures are transcoded in the tile worker to a format this renderer samples.
+      this.world.textureSupport = detectCompressedTextureSupport(renderer)
       let announced: string | undefined
       let painted = false
       this.world.beforeInstall = (key) => {

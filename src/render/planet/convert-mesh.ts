@@ -5,10 +5,22 @@
  * `supports-candidate-*.glb`) publish POSITION only. Missing NORMALs are computed here so the
  * worker can install the layer instead of failing the whole cell. Their triangles are kept as
  * published: no client-side filter removes asphalt or bridge supports.
+ *
+ * Quantized GLBs (`KHR_mesh_quantization`, usually with `EXT_meshopt_compression`) need no
+ * special case: `fromBufferAttribute` de-normalizes int8/int16 attributes and the node matrix
+ * carries the dequantization scale/offset, so every array below is float32 in tile metres.
  */
-import { Matrix3, Mesh, MeshStandardMaterial, Vector3, type BufferGeometry } from 'three'
+import {
+  Matrix3,
+  Mesh,
+  MeshStandardMaterial,
+  Vector3,
+  type BufferGeometry,
+  type CompressedTexture,
+} from 'three'
 import { seaCoverageIndex } from '../../planet/sea-coverage.js'
 import { isCandidateRoadKind, tagCandidateRoadMesh, type PlanetMesh } from '../../planet/index.js'
+import { compressedTexturePayload, isCompressedTileTexture } from './tile-compression.js'
 
 export const PLANET_MESH_VERTEX_LIMIT = 4_000_000
 
@@ -82,6 +94,12 @@ export function convertPlanetGlbMesh(
     tint: '#' + material.color.getHexString(),
     side: material.side,
     metadata,
+  }
+  // KTX2 (KHR_texture_basisu) textures arrive already transcoded to GPU blocks: copy the mips
+  // into the payload here. Plain PNG/JPEG textures keep the ImageBitmap path unchanged.
+  if (uv && isCompressedTileTexture(material.map)) {
+    converted.compressedMap = compressedTexturePayload(material.map as CompressedTexture)
+    return { mesh: converted }
   }
   const image = material.map?.image
   return uv && image ? { mesh: converted, image: image as CanvasImageSource } : { mesh: converted }
