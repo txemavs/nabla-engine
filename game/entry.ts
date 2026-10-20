@@ -35,10 +35,19 @@ export function browserStorage(): SourceStorage | undefined {
  * remembered choice; with none remembered, the package folder when it publishes the default start
  * cell (one manifest request; no index file), else the flat tile.
  */
+/** Default package base: the build's tile route (VITE_NABLA_TILES_URL), else the folder mount. */
+export function configuredPackagesUrl(): string {
+  return (
+    (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_NABLA_TILES_URL ||
+    DEFAULT_TERRAIN_QUERY.terrain
+  )
+}
+
 export async function resolveEntry(
   search: string = location.search,
   storage: SourceStorage | undefined = browserStorage(),
   probe: (base: string) => Promise<boolean> = probeTerrainFolder,
+  packagesUrl: string = configuredPackagesUrl(),
 ): Promise<Entry> {
   const params = new URLSearchParams(search)
   // Dynamic preparation (`api`, `static`) is the original demo's own mode.
@@ -46,12 +55,15 @@ export async function resolveEntry(
   if (parseTerrainSource(search) || params.has('api') || params.has('static'))
     return { mode: 'drive', search }
 
-  const published = await probe(DEFAULT_TERRAIN_QUERY.terrain)
+  const published = await probe(packagesUrl)
   const choice = chooseTerrainSource({
     search,
     stored: loadTerrainSource(storage, SOURCE_STORAGE_KEY),
     packagesAvailable: published,
   })
+  // The build's tile route (same-origin Atlas proxy, as Euskadi uses) replaces the folder mount.
+  if (choice.from === 'default' && choice.source.kind === 'packages')
+    choice.source = { ...choice.source, url: packagesUrl }
   const next = new URLSearchParams(withTerrainSource(search, choice.source))
   if (choice.source.kind === 'packages') {
     // Start over the default road, then let anything the URL already said win.
