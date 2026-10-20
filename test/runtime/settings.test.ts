@@ -28,7 +28,10 @@ it('shares named mobile budgets and preserves explicitly disabled render effects
   expect(p.shadows).toBe(0)
   expect(p.mirrors).toBe(0)
   expect(p.buildings).toBe(0)
-  expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 12 })
+  expect(p.smoke).toBe(0)
+  expect(p.distance).toBe(500)
+  expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 8 })
+  expect(normalizePerformance({ preset: 'ultra' }).smoke).toBe(10)
   expect(normalizePerformance({ preset: 'ultra' }).fog).toBe(8000)
 })
 it('minimal quality reduces pixels without dropping collision coverage below the safe mobile tier', () => {
