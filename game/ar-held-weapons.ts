@@ -8,15 +8,28 @@ const squeezed = (hand: GrabHand) =>
   !!hand.source?.gamepad?.buttons[1]?.pressed ||
   (hand.source?.gamepad?.buttons[1]?.value ?? 0) > 0.6
 
-type Held = { preset: HeldWeaponPreset; root: THREE.Group; grab: XRObjectGrab }
+type Held = {
+  preset: HeldWeaponPreset
+  root: THREE.Group
+  grab: XRObjectGrab
+  /** Grip to tip along -Z, metres. */
+  blade: number
+  tip: THREE.Vector3 | null
+  lastStrike: number
+}
+/** Tip speed that counts as a swing, m/s. */
+const SWING_SPEED = 2.5
 
 /**
  * Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
  * model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+ * A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+ * (`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
  */
 export class ARHeldWeapons {
   private readonly items = new Map<string, Held>()
   private generation = 0
+  onStrike?: (origin: THREE.Vector3, direction: THREE.Vector3, distance: number) => boolean
   constructor(private readonly scene: THREE.Scene) {}
 
   static presets(): HeldWeaponPreset[] {
@@ -42,7 +55,15 @@ export class ARHeldWeapons {
       model.add(object)
       root.add(model)
       this.scene.add(root)
-      item = { preset, root, grab: new XRObjectGrab() }
+      const bounds = new THREE.Box3().setFromObject(model, true)
+      item = {
+        preset,
+        root,
+        grab: new XRObjectGrab(),
+        blade: Math.max(0.1, -bounds.min.z),
+        tip: null,
+        lastStrike: -Infinity,
+      }
       this.items.set(preset.id, item)
     }
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -68,7 +89,27 @@ export class ARHeldWeapons {
         holding.map((h) => h.grip),
         dt,
       )
+      this.swing(item, dt)
     }
+  }
+
+  private swing(item: Held, dt: number): void {
+    const melee = item.preset.melee
+    if (!melee || !item.grab.hands.length || dt <= 0) {
+      item.tip = null
+      return
+    }
+    const origin = item.root.getWorldPosition(new THREE.Vector3())
+    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(
+      item.root.getWorldQuaternion(new THREE.Quaternion()),
+    )
+    const tip = origin.clone().addScaledVector(direction, item.blade)
+    const speed = item.tip ? tip.distanceTo(item.tip) / dt : 0
+    item.tip = tip
+    const now = performance.now()
+    if (speed < SWING_SPEED || now - item.lastStrike < melee.swingMs) return
+    const distance = Math.min(melee.reachM, item.blade)
+    if (this.onStrike?.(origin, direction, distance)) item.lastStrike = now
   }
 
   clear(): void {

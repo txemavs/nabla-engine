@@ -10,6 +10,7 @@ import { ImpactMarks } from '../render/entity/impact-marks.js'
 import { ShotSparks } from '../render/entity/shot-sparks.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { Sidearm } from './sidearm.js'
+import type { WeaponPreset } from '../catalog/weapons/library.js'
 import { XRLoadout } from './xr-loadout.js'
 import type { GameXR } from './xr.js'
 import type { GrabHand } from './xr-grab.js'
@@ -40,14 +41,17 @@ export class XRARWeapons {
     private readonly xr: GameXR,
     viewport: HTMLElement,
     initialPistols = 2,
+    /** Extra firearm presets carried after the two default pistols (start absent). */
+    extra: readonly WeaponPreset[] = [],
   ) {
     const weapons = [
       new Sidearm(viewport, undefined, 'low'),
       new Sidearm(viewport, undefined, 'low'),
+      ...extra.map((preset) => new Sidearm(viewport, preset, 'low')),
     ]
     this.contacts.onContact = (point) => this.audio.weaponSound('prop-impact', point.toArray())
     this.loadout = new XRLoadout(scene, weapons, xr.calibration)
-    for (const p of this.loadout.allPistols.slice(Math.max(0, initialPistols)))
+    for (const p of this.loadout.allPistols.slice(Math.max(0, Math.min(2, initialPistols))))
       this.loadout.removePistol(p)
     this.loadout.physicalPistols = true
     this.loadout.discardDropped = (root, dt) =>
@@ -318,6 +322,29 @@ export class XRARWeapons {
       if (normal.dot(this.ray.ray.direction) > 0) normal.negate()
       if (!glass) this.sparks.add(hit.point.toArray(), now, normal.toArray())
       if (!handled) this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
+    }
+  }
+
+  /**
+   * Non-firearm hit (for example a melee swing) through the same impact path as a shot:
+   * host onHit, sparks and marks. True when something within `distance` was hit.
+   */
+  strike(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    distance: number,
+    targets: THREE.Object3D[],
+    now: number,
+  ): boolean {
+    this.ray.set(origin, direction.clone().normalize())
+    const far = this.ray.far
+    this.ray.far = distance
+    try {
+      if (!this.ray.intersectObjects(targets, false).length) return false
+      this.hitTargets(targets, now)
+      return true
+    } finally {
+      this.ray.far = far
     }
   }
 

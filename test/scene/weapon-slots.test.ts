@@ -51,3 +51,20 @@ describe('weapon slots', () => {
     expect(keyLabel('Digit5')).toBe('5')
   })
 })
+
+describe('select-fire presets', () => {
+  it('keep their own magazine and rate in automatic', async () => {
+    const { specForMode } = await import('../../src/simulation/weapons/machine-pistol.js')
+    const base = {
+      magazineCapacity: 30,
+      chamber: 1,
+      cycleMs: 75,
+      reloadMs: { magazineOut: 1, magazineIn: 2, slideRelease: 3 },
+    }
+    expect(specForMode(base, 'burst30', 800)).toMatchObject({ magazineCapacity: 30, cycleMs: 75 })
+    expect(specForMode({ ...base, magazineCapacity: 13, cycleMs: 100 }, 'burst30')).toMatchObject({
+      magazineCapacity: 30,
+      cycleMs: 100 * 0 + 60000 / 900,
+    })
+  })
+})

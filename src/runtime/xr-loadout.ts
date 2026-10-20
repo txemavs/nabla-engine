@@ -72,8 +72,11 @@ export class XRLoadout {
   get pistols(): CarriedPistol[] {
     return this.allPistols.filter((p) => !this.absent.has(p))
   }
-  addPistol(): boolean {
-    const p = this.allPistols.find((p) => this.absent.has(p))
+  /** Bring back an absent weapon of `presetId` (default: the first weapon's preset). */
+  addPistol(presetId = this.allPistols[0]?.weapon.preset?.id): boolean {
+    const p = this.allPistols.find(
+      (p) => this.absent.has(p) && (!presetId || p.weapon.preset?.id === presetId),
+    )
     if (!p) return false
     this.absent.delete(p)
     p.weapon.reset()
@@ -116,7 +119,7 @@ export class XRLoadout {
     scene.add(this.body, this.loose)
     this.allPistols = weapons.map((weapon, i) => {
       const holster = new THREE.Group()
-      holster.position.set(i === 0 ? -0.25 : 0.25, -0.57, -0.08)
+      holster.position.set([-0.25, 0.25][i] ?? 0, -0.57, -0.08)
       holster.rotation.x = Math.PI
       this.body.add(holster)
       const pouch = new THREE.Mesh(this.geometry, this.material)
