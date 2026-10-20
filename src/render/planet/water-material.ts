@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { addWebGPUMaterialNodes } from '../webgpu-substitutes.js'
+import { riverWaveNodes } from './surface-nodes.js'
 /** The river's three drifting normal samples, shared with the sea. No reflection pass.
  * Adapted from Streets GL (MIT); assets/licenses/streets-gl-MIT.txt.
  */
@@ -9,6 +11,9 @@ export function waterWaves(
   offset?: { value: THREE.Vector3 },
 ): void {
   material.customProgramCacheKey = () => `river-waves-v1-${offset ? 'world' : 'local'}`
+  addWebGPUMaterialNodes(material, (kit, twin) =>
+    riverWaveNodes(twin as never, kit, texture, time, offset),
+  )
   material.onBeforeCompile = (shader) => {
     shader.uniforms.waterTime = time
     shader.uniforms.waterNormal = { value: texture }

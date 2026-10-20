@@ -1,5 +1,7 @@
 import { SURFACE_LAYERS } from '../../planet/land/surface.js'
 import * as THREE from 'three'
+import { addWebGPUMaterialNodes } from '../webgpu-substitutes.js'
+import { asphaltContrastNodes } from './surface-nodes.js'
 
 /**
  * `{ map }` when there is a texture, else `{}`: three.js warns "parameter 'map' has value of undefined"
@@ -270,6 +272,9 @@ export function withAsphaltContrast<T extends THREE.Material>(
   }
   const key = mask ? 'asphalt-mask:' : 'asphalt-contrast:'
   material.customProgramCacheKey = () => key + material.onBeforeCompile.toString()
+  addWebGPUMaterialNodes(material, (kit, twin) =>
+    asphaltContrastNodes(twin as never, kit, asphaltUniforms, mask),
+  )
   material.userData.asphaltContrast = asphaltUniforms
   if (mask) material.userData.asphaltMask = mask
   return material

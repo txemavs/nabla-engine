@@ -1,5 +1,7 @@
 import { BufferAttribute, BufferGeometry, DoubleSide, Mesh, ShaderMaterial, Vector3 } from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { tireMarkMaterial } from './particle-nodes.js'
 export type TireMarkContact = {
   contactPoint: Vec3Tuple | null
   contactNormal: Vec3Tuple | null
@@ -84,6 +86,7 @@ export class TireMarks {
     this.root.frustumCulled = false
     this.root.visible = false
     this.root.name = 'Transient tyre marks'
+    setWebGPUSubstitute(this.root, tireMarkMaterial(this.root))
   }
   update(dt: number, vehicle: string | null, contacts: TireMarkContact[], origin: Vector3): void {
     this.time += Number.isFinite(dt) ? Math.max(0, dt) : 0

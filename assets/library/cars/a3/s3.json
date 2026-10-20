@@ -47,6 +47,20 @@
       }
     },
     "clusterOffset": [0, 0.01, 0],
+    "lights": {
+      "tuning": {
+        "low": 0,
+        "high": 1,
+        "frontX": 0,
+        "frontY": 0,
+        "frontZ": 0,
+        "rearX": 0,
+        "rearY": 0,
+        "rearZ": 0.59,
+        "rearIntensity": 0.95,
+        "rearReach": 1
+      }
+    },
     "colliders": [
       {
         "size": [1.75, 0.48, 4.25],

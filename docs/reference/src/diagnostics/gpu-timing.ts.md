@@ -158,9 +158,201 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.gl.deleteQuery`
 - `this.results.clear`
 
+## WebGPUGpuTiming.constructor
+
+[Implementation, line 243](../../../../src/diagnostics/gpu-timing.ts#L243)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+constructor(private readonly renderer: TimestampRenderer): instance
+```
+
+## WebGPUGpuTiming.pool
+
+[Implementation, line 247](../../../../src/diagnostics/gpu-timing.ts#L247)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+pool(): inferred by TypeScript; see implementation
+```
+
+## WebGPUGpuTiming.beginFrame
+
+[Implementation, line 251](../../../../src/diagnostics/gpu-timing.ts#L251)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+beginFrame(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.frames.set`
+
+## WebGPUGpuTiming.beginPass
+
+[Implementation, line 257](../../../../src/diagnostics/gpu-timing.ts#L257)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+beginPass(pass: GpuTimingPass): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `this.open.set`
+
+## WebGPUGpuTiming.endPass
+
+[Implementation, line 262](../../../../src/diagnostics/gpu-timing.ts#L262)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+endPass(pass: GpuTimingPass): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `before.get`
+- `this.frames.get`
+- `this.open.delete`
+- `this.open.get`
+- `this.owners.set`
+
+## WebGPUGpuTiming.endFrame
+
+[Implementation, line 275](../../../../src/diagnostics/gpu-timing.ts#L275)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+endFrame(): void
+```
+
+## WebGPUGpuTiming.endFrame.callback@280
+
+[Implementation, line 280](../../../../src/diagnostics/gpu-timing.ts#L280)
+
+```ts
+callback@280(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.frames.get`
+- `this.owners.delete`
+- `this.owners.get`
+
+## WebGPUGpuTiming.endFrame.callback@291
+
+[Implementation, line 291](../../../../src/diagnostics/gpu-timing.ts#L291)
+
+```ts
+callback@291(): inferred by TypeScript; see implementation
+```
+
+## WebGPUGpuTiming.endFrame.callback@292
+
+[Implementation, line 292](../../../../src/diagnostics/gpu-timing.ts#L292)
+
+```ts
+callback@292(): inferred by TypeScript; see implementation
+```
+
+## WebGPUGpuTiming.finish
+
+[Implementation, line 297](../../../../src/diagnostics/gpu-timing.ts#L297)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+finish(): GpuFrameTimings | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `Object.values`
+- `[...this.frames.keys()].sort`
+- `passes.reduce`
+- `this.frames.delete`
+- `this.frames.get`
+- `this.frames.keys`
+- `this.owners.delete`
+
+## WebGPUGpuTiming.finish.callback@305
+
+[Implementation, line 305](../../../../src/diagnostics/gpu-timing.ts#L305)
+
+```ts
+callback@305(a, b): inferred by TypeScript; see implementation
+```
+
+## WebGPUGpuTiming.finish.callback@312
+
+[Implementation, line 312](../../../../src/diagnostics/gpu-timing.ts#L312)
+
+```ts
+callback@312(sum, ms): inferred by TypeScript; see implementation
+```
+
+## WebGPUGpuTiming.dispose
+
+[Implementation, line 318](../../../../src/diagnostics/gpu-timing.ts#L318)
+
+WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+`beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+readback is still mapping: those queries ride along with the next one). Frame time is the sum
+of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.frames.clear`
+- `this.open.clear`
+- `this.owners.clear`
+
 ## NullGpuTiming.beginPass
 
-[Implementation, line 217](../../../../src/diagnostics/gpu-timing.ts#L217)
+[Implementation, line 328](../../../../src/diagnostics/gpu-timing.ts#L328)
 
 Null implementation for environments without GPU timing support.
 
@@ -170,7 +362,7 @@ beginPass(): void
 
 ## NullGpuTiming.endPass
 
-[Implementation, line 218](../../../../src/diagnostics/gpu-timing.ts#L218)
+[Implementation, line 329](../../../../src/diagnostics/gpu-timing.ts#L329)
 
 Null implementation for environments without GPU timing support.
 
@@ -180,7 +372,7 @@ endPass(): void
 
 ## NullGpuTiming.beginFrame
 
-[Implementation, line 219](../../../../src/diagnostics/gpu-timing.ts#L219)
+[Implementation, line 330](../../../../src/diagnostics/gpu-timing.ts#L330)
 
 Null implementation for environments without GPU timing support.
 
@@ -190,7 +382,7 @@ beginFrame(): void
 
 ## NullGpuTiming.endFrame
 
-[Implementation, line 220](../../../../src/diagnostics/gpu-timing.ts#L220)
+[Implementation, line 331](../../../../src/diagnostics/gpu-timing.ts#L331)
 
 Null implementation for environments without GPU timing support.
 
@@ -200,7 +392,7 @@ endFrame(): void
 
 ## NullGpuTiming.finish
 
-[Implementation, line 221](../../../../src/diagnostics/gpu-timing.ts#L221)
+[Implementation, line 332](../../../../src/diagnostics/gpu-timing.ts#L332)
 
 Null implementation for environments without GPU timing support.
 
@@ -210,7 +402,7 @@ finish(): undefined
 
 ## NullGpuTiming.dispose
 
-[Implementation, line 224](../../../../src/diagnostics/gpu-timing.ts#L224)
+[Implementation, line 335](../../../../src/diagnostics/gpu-timing.ts#L335)
 
 Null implementation for environments without GPU timing support.
 
@@ -220,7 +412,7 @@ dispose(): void
 
 ## createGpuTiming
 
-[Implementation, line 231](../../../../src/diagnostics/gpu-timing.ts#L231)
+[Implementation, line 342](../../../../src/diagnostics/gpu-timing.ts#L342)
 
 Create a GPU timing backend for the given WebGL2 context.
 Returns a null implementation if the extension is unavailable.

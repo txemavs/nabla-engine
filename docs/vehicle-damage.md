@@ -40,7 +40,7 @@ threshold instead of jittering indefinitely. Detached materials darken; flames
 stay world-up even on overturned vehicles. The physical blast applies impulses
 away from each body's centre of mass to produce varied tumble.
 
-Smoke quantity defaults to 50%, adjustable from 0 to 300%. The live multiplier
+Smoke quantity defaults to 10%, adjustable from 0 to 300%. The live multiplier
 also affects exhaust, tyre and weapon smoke. Pools and shader programs are prepared
 during loading. See [central gameplay tuning](gameplay-tuning.md) for editable values
 and the rear-shot trunk balloon interaction.

@@ -34,6 +34,7 @@ import { bindLightControls } from './light-ui.js'
 import { bindExhaustControls } from './exhaust-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
+import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
 import {
   hostSteeringWheelsFromSearch,
   steeringWheelStorage,
@@ -146,6 +147,7 @@ try {
     fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
+    gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
       defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
@@ -274,6 +276,7 @@ try {
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
   bindRecoverToRoadToggle(runtime)
+  bindGravityScaleSlider(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)
   const roadStyle = bindAsphaltContrastSlider(runtime, boot.asphaltContrast)
   bindAnisotropySelect(runtime, roadStyle)
