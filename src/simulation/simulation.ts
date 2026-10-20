@@ -421,6 +421,19 @@ export class Simulation {
     return this.groundHold !== null
   }
   private groundHold: { height: number; waited: number } | null = null
+  /**
+   * Drive the spawn guard from the host while frames may not step the simulation (the reveal is
+   * still preparing). True once released; `force` releases without ground (host timeout).
+   */
+  settleGround(force = false): boolean {
+    if (!this.groundHold) return true
+    this.preparePlanetCollisions()
+    if (this.releaseGroundHold()) return true
+    if (!force) return false
+    console.warn('Spawn released without ground collision under the actor')
+    this.groundHold = null
+    return true
+  }
   private get controlledBody(): Body {
     return (this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : undefined) ?? this.playerBody
   }
