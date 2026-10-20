@@ -693,8 +693,7 @@ export class PlanetWorld {
     initTexture(texture: THREE.Texture): void
     compileAsync(object: THREE.Object3D): Promise<unknown>
   }
-  /** One sprite material for every cell's trees (identical parameters); never disposed per cell. */
-  private treeMaterial: THREE.MeshStandardMaterial | undefined
+
   private startup = false
   private startupCount: 1 | 4 = 1
   private startupSelection: MapTile[] = []
@@ -1491,17 +1490,15 @@ export class PlanetWorld {
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
-      if (!this.treeMaterial) {
-        this.treeMaterial = new THREE.MeshStandardMaterial({
-          map: this.treeTexture,
-          alphaTest: 0.4,
-          side: THREE.DoubleSide,
-          roughness: 1,
-        })
-        this.treeMaterial.userData.planetShared = true
-        this.setupMaterial(this.treeMaterial)
-      }
-      const trees = treeInstances(payload.vegetation, this.treeMaterial)
+      // Per cell: treeInstances patches its material and ties per-cell shadow materials to it.
+      const material = new THREE.MeshStandardMaterial({
+        map: this.treeTexture,
+        alphaTest: 0.4,
+        side: THREE.DoubleSide,
+        roughness: 1,
+      })
+      this.setupMaterial(material)
+      const trees = treeInstances(payload.vegetation, material)
       group.add(trees)
     }
     yield
@@ -1579,7 +1576,6 @@ export class PlanetWorld {
         mesh.geometry.dispose()
         for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
           const map = (material as THREE.MeshStandardMaterial).map
-          if (material.userData.planetShared) continue
           if (map && map !== this.treeTexture) {
             ;(map.image as { close?: () => void } | undefined)?.close?.()
             map.dispose()
@@ -1971,7 +1967,7 @@ export class PlanetWorld {
         for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
           // The photo texture is shared by every drape mesh of the tile.
           if (m.name === 'Drape') (mat as THREE.MeshStandardMaterial).map?.dispose()
-          if (!mat.userData.planetShared) mat.dispose()
+          mat.dispose()
         }
       }
     })
@@ -1995,13 +1991,12 @@ export class PlanetWorld {
         if (mesh.isMesh) {
           mesh.geometry.dispose()
           for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-            if (!material.userData.planetShared) material.dispose()
+            material.dispose()
         }
       })
     this.staging.clear()
     this.horizon.dispose()
     for (const key of this.resident.keys()) this.remove(key)
-    this.treeMaterial?.dispose()
     this.treeTexture?.dispose()
     this.root.removeFromParent()
   }
