@@ -199,6 +199,7 @@ import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
 import { mirrorPolicyForQuality } from '../render/entity/car-mirrors.js'
 import { GeographicView } from '../render/planet/sky.js'
+import { reuseFog } from '../render/planet/fog.js'
 import {
   PlanetWorld,
   type TileTiming,
@@ -1721,7 +1722,12 @@ export class GameRuntime {
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     // A solid background is stereo-safe; the desktop atmosphere/DOF/mirrors render to 2D targets.
     this.scene.background = new THREE.Color(this.view.night ? '#101827' : '#93b7cd')
-    this.scene.fog = new THREE.Fog(this.scene.background, this.quality.fog * 0.75, this.quality.fog)
+    this.scene.fog = reuseFog(
+      this.scene.fog,
+      this.scene.background,
+      this.quality.fog * 0.75,
+      this.quality.fog,
+    )
     this.sun.visible = true
     this.cull(eye)
     xr.anchor(eye.clone().sub(this.origin), rotation)
@@ -2387,7 +2393,12 @@ export class GameRuntime {
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
-      this.scene.fog = new THREE.Fog('#a6bbd5', this.quality.fog * 0.75, this.quality.fog)
+      this.scene.fog = reuseFog(
+        this.scene.fog,
+        '#a6bbd5',
+        this.quality.fog * 0.75,
+        this.quality.fog,
+      )
     }
     if (this.camera.far !== previousFar) this.camera.updateProjectionMatrix()
     this.view.root.position.copy(this.origin).negate()
