@@ -1,3 +1,4 @@
+import { simulationDefaults } from '../../src/config/simulation.js'
 import { boxSolid } from '../../src/math/solid/mesh.js'
 import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput } from '../../src/simulation/simulation.js'
@@ -150,10 +151,11 @@ describe('shared simulation', () => {
     expect(() => sim.step(NaN)).toThrow()
     expect(() => sim.step(-1)).toThrow()
     sim.step(1)
-    expect(sim.stats.ticks).toBe(4)
-    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - 4 / 60)
+    const cap = simulationDefaults.maxSubsteps
+    expect(sim.stats.ticks).toBe(cap)
+    expect(sim.stats.droppedSeconds).toBeCloseTo(1 - cap / 60)
     sim.step(1 / 60)
-    expect(sim.stats.ticks).toBe(5)
+    expect(sim.stats.ticks).toBe(cap + 1)
     sim.dispose()
   })
   it('moves the camera before a wall', () => {
@@ -433,6 +435,17 @@ it('does not reposition frozen actors when an in-flight tile finishes during ins
   restore()
   expect(sim.entityTransform('resting').position).toEqual([0, 1, 0])
   sim.dispose()
+})
+
+describe('world gravity scale', () => {
+  it('scales world gravity live and clamps to the supported range', () => {
+    const sim = new Simulation(scene())
+    expect(sim.gravityScale).toBe(1)
+    expect(sim.setGravityScale(2)).toBe(2)
+    expect(sim.setGravityScale(10)).toBe(simulationDefaults.gravityScaleRange.max)
+    expect(sim.setGravityScale(0.1)).toBe(simulationDefaults.gravityScaleRange.min)
+    sim.dispose()
+  })
 })
 
 describe('spawn ground guard', () => {

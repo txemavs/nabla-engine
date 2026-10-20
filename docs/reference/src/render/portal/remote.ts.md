@@ -8,6 +8,7 @@
 
 - `../planet/world.js`
 - `three`
+- `../planet/fog.js`
 - `../entity/view.js`
 - `../planet/sky.js`
 - `../../scene/document.js`
@@ -15,7 +16,7 @@
 
 ## RemotePortalViews.constructor
 
-[Implementation, line 23](../../../../../src/render/portal/remote.ts#L23)
+[Implementation, line 24](../../../../../src/render/portal/remote.ts#L24)
 
 Small cache of visited destination scenes, independent of the main view's working frame.
 
@@ -23,12 +24,12 @@ Small cache of visited destination scenes, independent of the main view's workin
 constructor(private readonly changed: () => void, private readonly report: (message: string) => void, private readonly createView: (document: SceneDocument) => SceneView = (doc) => new SceneView(doc), private readonly createPlanet?: (document: SceneDocument) => PlanetWorld | undefined): instance
 ```
 
-## RemotePortalViews.constructor.callback@26
+## RemotePortalViews.constructor.callback@27
 
-[Implementation, line 26](../../../../../src/render/portal/remote.ts#L26)
+[Implementation, line 27](../../../../../src/render/portal/remote.ts#L27)
 
 ```ts
-callback@26(doc): inferred by TypeScript; see implementation
+callback@27(doc): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -37,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemotePortalViews.resolve
 
-[Implementation, line 30](../../../../../src/render/portal/remote.ts#L30)
+[Implementation, line 31](../../../../../src/render/portal/remote.ts#L31)
 
 Small cache of visited destination scenes, independent of the main view's working frame.
 
@@ -62,20 +63,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.views.get`
 - `this.views.set`
 
-## RemotePortalViews.resolve.callback@44
+## RemotePortalViews.resolve.callback@45
 
-[Implementation, line 44](../../../../../src/render/portal/remote.ts#L44)
+[Implementation, line 45](../../../../../src/render/portal/remote.ts#L45)
 
 ```ts
-callback@44(): inferred by TypeScript; see implementation
+callback@45(): inferred by TypeScript; see implementation
 ```
 
-## RemotePortalViews.resolve.callback@54
+## RemotePortalViews.resolve.callback@55
 
-[Implementation, line 54](../../../../../src/render/portal/remote.ts#L54)
+[Implementation, line 55](../../../../../src/render/portal/remote.ts#L55)
 
 ```ts
-callback@54(): inferred by TypeScript; see implementation
+callback@55(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -83,12 +84,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.changed`
 - `this.views.get`
 
-## RemotePortalViews.resolve.callback@60
+## RemotePortalViews.resolve.callback@61
 
-[Implementation, line 60](../../../../../src/render/portal/remote.ts#L60)
+[Implementation, line 61](../../../../../src/render/portal/remote.ts#L61)
 
 ```ts
-callback@60(): inferred by TypeScript; see implementation
+callback@61(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -97,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemotePortalViews.resolve.background
 
-[Implementation, line 71](../../../../../src/render/portal/remote.ts#L71)
+[Implementation, line 72](../../../../../src/render/portal/remote.ts#L72)
 
 ```ts
 background(renderer, camera): inferred by TypeScript; see implementation
@@ -107,7 +108,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `THREE.Color`
-- `THREE.Fog`
 - `THREE.Vector3`
 - `camera.position.toArray`
 - `camera.updateProjectionMatrix`
@@ -119,10 +119,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `e.sun.position.copy(e.geography.sunDirection).multiplyScalar`
 - `e.view.limitDrawDistance`
 - `performance.now`
+- `reuseFog`
 
 ## RemotePortalViews.pending
 
-[Implementation, line 94](../../../../../src/render/portal/remote.ts#L94)
+[Implementation, line 95](../../../../../src/render/portal/remote.ts#L95)
 
 Small cache of visited destination scenes, independent of the main view's working frame.
 
@@ -135,17 +136,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.views.values()].some`
 - `this.views.values`
 
-## RemotePortalViews.pending.callback@96
+## RemotePortalViews.pending.callback@97
 
-[Implementation, line 96](../../../../../src/render/portal/remote.ts#L96)
+[Implementation, line 97](../../../../../src/render/portal/remote.ts#L97)
 
 ```ts
-callback@96(e): inferred by TypeScript; see implementation
+callback@97(e): inferred by TypeScript; see implementation
 ```
 
 ## RemotePortalViews.dispose
 
-[Implementation, line 99](../../../../../src/render/portal/remote.ts#L99)
+[Implementation, line 100](../../../../../src/render/portal/remote.ts#L100)
 
 Small cache of visited destination scenes, independent of the main view's working frame.
 

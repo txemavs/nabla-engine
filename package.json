@@ -91,6 +91,10 @@
       "types": "./dist/runtime/splash.d.ts",
       "import": "./dist/runtime/splash.js"
     },
+    "./runtime/quality-preset": {
+      "types": "./dist/runtime/quality-preset.d.ts",
+      "import": "./dist/runtime/quality-preset.js"
+    },
     "./runtime/resolution-scale": {
       "types": "./dist/runtime/resolution-scale.d.ts",
       "import": "./dist/runtime/resolution-scale.js"

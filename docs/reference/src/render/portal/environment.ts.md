@@ -7,12 +7,13 @@
 ## Module dependencies
 
 - `three`
+- `../planet/fog.js`
 - `../../planet/sky.js`
 - `../planet/sky.js`
 
 ## portalEnvironment
 
-[Implementation, line 8](../../../../../src/render/portal/environment.ts#L8)
+[Implementation, line 11](../../../../../src/render/portal/environment.ts#L11)
 
 Destination state lasts through the remote scene render, then restores the main view.
 Reuses the globe/textures; no extra geography, textures or network queue per portal.
@@ -24,23 +25,25 @@ portalEnvironment(geography: GeographicView, scene: THREE.Scene, remotePosition:
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
-- `THREE.Fog`
 - `geography.update`
 - `light.color.set`
 - `lights.map`
+- `remoteFogs.get`
+- `remoteFogs.set`
 - `remotePosition.toArray`
 - `restore`
+- `reuseFog`
 
 Explicit throws in this body:
 
 - `error`
 
-## portalEnvironment.callback@21
+## portalEnvironment.callback@24
 
-[Implementation, line 21](../../../../../src/render/portal/environment.ts#L21)
+[Implementation, line 24](../../../../../src/render/portal/environment.ts#L24)
 
 ```ts
-callback@21(light): inferred by TypeScript; see implementation
+callback@24(light): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -49,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## portalEnvironment.restore
 
-[Implementation, line 26](../../../../../src/render/portal/environment.ts#L26)
+[Implementation, line 29](../../../../../src/render/portal/environment.ts#L29)
 
 ```ts
 restore(): inferred by TypeScript; see implementation

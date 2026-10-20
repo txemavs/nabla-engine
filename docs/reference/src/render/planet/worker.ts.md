@@ -129,6 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `AbortController`
 - `GLTFLoader`
 - `LoadingManager`
+- `Set`
 - `String`
 - `adaptAtlasZ16Instances`
 - `applyCandidateAsphaltPolicy`

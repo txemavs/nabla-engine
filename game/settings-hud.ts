@@ -1,3 +1,4 @@
+import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
@@ -404,7 +405,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   if (quality && runtime.fieldLightLimit !== undefined) {
-    const lightProfile = new URLSearchParams(location.search).get('quality') ?? 'custom'
+    const lightProfile = readQualityPreset()
     const storageKey = `nabla.field-light-limit-v2:${lightProfile}`
     try {
       const saved = localStorage.getItem(storageKey)

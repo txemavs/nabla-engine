@@ -8,10 +8,12 @@
 
 - `three`
 - `../../entity/schema.js`
+- `../backend.js`
+- `../webgpu-substitutes.js`
 
 ## createPortalSurface
 
-[Implementation, line 14](../../../../../src/render/portal/portals.ts#L14)
+[Implementation, line 16](../../../../../src/render/portal/portals.ts#L16)
 
 ```ts
 createPortalSurface(entity: Entity): PortalSurface
@@ -23,10 +25,73 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.PlaneGeometry`
 - `THREE.ShaderMaterial`
 - `THREE.WebGLRenderTarget`
+- `portalMaterial`
+- `setWebGPUSubstitute`
+
+## portalMaterial
+
+[Implementation, line 55](../../../../../src/render/portal/portals.ts#L55)
+
+The portal shader as a node material: the remote capture at the fragment's screen position
+(WebGPU's `screenUV` and render-target rows both run top-down), black while not live. The
+capture is linear, so the frame's output pass tone-maps it as WebGL's `tonemapping_fragment`.
+
+```ts
+portalMaterial(base: THREE.ShaderMaterial): inferred by TypeScript; see implementation
+```
+
+## portalMaterial.callback@56
+
+[Implementation, line 56](../../../../../src/render/portal/portals.ts#L56)
+
+```ts
+callback@56({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `live.greaterThan`
+- `t.select`
+- `t.texture`
+- `t.uniform`
+- `t.uniform(0).onRenderUpdate`
+- `t.vec4`
+- `webgpu.MeshBasicNodeMaterial`
+
+## portalMaterial.callback@56.callback@58
+
+[Implementation, line 58](../../../../../src/render/portal/portals.ts#L58)
+
+```ts
+callback@58(): inferred by TypeScript; see implementation
+```
+
+## clipNearPlane
+
+[Implementation, line 76](../../../../../src/render/portal/portals.ts#L76)
+
+Clip `camera` at a world plane through its near plane (WebGPURenderer has no global
+`clippingPlanes`): the oblique projection of `reflectWebGPU`, for [0, 1] clip depth.
+
+```ts
+clipNearPlane(camera: THREE.PerspectiveCamera, plane: THREE.Plane): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sign`
+- `camera.projectionMatrixInverse.copy`
+- `camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert`
+- `clip.dot`
+- `clip.multiplyScalar`
+- `obliqueClip.set`
+- `obliquePlane.copy`
+- `obliquePlane.copy(plane).applyMatrix4`
+- `obliqueQ.set`
 
 ## renderPortals
 
-[Implementation, line 47](../../../../../src/render/portal/portals.ts#L47)
+[Implementation, line 99](../../../../../src/render/portal/portals.ts#L99)
 
 One remote level. Targets use screen projection, not a second quad perspective.
 
@@ -48,10 +113,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...surfaces.values()].some`
 - `background`
 - `camera.updateMatrixWorld`
+- `camera.updateProjectionMatrix`
+- `clipNearPlane`
 - `external.background`
 - `externalViews?.get`
 - `externalViews?.has`
 - `frustum.intersectsObject`
+- `isWebGPU`
 - `new THREE.Frustum().setFromProjectionMatrix`
 - `new THREE.Matrix4().makeRotationY`
 - `new THREE.Matrix4().multiplyMatrices`
@@ -75,12 +143,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `surfaces.has`
 - `surfaces.values`
 
-## renderPortals.callback@57
+## renderPortals.callback@109
 
-[Implementation, line 57](../../../../../src/render/portal/portals.ts#L57)
+[Implementation, line 109](../../../../../src/render/portal/portals.ts#L109)
 
 ```ts
-callback@57(s): inferred by TypeScript; see implementation
+callback@109(s): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

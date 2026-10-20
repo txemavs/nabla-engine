@@ -269,6 +269,7 @@ export class Simulation {
   private entitiesById = new Map<string, Entity>()
   private terrainGrounds: { e: Entity; pose: Transform }[] = []
   private readonly portalEntities: Entity[]
+  private gravityMultiplier = 1
   private readonly world = new World({ gravity: new Vec3(0, -simulationDefaults.gravity, 0) })
   private readonly solidMaterial = new Material({
     friction: simulationDefaults.solidFriction,
@@ -1015,6 +1016,21 @@ export class Simulation {
       }
     this.updateMapCollisions()
   }
+  /** Current world gravity multiplier (1 = `simulationDefaults.gravity`). */
+  get gravityScale(): number {
+    return this.gravityMultiplier
+  }
+  /** Scale the world gravity live, clamped to `simulationDefaults.gravityScaleRange`. Returns the value used. */
+  setGravityScale(scale: number): number {
+    const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
+    this.gravityMultiplier = Number.isFinite(scale) ? Math.min(max, Math.max(min, scale)) : fallback
+    this.world.gravity.set(0, -this.gravityAcceleration, 0)
+    return this.gravityMultiplier
+  }
+  /** Gravitational acceleration currently applied, m/s². */
+  private get gravityAcceleration(): number {
+    return simulationDefaults.gravity * this.gravityMultiplier
+  }
   setCollisionDistance(distance: number): void {
     if (!Number.isFinite(distance) || distance < 200 || distance > 2000)
       throw new Error('Collision distance must be 200–2000 m')
@@ -1708,10 +1724,10 @@ export class Simulation {
         vertical < -1 ? (vertical * vertical) / (2 * Math.max(0.1, distance - 1.25)) : -Infinity
       const acceleration = clamp(
         Math.max((1.25 - distance) * 45 - vertical * 12, braking),
-        -simulationDefaults.gravity,
+        -this.gravityAcceleration,
         70,
       )
-      body.applyForce(up.scale(body.mass * (simulationDefaults.gravity + acceleration)))
+      body.applyForce(up.scale(body.mass * (this.gravityAcceleration + acceleration)))
     }
   }
 
@@ -1832,9 +1848,9 @@ export class Simulation {
         const radial = this.radialUp(body)
         body.applyForce(
           new Vec3(
-            -radial.x * simulationDefaults.gravity * body.mass,
-            (1 - radial.y) * simulationDefaults.gravity * body.mass,
-            -radial.z * simulationDefaults.gravity * body.mass,
+            -radial.x * this.gravityAcceleration * body.mass,
+            (1 - radial.y) * this.gravityAcceleration * body.mass,
+            -radial.z * this.gravityAcceleration * body.mass,
           ),
         )
       }

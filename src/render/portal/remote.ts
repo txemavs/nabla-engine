@@ -1,5 +1,6 @@
 import { PlanetWorld } from '../planet/world.js'
 import * as THREE from 'three'
+import { reuseFog } from '../planet/fog.js'
 import { SceneView } from '../entity/view.js'
 import { GeographicView } from '../planet/sky.js'
 import type { SceneDocument } from '../../scene/document.js'
@@ -80,7 +81,7 @@ export class RemotePortalViews {
         e.geography.viewDistance = 1500
         e.geography.update(camera.position.toArray(), new THREE.Vector3(), document.sky)
         const air = e.geography.atmosphere
-        e.scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
+        e.scene.fog = air.fog ? reuseFog(e.scene.fog, air.color, air.near, air.far) : null
         e.ambient.intensity = 0.22 * air.day * (1 - air.space)
         e.sun.position.copy(e.geography.sunDirection).multiplyScalar(65)
         e.sun.intensity = 3.2 * Math.max(air.day, air.space)
