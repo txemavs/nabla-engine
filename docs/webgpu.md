@@ -26,7 +26,7 @@ of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is 
 | Ocean sheet, river, sea                   | TSL twins (`surface-nodes.ts`)    |
 | Portals (remote views)                    | TSL twin (`portals.ts`)           |
 | Car mirrors (`Reflector` addon)           | TSL twin (`mirror-nodes.ts`)      |
-| Depth of field, FSR 1 upscaling           | Disabled                          |
+| Depth of field, FSR 1 upscaling           | TSL twins (`effect-nodes.ts`)     |
 | Exhaust, tyre, muzzle smoke, tyre marks   | TSL twins (`particle-nodes.ts`)   |
 | Shot laser                                | TSL twins (`shot-laser-nodes.ts`) |
 | GPU timer queries (benchmark)             | WebGL only                        |
@@ -63,6 +63,13 @@ sea's shadowed flat colour and glint (a small lighting model), and the tree crow
 substitute, which also adds a per-instance `treeHeight` attribute because node positions run after
 instancing). The ground cloud shadow multiplies the sun's shadow factor on Lambert and Toon
 materials, the only programs the GLSL patch matches. `webgpu-surface-parity.spec.ts` covers them.
+
+Depth of field and FSR 1 run in the same order as under WebGL. Their full-screen passes draw node
+twins: the DoF gather decodes the renderer's own depth encoding (WebGPU's logarithmic depth
+differs from WebGL's), `OutputPass` becomes a tone map + sRGB encode into the 8-bit FSR input, and
+EASU and RCAS are ported from `fsr1-shaders.ts`. RCAS writes display-encoded colour, so its draw to
+the canvas runs with tone mapping and colour conversion off. After DoF the lens flare tests the
+scene depth by distance (`webgpu-effects-parity.spec.ts`).
 
 Portals render their remote views as under WebGL (same cameras, sky and environment); since
 `WebGPURenderer` has no global clipping planes, the destination plane is an oblique near plane on

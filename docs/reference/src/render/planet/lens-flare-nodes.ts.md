@@ -12,24 +12,18 @@
 
 ## lensFlareMaterial
 
-[Implementation, line 16](../../../../../src/render/planet/lens-flare-nodes.ts#L16)
-
-`createLensFlare` (lens-flare.ts) as a node material. WebGL adds the raw glow onto the displayed
-frame; the WebGPU frame is linear until its output pass, so the twin reads the frame below
-(`viewportSharedTexture`), adds the glow in display space and writes back its decode. One
-full-screen triangle, so the read is exact. Depth follows the GLSL: the source's depth when
-positional, else just in front of the far plane.
+[Implementation, line 18](../../../../../src/render/planet/lens-flare-nodes.ts#L18)
 
 ```ts
 lensFlareMaterial(base: THREE.ShaderMaterial): inferred by TypeScript; see implementation
 ```
 
-## lensFlareMaterial.callback@17
+## lensFlareMaterial.callback@19
 
-[Implementation, line 17](../../../../../src/render/planet/lens-flare-nodes.ts#L17)
+[Implementation, line 19](../../../../../src/render/planet/lens-flare-nodes.ts#L19)
 
 ```ts
-callback@17({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@19({ webgpu, tsl, logarithmicDepth }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -44,6 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `source.z.div`
 - `t.Fn`
 - `t.max`
+- `t.texture`
 - `t.uniform`
 - `t.uniform(0).onRenderUpdate`
 - `t.uniform(1).onRenderUpdate`
@@ -51,15 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vec4`
 - `webgpu.MeshBasicNodeMaterial`
 
-## lensFlareMaterial.callback@17.callback@22
-
-[Implementation, line 22](../../../../../src/render/planet/lens-flare-nodes.ts#L22)
-
-```ts
-callback@22(): inferred by TypeScript; see implementation
-```
-
-## lensFlareMaterial.callback@17.callback@23
+## lensFlareMaterial.callback@19.callback@23
 
 [Implementation, line 23](../../../../../src/render/planet/lens-flare-nodes.ts#L23)
 
@@ -67,17 +54,33 @@ callback@22(): inferred by TypeScript; see implementation
 callback@23(): inferred by TypeScript; see implementation
 ```
 
-## lensFlareMaterial.callback@17.callback@24
+## lensFlareMaterial.callback@19.callback@27
 
-[Implementation, line 24](../../../../../src/render/planet/lens-flare-nodes.ts#L24)
+[Implementation, line 27](../../../../../src/render/planet/lens-flare-nodes.ts#L27)
 
 ```ts
-callback@24(): inferred by TypeScript; see implementation
+callback@27(): inferred by TypeScript; see implementation
 ```
 
-## lensFlareMaterial.callback@17.blob
+## lensFlareMaterial.callback@19.callback@28
 
-[Implementation, line 39](../../../../../src/render/planet/lens-flare-nodes.ts#L39)
+[Implementation, line 28](../../../../../src/render/planet/lens-flare-nodes.ts#L28)
+
+```ts
+callback@28(): inferred by TypeScript; see implementation
+```
+
+## lensFlareMaterial.callback@19.callback@29
+
+[Implementation, line 29](../../../../../src/render/planet/lens-flare-nodes.ts#L29)
+
+```ts
+callback@29(): inferred by TypeScript; see implementation
+```
+
+## lensFlareMaterial.callback@19.blob
+
+[Implementation, line 44](../../../../../src/render/planet/lens-flare-nodes.ts#L44)
 
 ```ts
 blob(uv: N, at: N, sharp: number): inferred by TypeScript; see implementation
@@ -93,12 +96,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `uv.sub(at).mul`
 - `vec2`
 
-## lensFlareMaterial.callback@17.callback@43
+## lensFlareMaterial.callback@19.callback@48
 
-[Implementation, line 43](../../../../../src/render/planet/lens-flare-nodes.ts#L43)
+[Implementation, line 48](../../../../../src/render/planet/lens-flare-nodes.ts#L48)
 
 ```ts
-callback@43(): inferred by TypeScript; see implementation
+callback@48(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -138,6 +141,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.uv`
 - `t.viewportSharedTexture`
 - `tileRect.xy.add`
+- `useSceneDepth.greaterThan`
 - `vUv.mul`
 - `vec2`
 - `vec2(axis.y.negate(), axis.x).mul`
@@ -153,38 +157,79 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `viewDir.y.div(viewDir.z.negate()).mul(projection.element(1).y).mul`
 - `viewDir.z.negate`
 
-## lensFlareMaterial.callback@17.callback@43.callback@44
+## lensFlareMaterial.callback@19.callback@48.callback@49
 
-[Implementation, line 44](../../../../../src/render/planet/lens-flare-nodes.ts#L44)
+[Implementation, line 49](../../../../../src/render/planet/lens-flare-nodes.ts#L49)
 
 ```ts
-callback@44(): inferred by TypeScript; see implementation
+callback@49(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Discard`
 
-## lensFlareMaterial.callback@17.callback@43.callback@58
+## lensFlareMaterial.callback@19.callback@48.callback@52
 
-[Implementation, line 58](../../../../../src/render/planet/lens-flare-nodes.ts#L58)
+[Implementation, line 52](../../../../../src/render/planet/lens-flare-nodes.ts#L52)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@52(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `If`
+- `distance.lessThan`
+- `far.add`
+- `sceneDepth.sample`
+- `t.logarithmicDepthToViewZ`
+- `t.logarithmicDepthToViewZ(d, near, far).negate`
+- `t.perspectiveDepthToViewZ`
+- `t.perspectiveDepthToViewZ(d, near, far).negate`
+- `t.pow`
+- `t.pow(far.add(1), 0.9995).sub`
+
+## lensFlareMaterial.callback@19.callback@48.callback@52.callback@59
+
+[Implementation, line 59](../../../../../src/render/planet/lens-flare-nodes.ts#L59)
+
+```ts
+callback@59(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Discard`
 
-## lensFlareMaterial.callback@17.callback@43.callback@65
+## lensFlareMaterial.callback@19.callback@48.callback@74
 
-[Implementation, line 65](../../../../../src/render/planet/lens-flare-nodes.ts#L65)
+[Implementation, line 74](../../../../../src/render/planet/lens-flare-nodes.ts#L74)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@74(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Discard`
+
+## lensFlareMaterial.callback@19.callback@48.callback@81
+
+[Implementation, line 81](../../../../../src/render/planet/lens-flare-nodes.ts#L81)
+
+```ts
+callback@81(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Discard`
+
+## lensFlareMaterial.callback@19.sync
+
+[Implementation, line 113](../../../../../src/render/planet/lens-flare-nodes.ts#L113)
+
+```ts
+sync(): inferred by TypeScript; see implementation
+```

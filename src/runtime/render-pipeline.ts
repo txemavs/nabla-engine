@@ -199,25 +199,7 @@ export class GameRenderPipeline {
       monitors.finish()
       if (focus) {
         this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
-        if (flare && flareVisible) {
-          const parent = flare.parent
-          const material = flare.material as THREE.ShaderMaterial
-          const depthTest = material.depthTest
-          this.flareScene.add(flare)
-          material.depthTest = false
-          material.uniforms.sceneDepth.value = this.depthOfField.depthTexture
-          material.uniforms.useSceneDepth.value = true
-          renderer.autoClear = false
-          try {
-            renderer.render(this.flareScene, camera)
-          } finally {
-            material.depthTest = depthTest
-            material.uniforms.useSceneDepth.value = false
-            material.uniforms.sceneDepth.value = null
-            flare.removeFromParent()
-            parent?.add(flare)
-          }
-        }
+        if (flare && flareVisible) this.renderFocusFlare(renderer, camera, flare)
       }
       if (upscale) this.fsr.present(renderer)
       this.gpuTiming?.endPass('post')
@@ -235,6 +217,30 @@ export class GameRenderPipeline {
       for (const { object, visible } of overlays) object.visible = visible
       renderer.setRenderTarget(target)
       renderer.autoClear = autoClear
+    }
+  }
+  /** The lens flare over the presented depth-of-field frame, occluded by the scene depth. */
+  private renderFocusFlare(
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.PerspectiveCamera,
+    flare: THREE.Mesh,
+  ): void {
+    const parent = flare.parent
+    const material = flare.material as THREE.ShaderMaterial
+    const depthTest = material.depthTest
+    this.flareScene.add(flare)
+    material.depthTest = false
+    material.uniforms.sceneDepth.value = this.depthOfField.depthTexture
+    material.uniforms.useSceneDepth.value = true
+    renderer.autoClear = false
+    try {
+      renderer.render(this.flareScene, camera)
+    } finally {
+      material.depthTest = depthTest
+      material.uniforms.useSceneDepth.value = false
+      material.uniforms.sceneDepth.value = null
+      flare.removeFromParent()
+      parent?.add(flare)
     }
   }
   /** Remote portal views, each with its destination's sky and environment (`portalEnvironment`). */
@@ -323,6 +329,11 @@ export class GameRenderPipeline {
       frame.beforeMain?.()
       frame.sky.setViewAspect(camera.aspect)
       renderer.autoClear = true
+      // Depth of field and FSR 1 as under WebGL; their passes have node twins (effect-nodes.ts).
+      const focus = frame.depthOfField || frame.tunnelFocus !== undefined
+      this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
+      const upscale = this.fsr.begin(renderer)
+      if (focus) this.depthOfField.begin(renderer, upscale ? this.fsr.inputSize : undefined)
       frame.shadows.update(camera, frame.origin)
       monitors.prepare(camera)
       renderer.shadowMap.needsUpdate = frame.shadowsEnabled || !!frame.localShadowUpdate
@@ -335,16 +346,26 @@ export class GameRenderPipeline {
         renderer.clearDepth()
       } else if (!background && frame.skyVisible !== false)
         scene.background = scene.fog?.color ?? webgpuBackdrop
+      const flare = frame.sky.lensFlare
+      const flareVisible = flare?.visible ?? false
+      if (focus && flare) flare.visible = false
       try {
         renderer.render(scene, camera)
       } finally {
         scene.background = background
+        if (flare) flare.visible = flareVisible
       }
       if (skyDrawn) frame.sky.renderClouds(renderer, camera)
       monitors.finish()
+      if (focus) {
+        this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
+        if (flare && flareVisible) this.renderFocusFlare(renderer, camera, flare)
+      }
+      if (upscale) this.fsr.present(renderer)
       this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - portalsDone
       this.timings.postMs = 0
     } finally {
+      this.fsr.restore(renderer)
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible
       renderer.setRenderTarget(target)

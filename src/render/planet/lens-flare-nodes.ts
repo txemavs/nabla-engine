@@ -1,5 +1,5 @@
 import type * as THREE from 'three'
-import { NoBlending } from 'three'
+import { DepthTexture, NoBlending } from 'three'
 import type { NodeKit, WebGPUSubstitute } from '../webgpu-substitutes.js'
 import { decodeDisplay } from './sky-nodes.js'
 
@@ -13,10 +13,15 @@ type N = any // eslint-disable-line @typescript-eslint/no-explicit-any
  * full-screen triangle, so the read is exact. Depth follows the GLSL: the source's depth when
  * positional, else just in front of the far plane.
  */
+const sceneDepthPlaceholder = new DepthTexture(1, 1)
+
 export function lensFlareMaterial(base: THREE.ShaderMaterial) {
-  return ({ webgpu, tsl }: NodeKit): WebGPUSubstitute => {
+  return ({ webgpu, tsl, logarithmicDepth }: NodeKit): WebGPUSubstitute => {
     const t = tsl as N
     const u = base.uniforms
+    // After depth of field the flare draws over the presented frame and tests the scene depth.
+    const useSceneDepth = t.uniform(0).onRenderUpdate(() => (u.useSceneDepth.value ? 1 : 0))
+    const sceneDepth = t.texture(sceneDepthPlaceholder)
     const sunDirection = t.uniform(u.sunDirection.value)
     const sourcePosition = t.uniform(u.sourcePosition.value)
     const positional = t.uniform(0).onRenderUpdate(() => u.positional.value)
@@ -42,6 +47,17 @@ export function lensFlareMaterial(base: THREE.ShaderMaterial) {
     }
     material.colorNode = t.Fn(() => {
       If(intensity.lessThanEqual(0.001), () => Discard())
+      // GLSL: discard where the scene depth is below 0.9995 (WebGL log depth), i.e. closer than
+      // (far + 1)^0.9995 − 1 metres; compared as a distance since the encodings differ.
+      If(useSceneDepth.greaterThan(0.5), () => {
+        const d = sceneDepth.sample(t.screenUV).x
+        const near = t.cameraNear
+        const far = t.cameraFar
+        const distance = logarithmicDepth
+          ? t.logarithmicDepthToViewZ(d, near, far).negate()
+          : t.perspectiveDepthToViewZ(d, near, far).negate()
+        If(distance.lessThan(t.pow(far.add(1), 0.9995).sub(1)), () => Discard())
+      })
       const vUv = t.uv()
       const fullUv = tileRect.xy.add(vUv.mul(tileRect.zw))
       const viewDir = positional
@@ -92,6 +108,12 @@ export function lensFlareMaterial(base: THREE.ShaderMaterial) {
     material.depthWrite = false
     material.fog = false
     material.name = 'Lens flare (WebGPU)'
-    return { material }
+    return {
+      material,
+      sync: () => {
+        material.depthTest = base.depthTest
+        sceneDepth.value = u.sceneDepth.value ?? sceneDepthPlaceholder
+      },
+    }
   }
 }
