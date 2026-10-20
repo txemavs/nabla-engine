@@ -8,10 +8,12 @@
 
 - `./smoke-density.js`
 - `three`
+- `../webgpu-substitutes.js`
+- `./particle-nodes.js`
 
 ## MuzzleSmoke.constructor
 
-[Implementation, line 12](../../../../../src/render/entity/muzzle-smoke.ts#L12)
+[Implementation, line 14](../../../../../src/render/entity/muzzle-smoke.ts#L14)
 
 ```ts
 constructor(): instance
@@ -22,11 +24,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.BufferAttribute`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
+- `muzzleSmokeSprites`
+- `setWebGPUSubstitute`
 - `this.geometry.setAttribute`
 
 ## MuzzleSmoke.burst
 
-[Implementation, line 45](../../../../../src/render/entity/muzzle-smoke.ts#L45)
+[Implementation, line 48](../../../../../src/render/entity/muzzle-smoke.ts#L48)
 
 ```ts
 burst(now: number, muzzle: readonly number[]): void
@@ -39,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.update
 
-[Implementation, line 53](../../../../../src/render/entity/muzzle-smoke.ts#L53)
+[Implementation, line 56](../../../../../src/render/entity/muzzle-smoke.ts#L56)
 
 ```ts
 update(now: number, height = 750): void
@@ -50,17 +54,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sin`
 - `this.ages.some`
 
-## MuzzleSmoke.update.callback@62
+## MuzzleSmoke.update.callback@65
 
-[Implementation, line 62](../../../../../src/render/entity/muzzle-smoke.ts#L62)
+[Implementation, line 65](../../../../../src/render/entity/muzzle-smoke.ts#L65)
 
 ```ts
-callback@62(age): inferred by TypeScript; see implementation
+callback@65(age): inferred by TypeScript; see implementation
 ```
 
 ## MuzzleSmoke.dispose
 
-[Implementation, line 67](../../../../../src/render/entity/muzzle-smoke.ts#L67)
+[Implementation, line 70](../../../../../src/render/entity/muzzle-smoke.ts#L70)
 
 ```ts
 dispose(): void
@@ -74,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.clear
 
-[Implementation, line 72](../../../../../src/render/entity/muzzle-smoke.ts#L72)
+[Implementation, line 75](../../../../../src/render/entity/muzzle-smoke.ts#L75)
 
 ```ts
 clear(): void

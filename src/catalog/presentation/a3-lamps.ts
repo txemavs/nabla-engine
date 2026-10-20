@@ -1,6 +1,31 @@
 import * as THREE from 'three'
 import { lightingDefaults } from '../../config/lighting.js'
 import { CarLights, type LampBinding } from '../../render/entity/car-lights.js'
+import { addWebGPUMaterialNodes, type NodeKit } from '../../render/webgpu-substitutes.js'
+
+// TSL nodes are typed loosely here.
+type LampNode = any // eslint-disable-line @typescript-eslint/no-explicit-any
+/** A lamp lens region on the geometry position, as a TSL boolean. */
+type LampCondition = (position: LampNode) => LampNode
+
+/**
+ * WebGPU twin of the `masked` patch: outside the region a signal lens is discarded (colour pass
+ * only, as the GLSL depth material is not patched) and the other lenses emit nothing.
+ */
+function lampMaskNodes(
+  twin: THREE.Material,
+  { tsl }: NodeKit,
+  kind: 'brake' | 'reverse' | 'signal',
+  lit: LampCondition,
+): void {
+  const t = tsl as LampNode
+  const node = twin as THREE.Material & Record<string, LampNode>
+  const inside = lit(t.varying(t.positionGeometry))
+  if (kind === 'signal') {
+    node.maskNode = inside
+    node.maskShadowNode = t.bool(true)
+  } else node.emissiveNode = inside.select(t.materialEmissive, t.vec3(0))
+}
 
 export function createA3Lights(model: THREE.Object3D): CarLights {
   const lamps: LampBinding[] = []
@@ -10,6 +35,8 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
     color: string,
     condition: string,
     side: number,
+    /** The same `condition` on the geometry position, as TSL (WebGPU twin). */
+    lit: LampCondition,
   ): void {
     material.emissive.set(color)
     material.emissiveIntensity = 0
@@ -28,6 +55,7 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
         )
     }
     material.customProgramCacheKey = () => `a3-lamp:${kind}:${condition}`
+    addWebGPUMaterialNodes(material, (kit, twin) => lampMaskNodes(twin, kit, kind, lit))
     lamps.push({ material, kind, side })
   }
   model.traverse((object) => {
@@ -113,13 +141,20 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
         '#ffffff',
         'vLampPosition.y > 0.01 && vLampPosition.y < 0.053 && (vLampPosition.x < 0.21 || vLampPosition.x > 0.894)',
         0,
+        (p) =>
+          p.y
+            .greaterThan(0.01)
+            .and(p.y.lessThan(0.053))
+            .and(p.x.lessThan(0.21).or(p.x.greaterThan(0.894))),
       )
     if (material.emissiveIntensity > 0 && material.emissive.getHex() !== 0) {
       lamps.push({ material, kind: 'position', side: 0 })
       material.emissiveIntensity = 0
     }
     if (rearSide && material.name === 'Rojo 6')
-      masked(material, 'brake', '#ff0800', `${right ? '-' : ''}vLampPosition.y < 0.075`, 0)
+      masked(material, 'brake', '#ff0800', `${right ? '-' : ''}vLampPosition.y < 0.075`, 0, (p) =>
+        (right ? p.y.negate() : p.y).lessThan(0.075),
+      )
     // Independent upper amber strips, selected manually; the lower lens never flashes.
     if ((rearSide || trunk) && material.name === 'Rojo 6') {
       const source = object.geometry
@@ -149,10 +184,14 @@ export function createA3Lights(model: THREE.Object3D): CarLights {
       object.add(lamp)
       // Trunk has both strips in one primitive; use local X to address each half.
       if (trunk) {
-        masked(lamp.material, 'signal', '#ff7300', 'vLampPosition.x < 0.552', 1)
+        masked(lamp.material, 'signal', '#ff7300', 'vLampPosition.x < 0.552', 1, (p) =>
+          p.x.lessThan(0.552),
+        )
         const other = new THREE.Mesh(geometry.clone(), lamp.material.clone())
         object.add(other)
-        masked(other.material, 'signal', '#ff7300', 'vLampPosition.x >= 0.552', -1)
+        masked(other.material, 'signal', '#ff7300', 'vLampPosition.x >= 0.552', -1, (p) =>
+          p.x.greaterThanEqual(0.552),
+        )
         lamps[lamps.length - 2].mesh = lamp
         lamps[lamps.length - 1].mesh = other
       } else

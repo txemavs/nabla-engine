@@ -11,10 +11,11 @@
 - `../../planet/sky.js`
 - `./ocean-sheet.js`
 - `./sky.js`
+- `./fog.js`
 
 ## configureWorldRenderer
 
-[Implementation, line 20](../../../../../src/render/planet/world-environment.ts#L20)
+[Implementation, line 21](../../../../../src/render/planet/world-environment.ts#L21)
 
 ```ts
 configureWorldRenderer(renderer: THREE.WebGLRenderer): inferred by TypeScript; see implementation
@@ -22,7 +23,7 @@ configureWorldRenderer(renderer: THREE.WebGLRenderer): inferred by TypeScript; s
 
 ## WorldEnvironment.constructor
 
-[Implementation, line 29](../../../../../src/render/planet/world-environment.ts#L29)
+[Implementation, line 30](../../../../../src/render/planet/world-environment.ts#L30)
 
 Shared Studio/embedded-view environment. World content and streaming remain host-owned.
 
@@ -35,17 +36,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `OceanSheet`
 - `scene.add`
 
-## WorldEnvironment.constructor.callback@33
+## WorldEnvironment.constructor.callback@34
 
-[Implementation, line 33](../../../../../src/render/planet/world-environment.ts#L33)
+[Implementation, line 34](../../../../../src/render/planet/world-environment.ts#L34)
 
 ```ts
-callback@33(): inferred by TypeScript; see implementation
+callback@34(): inferred by TypeScript; see implementation
 ```
 
 ## WorldEnvironment.updateSea
 
-[Implementation, line 38](../../../../../src/render/planet/world-environment.ts#L38)
+[Implementation, line 39](../../../../../src/render/planet/world-environment.ts#L39)
 
 Shared Studio/embedded-view environment. World content and streaming remain host-owned.
 
@@ -59,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorldEnvironment.updateSky
 
-[Implementation, line 50](../../../../../src/render/planet/world-environment.ts#L50)
+[Implementation, line 51](../../../../../src/render/planet/world-environment.ts#L51)
 
 Shared Studio/embedded-view environment. World content and streaming remain host-owned.
 
@@ -75,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorldEnvironment.applyLighting
 
-[Implementation, line 63](../../../../../src/render/planet/world-environment.ts#L63)
+[Implementation, line 64](../../../../../src/render/planet/world-environment.ts#L64)
 
 Same lunar key light, ambient fill and fog in Studio and embedded viewers.
 
@@ -87,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
-- `THREE.Fog`
+- `reuseFog`
 - `this.ocean.followFog`
 - `this.ocean.setLight`
 - `this.sun.color.set`
@@ -96,7 +97,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorldEnvironment.dispose
 
-[Implementation, line 85](../../../../../src/render/planet/world-environment.ts#L85)
+[Implementation, line 86](../../../../../src/render/planet/world-environment.ts#L86)
 
 Shared Studio/embedded-view environment. World content and streaming remain host-owned.
 

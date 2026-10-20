@@ -1,5 +1,7 @@
 import { focusTuning } from '../../config/gameplay-tuning.js'
 import * as THREE from 'three'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { depthOfFieldMaterial } from './effect-nodes.js'
 
 /**
  * Slight far-field blur. The center of the frame stays sharp. Off skips the
@@ -9,9 +11,12 @@ import * as THREE from 'three'
 export class DepthOfField {
   private target: THREE.WebGLRenderTarget | null = null
   private readonly scene = new THREE.Scene()
-  private readonly camera = new THREE.Camera()
+  // Orthographic: WebGPU refreshes a camera's projection for its clip space.
+  private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
   private readonly material: THREE.ShaderMaterial
   private readonly size = new THREE.Vector2()
+  /** Camera near plane, for the WebGPU twin's depth decode. */
+  private readonly near = { value: 0.1 }
 
   constructor() {
     const geometry = new THREE.BufferGeometry()
@@ -89,6 +94,7 @@ export class DepthOfField {
     })
     const mesh = new THREE.Mesh(geometry, this.material)
     mesh.frustumCulled = false
+    setWebGPUSubstitute(mesh, depthOfFieldMaterial(this.material, this.near))
     this.scene.add(mesh)
   }
 
@@ -133,6 +139,7 @@ export class DepthOfField {
   ): void {
     renderer.setRenderTarget(destination)
     this.material.uniforms.cameraFar.value = camera.far
+    this.near.value = camera.near
     this.material.uniforms.radius.value = focusTuning.radiusPixels * renderer.getPixelRatio()
     const autoClear = renderer.autoClear
     renderer.autoClear = true

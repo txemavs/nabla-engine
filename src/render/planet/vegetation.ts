@@ -1,6 +1,7 @@
 import {
   CircleGeometry,
   Float32BufferAttribute,
+  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   MeshDepthMaterial,
@@ -14,6 +15,8 @@ import {
 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { PlanetPayload } from '../../planet/index.js'
+import { nodeMaterialTwin, setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { crownNodes } from './surface-nodes.js'
 
 /** Both foliage cards must have the authored crown width, including the Z-facing card. */
 export function treeInstances(
@@ -98,6 +101,19 @@ export function treeInstances(
       new Vector3(width, height, width),
     )
     trees.setMatrixAt(i, matrix)
+  })
+  // WebGPU: node positions run after instancing, so the crown lift needs each tree's height.
+  setWebGPUSubstitute(trees, (kit) => {
+    if (!geometry.getAttribute('treeHeight')) {
+      const heights = new Float32Array(vegetation.length)
+      vegetation.forEach((tree, i) => (heights[i] = tree.size[1]))
+      geometry.setAttribute('treeHeight', new InstancedBufferAttribute(heights, 1))
+    }
+    // Only WebGPU builds this: its shadow pass takes the twin's position and mask nodes, while
+    // the GLSL depth materials (RGBA packing, patched chunks) would draw nothing there.
+    trees.customDepthMaterial = undefined
+    trees.customDistanceMaterial = undefined
+    return nodeMaterialTwin(kit, material, (twin) => crownNodes(twin as never, kit))
   })
   trees.customDepthMaterial = depth
   trees.customDistanceMaterial = distance
