@@ -10,7 +10,9 @@
 - `./instances.js`
 - `./chart.js`
 - `./convert-mesh.js`
+- `./tile-compression.js`
 - `three/addons/loaders/GLTFLoader.js`
+- `meshoptimizer`
 - `three`
 - `../../planet/index.js`
 - `../../planet/contract.js`
@@ -20,7 +22,7 @@
 
 ## loadPhoto
 
-[Implementation, line 25](../../../../../src/render/planet/worker.ts#L25)
+[Implementation, line 29](../../../../../src/render/planet/worker.ts#L29)
 
 Download, verify and decode a package orthophoto, flipped so the texture needs no `flipY`.
 
@@ -39,12 +41,12 @@ Explicit throws in this body:
 - `Error('Photo size mismatch')`
 - `Error('Photo checksum mismatch')`
 
-## loadPhoto.callback@31
+## loadPhoto.callback@35
 
-[Implementation, line 31](../../../../../src/render/planet/worker.ts#L31)
+[Implementation, line 35](../../../../../src/render/planet/worker.ts#L35)
 
 ```ts
-callback@31(): inferred by TypeScript; see implementation
+callback@35(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,32 +62,32 @@ Explicit throws in this body:
 
 - `Error(\`Photo HTTP ${response.status}\`)`
 
-## loadPhoto.callback@31.callback@32
+## loadPhoto.callback@35.callback@36
 
-[Implementation, line 32](../../../../../src/render/planet/worker.ts#L32)
+[Implementation, line 36](../../../../../src/render/planet/worker.ts#L36)
 
 ```ts
-callback@32(): inferred by TypeScript; see implementation
+callback@36(): inferred by TypeScript; see implementation
 ```
 
-## loadPhoto.callback@38
+## loadPhoto.callback@42
 
-[Implementation, line 38](../../../../../src/render/planet/worker.ts#L38)
+[Implementation, line 42](../../../../../src/render/planet/worker.ts#L42)
 
 ```ts
-callback@38(): inferred by TypeScript; see implementation
+callback@42(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `sha256`
 
-## loadPhoto.callback@40
+## loadPhoto.callback@44
 
-[Implementation, line 40](../../../../../src/render/planet/worker.ts#L40)
+[Implementation, line 44](../../../../../src/render/planet/worker.ts#L44)
 
 ```ts
-callback@40(): inferred by TypeScript; see implementation
+callback@44(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -95,20 +97,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cache.put`
 - `cache.put(url, new Response(bytes.slice(0))).catch`
 
-## loadPhoto.callback@40.callback@40
+## loadPhoto.callback@44.callback@44
 
-[Implementation, line 40](../../../../../src/render/planet/worker.ts#L40)
+[Implementation, line 44](../../../../../src/render/planet/worker.ts#L44)
 
 ```ts
-callback@40(): inferred by TypeScript; see implementation
+callback@44(): inferred by TypeScript; see implementation
 ```
 
-## loadPhoto.callback@41
+## loadPhoto.callback@45
 
-[Implementation, line 41](../../../../../src/render/planet/worker.ts#L41)
+[Implementation, line 45](../../../../../src/render/planet/worker.ts#L45)
 
 ```ts
-callback@41(): inferred by TypeScript; see implementation
+callback@45(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -116,18 +118,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Blob`
 - `createImageBitmap`
 
-## callback@43
+## callback@47
 
-[Implementation, line 43](../../../../../src/render/planet/worker.ts#L43)
+[Implementation, line 47](../../../../../src/render/planet/worker.ts#L47)
 
 ```ts
-callback@43(event: MessageEvent<{ id: number manifest: PlanetManifest directory: string buildings?: boolean /** Load `roads.files.collision` / `roadCandidates.layers.collision` as an inspect mesh. Default off. */ inspectRoadCollision?: boolean /** Show v2+ OSM road asphalt as an inspect-only mesh (visible, no collision). Default off. */ osmRoads?: boolean /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */ drape?: { layers: string[]; width: number } cancel?: boolean }>): inferred by TypeScript; see implementation
+callback@47(event: MessageEvent<{ id: number manifest: PlanetManifest directory: string buildings?: boolean /** Load `roads.files.collision` / `roadCandidates.layers.collision` as an inspect mesh. Default off. */ inspectRoadCollision?: boolean /** Show v2+ OSM road asphalt as an inspect-only mesh (visible, no collision). Default off. */ osmRoads?: boolean /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */ drape?: { layers: string[]; width: number } /** GPU formats detected on the main thread, for KTX2 tile textures. Absent: RGBA8. */ textureSupport?: CompressedTextureSupport /** Where `basis_transcoder.js/.wasm` are served. Default `/basis/`. */ transcoderPath?: string cancel?: boolean }>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `AbortController`
 - `GLTFLoader`
+- `JSON.stringify`
 - `LoadingManager`
 - `Set`
 - `String`
@@ -136,6 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `atlasTreeInstances`
 - `bakedDrapeLayers`
 - `chunks.map`
+- `configureTileLoader`
 - `console.warn`
 - `controller.signal.throwIfAborted`
 - `controllers.delete`
@@ -148,6 +152,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `loadAtlasInstances`
 - `loadLayer`
 - `loadPhoto`
+- `loader.setMeshoptDecoder`
+- `loader.setMeshoptDecoder(MeshoptDecoder).setKTX2Loader`
 - `manager.setURLModifier`
 - `meshes.flatMap`
 - `meshes.map`
@@ -159,14 +165,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `planetTileGlbLayers`
 - `roadErrors.push`
 - `self.postMessage`
+- `tileDecoders?.ktx2.dispose`
 
 Explicit throws in this body:
 
 - `error`
 
-## callback@43.phase
+## callback@47.phase
 
-[Implementation, line 74](../../../../../src/render/planet/worker.ts#L74)
+[Implementation, line 82](../../../../../src/render/planet/worker.ts#L82)
 
 ```ts
 phase(name: keyof typeof timings, work: () => Promise<T> | T): Promise<T>
@@ -177,12 +184,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `work`
 
-## callback@43.callback@84
+## callback@47.callback@92
 
-[Implementation, line 84](../../../../../src/render/planet/worker.ts#L84)
+[Implementation, line 92](../../../../../src/render/planet/worker.ts#L92)
 
 ```ts
-callback@84(url): inferred by TypeScript; see implementation
+callback@92(url): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -194,9 +201,9 @@ Explicit throws in this body:
 
 - `Error('Planet GLBs must be self-contained')`
 
-## callback@43.loadLayer
+## callback@47.loadLayer
 
-[Implementation, line 91](../../../../../src/render/planet/worker.ts#L91)
+[Implementation, line 111](../../../../../src/render/planet/worker.ts#L111)
 
 ```ts
 loadLayer(name: string, file: PlanetLayerFile, kind: PlanetGlbKind, chartOnly = false, discard = false): inferred by TypeScript; see implementation
@@ -217,12 +224,12 @@ Explicit throws in this body:
 - `Error('GLB size mismatch')`
 - `Error('GLB checksum mismatch')`
 
-## callback@43.loadLayer.callback@101
+## callback@47.loadLayer.callback@121
 
-[Implementation, line 101](../../../../../src/render/planet/worker.ts#L101)
+[Implementation, line 121](../../../../../src/render/planet/worker.ts#L121)
 
 ```ts
-callback@101(): inferred by TypeScript; see implementation
+callback@121(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -239,32 +246,32 @@ Explicit throws in this body:
 
 - `Error(\`GLB HTTP ${response.status}\`)`
 
-## callback@43.loadLayer.callback@101.callback@102
+## callback@47.loadLayer.callback@121.callback@122
 
-[Implementation, line 102](../../../../../src/render/planet/worker.ts#L102)
+[Implementation, line 122](../../../../../src/render/planet/worker.ts#L122)
 
 ```ts
-callback@102(): inferred by TypeScript; see implementation
+callback@122(): inferred by TypeScript; see implementation
 ```
 
-## callback@43.loadLayer.callback@113
+## callback@47.loadLayer.callback@133
 
-[Implementation, line 113](../../../../../src/render/planet/worker.ts#L113)
+[Implementation, line 133](../../../../../src/render/planet/worker.ts#L133)
 
 ```ts
-callback@113(): inferred by TypeScript; see implementation
+callback@133(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `sha256`
 
-## callback@43.loadLayer.callback@115
+## callback@47.loadLayer.callback@135
 
-[Implementation, line 115](../../../../../src/render/planet/worker.ts#L115)
+[Implementation, line 135](../../../../../src/render/planet/worker.ts#L135)
 
 ```ts
-callback@115(): inferred by TypeScript; see implementation
+callback@135(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -273,32 +280,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cache.put`
 - `cache.put(cacheKey, new Response(bytes)).catch`
 
-## callback@43.loadLayer.callback@115.callback@115
+## callback@47.loadLayer.callback@135.callback@135
 
-[Implementation, line 115](../../../../../src/render/planet/worker.ts#L115)
+[Implementation, line 135](../../../../../src/render/planet/worker.ts#L135)
 
 ```ts
-callback@115(): inferred by TypeScript; see implementation
+callback@135(): inferred by TypeScript; see implementation
 ```
 
-## callback@43.loadLayer.callback@117
+## callback@47.loadLayer.callback@137
 
-[Implementation, line 117](../../../../../src/render/planet/worker.ts#L117)
+[Implementation, line 137](../../../../../src/render/planet/worker.ts#L137)
 
 ```ts
-callback@117(): inferred by TypeScript; see implementation
+callback@137(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `loader.parseAsync`
 
-## callback@43.loadLayer.callback@122
+## callback@47.loadLayer.callback@142
 
-[Implementation, line 122](../../../../../src/render/planet/worker.ts#L122)
+[Implementation, line 142](../../../../../src/render/planet/worker.ts#L142)
 
 ```ts
-callback@122(node): inferred by TypeScript; see implementation
+callback@142(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -309,12 +316,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `meshes.push`
 - `photos.push`
 
-## callback@43.loadLayer.callback@122.callback@126
+## callback@47.loadLayer.callback@142.callback@146
 
-[Implementation, line 126](../../../../../src/render/planet/worker.ts#L126)
+[Implementation, line 146](../../../../../src/render/planet/worker.ts#L146)
 
 ```ts
-callback@126(v: any): inferred by TypeScript; see implementation
+callback@146(v: any): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -323,36 +330,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `v.position.every`
 - `v.size.every`
 
-## callback@43.loadLayer.callback@122.callback@126.callback@132
+## callback@47.loadLayer.callback@142.callback@146.callback@152
 
-[Implementation, line 132](../../../../../src/render/planet/worker.ts#L132)
+[Implementation, line 152](../../../../../src/render/planet/worker.ts#L152)
 
 ```ts
-callback@132(n: number): inferred by TypeScript; see implementation
+callback@152(n: number): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
 
-## callback@43.loadLayer.callback@156
+## callback@47.loadLayer.callback@176
 
-[Implementation, line 156](../../../../../src/render/planet/worker.ts#L156)
+[Implementation, line 176](../../../../../src/render/planet/worker.ts#L176)
 
 ```ts
-callback@156(): inferred by TypeScript; see implementation
+callback@176(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `createImageBitmap`
 
-## callback@43.loadLayer.callback@159
+## callback@47.loadLayer.callback@179
 
-[Implementation, line 159](../../../../../src/render/planet/worker.ts#L159)
+[Implementation, line 179](../../../../../src/render/planet/worker.ts#L179)
 
 ```ts
-callback@159(node): inferred by TypeScript; see implementation
+callback@179(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -361,20 +368,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `m.geometry.dispose`
 - `material.dispose`
 
-## callback@43.callback@213
+## callback@47.callback@233
 
-[Implementation, line 213](../../../../../src/render/planet/worker.ts#L213)
+[Implementation, line 233](../../../../../src/render/planet/worker.ts#L233)
 
 ```ts
-callback@213(m): inferred by TypeScript; see implementation
+callback@233(m): inferred by TypeScript; see implementation
 ```
 
-## callback@43.callback@216
+## callback@47.callback@240
 
-[Implementation, line 216](../../../../../src/render/planet/worker.ts#L216)
+[Implementation, line 240](../../../../../src/render/planet/worker.ts#L240)
 
 ```ts
-callback@216(): inferred by TypeScript; see implementation
+callback@240(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -382,42 +389,62 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `buildDrapes`
 
-## callback@43.callback@229
+## callback@47.callback@253
 
-[Implementation, line 229](../../../../../src/render/planet/worker.ts#L229)
+[Implementation, line 253](../../../../../src/render/planet/worker.ts#L253)
 
 ```ts
-callback@229(l): inferred by TypeScript; see implementation
+callback@253(l): inferred by TypeScript; see implementation
 ```
 
-## callback@43.callback@264
+## callback@47.callback@288
 
-[Implementation, line 264](../../../../../src/render/planet/worker.ts#L264)
+[Implementation, line 288](../../../../../src/render/planet/worker.ts#L288)
 
 ```ts
-callback@264(m): inferred by TypeScript; see implementation
+callback@288(m): inferred by TypeScript; see implementation
 ```
 
-## callback@43.callback@271
+## callback@47.callback@295
 
-[Implementation, line 271](../../../../../src/render/planet/worker.ts#L271)
+[Implementation, line 295](../../../../../src/render/planet/worker.ts#L295)
 
 ```ts
-callback@271(c): inferred by TypeScript; see implementation
+callback@295(c): inferred by TypeScript; see implementation
 ```
 
-## callback@43.callback@272
+## callback@47.callback@296
 
-[Implementation, line 272](../../../../../src/render/planet/worker.ts#L272)
+[Implementation, line 296](../../../../../src/render/planet/worker.ts#L296)
 
 ```ts
-callback@272(m): inferred by TypeScript; see implementation
+callback@296(m): inferred by TypeScript; see implementation
 ```
 
-## callback@43.callback@273
+## callback@47.callback@297
 
-[Implementation, line 273](../../../../../src/render/planet/worker.ts#L273)
+[Implementation, line 297](../../../../../src/render/planet/worker.ts#L297)
 
 ```ts
-callback@273(d): inferred by TypeScript; see implementation
+callback@297(m): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `m.compressedMap?.mipmaps.map`
+
+## callback@47.callback@297.callback@297
+
+[Implementation, line 297](../../../../../src/render/planet/worker.ts#L297)
+
+```ts
+callback@297(l): inferred by TypeScript; see implementation
+```
+
+## callback@47.callback@298
+
+[Implementation, line 298](../../../../../src/render/planet/worker.ts#L298)
+
+```ts
+callback@298(d): inferred by TypeScript; see implementation
 ```

@@ -11,15 +11,20 @@ Atlas candidate road GLBs (`asphalt-candidate-*.glb`, `road-collision-candidate-
 worker can install the layer instead of failing the whole cell. Their triangles are kept as
 published: no client-side filter removes asphalt or bridge supports.
 
+Quantized GLBs (`KHR_mesh_quantization`, usually with `EXT_meshopt_compression`) need no
+special case: `fromBufferAttribute` de-normalizes int8/int16 attributes and the node matrix
+carries the dequantization scale/offset, so every array below is float32 in tile metres.
+
 ## Module dependencies
 
 - `three`
 - `../../planet/sea-coverage.js`
 - `../../planet/index.js`
+- `./tile-compression.js`
 
 ## preparePlanetMeshGeometry
 
-[Implementation, line 16](../../../../../src/render/planet/convert-mesh.ts#L16)
+[Implementation, line 28](../../../../../src/render/planet/convert-mesh.ts#L28)
 
 Compute missing vertex normals, then reject meshes without POSITION or with too many verts.
 
@@ -39,7 +44,7 @@ Explicit throws in this body:
 
 ## convertPlanetGlbMesh
 
-[Implementation, line 31](../../../../../src/render/planet/convert-mesh.ts#L31)
+[Implementation, line 43](../../../../../src/render/planet/convert-mesh.ts#L43)
 
 Same conversion the planet worker applies to every GLB mesh in a cell.
 
@@ -59,7 +64,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `color.getX`
 - `color.getY`
 - `color.getZ`
+- `compressedTexturePayload`
 - `isCandidateRoadKind`
+- `isCompressedTileTexture`
 - `material.color.getHexString`
 - `n.every`
 - `n.set`
