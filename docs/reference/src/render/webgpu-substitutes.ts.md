@@ -70,8 +70,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Error`
 - `Kind`
+- `Set`
 - `build`
 - `copy`
+- `owned.add`
 - `source.type.replace`
 
 Explicit throws in this body:
@@ -80,7 +82,7 @@ Explicit throws in this body:
 
 ## nodeMaterialTwin.copy
 
-[Implementation, line 86](../../../../src/render/webgpu-substitutes.ts#L86)
+[Implementation, line 91](../../../../src/render/webgpu-substitutes.ts#L91)
 
 ```ts
 copy(): inferred by TypeScript; see implementation
@@ -89,10 +91,11 @@ copy(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `TWIN_SKIP.has`
+- `owned.has`
 
 ## nodeMaterialTwin.sync
 
-[Implementation, line 95](../../../../src/render/webgpu-substitutes.ts#L95)
+[Implementation, line 102](../../../../src/render/webgpu-substitutes.ts#L102)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -104,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addWebGPUMaterialNodes
 
-[Implementation, line 113](../../../../src/render/webgpu-substitutes.ts#L113)
+[Implementation, line 120](../../../../src/render/webgpu-substitutes.ts#L120)
 
 Register the TSL equivalent of an `onBeforeCompile` patch on a built-in material. WebGL keeps
 the GLSL patch; under WebGPU every mesh drawing `material` draws its node twin instead. Patches
@@ -120,12 +123,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `materialNodes.set`
 - `materialTwins.delete`
 
-## addWebGPUMaterialNodes.callback@121
+## addWebGPUMaterialNodes.callback@128
 
-[Implementation, line 121](../../../../src/render/webgpu-substitutes.ts#L121)
+[Implementation, line 128](../../../../src/render/webgpu-substitutes.ts#L128)
 
 ```ts
-callback@121(kit, twin): inferred by TypeScript; see implementation
+callback@128(kit, twin): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -135,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasWebGPUMaterialNodes
 
-[Implementation, line 130](../../../../src/render/webgpu-substitutes.ts#L130)
+[Implementation, line 137](../../../../src/render/webgpu-substitutes.ts#L137)
 
 ```ts
 hasWebGPUMaterialNodes(material: THREE.Material): boolean
@@ -147,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuMaterialTwin
 
-[Implementation, line 135](../../../../src/render/webgpu-substitutes.ts#L135)
+[Implementation, line 142](../../../../src/render/webgpu-substitutes.ts#L142)
 
 The node twin of a registered material, built on first use.
 
@@ -163,24 +166,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `materialTwins.set`
 - `nodeMaterialTwin`
 
-## webgpuMaterialTwin.callback@143
+## webgpuMaterialTwin.callback@150
 
-[Implementation, line 143](../../../../src/render/webgpu-substitutes.ts#L143)
+[Implementation, line 150](../../../../src/render/webgpu-substitutes.ts#L150)
 
 ```ts
-callback@143(node): inferred by TypeScript; see implementation
+callback@150(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `build`
 
-## webgpuMaterialTwin.callback@145
+## webgpuMaterialTwin.callback@152
 
-[Implementation, line 145](../../../../src/render/webgpu-substitutes.ts#L145)
+[Implementation, line 152](../../../../src/render/webgpu-substitutes.ts#L152)
 
 ```ts
-callback@145(): inferred by TypeScript; see implementation
+callback@152(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

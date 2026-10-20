@@ -35,6 +35,12 @@ Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowM
 The WebGL-only chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) are not
 ported; `webgpu-shadow-parity.spec.ts` measures the remaining edge differences.
 
+WebGPU tone-maps the whole frame in its output pass; WebGL tone-maps per material and clears to the
+background colour as is. For on-screen frames `WebGPUCompatibility` draws `toneMapped: false`
+materials (lamps, instruments, screens) through a node twin whose output passes the inverse tone
+curve, and gives a background colour the same inverse as its `backgroundNode`, so both come out as
+under WebGL (`webgpu-tone-parity.spec.ts`). Render targets get no output pass in either backend.
+
 Built-in materials patched with `onBeforeCompile` register a TSL twin with
 `addWebGPUMaterialNodes` (`surface-nodes.ts`): asphalt contrast, river and ocean-sheet waves, the
 sea's shadowed flat colour and glint (a small lighting model), and the tree crowns (an object

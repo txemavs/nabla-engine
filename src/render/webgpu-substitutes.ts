@@ -79,16 +79,23 @@ export function nodeMaterialTwin(
   build: (twin: THREE.Material) => void,
 ): { material: THREE.Material; sync(): void } {
   const webgpu = kit.webgpu as unknown as Record<string, new () => THREE.Material>
-  const Kind = webgpu[source.type.replace(/Material$/, 'NodeMaterial')]
+  const Kind = (source as { isNodeMaterial?: boolean }).isNodeMaterial
+    ? (source.constructor as new () => THREE.Material)
+    : webgpu[source.type.replace(/Material$/, 'NodeMaterial')]
   if (!Kind) throw new Error(`No node material for ${source.type}`)
   const twin = new Kind()
   const record = twin as unknown as Record<string, unknown>
+  const original = source as unknown as Record<string, unknown>
+  // Keys `build` set (nodes, mostly) belong to the twin: later syncs leave them alone.
+  const owned = new Set<string>()
   const copy = () => {
     for (const key in source)
-      if (!TWIN_SKIP.has(key)) record[key] = (source as unknown as Record<string, unknown>)[key]
+      if (!TWIN_SKIP.has(key) && !owned.has(key)) record[key] = original[key]
   }
   copy()
+  const before = { ...record }
   build(twin)
+  for (const key in record) if (record[key] !== before[key]) owned.add(key)
   let version = source.version
   return {
     material: twin,

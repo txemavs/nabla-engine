@@ -2,10 +2,12 @@ import * as THREE from 'three'
 import {
   hasWebGPUMaterialNodes,
   hasWebGPUSubstitute,
+  nodeMaterialTwin,
   webgpuMaterialTwin,
   webgpuSubstitute,
   type NodeKit,
 } from './webgpu-substitutes.js'
+import { decodeDisplay } from './planet/sky-nodes.js'
 
 /** Renderer requested by the page: `auto` picks WebGPU when an adapter exists, else WebGL. */
 export type RendererPreference = 'webgl' | 'webgpu' | 'auto'
@@ -114,6 +116,7 @@ export function frameDrawCalls(renderer: THREE.WebGLRenderer): number {
 
 interface WebGPURendererLike {
   getMaxAnisotropy(): number
+  getRenderTarget(): unknown
   render(scene: THREE.Object3D, camera: THREE.Camera): unknown
   compileAsync(
     object: THREE.Object3D,
@@ -142,7 +145,12 @@ function webglSurface(gpu: WebGPURendererLike, kit?: NodeKit): THREE.WebGLRender
   }
   target.capabilities ??= { getMaxAnisotropy: () => gpu.getMaxAnisotropy() }
   target.forceContextLoss ??= () => {}
-  const guard = new WebGPUCompatibility(kit)
+  const guard = new WebGPUCompatibility(
+    kit,
+    () =>
+      gpu.getRenderTarget() === null &&
+      (gpu as unknown as { toneMapping: THREE.ToneMapping }).toneMapping !== THREE.NoToneMapping,
+  )
   compatibility.set(gpu, guard)
   if (kit) Object.defineProperty(gpu, NODE_KIT, { value: kit })
   const render = gpu.render.bind(gpu)
@@ -202,8 +210,23 @@ export class WebGPUCompatibility {
   readonly skipped = new Set<string>()
   /** Nested apply/restore pairs (a mirror capture inside a frame); restore at the outermost. */
   private depth = 0
-  /** `kit` enables registered TSL substitutes (see `setWebGPUSubstitute`); without it they hide. */
-  constructor(readonly kit?: NodeKit) {}
+  /** Display twins of `toneMapped: false` materials (see {@link displayTwin}). */
+  private readonly displayTwins = new WeakMap<
+    THREE.Material,
+    { material: THREE.Material; sync(): void }
+  >()
+  /** Background nodes that undo the output tone mapping of a background colour. */
+  private readonly backgrounds = new WeakMap<THREE.Color, unknown>()
+  /** Scene whose `backgroundNode` this frame set, with the node to put back. */
+  private background: { scene: THREE.Scene; node: unknown } | null = null
+  /**
+   * `kit` enables registered TSL substitutes (see `setWebGPUSubstitute`); without it they hide.
+   * `toScreen` tells whether the next render goes through the renderer's tone-mapping output pass.
+   */
+  constructor(
+    readonly kit?: NodeKit,
+    private readonly toScreen: () => boolean = () => false,
+  ) {}
   /** Hide incompatible objects (or swap in their TSL substitute) before a frame; then {@link restore}. */
   apply(root: THREE.Object3D): void {
     this.depth++
@@ -265,11 +288,70 @@ export class WebGPUCompatibility {
       if (!this.hidden.has(object)) this.hidden.set(object, object.visible)
       object.visible = false
     }
+    if (this.depth === 1 && this.kit && this.toScreen()) this.matchWebGLToneMapping(root)
+  }
+
+  /**
+   * WebGL tone-maps per material and clears to the background colour as is; WebGPU tone-maps the
+   * whole frame in its output pass. For an on-screen frame, draw `toneMapped: false` materials
+   * and a background colour through the inverse tone curve, so the output pass gives back what
+   * WebGL shows. Render targets get no output pass in either backend and are left alone.
+   */
+  private matchWebGLToneMapping(root: THREE.Object3D): void {
+    const kit = this.kit!
+    const scene = root as THREE.Scene & { backgroundNode?: unknown }
+    if (
+      scene.isScene &&
+      (scene.background as THREE.Color | null)?.isColor &&
+      !scene.backgroundNode
+    ) {
+      const color = scene.background as THREE.Color
+      let node = this.backgrounds.get(color)
+      if (!node) {
+        const tsl = kit.tsl
+        node = tsl.vec4(decodeDisplay(tsl.sRGBTransferOETF(tsl.uniform(color)), tsl), 1)
+        this.backgrounds.set(color, node)
+      }
+      this.background = { scene, node: scene.backgroundNode ?? null }
+      scene.backgroundNode = node as never
+    }
+    const synced = new Map<THREE.Material, THREE.Material>()
+    const display = (material: THREE.Material) => {
+      if (material.toneMapped !== false || glslOnlyMaterial(material)) return material
+      let node = synced.get(material)
+      if (node) return node
+      let twin = this.displayTwins.get(material)
+      if (!twin) {
+        twin = nodeMaterialTwin(kit, material, (target) => {
+          const tsl = kit.tsl
+          const node = target as THREE.Material & { outputNode: unknown }
+          const base = (node.outputNode ?? tsl.output) as ReturnType<typeof tsl.vec4>
+          node.outputNode = tsl.vec4(decodeDisplay(tsl.sRGBTransferOETF(base.rgb), tsl), base.a)
+        })
+        this.displayTwins.set(material, twin)
+      }
+      twin.sync()
+      synced.set(material, twin.material)
+      return twin.material
+    }
+    root.traverseVisible((object) => {
+      const mesh = object as THREE.Mesh
+      const material = mesh.material as THREE.Material | THREE.Material[] | undefined
+      if (!material) return
+      const materials = Array.isArray(material) ? material : [material]
+      if (!materials.some((m) => m.toneMapped === false && !glslOnlyMaterial(m))) return
+      if (!this.swapped.has(mesh)) this.swapped.set(mesh, material)
+      mesh.material = Array.isArray(material) ? material.map(display) : display(material)
+    })
   }
   /** Give hidden objects back the visibility (and swapped meshes the material) their owner set. */
   restore(): void {
     if (this.depth > 0) this.depth--
     if (this.depth > 0) return
+    if (this.background) {
+      ;(this.background.scene as { backgroundNode?: unknown }).backgroundNode = this.background.node
+      this.background = null
+    }
     for (const [object, visible] of this.hidden) object.visible = visible
     this.hidden.clear()
     for (const [mesh, material] of this.swapped) mesh.material = material
