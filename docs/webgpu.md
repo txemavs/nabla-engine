@@ -48,6 +48,10 @@ glass draws a node twin of the Reflector shader, with the sky pass painted into 
 Substitutes inside a capture (smoke, tyre marks) blend as raw colours there, as under WebGL
 (`webgpu-mirror-parity.spec.ts`).
 
+The lens flare (sun and destruction fire) adds its glow in display space over the frame below and
+writes back the decode; where a channel saturates, ACES cannot reach every clipped colour, so the
+saturated rim of the core is a little warmer than under WebGL (`webgpu-flare-parity.spec.ts`).
+
 Tyre, exhaust and muzzle smoke draw as instanced node sprites (`particle-nodes.ts`) that blend in
 display space against the frame below the draw (a dense plume core comes out slightly dimmer);
 tyre marks use a node material on the same ring-buffer mesh; the A3 masked lenses get TSL masks

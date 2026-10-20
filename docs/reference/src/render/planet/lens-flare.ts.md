@@ -7,10 +7,12 @@
 ## Module dependencies
 
 - `three`
+- `../webgpu-substitutes.js`
+- `./lens-flare-nodes.js`
 
 ## createLensFlare
 
-[Implementation, line 13](../../../../../src/render/planet/lens-flare.ts#L13)
+[Implementation, line 15](../../../../../src/render/planet/lens-flare.ts#L15)
 
 Screen-space ghosts along the sun, drawn after the world. No extra render target.
 
@@ -28,14 +30,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vector3`
 - `Vector4`
 - `geometry.setAttribute`
+- `lensFlareMaterial`
 - `scene.add`
+- `setWebGPUSubstitute`
 
-## createLensFlare.callback@86
+## createLensFlare.callback@89
 
-[Implementation, line 86](../../../../../src/render/planet/lens-flare.ts#L86)
+[Implementation, line 89](../../../../../src/render/planet/lens-flare.ts#L89)
 
 ```ts
-callback@86(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@89(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -44,7 +48,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createLensFlare.dispose
 
-[Implementation, line 109](../../../../../src/render/planet/lens-flare.ts#L109)
+[Implementation, line 112](../../../../../src/render/planet/lens-flare.ts#L112)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
