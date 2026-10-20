@@ -150,36 +150,7 @@ export class GameRenderPipeline {
       phaseStarted = this.diagnostics ? performance.now() : 0
       phasePrograms = renderer.info.programs?.length ?? 0
       this.gpuTiming?.beginPass('portals')
-      this.renderedPortals = renderPortals(
-        view.portals,
-        renderer,
-        scene,
-        camera,
-        (remote) => {
-          const remoteEye = remote.position.clone().add(origin)
-          frame.cull(remoteEye)
-          if (!sky.enabled) return
-          const restore = portalEnvironment(
-            sky,
-            scene,
-            remoteEye,
-            eye,
-            origin,
-            frame.clock,
-            frame.ambient,
-            frame.lights,
-          )
-          try {
-            sky.render(renderer, remote, remoteEye)
-            renderer.autoClear = false
-          } catch (error) {
-            restore()
-            throw error
-          }
-          return restore
-        },
-        frame.externalViews,
-      )
+      this.renderedPortals = this.renderPortals(frame)
       this.gpuTiming?.endPass('portals')
       recordShaders('portals')
       this.timings.portalsMs = (this.diagnostics ? performance.now() : 0) - phaseStarted
@@ -228,25 +199,7 @@ export class GameRenderPipeline {
       monitors.finish()
       if (focus) {
         this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
-        if (flare && flareVisible) {
-          const parent = flare.parent
-          const material = flare.material as THREE.ShaderMaterial
-          const depthTest = material.depthTest
-          this.flareScene.add(flare)
-          material.depthTest = false
-          material.uniforms.sceneDepth.value = this.depthOfField.depthTexture
-          material.uniforms.useSceneDepth.value = true
-          renderer.autoClear = false
-          try {
-            renderer.render(this.flareScene, camera)
-          } finally {
-            material.depthTest = depthTest
-            material.uniforms.useSceneDepth.value = false
-            material.uniforms.sceneDepth.value = null
-            flare.removeFromParent()
-            parent?.add(flare)
-          }
-        }
+        if (flare && flareVisible) this.renderFocusFlare(renderer, camera, flare)
       }
       if (upscale) this.fsr.present(renderer)
       this.gpuTiming?.endPass('post')
@@ -266,9 +219,67 @@ export class GameRenderPipeline {
       renderer.autoClear = autoClear
     }
   }
+  /** The lens flare over the presented depth-of-field frame, occluded by the scene depth. */
+  private renderFocusFlare(
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.PerspectiveCamera,
+    flare: THREE.Mesh,
+  ): void {
+    const parent = flare.parent
+    const material = flare.material as THREE.ShaderMaterial
+    const depthTest = material.depthTest
+    this.flareScene.add(flare)
+    material.depthTest = false
+    material.uniforms.sceneDepth.value = this.depthOfField.depthTexture
+    material.uniforms.useSceneDepth.value = true
+    renderer.autoClear = false
+    try {
+      renderer.render(this.flareScene, camera)
+    } finally {
+      material.depthTest = depthTest
+      material.uniforms.useSceneDepth.value = false
+      material.uniforms.sceneDepth.value = null
+      flare.removeFromParent()
+      parent?.add(flare)
+    }
+  }
+  /** Remote portal views, each with its destination's sky and environment (`portalEnvironment`). */
+  private renderPortals(frame: GameRenderFrame): number {
+    const { renderer, scene, camera, view, sky, origin, eye } = frame
+    return renderPortals(
+      view.portals,
+      renderer,
+      scene,
+      camera,
+      (remote) => {
+        const remoteEye = remote.position.clone().add(origin)
+        frame.cull(remoteEye)
+        if (!sky.enabled) return
+        const restore = portalEnvironment(
+          sky,
+          scene,
+          remoteEye,
+          eye,
+          origin,
+          frame.clock,
+          frame.ambient,
+          frame.lights,
+        )
+        try {
+          sky.render(renderer, remote, remoteEye)
+          renderer.autoClear = false
+        } catch (error) {
+          restore()
+          throw error
+        }
+        return restore
+      },
+      frame.externalViews,
+    )
+  }
   /**
-   * WebGPU frame: mirrors, then the main scene. GLSL passes (sky dome, clouds, portals, depth of
-   * field, FSR, lens flare) have no node-material port yet and are skipped; see docs/webgpu.md.
+   * WebGPU frame: mirrors, portals, then the main scene, timed per pass like the WebGL frame. GLSL passes without a node-material port yet are
+   * skipped; see docs/webgpu.md.
    */
   private renderWebGPU(frame: GameRenderFrame): void {
     const { renderer, scene, camera, view, eye, monitors } = frame
@@ -277,36 +288,95 @@ export class GameRenderPipeline {
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
     this.renderedPortals = 0
     const started = this.diagnostics ? performance.now() : 0
+    const timing = this.gpuTiming
+    timing?.beginFrame()
     try {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
-      // SceneView keeps the authored glass under WebGPU (no Reflector capture).
-      view.renderMirrors(renderer, scene, camera, frame.mirrorVehicle, frame.time)
+      // Mirrors capture through the TSL reflector twin (mirror-nodes.ts), with the sky pass painted
+      // into each capture as under WebGL; portals show black inside mirror captures there too.
+      const portalStates = [...view.portals.values()].map((surface) => ({
+        surface,
+        live: surface.mesh.material.uniforms.live.value,
+      }))
+      for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
+      timing?.beginPass('mirrors')
+      try {
+        view.renderMirrors(
+          renderer,
+          scene,
+          camera,
+          frame.mirrorVehicle,
+          frame.time,
+          frame.sky.enabled && frame.skyVisible !== false
+            ? (reflection) =>
+                frame.sky.render(
+                  renderer,
+                  reflection,
+                  reflection.position.clone().add(frame.origin),
+                )
+            : undefined,
+        )
+      } finally {
+        for (const { surface, live } of portalStates)
+          surface.mesh.material.uniforms.live.value = live
+      }
+      timing?.endPass('mirrors')
       const mirrorsDone = this.diagnostics ? performance.now() : 0
       this.timings.mirrorsMs = mirrorsDone - started
-      this.timings.portalsMs = 0
+      timing?.beginPass('portals')
+      this.renderedPortals = this.renderPortals(frame)
+      timing?.endPass('portals')
+      const portalsDone = this.diagnostics ? performance.now() : 0
+      this.timings.portalsMs = portalsDone - mirrorsDone
+      timing?.beginPass('main')
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
       frame.beforeMain?.()
       frame.sky.setViewAspect(camera.aspect)
       renderer.autoClear = true
+      // Depth of field and FSR 1 as under WebGL; their passes have node twins (effect-nodes.ts).
+      const focus = frame.depthOfField || frame.tunnelFocus !== undefined
+      this.depthOfField.setFocus(frame.tunnelFocus ?? 0, !!frame.depthOfField)
+      const upscale = this.fsr.begin(renderer)
+      if (focus) this.depthOfField.begin(renderer, upscale ? this.fsr.inputSize : undefined)
       frame.shadows.update(camera, frame.origin)
       monitors.prepare(camera)
       renderer.shadowMap.needsUpdate = frame.shadowsEnabled || !!frame.localShadowUpdate
-      // No GLSL sky dome under WebGPU: clear to the same backdrop the mirrors use.
+      // The sky scene draws first, as under WebGL; its GLSL pieces have TSL twins (sky-nodes.ts).
       const background = scene.background
-      if (!background && frame.skyVisible !== false)
+      const skyDrawn = frame.sky.enabled && frame.skyVisible !== false
+      if (skyDrawn) {
+        frame.sky.render(renderer, camera, eye)
+        renderer.autoClear = false
+        renderer.clearDepth()
+      } else if (!background && frame.skyVisible !== false)
         scene.background = scene.fog?.color ?? webgpuBackdrop
+      const flare = frame.sky.lensFlare
+      const flareVisible = flare?.visible ?? false
+      if (focus && flare) flare.visible = false
       try {
         renderer.render(scene, camera)
       } finally {
         scene.background = background
+        if (flare) flare.visible = flareVisible
       }
+      if (skyDrawn) frame.sky.renderClouds(renderer, camera)
       monitors.finish()
-      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - mirrorsDone
+      timing?.endPass('main')
+      timing?.beginPass('post')
+      if (focus) {
+        this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
+        if (flare && flareVisible) this.renderFocusFlare(renderer, camera, flare)
+      }
+      if (upscale) this.fsr.present(renderer)
+      timing?.endPass('post')
+      timing?.endFrame()
+      this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - portalsDone
       this.timings.postMs = 0
     } finally {
+      this.fsr.restore(renderer)
       monitors.finish()
       for (const { object, visible } of overlays) object.visible = visible
       renderer.setRenderTarget(target)

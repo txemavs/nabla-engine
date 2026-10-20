@@ -8,10 +8,12 @@
 
 - `../../config/gameplay-tuning.js`
 - `three`
+- `../webgpu-substitutes.js`
+- `./effect-nodes.js`
 
 ## DepthOfField.constructor
 
-[Implementation, line 16](../../../../../src/render/effects/depth-of-field.ts#L16)
+[Implementation, line 21](../../../../../src/render/effects/depth-of-field.ts#L21)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
@@ -28,16 +30,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Mesh`
 - `THREE.ShaderMaterial`
 - `THREE.Vector2`
+- `depthOfFieldMaterial`
 - `focusTuning.nearEndMetres.toFixed`
 - `focusTuning.nearStartMetres.toFixed`
 - `focusTuning.sideEnd.toFixed`
 - `focusTuning.sideStart.toFixed`
 - `geometry.setAttribute`
+- `setWebGPUSubstitute`
 - `this.scene.add`
 
 ## DepthOfField.setFocus
 
-[Implementation, line 96](../../../../../src/render/effects/depth-of-field.ts#L96)
+[Implementation, line 102](../../../../../src/render/effects/depth-of-field.ts#L102)
 
 Peripheral focus follows the weapon aim animation; ordinary far blur stays optional.
 
@@ -51,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.depthTexture
 
-[Implementation, line 101](../../../../../src/render/effects/depth-of-field.ts#L101)
+[Implementation, line 107](../../../../../src/render/effects/depth-of-field.ts#L107)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
@@ -63,7 +67,7 @@ depthTexture(): THREE.DepthTexture | null
 
 ## DepthOfField.begin
 
-[Implementation, line 106](../../../../../src/render/effects/depth-of-field.ts#L106)
+[Implementation, line 112](../../../../../src/render/effects/depth-of-field.ts#L112)
 
 Next draws land in the effect buffer.
 
@@ -84,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.present
 
-[Implementation, line 129](../../../../../src/render/effects/depth-of-field.ts#L129)
+[Implementation, line 135](../../../../../src/render/effects/depth-of-field.ts#L135)
 
 Draw the blurred frame to the canvas. The caller renders HUD after this.
 
@@ -100,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.dispose
 
-[Implementation, line 146](../../../../../src/render/effects/depth-of-field.ts#L146)
+[Implementation, line 153](../../../../../src/render/effects/depth-of-field.ts#L153)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale
@@ -117,12 +121,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.scene.clear`
 - `this.scene.traverse`
 
-## DepthOfField.dispose.callback@149
+## DepthOfField.dispose.callback@156
 
-[Implementation, line 149](../../../../../src/render/effects/depth-of-field.ts#L149)
+[Implementation, line 156](../../../../../src/render/effects/depth-of-field.ts#L156)
 
 ```ts
-callback@149(object): inferred by TypeScript; see implementation
+callback@156(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -131,7 +135,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## DepthOfField.release
 
-[Implementation, line 154](../../../../../src/render/effects/depth-of-field.ts#L154)
+[Implementation, line 161](../../../../../src/render/effects/depth-of-field.ts#L161)
 
 Slight far-field blur. The center of the frame stays sharp. Off skips the
 extra target entirely. Logarithmic depth is decoded with the same scale

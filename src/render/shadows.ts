@@ -23,7 +23,9 @@ import {
   shadowTiers,
   type ShadowTier,
 } from './shadow-tiers.js'
-import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
+import { groundCloudShadow, patchGroundCloudShadow } from './planet/artistic-clouds.js'
+import { groundCloudShade } from './planet/surface-nodes.js'
+import type { NodeKit } from './webgpu-substitutes.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
 // r186's DFG lookup and multi-scattering initialization, turning metals black.
@@ -99,6 +101,8 @@ export interface CSMConfig {
   lightDirection: THREE.Vector3
   lightIntensity?: number
   tier: ShadowTier
+  /** Node kit of a WebGPU renderer: cascades come from `CSMShadowNode` instead of the CSM addon. */
+  nodeKit?: NodeKit
 }
 
 /**
@@ -137,6 +141,11 @@ export class ShadowManager {
   /** Create CSM instance if tier is non-null. */
   init(config: CSMConfig): void {
     this.dispose()
+    if (config.nodeKit) this.nodeKit = config.nodeKit
+    if (this.nodeKit?.CSMShadowNode) {
+      this.initNode(config, this.nodeKit.CSMShadowNode)
+      return
+    }
     installProjectedShadowDepth()
     freezeShadowKernel()
     this.tier = config.tier
@@ -181,12 +190,91 @@ export class ShadowManager {
     }
   }
 
+  /**
+   * WebGPU: one shadow-casting sun whose `shadowNode` is a `CSMShadowNode` with the same cuts,
+   * margin, radius, fade, per-texel bias and bound padding as the WebGL addon setup above. The
+   * node fits its cascades to the render camera itself (render space, no origin shift needed).
+   */
+  private initNode(config: CSMConfig, CSMShadowNode: NonNullable<NodeKit['CSMShadowNode']>): void {
+    const tier = config.tier
+    this.tier = tier
+    const light = new THREE.DirectionalLight(0xffffff, config.lightIntensity ?? 3.2)
+    light.name = 'Nabla CSM sun'
+    light.castShadow = true
+    light.shadow.mapSize.set(tier.mapSize, tier.mapSize)
+    light.shadow.radius = tier.radius
+    light.shadow.intensity = 1
+    light.shadow.bias = 0
+    light.shadow.camera.near = 0.1
+    light.shadow.camera.far = tier.maxFar + 500
+    const node = new CSMShadowNode(light, {
+      cascades: tier.cascades,
+      maxFar: tier.maxFar,
+      mode: 'custom',
+      lightMargin: 200,
+      customSplitsCallback: (count: number, _near: number, far: number, breaks: number[]) => {
+        const distances = cascadeCutMetres(count)
+        for (let i = 0; i < count - 1; i++)
+          breaks.push(Math.min(distances[i] / far, (i + 1) / count))
+        breaks.push(1)
+      },
+    })
+    node.fade = true
+    // Cascade lights exist once the node is built; pad and bias them after every refit.
+    const refit = node.updateFrustums.bind(node)
+    node.updateFrustums = () => {
+      refit()
+      this.padNodeBounds()
+    }
+    // The ground cloud shadow (WebGL: `patchGroundCloudShadow`) rides on the sun's shadow factor.
+    // The GLSL patch only matches the Lambert and Toon programs, so only those get it here.
+    const tsl = this.nodeKit!.tsl as unknown as {
+      Fn(f: (builder: { material: THREE.Material }) => unknown): () => unknown
+      mul(a: unknown, b: unknown): unknown
+    }
+    const cloud = groundCloudShade(this.nodeKit!.tsl, groundCloudShadow)
+    light.shadow.shadowNode = tsl.Fn(({ material }) =>
+      /^Mesh(Lambert|Toon)/.test(material.type) ? tsl.mul(node, cloud) : node,
+    )() as never
+    this.lightDirection.copy(config.lightDirection).normalize()
+    config.scene.add(light, light.target)
+    this.node = { light, csm: node }
+  }
+
+  private node: {
+    light: THREE.DirectionalLight
+    csm: InstanceType<NonNullable<NodeKit['CSMShadowNode']>>
+  } | null = null
+  private readonly lightDirection = new THREE.Vector3(0, -1, 0)
+  /** Kept from the first `init`, so `reconfigure` stays on the WebGPU path. */
+  private nodeKit?: NodeKit
+
+  private padNodeBounds(): void {
+    if (!this.node || !this.tier) return
+    const lights = this.node.csm.lights as { shadow: THREE.DirectionalLightShadow }[]
+    lights.forEach(({ shadow }, index) => {
+      const cam = shadow.camera
+      const margin = cascadeBoundPad(index, this.tier!.cascades, this.tier!.maxFar)
+      if (margin) {
+        cam.left -= margin
+        cam.right += margin
+        cam.bottom -= margin
+        cam.top += margin
+        cam.updateProjectionMatrix()
+      }
+      const texel = (cam.right - cam.left) / shadow.mapSize.width
+      const bias = cascadeShadowBias(this.tier!, texel, this.biasScale)
+      shadow.normalBias = bias.normal
+      shadow.bias = -bias.depth / Math.max(1e-6, cam.far - cam.near)
+    })
+  }
+
   get enabled(): boolean {
-    return this.csm !== null
+    return this.csm !== null || this.node !== null
   }
 
   get lights(): THREE.DirectionalLight[] {
-    return this.csm?.lights ?? []
+    return this.node ? [this.node.light] : (this.csm?.lights ?? [])
   }
 
   /** Player factor on the tier's texel-scaled shadow bias (1 = tuned default). */
@@ -206,6 +294,7 @@ export class ShadowManager {
    * striped every gentle slope (acne) while the sharp one could lift contact shadows.
    */
   private applyBias(): void {
+    if (this.node) this.padNodeBounds()
     if (!this.csm || !this.tier) return
     for (const light of this.csm.lights) {
       const cam = light.shadow.camera
@@ -235,6 +324,7 @@ export class ShadowManager {
   }
 
   private bind(material: THREE.Material): void {
+    // WebGPU cascades live on the light's shadow node; materials need no patch.
     if (!this.csm) return
     this.csm.setupMaterial(material)
     const setup = material.onBeforeCompile,
@@ -249,6 +339,7 @@ export class ShadowManager {
 
   /** Update light direction (e.g., from sun position). */
   setLightDirection(direction: THREE.Vector3): void {
+    this.lightDirection.copy(direction).normalize()
     if (this.csm) {
       this.csm.lightDirection.copy(direction).normalize()
     }
@@ -256,6 +347,7 @@ export class ShadowManager {
 
   /** Update light intensity (e.g., day/night transition). */
   setLightIntensity(intensity: number): void {
+    if (this.node) this.node.light.intensity = intensity
     if (this.csm) {
       for (const light of this.csm.lights) {
         light.intensity = intensity
@@ -265,6 +357,7 @@ export class ShadowManager {
 
   /** Update light color (e.g., day/night transition). */
   setLightColor(color: THREE.ColorRepresentation): void {
+    if (this.node) this.node.light.color.set(color)
     if (this.csm) {
       for (const light of this.csm.lights) {
         light.color.set(color)
@@ -274,6 +367,20 @@ export class ShadowManager {
 
   /** Call each frame before rendering. */
   update(camera: THREE.PerspectiveCamera, origin: THREE.Vector3): void {
+    if (this.node && this.tier) {
+      // Only the direction matters to CSMShadowNode; keep the pair near the camera.
+      const { light, csm } = this.node
+      light.target.position.copy(camera.position)
+      light.position.copy(camera.position).addScaledVector(this.lightDirection, -100)
+      light.updateMatrixWorld()
+      light.target.updateMatrixWorld()
+      const key = shadowProjectionKey(camera, this.tier.maxFar)
+      if (key !== this.projectionKey && csm.camera) {
+        this.projectionKey = key
+        csm.updateFrustums()
+      }
+      return
+    }
     if (!this.csm || !this.tier) return
     const proxy = this.projectionCamera
     proxy.copy(camera)
@@ -321,6 +428,7 @@ export class ShadowManager {
 
   /** Call when camera projection changes. */
   updateFrustums(): void {
+    if (this.node?.csm.camera) this.node.csm.updateFrustums()
     this.csm?.updateFrustums()
     this.applyBias()
   }
@@ -354,6 +462,13 @@ export class ShadowManager {
   }
 
   dispose(): void {
+    if (this.node) {
+      this.node.csm.dispose()
+      this.node.light.removeFromParent()
+      this.node.light.target.removeFromParent()
+      this.node.light.dispose()
+      this.node = null
+    }
     if (this.csm) {
       this.csm.dispose()
       this.csm.remove()

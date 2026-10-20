@@ -8,10 +8,13 @@
 
 - `three`
 - `three/addons/objects/Reflector.js`
+- `../backend.js`
+- `../webgpu-substitutes.js`
+- `./mirror-nodes.js`
 
 ## authoredMirrorSurfaces
 
-[Implementation, line 4](../../../../../src/render/entity/car-mirrors.ts#L4)
+[Implementation, line 7](../../../../../src/render/entity/car-mirrors.ts#L7)
 
 Discover GLB-authored lens meshes without depending on material or node names.
 
@@ -23,12 +26,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `model.traverse`
 
-## authoredMirrorSurfaces.callback@6
+## authoredMirrorSurfaces.callback@9
 
-[Implementation, line 6](../../../../../src/render/entity/car-mirrors.ts#L6)
+[Implementation, line 9](../../../../../src/render/entity/car-mirrors.ts#L9)
 
 ```ts
-callback@6(node): inferred by TypeScript; see implementation
+callback@9(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -37,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampMirrorAngle
 
-[Implementation, line 50](../../../../../src/render/entity/car-mirrors.ts#L50)
+[Implementation, line 53](../../../../../src/render/entity/car-mirrors.ts#L53)
 
 Clamp to `mirrorAngleRange` and snap to its step; non-finite values become 0.
 
@@ -51,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampMirrorAngle.axis
 
-[Implementation, line 51](../../../../../src/render/entity/car-mirrors.ts#L51)
+[Implementation, line 54](../../../../../src/render/entity/car-mirrors.ts#L54)
 
 ```ts
 axis(value: unknown, range: { min: number; max: number; step: number }): inferred by TypeScript; see implementation
@@ -67,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## clampMirrorAdjustment
 
-[Implementation, line 63](../../../../../src/render/entity/car-mirrors.ts#L63)
+[Implementation, line 66](../../../../../src/render/entity/car-mirrors.ts#L66)
 
 Clamp every side; sides left at 0° / 0° are dropped, so `{}` means "as authored".
 
@@ -82,7 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorSideOf
 
-[Implementation, line 78](../../../../../src/render/entity/car-mirrors.ts#L78)
+[Implementation, line 81](../../../../../src/render/entity/car-mirrors.ts#L81)
 
 Which side a lens is on: its authored `extras.nabla.mirror` tag, else the sign of its centre
 across the vehicle (`root` is the chassis-space group: +X is the driver's right).
@@ -104,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorModelKey
 
-[Implementation, line 94](../../../../../src/render/entity/car-mirrors.ts#L94)
+[Implementation, line 97](../../../../../src/render/entity/car-mirrors.ts#L97)
 
 Key of a vehicle's mirror settings: its body GLB URL, plus its steering GLB when it has one,
 so cars that share a body but not a cockpit (the S3 and the A3) keep separate adjustments.
@@ -115,7 +118,7 @@ mirrorModelKey(bodyUrl: string, steeringUrl?: string): string
 
 ## fitMirrorCamera
 
-[Implementation, line 105](../../../../../src/render/entity/car-mirrors.ts#L105)
+[Implementation, line 108](../../../../../src/render/entity/car-mirrors.ts#L108)
 
 Fit the whole mirror from the eye position, independently of head rotation.
 The viewer's orientation only decides whether the mirror is visible.
@@ -156,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## raisedMirrorNormal
 
-[Implementation, line 143](../../../../../src/render/entity/car-mirrors.ts#L143)
+[Implementation, line 146](../../../../../src/render/entity/car-mirrors.ts#L146)
 
 Optical elevation follows the car rather than the driver's head pitch.
 
@@ -181,7 +184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveMirrorCapture
 
-[Implementation, line 164](../../../../../src/render/entity/car-mirrors.ts#L164)
+[Implementation, line 167](../../../../../src/render/entity/car-mirrors.ts#L167)
 
 ```ts
 resolveMirrorCapture(policy: MirrorPolicy = {}, side?: string): { width: number; height: number; intervalMs: number }
@@ -196,12 +199,12 @@ Explicit throws in this body:
 
 - `new Error('Invalid mirror policy')`
 
-## resolveMirrorCapture.callback@176
+## resolveMirrorCapture.callback@179
 
-[Implementation, line 176](../../../../../src/render/entity/car-mirrors.ts#L176)
+[Implementation, line 179](../../../../../src/render/entity/car-mirrors.ts#L179)
 
 ```ts
-callback@176(v): inferred by TypeScript; see implementation
+callback@179(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -210,7 +213,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorPolicyForQuality
 
-[Implementation, line 183](../../../../../src/render/entity/car-mirrors.ts#L183)
+[Implementation, line 186](../../../../../src/render/entity/car-mirrors.ts#L186)
 
 Alto/ultra double the authored left lens; other sides and cheaper presets stay at 8 Hz / 384×256.
 
@@ -224,7 +227,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## authoredMirrorSide
 
-[Implementation, line 196](../../../../../src/render/entity/car-mirrors.ts#L196)
+[Implementation, line 199](../../../../../src/render/entity/car-mirrors.ts#L199)
 
 ```ts
 authoredMirrorSide(mesh: THREE.Mesh): string | undefined
@@ -232,7 +235,7 @@ authoredMirrorSide(mesh: THREE.Mesh): string | undefined
 
 ## renderSceneWithSky
 
-[Implementation, line 208](../../../../../src/render/entity/car-mirrors.ts#L208)
+[Implementation, line 211](../../../../../src/render/entity/car-mirrors.ts#L211)
 
 Draw the sky into the mirror target before the reflected scene. The reflector clears on
 `renderer.render`, so the sky pass has to run inside that call, first, while autoClear is
@@ -248,12 +251,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `draw`
 
-## renderSceneWithSky.callback@224
+## renderSceneWithSky.callback@227
 
-[Implementation, line 224](../../../../../src/render/entity/car-mirrors.ts#L224)
+[Implementation, line 227](../../../../../src/render/entity/car-mirrors.ts#L227)
 
 ```ts
-callback@224(this: unknown, scene, camera, ...rest: unknown[]): inferred by TypeScript; see implementation
+callback@227(this: unknown, scene, camera, ...rest: unknown[]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -264,7 +267,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## skyCamera
 
-[Implementation, line 256](../../../../../src/render/entity/car-mirrors.ts#L256)
+[Implementation, line 259](../../../../../src/render/entity/car-mirrors.ts#L259)
 
 A camera the sky pass can rebuild: the sky redraws with its own camera from `fov`, `aspect`
 and `view` (it has its own near/far), so a projection matrix set directly is lost. A mirror's
@@ -290,7 +293,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.constructor
 
-[Implementation, line 321](../../../../../src/render/entity/car-mirrors.ts#L321)
+[Implementation, line 327](../../../../../src/render/entity/car-mirrors.ts#L327)
 
 `root` is the vehicle's chassis-space group; it tells untagged lenses their side and gives
 the outward direction for yaw (without it, the glass yaw has no reference). `aim` is the
@@ -334,23 +337,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `original.parent!.getWorldQuaternion(new THREE.Quaternion()).invert`
 - `original.updateWorldMatrix`
 - `positions.setZ`
+- `reflectorMaterial`
 - `resolveMirrorCapture`
 - `root.getWorldQuaternion`
 - `rotation.clone`
+- `setWebGPUSubstitute`
 - `this.entries.push`
 - `this.orient`
 
-## CarMirrors.constructor.callback@382
+## CarMirrors.constructor.callback@389
 
-[Implementation, line 382](../../../../../src/render/entity/car-mirrors.ts#L382)
+[Implementation, line 389](../../../../../src/render/entity/car-mirrors.ts#L389)
 
 ```ts
-callback@382(): inferred by TypeScript; see implementation
+callback@389(): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.sides
 
-[Implementation, line 405](../../../../../src/render/entity/car-mirrors.ts#L405)
+[Implementation, line 412](../../../../../src/render/entity/car-mirrors.ts#L412)
 
 Sides of the lenses this vehicle has (`left`, `right`, …), in lens order.
 
@@ -362,17 +367,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.entries.map`
 
-## CarMirrors.sides.callback@406
+## CarMirrors.sides.callback@413
 
-[Implementation, line 406](../../../../../src/render/entity/car-mirrors.ts#L406)
+[Implementation, line 413](../../../../../src/render/entity/car-mirrors.ts#L413)
 
 ```ts
-callback@406(e): inferred by TypeScript; see implementation
+callback@413(e): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.setTilt
 
-[Implementation, line 409](../../../../../src/render/entity/car-mirrors.ts#L409)
+[Implementation, line 416](../../../../../src/render/entity/car-mirrors.ts#L416)
 
 Vehicle-wide glass tilt (`vehicle.mirrorTilt`, −5…12°); per-side adjustments add to it.
 
@@ -387,7 +392,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.setAdjustment
 
-[Implementation, line 418](../../../../../src/render/entity/car-mirrors.ts#L418)
+[Implementation, line 425](../../../../../src/render/entity/car-mirrors.ts#L425)
 
 Turn each side's glass by its `MirrorAngle` (clamped) on top of the authored aim and the
 vehicle tilt. The reflection is computed from the glass every capture, so the mirror view
@@ -404,7 +409,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.orient
 
-[Implementation, line 423](../../../../../src/render/entity/car-mirrors.ts#L423)
+[Implementation, line 430](../../../../../src/render/entity/car-mirrors.ts#L430)
 
 Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
@@ -427,7 +432,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.viewYaw
 
-[Implementation, line 445](../../../../../src/render/entity/car-mirrors.ts#L445)
+[Implementation, line 452](../../../../../src/render/entity/car-mirrors.ts#L452)
 
 Signed view-only yaw of a side, radians, about the lens parent's vehicle-up.
 
@@ -443,7 +448,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CarMirrors.render
 
-[Implementation, line 453](../../../../../src/render/entity/car-mirrors.ts#L453)
+[Implementation, line 460](../../../../../src/render/entity/car-mirrors.ts#L460)
 
 Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 
@@ -475,6 +480,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `eye.dot`
 - `fitMirrorCamera`
 - `frustum.intersectsObject`
+- `isWebGPU`
 - `new THREE.Frustum().setFromProjectionMatrix`
 - `new THREE.Matrix4().multiplyMatrices`
 - `new THREE.Quaternion().setFromAxisAngle`
@@ -487,57 +493,58 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.viewYaw`
 - `up.transformDirection`
 
-## CarMirrors.render.callback@469
+## CarMirrors.render.callback@476
 
-[Implementation, line 469](../../../../../src/render/entity/car-mirrors.ts#L469)
+[Implementation, line 476](../../../../../src/render/entity/car-mirrors.ts#L476)
 
 ```ts
-callback@469(e): inferred by TypeScript; see implementation
+callback@476(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `authoredMirrorSide`
 
-## CarMirrors.render.callback@474
+## CarMirrors.render.callback@481
 
-[Implementation, line 474](../../../../../src/render/entity/car-mirrors.ts#L474)
+[Implementation, line 481](../../../../../src/render/entity/car-mirrors.ts#L481)
 
 ```ts
-callback@474(e): inferred by TypeScript; see implementation
+callback@481(e): inferred by TypeScript; see implementation
 ```
 
-## CarMirrors.render.callback@486
+## CarMirrors.render.callback@493
 
-[Implementation, line 486](../../../../../src/render/entity/car-mirrors.ts#L486)
+[Implementation, line 493](../../../../../src/render/entity/car-mirrors.ts#L493)
 
 ```ts
-callback@486(e): inferred by TypeScript; see implementation
+callback@493(e): inferred by TypeScript; see implementation
 ```
 
-## CarMirrors.render.callback@525
+## CarMirrors.render.callback@533
 
-[Implementation, line 525](../../../../../src/render/entity/car-mirrors.ts#L525)
+[Implementation, line 533](../../../../../src/render/entity/car-mirrors.ts#L533)
 
 ```ts
-callback@525(): inferred by TypeScript; see implementation
+callback@533(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `e.render.call`
+- `reflectWebGPU`
 
-## CarMirrors.render.callback@549
+## CarMirrors.render.callback@559
 
-[Implementation, line 549](../../../../../src/render/entity/car-mirrors.ts#L549)
+[Implementation, line 559](../../../../../src/render/entity/car-mirrors.ts#L559)
 
 ```ts
-callback@549(e, i): inferred by TypeScript; see implementation
+callback@559(e, i): inferred by TypeScript; see implementation
 ```
 
 ## CarMirrors.dispose
 
-[Implementation, line 556](../../../../../src/render/entity/car-mirrors.ts#L556)
+[Implementation, line 566](../../../../../src/render/entity/car-mirrors.ts#L566)
 
 Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz.
 

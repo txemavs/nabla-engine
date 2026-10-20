@@ -21,6 +21,7 @@ import {
   type RenderBackend,
   type RenderBackendKind,
   webgpuSkippedMaterials,
+  webgpuNodeKit,
 } from '../render/backend.js'
 import { atlasFieldLightSource } from '../render/planet/instance-lights.js'
 import { UsbFeedback } from './usb/feedback.js'
@@ -128,7 +129,11 @@ import {
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
-import { createGpuTiming } from '../diagnostics/gpu-timing.js'
+import {
+  createGpuTiming,
+  WebGPUGpuTiming,
+  type TimestampRenderer,
+} from '../diagnostics/gpu-timing.js'
 import { Sidearm } from './sidearm.js'
 import {
   normalizeWeaponPoses,
@@ -194,6 +199,7 @@ import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
 import { mirrorPolicyForQuality } from '../render/entity/car-mirrors.js'
 import { GeographicView } from '../render/planet/sky.js'
+import { reuseFog } from '../render/planet/fog.js'
 import {
   PlanetWorld,
   type TileTiming,
@@ -929,9 +935,14 @@ export class GameRuntime {
     configureWorldRenderer(this.renderer)
     if (options.onDiagnostics) {
       this.renderer.info.autoReset = false
-      const gl = this.renderer.getContext()
-      if (gl instanceof WebGL2RenderingContext) {
-        this.pipeline.gpuTiming = createGpuTiming(gl)
+      if (this.backend === 'webgpu') {
+        const timing = new WebGPUGpuTiming(this.renderer as unknown as TimestampRenderer)
+        this.pipeline.gpuTiming = timing.available ? timing : null
+      } else {
+        const gl = this.renderer.getContext()
+        if (gl instanceof WebGL2RenderingContext) {
+          this.pipeline.gpuTiming = createGpuTiming(gl)
+        }
       }
     }
     this.applyPixelRatio()
@@ -1110,6 +1121,7 @@ export class GameRuntime {
         scene: this.scene,
         lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
         tier: shadowTiers[this.quality.shadows]!,
+        nodeKit: webgpuNodeKit(this.renderer),
       })
     this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
     this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
@@ -1710,7 +1722,12 @@ export class GameRuntime {
     this.view.daylight = this.sky.enabled ? this.sky.atmosphere.day : 1
     // A solid background is stereo-safe; the desktop atmosphere/DOF/mirrors render to 2D targets.
     this.scene.background = new THREE.Color(this.view.night ? '#101827' : '#93b7cd')
-    this.scene.fog = new THREE.Fog(this.scene.background, this.quality.fog * 0.75, this.quality.fog)
+    this.scene.fog = reuseFog(
+      this.scene.fog,
+      this.scene.background,
+      this.quality.fog * 0.75,
+      this.quality.fog,
+    )
     this.sun.visible = true
     this.cull(eye)
     xr.anchor(eye.clone().sub(this.origin), rotation)
@@ -2376,7 +2393,12 @@ export class GameRuntime {
       )
     } else {
       this.scene.background = new THREE.Color('#a6bbd5')
-      this.scene.fog = new THREE.Fog('#a6bbd5', this.quality.fog * 0.75, this.quality.fog)
+      this.scene.fog = reuseFog(
+        this.scene.fog,
+        '#a6bbd5',
+        this.quality.fog * 0.75,
+        this.quality.fog,
+      )
     }
     if (this.camera.far !== previousFar) this.camera.updateProjectionMatrix()
     this.view.root.position.copy(this.origin).negate()

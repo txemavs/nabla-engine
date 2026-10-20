@@ -1,6 +1,8 @@
 import { smokeDensity } from './smoke-density.js'
 import { BufferAttribute, BufferGeometry, Points, ShaderMaterial, Vector3 } from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { tireSmokeSprites } from './particle-nodes.js'
 
 /** Bounded particle pool, one draw call. World positions stay independent of the floating origin. */
 export class TireSmoke {
@@ -36,6 +38,7 @@ export class TireSmoke {
         if(d>1.0 || age<=0.0) discard; gl_FragColor=vec4(0.65,0.67,0.69,(1.0-d)*(1.0-d)*age*0.24*smokeDensity); }`,
       }),
     )
+    setWebGPUSubstitute(this.root, tireSmokeSprites(this.root))
     this.root.frustumCulled = false
     this.root.visible = false
   }

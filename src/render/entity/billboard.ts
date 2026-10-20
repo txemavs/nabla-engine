@@ -1,3 +1,4 @@
+import { foliageNodes } from './entity-nodes.js'
 import * as THREE from 'three'
 
 /** Camera-facing in yaw only: the trunk retains world up, including in portal passes. */
@@ -36,4 +37,5 @@ export function softenFoliage(material: THREE.MeshBasicMaterial, saturation: num
     )
   }
   material.customProgramCacheKey = () => `foliage-${saturation}`
+  foliageNodes(material, saturation)
 }

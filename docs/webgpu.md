@@ -11,22 +11,84 @@ diagnostics samples (`backend`, `webgpuSkipped`).
 ## Known gaps under WebGPU
 
 GLSL `ShaderMaterial`s cannot compile on the node backend. Under WebGPU the renderer hides every
-object that uses one (in frames, mirror captures and warmups), and the pipeline skips GLSL passes:
+object that uses one (in frames, mirror captures and warmups) unless a TSL twin is registered with
+`setWebGPUSubstitute` (`src/render/webgpu-substitutes.ts`), and the pipeline skips GLSL passes.
 
-| Feature                                             | Under WebGPU                        |
-| --------------------------------------------------- | ----------------------------------- |
-| Sky dome, atmosphere, sun disc, night sky           | Not drawn; flat fog-colour backdrop |
-| Clouds (volumetric and artistic)                    | Not drawn                           |
-| Lens flare                                          | Not drawn                           |
-| Ocean sheet                                         | Not drawn                           |
-| Portals (remote views)                              | Not drawn                           |
-| Car mirrors (`Reflector` addon)                     | Authored glass, no live reflection  |
-| Depth of field, FSR 1 upscaling                     | Disabled                            |
-| Exhaust, tyre, muzzle smoke, tyre marks, shot laser | Not drawn                           |
-| GPU timer queries (benchmark)                       | WebGL only                          |
+The sky scene renders in display space into an 8-bit target and is composited through the inverse
+of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is checked by
+`test/browser/e2e/webgpu-sky-parity.spec.ts` (screenshots with `NABLA_PARITY_SHOTS=<dir>`).
 
-Materials patched with `onBeforeCompile` draw as their base three.js material (the patch is
-ignored): ground/terrain blend, water, vegetation wind, CSM shadow tweaks, avatar, billboard,
-vehicle lamps, destruction fire. They render, but without the custom look.
+| Feature                                   | Under WebGPU                          |
+| ----------------------------------------- | ------------------------------------- |
+| Sky dome, atmosphere, sun disc, night sky | TSL port (`sky-nodes.ts`)             |
+| Clouds (volumetric and artistic)          | TSL port (`cloud-nodes.ts`)           |
+| Lens flare                                | TSL twin (`lens-flare-nodes.ts`)      |
+| Ocean sheet, river, sea                   | TSL twins (`surface-nodes.ts`)        |
+| Portals (remote views)                    | TSL twin (`portals.ts`)               |
+| Car mirrors (`Reflector` addon)           | TSL twin (`mirror-nodes.ts`)          |
+| Depth of field, FSR 1 upscaling           | TSL twins (`effect-nodes.ts`)         |
+| Exhaust, tyre, muzzle smoke, tyre marks   | TSL twins (`particle-nodes.ts`)       |
+| Shot laser                                | TSL twins (`shot-laser-nodes.ts`)     |
+| GPU timer queries (benchmark)             | Timestamp queries (`WebGPUGpuTiming`) |
+
+Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowManager` with
+`nodeKit`): same cuts, margin, radius, fade, per-texel bias and bound padding as the WebGL CSM addon.
+The WebGL-only chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) are not
+ported; `webgpu-shadow-parity.spec.ts` measures the remaining edge differences.
+
+WebGPU tone-maps the whole frame in its output pass; WebGL tone-maps per material and clears to the
+background colour as is. For on-screen frames `WebGPUCompatibility` draws `toneMapped: false`
+materials (lamps, instruments, screens) through a node twin whose output passes the inverse tone
+curve, and gives a background colour the same inverse as its `backgroundNode`, so both come out as
+under WebGL (`webgpu-tone-parity.spec.ts`). Render targets get no output pass in either backend.
+
+Car mirrors keep the `Reflector` capture schedule (`CarMirrors`); under WebGPU the capture runs
+through `reflectWebGPU` (same mirrored camera, oblique near plane for [0, 1] clip depth) and the
+glass draws a node twin of the Reflector shader, with the sky pass painted into each capture.
+Substitutes inside a capture (smoke, tyre marks) blend as raw colours there, as under WebGL
+(`webgpu-mirror-parity.spec.ts`).
+
+The lens flare (sun and destruction fire) adds its glow in display space over the frame below and
+writes back the decode; where a channel saturates, ACES cannot reach every clipped colour, so the
+saturated rim of the core is a little warmer than under WebGL (`webgpu-flare-parity.spec.ts`).
+
+Tyre, exhaust and muzzle smoke draw as instanced node sprites (`particle-nodes.ts`) that blend in
+display space against the frame below the draw (a dense plume core comes out slightly dimmer);
+tyre marks use a node material on the same ring-buffer mesh; the A3 masked lenses get TSL masks
+(`a3-lamps.ts`). `webgpu-vehicle-parity.spec.ts` covers them.
+
+Built-in materials patched with `onBeforeCompile` register a TSL twin with
+`addWebGPUMaterialNodes` (`surface-nodes.ts`): asphalt contrast, river and ocean-sheet waves, the
+sea's shadowed flat colour and glint (a small lighting model), and the tree crowns (an object
+substitute, which also adds a per-instance `treeHeight` attribute because node positions run after
+instancing). The ground cloud shadow multiplies the sun's shadow factor on Lambert and Toon
+materials, the only programs the GLSL patch matches. `webgpu-surface-parity.spec.ts` covers them.
+
+Depth of field and FSR 1 run in the same order as under WebGL. Their full-screen passes draw node
+twins: the DoF gather decodes the renderer's own depth encoding (WebGPU's logarithmic depth
+differs from WebGL's), `OutputPass` becomes a tone map + sRGB encode into the 8-bit FSR input, and
+EASU and RCAS are ported from `fsr1-shaders.ts`. RCAS writes display-encoded colour, so its draw to
+the canvas runs with tone mapping and colour conversion off. After DoF the lens flare tests the
+scene depth by distance (`webgpu-effects-parity.spec.ts`).
+
+GPU timing under WebGPU uses three's timestamp queries (`trackTimestamp`, when the adapter has
+`timestamp-query`): each pass is the set of render calls between its begin and end, read back once
+per frame. The frame time is the sum of the passes, so idle gaps between them are not counted.
+
+Portals render their remote views as under WebGL (same cameras, sky and environment); since
+`WebGPURenderer` has no global clipping planes, the destination plane is an oblique near plane on
+the remote camera. The surface samples the capture at `screenUV`. The shot laser's beam and halo
+add in display space over a per-draw copy of the frame (`webgpu-portal-parity.spec.ts`).
+
+The entity patches have TSL twins too (`entity-nodes.ts`): foliage billboard saturation, the
+avatar helmet (shell aperture and panels, foam grain, black display surround, monitor face), the
+destruction burst fire and the wreck flames. Fire and flames blend in display space against a
+per-draw copy of the frame. Their brightest yellows lie outside what the ACES output pass can
+reach from non-negative colours, so under WebGPU they come out a little more saturated
+(`webgpu-entity-parity.spec.ts`, mean 8.1 on a close-up fire; the avatar view is 0.13).
+
+The WebGL CSM chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) fix
+artefacts in the WebGL CSM addon; under WebGPU `CSMShadowNode` is used as is, and
+`webgpu-shadow-parity.spec.ts` keeps the remaining edge differences small (mean 0.82 / 0.76).
 
 Next step: port each of these to TSL, one at a time, each with its own measurement.
