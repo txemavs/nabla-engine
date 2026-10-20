@@ -1,3 +1,4 @@
+import type { SparkSurface } from '../render/entity/shot-sparks.js'
 import { mouseButtons } from '../config/input-bindings.js'
 import { Vector3, PerspectiveCamera } from 'three'
 import type { Simulation } from '../simulation/simulation.js'
@@ -39,6 +40,15 @@ export interface SidearmShot extends FirearmEvent {
 /** Straight check for gallery targets after a ballistic miss, m (drop there is ~1 cm). */
 const NEAR_MISS_CHECK = 25
 
+/**
+ * Spark profile of a hit. Physics only tags metal (vehicle bodies, sign poles); untagged hits
+ * are told apart by their normal: floor-like is ground, anything else concrete.
+ */
+function sparkSurface(gallery: Gallery, point: Vector3, normal: Vec3 | undefined): SparkSurface {
+  const tagged = gallery.lastImpact
+  if (tagged && point.distanceToSquared(new Vector3(...tagged.point)) < 0.25) return 'metal'
+  return normal && normal[1] > 0.7 ? 'ground' : 'concrete'
+}
 /** Fitted drag and zero angle per load (they only depend on the preset). */
 const fits = new WeakMap<BallisticLoad, { k: number; angle: number }>()
 /** Shared geometric aim for shots and laser convergence; coordinates are simulation-world. */
@@ -164,7 +174,10 @@ export function fireSidearm(
     Math.min(25, (event.impactJoules ?? 480) / 40),
   )
   sidearm.impact(hit)
+  view.tracers.add(origin.toArray() as Vec3, destination.toArray() as Vec3, now)
   if (hit && !gallery.lastGlassImpact)
-    view.sparks.add(destination.toArray() as [number, number, number], now, normal)
+    view.sparks.add(destination.toArray() as Vec3, now, normal, {
+      surface: sparkSurface(gallery, destination, normal),
+    })
   return event
 }
