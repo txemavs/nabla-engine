@@ -64,8 +64,15 @@ substitute, which also adds a per-instance `treeHeight` attribute because node p
 instancing). The ground cloud shadow multiplies the sun's shadow factor on Lambert and Toon
 materials, the only programs the GLSL patch matches. `webgpu-surface-parity.spec.ts` covers them.
 
-Materials patched with `onBeforeCompile` draw as their base three.js material (the patch is
-ignored): ground/terrain blend, water, vegetation wind, CSM shadow tweaks, avatar, billboard,
-vehicle lamps, destruction fire. They render, but without the custom look.
+The entity patches have TSL twins too (`entity-nodes.ts`): foliage billboard saturation, the
+avatar helmet (shell aperture and panels, foam grain, black display surround, monitor face), the
+destruction burst fire and the wreck flames. Fire and flames blend in display space against a
+per-draw copy of the frame. Their brightest yellows lie outside what the ACES output pass can
+reach from non-negative colours, so under WebGPU they come out a little more saturated
+(`webgpu-entity-parity.spec.ts`, mean 8.1 on a close-up fire; the avatar view is 0.13).
+
+The WebGL CSM chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) fix
+artefacts in the WebGL CSM addon; under WebGPU `CSMShadowNode` is used as is, and
+`webgpu-shadow-parity.spec.ts` keeps the remaining edge differences small (mean 0.82 / 0.76).
 
 Next step: port each of these to TSL, one at a time, each with its own measurement.

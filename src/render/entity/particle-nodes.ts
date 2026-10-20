@@ -84,10 +84,15 @@ function pointSprites(
  * that, blended normally over the frame below, tone-maps to the WebGL result. Exact for the first
  * layer of a draw; overlapping sprites in one draw approximate it.
  */
-function displayBlend(t: N, color: N, alpha: N): N {
+export function displayBlend(
+  t: N,
+  color: N,
+  alpha: N,
+  raw: N = t.vec4(color, alpha),
+  frame: N = t.viewportSharedTexture(t.screenUV),
+): N {
   // Render targets (mirrors) have no output pass in either backend: the raw colour blends as is.
-  const raw = t.vec4(color, alpha)
-  const below = t.viewportSharedTexture(t.screenUV).rgb
+  const below = frame.rgb
   const shown = t.sRGBTransferOETF(t.acesFilmicToneMapping(below, t.toneMappingExposure))
   const target = decodeDisplay(t.mix(shown, color, alpha), t)
   const a = t.max(alpha, 1e-3)
