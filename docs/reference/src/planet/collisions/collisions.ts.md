@@ -15,19 +15,23 @@ The old set stays until the replacement is built.
 
 ## PlanetCollisions.constructor
 
-[Implementation, line 38](../../../../../src/planet/collisions/collisions.ts#L38)
+[Implementation, line 53](../../../../../src/planet/collisions/collisions.ts#L53)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+update with their colliders disabled, and the complete set is switched on together.
 
 ```ts
-constructor(private world: World, private material: Material): instance
+constructor(private world: World, private material: Material, private staged = false): instance
 ```
 
 ## PlanetCollisions.setTiles
 
-[Implementation, line 42](../../../../../src/planet/collisions/collisions.ts#L42)
+[Implementation, line 59](../../../../../src/planet/collisions/collisions.ts#L59)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+update with their colliders disabled, and the complete set is switched on together.
 
 ```ts
 setTiles(tiles: PlanetCollisionTile[]): inferred by TypeScript; see implementation
@@ -40,12 +44,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.bounds.has`
 - `this.bounds.set`
 
-## PlanetCollisions.setTiles.callback@44
+## PlanetCollisions.setTiles.callback@61
 
-[Implementation, line 44](../../../../../src/planet/collisions/collisions.ts#L44)
+[Implementation, line 61](../../../../../src/planet/collisions/collisions.ts#L61)
 
 ```ts
-callback@44(t): inferred by TypeScript; see implementation
+callback@61(t): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -55,9 +59,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetCollisions.update
 
-[Implementation, line 62](../../../../../src/planet/collisions/collisions.ts#L62)
+[Implementation, line 79](../../../../../src/planet/collisions/collisions.ts#L79)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+update with their colliders disabled, and the complete set is switched on together.
 
 ```ts
 update(positions: Vec3Tuple[], buildings: boolean, budgetMs = 3): void
@@ -77,8 +83,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `body.addShape`
 - `body.position.set`
 - `body.quaternion.set`
+- `body.setCollisionEnabled`
 - `candidates.every`
-- `candidates.find`
 - `candidates.map`
 - `candidates.push`
 - `candidates.sort`
@@ -90,17 +96,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `positions.map((p) => p.map((n) => Math.floor(n / 8)).join(',')).join`
 - `this.bounds.get`
 - `this.built.delete`
+- `this.built.has`
 - `this.built.set`
 - `this.wanted.has`
 - `this.world.addBody`
+- `this.world.raw.updateSceneQueries`
 - `this.world.removeBody`
 
-## PlanetCollisions.update.callback@68
+## PlanetCollisions.update.callback@85
 
-[Implementation, line 68](../../../../../src/planet/collisions/collisions.ts#L68)
+[Implementation, line 85](../../../../../src/planet/collisions/collisions.ts#L85)
 
 ```ts
-callback@68(p): inferred by TypeScript; see implementation
+callback@85(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,24 +116,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `p.map`
 - `p.map((n) => Math.floor(n / 8)).join`
 
-## PlanetCollisions.update.callback@68.callback@68
+## PlanetCollisions.update.callback@85.callback@85
 
-[Implementation, line 68](../../../../../src/planet/collisions/collisions.ts#L68)
+[Implementation, line 85](../../../../../src/planet/collisions/collisions.ts#L85)
 
 ```ts
-callback@68(n): inferred by TypeScript; see implementation
+callback@85(n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.floor`
 
-## PlanetCollisions.update.callback@75
+## PlanetCollisions.update.callback@92
 
-[Implementation, line 75](../../../../../src/planet/collisions/collisions.ts#L75)
+[Implementation, line 92](../../../../../src/planet/collisions/collisions.ts#L92)
 
 ```ts
-callback@75(p): inferred by TypeScript; see implementation
+callback@92(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -134,24 +142,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `inverse.vmult`
 - `new Vec3(...p).vsub`
 
-## PlanetCollisions.update.callback@79
+## PlanetCollisions.update.callback@96
 
-[Implementation, line 79](../../../../../src/planet/collisions/collisions.ts#L79)
+[Implementation, line 96](../../../../../src/planet/collisions/collisions.ts#L96)
 
 ```ts
-callback@79(p): inferred by TypeScript; see implementation
+callback@96(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
 
-## PlanetCollisions.update.callback@95
+## PlanetCollisions.update.callback@112
 
-[Implementation, line 95](../../../../../src/planet/collisions/collisions.ts#L95)
+[Implementation, line 112](../../../../../src/planet/collisions/collisions.ts#L112)
 
 ```ts
-callback@95(p): inferred by TypeScript; see implementation
+callback@112(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -159,12 +167,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `Math.max`
 
-## PlanetCollisions.update.callback@109
+## PlanetCollisions.update.callback@126
 
-[Implementation, line 109](../../../../../src/planet/collisions/collisions.ts#L109)
+[Implementation, line 126](../../../../../src/planet/collisions/collisions.ts#L126)
 
 ```ts
-callback@109(p): inferred by TypeScript; see implementation
+callback@126(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -172,40 +180,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.hypot`
 - `Math.max`
 
-## PlanetCollisions.update.callback@121
+## PlanetCollisions.update.callback@138
 
-[Implementation, line 121](../../../../../src/planet/collisions/collisions.ts#L121)
+[Implementation, line 138](../../../../../src/planet/collisions/collisions.ts#L138)
 
 ```ts
-callback@121(a, b): inferred by TypeScript; see implementation
+callback@138(a, b): inferred by TypeScript; see implementation
 ```
 
-## PlanetCollisions.update.callback@123
+## PlanetCollisions.update.callback@140
 
-[Implementation, line 123](../../../../../src/planet/collisions/collisions.ts#L123)
+[Implementation, line 140](../../../../../src/planet/collisions/collisions.ts#L140)
 
 ```ts
-callback@123(c): inferred by TypeScript; see implementation
+callback@140(c): inferred by TypeScript; see implementation
 ```
 
-## PlanetCollisions.update.callback@128
+## PlanetCollisions.update.callback@168
 
-[Implementation, line 128](../../../../../src/planet/collisions/collisions.ts#L128)
-
-```ts
-callback@128(c): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.built.has`
-
-## PlanetCollisions.update.callback@148
-
-[Implementation, line 148](../../../../../src/planet/collisions/collisions.ts#L148)
+[Implementation, line 168](../../../../../src/planet/collisions/collisions.ts#L168)
 
 ```ts
-callback@148(c): inferred by TypeScript; see implementation
+callback@168(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -214,7 +210,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlanetCollisions.prepareReplacement
 
-[Implementation, line 161](../../../../../src/planet/collisions/collisions.ts#L161)
+[Implementation, line 187](../../../../../src/planet/collisions/collisions.ts#L187)
 
 Cook a replacement in an isolated physics world; commit is synchronous with the visual swap.
 
@@ -225,44 +221,45 @@ prepareReplacement(previousId: string, tile: PlanetCollisionTile, positions: Vec
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `PlanetCollisions`
-- `World`
 - `staged.setTiles`
 - `staged.update`
 - `this.discardReplacement`
 
-## PlanetCollisions.prepareReplacement.callback@176
+## PlanetCollisions.prepareReplacement.callback@206
 
-[Implementation, line 176](../../../../../src/planet/collisions/collisions.ts#L176)
+[Implementation, line 206](../../../../../src/planet/collisions/collisions.ts#L206)
 
 ```ts
-callback@176(): inferred by TypeScript; see implementation
+callback@206(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `body.setCollisionEnabled`
 - `key.startsWith`
 - `staged.built.clear`
-- `staged.world.removeBody`
 - `this.built.delete`
 - `this.built.set`
 - `this.discardReplacement`
 - `this.tiles.map`
-- `this.world.addBody`
+- `this.world.raw.updateSceneQueries`
 - `this.world.removeBody`
 
-## PlanetCollisions.prepareReplacement.callback@176.callback@188
+## PlanetCollisions.prepareReplacement.callback@206.callback@218
 
-[Implementation, line 188](../../../../../src/planet/collisions/collisions.ts#L188)
+[Implementation, line 218](../../../../../src/planet/collisions/collisions.ts#L218)
 
 ```ts
-callback@188(existing): inferred by TypeScript; see implementation
+callback@218(existing): inferred by TypeScript; see implementation
 ```
 
 ## PlanetCollisions.discardReplacement
 
-[Implementation, line 194](../../../../../src/planet/collisions/collisions.ts#L194)
+[Implementation, line 224](../../../../../src/planet/collisions/collisions.ts#L224)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+update with their colliders disabled, and the complete set is switched on together.
 
 ```ts
 discardReplacement(): void
@@ -270,14 +267,15 @@ discardReplacement(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.replacement.staged.dispose`
-- `this.replacement.staged.world.raw.free`
+- `this.replacement?.staged.dispose`
 
 ## PlanetCollisions.dispose
 
-[Implementation, line 201](../../../../../src/planet/collisions/collisions.ts#L201)
+[Implementation, line 228](../../../../../src/planet/collisions/collisions.ts#L228)
 
 Nearby trimeshes use the GLB vertices, including roads and the curved ground.
+Rapier cooks a trimesh when its body is mounted, so bodies are mounted one trimesh per
+update with their colliders disabled, and the complete set is switched on together.
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -288,4 +286,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.built.clear`
 - `this.built.values`
 - `this.discardReplacement`
+- `this.world.raw.updateSceneQueries`
 - `this.world.removeBody`

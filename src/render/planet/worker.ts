@@ -289,7 +289,8 @@ self.onmessage = async (
           ...(roadErrors.length ? { roadErrors } : {}),
         },
       },
-      { transfer: [...transfers, ...(chart ? [chart.bitmap] : [])] },
+      // A buffer listed twice (views over one GLB buffer, a shared photo) throws DataCloneError.
+      { transfer: [...new Set([...transfers, ...(chart ? [chart.bitmap] : [])])] },
     )
   } catch (error) {
     self.postMessage({ id, error: String(error) })
