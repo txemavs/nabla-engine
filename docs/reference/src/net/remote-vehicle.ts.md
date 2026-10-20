@@ -12,13 +12,13 @@
 
 ## RemoteVehicle.constructor
 
-[Implementation, line 26](../../../../src/net/remote-vehicle.ts#L26)
+[Implementation, line 31](../../../../src/net/remote-vehicle.ts#L31)
 
 A locally spawned body that mirrors one remote peer. It is switched to kinematic so local
 physics cannot push it, but local bodies still collide against it.
 
 ```ts
-constructor(readonly entityId: string, private readonly host: KinematicHost, options: InterpolationOptions = defaultInterpolation): instance
+constructor(entityId: string | null, private readonly host: KinematicHost, options: InterpolationOptions = defaultInterpolation): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.push
 
-[Implementation, line 34](../../../../src/net/remote-vehicle.ts#L34)
+[Implementation, line 40](../../../../src/net/remote-vehicle.ts#L40)
 
 A locally spawned body that mirrors one remote peer. It is switched to kinematic so local
 physics cannot push it, but local bodies still collide against it.
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.update
 
-[Implementation, line 39](../../../../src/net/remote-vehicle.ts#L39)
+[Implementation, line 45](../../../../src/net/remote-vehicle.ts#L45)
 
 Call once per frame before `Simulation.step`. Returns the applied state, if any.
 
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.release
 
-[Implementation, line 54](../../../../src/net/remote-vehicle.ts#L54)
+[Implementation, line 60](../../../../src/net/remote-vehicle.ts#L60)
 
 Hand the body back to dynamic physics (for example before despawning or taking it over).
 

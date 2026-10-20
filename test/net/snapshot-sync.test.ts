@@ -29,6 +29,10 @@ function relay() {
           other.send(encodeMessage({ type: 'joined', peer, meta: message.meta ?? {} }))
         members.set(server, peer)
         server.send(encodeMessage({ type: 'welcome', peer, room: message.room, peers }))
+      } else if (message.type === 'leave') {
+        const peer = members.get(server)!
+        members.delete(server)
+        for (const other of members.keys()) other.send(encodeMessage({ type: 'left', peer }))
       } else if (message.type === 'snapshot') {
         const peer = members.get(server)!
         for (const other of members.keys())
@@ -112,5 +116,67 @@ describe('protocol', () => {
     expect(decodeServerMessage(JSON.stringify({ type: 'snapshot', t: 0 }))).toBeNull()
     expect(isValidRoom('euskadi-1')).toBe(true)
     expect(isValidRoom('../x')).toBe(false)
+  })
+})
+
+describe('SnapshotSync async placement', () => {
+  it('uses the id the game assigns on placement and buffers snapshots until then', async () => {
+    let now = 0
+    const clock = () => now
+    const net = relay()
+    const a = fakeHost(() => ({
+      position: [now / 100, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [10, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    const b = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    let release!: () => void
+    const ready = new Promise<void>((r) => (release = r))
+    const despawned: string[] = []
+    const syncA = new SnapshotSync({
+      transport: net.connect(),
+      room: 't',
+      host: a.host,
+      clock,
+      localEntity: () => 'player-vehicle',
+      spawnRemote: () => null,
+      despawnRemote: () => {},
+    })
+    const syncB = new SnapshotSync({
+      transport: net.connect(),
+      room: 't',
+      host: b.host,
+      clock,
+      localEntity: () => 'player-vehicle',
+      // Like GameRuntime.placeVehicle: the requested id is replaced by `spawned-N`.
+      spawnRemote: async () => (await ready, 'spawned-7'),
+      despawnRemote: (_peer, id) => despawned.push(id),
+    })
+    for (let frame = 0; frame < 30; frame++) {
+      now = frame * 20
+      syncA.update()
+      syncB.update()
+    }
+    expect(b.moved).toEqual([])
+    release()
+    await ready
+    await Promise.resolve()
+    for (let frame = 30; frame < 60; frame++) {
+      now = frame * 20
+      syncA.update()
+      syncB.update()
+    }
+    expect(b.kinematic.has('spawned-7')).toBe(true)
+    expect(new Set(b.moved.map((m) => m.id))).toEqual(new Set(['spawned-7']))
+    expect(b.moved.at(-1)!.x).toBeGreaterThan(9)
+    syncA.dispose()
+    expect(despawned).toEqual(['spawned-7'])
+    syncB.dispose()
   })
 })

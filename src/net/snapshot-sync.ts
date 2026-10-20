@@ -26,8 +26,12 @@ export interface SnapshotSyncOptions {
   host: StateSource & KinematicHost
   /** Entity the local player controls right now; null sends nothing. */
   localEntity: () => string | null
-  /** Game hook: create a local entity for a new peer and return its id (or null to ignore). */
-  spawnRemote: (peer: PeerInfo) => string | null
+  /**
+   * Game hook: create a local entity for a new peer and return the id it really got (or null to
+   * ignore the peer). May be async, because placement often waits for ground and assigns its own
+   * id; snapshots are buffered until it resolves.
+   */
+  spawnRemote: (peer: PeerInfo) => string | null | Promise<string | null>
   /** Game hook: remove the entity created for a peer that left. */
   despawnRemote: (peer: string, entityId: string) => void
   meta?: Record<string, string | number | boolean>
@@ -133,16 +137,34 @@ export class SnapshotSync {
 
   private add(peer: PeerInfo): void {
     if (peer.peer === this.peerId || this.remotes.has(peer.peer)) return
-    const entityId = this.options.spawnRemote(peer)
-    if (!entityId) return
-    this.remotes.set(
-      peer.peer,
-      new RemoteVehicle(
-        entityId,
-        this.options.host,
-        this.options.interpolation ?? defaultInterpolation,
-      ),
+    const remote = new RemoteVehicle(
+      null,
+      this.options.host,
+      this.options.interpolation ?? defaultInterpolation,
     )
+    this.remotes.set(peer.peer, remote)
+    const placed = (entityId: string | null) => {
+      if (this.remotes.get(peer.peer) === remote) {
+        if (entityId) remote.entityId = entityId
+        else this.remotes.delete(peer.peer)
+      } else if (entityId) {
+        // The peer left (or the session closed) while its entity was being placed.
+        this.options.despawnRemote(peer.peer, entityId)
+      }
+    }
+    let result: ReturnType<SnapshotSyncOptions['spawnRemote']>
+    try {
+      result = this.options.spawnRemote(peer)
+    } catch (error) {
+      this.remotes.delete(peer.peer)
+      throw error
+    }
+    if (result instanceof Promise)
+      result.then(placed, (error) => {
+        placed(null)
+        console.warn('[nabla/net] could not spawn peer', peer.peer, error)
+      })
+    else placed(result)
   }
 
   private remove(peer: string): void {
@@ -150,7 +172,7 @@ export class SnapshotSync {
     if (!remote) return
     remote.release()
     this.remotes.delete(peer)
-    this.options.despawnRemote(peer, remote.entityId)
+    if (remote.entityId !== null) this.options.despawnRemote(peer, remote.entityId)
   }
 
   private dropAll(): void {

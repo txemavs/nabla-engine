@@ -23,11 +23,17 @@ export interface KinematicHost {
 export class RemoteVehicle {
   readonly buffer: SnapshotBuffer
   private attached = false
+  /**
+   * Local entity mirroring the peer; null while the game is still placing it (snapshots are
+   * buffered meanwhile). Hosts often assign their own ids on placement, so set it from there.
+   */
+  entityId: string | null
   constructor(
-    readonly entityId: string,
+    entityId: string | null,
     private readonly host: KinematicHost,
     options: InterpolationOptions = defaultInterpolation,
   ) {
+    this.entityId = entityId
     this.buffer = new SnapshotBuffer(options)
   }
 
@@ -38,7 +44,7 @@ export class RemoteVehicle {
   /** Call once per frame before `Simulation.step`. Returns the applied state, if any. */
   update(now: number): EntityState | null {
     const state = this.buffer.sample(now)
-    if (!state) return null
+    if (!state || this.entityId === null) return null
     if (!this.attached) this.attached = this.host.setEntityKinematic(this.entityId, true)
     if (!this.attached) return null
     this.host.moveKinematicEntity(
@@ -52,7 +58,7 @@ export class RemoteVehicle {
 
   /** Hand the body back to dynamic physics (for example before despawning or taking it over). */
   release(): void {
-    if (this.attached) this.host.setEntityKinematic(this.entityId, false)
+    if (this.attached && this.entityId !== null) this.host.setEntityKinematic(this.entityId, false)
     this.attached = false
   }
 }
