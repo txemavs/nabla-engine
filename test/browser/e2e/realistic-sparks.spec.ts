@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 // Headless SwiftShader WebGL screenshots of the bullet effects with a fixed clock and seeded
 // Math.random, plus their draw calls and JS cost. Run on this branch and on the commit before it
 // (same spec copied over) with NABLA_SHOTS_DIR / NABLA_SHOTS_LABEL to compare.
-const scenes = ['metal-hit', 'concrete-hit', 'ground-hit', 'tracer-burst', 'muzzle-flash']
+// `muzzle-shot` replays a sidearm shot the way fireSidearm does on the checked-out commit: it
+// draws a tracer only when shooting.ts still adds one.
+const scenes = ['metal-hit', 'concrete-hit', 'ground-hit', 'muzzle-shot', 'muzzle-flash']
 
 for (const scene of scenes) {
   test(`bullet effects render: ${scene}`, async ({ page }) => {
@@ -21,8 +23,11 @@ for (const scene of scenes) {
       if (m.type() === 'error') errors.push(m.text().slice(0, 2000))
     })
     const hasFlash = existsSync(`${process.cwd()}/src/render/entity/muzzle-flash.ts`)
+    const firesTracer = readFileSync(`${process.cwd()}/src/runtime/shooting.ts`, 'utf8').includes(
+      'tracers.add(',
+    )
     const result = await page.evaluate(
-      async ({ root, scene, hasFlash }) => {
+      async ({ root, scene, hasFlash, firesTracer }) => {
         const T = await import(`/@fs/${root}/node_modules/three/build/three.module.js`)
         const { ShotSparks } = await import(`/@fs/${root}/src/render/entity/shot-sparks.ts`)
         const { ShotTracers } = await import(`/@fs/${root}/src/render/entity/shot-tracers.ts`)
@@ -82,21 +87,40 @@ for (const scene of scenes) {
           camera.position.set(0.9, groundHit ? 0.7 : 1.25, groundHit ? 1.3 : 0.6)
           camera.lookAt(point[0], point[1] + 0.1, point[2])
           shoot = (now) => {
-            sparks.add(point, now, normal, { surface })
+            // Shot from the left and slightly above (ignored by commits without `incoming`).
+            const incoming = groundHit ? [0.5, -0.6, -0.6] : [0.45, -0.25, -1]
+            sparks.add(point, now, normal, { surface, incoming })
             marks.addWorld(space, point, normal)
           }
           shotTimes = [1000, 1003]
           at = 1060
-        } else if (scene === 'tracer-burst') {
-          camera.position.set(2.2, 1.6, 1.5)
-          camera.lookAt(0, 1.2, -4)
-          shotTimes = [1000, 1012, 1024, 1036, 1048]
-          let i = 0
+        } else if (scene === 'muzzle-shot') {
+          // Downrange view past the barrel: muzzle flash, then a concrete hit 1.5 m away.
+          camera.position.set(0.35, 1.45, 0.9)
+          camera.lookAt(0, 1.15, -0.6)
+          const muzzle: [number, number, number] = [0, 1.3, 0.5]
+          const point: [number, number, number] = [0.1, 1.05, -0.997]
+          const incoming = [point[0] - muzzle[0], point[1] - muzzle[1], point[2] - muzzle[2]]
+          const flash = new T.Mesh(
+            flashModule ? flashModule.muzzleFlashGeometry() : new T.ConeGeometry(0.012, 0.03, 6),
+            new T.MeshBasicMaterial({
+              color: '#ffd9a0',
+              transparent: true,
+              opacity: 0.55,
+              blending: T.AdditiveBlending,
+              depthWrite: false,
+            }),
+          )
+          flash.position.set(...muzzle)
+          flash.rotation.x = -Math.PI / 2
+          effects.add(flash)
           shoot = (now) => {
-            const k = i++
-            tracers.add([0.1 * k, 1.3, 0.5], [0.4 - 0.15 * k, 1.0 + 0.05 * k, -12], now)
+            if (flashModule) flashModule.shapeMuzzleFlash(flash, 1000, 12, 0.55)
+            if (firesTracer) tracers.add(muzzle, point, now)
+            sparks.add(point, now, [0, 0, 1], { surface: 'concrete', incoming })
+            marks.addWorld(space, point, [0, 0, 1])
           }
-          at = 1060
+          at = 1030
         } else {
           camera.position.set(0.09, 0.03, 0.06)
           camera.lookAt(0, 0, -0.03)
@@ -158,7 +182,7 @@ for (const scene of scenes) {
         marks.dispose()
         return { png: c.toDataURL(), calls, jsMs, lit }
       },
-      { root: process.cwd(), scene, hasFlash },
+      { root: process.cwd(), scene, hasFlash, firesTracer },
     )
     const dir = process.env.NABLA_SHOTS_DIR
     const label = process.env.NABLA_SHOTS_LABEL ?? 'after'

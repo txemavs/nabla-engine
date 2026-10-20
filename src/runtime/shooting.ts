@@ -178,6 +178,7 @@ export function fireSidearm(
   if (hit && !gallery.lastGlassImpact)
     view.sparks.add(destination.toArray() as Vec3, now, normal, {
       surface: sparkSurface(gallery, destination, normal),
+      incoming: destination.clone().sub(origin).toArray() as Vec3,
     })
   return event
 }

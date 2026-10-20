@@ -427,17 +427,19 @@ export class LegacyShotSparks {
   }
 }
 
-const TRACER_LIFE_MS = 90
+const TRACER_LIFE_MS = 160
+/** Peak opacity of the faint grey air thread (matches shot-tracers.ts). */
+const TRACER_ALPHA = 0.1
 const TRACER_MAX = 24
 
-/** Former CPU tracers (plain line, fading opacity), kept for WebGPU where ShaderMaterial does not apply. */
+/** CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply. */
 export class LegacyShotTracers {
   readonly root = new THREE.Group()
   private readonly geometry = new THREE.BufferGeometry()
   private readonly material = new THREE.LineBasicMaterial({
-    color: '#ffe7ac',
+    color: '#dbe0e6',
     transparent: true,
-    opacity: 0.95,
+    opacity: TRACER_ALPHA,
     depthWrite: false,
     toneMapped: false,
   })
@@ -498,14 +500,14 @@ export class LegacyShotTracers {
       this.geometry.setDrawRange(0, this.count * 2)
     }
     this.material.opacity = this.count
-      ? Math.max(0, 1 - (now - newest) / TRACER_LIFE_MS) * 0.95
-      : 0.95
+      ? Math.max(0, 1 - (now - newest) / TRACER_LIFE_MS) ** 2 * TRACER_ALPHA
+      : TRACER_ALPHA
   }
 
   clear(): void {
     this.count = 0
     this.geometry.setDrawRange(0, 0)
-    this.material.opacity = 0.95
+    this.material.opacity = TRACER_ALPHA
   }
 
   dispose(): void {

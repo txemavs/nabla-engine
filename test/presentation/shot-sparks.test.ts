@@ -53,6 +53,37 @@ describe('spark surfaces and motion', () => {
   })
 })
 
+describe('spark emission and bounces', () => {
+  it('fans sparks around the reflected bullet direction', () => {
+    const sparks = new ShotSparks()
+    // A shot travelling +x and down hits the floor: sparks keep going +x and up.
+    sparks.add([0, 1, 0], 1000, [0, 1, 0], { surface: 'metal', incoming: [1, -1, 0] })
+    const p = sparks.livePositions(1030)
+    let x = 0
+    for (let i = 0; i < p.length; i += 3) {
+      x += p[i]!
+      expect(p[i + 1]!).toBeGreaterThanOrEqual(1 - 1e-6)
+    }
+    expect(x / (p.length / 3)).toBeGreaterThan(0.03)
+    sparks.dispose()
+  })
+
+  it('hops twice, lower each time, then rests on the plane', () => {
+    const p0 = [0, 1, 0],
+      v0 = [1, 3, 0],
+      drift = [0, 0, 0]
+    const ys: number[] = []
+    for (let t = 0; t < 3; t += 0.005) ys.push(sparkPosition(p0, v0, drift, 1, t)[1] - 1)
+    const peaks: number[] = []
+    for (let i = 1; i < ys.length - 1; i++)
+      if (ys[i]! > ys[i - 1]! && ys[i]! >= ys[i + 1]! && ys[i]! > 1e-4) peaks.push(ys[i]!)
+    expect(peaks).toHaveLength(3)
+    expect(peaks[1]!).toBeLessThan(peaks[0]!)
+    expect(peaks[2]!).toBeLessThan(peaks[1]!)
+    expect(ys.at(-1)).toBe(0)
+  })
+})
+
 describe('muzzle flash', () => {
   it('is a star (alternating rim radii) that varies per shot but not per frame', () => {
     const geometry = muzzleFlashGeometry()
