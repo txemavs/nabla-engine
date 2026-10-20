@@ -1290,6 +1290,7 @@ export class GameRuntime {
       this.options.startupTerrain === 'nearby' ? 4 : 1,
     )
     const document = structuredClone(this.document)
+    let spawnGround: number | undefined
     try {
       if (this.world) {
         const progress = (status: string) =>
@@ -1330,6 +1331,7 @@ export class GameRuntime {
           }
         }
         spawn.transform.position[1] = ground + playGroundClearance(spawn)
+        spawnGround = ground
         if (this.options.restParkedOnGround) {
           const authored = new Map(
             this.document.entities.map((entity) => [entity.id, entity.transform.position[1]]),
@@ -1368,6 +1370,9 @@ export class GameRuntime {
       })
       simulation.setCollisionDistance(this.quality.collisions)
       this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
+      // Frames step the simulation from here on, while the reveal still prepares. Hold the
+      // actor until its ground collision is active, then settle it on that surface.
+      if (spawnGround !== undefined) simulation.holdForGround(spawnGround)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.startSequence =
@@ -1383,6 +1388,19 @@ export class GameRuntime {
       // vehicle and sidearm models, shader programs, and any host gate (an intro sequence).
       this.options.onProgress?.('Preparing…')
       await this.prepareReveal(controller.signal)
+      // Never reveal an actor that is still waiting for its ground collision.
+      const holdStarted = performance.now()
+      while (!simulation.settleGround(performance.now() - holdStarted > 30_000)) {
+        controller.signal.throwIfAborted()
+        await new Promise((resolve) => setTimeout(resolve, 16))
+      }
+      if (spawnGround !== undefined && this.world) {
+        // Diagnostics: actor height above the rendered ground at reveal (negative: buried).
+        const at = simulation.player.position
+        const below = groundAtSeam(this.world, at)
+        this.options.canvas.dataset.spawnGap =
+          below === undefined ? 'none' : (at[1] - below).toFixed(2)
+      }
       if (options.vehicleId) this.drivingPrepared.add(options.vehicleId)
       controller.signal.throwIfAborted()
       const first = this.startSequence?.steps[0]
