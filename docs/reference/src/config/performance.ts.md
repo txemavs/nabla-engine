@@ -4,15 +4,14 @@
 
 [Source](../../../../src/config/performance.ts)
 
-Quality defaults, supported choices and named rendering/streaming presets.
-
 ## Module dependencies
 
+- `./gameplay-tuning.js`
 - `./shadows.js`
 
 ## normalizePerformance
 
-[Implementation, line 86](../../../../src/config/performance.ts#L86)
+[Implementation, line 100](../../../../src/config/performance.ts#L100)
 
 Validate serialized settings against supported quality choices; return an independent copy.
 
@@ -27,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizePerformance.choose
 
-[Implementation, line 89](../../../../src/config/performance.ts#L89)
+[Implementation, line 103](../../../../src/config/performance.ts#L103)
 
 ```ts
 choose(value: unknown, allowed: number[], fallback: number): inferred by TypeScript; see implementation
@@ -39,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## cloudStyleForPerformancePreset
 
-[Implementation, line 279](../../../../src/config/performance.ts#L279)
+[Implementation, line 297](../../../../src/config/performance.ts#L297)
 
 Cloud renderer for a named quality preset. Artistic 3-layer sheets only on Ultra; all other tiers use the cheaper globe layer.
 
@@ -49,7 +48,7 @@ cloudStyleForPerformancePreset(preset: string): 'low' | 'artistic'
 
 ## tileBudget
 
-[Implementation, line 284](../../../../src/config/performance.ts#L284)
+[Implementation, line 302](../../../../src/config/performance.ts#L302)
 
 z15 meshes for a custom draw distance. Named presets carry their own cap.
 
@@ -59,7 +58,7 @@ tileBudget(distance: number): number
 
 ## streamBudget
 
-[Implementation, line 292](../../../../src/config/performance.ts#L292)
+[Implementation, line 311](../../../../src/config/performance.ts#L311)
 
 ```ts
 streamBudget(settings: PerformanceSettings): inferred by TypeScript; see implementation
@@ -72,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## performanceProfile
 
-[Implementation, line 302](../../../../src/config/performance.ts#L302)
+[Implementation, line 321](../../../../src/config/performance.ts#L321)
 
 ```ts
 performanceProfile(settings: PerformanceSettings): inferred by TypeScript; see implementation

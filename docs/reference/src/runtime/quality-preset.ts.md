@@ -17,7 +17,7 @@ as `custom` (the heaviest browser defaults).
 
 ## safeGet
 
-[Implementation, line 21](../../../../src/runtime/quality-preset.ts#L21)
+[Implementation, line 23](../../../../src/runtime/quality-preset.ts#L23)
 
 ```ts
 safeGet(storage: ReadStorage | undefined | null, key: string): string | null
@@ -30,33 +30,43 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultStorage
 
-[Implementation, line 30](../../../../src/runtime/quality-preset.ts#L30)
+[Implementation, line 32](../../../../src/runtime/quality-preset.ts#L32)
 
 ```ts
 defaultStorage(): WriteStorage | undefined
 ```
 
-## readQualityPreset
+## defaultSession
 
-[Implementation, line 39](../../../../src/runtime/quality-preset.ts#L39)
-
-Active quality profile: URL `quality`, else the saved one, else `fallback`.
+[Implementation, line 40](../../../../src/runtime/quality-preset.ts#L40)
 
 ```ts
-readQualityPreset(search: string = globalThis.location?.search ?? '', storage: ReadStorage | undefined | null = defaultStorage(), fallback = 'custom'): string
+defaultSession(): ReadStorage | undefined
+```
+
+## readQualityPreset
+
+[Implementation, line 52](../../../../src/runtime/quality-preset.ts#L52)
+
+Active quality profile: URL `quality`, else the tab's test override (phone button), else the
+saved one, else `fallback`.
+
+```ts
+readQualityPreset(search: string = globalThis.location?.search ?? '', storage: ReadStorage | undefined | null = defaultStorage(), fallback = 'custom', session: ReadStorage | undefined | null = defaultSession()): string
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URLSearchParams`
 - `VALID.test`
+- `defaultSession`
 - `defaultStorage`
 - `new URLSearchParams(search).get`
 - `safeGet`
 
 ## saveQualityPreset
 
-[Implementation, line 50](../../../../src/runtime/quality-preset.ts#L50)
+[Implementation, line 68](../../../../src/runtime/quality-preset.ts#L68)
 
 Remember the profile for the next boots (`custom` clears the saved choice).
 
@@ -71,29 +81,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `storage?.removeItem`
 - `storage?.setItem`
 
-## toggleMobileQuality
-
-[Implementation, line 66](../../../../src/runtime/quality-preset.ts#L66)
-
-```ts
-toggleMobileQuality(current: string, storage: WriteStorage | undefined | null = defaultStorage()): string
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `defaultStorage`
-- `safeGet`
-- `saveQualityPreset`
-- `storage?.removeItem`
-- `storage?.setItem`
-
 ## mountMobileQualityButton
 
-[Implementation, line 92](../../../../src/runtime/quality-preset.ts#L92)
+[Implementation, line 87](../../../../src/runtime/quality-preset.ts#L87)
 
-Round, icon-only phone button that toggles mobile quality and reloads. Self-contained (no
-imports, no outer references) so a host boot script can inline it with `Function#toString`
-before the engine bundle loads; it uses the same storage keys as the functions above.
+Round, icon-only phone button for testing: one click runs this tab in mobile quality and enters
+the game straight away (`sessionStorage` override + one-shot auto-enter flag, then reload). The
+saved profile is never touched. Clicking it while active drops the override and returns to the
+start screen. Self-contained (no imports, no outer references) so a host boot script can inline
+it with `Function#toString` before the engine bundle loads.
 
 ```ts
 mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
@@ -102,45 +98,18 @@ mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
-- `URLSearchParams`
 - `button.addEventListener`
 - `button.setAttribute`
 - `document.createElement`
-- `get`
-- `new URLSearchParams(location.search).get`
 - `parent.append`
+- `sessionStorage.getItem`
 
-## mountMobileQualityButton.get
+## mountMobileQualityButton.callback@109
 
-[Implementation, line 95](../../../../src/runtime/quality-preset.ts#L95)
-
-```ts
-get(key: string): string | null
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `localStorage.getItem`
-
-## mountMobileQualityButton.set
-
-[Implementation, line 102](../../../../src/runtime/quality-preset.ts#L102)
+[Implementation, line 109](../../../../src/runtime/quality-preset.ts#L109)
 
 ```ts
-set(key: string, value: string | null): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `localStorage.removeItem`
-- `localStorage.setItem`
-
-## mountMobileQualityButton.callback@125
-
-[Implementation, line 125](../../../../src/runtime/quality-preset.ts#L125)
-
-```ts
-callback@125(event): inferred by TypeScript; see implementation
+callback@109(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -148,8 +117,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `URL`
 - `event.preventDefault`
 - `event.stopPropagation`
-- `get`
-- `localStorage.setItem`
 - `location.assign`
-- `set`
+- `sessionStorage.removeItem`
+- `sessionStorage.setItem`
 - `url.searchParams.delete`
+
+## takeAutoEnter
+
+[Implementation, line 132](../../../../src/runtime/quality-preset.ts#L132)
+
+Read and clear the one-shot auto-enter flag.
+
+```ts
+takeAutoEnter(session: WriteStorage | undefined | null = defaultStorageSession()): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `defaultStorageSession`
+- `session?.getItem`
+- `session?.removeItem`
+
+## defaultStorageSession
+
+[Implementation, line 144](../../../../src/runtime/quality-preset.ts#L144)
+
+```ts
+defaultStorageSession(): WriteStorage | undefined
+```

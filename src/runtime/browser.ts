@@ -5928,7 +5928,7 @@ export class GameRuntime {
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
         // A Shift keydown is a modifier change, not a repeat of the newest key.
-        if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight')
+        if (!inputBindings.sprint.keys.includes(event.code))
           this.keys.syncShift(event.shiftKey, performance.now())
         if (event.ctrlKey || event.metaKey || event.altKey) return
         if (event.code === 'Home') {
