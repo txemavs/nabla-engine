@@ -14,8 +14,10 @@ import {
   markRange,
   ParticleClock,
   PARTICLE_MOTION_GLSL,
+  TIRE_SMOKE_RISE,
 } from './gpu-particles.js'
 import { LegacyTireSmoke } from './legacy-particles.js'
+import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 
 const CAPACITY = 96
 const LIFETIME = 1.2
@@ -33,6 +35,8 @@ class AnalyticTireSmoke {
   private lastDeath = -Infinity
   private next = 0
   private carry = 0
+  /** Live puffs' paths in the root's (world) frame, for off-screen culling. */
+  private readonly bounds = new SpawnBounds(LIFETIME)
   readonly root: Points
   constructor() {
     const position = new BufferAttribute(this.origins, 3).setUsage(DynamicDrawUsage)
@@ -64,12 +68,30 @@ class AnalyticTireSmoke {
         if(d>1.0 || age<=0.0) discard; gl_FragColor=vec4(0.65,0.67,0.69,(1.0-d)*(1.0-d)*age*0.24*smokeDensity); }`,
       }),
     )
+    // Off-screen culling through the spawn bounds; three's sphere stays the sort centre.
     this.root.frustumCulled = false
+    const material = this.root.material as ShaderMaterial
+    cullOffscreen(this.root, {
+      box: (target) => this.bounds.unionInto(target),
+      // Point diameter: (1.8 − life)·160·pixelRatio / max(1, depth), clamped to [1, 80] px.
+      pad: (camera, height, distance) =>
+        pixelsToWorld(
+          camera,
+          height,
+          distance,
+          1 +
+            Math.min(
+              80,
+              Math.max(1, (1.8 * 160 * material.uniforms.pixelRatio.value) / Math.max(1, distance)),
+            ),
+        ),
+    })
     this.root.visible = false
   }
   update(dt: number, contacts: Vec3Tuple[], slip: number, origin: Vector3): void {
     dt = Math.min(0.05, Math.max(0, dt))
     this.clock.step(dt)
+    this.bounds.advance(this.clock.s)
     if (this.clock.span > EPOCH_SECONDS) this.rebase()
     this.carry = contacts.length && slip > 0.2 ? this.carry + dt * 30 * slip : 0
     while (this.carry >= 1) {
@@ -77,6 +99,15 @@ class AnalyticTireSmoke {
       const i = this.next++ % CAPACITY
       const p = contacts[i % contacts.length]
       this.origins.set([p[0], p[1] + 0.08, p[2]], i * 3)
+      // Rises 0.4 m/s for its lifetime.
+      this.bounds.expand(
+        p[0],
+        p[1] + 0.08,
+        p[2],
+        p[0],
+        p[1] + 0.08 + TIRE_SMOKE_RISE * LIFETIME,
+        p[2],
+      )
       this.births[i] = this.clock.s
       this.lifetimes[i] = LIFETIME
       this.spawn[i * 2] = this.clock.relS(this.clock.s)
@@ -104,6 +135,7 @@ class AnalyticTireSmoke {
     }
     this.lastDeath = -Infinity
     this.carry = 0
+    this.bounds.clear()
     this.root.visible = false
   }
   dispose(): void {
