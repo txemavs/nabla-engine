@@ -44,7 +44,7 @@ for (const view of views) {
     )
     test.skip(!hasGpu, 'No WebGPU adapter in this browser')
     const { kinds, images } = await page.evaluate(
-      async ({ root, view }) => {
+      async ({ root }) => {
         const T = await import(`/@fs/${root}/node_modules/three/build/three.module.js`)
         const { createRenderBackend } = await import(`/@fs/${root}/src/render/backend.ts`)
         const { configureWorldRenderer } = await import(
@@ -124,7 +124,7 @@ for (const view of views) {
         }
         return { kinds, images }
       },
-      { root: process.cwd(), view },
+      { root: process.cwd() },
     )
     expect(kinds).toEqual(['webgpu', 'webgl'])
     const [webgpu, webgl] = images.map((b64) => Buffer.from(b64, 'base64'))
