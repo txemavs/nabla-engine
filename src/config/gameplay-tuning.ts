@@ -157,7 +157,7 @@ export const laserTuning = {
   maxGrowth: 2,
   beamWidthPixels: 7,
 }
-export const smokeTuning = { defaultPercent: 50, maxPercent: 300 }
+export const smokeTuning = { defaultPercent: 10, maxPercent: 300 }
 /** Arcade overheating response, not measured firearm temperatures. */
 export const weaponHeatTuning = {
   heatPerShotC: 9,
