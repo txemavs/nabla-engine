@@ -39,9 +39,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.seen.delete`
 - `this.values.delete`
 
+## HeldKeys.syncShift
+
+[Implementation, line 39](../../../../src/runtime/held-keys.ts#L39)
+
+Reconcile Shift with the modifier flag every keyboard and mouse event carries. A Shift
+pressed while input was not owned (focus, pointer re-capture, a weapon click) or still held
+across a `clear()` never comes back as a fresh keydown: its repeats are orphans and are
+ignored, so sprint stayed off until Shift was pressed again. The flag restores it, and a
+lost Shift keyup is dropped the same way. Does not touch the repeat-stream owner.
+
+```ts
+syncShift(shift: boolean, now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.seen.delete`
+- `this.seen.set`
+- `this.values.add`
+- `this.values.delete`
+- `this.values.has`
+
 ## HeldKeys.clear
 
-[Implementation, line 33](../../../../src/runtime/held-keys.ts#L33)
+[Implementation, line 53](../../../../src/runtime/held-keys.ts#L53)
 
 Release the complete chord after blur, pause or other loss of input ownership.
 
@@ -56,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.expire
 
-[Implementation, line 43](../../../../src/runtime/held-keys.ts#L43)
+[Implementation, line 63](../../../../src/runtime/held-keys.ts#L63)
 
 Release movement keys after 1500 ms without a keydown or repeat from the newest held key,
 recovering from a lost keyup. A key held while another key was tapped and released keeps
@@ -72,12 +94,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.release`
 - `this.seen.keys`
 
-## HeldKeys.expire.callback@45
+## HeldKeys.expire.callback@65
 
-[Implementation, line 45](../../../../src/runtime/held-keys.ts#L45)
+[Implementation, line 65](../../../../src/runtime/held-keys.ts#L65)
 
 ```ts
-callback@45(code): inferred by TypeScript; see implementation
+callback@65(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
