@@ -50,6 +50,8 @@
 - `./catalog/vehicles/library.js`
 - `./catalog/vehicles/trailer-boxes.js`
 - `./catalog/weapons/library.js`
+- `./catalog/weapons/held-library.js`
+- `./catalog/weapons/slots.js`
 - `./render/monitors/html-monitor.js`
 - `./render/monitors/layered-monitor.js`
 - `./render/monitors/menu.js`

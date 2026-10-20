@@ -6,6 +6,7 @@ import { XRMenuGesture, ARTouchControls } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
+import { ARHeldWeapons } from './ar-held-weapons.js'
 import { ARDrone } from '@nabla/engine/experimental/betaflight'
 import { hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
 import * as THREE from 'three'
@@ -181,6 +182,8 @@ let bowGeneration = 0
 let bowLoading = false
 let bowReady: Promise<void> | undefined
 const hoop = new XRHoop(scene)
+const held = new ARHeldWeapons(scene)
+const heldPresets = ARHeldWeapons.presets()
 balls.afterPhysicsStep = () => hoop.sampleBalls(balls.ballSamples)
 const drone = new ARDrone(scene, () => balls.physicsWorld)
 drone.lightButtonIndex = 5
@@ -346,6 +349,7 @@ screen.mainMenuOrder = [
   'quality',
   'radio',
   'pistol',
+  ...heldPresets.map((preset) => `held-${preset.id}`),
   'ball',
   'model',
   'board',
@@ -373,6 +377,18 @@ const addBow = async () => {
   }
 }
 screen.mainMenu = () => [
+  ...heldPresets.map((preset) => ({
+    id: `held-${preset.id}`,
+    label: preset.name,
+    run: () => {
+      void held
+        .spawn(preset, camera)
+        .then(() =>
+          room.setMessage(`${preset.name}: agárrala con el agarre cerca de la empuñadura.`),
+        )
+        .catch(report)
+    },
+  })),
   {
     id: 'pistol',
     label: 'Pistola',
@@ -424,6 +440,7 @@ screen.mainMenu = () => [
 ]
 const freeEnvironment = () => {
   hoop.clear()
+  held.clear()
   bowGeneration++
   bow.clear()
   droneGeneration++
@@ -771,6 +788,7 @@ renderer.setAnimationLoop((time, frame) => {
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
             !rc.owns(h.grip) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -783,6 +801,20 @@ renderer.setAnimationLoop((time, frame) => {
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
             !rc.owns(h.grip) &&
+            !held.owns(h.grip) &&
+            !xr.calibrationOwns(h.source)),
+      ),
+      dt,
+    )
+    held.update(
+      hands.filter(
+        (h) =>
+          held.owns(h.grip) ||
+          (!hoop.owns(h.grip) &&
+            !bow.owns(h.grip) &&
+            !balls.owns(h.grip) &&
+            !rc.owns(h.grip) &&
+            !weapons.loadout.occupied(h) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -795,6 +827,7 @@ renderer.setAnimationLoop((time, frame) => {
             !bow.owns(h.grip) &&
             !rc.owns(h.grip) &&
             !weapons.loadout.occupied(h) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -813,6 +846,7 @@ renderer.setAnimationLoop((time, frame) => {
             !bow.owns(h.grip) &&
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       [...collisionSurfaces(), ...screen.collisionSurfaces, ...hoop.collisionSurfaces],
@@ -949,6 +983,7 @@ addEventListener(
     hoop.dispose()
     bowGeneration++
     bow.dispose()
+    held.clear()
     droneGeneration++
     drone.clear()
     model.dispose()
