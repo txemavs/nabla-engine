@@ -1,3 +1,4 @@
+import { presetResolutionScale } from '../../src/config/display.js'
 import { expect, it } from 'vitest'
 import {
   cloudStyleForPerformancePreset,
@@ -27,7 +28,8 @@ it('shares named mobile budgets and preserves explicitly disabled render effects
   const p = normalizePerformance({ ...performancePresets.mobile.settings, preset: 'mobile' })
   expect(p.shadows).toBe(0)
   expect(p.mirrors).toBe(0)
-  expect(p.buildings).toBe(0)
+  expect(p.buildings).toBe(1)
+  expect(p.resolution * presetResolutionScale('mobile')).toBe(0.25)
   expect(p.smoke).toBe(0)
   expect(p.distance).toBe(500)
   expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 8 })

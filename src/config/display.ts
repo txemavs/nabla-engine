@@ -28,7 +28,7 @@ export const presetResolutionScales: Readonly<Record<string, number>> = Object.f
   balanced: 1,
   custom: 1.5,
   low: 0.5,
-  mobile: 0.4,
+  mobile: 0.5,
   minimal: 0.4,
 })
 

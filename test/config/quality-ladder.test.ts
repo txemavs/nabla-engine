@@ -3,8 +3,7 @@ import { performancePresets } from '../../src/config/performance.js'
 import { presetResolutionScale } from '../../src/config/display.js'
 
 /** Lighter profiles must never cost more than heavier ones, field by field. */
-/** Mobile is the absolute floor (phones); Minimal keeps a little more reach for weak desktops. */
-const ladder = ['mobile', 'minimal', 'low', 'balanced', 'high', 'ultra'] as const
+const ladder = ['minimal', 'low', 'balanced', 'high', 'ultra'] as const
 const fields = [
   'vehicleShadows',
   'mirrors',
@@ -35,4 +34,26 @@ describe('quality ladder', () => {
       )
     })
   }
+})
+
+/**
+ * Mobile is the phone floor: no heavier than Minimal except buildings and pixel ratio, which
+ * phones keep so the world stays readable; and never heavier than Low.
+ */
+describe('mobile profile', () => {
+  const mobile = performancePresets.mobile
+  const phoneExtras = new Set<string>(['buildings', 'resolution'])
+  it('is no heavier than minimal outside buildings and pixel ratio', () => {
+    for (const f of fields)
+      if (!phoneExtras.has(f))
+        expect(mobile.settings[f], f).toBeLessThanOrEqual(performancePresets.minimal.settings[f])
+    expect(mobile.tiles).toBeLessThanOrEqual(performancePresets.minimal.tiles)
+  })
+  it('is never heavier than low', () => {
+    const low = performancePresets.low
+    for (const f of fields) expect(mobile.settings[f], f).toBeLessThanOrEqual(low.settings[f])
+    expect(mobile.settings.resolution * presetResolutionScale('mobile')).toBeLessThanOrEqual(
+      low.settings.resolution * presetResolutionScale('low'),
+    )
+  })
 })
