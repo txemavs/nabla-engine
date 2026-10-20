@@ -965,7 +965,7 @@ export class GameRuntime {
             (
               {
                 minimal: 0,
-                mobile: 2,
+                mobile: 0,
                 low: 4,
                 road: 6,
                 balanced: 8,
