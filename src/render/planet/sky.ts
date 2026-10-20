@@ -7,6 +7,7 @@ import { webgpuNodeKit } from '../backend.js'
 import { artisticCloudDeck, globeCloudSkin, lowCloudDome } from './cloud-nodes.js'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { createLensFlare } from './lens-flare.js'
+import { reuseFog } from './fog.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../../planet/sky.js'
 import * as THREE from 'three'
 import {
@@ -380,7 +381,9 @@ export class GeographicView {
     this.backdrop.material.color.copy(air.color)
     this.space.background = null
     // Same fog in local metres and planetary units prevents the remote globe forming a second horizon.
-    this.space.fog = air.fog ? new THREE.Fog(air.color, air.near * SCALE, air.far * SCALE) : null
+    this.space.fog = air.fog
+      ? reuseFog(this.space.fog, air.color, air.near * SCALE, air.far * SCALE)
+      : null
     this.night.opacity = air.stars
     const hours = cloudHours(at)
     const sunElev = this.sunDirection.dot(radial)
