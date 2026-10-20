@@ -1371,6 +1371,13 @@ export class GameRuntime {
         controller.signal.throwIfAborted()
         await new Promise((resolve) => requestAnimationFrame(resolve))
       }
+      if (spawnGround !== undefined && this.world) {
+        // Diagnostics: actor height above the rendered ground at reveal (negative: buried).
+        const at = simulation.player.position
+        const below = groundAtSeam(this.world, at)
+        this.options.canvas.dataset.spawnGap =
+          below === undefined ? 'none' : (at[1] - below).toFixed(2)
+      }
       if (options.vehicleId) this.drivingPrepared.add(options.vehicleId)
       controller.signal.throwIfAborted()
       const first = this.startSequence?.steps[0]
