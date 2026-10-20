@@ -1,3 +1,4 @@
+import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
@@ -289,7 +290,7 @@ try {
         }
       : undefined,
     depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
-    performance: { preset: new URLSearchParams(location.search).get('quality') ?? 'custom' },
+    performance: { preset: readQualityPreset() },
     tiles: noTerrainTest
       ? undefined
       : flat
