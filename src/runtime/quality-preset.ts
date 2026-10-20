@@ -105,7 +105,7 @@ export function mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
       ? 'color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.75)'
       : 'color:rgba(255,255,255,.75);background:transparent;border:1px solid transparent')
   button.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M18 11v2"/></svg>'
   button.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
