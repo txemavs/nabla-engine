@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **539 modules; 6379 executable function definitions**.
+Coverage: **540 modules; 6410 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -112,7 +112,7 @@ Coverage: **539 modules; 6379 executable function definitions**.
 | [src/catalog/monitors/s3-instruments.ts](src/catalog/monitors/s3-instruments.ts.md) | 2 |
 | [src/catalog/palette.ts](src/catalog/palette.ts.md) | 4 |
 | [src/catalog/placeables.ts](src/catalog/placeables.ts.md) | 9 |
-| [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 10 |
+| [src/catalog/presentation/a3-lamps.ts](src/catalog/presentation/a3-lamps.ts.md) | 16 |
 | [src/catalog/presentation/a3-mounts.ts](src/catalog/presentation/a3-mounts.ts.md) | 10 |
 | [src/catalog/presentation/motorcycle-paint.ts](src/catalog/presentation/motorcycle-paint.ts.md) | 2 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
@@ -263,6 +263,7 @@ Coverage: **539 modules; 6379 executable function definitions**.
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 6 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
+| [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 25 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |

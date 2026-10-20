@@ -1,6 +1,8 @@
 import { smokeDensity } from './smoke-density.js'
 /** Small bounded powder-smoke bursts, in the pistol presentation's local space. */
 import * as THREE from 'three'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { muzzleSmokeSprites } from './particle-nodes.js'
 export class MuzzleSmoke {
   private readonly births = new Float64Array(32).fill(-Infinity)
   private readonly origins = new Float32Array(96)
@@ -39,6 +41,7 @@ export class MuzzleSmoke {
       }),
     )
     this.root.name = 'Muzzle powder smoke'
+    setWebGPUSubstitute(this.root, muzzleSmokeSprites(this.root))
     this.root.visible = false
     this.root.frustumCulled = false
   }
