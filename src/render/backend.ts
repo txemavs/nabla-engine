@@ -34,6 +34,8 @@ export interface RenderBackendParameters {
   antialias?: boolean
   alpha?: boolean
   logarithmicDepthBuffer?: boolean
+  /** WebGPU only: record timestamp queries for GPU timing (default on; needs `timestamp-query`). */
+  trackTimestamp?: boolean
 }
 
 /** `?renderer=webgpu|webgl|auto`; anything else (or no parameter) keeps the WebGL default. */
@@ -84,7 +86,8 @@ export async function createRenderBackend(
   parameters: RenderBackendParameters,
 ): Promise<RenderBackend> {
   const webgl = (fallbackReason?: string): RenderBackend => {
-    const renderer = new THREE.WebGLRenderer(parameters)
+    const { trackTimestamp: _, ...webglParameters } = parameters
+    const renderer = new THREE.WebGLRenderer(webglParameters)
     backends.set(renderer, 'webgl')
     return { kind: 'webgl', renderer, requested: preference, fallbackReason }
   }
@@ -96,7 +99,11 @@ export async function createRenderBackend(
       import('three/tsl'),
       import('three/addons/csm/CSMShadowNode.js'),
     ])
-    const gpu = new webgpu.WebGPURenderer({ ...parameters, forceWebGL: false })
+    const gpu = new webgpu.WebGPURenderer({
+      ...parameters,
+      trackTimestamp: parameters.trackTimestamp ?? true,
+      forceWebGL: false,
+    })
     await gpu.init()
     const renderer = webglSurface(gpu, {
       webgpu,

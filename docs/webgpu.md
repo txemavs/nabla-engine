@@ -18,18 +18,18 @@ The sky scene renders in display space into an 8-bit target and is composited th
 of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is checked by
 `test/browser/e2e/webgpu-sky-parity.spec.ts` (screenshots with `NABLA_PARITY_SHOTS=<dir>`).
 
-| Feature                                   | Under WebGPU                      |
-| ----------------------------------------- | --------------------------------- |
-| Sky dome, atmosphere, sun disc, night sky | TSL port (`sky-nodes.ts`)         |
-| Clouds (volumetric and artistic)          | TSL port (`cloud-nodes.ts`)       |
-| Lens flare                                | TSL twin (`lens-flare-nodes.ts`)  |
-| Ocean sheet, river, sea                   | TSL twins (`surface-nodes.ts`)    |
-| Portals (remote views)                    | TSL twin (`portals.ts`)           |
-| Car mirrors (`Reflector` addon)           | TSL twin (`mirror-nodes.ts`)      |
-| Depth of field, FSR 1 upscaling           | TSL twins (`effect-nodes.ts`)     |
-| Exhaust, tyre, muzzle smoke, tyre marks   | TSL twins (`particle-nodes.ts`)   |
-| Shot laser                                | TSL twins (`shot-laser-nodes.ts`) |
-| GPU timer queries (benchmark)             | WebGL only                        |
+| Feature                                   | Under WebGPU                          |
+| ----------------------------------------- | ------------------------------------- |
+| Sky dome, atmosphere, sun disc, night sky | TSL port (`sky-nodes.ts`)             |
+| Clouds (volumetric and artistic)          | TSL port (`cloud-nodes.ts`)           |
+| Lens flare                                | TSL twin (`lens-flare-nodes.ts`)      |
+| Ocean sheet, river, sea                   | TSL twins (`surface-nodes.ts`)        |
+| Portals (remote views)                    | TSL twin (`portals.ts`)               |
+| Car mirrors (`Reflector` addon)           | TSL twin (`mirror-nodes.ts`)          |
+| Depth of field, FSR 1 upscaling           | TSL twins (`effect-nodes.ts`)         |
+| Exhaust, tyre, muzzle smoke, tyre marks   | TSL twins (`particle-nodes.ts`)       |
+| Shot laser                                | TSL twins (`shot-laser-nodes.ts`)     |
+| GPU timer queries (benchmark)             | Timestamp queries (`WebGPUGpuTiming`) |
 
 Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowManager` with
 `nodeKit`): same cuts, margin, radius, fade, per-texel bias and bound padding as the WebGL CSM addon.
@@ -70,6 +70,10 @@ differs from WebGL's), `OutputPass` becomes a tone map + sRGB encode into the 8-
 EASU and RCAS are ported from `fsr1-shaders.ts`. RCAS writes display-encoded colour, so its draw to
 the canvas runs with tone mapping and colour conversion off. After DoF the lens flare tests the
 scene depth by distance (`webgpu-effects-parity.spec.ts`).
+
+GPU timing under WebGPU uses three's timestamp queries (`trackTimestamp`, when the adapter has
+`timestamp-query`): each pass is the set of render calls between its begin and end, read back once
+per frame. The frame time is the sum of the passes, so idle gaps between them are not counted.
 
 Portals render their remote views as under WebGL (same cameras, sky and environment); since
 `WebGPURenderer` has no global clipping planes, the destination plane is an oblique near plane on

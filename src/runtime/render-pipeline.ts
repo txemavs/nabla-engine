@@ -278,7 +278,7 @@ export class GameRenderPipeline {
     )
   }
   /**
-   * WebGPU frame: mirrors, portals, then the main scene. GLSL passes without a node-material port yet are
+   * WebGPU frame: mirrors, portals, then the main scene, timed per pass like the WebGL frame. GLSL passes without a node-material port yet are
    * skipped; see docs/webgpu.md.
    */
   private renderWebGPU(frame: GameRenderFrame): void {
@@ -288,6 +288,8 @@ export class GameRenderPipeline {
     const overlays = (frame.overlays ?? []).map((object) => ({ object, visible: object.visible }))
     this.renderedPortals = 0
     const started = this.diagnostics ? performance.now() : 0
+    const timing = this.gpuTiming
+    timing?.beginFrame()
     try {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
@@ -298,6 +300,7 @@ export class GameRenderPipeline {
         live: surface.mesh.material.uniforms.live.value,
       }))
       for (const { surface } of portalStates) surface.mesh.material.uniforms.live.value = 0
+      timing?.beginPass('mirrors')
       try {
         view.renderMirrors(
           renderer,
@@ -318,11 +321,15 @@ export class GameRenderPipeline {
         for (const { surface, live } of portalStates)
           surface.mesh.material.uniforms.live.value = live
       }
+      timing?.endPass('mirrors')
       const mirrorsDone = this.diagnostics ? performance.now() : 0
       this.timings.mirrorsMs = mirrorsDone - started
+      timing?.beginPass('portals')
       this.renderedPortals = this.renderPortals(frame)
+      timing?.endPass('portals')
       const portalsDone = this.diagnostics ? performance.now() : 0
       this.timings.portalsMs = portalsDone - mirrorsDone
+      timing?.beginPass('main')
       for (const { object, visible } of overlays) object.visible = visible
       if (frame.batchBuildings !== undefined) view.batchBuildings = frame.batchBuildings
       frame.cull(eye)
@@ -357,11 +364,15 @@ export class GameRenderPipeline {
       }
       if (skyDrawn) frame.sky.renderClouds(renderer, camera)
       monitors.finish()
+      timing?.endPass('main')
+      timing?.beginPass('post')
       if (focus) {
         this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)
         if (flare && flareVisible) this.renderFocusFlare(renderer, camera, flare)
       }
       if (upscale) this.fsr.present(renderer)
+      timing?.endPass('post')
+      timing?.endFrame()
       this.timings.mainMs = (this.diagnostics ? performance.now() : 0) - portalsDone
       this.timings.postMs = 0
     } finally {

@@ -211,6 +211,117 @@ export class WebGL2GpuTiming implements GpuTimingBackend {
   }
 }
 
+/** The parts of a `three/webgpu` renderer that timestamp timing reads (three internals). */
+export interface TimestampRenderer {
+  resolveTimestampsAsync(type?: 'render' | 'compute'): Promise<number | undefined>
+  backend?: {
+    trackTimestamp?: boolean
+    timestampQueryPool?: Record<
+      string,
+      { queryOffsets: Map<string, number>; timestamps: Map<string, number> } | undefined
+    >
+  }
+}
+
+/**
+ * WebGPU GPU timing from three's timestamp queries (`trackTimestamp`). Every render pass writes a
+ * begin/end timestamp keyed by a per-call uid; a pass of ours is the set of uids allocated between
+ * `beginPass` and `endPass`. One resolve per frame reads them back (skipped while the previous
+ * readback is still mapping: those queries ride along with the next one). Frame time is the sum
+ * of the passes, so GPU idle gaps between them are not counted (WebGL's frame query includes them).
+ */
+export class WebGPUGpuTiming implements GpuTimingBackend {
+  readonly available: boolean
+  private frameNumber = 0
+  private readonly open = new Map<GpuTimingPass, Map<string, number>>()
+  /** uid → frame and pass, until its duration is read back. */
+  private readonly owners = new Map<string, { frameNumber: number; pass: GpuTimingPass }>()
+  private readonly frames = new Map<number, { timings: GpuFrameTimings; waiting: number }>()
+  private resolving = false
+  private readonly maxPendingFrames = 8
+
+  constructor(private readonly renderer: TimestampRenderer) {
+    this.available = renderer.backend?.trackTimestamp === true
+  }
+
+  private get pool() {
+    return this.renderer.backend?.timestampQueryPool?.render
+  }
+
+  beginFrame(): void {
+    if (!this.available) return
+    this.frameNumber++
+    this.frames.set(this.frameNumber, { timings: { passes: {} }, waiting: 0 })
+  }
+
+  beginPass(pass: GpuTimingPass): void {
+    if (!this.available) return
+    this.open.set(pass, new Map(this.pool?.queryOffsets ?? []))
+  }
+
+  endPass(pass: GpuTimingPass): void {
+    const before = this.open.get(pass)
+    this.open.delete(pass)
+    const frame = this.frames.get(this.frameNumber)
+    if (!before || !frame) return
+    for (const [uid, offset] of this.pool?.queryOffsets ?? []) {
+      if (before.get(uid) === offset) continue
+      this.owners.set(uid, { frameNumber: this.frameNumber, pass })
+      frame.waiting++
+    }
+    frame.timings.passes[pass] ??= 0
+  }
+
+  endFrame(): void {
+    if (!this.available || this.resolving || !this.owners.size) return
+    this.resolving = true
+    this.renderer
+      .resolveTimestampsAsync('render')
+      .then(() => {
+        for (const [uid, ms] of this.pool?.timestamps ?? []) {
+          const owner = this.owners.get(uid)
+          if (!owner) continue
+          this.owners.delete(uid)
+          const frame = this.frames.get(owner.frameNumber)
+          if (!frame) continue
+          frame.timings.passes[owner.pass] = (frame.timings.passes[owner.pass] ?? 0) + ms
+          frame.waiting--
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this.resolving = false
+      })
+  }
+
+  finish(): GpuFrameTimings | undefined {
+    if (!this.available) return undefined
+    while (this.frames.size > this.maxPendingFrames) {
+      const oldest = Math.min(...this.frames.keys())
+      this.frames.delete(oldest)
+      for (const [uid, owner] of this.owners)
+        if (owner.frameNumber === oldest) this.owners.delete(uid)
+    }
+    for (const frameNumber of [...this.frames.keys()].sort((a, b) => a - b)) {
+      if (frameNumber === this.frameNumber) break
+      const frame = this.frames.get(frameNumber)!
+      if (frame.waiting > 0) continue
+      this.frames.delete(frameNumber)
+      const passes = Object.values(frame.timings.passes) as number[]
+      if (!passes.length) continue
+      frame.timings.frameMs = passes.reduce((sum, ms) => sum + ms, 0)
+      return frame.timings
+    }
+    return undefined
+  }
+
+  dispose(): void {
+    this.open.clear()
+    this.owners.clear()
+    this.frames.clear()
+  }
+}
+
 /** Null implementation for environments without GPU timing support. */
 export class NullGpuTiming implements GpuTimingBackend {
   readonly available = false
