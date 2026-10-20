@@ -107,6 +107,12 @@ export interface RecoverVehicleOptions {
   maxRoadDistance?: number
 }
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
+/** Spawn guard probe: from this far above the actor (lifts a buried spawn) ... */
+const SPAWN_PROBE_UP = 5
+/** ... down to this far below it. */
+const SPAWN_PROBE_DOWN = 60
+/** Seconds the spawn guard waits for collision before releasing the actor anyway. */
+const SPAWN_HOLD_LIMIT = 30
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
@@ -395,6 +401,65 @@ export class Simulation {
         body.wakeUp()
       }
     }
+  }
+  /**
+   * Spawn guard. The controlled actor stays frozen (no physics step, no input) until an active
+   * static collider lies under it, then it is placed `height` above that surface, where `height`
+   * is its current height above `visualGround` (the render-mesh sample the spawn was placed on).
+   * A spawn below the collider surface (within {@link SPAWN_PROBE_UP}) is lifted onto it.
+   */
+  holdForGround(visualGround: number): void {
+    const body = this.controlledBody
+    this.groundHold = {
+      height: Math.max(body.position.y - visualGround, 0.05),
+      waited: 0,
+    }
+  }
+  /** True while {@link holdForGround} still waits for collision under the actor. */
+  get groundHeld(): boolean {
+    return this.groundHold !== null
+  }
+  private groundHold: { height: number; waited: number } | null = null
+  private get controlledBody(): Body {
+    return (this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : undefined) ?? this.playerBody
+  }
+  /** Settle the held actor on the active collider surface; false while there is none yet. */
+  private releaseGroundHold(): boolean {
+    const hold = this.groundHold
+    if (!hold) return true
+    const body = this.controlledBody
+    const { x, y, z } = body.position
+    let surface: number | undefined
+    let nearest = Infinity
+    this.world.raycastAll(
+      new Vec3(x, y + SPAWN_PROBE_UP, z),
+      new Vec3(x, y - SPAWN_PROBE_DOWN, z),
+      {},
+      (hit) => {
+        const other = hit.body as (Body & { collisionEnabled?: boolean }) | null
+        if (!other || other === body || other.mass > 0 || other.collisionEnabled === false) return
+        if (hit.distance < nearest) {
+          nearest = hit.distance
+          surface = hit.hitPointWorld.y
+        }
+      },
+    )
+    if (surface === undefined) {
+      if (hold.waited < SPAWN_HOLD_LIMIT) return false
+      console.warn('Spawn released without ground collision under the actor')
+      this.groundHold = null
+      return true
+    }
+    const rise = surface + hold.height - y
+    body.position.y += rise
+    body.previousPosition.y += rise
+    body.interpolatedPosition.y += rise
+    body.velocity.set(0, 0, 0)
+    body.angularVelocity.set(0, 0, 0)
+    body.aabbNeedsUpdate = true
+    body.wakeUp()
+    this.groundHold = null
+    return true
   }
   preparePlanetCollisions(): boolean {
     this.planetCollisions.update(this.sceneryActors(), this.mapBuildingsEnabled)
@@ -1374,6 +1439,10 @@ export class Simulation {
       throw new Error('Elapsed seconds must be finite and nonnegative')
     this.preparePlanetCollisions()
     this.installNearbyMapBodies()
+    if (this.groundHold) {
+      this.groundHold.waited += elapsed
+      if (!this.releaseGroundHold()) return
+    }
     const accepted = Math.min(elapsed, FIXED_STEP * simulationDefaults.maxSubsteps)
     this.lostTime += elapsed - accepted
     this.accumulator += accepted
