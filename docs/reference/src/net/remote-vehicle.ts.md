@@ -27,13 +27,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.push
 
-[Implementation, line 40](../../../../src/net/remote-vehicle.ts#L40)
+[Implementation, line 42](../../../../src/net/remote-vehicle.ts#L42)
 
 A locally spawned body that mirrors one remote peer. It is switched to kinematic so local
 physics cannot push it, but local bodies still collide against it.
 
 ```ts
-push(t: number, state: EntityState, receivedAt: number): void
+push(t: number, state: EntityState, receivedAt: number, extra?: SnapshotExtra): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.update
 
-[Implementation, line 45](../../../../src/net/remote-vehicle.ts#L45)
+[Implementation, line 48](../../../../src/net/remote-vehicle.ts#L48)
 
 Call once per frame before `Simulation.step`. Returns the applied state, if any.
 
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.release
 
-[Implementation, line 60](../../../../src/net/remote-vehicle.ts#L60)
+[Implementation, line 63](../../../../src/net/remote-vehicle.ts#L63)
 
 Hand the body back to dynamic physics (for example before despawning or taking it over).
 

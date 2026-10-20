@@ -102,7 +102,11 @@ import {
 import { RemotePortalViews } from '../render/portal/remote.js'
 import { FieldLighting } from './field-lighting.js'
 import type { FieldLightOptions } from '../render/entity/field-lights.js'
-import type { VehicleLightMode } from '../render/vehicle-presentation/light-controller.js'
+import type {
+  VehicleLampState,
+  VehicleLightMode,
+  VehicleLightSwitches,
+} from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
@@ -382,6 +386,9 @@ export interface VehiclePlacement {
   /** The vehicle the player occupies. */
   player: boolean
 }
+
+/** `GameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
+export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 
 export interface GameRuntimeOptions {
   /**
@@ -3504,6 +3511,37 @@ export class GameRuntime {
   private mirrorSidesOf(model: string): string[] {
     const id = this.document.entities.find((e) => this.view.mirrorModel(e.id) === model)?.id
     return id ? this.view.mirrorSides(id).sort() : ['left', 'right']
+  }
+  /** Repaint a vehicle with the same paint path as the vehicle menu's colour option. */
+  setVehiclePaint(id: string, color: string, finish: 'paint' | 'chrome' = 'paint'): void {
+    this.assertAlive()
+    this.view.setVehiclePaint(id, color, finish)
+  }
+  /**
+   * Light switches plus live lamp inputs of a vehicle (brake and reverse come from the
+   * simulation), or null while its model loads or when it has no lights.
+   */
+  vehicleLightState(id: string): VehicleLightState | null {
+    const switches = this.view.vehicleLightState(id)
+    const sim = this.session.simulation
+    if (!switches || !sim) return null
+    const info = sim.vehicleInfo(id)
+    return {
+      ...switches,
+      powered: sim.player.vehicleId === id || info.ignition === 'running',
+      braking: info.braking,
+      reversing: info.reversing,
+    }
+  }
+  /**
+   * Show `state` on a vehicle nobody drives here (for example another player's car): sets its
+   * existing light switches and lamp inputs. `null` gives the lamps back to the simulation.
+   */
+  setVehicleLightState(id: string, state: VehicleLightState | null): boolean {
+    this.assertAlive()
+    if (!state) return this.view.setVehicleLightState(id, null, null)
+    const { powered, braking, reversing, ...switches } = state
+    return this.view.setVehicleLightState(id, switches, { powered, braking, reversing })
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {

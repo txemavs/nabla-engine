@@ -30,12 +30,23 @@ export type EntityState = {
   angularVelocity: Vec3Tuple
 }
 
+/**
+ * Small game-defined values sent with a snapshot and applied as-is (not interpolated), e.g. a
+ * lights bitfield. At most 16 keys.
+ */
+const extra = z
+  .record(z.string().max(32), z.union([finite, z.boolean(), z.string().max(64)]))
+  .refine((value) => Object.keys(value).length <= 16)
+export type SnapshotExtra = Record<string, number | boolean | string>
+const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
+
 export const snapshotSchema = z.object({
   type: z.literal('snapshot'),
   /** Sender clock in milliseconds; only differences between one sender's samples matter. */
   t: finite,
   seq: z.number().int().nonnegative(),
   state: entityStateSchema,
+  extra: extra.optional(),
   peer: peerId.optional(),
 })
 export type SnapshotMessage = z.infer<typeof snapshotSchema>
@@ -43,17 +54,33 @@ export type SnapshotMessage = z.infer<typeof snapshotSchema>
 export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('join'), version: z.literal(PROTOCOL_VERSION), room: roomId, meta }),
   snapshotSchema,
+  /** Replace this peer's `meta` (e.g. it changed vehicle); relayed to the room as `profile`. */
+  z.object({ type: z.literal('profile'), meta }),
   z.object({ type: z.literal('leave') }),
 ])
 export type ClientMessage = z.input<typeof clientMessageSchema>
 
-const peerInfo = z.object({ peer: peerId, meta })
+/** `slot` and `color` are assigned by the relay per room (first free entry of its palette). */
+const peerInfo = z.object({
+  peer: peerId,
+  meta,
+  slot: z.number().int().nonnegative().optional(),
+  color: color.optional(),
+})
 export type PeerInfo = z.infer<typeof peerInfo>
 
 export const serverMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('welcome'), peer: peerId, room: roomId, peers: z.array(peerInfo) }),
-  z.object({ type: z.literal('joined'), peer: peerId, meta }),
+  z.object({
+    type: z.literal('welcome'),
+    peer: peerId,
+    room: roomId,
+    peers: z.array(peerInfo),
+    slot: z.number().int().nonnegative().optional(),
+    color: color.optional(),
+  }),
+  peerInfo.extend({ type: z.literal('joined') }),
   z.object({ type: z.literal('left'), peer: peerId }),
+  z.object({ type: z.literal('profile'), peer: peerId, meta }),
   snapshotSchema.extend({ peer: peerId }),
   z.object({ type: z.literal('error'), message: z.string() }),
 ])

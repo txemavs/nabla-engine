@@ -1,6 +1,6 @@
 import type { Transform, Vec3Tuple } from '../math/frame/vectors.js'
 import { SnapshotBuffer, defaultInterpolation, type InterpolationOptions } from './interpolation.js'
-import type { EntityState } from './protocol.js'
+import type { EntityState, SnapshotExtra } from './protocol.js'
 
 /**
  * The part of the simulation a remote entity needs. `Simulation` satisfies it structurally, so
@@ -37,8 +37,11 @@ export class RemoteVehicle {
     this.buffer = new SnapshotBuffer(options)
   }
 
-  push(t: number, state: EntityState, receivedAt: number): void {
+  /** Latest game-defined values received (applied as-is, not interpolated). */
+  extra: SnapshotExtra | null = null
+  push(t: number, state: EntityState, receivedAt: number, extra?: SnapshotExtra): void {
     this.buffer.push({ t, state }, receivedAt)
+    if (extra) this.extra = extra
   }
 
   /** Call once per frame before `Simulation.step`. Returns the applied state, if any. */

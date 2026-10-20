@@ -6,8 +6,12 @@
  *
  *   PORT=10003 node services/relay/server.mjs
  *
+ * Each member gets a slot (0, 1, 2…; the lowest free one in its room) and the palette colour at
+ * that slot, sent in `welcome` and `joined`; both are released when the member leaves.
+ *
  * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 8 peers),
- * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer).
+ * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer),
+ * PALETTE (comma-separated #rrggbb, default eight distinct car colours).
  */
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
@@ -16,6 +20,33 @@ import { WebSocketServer } from 'ws'
 
 export const PROTOCOL_VERSION = 1
 const ROOM = /^[A-Za-z0-9_-]{1,64}$/
+const COLOR = /^#[0-9a-fA-F]{6}$/
+export const DEFAULT_PALETTE = [
+  '#c0392b', // red
+  '#2471a3', // blue
+  '#f1c40f', // yellow
+  '#27ae60', // green
+  '#ecf0f1', // white
+  '#8e44ad', // purple
+  '#e67e22', // orange
+  '#1c2833', // black
+]
+
+function validExtra(extra) {
+  if (extra === undefined) return true
+  if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return false
+  const entries = Object.entries(extra)
+  return (
+    entries.length <= 16 &&
+    entries.every(
+      ([key, value]) =>
+        key.length <= 32 &&
+        (typeof value === 'boolean' ||
+          Number.isFinite(value) ||
+          (typeof value === 'string' && value.length <= 64)),
+    )
+  )
+}
 
 const finiteArray = (value, length) =>
   Array.isArray(value) && value.length === length && value.every(Number.isFinite)
@@ -30,7 +61,8 @@ function validSnapshot(message) {
     finiteArray(s.position, 3) &&
     finiteArray(s.rotation, 4) &&
     finiteArray(s.velocity, 3) &&
-    finiteArray(s.angularVelocity, 3)
+    finiteArray(s.angularVelocity, 3) &&
+    validExtra(message.extra)
   )
 }
 
@@ -51,6 +83,11 @@ export function startRelay({
   maxRoom = Number(process.env.MAX_ROOM ?? 8),
   maxFrame = Number(process.env.MAX_FRAME ?? 4096),
   maxRate = Number(process.env.MAX_RATE ?? 60),
+  palette = (process.env.PALETTE ?? '').split(',').filter((c) => COLOR.test(c.trim())).length
+    ? process.env.PALETTE.split(',')
+        .map((c) => c.trim())
+        .filter((c) => COLOR.test(c))
+    : DEFAULT_PALETTE,
   log = (...args) => console.log(new Date().toISOString(), ...args),
 } = {}) {
   /** room id -> Map<socket, { peer, meta }> */
@@ -111,11 +148,15 @@ export function startRelay({
         const peer = randomUUID().slice(0, 8)
         const meta = cleanMeta(message.meta)
         const peers = [...members.values()]
-        members.set(socket, { peer, meta })
+        const used = new Set(peers.map((m) => m.slot))
+        let slot = 0
+        while (used.has(slot)) slot++
+        const color = palette[slot % palette.length]
+        members.set(socket, { peer, meta, slot, color })
         rooms.set(message.room, members)
         state.room = message.room
-        send(socket, { type: 'welcome', peer, room: message.room, peers })
-        broadcast(message.room, socket, { type: 'joined', peer, meta })
+        send(socket, { type: 'welcome', peer, room: message.room, peers, slot, color })
+        broadcast(message.room, socket, { type: 'joined', peer, meta, slot, color })
         log('join', message.room, peer, `${members.size} in room`)
       } else if (message.type === 'snapshot') {
         const member = state.room && rooms.get(state.room)?.get(socket)
@@ -126,7 +167,13 @@ export function startRelay({
           t: message.t,
           seq: message.seq,
           state: message.state,
+          ...(message.extra ? { extra: message.extra } : {}),
         })
+      } else if (message.type === 'profile') {
+        const member = state.room && rooms.get(state.room)?.get(socket)
+        if (!member) return
+        member.meta = cleanMeta(message.meta)
+        broadcast(state.room, socket, { type: 'profile', peer: member.peer, meta: member.meta })
       } else if (message.type === 'leave') leave(socket)
     })
     socket.on('close', () => leave(socket))

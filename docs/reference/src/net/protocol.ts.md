@@ -13,9 +13,21 @@ messages so a client cannot impersonate another peer.
 - `zod`
 - `../math/frame/vectors.js`
 
+## callback@39
+
+[Implementation, line 39](../../../../src/net/protocol.ts#L39)
+
+```ts
+callback@39(value): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.keys`
+
 ## encodeMessage
 
-[Implementation, line 62](../../../../src/net/protocol.ts#L62)
+[Implementation, line 89](../../../../src/net/protocol.ts#L89)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -27,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 67](../../../../src/net/protocol.ts#L67)
+[Implementation, line 94](../../../../src/net/protocol.ts#L94)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -42,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 77](../../../../src/net/protocol.ts#L77)
+[Implementation, line 104](../../../../src/net/protocol.ts#L104)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

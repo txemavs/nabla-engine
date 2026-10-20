@@ -14,6 +14,10 @@ import {
 /** In-memory relay with the same routing rules as services/relay/server.mjs. */
 function relay() {
   const members = new Map<LoopbackTransport, string>()
+  const colours = new Map<
+    string,
+    { slot: number; color: string; meta: Record<string, string | number | boolean> }
+  >()
   let next = 1
   const connect = () => {
     const server = new LoopbackTransport()
@@ -24,11 +28,21 @@ function relay() {
       const message = clientMessageSchema.parse(JSON.parse(data))
       if (message.type === 'join') {
         const peer = `p${next++}`
-        const peers = [...members.values()].map((p) => ({ peer: p, meta: {} }))
+        const slot = members.size
+        const color = ['#c0392b', '#2471a3', '#f1c40f'][slot]
+        const peers = [...members.values()].map((p) => ({ peer: p, meta: {}, ...colours.get(p) }))
         for (const other of members.keys())
-          other.send(encodeMessage({ type: 'joined', peer, meta: message.meta ?? {} }))
+          other.send(encodeMessage({ type: 'joined', peer, meta: message.meta ?? {}, slot, color }))
         members.set(server, peer)
-        server.send(encodeMessage({ type: 'welcome', peer, room: message.room, peers }))
+        colours.set(peer, { slot, color, meta: message.meta ?? {} })
+        server.send(
+          encodeMessage({ type: 'welcome', peer, room: message.room, peers, slot, color }),
+        )
+      } else if (message.type === 'profile') {
+        const peer = members.get(server)!
+        for (const other of members.keys())
+          if (other !== server)
+            other.send(encodeMessage({ type: 'profile', peer, meta: message.meta ?? {} }))
       } else if (message.type === 'leave') {
         const peer = members.get(server)!
         members.delete(server)
@@ -177,6 +191,106 @@ describe('SnapshotSync async placement', () => {
     expect(b.moved.at(-1)!.x).toBeGreaterThan(9)
     syncA.dispose()
     expect(despawned).toEqual(['spawned-7'])
+    syncB.dispose()
+  })
+})
+
+describe('SnapshotSync extra values and relay colours', () => {
+  it('sends game values with snapshots, applies them on change and reports the slot colour', () => {
+    let now = 0
+    const clock = () => now
+    const net = relay()
+    const still = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    let lights = 1
+    const welcomes: (string | undefined)[] = []
+    const applied: [string, unknown, string][] = []
+    const syncA = new SnapshotSync({
+      transport: net.connect(),
+      room: 'x',
+      host: still.host,
+      clock,
+      localEntity: () => 'mine',
+      spawnRemote: () => null,
+      despawnRemote: () => {},
+      readExtra: () => ({ lights }),
+      onWelcome: (self) => welcomes.push(self.color),
+    })
+    const joinedColours: (string | undefined)[] = []
+    const syncB = new SnapshotSync({
+      transport: net.connect(),
+      room: 'x',
+      host: still.host,
+      clock,
+      localEntity: () => 'mine',
+      spawnRemote: (peer) => (joinedColours.push(peer.color), 'remote'),
+      despawnRemote: () => {},
+      applyExtra: (id, extra, peer) => {
+        applied.push([id, extra.lights, peer])
+      },
+      onWelcome: (self) => welcomes.push(self.color),
+    })
+    expect(welcomes).toEqual(['#c0392b', '#2471a3'])
+    expect(syncB.color).toBe('#2471a3')
+    expect(joinedColours).toEqual(['#c0392b'])
+    for (let frame = 0; frame < 20; frame++) {
+      now = frame * 50
+      if (frame === 10) lights = 3
+      syncA.update()
+      syncB.update()
+    }
+    // Applied once per distinct value, not every frame.
+    expect(applied).toEqual([
+      ['remote', 1, 'p1'],
+      ['remote', 3, 'p1'],
+    ])
+    syncA.dispose()
+    syncB.dispose()
+  })
+})
+
+describe('SnapshotSync profile changes', () => {
+  it('respawns the remote copy with the new vehicle and keeps its relay colour', () => {
+    const net = relay()
+    const host = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    const syncA = new SnapshotSync({
+      transport: net.connect(),
+      room: 'p',
+      host: host.host,
+      localEntity: () => 'mine',
+      spawnRemote: () => null,
+      despawnRemote: () => {},
+      meta: { vehicle: 'car' },
+    })
+    const spawned: [string, unknown, string | undefined][] = []
+    const despawned: string[] = []
+    let n = 0
+    const syncB = new SnapshotSync({
+      transport: net.connect(),
+      room: 'p',
+      host: host.host,
+      localEntity: () => 'mine',
+      spawnRemote: (peer) => (spawned.push([peer.peer, peer.meta.vehicle, peer.color]), `r${++n}`),
+      despawnRemote: (_peer, id) => despawned.push(id),
+    })
+    syncA.setMeta({ vehicle: 'vfr800' })
+    syncA.setMeta({ vehicle: '' })
+    expect(spawned).toEqual([
+      ['p1', 'car', '#c0392b'],
+      ['p1', 'vfr800', '#c0392b'],
+      ['p1', '', '#c0392b'],
+    ])
+    expect(despawned).toEqual(['r1', 'r2'])
+    syncA.dispose()
     syncB.dispose()
   })
 })
