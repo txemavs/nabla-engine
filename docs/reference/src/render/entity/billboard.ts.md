@@ -6,11 +6,12 @@
 
 ## Module dependencies
 
+- `./entity-nodes.js`
 - `three`
 
 ## UprightBillboard.constructor
 
-[Implementation, line 5](../../../../../src/render/entity/billboard.ts#L5)
+[Implementation, line 6](../../../../../src/render/entity/billboard.ts#L6)
 
 Camera-facing in yaw only: the trunk retains world up, including in portal passes.
 
@@ -24,12 +25,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.PlaneGeometry(1, 1).translate`
 - `super`
 
-## UprightBillboard.constructor.callback@7
+## UprightBillboard.constructor.callback@8
 
-[Implementation, line 7](../../../../../src/render/entity/billboard.ts#L7)
+[Implementation, line 8](../../../../../src/render/entity/billboard.ts#L8)
 
 ```ts
-callback@7(_renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@8(_renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -38,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UprightBillboard.face
 
-[Implementation, line 9](../../../../../src/render/entity/billboard.ts#L9)
+[Implementation, line 10](../../../../../src/render/entity/billboard.ts#L10)
 
 Camera-facing in yaw only: the trunk retains world up, including in portal passes.
 
@@ -63,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UprightBillboard.raycast
 
-[Implementation, line 21](../../../../../src/render/entity/billboard.ts#L21)
+[Implementation, line 22](../../../../../src/render/entity/billboard.ts#L22)
 
 Camera-facing in yaw only: the trunk retains world up, including in portal passes.
 
@@ -78,28 +79,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## softenFoliage
 
-[Implementation, line 27](../../../../../src/render/entity/billboard.ts#L27)
+[Implementation, line 28](../../../../../src/render/entity/billboard.ts#L28)
 
 ```ts
 softenFoliage(material: THREE.MeshBasicMaterial, saturation: number): void
 ```
 
-## softenFoliage.callback@28
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 28](../../../../../src/render/entity/billboard.ts#L28)
+- `foliageNodes`
+
+## softenFoliage.callback@29
+
+[Implementation, line 29](../../../../../src/render/entity/billboard.ts#L29)
 
 ```ts
-callback@28(shader): inferred by TypeScript; see implementation
+callback@29(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `shader.fragmentShader.replace`
 
-## softenFoliage.callback@38
+## softenFoliage.callback@39
 
-[Implementation, line 38](../../../../../src/render/entity/billboard.ts#L38)
+[Implementation, line 39](../../../../../src/render/entity/billboard.ts#L39)
 
 ```ts
-callback@38(): inferred by TypeScript; see implementation
+callback@39(): inferred by TypeScript; see implementation
 ```

@@ -1,6 +1,9 @@
 import * as THREE from 'three'
+import { reuseFog } from '../planet/fog.js'
 import type { SkyClock } from '../../planet/sky.js'
 import type { GeographicView } from '../planet/sky.js'
+
+const remoteFogs = new WeakMap<THREE.Scene, THREE.Fog>()
 
 /** Destination state lasts through the remote scene render, then restores the main view.
  * Reuses the globe/textures; no extra geography, textures or network queue per portal.
@@ -37,7 +40,12 @@ export function portalEnvironment(
     geography.update(remotePosition.toArray(), renderOrigin, clock)
     const air = geography.atmosphere
     scene.background = null
-    scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
+    // One remote fog per scene, reused across frames (see reuseFog).
+    const remote = air.fog
+      ? reuseFog(remoteFogs.get(scene) ?? null, air.color, air.near, air.far)
+      : null
+    if (remote) remoteFogs.set(scene, remote)
+    scene.fog = remote
     ambient.intensity = 0.22 * air.day * (1 - air.space)
     for (const light of lights) {
       light.intensity = 3.2 * Math.max(air.day, air.space)

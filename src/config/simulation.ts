@@ -3,11 +3,13 @@ export const simulationDefaults = Object.freeze({
   /** Fixed physics timestep, seconds. Changing this requires physics regression testing. */
   fixedStepSeconds: 1 / 60,
   /** Maximum fixed steps accepted from one elapsed-time submission. */
-  maxSubsteps: 4,
+  maxSubsteps: 8,
   /** Host frame-duration cap in seconds before physics performs its own substep cap. */
   maxFrameSeconds: 0.1,
   /** Gravitational acceleration in metres per second squared. */
   gravity: 9.81,
+  /** Player-adjustable multiplier range on `gravity` (1 = real Earth gravity). */
+  gravityScaleRange: Object.freeze({ min: 0.5, max: 3, default: 1 }),
   /** Rapier solver iterations per step; integer greater than zero. */
   solverIterations: 15,
   /** Dimensionless friction coefficient for solid scene bodies. */

@@ -6,12 +6,14 @@
 
 ## Module dependencies
 
+- `./sky-nodes.js`
+- `../webgpu-substitutes.js`
 - `three`
 - `../../math/geo/sphere.js`
 
 ## flatStars
 
-[Implementation, line 160](../../../../../src/render/planet/night-sky.ts#L160)
+[Implementation, line 162](../../../../../src/render/planet/night-sky.ts#L162)
 
 ```ts
 flatStars(): inferred by TypeScript; see implementation
@@ -21,17 +23,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `FIGURES.flatMap`
 
-## flatStars.callback@161
+## flatStars.callback@163
 
-[Implementation, line 161](../../../../../src/render/planet/night-sky.ts#L161)
+[Implementation, line 163](../../../../../src/render/planet/night-sky.ts#L163)
 
 ```ts
-callback@161(figure): inferred by TypeScript; see implementation
+callback@163(figure): inferred by TypeScript; see implementation
 ```
 
 ## NightSky.constructor
 
-[Implementation, line 173](../../../../../src/render/planet/night-sky.ts#L173)
+[Implementation, line 175](../../../../../src/render/planet/night-sky.ts#L175)
 
 Osas, zodiac, and the five naked-eye planets. No filler star field.
 
@@ -52,44 +54,47 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.SphereGeometry`
 - `flatStars`
 - `geometry.setAttribute`
+- `milkyWay`
+- `setWebGPUSubstitute`
+- `starSprites`
 - `stars.forEach`
 - `this.root.add`
 - `this.root.traverse`
 
-## NightSky.constructor.callback@180
+## NightSky.constructor.callback@182
 
-[Implementation, line 180](../../../../../src/render/planet/night-sky.ts#L180)
+[Implementation, line 182](../../../../../src/render/planet/night-sky.ts#L182)
 
 ```ts
-callback@180([, dec], i): inferred by TypeScript; see implementation
+callback@182([, dec], i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `colors.set`
 
-## NightSky.constructor.callback@195
+## NightSky.constructor.callback@197
 
-[Implementation, line 195](../../../../../src/render/planet/night-sky.ts#L195)
+[Implementation, line 197](../../../../../src/render/planet/night-sky.ts#L197)
 
 ```ts
-callback@195(): inferred by TypeScript; see implementation
+callback@197(): inferred by TypeScript; see implementation
 ```
 
-## NightSky.constructor.callback@196
+## NightSky.constructor.callback@198
 
-[Implementation, line 196](../../../../../src/render/planet/night-sky.ts#L196)
+[Implementation, line 198](../../../../../src/render/planet/night-sky.ts#L198)
 
 ```ts
-callback@196(shader): inferred by TypeScript; see implementation
+callback@198(shader): inferred by TypeScript; see implementation
 ```
 
-## NightSky.constructor.callback@259
+## NightSky.constructor.callback@266
 
-[Implementation, line 259](../../../../../src/render/planet/night-sky.ts#L259)
+[Implementation, line 266](../../../../../src/render/planet/night-sky.ts#L266)
 
 ```ts
-callback@259(planet): inferred by TypeScript; see implementation
+callback@266(planet): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -98,15 +103,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshBasicMaterial`
 - `THREE.RingGeometry`
 - `THREE.SphereGeometry`
+- `encodedTwin`
 - `mesh.add`
+- `setWebGPUSubstitute`
 - `this.root.add`
 
-## NightSky.constructor.callback@283
+## NightSky.constructor.callback@292
 
-[Implementation, line 283](../../../../../src/render/planet/night-sky.ts#L283)
+[Implementation, line 292](../../../../../src/render/planet/night-sky.ts#L292)
 
 ```ts
-callback@283(node): inferred by TypeScript; see implementation
+callback@292(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -116,7 +123,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NightSky.place
 
-[Implementation, line 290](../../../../../src/render/planet/night-sky.ts#L290)
+[Implementation, line 299](../../../../../src/render/planet/night-sky.ts#L299)
 
 Osas, zodiac, and the five naked-eye planets. No filler star field.
 
@@ -140,12 +147,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.galacticPole.value.copy`
 - `this.stars.geometry.getAttribute`
 
-## NightSky.place.callback@293
+## NightSky.place.callback@302
 
-[Implementation, line 293](../../../../../src/render/planet/night-sky.ts#L293)
+[Implementation, line 302](../../../../../src/render/planet/night-sky.ts#L302)
 
 ```ts
-callback@293([ra, dec], i): inferred by TypeScript; see implementation
+callback@302([ra, dec], i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -156,7 +163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NightSky.opacity
 
-[Implementation, line 306](../../../../../src/render/planet/night-sky.ts#L306)
+[Implementation, line 315](../../../../../src/render/planet/night-sky.ts#L315)
 
 Osas, zodiac, and the five naked-eye planets. No filler star field.
 

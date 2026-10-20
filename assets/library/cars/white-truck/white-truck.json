@@ -90,7 +90,19 @@
       }
     },
     "lights": {
-      "rearWash": true
+      "rearWash": true,
+      "tuning": {
+        "low": 0,
+        "high": 1,
+        "frontX": 0,
+        "frontY": 0,
+        "frontZ": 0,
+        "rearX": 0,
+        "rearY": 0.24,
+        "rearZ": 1.05,
+        "rearIntensity": 1.85,
+        "rearReach": 0.6
+      }
     },
     "exhaust": {
       "outlets": [[-1.08, 1.86, -0.72]],

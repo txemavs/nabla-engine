@@ -3,6 +3,7 @@ import type { GeoPoint } from '../../math/geo/sphere.js'
 import type { SkyClock } from '../../planet/sky.js'
 import { OceanSheet } from './ocean-sheet.js'
 import { GeographicView } from './sky.js'
+import { reuseFog } from './fog.js'
 
 /** Engine-owned defaults for the complete planetary environment. */
 export const PLANET_DEFAULTS = Object.freeze({
@@ -65,7 +66,7 @@ export class WorldEnvironment {
     const night = 1 - Math.min(1, Math.max(0, air.day))
     this.scene.background = null
     this.ambient.intensity = (0.22 * air.day + 0.04 * night) * (1 - air.space)
-    this.scene.fog = air.fog ? new THREE.Fog(air.color, air.near, air.far) : null
+    this.scene.fog = air.fog ? reuseFog(this.scene.fog, air.color, air.near, air.far) : null
     const moonUp = Math.max(0, geography.moonDirection.y)
     const useMoon = geography.sunDirection.y <= 0 && moonUp > 0
     const direction = useMoon ? geography.moonDirection : geography.sunDirection

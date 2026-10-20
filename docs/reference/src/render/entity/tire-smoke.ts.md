@@ -9,10 +9,12 @@
 - `./smoke-density.js`
 - `three`
 - `../../entity/schema.js`
+- `../webgpu-substitutes.js`
+- `./particle-nodes.js`
 
 ## TireSmoke.constructor
 
-[Implementation, line 13](../../../../../src/render/entity/tire-smoke.ts#L13)
+[Implementation, line 15](../../../../../src/render/entity/tire-smoke.ts#L15)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -25,11 +27,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `BufferAttribute`
 - `Points`
 - `ShaderMaterial`
+- `setWebGPUSubstitute`
 - `this.geometry.setAttribute`
+- `tireSmokeSprites`
 
 ## TireSmoke.update
 
-[Implementation, line 42](../../../../../src/render/entity/tire-smoke.ts#L42)
+[Implementation, line 45](../../../../../src/render/entity/tire-smoke.ts#L45)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -46,17 +50,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.copy`
 - `this.root.position.copy(origin).negate`
 
-## TireSmoke.update.callback@57
+## TireSmoke.update.callback@60
 
-[Implementation, line 57](../../../../../src/render/entity/tire-smoke.ts#L57)
+[Implementation, line 60](../../../../../src/render/entity/tire-smoke.ts#L60)
 
 ```ts
-callback@57(v): inferred by TypeScript; see implementation
+callback@60(v): inferred by TypeScript; see implementation
 ```
 
 ## TireSmoke.clear
 
-[Implementation, line 61](../../../../../src/render/entity/tire-smoke.ts#L61)
+[Implementation, line 64](../../../../../src/render/entity/tire-smoke.ts#L64)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 
@@ -70,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.dispose
 
-[Implementation, line 66](../../../../../src/render/entity/tire-smoke.ts#L66)
+[Implementation, line 69](../../../../../src/render/entity/tire-smoke.ts#L69)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 

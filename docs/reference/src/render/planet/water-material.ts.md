@@ -7,10 +7,12 @@
 ## Module dependencies
 
 - `three`
+- `../webgpu-substitutes.js`
+- `./surface-nodes.js`
 
 ## waterWaves
 
-[Implementation, line 5](../../../../../src/render/planet/water-material.ts#L5)
+[Implementation, line 7](../../../../../src/render/planet/water-material.ts#L7)
 
 The river's three drifting normal samples, shared with the sea. No reflection pass.
 Adapted from Streets GL (MIT); assets/licenses/streets-gl-MIT.txt.
@@ -19,20 +21,36 @@ Adapted from Streets GL (MIT); assets/licenses/streets-gl-MIT.txt.
 waterWaves(material: THREE.MeshStandardMaterial, texture: THREE.Texture, time: { value: number }, offset?: { value: THREE.Vector3 }): void
 ```
 
-## waterWaves.callback@11
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 11](../../../../../src/render/planet/water-material.ts#L11)
+- `addWebGPUMaterialNodes`
+
+## waterWaves.callback@13
+
+[Implementation, line 13](../../../../../src/render/planet/water-material.ts#L13)
 
 ```ts
-callback@11(): inferred by TypeScript; see implementation
+callback@13(): inferred by TypeScript; see implementation
 ```
 
-## waterWaves.callback@12
+## waterWaves.callback@14
 
-[Implementation, line 12](../../../../../src/render/planet/water-material.ts#L12)
+[Implementation, line 14](../../../../../src/render/planet/water-material.ts#L14)
 
 ```ts
-callback@12(shader): inferred by TypeScript; see implementation
+callback@14(kit, twin): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `riverWaveNodes`
+
+## waterWaves.callback@17
+
+[Implementation, line 17](../../../../../src/render/planet/water-material.ts#L17)
+
+```ts
+callback@17(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
