@@ -63,7 +63,11 @@ const backends = new WeakMap<object, RenderBackendKind>()
 
 /** Backend of a renderer created by {@link createRenderBackend}; plain renderers are WebGL. */
 export function rendererBackend(renderer: object): RenderBackendKind {
-  return backends.get(renderer) ?? 'webgl'
+  // `isWebGPURenderer` also answers for a second instance of this module (tests, HMR).
+  return (
+    backends.get(renderer) ??
+    ((renderer as { isWebGPURenderer?: boolean }).isWebGPURenderer ? 'webgpu' : 'webgl')
+  )
 }
 
 export function isWebGPU(renderer: object): boolean {

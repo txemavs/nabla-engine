@@ -173,6 +173,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `a.oneMinus`
 - `below.mul`
 - `decodeDisplay`
+- `onScreen`
+- `onScreen(t).select`
 - `t.acesFilmicToneMapping`
 - `t.max`
 - `t.mix`
@@ -182,9 +184,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `target.sub`
 - `target.sub(below.mul(a.oneMinus())).div`
 
+## onScreen
+
+[Implementation, line 99](../../../../../src/render/entity/particle-nodes.ts#L99)
+
+```ts
+onScreen(t: N): inferred by TypeScript; see implementation
+```
+
+## onScreen.callback@102
+
+[Implementation, line 102](../../../../../src/render/entity/particle-nodes.ts#L102)
+
+```ts
+callback@102({ renderer }: N): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `renderer.getRenderTarget`
+
 ## pointDistance
 
-[Implementation, line 96](../../../../../src/render/entity/particle-nodes.ts#L96)
+[Implementation, line 110](../../../../../src/render/entity/particle-nodes.ts#L110)
 
 ```ts
 pointDistance(t: N): inferred by TypeScript; see implementation
@@ -199,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tireSmokeSprites
 
-[Implementation, line 99](../../../../../src/render/entity/particle-nodes.ts#L99)
+[Implementation, line 113](../../../../../src/render/entity/particle-nodes.ts#L113)
 
 `TireSmoke` (tire-smoke.ts).
 
@@ -211,12 +233,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pointSprites`
 
-## tireSmokeSprites.callback@100
+## tireSmokeSprites.callback@114
 
-[Implementation, line 100](../../../../../src/render/entity/particle-nodes.ts#L100)
+[Implementation, line 114](../../../../../src/render/entity/particle-nodes.ts#L114)
 
 ```ts
-callback@100(t, { life }, u): inferred by TypeScript; see implementation
+callback@114(t, { life }, u): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -244,7 +266,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## muzzleSmokeSprites
 
-[Implementation, line 126](../../../../../src/render/entity/particle-nodes.ts#L126)
+[Implementation, line 140](../../../../../src/render/entity/particle-nodes.ts#L140)
 
 `MuzzleSmoke` (muzzle-smoke.ts).
 
@@ -256,12 +278,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pointSprites`
 
-## muzzleSmokeSprites.callback@127
+## muzzleSmokeSprites.callback@141
 
-[Implementation, line 127](../../../../../src/render/entity/particle-nodes.ts#L127)
+[Implementation, line 141](../../../../../src/render/entity/particle-nodes.ts#L141)
 
 ```ts
-callback@127(t, { age: ageAttribute }, u): inferred by TypeScript; see implementation
+callback@141(t, { age: ageAttribute }, u): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -288,7 +310,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## exhaustSmokeSprites
 
-[Implementation, line 158](../../../../../src/render/entity/particle-nodes.ts#L158)
+[Implementation, line 172](../../../../../src/render/entity/particle-nodes.ts#L172)
 
 `ExhaustSmoke` (exhaust-smoke.ts).
 
@@ -300,12 +322,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `pointSprites`
 
-## exhaustSmokeSprites.callback@159
+## exhaustSmokeSprites.callback@173
 
-[Implementation, line 159](../../../../../src/render/entity/particle-nodes.ts#L159)
+[Implementation, line 173](../../../../../src/render/entity/particle-nodes.ts#L173)
 
 ```ts
-callback@159(t, { life, tint }, u): inferred by TypeScript; see implementation
+callback@173(t, { life, tint }, u): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -333,7 +355,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## tireMarkMaterial
 
-[Implementation, line 185](../../../../../src/render/entity/particle-nodes.ts#L185)
+[Implementation, line 199](../../../../../src/render/entity/particle-nodes.ts#L199)
 
 `TireMarks` (tire-marks.ts): the same ring-buffer mesh with a node material.
 
@@ -341,12 +363,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 tireMarkMaterial(mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>): inferred by TypeScript; see implementation
 ```
 
-## tireMarkMaterial.callback@186
+## tireMarkMaterial.callback@200
 
-[Implementation, line 186](../../../../../src/render/entity/particle-nodes.ts#L186)
+[Implementation, line 200](../../../../../src/render/entity/particle-nodes.ts#L200)
 
 ```ts
-callback@186({ webgpu, tsl }: NodeKit): WebGPUSubstitute
+callback@200({ webgpu, tsl }: NodeKit): WebGPUSubstitute
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -358,12 +380,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.uv`
 - `webgpu.MeshBasicNodeMaterial`
 
-## tireMarkMaterial.callback@186.callback@197
+## tireMarkMaterial.callback@200.callback@211
 
-[Implementation, line 197](../../../../../src/render/entity/particle-nodes.ts#L197)
+[Implementation, line 211](../../../../../src/render/entity/particle-nodes.ts#L211)
 
 ```ts
-callback@197(): inferred by TypeScript; see implementation
+callback@211(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -376,6 +398,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lifetime.mul`
 - `markUv.x.mul`
 - `markUv.x.oneMinus`
+- `onScreen`
+- `onScreen(t).select`
 - `t.If`
 - `t.cos`
 - `t.cos(markUv.x.mul(38)).mul`
@@ -386,21 +410,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.smoothstep(lifetime.mul(0.65), lifetime, age).oneMinus`
 - `t.vec4`
 
-## tireMarkMaterial.callback@186.callback@197.callback@202
+## tireMarkMaterial.callback@200.callback@211.callback@216
 
-[Implementation, line 202](../../../../../src/render/entity/particle-nodes.ts#L202)
+[Implementation, line 216](../../../../../src/render/entity/particle-nodes.ts#L216)
 
 ```ts
-callback@202(): inferred by TypeScript; see implementation
+callback@216(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t.Discard`
 
-## tireMarkMaterial.callback@186.sync
+## tireMarkMaterial.callback@200.sync
 
-[Implementation, line 210](../../../../../src/render/entity/particle-nodes.ts#L210)
+[Implementation, line 224](../../../../../src/render/entity/particle-nodes.ts#L224)
 
 ```ts
 sync(): inferred by TypeScript; see implementation

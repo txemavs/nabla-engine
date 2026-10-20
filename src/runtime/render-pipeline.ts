@@ -267,8 +267,8 @@ export class GameRenderPipeline {
     }
   }
   /**
-   * WebGPU frame: mirrors, then the main scene. GLSL passes (sky dome, clouds, portals, depth of
-   * field, FSR, lens flare) have no node-material port yet and are skipped; see docs/webgpu.md.
+   * WebGPU frame: mirrors, then the main scene. GLSL passes without a node-material port yet are
+   * skipped; see docs/webgpu.md.
    */
   private renderWebGPU(frame: GameRenderFrame): void {
     const { renderer, scene, camera, view, eye, monitors } = frame
@@ -280,8 +280,19 @@ export class GameRenderPipeline {
     try {
       for (const { object } of overlays) object.visible = false
       if (frame.mirrorVehicle) frame.cull(eye)
-      // SceneView keeps the authored glass under WebGPU (no Reflector capture).
-      view.renderMirrors(renderer, scene, camera, frame.mirrorVehicle, frame.time)
+      // Mirrors capture through the TSL reflector twin (mirror-nodes.ts), with the sky pass painted
+      // into each capture as under WebGL.
+      view.renderMirrors(
+        renderer,
+        scene,
+        camera,
+        frame.mirrorVehicle,
+        frame.time,
+        frame.sky.enabled && frame.skyVisible !== false
+          ? (reflection) =>
+              frame.sky.render(renderer, reflection, reflection.position.clone().add(frame.origin))
+          : undefined,
+      )
       const mirrorsDone = this.diagnostics ? performance.now() : 0
       this.timings.mirrorsMs = mirrorsDone - started
       this.timings.portalsMs = 0

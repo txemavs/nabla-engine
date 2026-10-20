@@ -18,17 +18,18 @@ The sky scene renders in display space into an 8-bit target and is composited th
 of the ACES + sRGB output transform, so it blends exactly like WebGL. Parity is checked by
 `test/browser/e2e/webgpu-sky-parity.spec.ts` (screenshots with `NABLA_PARITY_SHOTS=<dir>`).
 
-| Feature                                             | Under WebGPU                       |
-| --------------------------------------------------- | ---------------------------------- |
-| Sky dome, atmosphere, sun disc, night sky           | TSL port (`sky-nodes.ts`)          |
-| Clouds (volumetric and artistic)                    | Not drawn                          |
-| Lens flare                                          | Not drawn                          |
-| Ocean sheet                                         | Not drawn                          |
-| Portals (remote views)                              | Not drawn                          |
-| Car mirrors (`Reflector` addon)                     | Authored glass, no live reflection |
-| Depth of field, FSR 1 upscaling                     | Disabled                           |
-| Exhaust, tyre, muzzle smoke, tyre marks, shot laser | Not drawn                          |
-| GPU timer queries (benchmark)                       | WebGL only                         |
+| Feature                                   | Under WebGPU                    |
+| ----------------------------------------- | ------------------------------- |
+| Sky dome, atmosphere, sun disc, night sky | TSL port (`sky-nodes.ts`)       |
+| Clouds (volumetric and artistic)          | TSL port (`cloud-nodes.ts`)     |
+| Lens flare                                | Not drawn                       |
+| Ocean sheet, river, sea                   | TSL twins (`surface-nodes.ts`)  |
+| Portals (remote views)                    | Not drawn                       |
+| Car mirrors (`Reflector` addon)           | TSL twin (`mirror-nodes.ts`)    |
+| Depth of field, FSR 1 upscaling           | Disabled                        |
+| Exhaust, tyre, muzzle smoke, tyre marks   | TSL twins (`particle-nodes.ts`) |
+| Shot laser                                | Not drawn                       |
+| GPU timer queries (benchmark)             | WebGL only                      |
 
 Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowManager` with
 `nodeKit`): same cuts, margin, radius, fade, per-texel bias and bound padding as the WebGL CSM addon.
@@ -40,6 +41,12 @@ background colour as is. For on-screen frames `WebGPUCompatibility` draws `toneM
 materials (lamps, instruments, screens) through a node twin whose output passes the inverse tone
 curve, and gives a background colour the same inverse as its `backgroundNode`, so both come out as
 under WebGL (`webgpu-tone-parity.spec.ts`). Render targets get no output pass in either backend.
+
+Car mirrors keep the `Reflector` capture schedule (`CarMirrors`); under WebGPU the capture runs
+through `reflectWebGPU` (same mirrored camera, oblique near plane for [0, 1] clip depth) and the
+glass draws a node twin of the Reflector shader, with the sky pass painted into each capture.
+Substitutes inside a capture (smoke, tyre marks) blend as raw colours there, as under WebGL
+(`webgpu-mirror-parity.spec.ts`).
 
 Tyre, exhaust and muzzle smoke draw as instanced node sprites (`particle-nodes.ts`) that blend in
 display space against the frame below the draw (a dense plume core comes out slightly dimmer);

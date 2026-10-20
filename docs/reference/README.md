@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **540 modules; 6410 executable function definitions**.
+Coverage: **541 modules; 6416 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -259,11 +259,12 @@ Coverage: **540 modules; 6410 executable function definitions**.
 | [src/render/entity/laser-smoke.ts](src/render/entity/laser-smoke.ts.md) | 1 |
 | [src/render/entity/magazine-shape.ts](src/render/entity/magazine-shape.ts.md) | 2 |
 | [src/render/entity/magazines.ts](src/render/entity/magazines.ts.md) | 4 |
+| [src/render/entity/mirror-nodes.ts](src/render/entity/mirror-nodes.ts.md) | 3 |
 | [src/render/entity/monitor-face.ts](src/render/entity/monitor-face.ts.md) | 4 |
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 6 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
-| [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 25 |
+| [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
@@ -412,7 +413,7 @@ Coverage: **540 modules; 6410 executable function definitions**.
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
-| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 13 |
+| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 14 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
