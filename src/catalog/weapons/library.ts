@@ -21,6 +21,8 @@ const firearmSchema = z
     triggerPullSingleN: positive.max(200).optional(),
     triggerPullDoubleN: positive.max(200).optional(),
     semiAutomatic: z.literal(true),
+    /** Select-fire weapons: cyclic rate in automatic, which becomes the default mode. */
+    automaticRpm: positive.max(2000).optional(),
     slideLocksOnEmpty: z.boolean(),
     cycleMs: positive.max(2000),
     reloadMs: z

@@ -22,10 +22,12 @@ squeezed(hand: GrabHand): inferred by TypeScript; see implementation
 
 ## ARHeldWeapons.constructor
 
-[Implementation, line 20](../../../game/ar-held-weapons.ts#L20)
+[Implementation, line 33](../../../game/ar-held-weapons.ts#L33)
 
 Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
 model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+(`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
 
 ```ts
 constructor(private readonly scene: THREE.Scene): instance
@@ -33,10 +35,12 @@ constructor(private readonly scene: THREE.Scene): instance
 
 ## ARHeldWeapons.presets
 
-[Implementation, line 22](../../../game/ar-held-weapons.ts#L22)
+[Implementation, line 35](../../../game/ar-held-weapons.ts#L35)
 
 Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
 model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+(`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
 
 ```ts
 presets(): HeldWeaponPreset[]
@@ -47,20 +51,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `heldWeaponPresets`
 - `heldWeaponPresets().filter`
 
-## ARHeldWeapons.presets.callback@23
+## ARHeldWeapons.presets.callback@36
 
-[Implementation, line 23](../../../game/ar-held-weapons.ts#L23)
+[Implementation, line 36](../../../game/ar-held-weapons.ts#L36)
 
 ```ts
-callback@23(p): inferred by TypeScript; see implementation
+callback@36(p): inferred by TypeScript; see implementation
 ```
 
 ## ARHeldWeapons.owns
 
-[Implementation, line 26](../../../game/ar-held-weapons.ts#L26)
+[Implementation, line 39](../../../game/ar-held-weapons.ts#L39)
 
 Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
 model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+(`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
 
 ```ts
 owns(grip: THREE.Object3D): boolean
@@ -73,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARHeldWeapons.spawn
 
-[Implementation, line 32](../../../game/ar-held-weapons.ts#L32)
+[Implementation, line 45](../../../game/ar-held-weapons.ts#L45)
 
 Place the weapon 45 cm in front of the eyes; a second call moves the same one.
 
@@ -83,6 +89,8 @@ spawn(preset: HeldWeaponPreset, camera: THREE.Camera): Promise<void>
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `THREE.Box3`
 - `THREE.Group`
 - `THREE.Vector3`
 - `XRObjectGrab`
@@ -94,6 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `item.root.quaternion.copy`
 - `model.add`
 - `model.scale.setScalar`
+- `new THREE.Box3().setFromObject`
 - `new THREE.Vector3(0, 0, -1).applyQuaternion`
 - `root.add`
 - `this.items.get`
@@ -102,7 +111,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARHeldWeapons.update
 
-[Implementation, line 56](../../../game/ar-held-weapons.ts#L56)
+[Implementation, line 77](../../../game/ar-held-weapons.ts#L77)
 
 Free hands squeezing within 15 cm of the grip (model origin) take the weapon.
 
@@ -118,13 +127,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `item.grab.update`
 - `item.root.getWorldPosition`
 - `this.items.values`
+- `this.swing`
 
-## ARHeldWeapons.update.callback@60
+## ARHeldWeapons.update.callback@81
 
-[Implementation, line 60](../../../game/ar-held-weapons.ts#L60)
+[Implementation, line 81](../../../game/ar-held-weapons.ts#L81)
 
 ```ts
-callback@60(h): inferred by TypeScript; see implementation
+callback@81(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -135,20 +145,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `squeezed`
 - `this.owns`
 
-## ARHeldWeapons.update.callback@68
+## ARHeldWeapons.update.callback@89
 
-[Implementation, line 68](../../../game/ar-held-weapons.ts#L68)
+[Implementation, line 89](../../../game/ar-held-weapons.ts#L89)
 
 ```ts
-callback@68(h): inferred by TypeScript; see implementation
+callback@89(h): inferred by TypeScript; see implementation
 ```
 
-## ARHeldWeapons.clear
+## ARHeldWeapons.swing
 
-[Implementation, line 74](../../../game/ar-held-weapons.ts#L74)
+[Implementation, line 96](../../../game/ar-held-weapons.ts#L96)
 
 Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
 model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+(`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
+
+```ts
+swing(item: Held, dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `item.root.getWorldPosition`
+- `item.root.getWorldQuaternion`
+- `new THREE.Vector3(0, 0, -1).applyQuaternion`
+- `origin.clone`
+- `origin.clone().addScaledVector`
+- `performance.now`
+- `this.onStrike`
+- `tip.distanceTo`
+
+## ARHeldWeapons.clear
+
+[Implementation, line 115](../../../game/ar-held-weapons.ts#L115)
+
+Held weapons from preset data (melee and prop kinds) as grabbable AR objects: grip near the
+model to hold it, release to leave it floating where it is. Bows keep the physical XRBow.
+A held melee weapon whose tip moves faster than SWING_SPEED strikes along its blade
+(`onStrike`, same impact path as a shot), at most once per `melee.swingMs`.
 
 ```ts
 clear(): void

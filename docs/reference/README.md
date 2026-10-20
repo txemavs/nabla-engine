@@ -6,13 +6,13 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **553 modules; 6611 executable function definitions**.
+Coverage: **553 modules; 6620 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/anisotropy-ui.ts](game/anisotropy-ui.ts.md) | 9 |
 | [game/ar-balls.ts](game/ar-balls.ts.md) | 0 |
-| [game/ar-held-weapons.ts](game/ar-held-weapons.ts.md) | 10 |
+| [game/ar-held-weapons.ts](game/ar-held-weapons.ts.md) | 11 |
 | [game/ar-mobile-weapon.ts](game/ar-mobile-weapon.ts.md) | 10 |
 | [game/ar-mode.ts](game/ar-mode.ts.md) | 1 |
 | [game/ar-model.ts](game/ar-model.ts.md) | 0 |
@@ -20,7 +20,7 @@ Coverage: **553 modules; 6611 executable function definitions**.
 | [game/ar-rc-demo.ts](game/ar-rc-demo.ts.md) | 12 |
 | [game/ar-rc.ts](game/ar-rc.ts.md) | 0 |
 | [game/ar-room.ts](game/ar-room.ts.md) | 0 |
-| [game/ar.ts](game/ar.ts.md) | 125 |
+| [game/ar.ts](game/ar.ts.md) | 131 |
 | [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
 | [game/boot.ts](game/boot.ts.md) | 6 |
 | [game/clock-wheel.ts](game/clock-wheel.ts.md) | 2 |
@@ -463,7 +463,7 @@ Coverage: **553 modules; 6611 executable function definitions**.
 | [src/runtime/weapon-wheel.ts](src/runtime/weapon-wheel.ts.md) | 5 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
-| [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 34 |
+| [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 36 |
 | [src/runtime/xr-body-anchor.ts](src/runtime/xr-body-anchor.ts.md) | 3 |
 | [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 26 |
 | [src/runtime/xr-calibration-screen.ts](src/runtime/xr-calibration-screen.ts.md) | 38 |

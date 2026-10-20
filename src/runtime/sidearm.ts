@@ -119,6 +119,8 @@ export class Sidearm {
   /** The pistol's own (semi-automatic) spec; `firearm` follows the fire mode. */
   readonly baseFirearm: FirearmSpec
   private mode: FireMode = 'semi'
+  /** `firearm.automaticRpm`: select-fire preset, automatic by default. */
+  private readonly nativeRpm: number | undefined
   readonly recoilYaw = new RecoilYaw()
   readonly state: FirearmState
   private readonly rise: MuzzleRise | null
@@ -220,7 +222,9 @@ export class Sidearm {
           reloadMs: preset.firearm.reloadMs,
         }
       : legacyFirearm(preset)
-    this.state = freshFirearm(this.baseFirearm)
+    this.nativeRpm = preset?.firearm?.automaticRpm
+    if (this.nativeRpm) this.mode = 'burst30'
+    this.state = freshFirearm(this.firearm)
     this.rise = preset?.recoil ? new MuzzleRise(preset.recoil) : null
     const fallbackMaterial = new THREE.MeshStandardMaterial({ color: '#1b1f24', roughness: 0.6 })
     const fallback = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.17), fallbackMaterial)
@@ -509,7 +513,7 @@ export class Sidearm {
 
   /** Spec in use: the pistol's own, or the 30-round RÁFAGA one (`machine-pistol.ts`). */
   get firearm(): FirearmSpec {
-    return specForMode(this.baseFirearm, this.mode)
+    return specForMode(this.baseFirearm, this.mode, this.nativeRpm)
   }
   get fireMode(): FireMode {
     return this.mode
@@ -531,7 +535,7 @@ export class Sidearm {
     this.inspection = null
     if (this.broken || this.safetyOn) return trigger(this.state, this.firearm, false, now)
     if (this.disposed || !Number.isFinite(now)) return trigger(this.state, this.firearm, false, 0)
-    const event = pullTrigger(this.state, this.firearm, this.mode, true, now)
+    const event = pullTrigger(this.state, this.firearm, this.mode, true, now, this.nativeRpm)
     if (event.fired || event.dry) {
       this.hammerStrikeAt = now
       this.lastAction = this.hammerArmed ? 'single' : 'double'
@@ -628,13 +632,14 @@ export class Sidearm {
   handleMagazine(action: 'drop' | 'insert' | 'release' | 'automatic', now: number): FirearmEvent {
     if (action === 'drop') return this.manipulate('magazine-out', now)
     if (action === 'insert' || action === 'automatic') {
-      const spec = specForMode(this.baseFirearm, action === 'insert' ? 'semi' : 'burst30')
+      const mode = action === 'insert' && !this.nativeRpm ? 'semi' : 'burst30'
+      const spec = specForMode(this.baseFirearm, mode, this.nativeRpm)
       const event =
         action === 'insert'
           ? insertFreshMagazine(this.state, spec, now)
           : swapFreshMagazine(this.state, spec, now)
       if (event.reloadStarted) {
-        this.setFireMode(action === 'insert' ? 'semi' : 'burst30')
+        this.setFireMode(mode)
         this.magazineLeverPoseAt = now
       }
       return event
@@ -658,7 +663,8 @@ export class Sidearm {
 
   seatMagazine(magazine: MagazineEntity): FirearmEvent {
     const event = seatMagazine(this.state, magazine)
-    if (event.magazineSeated) this.setFireMode(magazine.capacity > 13 ? 'burst30' : 'semi')
+    if (event.magazineSeated)
+      this.setFireMode(this.nativeRpm || magazine.capacity > 13 ? 'burst30' : 'semi')
     return event
   }
 

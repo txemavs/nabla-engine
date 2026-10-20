@@ -18,13 +18,14 @@
 - `../render/entity/shot-sparks.js`
 - `../simulation/weapons/firearm.js`
 - `./sidearm.js`
+- `../catalog/weapons/library.js`
 - `./xr-loadout.js`
 - `./xr.js`
 - `./xr-grab.js`
 
 ## XRARWeapons.physicsWorld
 
-[Implementation, line 24](../../../../src/runtime/xr-ar-weapons.ts#L24)
+[Implementation, line 25](../../../../src/runtime/xr-ar-weapons.ts#L25)
 
 ```ts
 physicsWorld(): inferred by TypeScript; see implementation
@@ -32,32 +33,46 @@ physicsWorld(): inferred by TypeScript; see implementation
 
 ## XRARWeapons.constructor
 
-[Implementation, line 37](../../../../src/runtime/xr-ar-weapons.ts#L37)
+[Implementation, line 38](../../../../src/runtime/xr-ar-weapons.ts#L38)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
 ```ts
-constructor(private readonly scene: THREE.Scene, private readonly camera: THREE.PerspectiveCamera, private readonly xr: GameXR, viewport: HTMLElement, initialPistols = 2): instance
+constructor(private readonly scene: THREE.Scene, private readonly camera: THREE.PerspectiveCamera, private readonly xr: GameXR, viewport: HTMLElement, initialPistols = 2, extra: readonly WeaponPreset[] = []): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
+- `Math.min`
 - `Promise.all`
 - `Promise.all(weapons.map((w) => w.ready)).then`
 - `Sidearm`
 - `XRLoadout`
+- `extra.map`
 - `scene.add`
 - `this.loadout.allPistols.slice`
 - `this.loadout.removePistol`
 - `weapons.map`
 
-## XRARWeapons.constructor.callback@48
+## XRARWeapons.constructor.callback@50
 
-[Implementation, line 48](../../../../src/runtime/xr-ar-weapons.ts#L48)
+[Implementation, line 50](../../../../src/runtime/xr-ar-weapons.ts#L50)
 
 ```ts
-callback@48(point): inferred by TypeScript; see implementation
+callback@50(preset): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Sidearm`
+
+## XRARWeapons.constructor.callback@52
+
+[Implementation, line 52](../../../../src/runtime/xr-ar-weapons.ts#L52)
+
+```ts
+callback@52(point): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -65,24 +80,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `point.toArray`
 - `this.audio.weaponSound`
 
-## XRARWeapons.constructor.callback@53
+## XRARWeapons.constructor.callback@57
 
-[Implementation, line 53](../../../../src/runtime/xr-ar-weapons.ts#L53)
+[Implementation, line 57](../../../../src/runtime/xr-ar-weapons.ts#L57)
 
 ```ts
-callback@53(root, dt): inferred by TypeScript; see implementation
+callback@57(root, dt): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.contacts.entersDisposal`
 
-## XRARWeapons.constructor.callback@55
+## XRARWeapons.constructor.callback@59
 
-[Implementation, line 55](../../../../src/runtime/xr-ar-weapons.ts#L55)
+[Implementation, line 59](../../../../src/runtime/xr-ar-weapons.ts#L59)
 
 ```ts
-callback@55(root, velocity, angularVelocity): inferred by TypeScript; see implementation
+callback@59(root, velocity, angularVelocity): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -90,25 +105,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.contacts.drop`
 - `this.physicsWorld`
 
-## XRARWeapons.constructor.callback@57
+## XRARWeapons.constructor.callback@61
 
-[Implementation, line 57](../../../../src/runtime/xr-ar-weapons.ts#L57)
+[Implementation, line 61](../../../../src/runtime/xr-ar-weapons.ts#L61)
 
 ```ts
-callback@57(w): inferred by TypeScript; see implementation
+callback@61(w): inferred by TypeScript; see implementation
 ```
 
-## XRARWeapons.constructor.callback@57
+## XRARWeapons.constructor.callback@61
 
-[Implementation, line 57](../../../../src/runtime/xr-ar-weapons.ts#L57)
+[Implementation, line 61](../../../../src/runtime/xr-ar-weapons.ts#L61)
 
 ```ts
-callback@57(): inferred by TypeScript; see implementation
+callback@61(): inferred by TypeScript; see implementation
 ```
 
 ## XRARWeapons.setAudioActive
 
-[Implementation, line 62](../../../../src/runtime/xr-ar-weapons.ts#L62)
+[Implementation, line 66](../../../../src/runtime/xr-ar-weapons.ts#L66)
 
 Pause audio without discarding placed objects or active grips.
 
@@ -122,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.unlock
 
-[Implementation, line 65](../../../../src/runtime/xr-ar-weapons.ts#L65)
+[Implementation, line 69](../../../../src/runtime/xr-ar-weapons.ts#L69)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -136,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.suspend
 
-[Implementation, line 69](../../../../src/runtime/xr-ar-weapons.ts#L69)
+[Implementation, line 73](../../../../src/runtime/xr-ar-weapons.ts#L73)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -155,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.tip
 
-[Implementation, line 79](../../../../src/runtime/xr-ar-weapons.ts#L79)
+[Implementation, line 83](../../../../src/runtime/xr-ar-weapons.ts#L83)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -168,17 +183,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.loadout.pistols.find`
 - `this.loadout.pistols.find((p) => p.holder?.source === source)?.weapon.worldMuzzle`
 
-## XRARWeapons.tip.callback@81
+## XRARWeapons.tip.callback@85
 
-[Implementation, line 81](../../../../src/runtime/xr-ar-weapons.ts#L81)
+[Implementation, line 85](../../../../src/runtime/xr-ar-weapons.ts#L85)
 
 ```ts
-callback@81(p): inferred by TypeScript; see implementation
+callback@85(p): inferred by TypeScript; see implementation
 ```
 
 ## XRARWeapons.update
 
-[Implementation, line 85](../../../../src/runtime/xr-ar-weapons.ts#L85)
+[Implementation, line 89](../../../../src/runtime/xr-ar-weapons.ts#L89)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -240,12 +255,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapon.syncTracked`
 - `weapon.update`
 
-## XRARWeapons.update.callback@100
+## XRARWeapons.update.callback@104
 
-[Implementation, line 100](../../../../src/runtime/xr-ar-weapons.ts#L100)
+[Implementation, line 104](../../../../src/runtime/xr-ar-weapons.ts#L104)
 
 ```ts
-callback@100(h): inferred by TypeScript; see implementation
+callback@104(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -253,24 +268,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.loadout.occupied`
 - `this.xr.calibrationOwns`
 
-## XRARWeapons.update.callback@109
+## XRARWeapons.update.callback@113
 
-[Implementation, line 109](../../../../src/runtime/xr-ar-weapons.ts#L109)
+[Implementation, line 113](../../../../src/runtime/xr-ar-weapons.ts#L113)
 
 ```ts
-callback@109(from, distance): inferred by TypeScript; see implementation
+callback@113(from, distance): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Vector3`
 
-## XRARWeapons.update.callback@111
+## XRARWeapons.update.callback@115
 
-[Implementation, line 111](../../../../src/runtime/xr-ar-weapons.ts#L111)
+[Implementation, line 115](../../../../src/runtime/xr-ar-weapons.ts#L115)
 
 ```ts
-callback@111(weapon): inferred by TypeScript; see implementation
+callback@115(weapon): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -279,49 +294,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapon.worldMuzzle`
 - `weapon.worldMuzzle()?.toArray`
 
-## XRARWeapons.update.callback@114
+## XRARWeapons.update.callback@118
 
-[Implementation, line 114](../../../../src/runtime/xr-ar-weapons.ts#L114)
+[Implementation, line 118](../../../../src/runtime/xr-ar-weapons.ts#L118)
 
 ```ts
-callback@114(c): inferred by TypeScript; see implementation
+callback@118(c): inferred by TypeScript; see implementation
 ```
 
-## XRARWeapons.update.callback@115
+## XRARWeapons.update.callback@119
 
-[Implementation, line 115](../../../../src/runtime/xr-ar-weapons.ts#L115)
+[Implementation, line 119](../../../../src/runtime/xr-ar-weapons.ts#L119)
 
 ```ts
-callback@115(m): inferred by TypeScript; see implementation
+callback@119(m): inferred by TypeScript; see implementation
 ```
 
-## XRARWeapons.update.callback@115
+## XRARWeapons.update.callback@119
 
-[Implementation, line 115](../../../../src/runtime/xr-ar-weapons.ts#L115)
+[Implementation, line 119](../../../../src/runtime/xr-ar-weapons.ts#L119)
 
 ```ts
-callback@115(m): inferred by TypeScript; see implementation
+callback@119(m): inferred by TypeScript; see implementation
 ```
 
-## XRARWeapons.update.callback@116
+## XRARWeapons.update.callback@120
 
-[Implementation, line 116](../../../../src/runtime/xr-ar-weapons.ts#L116)
+[Implementation, line 120](../../../../src/runtime/xr-ar-weapons.ts#L120)
 
 ```ts
-callback@116(p): inferred by TypeScript; see implementation
+callback@120(p): inferred by TypeScript; see implementation
 ```
 
-## XRARWeapons.update.callback@116
+## XRARWeapons.update.callback@120
 
-[Implementation, line 116](../../../../src/runtime/xr-ar-weapons.ts#L116)
+[Implementation, line 120](../../../../src/runtime/xr-ar-weapons.ts#L120)
 
 ```ts
-callback@116(p): inferred by TypeScript; see implementation
+callback@120(p): inferred by TypeScript; see implementation
 ```
 
 ## XRARWeapons.update.collide
 
-[Implementation, line 119](../../../../src/runtime/xr-ar-weapons.ts#L119)
+[Implementation, line 123](../../../../src/runtime/xr-ar-weapons.ts#L123)
 
 ```ts
 collide(weapon: Sidearm): inferred by TypeScript; see implementation
@@ -335,12 +350,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.physicsWorld`
 - `weapon.trackedMagazine.getWorldPosition`
 
-## XRARWeapons.update.collide.callback@121
+## XRARWeapons.update.collide.callback@125
 
-[Implementation, line 121](../../../../src/runtime/xr-ar-weapons.ts#L121)
+[Implementation, line 125](../../../../src/runtime/xr-ar-weapons.ts#L125)
 
 ```ts
-callback@121(name): inferred by TypeScript; see implementation
+callback@125(name): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -349,20 +364,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weapon.model.getObjectByName`
 - `weapon.model.getObjectByName(name)?.getWorldPosition`
 
-## XRARWeapons.update.collide.callback@122
+## XRARWeapons.update.collide.callback@126
 
-[Implementation, line 122](../../../../src/runtime/xr-ar-weapons.ts#L122)
+[Implementation, line 126](../../../../src/runtime/xr-ar-weapons.ts#L126)
 
 ```ts
-callback@122(p): p is THREE.Vector3
+callback@126(p): p is THREE.Vector3
 ```
 
-## XRARWeapons.update.callback@185
+## XRARWeapons.update.callback@189
 
-[Implementation, line 185](../../../../src/runtime/xr-ar-weapons.ts#L185)
+[Implementation, line 189](../../../../src/runtime/xr-ar-weapons.ts#L189)
 
 ```ts
-callback@185(origin, direction, range): inferred by TypeScript; see implementation
+callback@189(origin, direction, range): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -373,7 +388,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.update.cast
 
-[Implementation, line 191](../../../../src/runtime/xr-ar-weapons.ts#L191)
+[Implementation, line 195](../../../../src/runtime/xr-ar-weapons.ts#L195)
 
 ```ts
 cast(from: Vec3Tuple, direction: Vec3Tuple, length: number): inferred by TypeScript; see implementation
@@ -386,17 +401,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.physicsWorld`
 - `world?.sweepSphere`
 
-## XRARWeapons.update.cast.callback@193
+## XRARWeapons.update.cast.callback@197
 
-[Implementation, line 193](../../../../src/runtime/xr-ar-weapons.ts#L193)
+[Implementation, line 197](../../../../src/runtime/xr-ar-weapons.ts#L197)
 
 ```ts
-callback@193(v, i): inferred by TypeScript; see implementation
+callback@197(v, i): inferred by TypeScript; see implementation
 ```
 
 ## XRARWeapons.eject
 
-[Implementation, line 214](../../../../src/runtime/xr-ar-weapons.ts#L214)
+[Implementation, line 218](../../../../src/runtime/xr-ar-weapons.ts#L218)
 
 Same ejection ports, motion and visual pools as desktop/VR.
 
@@ -422,7 +437,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.sound
 
-[Implementation, line 241](../../../../src/runtime/xr-ar-weapons.ts#L241)
+[Implementation, line 245](../../../../src/runtime/xr-ar-weapons.ts#L245)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -438,7 +453,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.enableMobile
 
-[Implementation, line 255](../../../../src/runtime/xr-ar-weapons.ts#L255)
+[Implementation, line 259](../../../../src/runtime/xr-ar-weapons.ts#L259)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -454,7 +469,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.reloadMobile
 
-[Implementation, line 264](../../../../src/runtime/xr-ar-weapons.ts#L264)
+[Implementation, line 268](../../../../src/runtime/xr-ar-weapons.ts#L268)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -469,7 +484,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.updateMobile
 
-[Implementation, line 267](../../../../src/runtime/xr-ar-weapons.ts#L267)
+[Implementation, line 271](../../../../src/runtime/xr-ar-weapons.ts#L271)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -507,7 +522,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.hitTargets
 
-[Implementation, line 304](../../../../src/runtime/xr-ar-weapons.ts#L304)
+[Implementation, line 308](../../../../src/runtime/xr-ar-weapons.ts#L308)
 
 Small mixed-reality host for the same carried weapons used by the game.
 
@@ -534,9 +549,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.ray.intersectObjects`
 - `this.sparks.add`
 
+## XRARWeapons.strike
+
+[Implementation, line 332](../../../../src/runtime/xr-ar-weapons.ts#L332)
+
+Non-firearm hit (for example a melee swing) through the same impact path as a shot:
+host onHit, sparks and marks. True when something within `distance` was hit.
+
+```ts
+strike(origin: THREE.Vector3, direction: THREE.Vector3, distance: number, targets: THREE.Object3D[], now: number): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `direction.clone`
+- `direction.clone().normalize`
+- `this.hitTargets`
+- `this.ray.intersectObjects`
+- `this.ray.set`
+
 ## XRARWeapons.dispose
 
-[Implementation, line 324](../../../../src/runtime/xr-ar-weapons.ts#L324)
+[Implementation, line 351](../../../../src/runtime/xr-ar-weapons.ts#L351)
 
 Small mixed-reality host for the same carried weapons used by the game.
 

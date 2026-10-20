@@ -7,6 +7,7 @@ import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
 import { ARHeldWeapons } from './ar-held-weapons.js'
+import { weaponPresets, weaponSlots, type WeaponPreset } from '@nabla/engine'
 import { ARDrone } from '@nabla/engine/experimental/betaflight'
 import { hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
 import * as THREE from 'three'
@@ -240,7 +241,11 @@ const touchControls = new ARTouchControls({
 })
 xr.domOverlayRoot = mobileAR ? touchControls.root : undefined
 xr.screenTouchEnabled = false
-const weapons = new XRARWeapons(scene, camera, xr, document.body, 0)
+// Slotted firearms after the default pistol (for example Euskadi's MP5) ride in the same loadout.
+const extraFirearms = weaponSlots()
+  .filter((slot) => slot.kind === 'firearm' && slot.id !== weaponPresets()[0]?.id)
+  .map((slot) => slot.preset as WeaponPreset)
+const weapons = new XRARWeapons(scene, camera, xr, document.body, 0, extraFirearms)
 void weapons.ready.catch(report)
 if (mobileAR) {
   touchControls.root.querySelector<HTMLButtonElement>(':scope > button')!.hidden = true
@@ -261,6 +266,20 @@ if (mobileAR) {
 }
 
 weapons.physicsWorld = () => balls.physicsWorld
+held.onStrike = (origin, direction, distance) =>
+  weapons.strike(
+    origin,
+    direction,
+    distance,
+    [
+      ...screen.targets,
+      ...collisionSurfaces(),
+      ...hoop.collisionSurfaces,
+      ...balls.targets,
+      ...rc.targets,
+    ],
+    performance.now(),
+  )
 weapons.onHit = (object, point, direction) => {
   if (xr.calibrationScreen?.hit(object, point)) return true
   const vehicle = rc.hit(object, point, direction)
@@ -349,6 +368,7 @@ screen.mainMenuOrder = [
   'quality',
   'radio',
   'pistol',
+  ...extraFirearms.map((preset) => `firearm-${preset.id}`),
   ...heldPresets.map((preset) => `held-${preset.id}`),
   'ball',
   'model',
@@ -377,6 +397,18 @@ const addBow = async () => {
   }
 }
 screen.mainMenu = () => [
+  ...extraFirearms.map((preset) => ({
+    id: `firearm-${preset.id}`,
+    label: preset.name,
+    run: () => {
+      const added = weapons.loadout.addPistol(preset.id)
+      room.setMessage(
+        added
+          ? `${preset.name} añadida al cuerpo. Cógela con agarre; gatillo para disparar.`
+          : `Ya tienes la ${preset.name}.`,
+      )
+    },
+  })),
   ...heldPresets.map((preset) => ({
     id: `held-${preset.id}`,
     label: preset.name,
