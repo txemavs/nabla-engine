@@ -366,6 +366,12 @@ export class Body {
     return Math.max(...this.shapes.map((s) => s.boundingSphereRadius), 0.5)
   }
   updateBoundingRadius() {}
+  /** False keeps the colliders mounted but inert: no contacts, no scene queries. */
+  collisionEnabled = true
+  setCollisionEnabled(enabled: boolean) {
+    this.collisionEnabled = enabled
+    for (const collider of this.colliders) collider.setEnabled(enabled)
+  }
   addShape(shape: Shape, offset?: Vec3, orientation?: Quaternion) {
     this.shapes.push(shape)
     this.shapeOffsets.push(offset?.clone() ?? new Vec3())
@@ -647,6 +653,7 @@ export class Body {
       .setRestitution(this.material.restitution)
       .setDensity(0)
     if (!shape.collisionResponse) desc.setSensor(true)
+    if (!this.collisionEnabled) desc.setEnabled(false)
     this.colliders[i] = this.world.raw.createCollider(desc, this.raw)
   }
 }
@@ -885,19 +892,20 @@ export class World {
     this.raw = new (R().World)(g)
     this.raw.integrationParameters.numSolverIterations = 15
   }
-  addBody(body: Body) {
+  /** `refreshQueries` false defers the scene-query rebuild to the caller (one rebuild for a batch). */
+  addBody(body: Body, refreshQueries = true) {
     if (body.world === this) return
     body.mount(this)
     this.bodies.push(body)
-    this.raw.updateSceneQueries()
+    if (refreshQueries) this.raw.updateSceneQueries()
   }
-  removeBody(body: Body) {
+  removeBody(body: Body, refreshQueries = true) {
     if (body.world !== this || !body.raw) return
     this.raw.removeRigidBody(body.raw)
     body.raw = null
     body.colliders = []
     body.world = null
-    this.raw.updateSceneQueries()
+    if (refreshQueries) this.raw.updateSceneQueries()
     this.bodies = this.bodies.filter((b) => b !== body)
   }
   addConstraint(constraint: LockConstraint) {
