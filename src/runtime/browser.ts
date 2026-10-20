@@ -460,6 +460,8 @@ export interface GameRuntimeOptions {
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
+  /** World gravity multiplier (see `simulationDefaults.gravityScaleRange`, default 1 = 9.81 m/s²). */
+  gravityScale?: number
   /**
    * Factor on the quality tier's texel-scaled shadow bias, 0..3 (default 1). Higher removes
    * residual shadow stripes (acne) at the cost of slightly detached shadows; live via `setShadowBias`.
@@ -609,6 +611,7 @@ export class GameRuntime {
   }
   private spawned: string[] = []
   private spawnSequence = 0
+  private worldGravityScale = 1
   private accidentReplacement?: AccidentReplacement
   private exhaustOffset: Vec3Tuple = [0, 0, 0]
   private readonly idleCinematic = new IdleCinematic()
@@ -815,6 +818,7 @@ export class GameRuntime {
     this.text = createRuntimeText(options.locale, options.messages)
     this.game.text = this.text
     this.game.recover.snapToRoad = options.recoverToRoad !== false
+    this.worldGravityScale = options.gravityScale ?? simulationDefaults.gravityScaleRange.default
     this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
     this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
     this.toolbar = new GameToolbar(
@@ -1358,6 +1362,7 @@ export class GameRuntime {
         planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
+      this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.startSequence =
@@ -3851,6 +3856,19 @@ export class GameRuntime {
   setFlipCinematicEnabled(enabled: boolean): void {
     this.assertAlive()
     this.flipCinematic.enabled = enabled
+  }
+  /** World gravity multiplier (1 = 9.81 m/s²). */
+  get gravityScale(): number {
+    return this.worldGravityScale
+  }
+  /** Scale world gravity live (clamped to `simulationDefaults.gravityScaleRange`). Returns the value used. */
+  setGravityScale(scale: number): number {
+    this.assertAlive()
+    const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
+    this.worldGravityScale = Number.isFinite(scale) ? Math.min(max, Math.max(min, scale)) : fallback
+    const simulation = this.session.simulation
+    if (simulation) this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
+    return this.worldGravityScale
   }
   /** Whether R reset snaps to the nearest road/vía (default on). */
   get recoverToRoadEnabled(): boolean {
