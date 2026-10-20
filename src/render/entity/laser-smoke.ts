@@ -1,14 +1,18 @@
 import * as THREE from 'three'
 import { smokeDensity } from './smoke-density.js'
 
-/** Live smoke pools; removed on disposal so reset worlds do not retain particles. */
-export const laserSmokePools = new Set<{
-  root: THREE.Points
+export interface LaserSmokePool {
+  root: THREE.Object3D
   positions: Float32Array
   life: Float32Array
   lifetime: number
   size: number
-}>()
+  /** Refresh `positions` and `life` first (pools whose motion is evaluated on the GPU). */
+  sync?(): void
+}
+
+/** Live smoke pools; removed on disposal so reset worlds do not retain particles. */
+export const laserSmokePools = new Set<LaserSmokePool>()
 
 /** Bounded density profile along a beam, in its own scene frame. */
 export function sampleLaserSmoke(
@@ -28,6 +32,7 @@ export function sampleLaserSmoke(
   const position = new THREE.Vector3()
   for (const pool of laserSmokePools) {
     if (!pool.root.visible || !pool.root.parent) continue
+    pool.sync?.()
     pool.root.updateWorldMatrix(true, false)
     const transform = inverse.clone().multiply(pool.root.matrixWorld)
     for (let i = 0; i < pool.life.length; i++) {

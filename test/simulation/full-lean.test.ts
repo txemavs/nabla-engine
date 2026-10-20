@@ -4,7 +4,6 @@
  * hangs off further, and letting go relaxes the limit back.
  */
 import { describe, expect, it } from 'vitest'
-import type * as THREE from 'three'
 import { ShotSparks } from '../../src/render/entity/shot-sparks.js'
 import { MetalScrape } from '../../src/audio/scrape.js'
 import { presetVehicle, vehiclePreset } from '../../src/catalog/vehicles/library.js'
@@ -103,9 +102,9 @@ describe('footpeg scrape effects', () => {
     const sparks = new ShotSparks()
     sparks.add([0, 0, 0], 1000, [0, 1, 0], { count: 4, drift: [0, 0, -20], speed: 0.5 })
     sparks.update(1100)
-    const points = sparks.root.children[0] as THREE.Points
-    expect(points.geometry.drawRange.count).toBe(4)
-    const z = points.geometry.getAttribute('position').getZ(0)
+    const live = sparks.livePositions(1100)
+    expect(live.length / 3).toBe(4)
+    const z = live[2]
     // 0.1 s of a −20 m/s drift (the random spread is at most ±1.8 m/s × 0.1 s).
     expect(z).toBeLessThan(-1.7)
     sparks.dispose()

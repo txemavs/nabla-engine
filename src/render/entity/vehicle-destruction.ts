@@ -350,7 +350,7 @@ export class VehicleDestruction {
     this.warmFire ??= this.createFire().fire
     this.warmFlames ??= this.createFlames({ value: 0 })
     this.warmSmoke ??= new ExhaustSmoke(this.space, this.space)
-    this.warmSmoke.root.visible = true
+    this.warmSmoke.warmUp(true)
     this.root.add(this.warmFire, this.warmSmoke.root, this.warmFlames.flames)
     try {
       await renderer.compileAsync(scene, camera)
@@ -377,6 +377,7 @@ export class VehicleDestruction {
       parts.removeFromParent()
       parts.clear()
       this.warmFire.removeFromParent()
+      this.warmSmoke.warmUp(false)
       this.warmSmoke.root.removeFromParent()
       this.warmFlames.flames.removeFromParent()
     }
