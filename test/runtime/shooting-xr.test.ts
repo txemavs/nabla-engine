@@ -32,7 +32,18 @@ it('keeps impact rays on the barrel with an asymmetric XR projection and floatin
     }),
   }
   const sim = { shoot: vi.fn(() => ({ point: target.toArray(), normal: [0, 0, 1] })) }
-  fireSidearm(sidearm as any, gallery as any, sim as any, { root } as any, camera, 100, false)
+  const tracers = { add: vi.fn() }
+  fireSidearm(
+    sidearm as any,
+    gallery as any,
+    sim as any,
+    { root, tracers } as any,
+    camera,
+    100,
+    false,
+  )
+  // The tracer streak runs from the barrel to the impact.
+  expect(tracers.add).toHaveBeenCalledWith(origin.toArray(), target.toArray(), 100)
   expect(marked!.ray.origin.distanceTo(origin)).toBeLessThan(1e-8)
   expect(marked!.ray.direction.dot(direction)).toBeCloseTo(1, 10)
   expect(marked!.ray.at(10, new Vector3()).distanceTo(target)).toBeLessThan(1e-8)

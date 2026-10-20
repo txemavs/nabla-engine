@@ -5,7 +5,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 // Each scene runs twice in the same page with a fixed clock and seeded Math.random: once with the
 // former CPU particle simulations (legacy-particles.ts) and once with the analytic GPU pools
 // (gpu-particles.ts). The frames must match.
-const scenes = ['smoke', 'burning-car', 'explosion', 'sparks', 'tyre-smoke', 'muzzle-smoke']
+// Shot sparks left this parity check when they became streaks with dust (realistic-sparks.spec.ts).
+const scenes = ['smoke', 'burning-car', 'explosion', 'tyre-smoke', 'muzzle-smoke']
 
 for (const scene of scenes) {
   test(`analytic GPU particles match the CPU simulation: ${scene}`, async ({ page }) => {
