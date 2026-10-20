@@ -8,8 +8,10 @@
  * as `custom` (the heaviest browser defaults).
  */
 export const QUALITY_STORAGE_KEY = 'nabla.quality'
-/** Profile to return to when the mobile toggle is switched off. */
-export const QUALITY_PREVIOUS_STORAGE_KEY = 'nabla.quality.previous'
+/** Tab-only test override (`sessionStorage`) set by the phone button; never saved. */
+export const QUALITY_SESSION_STORAGE_KEY = 'nabla.quality.session'
+/** One-shot `sessionStorage` flag: the host skips its start screen on the next boot. */
+export const AUTO_ENTER_STORAGE_KEY = 'nabla.autoEnter'
 /** The lightest named profile that keeps the game readable; the phone button switches to it. */
 export const MOBILE_QUALITY = 'mobile'
 
@@ -35,15 +37,31 @@ function defaultStorage(): WriteStorage | undefined {
   }
 }
 
-/** Active quality profile: URL `quality`, else the saved one, else `fallback`. */
+function defaultSession(): ReadStorage | undefined {
+  try {
+    return globalThis.sessionStorage
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Active quality profile: URL `quality`, else the tab's test override (phone button), else the
+ * saved one, else `fallback`.
+ */
 export function readQualityPreset(
   search: string = globalThis.location?.search ?? '',
   storage: ReadStorage | undefined | null = defaultStorage(),
   fallback = 'custom',
+  session: ReadStorage | undefined | null = defaultSession(),
 ): string {
   const fromUrl = new URLSearchParams(search).get('quality')
   if (fromUrl && VALID.test(fromUrl)) return fromUrl
-  return safeGet(storage, QUALITY_STORAGE_KEY) ?? fallback
+  return (
+    safeGet(session, QUALITY_SESSION_STORAGE_KEY) ??
+    safeGet(storage, QUALITY_STORAGE_KEY) ??
+    fallback
+  )
 }
 
 /** Remember the profile for the next boots (`custom` clears the saved choice). */
@@ -60,59 +78,25 @@ export function saveQualityPreset(
 }
 
 /**
- * Switch to {@link MOBILE_QUALITY}, or back to the profile used before it. Returns the profile
- * to boot with next; the caller reloads so every setting is applied from the start.
- */
-export function toggleMobileQuality(
-  current: string,
-  storage: WriteStorage | undefined | null = defaultStorage(),
-): string {
-  let next: string
-  try {
-    if (current === MOBILE_QUALITY) {
-      next = safeGet(storage, QUALITY_PREVIOUS_STORAGE_KEY) ?? 'custom'
-      if (next === MOBILE_QUALITY) next = 'custom'
-      storage?.removeItem(QUALITY_PREVIOUS_STORAGE_KEY)
-    } else {
-      storage?.setItem(QUALITY_PREVIOUS_STORAGE_KEY, current)
-      next = MOBILE_QUALITY
-    }
-  } catch {
-    next = current === MOBILE_QUALITY ? 'custom' : MOBILE_QUALITY
-  }
-  saveQualityPreset(next, storage)
-  return next
-}
-
-/**
- * Round, icon-only phone button that toggles mobile quality and reloads. Self-contained (no
- * imports, no outer references) so a host boot script can inline it with `Function#toString`
- * before the engine bundle loads; it uses the same storage keys as the functions above.
+ * Round, icon-only phone button for testing: one click runs this tab in mobile quality and enters
+ * the game straight away (`sessionStorage` override + one-shot auto-enter flag, then reload). The
+ * saved profile is never touched. Clicking it while active drops the override and returns to the
+ * start screen. Self-contained (no imports, no outer references) so a host boot script can inline
+ * it with `Function#toString` before the engine bundle loads.
  */
 export function mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement {
-  const KEY = 'nabla.quality'
-  const PREV = 'nabla.quality.previous'
-  const get = (key: string): string | null => {
-    try {
-      return localStorage.getItem(key)
-    } catch {
-      return null
-    }
+  const SESSION = 'nabla.quality.session'
+  const AUTO = 'nabla.autoEnter'
+  let active = false
+  try {
+    active = sessionStorage.getItem(SESSION) === 'mobile'
+  } catch {
+    /* Storage is optional. */
   }
-  const set = (key: string, value: string | null) => {
-    try {
-      if (value === null || value === 'custom') localStorage.removeItem(key)
-      else localStorage.setItem(key, value)
-    } catch {
-      /* Storage is optional. */
-    }
-  }
-  const current = new URLSearchParams(location.search).get('quality') ?? get(KEY) ?? 'custom'
-  const active = current === 'mobile'
   const button = document.createElement('button')
   button.type = 'button'
   button.id = 'nabla-mobile-quality'
-  button.title = active ? 'Calidad móvil activa · volver a la anterior' : 'Calidad móvil'
+  button.title = active ? 'Probando calidad móvil · volver' : 'Entrar con calidad móvil (prueba)'
   button.setAttribute('aria-label', 'Calidad móvil')
   button.setAttribute('aria-pressed', String(active))
   button.style.cssText =
@@ -125,17 +109,16 @@ export function mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
   button.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
-    if (active) {
-      const previous = get(PREV)
-      set(KEY, previous && previous !== 'mobile' ? previous : null)
-      set(PREV, null)
-    } else {
-      try {
-        localStorage.setItem(PREV, current)
-      } catch {
-        /* Storage is optional. */
+    try {
+      if (active) {
+        sessionStorage.removeItem(SESSION)
+        sessionStorage.removeItem(AUTO)
+      } else {
+        sessionStorage.setItem(SESSION, 'mobile')
+        sessionStorage.setItem(AUTO, '1')
       }
-      set(KEY, 'mobile')
+    } catch {
+      /* Storage is optional. */
     }
     const url = new URL(location.href)
     url.searchParams.delete('quality')
@@ -143,4 +126,25 @@ export function mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
   })
   parent.append(button)
   return button
+}
+
+/** Read and clear the one-shot auto-enter flag. */
+export function takeAutoEnter(
+  session: WriteStorage | undefined | null = defaultStorageSession(),
+): boolean {
+  try {
+    const on = session?.getItem(AUTO_ENTER_STORAGE_KEY) === '1'
+    session?.removeItem(AUTO_ENTER_STORAGE_KEY)
+    return on
+  } catch {
+    return false
+  }
+}
+
+function defaultStorageSession(): WriteStorage | undefined {
+  try {
+    return globalThis.sessionStorage
+  } catch {
+    return undefined
+  }
 }

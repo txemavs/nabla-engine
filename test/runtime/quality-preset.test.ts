@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  QUALITY_PREVIOUS_STORAGE_KEY,
   QUALITY_STORAGE_KEY,
+  QUALITY_SESSION_STORAGE_KEY,
   readQualityPreset,
+  takeAutoEnter,
   saveQualityPreset,
-  toggleMobileQuality,
 } from '../../src/runtime/quality-preset.js'
 
 function memory() {
@@ -36,20 +36,20 @@ describe('quality preset', () => {
     expect(readQualityPreset('', s)).toBe('custom')
   })
 
-  it('toggles to mobile and back to the previous profile', () => {
-    const s = memory()
-    saveQualityPreset('balanced', s)
-    expect(toggleMobileQuality('balanced', s)).toBe('mobile')
-    expect(readQualityPreset('', s)).toBe('mobile')
-    expect(toggleMobileQuality('mobile', s)).toBe('balanced')
-    expect(readQualityPreset('', s)).toBe('balanced')
-    expect(s.map.has(QUALITY_PREVIOUS_STORAGE_KEY)).toBe(false)
+  it('the tab override beats the saved profile and never changes it', () => {
+    const s = memory(),
+      session = memory()
+    saveQualityPreset('high', s)
+    session.setItem(QUALITY_SESSION_STORAGE_KEY, 'mobile')
+    expect(readQualityPreset('', s, 'custom', session)).toBe('mobile')
+    expect(readQualityPreset('?quality=low', s, 'custom', session)).toBe('low')
+    expect(s.getItem(QUALITY_STORAGE_KEY)).toBe('high')
   })
 
-  it('returns to custom when there was no previous profile', () => {
-    const s = memory()
-    expect(toggleMobileQuality('custom', s)).toBe('mobile')
-    expect(toggleMobileQuality('mobile', s)).toBe('custom')
-    expect(s.map.has(QUALITY_STORAGE_KEY)).toBe(false)
+  it('auto-enter is one-shot', () => {
+    const session = memory()
+    session.setItem('nabla.autoEnter', '1')
+    expect(takeAutoEnter(session)).toBe(true)
+    expect(takeAutoEnter(session)).toBe(false)
   })
 })
