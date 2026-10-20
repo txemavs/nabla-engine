@@ -23,7 +23,8 @@ import {
   shadowTiers,
   type ShadowTier,
 } from './shadow-tiers.js'
-import { patchGroundCloudShadow } from './planet/artistic-clouds.js'
+import { groundCloudShadow, patchGroundCloudShadow } from './planet/artistic-clouds.js'
+import { groundCloudShade } from './planet/surface-nodes.js'
 import type { NodeKit } from './webgpu-substitutes.js'
 
 // The addon ships an older full lighting chunk. Replacing it wholesale drops
@@ -225,7 +226,16 @@ export class ShadowManager {
       refit()
       this.padNodeBounds()
     }
-    light.shadow.shadowNode = node
+    // The ground cloud shadow (WebGL: `patchGroundCloudShadow`) rides on the sun's shadow factor.
+    // The GLSL patch only matches the Lambert and Toon programs, so only those get it here.
+    const tsl = this.nodeKit!.tsl as unknown as {
+      Fn(f: (builder: { material: THREE.Material }) => unknown): () => unknown
+      mul(a: unknown, b: unknown): unknown
+    }
+    const cloud = groundCloudShade(this.nodeKit!.tsl, groundCloudShadow)
+    light.shadow.shadowNode = tsl.Fn(({ material }) =>
+      /^Mesh(Lambert|Toon)/.test(material.type) ? tsl.mul(node, cloud) : node,
+    )() as never
     this.lightDirection.copy(config.lightDirection).normalize()
     config.scene.add(light, light.target)
     this.node = { light, csm: node }

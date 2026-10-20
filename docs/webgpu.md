@@ -35,6 +35,13 @@ Cascaded shadows use three's `CSMShadowNode` on one shadow-casting sun (`ShadowM
 The WebGL-only chunk tweaks (frozen PCF kernel, widened seam fade, projected shadow depth) are not
 ported; `webgpu-shadow-parity.spec.ts` measures the remaining edge differences.
 
+Built-in materials patched with `onBeforeCompile` register a TSL twin with
+`addWebGPUMaterialNodes` (`surface-nodes.ts`): asphalt contrast, river and ocean-sheet waves, the
+sea's shadowed flat colour and glint (a small lighting model), and the tree crowns (an object
+substitute, which also adds a per-instance `treeHeight` attribute because node positions run after
+instancing). The ground cloud shadow multiplies the sun's shadow factor on Lambert and Toon
+materials, the only programs the GLSL patch matches. `webgpu-surface-parity.spec.ts` covers them.
+
 Materials patched with `onBeforeCompile` draw as their base three.js material (the patch is
 ignored): ground/terrain blend, water, vegetation wind, CSM shadow tweaks, avatar, billboard,
 vehicle lamps, destruction fire. They render, but without the custom look.

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **538 modules; 6337 executable function definitions**.
+Coverage: **539 modules; 6372 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -227,7 +227,7 @@ Coverage: **538 modules; 6337 executable function definitions**.
 | [src/planet/tide.ts](src/planet/tide.ts.md) | 1 |
 | [src/planet/tiles.ts](src/planet/tiles.ts.md) | 6 |
 | [src/presentation/scene-view.ts](src/presentation/scene-view.ts.md) | 1 |
-| [src/render/backend.ts](src/render/backend.ts.md) | 19 |
+| [src/render/backend.ts](src/render/backend.ts.md) | 20 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 8 |
 | [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
@@ -302,7 +302,7 @@ Coverage: **538 modules; 6337 executable function definitions**.
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 10 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
-| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 21 |
+| [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 22 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
 | [src/render/planet/horizon.worker.ts](src/render/planet/horizon.worker.ts.md) | 11 |
 | [src/render/planet/instance-lights.ts](src/render/planet/instance-lights.ts.md) | 5 |
@@ -325,14 +325,15 @@ Coverage: **538 modules; 6337 executable function definitions**.
 | [src/render/planet/startup-tiles.ts](src/render/planet/startup-tiles.ts.md) | 5 |
 | [src/render/planet/static-tiles.ts](src/render/planet/static-tiles.ts.md) | 12 |
 | [src/render/planet/sun-disc.ts](src/render/planet/sun-disc.ts.md) | 2 |
+| [src/render/planet/surface-nodes.ts](src/render/planet/surface-nodes.ts.md) | 17 |
 | [src/render/planet/tile-asset.ts](src/render/planet/tile-asset.ts.md) | 5 |
 | [src/render/planet/tile-layers.ts](src/render/planet/tile-layers.ts.md) | 15 |
-| [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 6 |
+| [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 9 |
 | [src/render/planet/visibility.ts](src/render/planet/visibility.ts.md) | 1 |
 | [src/render/planet/water-geometry.ts](src/render/planet/water-geometry.ts.md) | 17 |
-| [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 3 |
+| [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 4 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
-| [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
+| [src/render/planet/water.ts](src/render/planet/water.ts.md) | 24 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
 | [src/render/planet/world.ts](src/render/planet/world.ts.md) | 159 |
@@ -344,7 +345,7 @@ Coverage: **538 modules; 6337 executable function definitions**.
 | [src/render/shader-warmup.ts](src/render/shader-warmup.ts.md) | 3 |
 | [src/render/shadow-depth.ts](src/render/shadow-depth.ts.md) | 1 |
 | [src/render/shadow-tiers.ts](src/render/shadow-tiers.ts.md) | 0 |
-| [src/render/shadows.ts](src/render/shadows.ts.md) | 34 |
+| [src/render/shadows.ts](src/render/shadows.ts.md) | 35 |
 | [src/render/vehicle-presentation/adapter.ts](src/render/vehicle-presentation/adapter.ts.md) | 0 |
 | [src/render/vehicle-presentation/authored-lights.ts](src/render/vehicle-presentation/authored-lights.ts.md) | 24 |
 | [src/render/vehicle-presentation/exhaust.ts](src/render/vehicle-presentation/exhaust.ts.md) | 6 |
@@ -362,7 +363,7 @@ Coverage: **538 modules; 6337 executable function definitions**.
 | [src/render/vehicle-presentation/retractable.ts](src/render/vehicle-presentation/retractable.ts.md) | 4 |
 | [src/render/vehicle-presentation/screen-mounts.ts](src/render/vehicle-presentation/screen-mounts.ts.md) | 4 |
 | [src/render/vehicle-presentation/start-lights.ts](src/render/vehicle-presentation/start-lights.ts.md) | 3 |
-| [src/render/webgpu-substitutes.ts](src/render/webgpu-substitutes.ts.md) | 3 |
+| [src/render/webgpu-substitutes.ts](src/render/webgpu-substitutes.ts.md) | 12 |
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/action-cam-settings.ts](src/runtime/action-cam-settings.ts.md) | 1 |
 | [src/runtime/action-cam.ts](src/runtime/action-cam.ts.md) | 6 |
