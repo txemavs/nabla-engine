@@ -35,6 +35,9 @@ import { atlasFileUrl, atlasPhotoFor, type AtlasZ15Options } from '../../planet/
 import { fetchOsmSnapshot } from './osm-roads.js'
 import { NO_ASPHALT_MASK, asphaltMaskTexture } from './asphalt-mask.js'
 
+/** Yielded by an install step that waits on the GPU: end this frame's install slice. */
+const GPU_WAIT = Symbol('gpu-wait')
+
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
   /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
@@ -677,10 +680,21 @@ export class PlanetWorld {
     }
   }
   private installQueue: { key: string; manifest: PlanetManifest; payload: PlanetPayload }[] = []
-  private installing: { key: string; steps: Generator<void> } | undefined
+  private installing: { key: string; steps: Generator<void | typeof GPU_WAIT> } | undefined
   private lastInstallMs = 0
   private maxInstallMs = 0
   private staging = new Set<THREE.Group>()
+  /**
+   * Host GPU preparation for staged cells (WebGL and WebGPU renderers both provide these):
+   * textures are uploaded one per install step and programs/pipelines compile asynchronously,
+   * before publication, instead of all inside the first frame that draws the cell.
+   */
+  gpu?: {
+    initTexture(texture: THREE.Texture): void
+    compileAsync(object: THREE.Object3D): Promise<unknown>
+  }
+  /** One sprite material for every cell's trees (identical parameters); never disposed per cell. */
+  private treeMaterial: THREE.MeshStandardMaterial | undefined
   private startup = false
   private startupCount: 1 | 4 = 1
   private startupSelection: MapTile[] = []
@@ -822,7 +836,8 @@ export class PlanetWorld {
         this.installing = { key: job.key, steps: this.install(job.key, job.manifest, job.payload) }
       }
       const stepStarted = performance.now()
-      const done = this.installing.steps.next().done
+      const result = this.installing.steps.next()
+      const done = result.done
       const step = performance.now() - stepStarted
       const timing = this.stamp(this.installing.key)
       timing.installMs = (timing.installMs ?? 0) + step
@@ -832,7 +847,7 @@ export class PlanetWorld {
         timing.atInstalled = performance.now()
         this.afterInstall?.(this.installing.key)
         this.installing = undefined
-      }
+      } else if (result.value === GPU_WAIT) break
     } while (performance.now() - started < budgetMs)
     this.lastInstallMs = performance.now() - started
     this.maxInstallMs = Math.max(this.maxInstallMs, this.lastInstallMs)
@@ -1312,7 +1327,42 @@ export class PlanetWorld {
       })
     }
   }
-  private *install(key: string, manifest: PlanetManifest, payload: PlanetPayload): Generator<void> {
+  /** Upload the staged cell's textures (one per step) and compile its programs off the frame. */
+  private *prepareGpu(group: THREE.Object3D): Generator<void | typeof GPU_WAIT> {
+    const gpu = this.gpu
+    if (!gpu) return
+    const textures = new Set<THREE.Texture>()
+    group.traverse((node) => {
+      const material = (node as THREE.Mesh).material
+      if (!material) return
+      for (const m of Array.isArray(material) ? material : [material])
+        for (const value of Object.values(m))
+          if ((value as THREE.Texture | null)?.isTexture && (value as THREE.Texture).image)
+            textures.add(value as THREE.Texture)
+    })
+    for (const texture of textures) {
+      try {
+        gpu.initTexture(texture)
+      } catch (error) {
+        console.warn('Planet texture pre-upload failed', String(error))
+      }
+      yield
+    }
+    let settled = false
+    gpu.compileAsync(group).then(
+      () => (settled = true),
+      (error) => {
+        settled = true
+        console.warn('Planet shader warm-up failed', String(error))
+      },
+    )
+    while (!settled) yield GPU_WAIT
+  }
+  private *install(
+    key: string,
+    manifest: PlanetManifest,
+    payload: PlanetPayload,
+  ): Generator<void | typeof GPU_WAIT> {
     const group = new THREE.Group()
     this.staging.add(group)
     const position = geoToLocal(this.origin, manifest.anchor)
@@ -1441,17 +1491,21 @@ export class PlanetWorld {
     if (payload.vegetation.length) {
       this.treeTexture ??= new THREE.TextureLoader().load('/sprites/tree.png', () => this.changed())
       this.treeTexture.colorSpace = THREE.SRGBColorSpace
-      const material = new THREE.MeshStandardMaterial({
-        map: this.treeTexture,
-        alphaTest: 0.4,
-        side: THREE.DoubleSide,
-        roughness: 1,
-      })
-      this.setupMaterial(material)
-      const trees = treeInstances(payload.vegetation, material)
+      if (!this.treeMaterial) {
+        this.treeMaterial = new THREE.MeshStandardMaterial({
+          map: this.treeTexture,
+          alphaTest: 0.4,
+          side: THREE.DoubleSide,
+          roughness: 1,
+        })
+        this.treeMaterial.userData.planetShared = true
+        this.setupMaterial(this.treeMaterial)
+      }
+      const trees = treeInstances(payload.vegetation, this.treeMaterial)
       group.add(trees)
     }
     yield
+    yield* this.prepareGpu(group)
     const previous = this.resident.get(key)
     const hotReload =
       !!previous &&
@@ -1525,6 +1579,7 @@ export class PlanetWorld {
         mesh.geometry.dispose()
         for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
           const map = (material as THREE.MeshStandardMaterial).map
+          if (material.userData.planetShared) continue
           if (map && map !== this.treeTexture) {
             ;(map.image as { close?: () => void } | undefined)?.close?.()
             map.dispose()
@@ -1916,7 +1971,7 @@ export class PlanetWorld {
         for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
           // The photo texture is shared by every drape mesh of the tile.
           if (m.name === 'Drape') (mat as THREE.MeshStandardMaterial).map?.dispose()
-          mat.dispose()
+          if (!mat.userData.planetShared) mat.dispose()
         }
       }
     })
@@ -1940,12 +1995,13 @@ export class PlanetWorld {
         if (mesh.isMesh) {
           mesh.geometry.dispose()
           for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-            material.dispose()
+            if (!material.userData.planetShared) material.dispose()
         }
       })
     this.staging.clear()
     this.horizon.dispose()
     for (const key of this.resident.keys()) this.remove(key)
+    this.treeMaterial?.dispose()
     this.treeTexture?.dispose()
     this.root.removeFromParent()
   }

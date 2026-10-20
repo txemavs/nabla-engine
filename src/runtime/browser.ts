@@ -1132,6 +1132,11 @@ export class GameRuntime {
           )
         : null
     if (this.world) {
+      const renderer = this.renderer
+      this.world.gpu = {
+        initTexture: (texture) => renderer.initTexture(texture),
+        compileAsync: (object) => renderer.compileAsync(object, this.camera, this.scene),
+      }
       let announced: string | undefined
       let painted = false
       this.world.beforeInstall = (key) => {
