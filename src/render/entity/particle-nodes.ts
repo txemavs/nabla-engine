@@ -85,12 +85,26 @@ function pointSprites(
  * layer of a draw; overlapping sprites in one draw approximate it.
  */
 function displayBlend(t: N, color: N, alpha: N): N {
+  // Render targets (mirrors) have no output pass in either backend: the raw colour blends as is.
+  const raw = t.vec4(color, alpha)
   const below = t.viewportSharedTexture(t.screenUV).rgb
   const shown = t.sRGBTransferOETF(t.acesFilmicToneMapping(below, t.toneMappingExposure))
   const target = decodeDisplay(t.mix(shown, color, alpha), t)
   const a = t.max(alpha, 1e-3)
-  return t.vec4(target.sub(below.mul(a.oneMinus())).div(a), alpha)
+  const screen = t.vec4(target.sub(below.mul(a.oneMinus())).div(a), alpha)
+  return onScreen(t).select(screen, raw)
 }
+
+/** True while the renderer draws to the canvas (through its output pass), false into a target. */
+const onScreen = (t: N) =>
+  t
+    .uniform(1)
+    .onRenderUpdate(({ renderer }: N) => {
+      // On screen the renderer draws into its own framebuffer target before the output pass.
+      const target = renderer.getRenderTarget()
+      return target === null || target.isPostProcessingRenderTarget === true ? 1 : 0
+    })
+    .greaterThan(0.5)
 
 /** Radial falloff of the GLSL `length(gl_PointCoord-0.5)*2.0` (sprite quads carry it in `uv`). */
 const pointDistance = (t: N) => t.length(t.uv().sub(0.5)).mul(2)
@@ -200,7 +214,7 @@ export function tireMarkMaterial(mesh: THREE.Mesh<THREE.BufferGeometry, THREE.Sh
       const grooves = t.cos(markUv.x.mul(38)).mul(0.18).add(0.82)
       const alpha = fade.mul(edge).mul(grooves).mul(opacity).mul(0.48)
       t.If(alpha.lessThan(0.005), () => t.Discard())
-      return t.vec4(t.sRGBTransferEOTF(tint), alpha)
+      return t.vec4(onScreen(t).select(t.sRGBTransferEOTF(tint), tint), alpha)
     })()
     material.transparent = base.transparent
     material.depthWrite = base.depthWrite

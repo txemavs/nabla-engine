@@ -167,8 +167,8 @@ Explicit throws in this body:
 
 [Implementation, line 273](../../../../src/runtime/render-pipeline.ts#L273)
 
-WebGPU frame: mirrors, then the main scene. GLSL passes (sky dome, clouds, portals, depth of
-field, FSR, lens flare) have no node-material port yet and are skipped; see docs/webgpu.md.
+WebGPU frame: mirrors, then the main scene. GLSL passes without a node-material port yet are
+skipped; see docs/webgpu.md.
 
 ```ts
 renderWebGPU(frame: GameRenderFrame): void
@@ -200,9 +200,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@277(object): inferred by TypeScript; see implementation
 ```
 
+## GameRenderPipeline.renderWebGPU.callback@292
+
+[Implementation, line 292](../../../../src/runtime/render-pipeline.ts#L292)
+
+```ts
+callback@292(reflection): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `frame.sky.render`
+- `reflection.position.clone`
+- `reflection.position.clone().add`
+
 ## GameRenderPipeline.blankShadowMaps
 
-[Implementation, line 323](../../../../src/runtime/render-pipeline.ts#L323)
+[Implementation, line 334](../../../../src/runtime/render-pipeline.ts#L334)
 
 Clear every shadow map to its far depth (fully lit); the current render target is kept.
 
@@ -218,7 +232,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## missingShadowMap
 
-[Implementation, line 344](../../../../src/runtime/render-pipeline.ts#L344)
+[Implementation, line 355](../../../../src/runtime/render-pipeline.ts#L355)
 
 A shadow-casting light whose map the renderer has not created yet.
 
@@ -230,10 +244,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `lights.some`
 
-## missingShadowMap.callback@345
+## missingShadowMap.callback@356
 
-[Implementation, line 345](../../../../src/runtime/render-pipeline.ts#L345)
+[Implementation, line 356](../../../../src/runtime/render-pipeline.ts#L356)
 
 ```ts
-callback@345(light): inferred by TypeScript; see implementation
+callback@356(light): inferred by TypeScript; see implementation
 ```
