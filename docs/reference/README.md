@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **544 modules; 6467 executable function definitions**.
+Coverage: **545 modules; 6511 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -230,8 +230,9 @@ Coverage: **544 modules; 6467 executable function definitions**.
 | [src/render/backend.ts](src/render/backend.ts.md) | 27 |
 | [src/render/capture.ts](src/render/capture.ts.md) | 7 |
 | [src/render/effects/depth-of-field.ts](src/render/effects/depth-of-field.ts.md) | 8 |
+| [src/render/effects/effect-nodes.ts](src/render/effects/effect-nodes.ts.md) | 37 |
 | [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
-| [src/render/effects/fsr1.ts](src/render/effects/fsr1.ts.md) | 13 |
+| [src/render/effects/fsr1.ts](src/render/effects/fsr1.ts.md) | 15 |
 | [src/render/entity/aircraft.ts](src/render/entity/aircraft.ts.md) | 4 |
 | [src/render/entity/asset-pack.ts](src/render/entity/asset-pack.ts.md) | 7 |
 | [src/render/entity/asset-quality.ts](src/render/entity/asset-quality.ts.md) | 2 |
@@ -312,7 +313,7 @@ Coverage: **544 modules; 6467 executable function definitions**.
 | [src/render/planet/instance-lights.ts](src/render/planet/instance-lights.ts.md) | 5 |
 | [src/render/planet/instances.ts](src/render/planet/instances.ts.md) | 4 |
 | [src/render/planet/landcover-batches.ts](src/render/planet/landcover-batches.ts.md) | 9 |
-| [src/render/planet/lens-flare-nodes.ts](src/render/planet/lens-flare-nodes.ts.md) | 10 |
+| [src/render/planet/lens-flare-nodes.ts](src/render/planet/lens-flare-nodes.ts.md) | 14 |
 | [src/render/planet/lens-flare.ts](src/render/planet/lens-flare.ts.md) | 3 |
 | [src/render/planet/loading-workers.ts](src/render/planet/loading-workers.ts.md) | 19 |
 | [src/render/planet/loading.worker.ts](src/render/planet/loading.worker.ts.md) | 0 |
@@ -416,7 +417,7 @@ Coverage: **544 modules; 6467 executable function definitions**.
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
-| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 16 |
+| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 17 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
