@@ -2,7 +2,9 @@ import { adaptAtlasZ16Instances } from '../../planet/atlas-z16.js'
 import { atlasTreeInstances, loadAtlasInstances } from './instances.js'
 import { planetChart } from './chart.js'
 import { convertPlanetGlbMesh } from './convert-mesh.js'
+import { configureTileLoader, type CompressedTextureSupport } from './tile-compression.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'meshoptimizer'
 import { LoadingManager, Mesh } from 'three'
 import {
   applyCandidateAsphaltPolicy,
@@ -21,6 +23,8 @@ import { mapCache } from './cache.js'
 import { sha256 } from '../../util/sha256.js'
 import { bakedDrapeLayers, buildDrapes } from './drape.js'
 const controllers = new Map<number, AbortController>()
+/** One KTX2 transcoder per worker (its wasm and nested workers are reused across cells). */
+let tileDecoders: { key: string; ktx2: ReturnType<typeof configureTileLoader>['ktx2'] } | undefined
 /** Download, verify and decode a package orthophoto, flipped so the texture needs no `flipY`. */
 async function loadPhoto(
   url: string,
@@ -52,6 +56,10 @@ self.onmessage = async (
     osmRoads?: boolean
     /** Package photo to drape: the projected layer ids and the cell's ground width in metres. */
     drape?: { layers: string[]; width: number }
+    /** GPU formats detected on the main thread, for KTX2 tile textures. Absent: RGBA8. */
+    textureSupport?: CompressedTextureSupport
+    /** Where `basis_transcoder.js/.wasm` are served. Default `/basis/`. */
+    transcoderPath?: string
     cancel?: boolean
   }>,
 ) => {
@@ -87,6 +95,18 @@ self.onmessage = async (
       throw Error('Planet GLBs must be self-contained')
     })
     const loader = new GLTFLoader(manager)
+    // meshopt geometry and KTX2 textures decode here, in the worker. Plain GLBs never use them.
+    const decoderKey = JSON.stringify([event.data.textureSupport, event.data.transcoderPath])
+    if (tileDecoders?.key !== decoderKey) {
+      tileDecoders?.ktx2.dispose()
+      tileDecoders = {
+        key: decoderKey,
+        ktx2: configureTileLoader(loader, {
+          support: event.data.textureSupport,
+          transcoderPath: event.data.transcoderPath,
+        }).ktx2,
+      }
+    } else loader.setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(tileDecoders.ktx2)
     /** Download, verify (size + SHA-256, in the worker) and convert one GLB layer into `meshes`. */
     const loadLayer = async (
       name: string,
@@ -210,7 +230,11 @@ self.onmessage = async (
     let drape: PlanetPayload['drape']
     if (event.data.drape && manifest.photo) {
       const baked = bakedDrapeLayers(
-        meshes.map((m) => ({ name: m.name, metadata: m.metadata, hasMap: !!m.map })),
+        meshes.map((m) => ({
+          name: m.name,
+          metadata: m.metadata,
+          hasMap: !!(m.map || m.compressedMap),
+        })),
         planetCellVersion(manifest),
       )
       const layers = await phase('photo', () =>
@@ -270,6 +294,7 @@ self.onmessage = async (
       ]),
       ...chunks.map((c) => c.triangles.buffer),
       ...meshes.flatMap((m) => (m.map ? [m.map] : [])),
+      ...meshes.flatMap((m) => m.compressedMap?.mipmaps.map((l) => l.data.buffer) ?? []),
       ...(drape?.layers.flatMap((d) => [d.position.buffer, d.uv.buffer]) ?? []),
       ...(drape?.photo ? [drape.photo] : []),
       ...(drape?.roofPhoto ? [drape.roofPhoto] : []),

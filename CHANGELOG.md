@@ -8,6 +8,7 @@
 
 ### Added
 
+- Compressed planet tiles: the tile worker decodes `EXT_meshopt_compression` / `KHR_mesh_quantization` geometry and transcodes `KHR_texture_basisu` (KTX2) textures to the renderer's BC7/ASTC/ETC2 format (RGBA8 fallback); the main thread uploads them as `CompressedTexture`. Plain GLBs and manifests load unchanged. Basis transcoder served from `/basis/` (`tiles.basisTranscoderPath`). See `docs/planet-tile-compression.md`.
 - Ajustes → Opciones → Luz: live sliders for Exposición (tone-mapping exposure), Sol and Ambiente (multipliers on the full-day 3.2 sun and 0.22 ambient), Reflejos (vehicle reflection multiplier), Pintura (vehicle paint colour multiplier), Sombras on/off and intensity. Each value is shown next to its slider, saved as `nabla.lightTuning`, and «Copiar valores» copies them as JSON (with «Restablecer» back to the defaults). The defaults are the restored look.
 
 ### Fixed

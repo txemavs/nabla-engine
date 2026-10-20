@@ -9,3 +9,4 @@ playwright-report
 
 assets/geography/irun-ventas.json
 test/planet/fixtures/
+assets/basis/basis_transcoder.js

@@ -5,6 +5,8 @@ import {
   tileClusterCullingEnabled,
   tileClustersTried,
 } from './cluster-culling.js'
+import { compressedTextureBytes, type CompressedTextureSupport } from './tile-compression.js'
+import type { PlanetCompressedTexture } from '../../planet/contract.js'
 import { Z16Updates } from './z16-updates.js'
 import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
@@ -40,6 +42,11 @@ const GPU_WAIT = Symbol('gpu-wait')
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /**
+   * URL directory serving `basis_transcoder.js` and `basis_transcoder.wasm` (shipped in
+   * `assets/basis/`), used only by KTX2-compressed tile GLBs. Default `/basis/`.
+   */
+  basisTranscoderPath?: string
   /** Atlas package fetch + SHA-256 + parse. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
   packageLoader?: AtlasPackageLoader
   /** Package photo decode and cluster-culling reorder. Default: main thread; the runtime picks a worker unless `?loadingWorkers=0`. */
@@ -376,6 +383,25 @@ function tileRevision(manifest: PlanetManifest) {
   return planetTileRevision(manifest)
 }
 
+/** Wrap a worker-transcoded KTX2 texture; mips are uploaded as-is (no GPU mip generation). */
+function compressedTileTexture(data: PlanetCompressedTexture) {
+  const texture = new THREE.CompressedTexture(
+    data.mipmaps as unknown as ImageData[],
+    data.width,
+    data.height,
+    data.format as THREE.CompressedPixelFormat,
+    data.type as THREE.TextureDataType,
+  )
+  texture.colorSpace = data.colorSpace as THREE.ColorSpace
+  texture.flipY = false
+  texture.generateMipmaps = false
+  texture.minFilter = data.mipmaps.length > 1 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.needsUpdate = true
+  return texture
+}
+
 function roofTexture(bitmap: ImageBitmap) {
   const texture = new THREE.Texture(bitmap)
   texture.flipY = false
@@ -693,6 +719,11 @@ export class PlanetWorld {
     initTexture(texture: THREE.Texture): void
     compileAsync(object: THREE.Object3D): Promise<unknown>
   }
+  /**
+   * Compressed GPU formats the renderer samples (see `detectCompressedTextureSupport`). The tile
+   * worker transcodes KTX2 tile textures to one of them; unset means RGBA8. Set before streaming.
+   */
+  textureSupport?: CompressedTextureSupport
 
   private startup = false
   private startupCount: 1 | 4 = 1
@@ -1316,6 +1347,8 @@ export class PlanetWorld {
         id,
         manifest,
         buildings: this.buildings,
+        textureSupport: this.textureSupport,
+        transcoderPath: this.sourceOptions.basisTranscoderPath,
         inspectRoadCollision: this.sourceOptions.inspectRoadCollision === true,
         osmRoads: this.sourceOptions.osmRoads === true,
         drape:
@@ -1391,7 +1424,11 @@ export class PlanetWorld {
       if (data.uv) geometry.setAttribute('uv', new THREE.BufferAttribute(data.uv, 2))
       if (data.index) geometry.setIndex(new THREE.BufferAttribute(data.index, 1))
       geometry.computeBoundingSphere()
-      const photo = data.map ? roofTexture(data.map) : undefined
+      const photo = data.compressedMap
+        ? compressedTileTexture(data.compressedMap)
+        : data.map
+          ? roofTexture(data.map)
+          : undefined
       const material = inlandWater(data.metadata)
         ? this.riverMaterial(data.side as THREE.Side)
         : (data.metadata.category === 'Buildings' || data.metadata.drape
@@ -1551,7 +1588,8 @@ export class PlanetWorld {
                 (m.color?.byteLength ?? 0) +
                 (m.index?.byteLength ?? 0) +
                 (m.uv?.byteLength ?? 0)) +
-            (m.map ? m.map.width * m.map.height * 4 * 2 : 0),
+            (m.map ? m.map.width * m.map.height * 4 * 2 : 0) +
+            (m.compressedMap ? 2 * compressedTextureBytes(m.compressedMap) : 0),
           0,
         ) +
         validPlanetPlaces(manifest.places).length * 512 * 64 * 4 +

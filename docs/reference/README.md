@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **549 modules; 6565 executable function definitions**.
+Coverage: **550 modules; 6576 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -335,6 +335,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/render/planet/sun-disc.ts](src/render/planet/sun-disc.ts.md) | 2 |
 | [src/render/planet/surface-nodes.ts](src/render/planet/surface-nodes.ts.md) | 17 |
 | [src/render/planet/tile-asset.ts](src/render/planet/tile-asset.ts.md) | 5 |
+| [src/render/planet/tile-compression.ts](src/render/planet/tile-compression.ts.md) | 8 |
 | [src/render/planet/tile-layers.ts](src/render/planet/tile-layers.ts.md) | 15 |
 | [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 9 |
 | [src/render/planet/visibility.ts](src/render/planet/visibility.ts.md) | 1 |
@@ -342,9 +343,9 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 4 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 24 |
-| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
+| [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 31 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 163 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 164 |
 | [src/render/planet/z16-updates.ts](src/render/planet/z16-updates.ts.md) | 5 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
