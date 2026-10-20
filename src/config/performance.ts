@@ -198,7 +198,7 @@ export const performancePresets = {
       fog: 500,
       relief: 2,
       collisions: 200,
-      resolution: 0.5,
+      resolution: 1,
       shadows: 0,
       smoke: 0,
     },

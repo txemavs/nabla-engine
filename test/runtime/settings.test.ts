@@ -29,7 +29,7 @@ it('shares named mobile budgets and preserves explicitly disabled render effects
   expect(p.shadows).toBe(0)
   expect(p.mirrors).toBe(0)
   expect(p.buildings).toBe(1)
-  expect(p.resolution * presetResolutionScale('mobile')).toBe(0.25)
+  expect(p.resolution * presetResolutionScale('mobile')).toBe(0.5)
   expect(p.smoke).toBe(0)
   expect(p.distance).toBe(500)
   expect(streamBudget(p)).toEqual({ concurrent: 1, ahead: 0, retain: false, tiles: 8 })
