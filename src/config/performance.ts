@@ -1,3 +1,4 @@
+import { smokeTuning } from './gameplay-tuning.js'
 /** Quality defaults, supported choices and named rendering/streaming presets. */
 export interface PerformanceSettings {
   /** Named quality profile, or custom for explicit values. */
@@ -24,6 +25,8 @@ export interface PerformanceSettings {
   shadows: number
   /** 0 off, 1 slight far-field blur. Presets reset it to off. */
   dof: number
+  /** Default smoke opacity, percent (0 off). A saved player value wins unless the profile turns smoke off. */
+  smoke: number
 }
 
 export {
@@ -52,6 +55,16 @@ export const visibilityChoices = Object.freeze({
   buildings: [0, 1],
 } as const)
 
+/** Supported values of the per-profile fields applied at start (not live). */
+export const profileChoices = Object.freeze({
+  /** Terrain draw distance. */
+  distance: [500, 1000, 2000, 4000, 6000, 10000, 20000],
+  /** Default smoke percent; 0 turns smoke off for the profile. */
+  smoke: [0, 5, 10, 25, 50, 100, 200, 300],
+  /** Sun shadow map size; 0 off. */
+  shadows: [0, 512, 1024, 2048, 4096],
+} as const)
+
 /** The quality fields that can change live without a restart. */
 export type VisibilitySettings = Pick<
   PerformanceSettings,
@@ -71,6 +84,7 @@ export const performanceDefaults: Readonly<PerformanceSettings> = Object.freeze(
   resolution: 1.25,
   shadows: 512,
   dof: 0,
+  smoke: smokeTuning.defaultPercent,
 })
 
 /** Standalone browser-game profile; explicit host settings override these values. */
@@ -101,11 +115,7 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
         [...visibilityChoices.buildings],
         performanceDefaults.buildings,
       ),
-      distance: choose(
-        s.distance,
-        [1000, 2000, 4000, 6000, 10000, 20000],
-        performanceDefaults.distance,
-      ),
+      distance: choose(s.distance, [...profileChoices.distance], performanceDefaults.distance),
       fog: choose(
         s.fog,
         [...visibilityChoices.fog],
@@ -121,11 +131,12 @@ export function normalizePerformance(value: unknown): PerformanceSettings {
       ),
       resolution: choose(
         s.resolution,
-        [0.35, 0.5, 0.75, 1, 1.25, 2],
+        [0.25, 0.35, 0.5, 0.75, 1, 1.25, 2],
         performanceDefaults.resolution,
       ),
-      shadows: choose(s.shadows, [0, 512, 1024, 2048, 4096], performanceDefaults.shadows),
+      shadows: choose(s.shadows, [...profileChoices.shadows], performanceDefaults.shadows),
       dof: choose(s.dof, [0, 1], performanceDefaults.dof),
+      smoke: choose(s.smoke, [...profileChoices.smoke], performanceDefaults.smoke),
     }
   } catch {
     return { ...performanceDefaults }
@@ -147,6 +158,7 @@ export const performancePresets = {
       collisions: 400,
       resolution: 1,
       shadows: 512,
+      smoke: smokeTuning.defaultPercent,
     },
     cache: 100,
     concurrent: 2,
@@ -167,6 +179,7 @@ export const performancePresets = {
       collisions: 200,
       resolution: 0.35,
       shadows: 0,
+      smoke: 0,
     },
     cache: 25,
     concurrent: 1,
@@ -180,18 +193,19 @@ export const performancePresets = {
       mirrors: 0,
       dof: 0,
       roads: 250,
-      buildings: 0,
-      distance: 1000,
+      buildings: 1,
+      distance: 500,
       fog: 500,
       relief: 2,
       collisions: 200,
-      resolution: 0.5,
-      shadows: 512,
+      resolution: 1,
+      shadows: 0,
+      smoke: 0,
     },
     cache: 25,
     concurrent: 1,
     ahead: 0,
-    tiles: 12,
+    tiles: 8,
   },
   low: {
     label: 'Bajo',
@@ -207,6 +221,7 @@ export const performancePresets = {
       collisions: 200,
       resolution: 1,
       shadows: 512,
+      smoke: smokeTuning.defaultPercent,
     },
     cache: 50,
     concurrent: 1,
@@ -227,6 +242,7 @@ export const performancePresets = {
       collisions: 400,
       resolution: 1.25,
       shadows: 512,
+      smoke: smokeTuning.defaultPercent,
     },
     cache: 100,
     concurrent: 2,
@@ -247,6 +263,7 @@ export const performancePresets = {
       collisions: 800,
       resolution: 1.25,
       shadows: 1024,
+      smoke: smokeTuning.defaultPercent,
     },
     cache: 100,
     concurrent: 3,
@@ -267,6 +284,7 @@ export const performancePresets = {
       collisions: 800,
       resolution: 2,
       shadows: 2048,
+      smoke: smokeTuning.defaultPercent,
     },
     cache: 100,
     concurrent: 3,
@@ -282,6 +300,7 @@ export function cloudStyleForPerformancePreset(preset: string): 'low' | 'artisti
 
 /** z15 meshes for a custom draw distance. Named presets carry their own cap. */
 export function tileBudget(distance: number): number {
+  if (distance <= 500) return 8
   if (distance <= 1000) return 12
   if (distance <= 2000) return 24
   if (distance <= 4000) return 64
