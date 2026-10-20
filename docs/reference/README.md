@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **535 modules; 6247 executable function definitions**.
+Coverage: **535 modules; 6253 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -201,7 +201,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/planet/buildings/roofs.ts](src/planet/buildings/roofs.ts.md) | 29 |
 | [src/planet/catch-floor.ts](src/planet/catch-floor.ts.md) | 0 |
 | [src/planet/collisions/chunks.ts](src/planet/collisions/chunks.ts.md) | 2 |
-| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 19 |
+| [src/planet/collisions/collisions.ts](src/planet/collisions/collisions.ts.md) | 18 |
 | [src/planet/collisions/index.ts](src/planet/collisions/index.ts.md) | 0 |
 | [src/planet/contract.ts](src/planet/contract.ts.md) | 32 |
 | [src/planet/extract/contract.ts](src/planet/extract/contract.ts.md) | 0 |
@@ -332,7 +332,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 22 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 159 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 163 |
 | [src/render/planet/z16-updates.ts](src/render/planet/z16-updates.ts.md) | 5 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
@@ -370,7 +370,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 457 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 459 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -501,7 +501,7 @@ Coverage: **535 modules; 6247 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 122 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 123 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |

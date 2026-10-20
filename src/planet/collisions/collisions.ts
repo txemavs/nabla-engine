@@ -2,7 +2,15 @@
  * Nearby GLB triangles as static trimeshes.
  * The old set stays until the replacement is built.
  */
-import { Body, Box, Material, Quaternion, Trimesh, Vec3, type World } from '../../simulation/physics.js'
+import {
+  Body,
+  Box,
+  Material,
+  Quaternion,
+  Trimesh,
+  Vec3,
+  type World,
+} from '../../simulation/physics.js'
 import type { QuatTuple, Transform, Vec3Tuple } from '../../math/frame/vectors.js'
 import type { PlanetCollisionChunk } from '../contract.js'
 
