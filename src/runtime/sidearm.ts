@@ -1,3 +1,4 @@
+import { muzzleFlashGeometry, shapeMuzzleFlash } from '../render/entity/muzzle-flash.js'
 import { assetUrlForQuality, type AssetQuality } from '../render/entity/asset-quality.js'
 import type { MagazineEntity } from '../simulation/weapons/magazine.js'
 import {
@@ -310,7 +311,7 @@ export class Sidearm {
     this.flashAt = (preset?.flash.position ?? [0, 0, -0.135]) as [number, number, number]
     // A short, small, dim flash: in daylight a 9 mm shows little more than a blink.
     this.flash = new THREE.Mesh(
-      new THREE.ConeGeometry(0.012, 0.03, 6),
+      muzzleFlashGeometry(),
       new THREE.MeshBasicMaterial({
         color: '#ffd9a0',
         transparent: true,
@@ -823,8 +824,10 @@ export class Sidearm {
     this.muzzleLight.target.position.copy(this.flash.position).add(new THREE.Vector3(0, 0, -1))
     this.flash.visible =
       this.flashTuning.intensity > 0 && ((age >= 0 && age < 60) || now < this.flashPreviewUntil)
-    ;(this.flash.material as THREE.MeshBasicMaterial).opacity = Math.min(
-      1,
+    shapeMuzzleFlash(
+      this.flash,
+      this.state.lastShotMs,
+      age,
       (0.55 * this.flashTuning.intensity) / 100,
     )
     this.muzzleLight.intensity = this.flashIntensity(now)
@@ -877,8 +880,10 @@ export class Sidearm {
       this.flashAt[2] - 0.015 + this.flashTuning.z / 1000,
     )
     this.flash.visible = this.visible && this.flashIntensity(now) > 0
-    ;(this.flash.material as THREE.MeshBasicMaterial).opacity = Math.min(
-      1,
+    shapeMuzzleFlash(
+      this.flash,
+      this.state.lastShotMs,
+      now - this.state.lastShotMs,
       (0.55 * this.flashTuning.intensity) / 100,
     )
     this.laserLine.visible = false

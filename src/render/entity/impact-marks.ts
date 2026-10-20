@@ -20,6 +20,11 @@ const HOLE_EDGE = 0.06
 const HOLE_RGB = [10, 10, 10] as const
 const SCORCH_RGB = [22, 18, 14] as const
 
+/** Random size of one mark, 0.8–1.25× (bullets do not leave identical holes). */
+function markScale(): number {
+  return 0.8 + Math.random() * 0.45
+}
+
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
   return t * t * (3 - 2 * t)
@@ -129,7 +134,7 @@ export class ImpactMarks {
     if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
-    mark.scale.set(1, 1, 1)
+    mark.scale.setScalar(markScale())
     this.place(mark, point, normal, false)
     mark.updateMatrixWorld(true)
     parent.updateWorldMatrix(true, false)
@@ -142,7 +147,7 @@ export class ImpactMarks {
     if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
-    mark.scale.set(1, 1, 1)
+    mark.scale.setScalar(markScale())
     const inverse = new THREE.Quaternion(...pose.rotation).invert()
     const n = new THREE.Vector3(...normal).normalize().applyQuaternion(inverse)
     if (n.lengthSq() < 1e-8) n.set(0, 1, 0)
@@ -166,7 +171,7 @@ export class ImpactMarks {
     if (!this.limit) return
     const mark = this.take()
     mark.removeFromParent()
-    mark.scale.set(1, 1, 1)
+    mark.scale.setScalar(markScale())
     this.place(mark, point, normal, false)
     root.add(mark)
     this.marks.push(mark)

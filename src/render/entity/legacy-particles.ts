@@ -426,3 +426,96 @@ export class LegacyShotSparks {
     this.material.dispose()
   }
 }
+
+const TRACER_LIFE_MS = 160
+/** Peak opacity of the faint grey air thread (matches shot-tracers.ts). */
+const TRACER_ALPHA = 0.1
+const TRACER_MAX = 24
+
+/** CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply. */
+export class LegacyShotTracers {
+  readonly root = new THREE.Group()
+  private readonly geometry = new THREE.BufferGeometry()
+  private readonly material = new THREE.LineBasicMaterial({
+    color: '#dbe0e6',
+    transparent: true,
+    opacity: TRACER_ALPHA,
+    depthWrite: false,
+    toneMapped: false,
+  })
+  private readonly line: THREE.LineSegments
+  private readonly positions = new Float32Array(TRACER_MAX * 6)
+  private readonly births = new Float64Array(TRACER_MAX)
+  private count = 0
+  private disposed = false
+
+  constructor() {
+    this.root.name = 'Shot tracers'
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
+    this.geometry.setDrawRange(0, 0)
+    this.line = new THREE.LineSegments(this.geometry, this.material)
+    this.line.frustumCulled = false
+    this.line.renderOrder = 4
+    this.root.add(this.line)
+    this.root.raycast = () => undefined
+  }
+
+  add(origin: Vec3Tuple, end: Vec3Tuple, now: number): void {
+    if (this.disposed || !Number.isFinite(now)) return
+    if (this.count === TRACER_MAX) {
+      this.positions.copyWithin(0, 6)
+      this.births.copyWithin(0, 1)
+      this.count = TRACER_MAX - 1
+    }
+    const o = this.count * 6
+    this.positions[o] = origin[0]
+    this.positions[o + 1] = origin[1]
+    this.positions[o + 2] = origin[2]
+    this.positions[o + 3] = end[0]
+    this.positions[o + 4] = end[1]
+    this.positions[o + 5] = end[2]
+    this.births[this.count] = now
+    this.count++
+    this.geometry.attributes.position.needsUpdate = true
+    this.geometry.setDrawRange(0, this.count * 2)
+    this.geometry.computeBoundingSphere()
+  }
+
+  update(now: number): void {
+    if (this.disposed || this.count === 0) return
+    let write = 0
+    let newest = -Infinity
+    for (let i = 0; i < this.count; i++) {
+      if (now - this.births[i] > TRACER_LIFE_MS) continue
+      if (write !== i) {
+        this.positions.copyWithin(write * 6, i * 6, i * 6 + 6)
+        this.births[write] = this.births[i]
+      }
+      newest = Math.max(newest, this.births[write]!)
+      write++
+    }
+    if (write !== this.count) {
+      this.count = write
+      this.geometry.attributes.position.needsUpdate = true
+      this.geometry.setDrawRange(0, this.count * 2)
+    }
+    this.material.opacity = this.count
+      ? Math.max(0, 1 - (now - newest) / TRACER_LIFE_MS) ** 2 * TRACER_ALPHA
+      : TRACER_ALPHA
+  }
+
+  clear(): void {
+    this.count = 0
+    this.geometry.setDrawRange(0, 0)
+    this.material.opacity = TRACER_ALPHA
+  }
+
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.clear()
+    this.root.removeFromParent()
+    this.geometry.dispose()
+    this.material.dispose()
+  }
+}
