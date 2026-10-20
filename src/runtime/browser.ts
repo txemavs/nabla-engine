@@ -1367,9 +1367,10 @@ export class GameRuntime {
       this.options.onProgress?.('Preparing…')
       await this.prepareReveal(controller.signal)
       // Never reveal an actor that is still waiting for its ground collision.
-      while (simulation.groundHeld) {
+      const holdStarted = performance.now()
+      while (!simulation.settleGround(performance.now() - holdStarted > 30_000)) {
         controller.signal.throwIfAborted()
-        await new Promise((resolve) => requestAnimationFrame(resolve))
+        await new Promise((resolve) => setTimeout(resolve, 16))
       }
       if (spawnGround !== undefined && this.world) {
         // Diagnostics: actor height above the rendered ground at reveal (negative: buried).
