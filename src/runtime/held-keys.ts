@@ -29,6 +29,26 @@ export class HeldKeys {
     // down, so with no owner there is no silence to interpret and the chord is kept.
     if (this.owner === code) this.owner = null
   }
+  /**
+   * Reconcile Shift with the modifier flag every keyboard and mouse event carries. A Shift
+   * pressed while input was not owned (focus, pointer re-capture, a weapon click) or still held
+   * across a `clear()` never comes back as a fresh keydown: its repeats are orphans and are
+   * ignored, so sprint stayed off until Shift was pressed again. The flag restores it, and a
+   * lost Shift keyup is dropped the same way. Does not touch the repeat-stream owner.
+   */
+  syncShift(shift: boolean, now: number): void {
+    const held = this.values.has('ShiftLeft') || this.values.has('ShiftRight')
+    if (shift && !held) {
+      this.values.add('ShiftLeft')
+      this.seen.set('ShiftLeft', now)
+    } else if (!shift && held) {
+      for (const code of ['ShiftLeft', 'ShiftRight']) {
+        this.values.delete(code)
+        this.seen.delete(code)
+        if (this.owner === code) this.owner = null
+      }
+    }
+  }
   /** Release the complete chord after blur, pause or other loss of input ownership. */
   clear(): void {
     this.values.clear()
