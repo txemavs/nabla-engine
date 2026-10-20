@@ -21,6 +21,7 @@ import {
   type RenderBackend,
   type RenderBackendKind,
   webgpuSkippedMaterials,
+  webgpuNodeKit,
 } from '../render/backend.js'
 import { atlasFieldLightSource } from '../render/planet/instance-lights.js'
 import { UsbFeedback } from './usb/feedback.js'
@@ -128,7 +129,11 @@ import {
 import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
-import { createGpuTiming } from '../diagnostics/gpu-timing.js'
+import {
+  createGpuTiming,
+  WebGPUGpuTiming,
+  type TimestampRenderer,
+} from '../diagnostics/gpu-timing.js'
 import { Sidearm } from './sidearm.js'
 import {
   normalizeWeaponPoses,
@@ -925,9 +930,14 @@ export class GameRuntime {
     configureWorldRenderer(this.renderer)
     if (options.onDiagnostics) {
       this.renderer.info.autoReset = false
-      const gl = this.renderer.getContext()
-      if (gl instanceof WebGL2RenderingContext) {
-        this.pipeline.gpuTiming = createGpuTiming(gl)
+      if (this.backend === 'webgpu') {
+        const timing = new WebGPUGpuTiming(this.renderer as unknown as TimestampRenderer)
+        this.pipeline.gpuTiming = timing.available ? timing : null
+      } else {
+        const gl = this.renderer.getContext()
+        if (gl instanceof WebGL2RenderingContext) {
+          this.pipeline.gpuTiming = createGpuTiming(gl)
+        }
       }
     }
     this.applyPixelRatio()
@@ -1106,6 +1116,7 @@ export class GameRuntime {
         scene: this.scene,
         lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
         tier: shadowTiers[this.quality.shadows]!,
+        nodeKit: webgpuNodeKit(this.renderer),
       })
     this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
     this.view.setupMaterials((material) => this.shadows.setupMaterial(material))

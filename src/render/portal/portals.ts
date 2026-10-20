@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import type { Entity } from '../../entity/schema.js'
+import { isWebGPU } from '../backend.js'
+import { setWebGPUSubstitute, type NodeKit, type WebGPUSubstitute } from '../webgpu-substitutes.js'
 
 export interface PortalSurface {
   entity: Entity
@@ -41,7 +43,57 @@ export function createPortalSurface(entity: Entity): PortalSurface {
   })
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(entity.size[0], entity.size[1]), material)
   mesh.userData.portalSurface = true
+  setWebGPUSubstitute(mesh, portalMaterial(material))
   return { entity, mesh, target }
+}
+
+/**
+ * The portal shader as a node material: the remote capture at the fragment's screen position
+ * (WebGPU's `screenUV` and render-target rows both run top-down), black while not live. The
+ * capture is linear, so the frame's output pass tone-maps it as WebGL's `tonemapping_fragment`.
+ */
+function portalMaterial(base: THREE.ShaderMaterial) {
+  return ({ webgpu, tsl }: NodeKit): WebGPUSubstitute => {
+    const t = tsl as any // eslint-disable-line @typescript-eslint/no-explicit-any
+    const live = t.uniform(0).onRenderUpdate(() => base.uniforms.live.value)
+    const remote = t.texture(base.uniforms.remote.value, t.screenUV)
+    const material = new webgpu.MeshBasicNodeMaterial({ side: THREE.DoubleSide })
+    material.colorNode = t.select(live.greaterThan(0.5), remote, t.vec4(0, 0, 0, 1))
+    material.fog = false
+    material.name = 'Portal surface (WebGPU)'
+    return { material }
+  }
+}
+
+const obliqueQ = new THREE.Vector4()
+const obliqueClip = new THREE.Vector4()
+const obliquePlane = new THREE.Plane()
+
+/**
+ * Clip `camera` at a world plane through its near plane (WebGPURenderer has no global
+ * `clippingPlanes`): the oblique projection of `reflectWebGPU`, for [0, 1] clip depth.
+ */
+function clipNearPlane(camera: THREE.PerspectiveCamera, plane: THREE.Plane): void {
+  obliquePlane.copy(plane).applyMatrix4(camera.matrixWorldInverse)
+  const clip = obliqueClip.set(
+    obliquePlane.normal.x,
+    obliquePlane.normal.y,
+    obliquePlane.normal.z,
+    obliquePlane.constant,
+  )
+  const e = camera.projectionMatrix.elements
+  obliqueQ.set(
+    (Math.sign(clip.x) + e[8]) / e[0],
+    (Math.sign(clip.y) + e[9]) / e[5],
+    -1,
+    (1 + e[10]) / e[14],
+  )
+  clip.multiplyScalar(1 / clip.dot(obliqueQ))
+  e[2] = clip.x
+  e[6] = clip.y
+  e[10] = clip.z
+  e[14] = clip.w
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert()
 }
 /** One remote level. Targets use screen projection, not a second quad perspective. */
 export function renderPortals(
@@ -73,6 +125,14 @@ export function renderPortals(
     new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
   )
   let rendered = 0
+  const webgpu = isWebGPU(renderer)
+  if (webgpu) {
+    // The remote camera keeps the main projection, in the renderer's clip space.
+    const system = (renderer as unknown as { coordinateSystem: THREE.CoordinateSystem })
+      .coordinateSystem
+    camera.coordinateSystem = system
+    camera.updateProjectionMatrix()
+  }
   try {
     // A recursion boundary has a stable dark surface rather than rendering stale feedback.
     for (const surface of surfaces.values()) surface.mesh.material.uniforms.live.value = 0
@@ -110,7 +170,9 @@ export function renderPortals(
         const point = new THREE.Vector3()
           .setFromMatrixPosition(destination.mesh.matrixWorld)
           .addScaledVector(normal, 0.015)
-        renderer.clippingPlanes = [new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)]
+        const clipPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, point)
+        if (webgpu) clipNearPlane(remote, clipPlane)
+        else renderer.clippingPlanes = [clipPlane]
         destination.mesh.visible = false
         renderer.render(external?.scene ?? scene, remote)
         rendered++
