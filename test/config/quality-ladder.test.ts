@@ -3,7 +3,8 @@ import { performancePresets } from '../../src/config/performance.js'
 import { presetResolutionScale } from '../../src/config/display.js'
 
 /** Lighter profiles must never cost more than heavier ones, field by field. */
-const ladder = ['minimal', 'mobile', 'low', 'balanced', 'high', 'ultra'] as const
+/** Mobile is the absolute floor (phones); Minimal keeps a little more reach for weak desktops. */
+const ladder = ['mobile', 'minimal', 'low', 'balanced', 'high', 'ultra'] as const
 const fields = [
   'vehicleShadows',
   'mirrors',
@@ -15,6 +16,7 @@ const fields = [
   'collisions',
   'resolution',
   'shadows',
+  'smoke',
 ] as const
 
 describe('quality ladder', () => {

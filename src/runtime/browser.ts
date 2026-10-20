@@ -896,6 +896,14 @@ export class GameRuntime {
       ...preset,
       ...options.performance,
     })
+    // Profile smoke: off forces it off for the session; otherwise it is the default under a saved value.
+    try {
+      if (this.quality.smoke === 0) setSmokeDensity(0)
+      else if (browserStorage()?.getItem('nabla.smokePercent') == null)
+        setSmokeDensity(this.quality.smoke)
+    } catch {
+      setSmokeDensity(this.quality.smoke)
+    }
     const savedPlanet = readSavedPlanetVisual(browserStorage())
     if (savedPlanet) Object.assign(this.planet, savedPlanet)
     else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
