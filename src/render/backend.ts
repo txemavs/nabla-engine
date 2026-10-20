@@ -8,6 +8,7 @@ import {
   type NodeKit,
 } from './webgpu-substitutes.js'
 import { decodeDisplay } from './planet/sky-nodes.js'
+import { setAnalyticParticles } from './entity/gpu-particles.js'
 
 /** Renderer requested by the page: `auto` picks WebGPU when an adapter exists, else WebGL. */
 export type RendererPreference = 'webgl' | 'webgpu' | 'auto'
@@ -89,6 +90,7 @@ export async function createRenderBackend(
     const { trackTimestamp: _, ...webglParameters } = parameters
     const renderer = new THREE.WebGLRenderer(webglParameters)
     backends.set(renderer, 'webgl')
+    setAnalyticParticles(true)
     return { kind: 'webgl', renderer, requested: preference, fallbackReason }
   }
   if (preference === 'webgl') return webgl()
@@ -112,6 +114,8 @@ export async function createRenderBackend(
       CSMShadowNode: csm.CSMShadowNode,
     })
     backends.set(renderer, 'webgpu')
+    // The WebGPU sprite substitutes read CPU-integrated particle attributes.
+    setAnalyticParticles(false)
     return { kind: 'webgpu', renderer, requested: preference }
   } catch (error) {
     console.warn('WebGPU renderer failed; using WebGL', error)

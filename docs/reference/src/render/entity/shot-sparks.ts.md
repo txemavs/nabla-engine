@@ -8,12 +8,16 @@
 
 - `three`
 - `../../entity/schema.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
 
-## ShotSparks.constructor
+## AnalyticShotSparks.constructor
 
-[Implementation, line 43](../../../../../src/render/entity/shot-sparks.ts#L43)
+[Implementation, line 55](../../../../../src/render/entity/shot-sparks.ts#L55)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
 
 ```ts
 constructor(): instance
@@ -23,23 +27,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.BufferAttribute`
 - `THREE.Points`
+- `THREE.Sphere`
+- `THREE.Vector3`
 - `this.geometry.setAttribute`
-- `this.geometry.setDrawRange`
 - `this.root.add`
 
-## ShotSparks.constructor.callback@51
+## AnalyticShotSparks.constructor.callback@61
 
-[Implementation, line 51](../../../../../src/render/entity/shot-sparks.ts#L51)
+[Implementation, line 61](../../../../../src/render/entity/shot-sparks.ts#L61)
 
 ```ts
-callback@51(): inferred by TypeScript; see implementation
+callback@61(shader): inferred by TypeScript; see implementation
 ```
 
-## ShotSparks.add
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 54](../../../../../src/render/entity/shot-sparks.ts#L54)
+- `LIFE_MS.toFixed`
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+## AnalyticShotSparks.constructor.callback@81
+
+[Implementation, line 81](../../../../../src/render/entity/shot-sparks.ts#L81)
+
+```ts
+callback@81(): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.constructor.callback@87
+
+[Implementation, line 87](../../../../../src/render/entity/shot-sparks.ts#L87)
+
+```ts
+callback@87(): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.add
+
+[Implementation, line 90](../../../../../src/render/entity/shot-sparks.ts#L90)
+
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
 
 ```ts
 add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
@@ -54,20 +81,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.round`
 - `Number.isFinite`
 - `THREE.Vector3`
+- `attribute.addUpdateRange`
 - `new THREE.Vector3().crossVectors`
 - `new THREE.Vector3().crossVectors(n, tangent).normalize`
 - `new THREE.Vector3(...normal).normalize`
 - `tangent.crossVectors`
 - `tangent.crossVectors(bitangent, n).normalize`
-- `this.bursts.push`
-- `this.bursts.shift`
-- `velocities.push`
+- `this.geometry.getAttribute`
+- `this.live`
+- `this.origins.set`
+- `this.rebase`
+- `velocity.toArray`
 
-## ShotSparks.update
+## AnalyticShotSparks.update
 
-[Implementation, line 83](../../../../../src/render/entity/shot-sparks.ts#L83)
+[Implementation, line 137](../../../../../src/render/entity/shot-sparks.ts#L137)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
 
 ```ts
 update(now: number): void
@@ -76,25 +108,15 @@ update(now: number): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
-- `this.bursts.filter`
-- `this.bursts.push`
 - `this.clear`
-- `this.geometry.computeBoundingSphere`
-- `this.geometry.setDrawRange`
 
-## ShotSparks.update.callback@89
+## AnalyticShotSparks.clear
 
-[Implementation, line 89](../../../../../src/render/entity/shot-sparks.ts#L89)
+[Implementation, line 150](../../../../../src/render/entity/shot-sparks.ts#L150)
 
-```ts
-callback@89(b): inferred by TypeScript; see implementation
-```
-
-## ShotSparks.clear
-
-[Implementation, line 111](../../../../../src/render/entity/shot-sparks.ts#L111)
-
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
 
 ```ts
 clear(): void
@@ -102,13 +124,15 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.geometry.setDrawRange`
+- `this.births.fill`
 
-## ShotSparks.dispose
+## AnalyticShotSparks.dispose
 
-[Implementation, line 117](../../../../../src/render/entity/shot-sparks.ts#L117)
+[Implementation, line 156](../../../../../src/render/entity/shot-sparks.ts#L156)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
 
 ```ts
 dispose(): void
@@ -120,3 +144,178 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.dispose`
 - `this.material.dispose`
 - `this.root.removeFromParent`
+
+## AnalyticShotSparks.livePositions
+
+[Implementation, line 166](../../../../../src/render/entity/shot-sparks.ts#L166)
+
+Positions of the live sparks at `now`, oldest burst first (the shader's maths).
+
+```ts
+livePositions(now: number): Float32Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float32Array.from`
+- `out.push`
+- `this.births.keys`
+
+## AnalyticShotSparks.livePositions.callback@169
+
+[Implementation, line 169](../../../../../src/render/entity/shot-sparks.ts#L169)
+
+```ts
+callback@169(b): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.livePositions.callback@170
+
+[Implementation, line 170](../../../../../src/render/entity/shot-sparks.ts#L170)
+
+```ts
+callback@170(a, b): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.live
+
+[Implementation, line 184](../../../../../src/render/entity/shot-sparks.ts#L184)
+
+Analytic GPU sparks: each burst writes its origin, velocities and birth once into a ring of
+`MAX_BURSTS` × `PER_BURST` slots; the vertex shader evaluates the ballistic path. All sparks
+share one colour and opacity, so their draw order does not change the blend.
+
+```ts
+live(now: number): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.births.some`
+
+## AnalyticShotSparks.live.callback@185
+
+[Implementation, line 185](../../../../../src/render/entity/shot-sparks.ts#L185)
+
+```ts
+callback@185(birth): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.rebase
+
+[Implementation, line 189](../../../../../src/render/entity/shot-sparks.ts#L189)
+
+Start a new float epoch at `now`: rewrite every slot's birth against it (rare, 1.3 KB).
+
+```ts
+rebase(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `attribute.clearUpdateRanges`
+- `this.geometry.getAttribute`
+
+## ShotSparks.enabled
+
+[Implementation, line 208](../../../../../src/render/entity/shot-sparks.ts#L208)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+enabled(): boolean
+```
+
+## ShotSparks.enabled
+
+[Implementation, line 211](../../../../../src/render/entity/shot-sparks.ts#L211)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+enabled(enabled: boolean): inferred by TypeScript; see implementation
+```
+
+## ShotSparks.add
+
+[Implementation, line 214](../../../../../src/render/entity/shot-sparks.ts#L214)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.add`
+
+## ShotSparks.update
+
+[Implementation, line 217](../../../../../src/render/entity/shot-sparks.ts#L217)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+update(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## ShotSparks.livePositions
+
+[Implementation, line 221](../../../../../src/render/entity/shot-sparks.ts#L221)
+
+Positions of the live sparks at `now` (after `update(now)`).
+
+```ts
+livePositions(now: number): Float32Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `array.slice`
+- `points.geometry.getAttribute`
+- `this.impl.livePositions`
+
+## ShotSparks.clear
+
+[Implementation, line 227](../../../../../src/render/entity/shot-sparks.ts#L227)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.clear`
+
+## ShotSparks.dispose
+
+[Implementation, line 230](../../../../../src/render/entity/shot-sparks.ts#L230)
+
+Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`

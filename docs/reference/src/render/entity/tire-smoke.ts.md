@@ -9,14 +9,14 @@
 - `./smoke-density.js`
 - `three`
 - `../../entity/schema.js`
-- `../webgpu-substitutes.js`
-- `./particle-nodes.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
 
-## TireSmoke.constructor
+## AnalyticTireSmoke.constructor
 
-[Implementation, line 15](../../../../../src/render/entity/tire-smoke.ts#L15)
+[Implementation, line 37](../../../../../src/render/entity/tire-smoke.ts#L37)
 
-Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
 ```ts
 constructor(): instance
@@ -27,15 +27,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `BufferAttribute`
 - `Points`
 - `ShaderMaterial`
-- `setWebGPUSubstitute`
+- `new BufferAttribute(this.origins, 3).setUsage`
+- `new BufferAttribute(this.spawn, 2).setUsage`
 - `this.geometry.setAttribute`
-- `tireSmokeSprites`
 
-## TireSmoke.update
+## AnalyticTireSmoke.update
 
-[Implementation, line 45](../../../../../src/render/entity/tire-smoke.ts#L45)
+[Implementation, line 70](../../../../../src/render/entity/tire-smoke.ts#L70)
 
-Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
 ```ts
 update(dt: number, contacts: Vec3Tuple[], slip: number, origin: Vector3): void
@@ -45,24 +45,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
-- `this.life.some`
-- `this.positions.set`
+- `markRange`
+- `this.clock.relS`
+- `this.clock.step`
+- `this.origins.set`
+- `this.rebase`
 - `this.root.position.copy`
 - `this.root.position.copy(origin).negate`
 
-## TireSmoke.update.callback@60
+## AnalyticTireSmoke.life
 
-[Implementation, line 60](../../../../../src/render/entity/tire-smoke.ts#L60)
+[Implementation, line 93](../../../../../src/render/entity/tire-smoke.ts#L93)
+
+Current life of each particle, evaluated with the shader's maths.
 
 ```ts
-callback@60(v): inferred by TypeScript; see implementation
+life(): Float32Array
 ```
 
-## TireSmoke.clear
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 64](../../../../../src/render/entity/tire-smoke.ts#L64)
+- `Float32Array`
+- `Math.max`
 
-Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+## AnalyticTireSmoke.clear
+
+[Implementation, line 99](../../../../../src/render/entity/tire-smoke.ts#L99)
+
+Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
 ```ts
 clear(): void
@@ -70,13 +80,14 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.life.fill`
+- `markRange`
+- `this.lifetimes.fill`
 
-## TireSmoke.dispose
+## AnalyticTireSmoke.dispose
 
-[Implementation, line 69](../../../../../src/render/entity/tire-smoke.ts#L69)
+[Implementation, line 109](../../../../../src/render/entity/tire-smoke.ts#L109)
 
-Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
 ```ts
 dispose(): void
@@ -86,3 +97,82 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `(this.root.material as ShaderMaterial).dispose`
 - `this.geometry.dispose`
+
+## AnalyticTireSmoke.rebase
+
+[Implementation, line 113](../../../../../src/render/entity/tire-smoke.ts#L113)
+
+Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
+
+```ts
+rebase(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `markRange`
+- `this.clock.rebase`
+- `this.clock.relS`
+
+## TireSmoke.update
+
+[Implementation, line 128](../../../../../src/render/entity/tire-smoke.ts#L128)
+
+Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
+simulation feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+update(dt: number, contacts: Vec3Tuple[], slip: number, origin: Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## TireSmoke.life
+
+[Implementation, line 132](../../../../../src/render/entity/tire-smoke.ts#L132)
+
+Current life of each particle (0 when dead).
+
+```ts
+life(): Float32Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.life`
+- `this.root.geometry.getAttribute`
+
+## TireSmoke.clear
+
+[Implementation, line 137](../../../../../src/render/entity/tire-smoke.ts#L137)
+
+Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
+simulation feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.clear`
+
+## TireSmoke.dispose
+
+[Implementation, line 140](../../../../../src/render/entity/tire-smoke.ts#L140)
+
+Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
+simulation feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`

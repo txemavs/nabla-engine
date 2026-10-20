@@ -9,10 +9,11 @@
 - `three`
 - `./webgpu-substitutes.js`
 - `./planet/sky-nodes.js`
+- `./entity/gpu-particles.js`
 
 ## parseRendererPreference
 
-[Implementation, line 42](../../../../src/render/backend.ts#L42)
+[Implementation, line 43](../../../../src/render/backend.ts#L43)
 
 `?renderer=webgpu|webgl|auto`; anything else (or no parameter) keeps the WebGL default.
 
@@ -29,7 +30,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuAvailable
 
-[Implementation, line 53](../../../../src/render/backend.ts#L53)
+[Implementation, line 54](../../../../src/render/backend.ts#L54)
 
 True when the browser exposes `navigator.gpu` and grants an adapter.
 
@@ -43,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rendererBackend
 
-[Implementation, line 67](../../../../src/render/backend.ts#L67)
+[Implementation, line 68](../../../../src/render/backend.ts#L68)
 
 ```ts
 rendererBackend(renderer: object): RenderBackendKind
@@ -55,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isWebGPU
 
-[Implementation, line 75](../../../../src/render/backend.ts#L75)
+[Implementation, line 76](../../../../src/render/backend.ts#L76)
 
 ```ts
 isWebGPU(renderer: object): boolean
@@ -67,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createRenderBackend
 
-[Implementation, line 84](../../../../src/render/backend.ts#L84)
+[Implementation, line 85](../../../../src/render/backend.ts#L85)
 
 Create and initialise the renderer for a preference. WebGL is the default and is created exactly
 as before. WebGPU loads `three/webgpu` on demand, awaits `init()`, and falls back to WebGL when
@@ -85,6 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `console.warn`
 - `gpu.init`
 - `import`
+- `setAnalyticParticles`
 - `webgl`
 - `webglSurface`
 - `webgpu.WebGPURenderer`
@@ -92,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createRenderBackend.webgl
 
-[Implementation, line 88](../../../../src/render/backend.ts#L88)
+[Implementation, line 89](../../../../src/render/backend.ts#L89)
 
 ```ts
 webgl(fallbackReason?: string): RenderBackend
@@ -102,10 +104,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.WebGLRenderer`
 - `backends.set`
+- `setAnalyticParticles`
 
 ## frameDrawCalls
 
-[Implementation, line 123](../../../../src/render/backend.ts#L123)
+[Implementation, line 127](../../../../src/render/backend.ts#L127)
 
 Draw calls of the last frame: WebGPU counts them in `drawCalls`, WebGL in `calls`.
 
@@ -119,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuSkippedMaterials
 
-[Implementation, line 142](../../../../src/render/backend.ts#L142)
+[Implementation, line 146](../../../../src/render/backend.ts#L146)
 
 GLSL-only material names a WebGPU renderer has skipped so far; empty under WebGL.
 
@@ -133,7 +136,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webglSurface
 
-[Implementation, line 152](../../../../src/render/backend.ts#L152)
+[Implementation, line 156](../../../../src/render/backend.ts#L156)
 
 ```ts
 webglSurface(gpu: WebGPURendererLike, kit?: NodeKit): THREE.WebGLRenderer
@@ -149,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webglSurface.getMaxAnisotropy
 
-[Implementation, line 157](../../../../src/render/backend.ts#L157)
+[Implementation, line 161](../../../../src/render/backend.ts#L161)
 
 ```ts
 getMaxAnisotropy(): inferred by TypeScript; see implementation
@@ -159,32 +162,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `gpu.getMaxAnisotropy`
 
-## webglSurface.callback@158
+## webglSurface.callback@162
 
-[Implementation, line 158](../../../../src/render/backend.ts#L158)
+[Implementation, line 162](../../../../src/render/backend.ts#L162)
 
 ```ts
-callback@158(): inferred by TypeScript; see implementation
+callback@162(): inferred by TypeScript; see implementation
 ```
 
-## webglSurface.callback@161
+## webglSurface.callback@165
 
-[Implementation, line 161](../../../../src/render/backend.ts#L161)
+[Implementation, line 165](../../../../src/render/backend.ts#L165)
 
 ```ts
-callback@161(): inferred by TypeScript; see implementation
+callback@165(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `gpu.getRenderTarget`
 
-## webglSurface.callback@168
+## webglSurface.callback@172
 
-[Implementation, line 168](../../../../src/render/backend.ts#L168)
+[Implementation, line 172](../../../../src/render/backend.ts#L172)
 
 ```ts
-callback@168(scene, camera): inferred by TypeScript; see implementation
+callback@172(scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -193,12 +196,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `guard.restore`
 - `render`
 
-## webglSurface.callback@178
+## webglSurface.callback@182
 
-[Implementation, line 178](../../../../src/render/backend.ts#L178)
+[Implementation, line 182](../../../../src/render/backend.ts#L182)
 
 ```ts
-callback@178(object, camera, targetScene): inferred by TypeScript; see implementation
+callback@182(object, camera, targetScene): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -209,7 +212,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## webgpuNodeKit
 
-[Implementation, line 192](../../../../src/render/backend.ts#L192)
+[Implementation, line 196](../../../../src/render/backend.ts#L196)
 
 Material built from GLSL (or patched GLSL) that the WebGPU node backend cannot compile.
 
@@ -221,7 +224,7 @@ webgpuNodeKit(renderer: object): NodeKit | undefined
 
 ## glslOnlyMaterial
 
-[Implementation, line 199](../../../../src/render/backend.ts#L199)
+[Implementation, line 203](../../../../src/render/backend.ts#L203)
 
 ```ts
 glslOnlyMaterial(material: THREE.Material): boolean
@@ -229,7 +232,7 @@ glslOnlyMaterial(material: THREE.Material): boolean
 
 ## WebGPUCompatibility.constructor
 
-[Implementation, line 237](../../../../src/render/backend.ts#L237)
+[Implementation, line 241](../../../../src/render/backend.ts#L241)
 
 `kit` enables registered TSL substitutes (see `setWebGPUSubstitute`); without it they hide.
 `toScreen` tells whether the next render goes through the renderer's tone-mapping output pass.
@@ -238,17 +241,17 @@ glslOnlyMaterial(material: THREE.Material): boolean
 constructor(readonly kit?: NodeKit, private readonly toScreen: () => boolean = () => false): instance
 ```
 
-## WebGPUCompatibility.constructor.callback@239
+## WebGPUCompatibility.constructor.callback@243
 
-[Implementation, line 239](../../../../src/render/backend.ts#L239)
+[Implementation, line 243](../../../../src/render/backend.ts#L243)
 
 ```ts
-callback@239(): inferred by TypeScript; see implementation
+callback@243(): inferred by TypeScript; see implementation
 ```
 
 ## WebGPUCompatibility.apply
 
-[Implementation, line 242](../../../../src/render/backend.ts#L242)
+[Implementation, line 246](../../../../src/render/backend.ts#L246)
 
 WebGPU-only guard: hide meshes whose material is GLSL `ShaderMaterial` (the node backend would
 draw them with a default white material). Hidden objects are tracked so a later visibility
@@ -282,12 +285,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.toScreen`
 - `webgpuSubstitute`
 
-## WebGPUCompatibility.apply.callback@246
+## WebGPUCompatibility.apply.callback@250
 
-[Implementation, line 246](../../../../src/render/backend.ts#L246)
+[Implementation, line 250](../../../../src/render/backend.ts#L250)
 
 ```ts
-callback@246(object): inferred by TypeScript; see implementation
+callback@250(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -300,7 +303,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUCompatibility.apply.swap
 
-[Implementation, line 257](../../../../src/render/backend.ts#L257)
+[Implementation, line 261](../../../../src/render/backend.ts#L261)
 
 ```ts
 swap(material: THREE.Material): inferred by TypeScript; see implementation
@@ -315,7 +318,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUCompatibility.matchWebGLToneMapping
 
-[Implementation, line 311](../../../../src/render/backend.ts#L311)
+[Implementation, line 315](../../../../src/render/backend.ts#L315)
 
 WebGL tone-maps per material and clears to the background colour as is; WebGPU tone-maps the
 whole frame in its output pass. For an on-screen frame, draw `toneMapped: false` materials
@@ -339,7 +342,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUCompatibility.matchWebGLToneMapping.display
 
-[Implementation, line 330](../../../../src/render/backend.ts#L330)
+[Implementation, line 334](../../../../src/render/backend.ts#L334)
 
 ```ts
 display(material: THREE.Material): inferred by TypeScript; see implementation
@@ -355,12 +358,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.displayTwins.set`
 - `twin.sync`
 
-## WebGPUCompatibility.matchWebGLToneMapping.display.callback@336
+## WebGPUCompatibility.matchWebGLToneMapping.display.callback@340
 
-[Implementation, line 336](../../../../src/render/backend.ts#L336)
+[Implementation, line 340](../../../../src/render/backend.ts#L340)
 
 ```ts
-callback@336(target): inferred by TypeScript; see implementation
+callback@340(target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -369,12 +372,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tsl.sRGBTransferOETF`
 - `tsl.vec4`
 
-## WebGPUCompatibility.matchWebGLToneMapping.callback@348
+## WebGPUCompatibility.matchWebGLToneMapping.callback@352
 
-[Implementation, line 348](../../../../src/render/backend.ts#L348)
+[Implementation, line 352](../../../../src/render/backend.ts#L352)
 
 ```ts
-callback@348(object): inferred by TypeScript; see implementation
+callback@352(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -386,12 +389,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.swapped.has`
 - `this.swapped.set`
 
-## WebGPUCompatibility.matchWebGLToneMapping.callback@348.callback@353
+## WebGPUCompatibility.matchWebGLToneMapping.callback@352.callback@357
 
-[Implementation, line 353](../../../../src/render/backend.ts#L353)
+[Implementation, line 357](../../../../src/render/backend.ts#L357)
 
 ```ts
-callback@353(m): inferred by TypeScript; see implementation
+callback@357(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -400,7 +403,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WebGPUCompatibility.restore
 
-[Implementation, line 359](../../../../src/render/backend.ts#L359)
+[Implementation, line 363](../../../../src/render/backend.ts#L363)
 
 Give hidden objects back the visibility (and swapped meshes the material) their owner set.
 

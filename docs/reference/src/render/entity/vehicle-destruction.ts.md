@@ -284,6 +284,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.warmFire.removeFromParent`
 - `this.warmFlames.flames.removeFromParent`
 - `this.warmSmoke.root.removeFromParent`
+- `this.warmSmoke.warmUp`
 
 ## VehicleDestruction.warm.callback@363
 
@@ -299,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.glass
 
-[Implementation, line 384](../../../../../src/render/entity/vehicle-destruction.ts#L384)
+[Implementation, line 385](../../../../../src/render/entity/vehicle-destruction.ts#L385)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -317,7 +318,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.update
 
-[Implementation, line 399](../../../../../src/render/entity/vehicle-destruction.ts#L399)
+[Implementation, line 400](../../../../../src/render/entity/vehicle-destruction.ts#L400)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -367,24 +368,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.shards.splice`
 - `this.space.worldToLocal`
 
-## VehicleDestruction.update.callback@458
+## VehicleDestruction.update.callback@459
 
-[Implementation, line 458](../../../../../src/render/entity/vehicle-destruction.ts#L458)
+[Implementation, line 459](../../../../../src/render/entity/vehicle-destruction.ts#L459)
 
 ```ts
-callback@458(tongue, i): inferred by TypeScript; see implementation
+callback@459(tongue, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.sin`
 
-## VehicleDestruction.update.callback@522
+## VehicleDestruction.update.callback@523
 
-[Implementation, line 522](../../../../../src/render/entity/vehicle-destruction.ts#L522)
+[Implementation, line 523](../../../../../src/render/entity/vehicle-destruction.ts#L523)
 
 ```ts
-callback@522(shard, i): inferred by TypeScript; see implementation
+callback@523(shard, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -396,7 +397,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.remove
 
-[Implementation, line 530](../../../../../src/render/entity/vehicle-destruction.ts#L530)
+[Implementation, line 531](../../../../../src/render/entity/vehicle-destruction.ts#L531)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -416,7 +417,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.clear
 
-[Implementation, line 540](../../../../../src/render/entity/vehicle-destruction.ts#L540)
+[Implementation, line 541](../../../../../src/render/entity/vehicle-destruction.ts#L541)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 
@@ -445,7 +446,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.dispose
 
-[Implementation, line 576](../../../../../src/render/entity/vehicle-destruction.ts#L576)
+[Implementation, line 577](../../../../../src/render/entity/vehicle-destruction.ts#L577)
 
 Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame.
 

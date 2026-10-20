@@ -8,12 +8,22 @@
 
 - `./smoke-density.js`
 - `three`
-- `../webgpu-substitutes.js`
-- `./particle-nodes.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
 
-## MuzzleSmoke.constructor
+## AnalyticMuzzleSmoke.callback@16
 
-[Implementation, line 14](../../../../../src/render/entity/muzzle-smoke.ts#L14)
+[Implementation, line 16](../../../../../src/render/entity/muzzle-smoke.ts#L16)
+
+```ts
+callback@16(_, i): inferred by TypeScript; see implementation
+```
+
+## AnalyticMuzzleSmoke.constructor
+
+[Implementation, line 22](../../../../../src/render/entity/muzzle-smoke.ts#L22)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
 ```ts
 constructor(): instance
@@ -21,16 +31,17 @@ constructor(): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `LIFE_S.toFixed`
 - `THREE.BufferAttribute`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
-- `muzzleSmokeSprites`
-- `setWebGPUSubstitute`
 - `this.geometry.setAttribute`
 
-## MuzzleSmoke.burst
+## AnalyticMuzzleSmoke.burst
 
-[Implementation, line 48](../../../../../src/render/entity/muzzle-smoke.ts#L48)
+[Implementation, line 56](../../../../../src/render/entity/muzzle-smoke.ts#L56)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
 ```ts
 burst(now: number, muzzle: readonly number[]): void
@@ -38,12 +49,16 @@ burst(now: number, muzzle: readonly number[]): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.live`
 - `this.origins.set`
 - `this.update`
+- `this.writeBirths`
 
-## MuzzleSmoke.update
+## AnalyticMuzzleSmoke.update
 
-[Implementation, line 56](../../../../../src/render/entity/muzzle-smoke.ts#L56)
+[Implementation, line 68](../../../../../src/render/entity/muzzle-smoke.ts#L68)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
 ```ts
 update(now: number, height = 750): void
@@ -51,20 +66,29 @@ update(now: number, height = 750): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.sin`
-- `this.ages.some`
+- `this.live`
 
-## MuzzleSmoke.update.callback@65
+## AnalyticMuzzleSmoke.particles
 
-[Implementation, line 65](../../../../../src/render/entity/muzzle-smoke.ts#L65)
+[Implementation, line 74](../../../../../src/render/entity/muzzle-smoke.ts#L74)
+
+Current positions and ages (−1 when dead), evaluated with the shader's maths.
 
 ```ts
-callback@65(age): inferred by TypeScript; see implementation
+particles(now: number): { positions: Float32Array; ages: Float32Array }
 ```
 
-## MuzzleSmoke.dispose
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 70](../../../../../src/render/entity/muzzle-smoke.ts#L70)
+- `Float32Array`
+- `Math.max`
+- `Math.sin`
+
+## AnalyticMuzzleSmoke.dispose
+
+[Implementation, line 87](../../../../../src/render/entity/muzzle-smoke.ts#L87)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
 ```ts
 dispose(): void
@@ -72,13 +96,15 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(this.root.material as THREE.ShaderMaterial).dispose`
 - `this.geometry.dispose`
+- `this.material.dispose`
 - `this.root.removeFromParent`
 
-## MuzzleSmoke.clear
+## AnalyticMuzzleSmoke.clear
 
-[Implementation, line 75](../../../../../src/render/entity/muzzle-smoke.ts#L75)
+[Implementation, line 92](../../../../../src/render/entity/muzzle-smoke.ts#L92)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
 ```ts
 clear(): void
@@ -88,3 +114,104 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.births.fill`
 - `this.update`
+- `this.writeBirths`
+
+## AnalyticMuzzleSmoke.live
+
+[Implementation, line 97](../../../../../src/render/entity/muzzle-smoke.ts#L97)
+
+Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
+
+```ts
+live(now: number): boolean
+```
+
+## AnalyticMuzzleSmoke.writeBirths
+
+[Implementation, line 105](../../../../../src/render/entity/muzzle-smoke.ts#L105)
+
+All 32 births against the current epoch (one 128-byte upload).
+
+```ts
+writeBirths(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+
+## MuzzleSmoke.burst
+
+[Implementation, line 119](../../../../../src/render/entity/muzzle-smoke.ts#L119)
+
+Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
+under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+burst(now: number, muzzle: readonly number[]): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.burst`
+
+## MuzzleSmoke.update
+
+[Implementation, line 122](../../../../../src/render/entity/muzzle-smoke.ts#L122)
+
+Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
+under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+update(now: number, height = 750): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## MuzzleSmoke.particles
+
+[Implementation, line 126](../../../../../src/render/entity/muzzle-smoke.ts#L126)
+
+Positions and ages (−1 when dead) at `now`.
+
+```ts
+particles(now: number): { positions: Float32Array; ages: Float32Array }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.particles`
+- `this.impl.update`
+- `this.root.geometry.getAttribute`
+
+## MuzzleSmoke.dispose
+
+[Implementation, line 134](../../../../../src/render/entity/muzzle-smoke.ts#L134)
+
+Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
+under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`
+
+## MuzzleSmoke.clear
+
+[Implementation, line 137](../../../../../src/render/entity/muzzle-smoke.ts#L137)
+
+Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
+under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.clear`
