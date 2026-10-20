@@ -1,7 +1,16 @@
-import { BufferAttribute, BufferGeometry, DoubleSide, Mesh, ShaderMaterial, Vector3 } from 'three'
+import {
+  BufferAttribute,
+  BufferGeometry,
+  DoubleSide,
+  DynamicDrawUsage,
+  Mesh,
+  ShaderMaterial,
+  Vector3,
+} from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { tireMarkMaterial } from './particle-nodes.js'
+import { cullOffscreen, SpawnBounds } from './effect-culling.js'
 export type TireMarkContact = {
   contactPoint: Vec3Tuple | null
   contactNormal: Vec3Tuple | null
@@ -15,7 +24,17 @@ const OFF_ROAD_MARK = [0.07, 0.068, 0.065]
 function markGate(contact: TireMarkContact): number {
   return contact.surface === 'grass' ? 0.12 : 0.22
 }
-/** Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. */
+/** Float attributes of one segment (two triangles), uploaded together per written slot. */
+const SEGMENT_FLOATS = { position: 18, born: 6, strength: 6, tint: 18 } as const
+/** Bytes uploaded per written segment: 48 floats. */
+export const TIRE_MARK_SEGMENT_BYTES =
+  4 * Object.values(SEGMENT_FLOATS).reduce((sum, floats) => sum + floats, 0)
+
+/**
+ * Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. Only the
+ * slots written in a frame are uploaded (`addUpdateRange`, split in two across the ring's wrap),
+ * and the draw is skipped while every live mark is off-screen.
+ */
 export class TireMarks {
   readonly root: Mesh<BufferGeometry, ShaderMaterial>
   private readonly positions: Float32Array
@@ -30,6 +49,10 @@ export class TireMarks {
   private lastEmission = -Infinity
   private lastMark = -Infinity
   private vehicle: string | null = null
+  /** Slots written since the last upload, in write order (at most one per contact). */
+  private readonly written: number[] = []
+  /** Marks younger than `lifetime`, in the mesh's (anchor) frame. */
+  private readonly bounds: SpawnBounds
   private previous = new Map<
     number,
     { point: Vector3; normal: Vector3; left?: Vector3; right?: Vector3 }
@@ -83,7 +106,12 @@ export class TireMarks {
       }`,
       }),
     )
+    for (const key of Object.keys(SEGMENT_FLOATS))
+      (geometry.attributes[key] as BufferAttribute).setUsage(DynamicDrawUsage)
+    this.bounds = new SpawnBounds(lifetime)
+    // Culled through its own bounds: the geometry sphere stays three's sort centre.
     this.root.frustumCulled = false
+    cullOffscreen(this.root, { box: (target) => this.bounds.unionInto(target) })
     this.root.visible = false
     this.root.name = 'Transient tyre marks'
     setWebGPUSubstitute(this.root, tireMarkMaterial(this.root))
@@ -91,6 +119,7 @@ export class TireMarks {
   update(dt: number, vehicle: string | null, contacts: TireMarkContact[], origin: Vector3): void {
     this.time += Number.isFinite(dt) ? Math.max(0, dt) : 0
     this.root.material.uniforms.clock.value = this.time
+    this.bounds.advance(this.time)
     if (vehicle !== this.vehicle) {
       this.previous.clear()
       this.vehicle = vehicle
@@ -140,20 +169,46 @@ export class TireMarks {
       const tint = c.surface === 'grass' ? OFF_ROAD_MARK : ASPHALT_MARK
       for (let k = 0; k < 6; k++) this.colors.set(tint, slot * 18 + k * 3)
       this.count = Math.min(this.capacity, this.count + 1)
+      this.written.push(slot)
+      for (const v of [a, b, left, right]) this.bounds.expand(v.x, v.y, v.z, v.x, v.y, v.z)
       this.previous.set(i, { point, normal, left, right })
       this.lastMark = this.time
       changed = true
     })
     if (changed) {
-      for (const key of ['position', 'born', 'strength', 'tint'])
-        this.root.geometry.attributes[key].needsUpdate = true
+      this.upload()
       this.root.geometry.setDrawRange(0, this.count * 6)
     }
     this.root.position.copy(this.anchor).sub(origin)
     this.root.visible = this.time - this.lastMark < this.lifetime
   }
+  /**
+   * Queue the written slots for upload, merging consecutive slots into one range; a run that
+   * crosses the end of the ring becomes two ranges (end of the buffer, then its start).
+   */
+  private upload(): void {
+    const slots = this.written
+    for (const [key, floats] of Object.entries(SEGMENT_FLOATS)) {
+      const attribute = this.root.geometry.attributes[key] as BufferAttribute
+      let start = slots[0]
+      let end = start
+      for (let k = 1; k <= slots.length; k++) {
+        const slot = slots[k]
+        if (k < slots.length && slot === end + 1) {
+          end = slot
+          continue
+        }
+        attribute.addUpdateRange(start * floats, (end - start + 1) * floats)
+        start = end = slot
+      }
+      attribute.needsUpdate = true
+    }
+    slots.length = 0
+  }
   clear(): void {
     this.previous.clear()
+    this.written.length = 0
+    this.bounds.clear()
     this.count = this.next = 0
     this.lastMark = -Infinity
     this.anchored = false

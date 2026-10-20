@@ -67,10 +67,27 @@ export function impactMarkTexture(size = IMPACT_MARK_TEXTURE_SIZE): THREE.DataTe
   return texture
 }
 
+/** One batch: the marks of one parent (a vehicle, a prop, or the static world root). */
+type MarkBatch = {
+  readonly mesh: THREE.InstancedMesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+  /** Marks by instance index (`count` of them). */
+  readonly marks: Mark[]
+  parent: THREE.Object3D | null
+}
+type Mark = { batch: MarkBatch; index: number }
+
+const scratch = new THREE.Object3D()
+const inverse = new THREE.Matrix4()
+const zAxis = new THREE.Vector3(0, 0, 1)
+
 /**
- * Bounded shot marks. Entity hits parent into the hit object's local frame so they
- * ride with vehicles; world hits (buildings and other static colliders without an
- * entity id) parent under a scene root that shares the floating-origin shift.
+ * Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+ * go into a batch parented to the hit object, with each mark's matrix in that object's local
+ * frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+ * world matrix with the instance matrices on the GPU). World hits (buildings and other static
+ * colliders without an entity id) share one batch under a scene root that has the
+ * floating-origin shift. The instance matrices are the exact local matrices the former
+ * per-mark groups had.
  */
 export class ImpactMarks {
   private readonly geom = new THREE.PlaneGeometry(IMPACT_MARK_RADIUS * 2, IMPACT_MARK_RADIUS * 2)
@@ -88,78 +105,159 @@ export class ImpactMarks {
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
   })
-  private marks: THREE.Group[] = []
+  /** Live marks, oldest first. */
+  private marks: Mark[] = []
+  private readonly batches = new Map<THREE.Object3D, MarkBatch>()
+  private readonly spare: MarkBatch[] = []
   private limit = MAX_IMPACT_MARKS
   setLimit(limit: number): void {
     this.limit = Number.isFinite(limit)
       ? Math.max(0, Math.min(MAX_IMPACT_MARKS, Math.floor(limit)))
       : MAX_IMPACT_MARKS
-    while (this.marks.length > this.limit) this.marks.shift()!.removeFromParent()
+    while (this.marks.length > this.limit) this.remove(this.marks[0])
   }
   get count(): number {
     return this.marks.length
   }
-
-  /** Shared GPU resources, without creating a live impact or consuming a pool entry. */
-  warmupObject(): THREE.Mesh {
-    return new THREE.Mesh(this.geom, this.material)
+  /** Instanced draws currently holding marks (one per parent with marks). */
+  get batchCount(): number {
+    return this.batches.size
   }
 
-  private take(): THREE.Group {
-    if (this.marks.length >= this.limit) {
-      const oldest = this.marks.shift()!
-      oldest.removeFromParent()
-      return oldest
+  /** Shared GPU resources (the instanced program), without creating a live impact. */
+  warmupObject(): THREE.InstancedMesh {
+    const mesh = new THREE.InstancedMesh(this.geom, this.material, 1)
+    mesh.renderOrder = 2
+    return mesh
+  }
+
+  /** Local matrices of the marks under `parent`, in instance order (tests and tools). */
+  matricesFor(parent: THREE.Object3D): THREE.Matrix4[] {
+    const batch = this.batches.get(parent)
+    if (!batch) return []
+    return batch.marks.map((_, i) => {
+      const m = new THREE.Matrix4()
+      batch.mesh.getMatrixAt(i, m)
+      return m
+    })
+  }
+
+  private batchFor(parent: THREE.Object3D): MarkBatch {
+    let batch = this.batches.get(parent)
+    if (batch) return batch
+    batch = this.spare.pop()
+    if (!batch) {
+      const mesh = new THREE.InstancedMesh(this.geom, this.material, MAX_IMPACT_MARKS)
+      mesh.name = 'shot-impacts'
+      mesh.renderOrder = 2
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      batch = { mesh, marks: [], parent: null }
     }
-    const group = new THREE.Group()
-    group.name = 'shot-impact'
-    const mark = new THREE.Mesh(this.geom, this.material)
-    mark.renderOrder = 2
-    group.add(mark)
-    return group
+    batch.mesh.count = 0
+    batch.parent = parent
+    parent.add(batch.mesh)
+    this.batches.set(parent, batch)
+    return batch
   }
 
-  private place(mark: THREE.Group, point: Vec3Tuple, normal: Vec3Tuple, local: boolean): void {
+  private release(batch: MarkBatch): void {
+    batch.mesh.removeFromParent()
+    if (batch.parent) this.batches.delete(batch.parent)
+    batch.parent = null
+    batch.marks.length = 0
+    batch.mesh.count = 0
+    this.spare.push(batch)
+  }
+
+  private touched(batch: MarkBatch, index: number): void {
+    batch.mesh.instanceMatrix.addUpdateRange(index * 16, 16)
+    batch.mesh.instanceMatrix.needsUpdate = true
+    // Recomputed lazily by three for culling and sorting.
+    batch.mesh.boundingSphere = null
+    batch.mesh.boundingBox = null
+  }
+
+  /** Drop one mark: the batch's last instance moves into its slot. */
+  private remove(mark: Mark): void {
+    const at = this.marks.indexOf(mark)
+    if (at >= 0) this.marks.splice(at, 1)
+    const { batch, index } = mark
+    const last = batch.marks.length - 1
+    if (index !== last) {
+      const moved = batch.marks[last]
+      batch.mesh.getMatrixAt(last, inverse)
+      batch.mesh.setMatrixAt(index, inverse)
+      batch.marks[index] = moved
+      moved.index = index
+      this.touched(batch, index)
+    }
+    batch.marks.length = last
+    batch.mesh.count = last
+    if (!last) this.release(batch)
+    else {
+      batch.mesh.boundingSphere = null
+      batch.mesh.boundingBox = null
+    }
+  }
+
+  /** Store `scratch`'s local matrix as a new mark under `parent`. */
+  private push(parent: THREE.Object3D): void {
+    if (this.marks.length >= this.limit) this.remove(this.marks[0])
+    const batch = this.batchFor(parent)
+    const index = batch.marks.length
+    const mark = { batch, index }
+    batch.marks.push(mark)
+    batch.mesh.count = batch.marks.length
+    batch.mesh.setMatrixAt(index, scratch.matrix)
+    this.touched(batch, index)
+    this.marks.push(mark)
+  }
+
+  /** Reset the scratch transform with a random size (0.8–1.25×). */
+  private begin(): void {
+    scratch.position.set(0, 0, 0)
+    scratch.quaternion.identity()
+    scratch.scale.setScalar(markScale())
+  }
+
+  private place(point: Vec3Tuple, normal: Vec3Tuple): void {
     const n = new THREE.Vector3(...normal).normalize()
     if (n.lengthSq() < 1e-8) n.set(0, 1, 0)
-    mark.position.fromArray(point).addScaledVector(n, IMPACT_MARK_STANDOFF)
-    mark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
+    scratch.position.fromArray(point).addScaledVector(n, IMPACT_MARK_STANDOFF)
+    scratch.quaternion.setFromUnitVectors(zAxis, n)
     // Slight random roll so overlapping marks do not stack identically.
-    mark.rotateZ(Math.random() * Math.PI * 2)
-    void local
+    scratch.rotateZ(Math.random() * Math.PI * 2)
   }
 
   /** Exact rendered surface hit, anchored in the moving mesh's local frame. */
   addSurface(parent: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
     if (!this.limit) return
-    const mark = this.take()
-    mark.removeFromParent()
-    mark.scale.setScalar(markScale())
-    this.place(mark, point, normal, false)
-    mark.updateMatrixWorld(true)
+    this.begin()
+    this.place(point, normal)
+    scratch.updateMatrix()
     parent.updateWorldMatrix(true, false)
-    parent.attach(mark)
-    this.marks.push(mark)
+    // What `parent.attach(mark)` did: re-express the world placement in the parent's frame.
+    scratch.applyMatrix4(inverse.copy(parent.matrixWorld).invert())
+    scratch.updateMatrix()
+    this.push(parent)
   }
 
   /** Mark on a scene entity (car, prop, authored mesh) in that entity's local frame. */
   add(parent: THREE.Object3D, pose: Transform, point: Vec3Tuple, normal: Vec3Tuple): void {
     if (!this.limit) return
-    const mark = this.take()
-    mark.removeFromParent()
-    mark.scale.setScalar(markScale())
-    const inverse = new THREE.Quaternion(...pose.rotation).invert()
-    const n = new THREE.Vector3(...normal).normalize().applyQuaternion(inverse)
+    this.begin()
+    const rotation = new THREE.Quaternion(...pose.rotation).invert()
+    const n = new THREE.Vector3(...normal).normalize().applyQuaternion(rotation)
     if (n.lengthSq() < 1e-8) n.set(0, 1, 0)
-    mark.position
+    scratch.position
       .fromArray(point)
       .sub(new THREE.Vector3(...pose.position))
-      .applyQuaternion(inverse)
+      .applyQuaternion(rotation)
       .addScaledVector(n, IMPACT_MARK_STANDOFF)
-    mark.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
-    mark.rotateZ(Math.random() * Math.PI * 2)
-    parent.add(mark)
-    this.marks.push(mark)
+    scratch.quaternion.setFromUnitVectors(zAxis, n)
+    scratch.rotateZ(Math.random() * Math.PI * 2)
+    scratch.updateMatrix()
+    this.push(parent)
   }
 
   /**
@@ -169,31 +267,33 @@ export class ImpactMarks {
    */
   addWorld(root: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void {
     if (!this.limit) return
-    const mark = this.take()
-    mark.removeFromParent()
-    mark.scale.setScalar(markScale())
-    this.place(mark, point, normal, false)
-    root.add(mark)
-    this.marks.push(mark)
+    this.begin()
+    this.place(point, normal)
+    scratch.updateMatrix()
+    this.push(root)
   }
 
+  /** Remove the marks whose batch hangs from `parent` or any of its descendants. */
   removeFor(parent: THREE.Object3D): void {
-    this.marks = this.marks.filter((mark) => {
-      let owner: THREE.Object3D | null = mark.parent
+    for (const batch of [...this.batches.values()]) {
+      let owner: THREE.Object3D | null = batch.mesh.parent
       while (owner && owner !== parent) owner = owner.parent
-      if (!owner) return true
-      mark.removeFromParent()
-      return false
-    })
+      if (!owner) continue
+      const gone = new Set(batch.marks)
+      this.marks = this.marks.filter((mark) => !gone.has(mark))
+      this.release(batch)
+    }
   }
 
   clear(): void {
-    for (const mark of this.marks) mark.removeFromParent()
+    for (const batch of [...this.batches.values()]) this.release(batch)
     this.marks = []
   }
 
   dispose(): void {
     this.clear()
+    for (const batch of this.spare) batch.mesh.dispose()
+    this.spare.length = 0
     this.geom.dispose()
     this.texture.dispose()
     this.material.dispose()

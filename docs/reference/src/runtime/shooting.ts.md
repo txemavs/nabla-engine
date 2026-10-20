@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../render/entity/shot-sparks.js`
 - `../config/input-bindings.js`
 - `three`
 - `../simulation/simulation.js`
@@ -17,7 +18,7 @@
 
 ## sidearmButtonAction
 
-[Implementation, line 21](../../../../src/runtime/shooting.ts#L21)
+[Implementation, line 22](../../../../src/runtime/shooting.ts#L22)
 
 Sidearm button edge. Left click fires even while right-button aim is already held: pointer
 lock often delivers that second press only as `mousedown`, not `pointerdown`.
@@ -26,9 +27,25 @@ lock often delivers that second press only as `mousedown`, not `pointerdown`.
 sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' | 'unaim' | null
 ```
 
+## sparkSurface
+
+[Implementation, line 47](../../../../src/runtime/shooting.ts#L47)
+
+Spark profile of a hit. Physics only tags metal (vehicle bodies, sign poles); untagged hits
+are told apart by their normal: floor-like is ground, anything else concrete.
+
+```ts
+sparkSurface(gallery: Gallery, point: Vector3, normal: Vec3 | undefined): SparkSurface
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vector3`
+- `point.distanceToSquared`
+
 ## sidearmAimRay
 
-[Implementation, line 45](../../../../src/runtime/shooting.ts#L45)
+[Implementation, line 55](../../../../src/runtime/shooting.ts#L55)
 
 Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
 
@@ -60,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fitted
 
-[Implementation, line 74](../../../../src/runtime/shooting.ts#L74)
+[Implementation, line 84](../../../../src/runtime/shooting.ts#L84)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -75,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 90](../../../../src/runtime/shooting.ts#L90)
+[Implementation, line 100](../../../../src/runtime/shooting.ts#L100)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -101,6 +118,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `axis.cross`
 - `axis.cross(direction).normalize`
 - `bulletEnergy`
+- `destination.clone`
+- `destination.clone().sub`
+- `destination.clone().sub(origin).toArray`
 - `destination.toArray`
 - `direction.clone`
 - `direction.clone().cross`
@@ -121,15 +141,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sidearm.pull`
 - `sidearmAimRay`
 - `sim.shoot`
+- `sparkSurface`
 - `traceBullet`
 - `view.sparks.add`
+- `view.tracers.add`
 
-## fireSidearm.callback@126
+## fireSidearm.callback@136
 
-[Implementation, line 126](../../../../src/runtime/shooting.ts#L126)
+[Implementation, line 136](../../../../src/runtime/shooting.ts#L136)
 
 ```ts
-callback@126(from, dir, length): inferred by TypeScript; see implementation
+callback@136(from, dir, length): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

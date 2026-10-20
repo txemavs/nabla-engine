@@ -370,3 +370,94 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.dispose`
 - `this.material.dispose`
 - `this.root.removeFromParent`
+
+## LegacyShotTracers.constructor
+
+[Implementation, line 452](../../../../../src/render/entity/legacy-particles.ts#L452)
+
+CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
+
+```ts
+constructor(): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.BufferAttribute`
+- `THREE.LineSegments`
+- `this.geometry.setAttribute`
+- `this.geometry.setDrawRange`
+- `this.root.add`
+
+## LegacyShotTracers.constructor.callback@460
+
+[Implementation, line 460](../../../../../src/render/entity/legacy-particles.ts#L460)
+
+```ts
+callback@460(): inferred by TypeScript; see implementation
+```
+
+## LegacyShotTracers.add
+
+[Implementation, line 463](../../../../../src/render/entity/legacy-particles.ts#L463)
+
+CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
+
+```ts
+add(origin: Vec3Tuple, end: Vec3Tuple, now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number.isFinite`
+- `this.births.copyWithin`
+- `this.geometry.computeBoundingSphere`
+- `this.geometry.setDrawRange`
+- `this.positions.copyWithin`
+
+## LegacyShotTracers.update
+
+[Implementation, line 484](../../../../../src/render/entity/legacy-particles.ts#L484)
+
+CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
+
+```ts
+update(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `this.geometry.setDrawRange`
+- `this.positions.copyWithin`
+
+## LegacyShotTracers.clear
+
+[Implementation, line 507](../../../../../src/render/entity/legacy-particles.ts#L507)
+
+CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.geometry.setDrawRange`
+
+## LegacyShotTracers.dispose
+
+[Implementation, line 513](../../../../../src/render/entity/legacy-particles.ts#L513)
+
+CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
+- `this.geometry.dispose`
+- `this.material.dispose`
+- `this.root.removeFromParent`

@@ -11,10 +11,11 @@
 - `../../entity/schema.js`
 - `./gpu-particles.js`
 - `./legacy-particles.js`
+- `./effect-culling.js`
 
 ## AnalyticTireSmoke.constructor
 
-[Implementation, line 37](../../../../../src/render/entity/tire-smoke.ts#L37)
+[Implementation, line 41](../../../../../src/render/entity/tire-smoke.ts#L41)
 
 Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
@@ -27,13 +28,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `BufferAttribute`
 - `Points`
 - `ShaderMaterial`
+- `cullOffscreen`
 - `new BufferAttribute(this.origins, 3).setUsage`
 - `new BufferAttribute(this.spawn, 2).setUsage`
 - `this.geometry.setAttribute`
 
+## AnalyticTireSmoke.constructor.box
+
+[Implementation, line 75](../../../../../src/render/entity/tire-smoke.ts#L75)
+
+```ts
+box(target): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.bounds.unionInto`
+
+## AnalyticTireSmoke.constructor.pad
+
+[Implementation, line 77](../../../../../src/render/entity/tire-smoke.ts#L77)
+
+```ts
+pad(camera, height, distance): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `pixelsToWorld`
+
 ## AnalyticTireSmoke.update
 
-[Implementation, line 70](../../../../../src/render/entity/tire-smoke.ts#L70)
+[Implementation, line 91](../../../../../src/render/entity/tire-smoke.ts#L91)
 
 Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
@@ -46,6 +74,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `markRange`
+- `this.bounds.advance`
+- `this.bounds.expand`
 - `this.clock.relS`
 - `this.clock.step`
 - `this.origins.set`
@@ -55,7 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticTireSmoke.life
 
-[Implementation, line 93](../../../../../src/render/entity/tire-smoke.ts#L93)
+[Implementation, line 124](../../../../../src/render/entity/tire-smoke.ts#L124)
 
 Current life of each particle, evaluated with the shader's maths.
 
@@ -70,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticTireSmoke.clear
 
-[Implementation, line 99](../../../../../src/render/entity/tire-smoke.ts#L99)
+[Implementation, line 130](../../../../../src/render/entity/tire-smoke.ts#L130)
 
 Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
@@ -81,11 +111,12 @@ clear(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `markRange`
+- `this.bounds.clear`
 - `this.lifetimes.fill`
 
 ## AnalyticTireSmoke.dispose
 
-[Implementation, line 109](../../../../../src/render/entity/tire-smoke.ts#L109)
+[Implementation, line 141](../../../../../src/render/entity/tire-smoke.ts#L141)
 
 Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
@@ -100,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticTireSmoke.rebase
 
-[Implementation, line 113](../../../../../src/render/entity/tire-smoke.ts#L113)
+[Implementation, line 145](../../../../../src/render/entity/tire-smoke.ts#L145)
 
 Analytic GPU tyre smoke: spawn data written once, rise evaluated in the vertex shader.
 
@@ -116,7 +147,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.update
 
-[Implementation, line 128](../../../../../src/render/entity/tire-smoke.ts#L128)
+[Implementation, line 160](../../../../../src/render/entity/tire-smoke.ts#L160)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
@@ -132,7 +163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.life
 
-[Implementation, line 132](../../../../../src/render/entity/tire-smoke.ts#L132)
+[Implementation, line 164](../../../../../src/render/entity/tire-smoke.ts#L164)
 
 Current life of each particle (0 when dead).
 
@@ -147,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.clear
 
-[Implementation, line 137](../../../../../src/render/entity/tire-smoke.ts#L137)
+[Implementation, line 169](../../../../../src/render/entity/tire-smoke.ts#L169)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
@@ -163,7 +194,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.dispose
 
-[Implementation, line 140](../../../../../src/render/entity/tire-smoke.ts#L140)
+[Implementation, line 172](../../../../../src/render/entity/tire-smoke.ts#L172)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
