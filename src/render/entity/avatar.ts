@@ -1,3 +1,4 @@
+import { avatarShellNodes, avatarFoamNodes, avatarScreenNodes } from './entity-nodes.js'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js'
 import { MonitorFace, MONITOR_COLUMNS, MONITOR_ROWS } from './monitor-face.js'
@@ -108,6 +109,7 @@ export function createMonitorAvatar(): THREE.Group {
       `,
     )
   }
+  avatarShellNodes(shell)
   const border: THREE.Vector3[] = []
   const borderPoint = (rawX: number, rawY: number) => {
     const y = rawY + FACE_CENTRE_Y
@@ -176,6 +178,7 @@ export function createMonitorAvatar(): THREE.Group {
     `,
     )
   }
+  avatarFoamNodes(foam, 'foam')
   const displaySurround = foam.clone()
   displaySurround.onBeforeCompile = (shader) => {
     // The display returns meet the enlarged screen as a continuous black surface.
@@ -184,6 +187,7 @@ export function createMonitorAvatar(): THREE.Group {
       'outgoingLight = vec3(0.0);\n#include <opaque_fragment>',
     )
   }
+  avatarFoamNodes(displaySurround, 'black')
   add('RecessWall', smoothWall, displaySurround, [0, 0, 0])
   // Small rounded lower lip; the underside remains open, with no chin guard.
   const rimProfile = new THREE.CatmullRomCurve3([
@@ -217,6 +221,7 @@ export function createMonitorAvatar(): THREE.Group {
       `,
     )
   }
+  avatarFoamNodes(innerFoam, 'lining')
   add('HelmetInterior', inner, innerFoam, [0, 0, 0])
   const propulsionSocket = new THREE.Group()
   propulsionSocket.name = 'PropulsionSocket'
@@ -251,6 +256,7 @@ export function createMonitorAvatar(): THREE.Group {
     `,
     )
   }
+  avatarScreenNodes(screenMaterial, matrixMode, faceLight, MONITOR_COLUMNS, MONITOR_ROWS)
   const screen = add('Screen', curvedScreen(0.34, 0.22, 0.1401), screenMaterial, [0, 0, 0])
   screen.castShadow = false
   screen.userData.matrix = [MONITOR_COLUMNS, MONITOR_ROWS]

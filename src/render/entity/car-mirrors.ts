@@ -1,5 +1,8 @@
 import * as THREE from 'three'
 import { Reflector } from 'three/addons/objects/Reflector.js'
+import { isWebGPU } from '../backend.js'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { reflectWebGPU, reflectorMaterial } from './mirror-nodes.js'
 /** Discover GLB-authored lens meshes without depending on material or node names. */
 export function authoredMirrorSurfaces(model: THREE.Object3D): THREE.Mesh[] {
   const surfaces: THREE.Mesh[] = []
@@ -290,6 +293,9 @@ export function skyCamera(
   return sky
 }
 
+/** Reflector near-plane offset past the glass. */
+const MIRROR_CLIP_BIAS = 0.003
+
 /** Side mirrors render only in the occupied cockpit. Default 8 Hz; high/ultra left is 16 Hz. */
 export class CarMirrors {
   private entries: {
@@ -362,9 +368,10 @@ export class CarMirrors {
         textureHeight: capture.height,
         color: 0xaaaaaa,
         multisample: 0,
-        clipBias: 0.003,
+        clipBias: MIRROR_CLIP_BIAS,
       })
       mirror.position.copy(centre)
+      setWebGPUSubstitute(mirror, reflectorMaterial(mirror))
       const up = carUp
         .clone()
         .applyQuaternion(original.parent!.getWorldQuaternion(new THREE.Quaternion()).invert())
@@ -484,6 +491,7 @@ export class CarMirrors {
     const background = scene.background,
       autoClear = renderer.autoClear
     const visible = this.entries.map((e) => e.mirror.visible)
+    const webgpu = isWebGPU(renderer)
     const capturing = new Set(due)
     try {
       // No recursive mirror captures; keep an inexpensive atmospheric background.
@@ -523,15 +531,17 @@ export class CarMirrors {
             renderer,
             paintSky,
             () =>
-              e.render.call(
-                e.mirror,
-                renderer,
-                scene,
-                e.capture,
-                e.mirror.geometry,
-                e.mirror.material as THREE.Material,
-                null!,
-              ),
+              webgpu
+                ? reflectWebGPU(e.mirror, renderer, scene, e.capture, MIRROR_CLIP_BIAS)
+                : e.render.call(
+                    e.mirror,
+                    renderer,
+                    scene,
+                    e.capture,
+                    e.mirror.geometry,
+                    e.mirror.material as THREE.Material,
+                    null!,
+                  ),
             e.capture.projectionMatrix.clone(),
           )
         } finally {
