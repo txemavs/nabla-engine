@@ -493,6 +493,30 @@ export class Body {
     this.breakawayAnchored = anchored
     this.raw?.setBodyType(anchored ? R().RigidBodyType.Fixed : R().RigidBodyType.Dynamic, true)
   }
+  /** True while the body follows `moveKinematic` targets instead of forces (networked mirrors). */
+  kinematic = false
+  setKinematic(enabled: boolean): void {
+    if (this.kinematic === enabled || this.breakawayAnchored) return
+    this.kinematic = enabled
+    const api = R()
+    this.raw?.setBodyType(
+      enabled ? api.RigidBodyType.KinematicPositionBased : api.RigidBodyType.Dynamic,
+      true,
+    )
+  }
+  /** Target pose for the next world step; Rapier derives contact velocities from the motion. */
+  moveKinematic(position: Vec3, quaternion: Quaternion): void {
+    if (!this.kinematic) return
+    this.previousPosition.copy(this.position)
+    this.previousQuaternion.copy(this.quaternion)
+    this.position.silent = this.quaternion.silent = true
+    this.position.copy(position)
+    this.quaternion.copy(quaternion)
+    this.position.silent = this.quaternion.silent = false
+    if (!this.raw) return
+    this.raw.setNextKinematicTranslation(position.vsub(this.world?.origin ?? new Vec3()))
+    this.raw.setNextKinematicRotation(quaternion)
+  }
   /** Streamed breakaway props stay dormant until an actual contact wakes them. */
   preserveSleep = false
   push() {
@@ -535,7 +559,7 @@ export class Body {
       this.velocity.silent =
       this.angularVelocity.silent =
         false
-    this.mass = this.raw.isFixed() ? 0 : this.raw.mass()
+    if (!this.kinematic) this.mass = this.raw.isFixed() ? 0 : this.raw.mass()
     this.updateAABB()
   }
   mount(world: World) {

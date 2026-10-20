@@ -1253,6 +1253,51 @@ export class Simulation {
     const body = this.bodies.get(id)
     return body ? vec(body.velocity) : [0, 0, 0]
   }
+  /** Angular velocity in radians/second (world frame). */
+  entityAngularVelocity(id: string): Vec3Tuple {
+    const body = this.bodies.get(id)
+    return body ? vec(body.angularVelocity) : [0, 0, 0]
+  }
+  /**
+   * Switch a physical entity between dynamic and kinematic (pose-driven) motion, for example to
+   * mirror an entity owned by another peer. The controlled entity cannot be made kinematic.
+   * Returns false when the entity has no dynamic body.
+   */
+  setEntityKinematic(id: string, kinematic: boolean): boolean {
+    const body = this.bodies.get(id)
+    if (!body || body.mass <= 0 || body.breakawayAnchored) return false
+    if (kinematic && id === this.vehicleId) return false
+    body.setKinematic(kinematic)
+    if (!kinematic) body.wakeUp()
+    return true
+  }
+  /** Drive a kinematic entity toward `transform` over the next step; velocities are informative. */
+  moveKinematicEntity(
+    id: string,
+    transform: Transform,
+    velocity?: Vec3Tuple,
+    angularVelocity?: Vec3Tuple,
+  ): boolean {
+    const body = this.bodies.get(id)
+    if (!body?.kinematic) return false
+    const values = [
+      ...transform.position,
+      ...transform.rotation,
+      ...(velocity ?? []),
+      ...(angularVelocity ?? []),
+    ]
+    if (!values.every(Number.isFinite)) throw new Error(`Invalid kinematic pose: ${id}`)
+    const length = Math.hypot(...transform.rotation)
+    if (length < 1e-12) throw new Error(`Invalid kinematic pose: ${id}`)
+    const q = new Quaternion()
+    q.set(...(transform.rotation.map((v) => v / length) as Transform['rotation']))
+    body.moveKinematic(new Vec3(...transform.position), q)
+    body.velocity.silent = body.angularVelocity.silent = true
+    if (velocity) body.velocity.set(...velocity)
+    if (angularVelocity) body.angularVelocity.set(...angularVelocity)
+    body.velocity.silent = body.angularVelocity.silent = false
+    return true
+  }
   /** Physical chassis/equipment shapes and the raycast tyres' spherical envelopes.
    * This lets a differently scaled view share contacts with room props without
    * changing its drivetrain, gravity, suspension, or full-size simulation rules.
