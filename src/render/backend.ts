@@ -1,5 +1,11 @@
 import * as THREE from 'three'
-import { hasWebGPUSubstitute, webgpuSubstitute, type NodeKit } from './webgpu-substitutes.js'
+import {
+  hasWebGPUMaterialNodes,
+  hasWebGPUSubstitute,
+  webgpuMaterialTwin,
+  webgpuSubstitute,
+  type NodeKit,
+} from './webgpu-substitutes.js'
 
 /** Renderer requested by the page: `auto` picks WebGPU when an adapter exists, else WebGL. */
 export type RendererPreference = 'webgl' | 'webgpu' | 'auto'
@@ -202,17 +208,39 @@ export class WebGPUCompatibility {
   apply(root: THREE.Object3D): void {
     this.depth++
     const found: THREE.Object3D[] = []
+    const twinned: THREE.Mesh[] = []
     root.traverseVisible((object) => {
       const material = (object as THREE.Mesh).material as
         THREE.Material | THREE.Material[] | undefined
       if (!material) return
       const materials = Array.isArray(material) ? material : [material]
       if (materials.some(glslOnlyMaterial) || hasWebGPUSubstitute(object)) found.push(object)
+      else if (this.kit && materials.some(hasWebGPUMaterialNodes))
+        twinned.push(object as THREE.Mesh)
     })
+    // Shared materials: one twin and one sync per material per frame.
+    const synced = new Map<THREE.Material, THREE.Material>()
+    const swap = (material: THREE.Material) => {
+      let node = synced.get(material)
+      if (node) return node
+      const twin = webgpuMaterialTwin(material, this.kit!)
+      twin?.sync()
+      node = twin?.material ?? material
+      synced.set(material, node)
+      return node
+    }
+    for (const mesh of twinned) {
+      if (this.swapped.has(mesh)) continue
+      const original = mesh.material
+      this.swapped.set(mesh, original)
+      mesh.material = Array.isArray(original) ? original.map(swap) : swap(original)
+    }
     for (const object of found) {
       const substitute = this.kit && webgpuSubstitute(object, this.kit)
-      if (substitute?.material && !this.swapped.has(object as THREE.Mesh)) {
+      if (substitute?.material) {
+        // Nested passes (shadow maps, mirrors) meet the mesh already swapped: keep it drawn.
         const mesh = object as THREE.Mesh
+        if (this.swapped.has(mesh)) continue
         substitute.sync?.()
         this.swapped.set(mesh, mesh.material)
         mesh.material = substitute.material

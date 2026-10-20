@@ -52,3 +52,137 @@ hasWebGPUSubstitute(object: THREE.Object3D): boolean
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `factories.has`
+
+## nodeMaterialTwin
+
+[Implementation, line 76](../../../../src/render/webgpu-substitutes.ts#L76)
+
+A node material of the same kind as `source` (as three's own `NodeLibrary.fromMaterial` makes
+it), with `build` adding the TSL equivalent of the GLSL patch. `sync` copies the original's
+properties again (texture swaps, opacity, flags) and recompiles the twin when the original's
+version moved (`needsUpdate`).
+
+```ts
+nodeMaterialTwin(kit: NodeKit, source: THREE.Material, build: (twin: THREE.Material) => void): { material: THREE.Material; sync(): void }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Kind`
+- `build`
+- `copy`
+- `source.type.replace`
+
+Explicit throws in this body:
+
+- `new Error(\`No node material for ${source.type}\`)`
+
+## nodeMaterialTwin.copy
+
+[Implementation, line 86](../../../../src/render/webgpu-substitutes.ts#L86)
+
+```ts
+copy(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `TWIN_SKIP.has`
+
+## nodeMaterialTwin.sync
+
+[Implementation, line 95](../../../../src/render/webgpu-substitutes.ts#L95)
+
+```ts
+sync(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `copy`
+
+## addWebGPUMaterialNodes
+
+[Implementation, line 113](../../../../src/render/webgpu-substitutes.ts#L113)
+
+Register the TSL equivalent of an `onBeforeCompile` patch on a built-in material. WebGL keeps
+the GLSL patch; under WebGPU every mesh drawing `material` draws its node twin instead. Patches
+chain: a later registration runs after the earlier ones on the same twin.
+
+```ts
+addWebGPUMaterialNodes(material: THREE.Material, build: (kit: NodeKit, twin: THREE.Material) => void): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `materialNodes.get`
+- `materialNodes.set`
+- `materialTwins.delete`
+
+## addWebGPUMaterialNodes.callback@121
+
+[Implementation, line 121](../../../../src/render/webgpu-substitutes.ts#L121)
+
+```ts
+callback@121(kit, twin): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `build`
+- `previous`
+
+## hasWebGPUMaterialNodes
+
+[Implementation, line 130](../../../../src/render/webgpu-substitutes.ts#L130)
+
+```ts
+hasWebGPUMaterialNodes(material: THREE.Material): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `materialNodes.has`
+
+## webgpuMaterialTwin
+
+[Implementation, line 135](../../../../src/render/webgpu-substitutes.ts#L135)
+
+The node twin of a registered material, built on first use.
+
+```ts
+webgpuMaterialTwin(material: THREE.Material, kit: NodeKit): { material: THREE.Material; sync(): void } | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `material.addEventListener`
+- `materialNodes.get`
+- `materialTwins.get`
+- `materialTwins.set`
+- `nodeMaterialTwin`
+
+## webgpuMaterialTwin.callback@143
+
+[Implementation, line 143](../../../../src/render/webgpu-substitutes.ts#L143)
+
+```ts
+callback@143(node): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `build`
+
+## webgpuMaterialTwin.callback@145
+
+[Implementation, line 145](../../../../src/render/webgpu-substitutes.ts#L145)
+
+```ts
+callback@145(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `twin!.material.dispose`
