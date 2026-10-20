@@ -5644,6 +5644,23 @@ export class GameRuntime {
     const canvas = this.options.canvas
     for (const event of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'pointermove', 'wheel'])
       window.addEventListener(event, () => this.cameraActivity(), { ...options, capture: true })
+    // Mouse look, aim and fire carry the live Shift state: resync sprint from them so a Shift
+    // that was held through an input release (pointer re-capture, blur) runs again at once.
+    for (const event of [
+      'pointerdown',
+      'pointerup',
+      'pointermove',
+      'mousedown',
+      'mouseup',
+    ] as const)
+      canvas.addEventListener(
+        event,
+        (e) => {
+          if (this.hasInput() && this.session.state === 'playing')
+            this.keys.syncShift(e.shiftKey, performance.now())
+        },
+        options,
+      )
     canvas.addEventListener(
       'wheel',
       (event) => {
@@ -5784,6 +5801,9 @@ export class GameRuntime {
       'keydown',
       (event) => {
         if (!this.hasInput() || this.session.state !== 'playing') return
+        // A Shift keydown is a modifier change, not a repeat of the newest key.
+        if (!inputBindings.sprint.keys.includes(event.code))
+          this.keys.syncShift(event.shiftKey, performance.now())
         if (event.ctrlKey || event.metaKey || event.altKey) return
         if (event.code === 'Home') {
           event.preventDefault()
