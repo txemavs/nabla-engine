@@ -165,6 +165,20 @@ export class PlanetCollisions {
       this.world.addBody(body, false)
       this.built.set(next.key, body)
     }
+    // Nothing active yet (start-up, teleport): the chunks under an actor collide now instead of
+    // waiting for the whole set, or the actor falls through while the rest is cooked.
+    if (!this.staged && ![...this.built.values()].some((b) => b.collisionEnabled)) {
+      let enabled = false
+      for (const c of candidates) {
+        if (c.distance > URGENT_CHUNK_DISTANCE) break
+        const body = this.built.get(c.key)
+        if (body && !body.collisionEnabled) {
+          body.setCollisionEnabled(true)
+          enabled = true
+        }
+      }
+      if (enabled) this.world.raw.updateSceneQueries()
+    }
     this.ready = candidates.every((c) => this.built.has(c.key))
     // Swap complete nearby coverage atomically; never collide with both LODs.
     if (this.ready && !this.staged) {

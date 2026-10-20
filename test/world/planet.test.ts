@@ -283,12 +283,34 @@ describe('collisions', () => {
     colliders.update([[0, 0, 0]], true, 100)
     expect(colliders.ready).toBe(false)
     expect(world.bodies).toHaveLength(1)
+    // Nothing is active and nothing is under the actor: nothing switched on early.
     expect(world.bodies.some((b) => b.collisionEnabled)).toBe(false)
     colliders.update([[0, 0, 0]], true, 100)
     expect(colliders.ready).toBe(true)
     expect(world.bodies.filter((b) => b.collisionEnabled)).toHaveLength(2)
     colliders.dispose()
     expect(world.bodies).toHaveLength(0)
+  })
+  it('switches the chunk under an actor on at once when nothing is active yet', () => {
+    const world = new World(),
+      colliders = new PlanetCollisions(world, new Material())
+    const chunk = (key: string, x: number) => ({
+      key,
+      buildings: false,
+      bounds: [x, 0, 0, x + 1, 0, 1] as [number, number, number, number, number, number],
+      triangles: new Float32Array([x, 0, 0, x + 1, 0, 0, x, 0, 1]),
+    })
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    colliders.setTiles([
+      { id: 't', pose, chunks: [chunk('under', 0), chunk('a', 20), chunk('b', 30)] },
+    ])
+    colliders.update([[0.5, 0, 0.5]], true, 100)
+    expect(colliders.ready).toBe(false)
+    expect(world.bodies.filter((b) => b.collisionEnabled)).toHaveLength(1)
+    colliders.dispose()
   })
   it('stops a moving body on a trunk pole', () => {
     const world = new World({ gravity: new Vec3(0, 0, 0) })
