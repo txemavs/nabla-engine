@@ -10,7 +10,7 @@
 
 ## HeldKeys.press
 
-[Implementation, line 16](../../../../src/runtime/held-keys.ts#L16)
+[Implementation, line 18](../../../../src/runtime/held-keys.ts#L18)
 
 Record a physical KeyboardEvent.code at a millisecond timestamp; ignore orphan repeats.
 
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.release
 
-[Implementation, line 25](../../../../src/runtime/held-keys.ts#L25)
+[Implementation, line 27](../../../../src/runtime/held-keys.ts#L27)
 
 Release one key from both the exposed chord and its expiry tracking.
 
@@ -41,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.syncShift
 
-[Implementation, line 39](../../../../src/runtime/held-keys.ts#L39)
+[Implementation, line 41](../../../../src/runtime/held-keys.ts#L41)
 
 Reconcile Shift with the modifier flag every keyboard and mouse event carries. A Shift
 pressed while input was not owned (focus, pointer re-capture, a weapon click) or still held
@@ -55,15 +55,27 @@ syncShift(shift: boolean, now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `shiftCodes.some`
 - `this.seen.delete`
 - `this.seen.set`
 - `this.values.add`
 - `this.values.delete`
+
+## HeldKeys.syncShift.callback@42
+
+[Implementation, line 42](../../../../src/runtime/held-keys.ts#L42)
+
+```ts
+callback@42(code): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `this.values.has`
 
 ## HeldKeys.clear
 
-[Implementation, line 53](../../../../src/runtime/held-keys.ts#L53)
+[Implementation, line 55](../../../../src/runtime/held-keys.ts#L55)
 
 Release the complete chord after blur, pause or other loss of input ownership.
 
@@ -78,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldKeys.expire
 
-[Implementation, line 63](../../../../src/runtime/held-keys.ts#L63)
+[Implementation, line 65](../../../../src/runtime/held-keys.ts#L65)
 
 Release movement keys after 1500 ms without a keydown or repeat from the newest held key,
 recovering from a lost keyup. A key held while another key was tapped and released keeps
@@ -94,12 +106,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.release`
 - `this.seen.keys`
 
-## HeldKeys.expire.callback@65
+## HeldKeys.expire.callback@67
 
-[Implementation, line 65](../../../../src/runtime/held-keys.ts#L65)
+[Implementation, line 67](../../../../src/runtime/held-keys.ts#L67)
 
 ```ts
-callback@65(code): inferred by TypeScript; see implementation
+callback@67(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

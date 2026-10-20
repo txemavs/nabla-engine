@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **535 modules; 6249 executable function definitions**.
+Coverage: **535 modules; 6250 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -385,7 +385,7 @@ Coverage: **535 modules; 6249 executable function definitions**.
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 22 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
-| [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 6 |
+| [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 7 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |

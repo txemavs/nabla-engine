@@ -1,4 +1,6 @@
-import { movementKeyCodes } from '../config/input-bindings.js'
+import { inputBindings, movementKeyCodes } from '../config/input-bindings.js'
+/** Physical Shift codes, from the sprint declaration (the event `shiftKey` flag mirrors them). */
+const shiftCodes: readonly string[] = inputBindings.sprint.keys
 /** Keyboard state with a bounded lifetime for a lost keyup (embedded browsers/focus changes). */
 export class HeldKeys {
   readonly values = new Set<string>()
@@ -37,12 +39,12 @@ export class HeldKeys {
    * lost Shift keyup is dropped the same way. Does not touch the repeat-stream owner.
    */
   syncShift(shift: boolean, now: number): void {
-    const held = this.values.has('ShiftLeft') || this.values.has('ShiftRight')
+    const held = shiftCodes.some((code) => this.values.has(code))
     if (shift && !held) {
-      this.values.add('ShiftLeft')
-      this.seen.set('ShiftLeft', now)
+      this.values.add(shiftCodes[0])
+      this.seen.set(shiftCodes[0], now)
     } else if (!shift && held) {
-      for (const code of ['ShiftLeft', 'ShiftRight']) {
+      for (const code of shiftCodes) {
         this.values.delete(code)
         this.seen.delete(code)
         if (this.owner === code) this.owner = null
