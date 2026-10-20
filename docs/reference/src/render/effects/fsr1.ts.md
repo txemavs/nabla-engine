@@ -10,10 +10,32 @@
 - `three/addons/postprocessing/OutputPass.js`
 - `three/addons/postprocessing/Pass.js`
 - `./fsr1-shaders.js`
+- `../backend.js`
+- `../webgpu-substitutes.js`
+- `./effect-nodes.js`
+
+## fullScreenScene
+
+[Implementation, line 10](../../../../../src/render/effects/fsr1.ts#L10)
+
+A full-screen triangle in its own scene, for the WebGPU passes (node twins of each pass).
+
+```ts
+fullScreenScene(material: THREE.Material): { scene: THREE.Scene; mesh: THREE.Mesh }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.BufferGeometry`
+- `THREE.Float32BufferAttribute`
+- `THREE.Mesh`
+- `THREE.Scene`
+- `geometry.setAttribute`
+- `scene.add`
 
 ## resolveFsr
 
-[Implementation, line 19](../../../../../src/render/effects/fsr1.ts#L19)
+[Implementation, line 36](../../../../../src/render/effects/fsr1.ts#L36)
 
 ```ts
 resolveFsr(settings: Partial<FsrSettings> = {}): FsrSettings
@@ -31,7 +53,7 @@ Explicit throws in this body:
 
 ## fsrSize
 
-[Implementation, line 26](../../../../../src/render/effects/fsr1.ts#L26)
+[Implementation, line 43](../../../../../src/render/effects/fsr1.ts#L43)
 
 ```ts
 fsrSize(width: number, height: number, mode: FsrMode): [number, number]
@@ -44,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.constructor
 
-[Implementation, line 50](../../../../../src/render/effects/fsr1.ts#L50)
+[Implementation, line 67](../../../../../src/render/effects/fsr1.ts#L67)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -55,11 +77,17 @@ constructor(): instance
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `FullScreenQuad`
+- `THREE.MeshBasicMaterial`
+- `fsrEasuMaterial`
+- `fsrEncodeMaterial`
+- `fsrRcasMaterial`
+- `fullScreenScene`
 - `make`
+- `setWebGPUSubstitute`
 
 ## Fsr1.constructor.make
 
-[Implementation, line 51](../../../../../src/render/effects/fsr1.ts#L51)
+[Implementation, line 68](../../../../../src/render/effects/fsr1.ts#L68)
 
 ```ts
 make(name: string, fragmentShader: string): inferred by TypeScript; see implementation
@@ -72,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.settings
 
-[Implementation, line 71](../../../../../src/render/effects/fsr1.ts#L71)
+[Implementation, line 106](../../../../../src/render/effects/fsr1.ts#L106)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -82,7 +110,7 @@ settings(): FsrSettings
 
 ## Fsr1.setSettings
 
-[Implementation, line 74](../../../../../src/render/effects/fsr1.ts#L74)
+[Implementation, line 109](../../../../../src/render/effects/fsr1.ts#L109)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -97,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.input
 
-[Implementation, line 78](../../../../../src/render/effects/fsr1.ts#L78)
+[Implementation, line 113](../../../../../src/render/effects/fsr1.ts#L113)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -107,7 +135,7 @@ input(): THREE.WebGLRenderTarget | null
 
 ## Fsr1.inputSize
 
-[Implementation, line 81](../../../../../src/render/effects/fsr1.ts#L81)
+[Implementation, line 116](../../../../../src/render/effects/fsr1.ts#L116)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -117,7 +145,7 @@ inputSize(): THREE.Vector2
 
 ## Fsr1.begin
 
-[Implementation, line 85](../../../../../src/render/effects/fsr1.ts#L85)
+[Implementation, line 120](../../../../../src/render/effects/fsr1.ts#L120)
 
 Called after auxiliary views, so mirrors/portals keep their own resolution.
 
@@ -145,7 +173,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.present
 
-[Implementation, line 124](../../../../../src/render/effects/fsr1.ts#L124)
+[Implementation, line 159](../../../../../src/render/effects/fsr1.ts#L159)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -155,17 +183,38 @@ present(renderer: THREE.WebGLRenderer): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `isWebGPU`
 - `renderer.setRenderTarget`
 - `renderer.setScissor`
 - `renderer.setScissorTest`
 - `renderer.setViewport`
 - `this.output.render`
+- `this.presentWebGPU`
 - `this.quad.render`
+- `this.restore`
+
+## Fsr1.presentWebGPU
+
+[Implementation, line 179](../../../../../src/render/effects/fsr1.ts#L179)
+
+Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
+
+```ts
+presentWebGPU(renderer: THREE.WebGLRenderer): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `renderer.render`
+- `renderer.setRenderTarget`
+- `renderer.setScissor`
+- `renderer.setScissorTest`
+- `renderer.setViewport`
 - `this.restore`
 
 ## Fsr1.restore
 
-[Implementation, line 144](../../../../../src/render/effects/fsr1.ts#L144)
+[Implementation, line 206](../../../../../src/render/effects/fsr1.ts#L206)
 
 Restore state even when the world, focus or post pass throws.
 
@@ -182,7 +231,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.release
 
-[Implementation, line 153](../../../../../src/render/effects/fsr1.ts#L153)
+[Implementation, line 215](../../../../../src/render/effects/fsr1.ts#L215)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -198,7 +247,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## Fsr1.dispose
 
-[Implementation, line 160](../../../../../src/render/effects/fsr1.ts#L160)
+[Implementation, line 222](../../../../../src/render/effects/fsr1.ts#L222)
 
 Desktop spatial upscaling. Linear HDR -> display encoding -> AMD EASU -> AMD RCAS.
 
@@ -208,6 +257,7 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `pass.mesh.geometry.dispose`
 - `this.easu.dispose`
 - `this.output.dispose`
 - `this.quad.dispose`

@@ -1,3 +1,4 @@
+import { fireNodes, flameNodes } from './entity-nodes.js'
 import { explosionTuning, vehicleDamageTuning } from '../../config/gameplay-tuning.js'
 import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
@@ -268,6 +269,7 @@ export class VehicleDestruction {
         )
     }
     fire.material.customProgramCacheKey = () => 'vehicle-fire-v1'
+    fireNodes(fire.material, clock)
     return { fire, clock }
   }
   private createFlames(clock: { value: number }) {
@@ -317,6 +319,7 @@ export class VehicleDestruction {
         )
     }
     material.customProgramCacheKey = () => 'vehicle-flames-v2'
+    flameNodes(material, clock)
     const flames = new THREE.Group()
     flames.name = 'Wreck flames'
     flames.position.y = 0.3

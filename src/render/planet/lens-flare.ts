@@ -9,6 +9,8 @@ import {
   Vector4,
   type PerspectiveCamera,
 } from 'three'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
+import { lensFlareMaterial } from './lens-flare-nodes.js'
 /** Screen-space ghosts along the sun, drawn after the world. No extra render target. */
 export function createLensFlare(direction: Vector3, options: { position?: Vector3 } = {}) {
   const geometry = new BufferGeometry()
@@ -83,6 +85,7 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
     `,
   })
   const mesh = new Mesh(geometry, material)
+  setWebGPUSubstitute(mesh, lensFlareMaterial(material))
   mesh.onBeforeRender = (_renderer, _scene, camera) => {
     if (options.position) material.uniforms.aspect.value = (camera as PerspectiveCamera).aspect ?? 1
     const view = (camera as PerspectiveCamera).view

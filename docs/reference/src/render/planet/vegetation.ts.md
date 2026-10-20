@@ -9,10 +9,12 @@
 - `three`
 - `three/addons/utils/BufferGeometryUtils.js`
 - `../../planet/index.js`
+- `../webgpu-substitutes.js`
+- `./surface-nodes.js`
 
 ## treeInstances
 
-[Implementation, line 19](../../../../../src/render/planet/vegetation.ts#L19)
+[Implementation, line 22](../../../../../src/render/planet/vegetation.ts#L22)
 
 Both foliage cards must have the authored crown width, including the Z-facing card.
 
@@ -44,6 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `patchMaterial`
 - `plane.getAttribute`
 - `plane.setAttribute`
+- `setWebGPUSubstitute`
 - `uv.getX`
 - `uv.getY`
 - `uv.setXY`
@@ -51,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## treeInstances.patchMaterial
 
-[Implementation, line 45](../../../../../src/render/planet/vegetation.ts#L45)
+[Implementation, line 48](../../../../../src/render/planet/vegetation.ts#L48)
 
 ```ts
 patchMaterial(material: Material): inferred by TypeScript; see implementation
@@ -61,12 +64,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `material.customProgramCacheKey`
 
-## treeInstances.patchMaterial.callback@48
+## treeInstances.patchMaterial.callback@51
 
-[Implementation, line 48](../../../../../src/render/planet/vegetation.ts#L48)
+[Implementation, line 51](../../../../../src/render/planet/vegetation.ts#L51)
 
 ```ts
-callback@48(shader, renderer): inferred by TypeScript; see implementation
+callback@51(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -75,20 +78,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `shader.fragmentShader.replace`
 - `shader.vertexShader.replace`
 
-## treeInstances.patchMaterial.callback@72
+## treeInstances.patchMaterial.callback@75
 
-[Implementation, line 72](../../../../../src/render/planet/vegetation.ts#L72)
+[Implementation, line 75](../../../../../src/render/planet/vegetation.ts#L75)
 
 ```ts
-callback@72(): inferred by TypeScript; see implementation
+callback@75(): inferred by TypeScript; see implementation
 ```
 
-## treeInstances.callback@82
+## treeInstances.callback@85
 
-[Implementation, line 82](../../../../../src/render/planet/vegetation.ts#L82)
+[Implementation, line 85](../../../../../src/render/planet/vegetation.ts#L85)
 
 ```ts
-callback@82(): inferred by TypeScript; see implementation
+callback@85(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -96,12 +99,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `depth.dispose`
 - `distance.dispose`
 
-## treeInstances.callback@93
+## treeInstances.callback@96
 
-[Implementation, line 93](../../../../../src/render/planet/vegetation.ts#L93)
+[Implementation, line 96](../../../../../src/render/planet/vegetation.ts#L96)
 
 ```ts
-callback@93(tree, i): inferred by TypeScript; see implementation
+callback@96(tree, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -109,3 +112,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Vector3`
 - `matrix.compose`
 - `trees.setMatrixAt`
+
+## treeInstances.callback@106
+
+[Implementation, line 106](../../../../../src/render/planet/vegetation.ts#L106)
+
+```ts
+callback@106(kit): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float32Array`
+- `InstancedBufferAttribute`
+- `geometry.getAttribute`
+- `geometry.setAttribute`
+- `nodeMaterialTwin`
+- `vegetation.forEach`
+
+## treeInstances.callback@106.callback@109
+
+[Implementation, line 109](../../../../../src/render/planet/vegetation.ts#L109)
+
+```ts
+callback@109(tree, i): inferred by TypeScript; see implementation
+```
+
+## treeInstances.callback@106.callback@116
+
+[Implementation, line 116](../../../../../src/render/planet/vegetation.ts#L116)
+
+```ts
+callback@116(twin): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `crownNodes`

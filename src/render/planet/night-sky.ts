@@ -1,3 +1,5 @@
+import { encodedTwin, milkyWay, starSprites } from './sky-nodes.js'
+import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import * as THREE from 'three'
 import { eclipticDirection, equatorialDirection } from '../../math/geo/sphere.js'
 
@@ -200,6 +202,7 @@ export class NightSky {
     }
     this.stars = new THREE.Points(geometry, material)
     this.stars.renderOrder = 2
+    setWebGPUSubstitute(this.stars, starSprites(this.stars))
     this.root.add(this.stars)
     const band = new THREE.Mesh(
       new THREE.SphereGeometry(70000, 48, 32),
@@ -253,6 +256,10 @@ export class NightSky {
       }),
     )
     band.name = 'Milky Way'
+    setWebGPUSubstitute(
+      band,
+      milkyWay(band.material, this.bandOpacity, this.galacticPole, this.galacticCenter),
+    )
     band.frustumCulled = false
     band.renderOrder = -1
     this.root.add(band)
@@ -272,9 +279,11 @@ export class NightSky {
             fog: false,
           }),
         )
+        setWebGPUSubstitute(ring, encodedTwin(ring.material))
         ring.rotation.x = Math.PI / 2.4
         mesh.add(ring)
       }
+      setWebGPUSubstitute(mesh, encodedTwin(mesh.material))
       mesh.renderOrder = 2
       this.root.add(mesh)
       return { mesh, L0: planet.L0, rate: planet.rate }
