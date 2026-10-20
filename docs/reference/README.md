@@ -6,12 +6,13 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **545 modules; 6524 executable function definitions**.
+Coverage: **553 modules; 6611 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
 | [game/anisotropy-ui.ts](game/anisotropy-ui.ts.md) | 9 |
 | [game/ar-balls.ts](game/ar-balls.ts.md) | 0 |
+| [game/ar-held-weapons.ts](game/ar-held-weapons.ts.md) | 10 |
 | [game/ar-mobile-weapon.ts](game/ar-mobile-weapon.ts.md) | 10 |
 | [game/ar-mode.ts](game/ar-mode.ts.md) | 1 |
 | [game/ar-model.ts](game/ar-model.ts.md) | 0 |
@@ -19,7 +20,7 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [game/ar-rc-demo.ts](game/ar-rc-demo.ts.md) | 12 |
 | [game/ar-rc.ts](game/ar-rc.ts.md) | 0 |
 | [game/ar-room.ts](game/ar-room.ts.md) | 0 |
-| [game/ar.ts](game/ar.ts.md) | 120 |
+| [game/ar.ts](game/ar.ts.md) | 125 |
 | [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
 | [game/boot.ts](game/boot.ts.md) | 6 |
 | [game/clock-wheel.ts](game/clock-wheel.ts.md) | 2 |
@@ -29,11 +30,12 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
 | [game/drive.ts](game/drive.ts.md) | 17 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
-| [game/entry.ts](game/entry.ts.md) | 3 |
+| [game/entry.ts](game/entry.ts.md) | 4 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 7 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/fps-readout.ts](game/fps-readout.ts.md) | 2 |
 | [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
+| [game/gravity-ui.ts](game/gravity-ui.ts.md) | 7 |
 | [game/headset.ts](game/headset.ts.md) | 9 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
@@ -124,8 +126,10 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/catalog/vehicles/preset-source.browser.ts](src/catalog/vehicles/preset-source.browser.ts.md) | 2 |
 | [src/catalog/vehicles/preset-source.ts](src/catalog/vehicles/preset-source.ts.md) | 5 |
 | [src/catalog/vehicles/trailer-boxes.ts](src/catalog/vehicles/trailer-boxes.ts.md) | 5 |
+| [src/catalog/weapons/held-library.ts](src/catalog/weapons/held-library.ts.md) | 6 |
 | [src/catalog/weapons/index.ts](src/catalog/weapons/index.ts.md) | 0 |
 | [src/catalog/weapons/library.ts](src/catalog/weapons/library.ts.md) | 8 |
+| [src/catalog/weapons/slots.ts](src/catalog/weapons/slots.ts.md) | 6 |
 | [src/catalog/weapons/weapon-source.browser.ts](src/catalog/weapons/weapon-source.browser.ts.md) | 2 |
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
 | [src/config/audio.ts](src/config/audio.ts.md) | 0 |
@@ -306,6 +310,7 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/render/planet/convert-mesh.ts](src/render/planet/convert-mesh.ts.md) | 2 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 10 |
+| [src/render/planet/fog.ts](src/render/planet/fog.ts.md) | 1 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
 | [src/render/planet/ground-material.ts](src/render/planet/ground-material.ts.md) | 22 |
 | [src/render/planet/horizon.ts](src/render/planet/horizon.ts.md) | 36 |
@@ -342,7 +347,7 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 24 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 29 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
-| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 159 |
+| [src/render/planet/world.ts](src/render/planet/world.ts.md) | 163 |
 | [src/render/planet/z16-updates.ts](src/render/planet/z16-updates.ts.md) | 5 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
@@ -381,7 +386,7 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 457 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 469 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -396,12 +401,14 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/runtime/game.ts](src/runtime/game.ts.md) | 22 |
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
-| [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 5 |
+| [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 7 |
+| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 13 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
+| [src/runtime/interface-style.ts](src/runtime/interface-style.ts.md) | 1 |
 | [src/runtime/interface-theme.ts](src/runtime/interface-theme.ts.md) | 0 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
@@ -415,6 +422,7 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
+| [src/runtime/quality-preset.ts](src/runtime/quality-preset.ts.md) | 9 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
 | [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 17 |
@@ -511,13 +519,13 @@ Coverage: **545 modules; 6524 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 122 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 123 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 269 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 278 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |

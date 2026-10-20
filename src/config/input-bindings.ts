@@ -99,6 +99,11 @@ export const inputBindings = {
   'gear.down': press('Bajar marcha', ['PageDown'], ['vehicle']),
   transfer: press('Transferir puesto de conducción', ['KeyT'], ['vehicle']),
   holster: press('Sacar / enfundar arma', ['KeyQ'], ['game']),
+  'weapon.slot1': press('Arma 1', ['Digit1'], ['walk']),
+  'weapon.slot2': press('Arma 2', ['Digit2'], ['walk']),
+  'weapon.slot3': press('Arma 3', ['Digit3'], ['walk']),
+  'weapon.slot4': press('Arma 4', ['Digit4'], ['walk']),
+  'weapon.slot5': press('Arma 5', ['Digit5'], ['walk']),
   'gallery.reset': press('Reiniciar galería de tiro', ['KeyN'], ['game']),
   'signal.left': press('Intermitente izquierdo', ['KeyZ'], ['vehicle']),
   'signal.right': press('Intermitente derecho', ['KeyX'], ['vehicle']),
@@ -224,7 +229,7 @@ export function keyLabel(code: string): string {
     ArrowLeft: '←',
     ArrowRight: '→',
   }
-  return special[code] ?? code.replace(/^Key/, '')
+  return special[code] ?? code.replace(/^(Key|Digit)/, '')
 }
 /** The same resolved declarations drive help; hidden fallback actions never appear as available. */
 export function controlsFor(

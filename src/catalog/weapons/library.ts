@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { vector } from '../../entity/coords.js'
 import { readWeaponPresetSources } from './weapon-source.js'
+import { isHeldWeaponSource } from './held-library.js'
 
 /**
  * A weapon preset is a JSON file under assets/library/weapons or assets/custom/weapons.
@@ -78,6 +79,8 @@ const presetSchema = z
     id: z.string().regex(/^[a-z0-9-]{1,40}$/),
     name: z.string().min(1).max(80),
     order: z.number().int().min(0).max(100),
+    /** Number key (1-9) that selects this weapon on foot; see `weaponSlots()`. */
+    slot: z.number().int().min(1).max(9).optional(),
     /** Legacy split assets (body + optional slide), used when there is no assembled `model`. */
     body: z.string().min(1).max(200).optional(),
     slide: z.string().min(1).max(200).optional(),
@@ -129,6 +132,8 @@ export function weaponPresets(): WeaponPreset[] {
   if (cached) return cached
   const presets: WeaponPreset[] = []
   for (const source of readWeaponPresetSources()) {
+    // Presets with a `kind` (melee, bow, placeholder) belong to held-library.ts.
+    if (isHeldWeaponSource(source.data)) continue
     try {
       presets.push(presetSchema.parse(source.data))
     } catch (error) {
