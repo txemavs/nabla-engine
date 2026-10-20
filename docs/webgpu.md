@@ -41,6 +41,11 @@ materials (lamps, instruments, screens) through a node twin whose output passes 
 curve, and gives a background colour the same inverse as its `backgroundNode`, so both come out as
 under WebGL (`webgpu-tone-parity.spec.ts`). Render targets get no output pass in either backend.
 
+Tyre, exhaust and muzzle smoke draw as instanced node sprites (`particle-nodes.ts`) that blend in
+display space against the frame below the draw (a dense plume core comes out slightly dimmer);
+tyre marks use a node material on the same ring-buffer mesh; the A3 masked lenses get TSL masks
+(`a3-lamps.ts`). `webgpu-vehicle-parity.spec.ts` covers them.
+
 Built-in materials patched with `onBeforeCompile` register a TSL twin with
 `addWebGPUMaterialNodes` (`surface-nodes.ts`): asphalt contrast, river and ocean-sheet waves, the
 sea's shadowed flat colour and glint (a small lighting model), and the tree crowns (an object
