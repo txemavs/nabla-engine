@@ -66,7 +66,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parent?.add`
 - `performance.now`
 - `recordShaders`
-- `renderPortals`
 - `renderer.clearDepth`
 - `renderer.getRenderTarget`
 - `renderer.render`
@@ -86,6 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.gpuTiming?.beginPass`
 - `this.gpuTiming?.endFrame`
 - `this.gpuTiming?.endPass`
+- `this.renderPortals`
 - `this.renderWebGPU`
 - `this.shaderPasses.clear`
 - `view.portals.values`
@@ -142,12 +142,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `reflection.position.clone().add`
 - `sky.render`
 
-## GameRenderPipeline.render.callback@158
+## GameRenderPipeline.renderPortals
 
-[Implementation, line 158](../../../../src/runtime/render-pipeline.ts#L158)
+[Implementation, line 241](../../../../src/runtime/render-pipeline.ts#L241)
+
+Remote portal views, each with its destination's sky and environment (`portalEnvironment`).
 
 ```ts
-callback@158(remote): inferred by TypeScript; see implementation
+renderPortals(frame: GameRenderFrame): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `renderPortals`
+
+## GameRenderPipeline.renderPortals.callback@248
+
+[Implementation, line 248](../../../../src/runtime/render-pipeline.ts#L248)
+
+```ts
+callback@248(remote): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -165,9 +179,9 @@ Explicit throws in this body:
 
 ## GameRenderPipeline.renderWebGPU
 
-[Implementation, line 273](../../../../src/runtime/render-pipeline.ts#L273)
+[Implementation, line 278](../../../../src/runtime/render-pipeline.ts#L278)
 
-WebGPU frame: mirrors, then the main scene. GLSL passes without a node-material port yet are
+WebGPU frame: mirrors, portals, then the main scene. GLSL passes without a node-material port yet are
 skipped; see docs/webgpu.md.
 
 ```ts
@@ -177,6 +191,7 @@ renderWebGPU(frame: GameRenderFrame): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `(frame.overlays ?? []).map`
+- `[...view.portals.values()].map`
 - `frame.beforeMain`
 - `frame.cull`
 - `frame.shadows.update`
@@ -190,22 +205,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `renderer.getRenderTarget`
 - `renderer.render`
 - `renderer.setRenderTarget`
+- `this.renderPortals`
+- `view.portals.values`
 - `view.renderMirrors`
 
-## GameRenderPipeline.renderWebGPU.callback@277
+## GameRenderPipeline.renderWebGPU.callback@282
 
-[Implementation, line 277](../../../../src/runtime/render-pipeline.ts#L277)
+[Implementation, line 282](../../../../src/runtime/render-pipeline.ts#L282)
 
 ```ts
-callback@277(object): inferred by TypeScript; see implementation
+callback@282(object): inferred by TypeScript; see implementation
 ```
 
-## GameRenderPipeline.renderWebGPU.callback@292
+## GameRenderPipeline.renderWebGPU.callback@290
 
-[Implementation, line 292](../../../../src/runtime/render-pipeline.ts#L292)
+[Implementation, line 290](../../../../src/runtime/render-pipeline.ts#L290)
 
 ```ts
-callback@292(reflection): inferred by TypeScript; see implementation
+callback@290(surface): inferred by TypeScript; see implementation
+```
+
+## GameRenderPipeline.renderWebGPU.callback@303
+
+[Implementation, line 303](../../../../src/runtime/render-pipeline.ts#L303)
+
+```ts
+callback@303(reflection): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -216,7 +241,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRenderPipeline.blankShadowMaps
 
-[Implementation, line 334](../../../../src/runtime/render-pipeline.ts#L334)
+[Implementation, line 355](../../../../src/runtime/render-pipeline.ts#L355)
 
 Clear every shadow map to its far depth (fully lit); the current render target is kept.
 
@@ -232,7 +257,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## missingShadowMap
 
-[Implementation, line 355](../../../../src/runtime/render-pipeline.ts#L355)
+[Implementation, line 376](../../../../src/runtime/render-pipeline.ts#L376)
 
 A shadow-casting light whose map the renderer has not created yet.
 
@@ -244,10 +269,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `lights.some`
 
-## missingShadowMap.callback@356
+## missingShadowMap.callback@377
 
-[Implementation, line 356](../../../../src/runtime/render-pipeline.ts#L356)
+[Implementation, line 377](../../../../src/runtime/render-pipeline.ts#L377)
 
 ```ts
-callback@356(light): inferred by TypeScript; see implementation
+callback@377(light): inferred by TypeScript; see implementation
 ```

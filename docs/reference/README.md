@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **543 modules; 6452 executable function definitions**.
+Coverage: **544 modules; 6467 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -271,6 +271,7 @@ Coverage: **543 modules; 6452 executable function definitions**.
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
 | [src/render/entity/ship-hud.ts](src/render/entity/ship-hud.ts.md) | 4 |
 | [src/render/entity/ship-lights.ts](src/render/entity/ship-lights.ts.md) | 14 |
+| [src/render/entity/shot-laser-nodes.ts](src/render/entity/shot-laser-nodes.ts.md) | 9 |
 | [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 9 |
 | [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 7 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
@@ -344,7 +345,7 @@ Coverage: **543 modules; 6452 executable function definitions**.
 | [src/render/planet/z16-updates.ts](src/render/planet/z16-updates.ts.md) | 5 |
 | [src/render/portal/environment.ts](src/render/portal/environment.ts.md) | 3 |
 | [src/render/portal/frame.ts](src/render/portal/frame.ts.md) | 1 |
-| [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 3 |
+| [src/render/portal/portals.ts](src/render/portal/portals.ts.md) | 7 |
 | [src/render/portal/remote.ts](src/render/portal/remote.ts.md) | 10 |
 | [src/render/shader-warmup.ts](src/render/shader-warmup.ts.md) | 3 |
 | [src/render/shadow-depth.ts](src/render/shadow-depth.ts.md) | 1 |
@@ -415,7 +416,7 @@ Coverage: **543 modules; 6452 executable function definitions**.
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |
-| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 14 |
+| [src/runtime/render-pipeline.ts](src/runtime/render-pipeline.ts.md) | 16 |
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
