@@ -13,6 +13,7 @@ import {
 } from '@nabla/engine/planet/terrain-source'
 import { SOURCE_STORAGE_KEY, browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 /** Build-time default for the tile host (VITE_NABLA_TILES_URL), else the public Atlas host. */
 function configuredTilesUrl(): string {
@@ -103,7 +104,7 @@ export function bindTerrainSelector(
     try {
       const next = withTerrainSource(search, source)
       saveTerrainSource(storage, SOURCE_STORAGE_KEY, source)
-      message.textContent = 'Cargando el terreno elegido…'
+      message.textContent = t('boot.loading-the-chosen-terrain')
       reload(next)
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : String(error)

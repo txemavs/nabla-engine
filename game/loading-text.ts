@@ -1,5 +1,6 @@
-/** Spanish loading text: what is happening and, when something fails, the last error, so nothing is silent. */
+/** Loading text: what is happening and, when something fails, the last error, so nothing is silent. */
 import type { LoadDiagnostics, StreamError } from '@nabla/engine/render'
+import { t } from '@nabla/engine/i18n'
 
 export interface LoadStats {
   loaded: number
@@ -9,23 +10,23 @@ export interface LoadStats {
 }
 
 /** Phrase the last streaming error for the player (kind and status come from the engine, not from parsing text). */
-export function spanishLoadError(error: StreamError): string {
+export function describeLoadError(error: StreamError): string {
   const where = error.url ? ` (${shortUrl(error.url)})` : ''
   switch (error.kind) {
     case 'http':
-      return `El servidor respondió HTTP ${error.status ?? '?'}${where}`
+      return t('loading.error.http', { status: error.status ?? '?', where })
     case 'timeout':
-      return `El servidor no respondió a tiempo${where}`
+      return t('loading.error.timeout', { where })
     case 'network':
-      return `No se pudo conectar con el servidor de teselas (red o CORS)${where}`
+      return t('loading.error.network', { where })
     case 'insecure':
-      return 'La página es https pero las teselas son http: el navegador lo bloquea'
+      return t('loading.error.insecure')
     case 'invalid':
-      return `Datos de la celda no válidos${where}`
+      return t('loading.error.invalid', { where })
     case 'worker':
-      return `Falló el cargador de celdas: ${error.message}`
+      return t('loading.error.worker', { message: error.message })
     default:
-      return `Error al cargar una celda: ${error.message}`
+      return t('loading.error.other', { message: error.message })
   }
 }
 
@@ -43,17 +44,26 @@ export function describeLoading(
   stats: LoadStats | null,
   diagnostics: LoadDiagnostics | null,
 ): { status: string; detail: string } {
-  if (!stats) return { status: 'Cargando el terreno…', detail: '' }
-  const parts = [`${stats.loaded} ${stats.loaded === 1 ? 'celda lista' : 'celdas listas'}`]
-  if (stats.pending) parts.push(`${stats.pending} en camino`)
+  if (!stats) return { status: t('loading.terrain'), detail: '' }
+  const parts = [
+    t(stats.loaded === 1 ? 'loading.cell-ready' : 'loading.cells-ready', { n: stats.loaded }),
+  ]
+  if (stats.pending) parts.push(t('loading.pending', { n: stats.pending }))
   if (stats.missing)
-    parts.push(`${stats.missing} no ${stats.missing === 1 ? 'existe' : 'existen'} en el servidor`)
-  const status = `Cargando el terreno · ${parts.join(' · ')}…`
+    parts.push(
+      t(stats.missing === 1 ? 'loading.missing-one' : 'loading.missing', { n: stats.missing }),
+    )
+  const status = t('loading.terrain-status', { parts: parts.join(' · ') })
   if (!diagnostics) return { status, detail: '' }
   const detail = [
-    `Peticiones: ${diagnostics.manifestsInFlight} manifiestos · ${diagnostics.cellsInFlight} descargas · ${diagnostics.installing} instalando · ${diagnostics.failed} con error`,
+    t('loading.requests', {
+      manifests: diagnostics.manifestsInFlight,
+      cells: diagnostics.cellsInFlight,
+      installing: diagnostics.installing,
+      failed: diagnostics.failed,
+    }),
   ]
   if (diagnostics.failed && diagnostics.lastError)
-    detail.push(`Último error: ${spanishLoadError(diagnostics.lastError)}`)
+    detail.push(t('loading.last-error', { error: describeLoadError(diagnostics.lastError) }))
   return { status, detail: detail.join('\n') }
 }

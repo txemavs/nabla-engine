@@ -1,4 +1,5 @@
 import { cameraFovRange } from './camera-fov.js'
+import { t } from '../i18n/index.js'
 
 /** Shared layout, icon appearance and ordered groups for the gameplay action rail. */
 export class GameToolbar {
@@ -30,7 +31,7 @@ export class GameToolbar {
     }
     this.root.className = 'game-toolbar'
     this.root.setAttribute('role', 'group')
-    this.root.setAttribute('aria-label', 'Controles del juego')
+    this.root.setAttribute('aria-label', t('toolbar.game-controls'))
     this.root.style.cssText =
       'position:fixed;right:20px;top:72px;z-index:48;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;max-height:calc(100% - 70px)'
     this.setVisible(false)
@@ -39,7 +40,7 @@ export class GameToolbar {
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset.toolbarLabel = 'FOV'
-    button.title = 'Campo de visión (FOV)'
+    button.title = t('toolbar.field-of-view-fov')
     button.setAttribute('aria-label', button.title)
     button.setAttribute('aria-expanded', 'false')
     button.innerHTML =
@@ -58,7 +59,7 @@ export class GameToolbar {
     input.step = '1'
     input.className = 'nabla-vertical-range'
     panel.className = 'nabla-slider-panel'
-    input.setAttribute('aria-label', 'Ajuste del campo de visión en grados')
+    input.setAttribute('aria-label', t('toolbar.field-of-view-setting-in-degrees'))
     const refresh = () => {
       input.value = String(read())
       output.textContent = String(read())
@@ -101,7 +102,7 @@ export class GameToolbar {
       rb.type = 'button'
       rb.dataset.toolbarLabel = 'QLTY'
       rb.textContent = '%'
-      rb.title = 'Escala de resolución'
+      rb.title = t('toolbar.resolution-scale')
       rb.setAttribute('aria-label', rb.title)
       GameToolbar.styleButton(rb)
       const rp = document.createElement('div')
@@ -115,7 +116,7 @@ export class GameToolbar {
       ri.max = String(scales.length - 1)
       ri.step = '1'
       ri.className = 'nabla-vertical-range'
-      ri.setAttribute('aria-label', 'Escala de resolución')
+      ri.setAttribute('aria-label', t('toolbar.resolution-scale'))
       const sync = () => {
         const current = resolution.read()
         ri.value = String(

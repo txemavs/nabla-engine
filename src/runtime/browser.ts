@@ -293,6 +293,7 @@ import { FlipCinematic } from './flip-cinematic.js'
 import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigation-places.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
+import { t } from '../i18n/index.js'
 
 export interface GameFrame {
   speedKmh: number
@@ -838,7 +839,7 @@ export class GameRuntime {
       },
     )
     this.toolbar.addAction(
-      'Añadir vehículo al azar',
+      t('game.add-a-random-vehicle'),
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>',
       40,
       async () => {
@@ -856,10 +857,10 @@ export class GameRuntime {
             const yaw = 2 * Math.atan2(pose.rotation[1], pose.rotation[3])
             await this.placeVehicle(selected.trailer, pose.position, yaw)
           }
-          this.options.onMessage?.('Vehículo añadido: ' + selected.vehicle.name)
+          this.options.onMessage?.(t('game.vehicle-added', { name: selected.vehicle.name }))
         } catch (error) {
           this.options.onMessage?.(
-            error instanceof Error ? error.message : 'No se pudo añadir el vehículo',
+            error instanceof Error ? error.message : t('game.could-not-add-the-vehicle'),
           )
         }
       },
@@ -2645,16 +2646,14 @@ export class GameRuntime {
     if (this.inspector) {
       this.inspector.returning = true
       this.inspector.position.copy(this.inspector.home)
-      this.options.onMessage?.('Volviendo al vehículo · preparando terreno')
+      this.options.onMessage?.(t('game.back-to-the-vehicle-preparing-terrain'))
     } else {
       this.inspector = new MapInspector(this.camera.position.clone(), this.camera.quaternion)
       this.inspectorState.mode = 'map'
       if (this.session.simulation) this.session.simulation.terrainSupportPaused = true
       this.effects.audio.setSuspended(true)
       this.usbFeedback.stop()
-      this.options.onMessage?.(
-        'Modo Dios · WASD/flechas · ratón · Shift rápido · Q/E altura · Inicio volver',
-      )
+      this.options.onMessage?.(t('game.god-mode-wasd-arrows-mouse-shift-fast-q-e-height'))
     }
     this.lastTime = null
     this.options.canvas.dataset.inspection = this.inspector.returning ? 'returning' : 'active'
@@ -2687,7 +2686,7 @@ export class GameRuntime {
       this.lastTime = null
       this.effects.audio.setSuspended(false)
       this.options.canvas.dataset.inspection = 'off'
-      this.options.onMessage?.('Conducción reanudada')
+      this.options.onMessage?.(t('game.driving-resumed'))
     }
   }
   private warmFrame(
@@ -2881,9 +2880,9 @@ export class GameRuntime {
           state.mapDescentDamping = START_DESCENT_DAMPING
         }
         await this.reportLoadStep(
-          'Render inicial: ' +
-            view.mode +
-            (view.height === undefined ? '' : ' · ' + view.height + ' m'),
+          view.mode === 'map'
+            ? t('load.view.map')
+            : t('load.view', { view: t('load.view.' + view.mode) }),
         )
         // Looking sideways/back exposes cockpit glass, mirrors and nearby geometry
         // absent from the forward render. Upload/draw those views before accepting input.
@@ -2902,7 +2901,7 @@ export class GameRuntime {
           await new Promise<void>((resolve) => setTimeout(resolve, 0))
         }
         // Effects need the final light count too, including field lights and shadow maps.
-        await this.reportLoadStep('Efectos para cámara ' + (viewIndex + 1))
+        await this.reportLoadStep(t('load.camera-effects', { n: viewIndex + 1 }))
         await warmEffectPresentation(
           this.renderer,
           this.camera,
@@ -2917,7 +2916,7 @@ export class GameRuntime {
           this.scene,
         )
         // Compile the viewmodel against the lights and shadow maps this view actually uses.
-        await this.reportLoadStep('Arma para cámara ' + (viewIndex + 1))
+        await this.reportLoadStep(t('load.camera-weapon', { n: viewIndex + 1 }))
         await this.sidearm?.warm(this.renderer, this.scene)
         await new Promise<void>((resolve) => setTimeout(resolve, 0))
       }
@@ -3725,8 +3724,8 @@ export class GameRuntime {
     const geography = this.document.geography
     const world = this.world
     if (!sim || !geography || !world)
-      throw new Error('Entra primero en Zaisa para añadir celdas a su terreno')
-    if (this.terrainLoad) throw new Error('Ya se está cargando una celda')
+      throw new Error(t('game.enter-zaisa-first-to-add-cells-to-its-terrain'))
+    if (this.terrainLoad) throw new Error(t('game.a-cell-is-already-loading'))
     normalizeTilesBase(baseUrl)
     const here = localToGeo(geography, sim.player.position)
     const current = mapTileAt(here.latitude, here.longitude, 15)
@@ -3735,7 +3734,7 @@ export class GameRuntime {
       here.longitude,
       world.activeTiles.map((t) => t.key),
     )
-    if (!tile) throw new Error('No quedan celdas cercanas por añadir')
+    if (!tile) throw new Error(t('game.no-nearby-cells-left-to-add'))
     const controller = new AbortController()
     this.terrainLoad = controller
     // Pin the existing cover before asking for more: it must not be evicted by the quality budget.
@@ -4563,15 +4562,15 @@ export class GameRuntime {
       })
     }
     signal.throwIfAborted()
-    await this.reportLoadStep('Preparando audio')
+    await this.reportLoadStep(t('load.loading-audio'))
     this.effects.audio.prepare()
     // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
     stage('vehicles', 0)
-    await this.reportLoadStep('Cargando modelos de vehículos')
+    await this.reportLoadStep(t('load.loading-vehicles'))
     await this.view.ready
     signal.throwIfAborted()
     stage('weapons', 1)
-    await this.reportLoadStep('Cargando modelos de armas')
+    await this.reportLoadStep(t('load.loading-weapons'))
     const preset = weaponPresets()[0]
     const weaponUrls = [preset?.model, preset?.body, preset?.slide].filter(
       (url): url is string => typeof url === 'string',
@@ -4583,7 +4582,7 @@ export class GameRuntime {
     // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
     // first draw shows the pistol instead of the placeholder block while it loads.
     this.sidearm ??= this.createSidearm()
-    await this.reportLoadStep('Compilando arma y cargadores')
+    await this.reportLoadStep(t('load.preparing-magazines'))
     await this.sidearm.warm(this.renderer)
     signal.throwIfAborted()
     // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
@@ -4607,7 +4606,7 @@ export class GameRuntime {
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     stage('terrain', 2)
-    await this.reportLoadStep('Colocando vehículos y preparando el escenario')
+    await this.reportLoadStep(t('load.preparing-scene'))
     for (const task of this.revealTasks.splice(0)) {
       signal.throwIfAborted()
       await task().catch((error) => console.warn('beforeReveal task failed', error))
@@ -4616,7 +4615,7 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
-      await this.reportLoadStep('Esperando teselas, ortofotos y colisiones del terreno')
+      await this.reportLoadStep(t('load.preloading-digital-twin'))
       if (this.options.startupTerrain === 'area') {
         const spawnEye = new THREE.Vector3(...spawn)
         let plannedCells: (() => { loaded: number; total: number }) | undefined
@@ -4663,7 +4662,7 @@ export class GameRuntime {
     // Heavy GPU preparation keeps the already-visible planet still, without delaying startup.
     if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
     stage('shaders', 3)
-    await this.reportLoadStep('Preparando poses, luces y materiales')
+    await this.reportLoadStep(t('load.preparing-poses-lights-and-materials'))
     // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
     // lights compileAsync sees are the ones gameplay draws with (the light count is part of
     // every lit program; a mismatch means slow synchronous compiles later).
@@ -4678,7 +4677,7 @@ export class GameRuntime {
           this.cameraState.headPitch,
         )
       const camera = this.camera.clone()
-      await this.reportLoadStep('Compilando efectos: humo, impactos y casquillos')
+      await this.reportLoadStep(t('load.preparing-special-effects'))
       await warmEffectPresentation(
         this.renderer,
         camera,
@@ -4701,14 +4700,14 @@ export class GameRuntime {
         signal,
         onProgress: (detail) => this.reportLoadStep(detail),
       })
-      await this.reportLoadStep('Subiendo texturas a la GPU')
+      await this.reportLoadStep(t('load.uploading-gpu-textures'))
       await uploadSceneTextures(this.renderer, this.scene, signal)
       signal.throwIfAborted()
       // Then the start views themselves, as the first gameplay frames will draw them. Awaited
       // in full (a handful of frames): a timed-out warmup must not keep moving the camera.
-      await this.reportLoadStep('Preparando cámaras de entrada')
+      await this.reportLoadStep(t('load.mounting-cameras'))
       await this.warmStartViews(signal)
-      await this.reportLoadStep('Compilando destrucción y fragmentos')
+      await this.reportLoadStep(t('load.preparing-destruction'))
       await this.view.destruction.warm(this.renderer, this.scene, this.camera, [this.view.root])
       stage('preload', 4)
       // Replacement candidates are availability metadata, not an instruction to preload
@@ -4733,7 +4732,7 @@ export class GameRuntime {
             canvas.dataset.stallLog = this.stallLog.join('\n')
           }
           await this.reportLoadStep(
-            `Precargando vehículo: ${index + 1}/${preloadVehicles.length} · ${phase}`,
+            t('load.vehicle', { n: index + 1, total: preloadVehicles.length, phase }),
           )
           lastPhase = phase
           phaseStarted = performance.now()
@@ -4755,7 +4754,7 @@ export class GameRuntime {
     }
     stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'
-    await this.reportLoadStep('GPU preparada · entrando al juego')
+    await this.reportLoadStep(t('load.simulation-ready'))
     while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
   }
   /**
@@ -5640,7 +5639,7 @@ export class GameRuntime {
               this.action('interact')
           })
           .catch((error) => {
-            this.options.onMessage?.('No se pudo preparar el vehículo. Puedes volver a intentarlo.')
+            this.options.onMessage?.(t('game.could-not-prepare-the-vehicle-you-can-try-again'))
             console.error('Vehicle preparation failed', error)
           })
           .finally(() => {
@@ -5873,7 +5872,7 @@ export class GameRuntime {
             this.text,
             (entityId, mode) =>
               this.session.simulation?.setEngineMode(entityId, mode) ??
-              'Este vehículo tiene un solo modo de motor',
+              t('game.this-vehicle-has-a-single-engine-mode'),
             (step) => {
               this.applyCameraFov(nextCameraFovOffset(this.fovOffset, step))
               writeCameraFovOffset(browserStorage(), this.fovOffset)
@@ -5882,14 +5881,14 @@ export class GameRuntime {
             },
             (action) => {
               const track = this.effects.audio.musicTrack
-              if (!track) return 'Sin música'
+              if (!track) return t('game.no-music')
               if (action === 'stop') {
                 this.effects.audio.fadeOutMusic(0.8)
-                return 'Música parada'
+                return t('game.music-stopped')
               }
               return this.effects.audio.playMusic()
-                ? 'Música: ' + (track.title ?? 'pista')
-                : 'Música silenciada en Ajustes → Audio'
+                ? t('game.music-track', { title: track.title ?? t('game.track') })
+                : t('game.music-muted-in-settings-to-audio')
             },
             (action) => {
               const sim = this.session.simulation!
