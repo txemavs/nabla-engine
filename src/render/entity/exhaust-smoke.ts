@@ -1,5 +1,12 @@
 import { laserSmokePools, type LaserSmokePool } from './laser-smoke.js'
 import { smokeDensity } from './smoke-density.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 /** White exhaust vapour attached to the authored outlet, with a bounded world-space pool. */
 import * as THREE from 'three'
 import {
@@ -78,15 +85,17 @@ class SmokeBatch {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { smokeDensity, clocks: { value: this.clocks } },
+        uniforms: { smokeDensity, clocks: { value: this.clocks }, ...softSmokeUniforms() },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
         ${PARTICLE_MOTION_GLSL}
         attribute vec3 velocity; attribute vec3 tint; attribute vec4 spawn;
         uniform vec4 clocks[${BATCH_EMITTERS}];
-        varying vec3 smokeTint; varying float age; varying float smokeLifetime;
+        varying vec3 smokeTint; varying float age; varying float smokeLifetime; varying float smokeSeed;
+        ${SOFT_VERTEX_PARS}
         void main(){
+          smokeSeed=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453);
           vec4 clock=clocks[int(spawn.w+0.5)];
           float t=clock.x-spawn.x;
           float life=clock.w>0.5?nablaLife(spawn.z,t):0.0;
@@ -94,22 +103,27 @@ class SmokeBatch {
           age=life; smokeLifetime=lifetime; smokeTint=tint;
           vec4 p=modelViewMatrix*vec4(nablaSmokePosition(position,velocity,t,clock.y,spawn.x,spawn.y),1.0);
           gl_Position=projectionMatrix*p;
+          ${softVertex('p')}
           gl_PointSize=life>0.0?clamp((1.0-life/lifetime)*1.4*clock.z/max(1.0,-p.z),1.0,240.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
         uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
-        varying float age; varying vec3 smokeTint; varying float smokeLifetime;
+        varying float age; varying vec3 smokeTint; varying float smokeLifetime; varying float smokeSeed;
+        ${SOFT_FRAGMENT_PARS}
         void main(){
           #include <logdepthbuf_fragment>
-          float d=length(gl_PointCoord-0.5)*2.0;
-          if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/smokeLifetime)*0.4*smokeDensity);
+          if(age<=0.0)discard;
+          float k=1.0-age/smokeLifetime;
+          vec4 c=nablaSmoke(smokeTint,(age/smokeLifetime)*0.4*smokeDensity,k,smokeSeed,k*(smokeSeed-0.5)*1.5,0.35);
+          if(c.a<0.002)discard;
+          gl_FragColor=c;
         }`,
       }),
     )
     this.points.name = 'Engine exhaust smoke'
+    softConsumer(this.points.material)
     // Never three-culled (the sphere above is the fixed sort centre): off-screen culling uses
     // the leased emitters' spawn bounds instead.
     this.points.frustumCulled = false

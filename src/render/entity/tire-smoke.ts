@@ -1,5 +1,12 @@
 import { smokeDensity } from './smoke-density.js'
 import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
+import {
   BufferAttribute,
   BufferGeometry,
   DynamicDrawUsage,
@@ -48,29 +55,40 @@ class AnalyticTireSmoke {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { smokeDensity, pixelRatio: { value: 1 }, clock: this.clockUniform },
+        uniforms: {
+          smokeDensity,
+          pixelRatio: { value: 1 },
+          clock: this.clockUniform,
+          ...softSmokeUniforms(),
+        },
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
         ${PARTICLE_MOTION_GLSL}
-        attribute vec2 spawn; varying float age; uniform float pixelRatio; uniform float clock;
-        void main(){ float t=clock-spawn.x; float life=nablaLife(spawn.y,t); age=life;
+        attribute vec2 spawn; varying float age; uniform float pixelRatio; uniform float clock; varying float smokeSeed;
+        ${SOFT_VERTEX_PARS}
+        void main(){ smokeSeed=fract(sin(dot(position,vec3(12.9898,78.233,37.719)))*43758.5453); float t=clock-spawn.x; float life=nablaLife(spawn.y,t); age=life;
           vec4 p=modelViewMatrix*vec4(nablaTireSmokePosition(position,t),1.0);
-          gl_Position=projectionMatrix*p; gl_PointSize=life>0.0 ? clamp((1.8-life)*160.0*pixelRatio/max(1.0,-p.z),1.0,80.0) : 0.0;
+          gl_Position=projectionMatrix*p; ${softVertex('p')} gl_PointSize=life>0.0 ? clamp((1.8-life)*160.0*pixelRatio/max(1.0,-p.z),1.0,80.0) : 0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
         uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
-        varying float age; void main(){
+        varying float age; varying float smokeSeed;
+        ${SOFT_FRAGMENT_PARS}
+        void main(){
         #include <logdepthbuf_fragment>
- float d=length(gl_PointCoord-0.5)*2.0;
-        if(d>1.0 || age<=0.0) discard; gl_FragColor=vec4(0.65,0.67,0.69,(1.0-d)*(1.0-d)*age*0.24*smokeDensity); }`,
+        if(age<=0.0) discard;
+        float k=1.0-age/${LIFETIME.toFixed(2)};
+        vec4 c=nablaSmoke(vec3(0.65,0.67,0.69),age*0.24*smokeDensity,k,smokeSeed,k*(smokeSeed-0.5)*2.0,0.25);
+        if(c.a<0.002) discard; gl_FragColor=c; }`,
       }),
     )
     // Off-screen culling through the spawn bounds; three's sphere stays the sort centre.
     this.root.frustumCulled = false
     const material = this.root.material as ShaderMaterial
+    softConsumer(material)
     cullOffscreen(this.root, {
       box: (target) => this.bounds.unionInto(target),
       // Point diameter: (1.8 − life)·160·pixelRatio / max(1, depth), clamped to [1, 80] px.

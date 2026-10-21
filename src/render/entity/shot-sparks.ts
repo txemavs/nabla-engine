@@ -2,6 +2,13 @@ import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { analyticParticles, EPOCH_MS, markRange, NEVER, SPARK_DROP } from './gpu-particles.js'
 import { LegacyShotSparks } from './legacy-particles.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 
 const MAX_BURSTS = 32
@@ -220,6 +227,7 @@ const PUFF_VERTEX = /* glsl */ `
 attribute vec3 puffVelocity; attribute vec4 puffData; attribute vec3 puffColor;
 uniform float sparkNow; uniform float pixelScale;
 varying vec4 vColor; varying float vFlash;
+${SOFT_VERTEX_PARS}
 #include <logdepthbuf_pars_vertex>
 void main(){
   // puffData: birth (ms), life (ms), size (m), flash flag.
@@ -235,18 +243,20 @@ void main(){
   vColor = vec4(puffColor, alpha);
   gl_Position = projectionMatrix * view;
   gl_PointSize = size * pixelScale / max(0.05, -view.z);
+  ${softVertex('view')}
   #include <logdepthbuf_vertex>
 }
 `
 const PUFF_FRAGMENT = /* glsl */ `
 varying vec4 vColor; varying float vFlash;
+${SOFT_FRAGMENT_PARS}
 #include <logdepthbuf_pars_fragment>
 void main(){
   #include <logdepthbuf_fragment>
   float r = length(gl_PointCoord - 0.5) * 2.0;
   if (r > 1.0) discard;
   float soft = vFlash > 0.5 ? pow(1.0 - r, 2.5) : (1.0 - r * r);
-  float a = vColor.a * soft;
+  float a = vColor.a * soft * nablaSoft(0.08);
   // Premultiplied blend in one draw: the flash adds light (alpha 0), dust covers (alpha a).
   gl_FragColor = vFlash > 0.5 ? vec4(vColor.rgb * a, 0.0) : vec4(vColor.rgb * a, a);
 }
@@ -279,7 +289,7 @@ class AnalyticShotSparks {
     toneMapped: false,
   })
   private readonly puffMaterial = new THREE.ShaderMaterial({
-    uniforms: { sparkNow: this.now, pixelScale: this.pixelScale },
+    uniforms: { sparkNow: this.now, pixelScale: this.pixelScale, ...softSmokeUniforms() },
     vertexShader: PUFF_VERTEX,
     fragmentShader: PUFF_FRAGMENT,
     transparent: true,
@@ -359,6 +369,7 @@ class AnalyticShotSparks {
     }
     this.streaks.onBeforeRender = (renderer, _scene, camera) => measure(renderer, camera)
     this.puffs.onBeforeRender = (renderer, _scene, camera) => measure(renderer, camera)
+    softConsumer(this.puffMaterial)
     this.root.add(this.streaks, this.puffs)
     this.root.raycast = () => undefined
   }
