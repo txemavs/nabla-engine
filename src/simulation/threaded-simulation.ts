@@ -30,6 +30,7 @@ import {
   type SimulationPort,
 } from './simulation-worker-host.js'
 import { Simulation, type PlayerInput } from './simulation.js'
+import { blendNumbers } from './snapshot-clock.js'
 import type { SceneDocument } from '../scene/document.js'
 import type { Entity, Transform, Vec3Tuple } from '../entity/schema.js'
 
@@ -161,6 +162,7 @@ export class ThreadedSimulation {
       if (reply.query) this.query.apply(reply.query)
       if (reply.reads) {
         this.reads = reply.reads
+        if (reply.snapshot) this.readsAt.set(reply.snapshot, reply.reads)
         this.explosions.push(...reply.reads.explosions)
       }
       if (reply.snapshot) this.settlePending(reply.snapshot.entities)
@@ -347,6 +349,24 @@ export class ThreadedSimulation {
   private vehicleReads(id: string | null | undefined) {
     return id ? this.reads?.vehicles[id] : undefined
   }
+  /** Worker reads of each reply, by its snapshot, so render-facing reads blend on the timeline. */
+  private readonly readsAt = new WeakMap<object, SimulationReads>()
+  /**
+   * A worker-sampled read at the render time: blended between the two replies the timeline is
+   * showing (pipelined), else the newest. Cameras, rigs and wheels then share one timeline.
+   */
+  private onTimeline<T>(read: (reads: SimulationReads) => T | null | undefined): T | null {
+    const newest = this.reads ? (read(this.reads) ?? null) : null
+    if (!this.worker.pipelined || newest === null) return newest
+    const sample = this.worker.timeline.sample()
+    if (!sample) return newest
+    const a = this.readsAt.get(sample.a.snapshot)
+    const b = this.readsAt.get(sample.b.snapshot)
+    const from = a ? read(a) : null
+    const to = b ? read(b) : null
+    if (from == null || to == null) return newest
+    return blendNumbers(from, to, Math.min(1, sample.t))
+  }
 
   /** Wait for every forwarded command and mirror the resulting state. */
   async refresh(): Promise<void> {
@@ -425,16 +445,16 @@ export class ThreadedSimulation {
     return this.vehicleReads(id)?.engineMode ?? 'normal'
   }
   twoWheeledPose(id: string): ReturnType<Simulation['twoWheeledPose']> {
-    return this.vehicleReads(id)?.twoWheeledPose ?? null
+    return this.onTimeline((r) => r.vehicles[id]?.twoWheeledPose)
   }
   forkliftPose(id: string): ReturnType<Simulation['forkliftPose']> {
-    return this.vehicleReads(id)?.forkliftPose ?? null
+    return this.onTimeline((r) => r.vehicles[id]?.forkliftPose)
   }
   wheelVisualState(id: string): ReturnType<Simulation['wheelVisualState']> {
-    return this.vehicleReads(id)?.wheelVisualState ?? null
+    return this.onTimeline((r) => r.vehicles[id]?.wheelVisualState)
   }
   entityAngularVelocity(id: string): Vec3Tuple {
-    return this.vehicleReads(id)?.angularVelocity ?? [0, 0, 0]
+    return this.onTimeline((r) => r.vehicles[id]?.angularVelocity) ?? [0, 0, 0]
   }
   hitchCandidate(tractorId = this.player.vehicleId): string | null {
     return this.vehicleReads(tractorId)?.hitchCandidate ?? null
@@ -701,7 +721,8 @@ export class ThreadedSimulation {
     return { ...portal }
   }
   entityVelocity(id: string): Vec3Tuple {
-    return this.state().velocities[id] ?? [0, 0, 0]
+    this.state()
+    return this.onTimeline((r) => r.velocities[id]) ?? [0, 0, 0]
   }
   vehicleInfo(id: string, interpolated = false): ReturnType<Simulation['vehicleInfo']> {
     const reads = this.state().vehicles[id]

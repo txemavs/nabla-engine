@@ -141,3 +141,22 @@ export function lerpAngle(a: number, b: number, t: number): number {
   const d = Math.atan2(Math.sin(b - a), Math.cos(b - a))
   return a + d * t
 }
+
+/**
+ * Blend two worker reads of the same shape: numbers lerp, arrays and objects blend per field,
+ * anything else (flags, ids, strings) takes `b`. Lean, steering, suspension and velocities sampled
+ * by the worker then follow the render timeline instead of stepping at the reply rate.
+ */
+export function blendNumbers<T>(a: T, b: T, t: number): T {
+  if (typeof a === 'number' && typeof b === 'number') return (a + (b - a) * t) as T
+  if (Array.isArray(a) && Array.isArray(b))
+    return (a.length === b.length ? a.map((v, i) => blendNumbers(v, b[i], t)) : b) as T
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const from = a as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(b))
+      out[key] = key in from ? blendNumbers(from[key], value, t) : value
+    return out as T
+  }
+  return b
+}
