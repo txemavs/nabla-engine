@@ -327,9 +327,72 @@ export class Gallery {
         if (damage > 0)
           view.destruction.balloons.hit(object, new THREE.Vector3(...hit.point), ray.ray.direction)
       } else {
-        view.impacts.addWorld(view.root, hit.point, hit.normal)
+        // Static colliders (host scenery layers, pole boxes, terrain) can differ from what is
+        // drawn: put the mark on the visible surface met along the same shot near the hit.
+        const skin = visibleSurfaceNear(view.root, ray.ray, new THREE.Vector3(...hit.point))
+        view.impacts.addWorld(view.root, skin?.point ?? hit.point, skin?.normal ?? hit.normal)
       }
     }
     return !!hit
+  }
+}
+
+/** How far from the physics hit the drawn surface may be and still take the mark, metres. */
+const SKIN_REACH = 0.5
+
+/**
+ * The first visible mesh surface (instanced meshes included) along `ray` within
+ * {@link SKIN_REACH} of `hit`, in `root`'s frame. Only meshes whose bounds reach the hit are
+ * tested, so a shot costs a few bounding-sphere checks plus the nearby triangles.
+ */
+function visibleSurfaceNear(
+  root: THREE.Object3D,
+  ray: THREE.Ray,
+  hit: THREE.Vector3,
+): { point: Vec3Tuple; normal: Vec3Tuple } | null {
+  root.updateWorldMatrix(true, true)
+  const offset = root.position
+  const at = hit.clone().add(offset)
+  const sphere = new THREE.Sphere()
+  const candidates: THREE.Mesh[] = []
+  root.traverseVisible((object) => {
+    const mesh = object as THREE.Mesh
+    if (!mesh.isMesh || object.name === 'shot-impact' || !mesh.geometry) return
+    if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere()
+    const bounds = (mesh as THREE.InstancedMesh).isInstancedMesh
+      ? ((mesh as THREE.InstancedMesh).boundingSphere ??
+        ((mesh as THREE.InstancedMesh).computeBoundingSphere(),
+        (mesh as THREE.InstancedMesh).boundingSphere))
+      : mesh.geometry.boundingSphere
+    if (!bounds) return
+    sphere.copy(bounds).applyMatrix4(mesh.matrixWorld)
+    if (sphere.distanceToPoint(at) <= SKIN_REACH) candidates.push(mesh)
+  })
+  if (!candidates.length) return null
+  const origin = ray.origin.clone().add(offset)
+  const distance = origin.distanceTo(at)
+  const caster = new THREE.Raycaster(
+    origin,
+    ray.direction.clone().normalize(),
+    Math.max(0, distance - SKIN_REACH),
+    distance + SKIN_REACH,
+  )
+  const surface = caster.intersectObjects(candidates, false).find((candidate) => !!candidate.face)
+  if (!surface?.face) return null
+  const matrix = surface.object.matrixWorld.clone()
+  const instanced = surface.object as THREE.InstancedMesh
+  if (instanced.isInstancedMesh && surface.instanceId !== undefined) {
+    const instance = new THREE.Matrix4()
+    instanced.getMatrixAt(surface.instanceId, instance)
+    matrix.multiply(instance)
+  }
+  const normal = surface.face.normal
+    .clone()
+    .applyMatrix3(new THREE.Matrix3().getNormalMatrix(matrix))
+    .normalize()
+  if (normal.dot(caster.ray.direction) > 0) normal.negate()
+  return {
+    point: surface.point.clone().sub(offset).toArray() as Vec3Tuple,
+    normal: normal.toArray() as Vec3Tuple,
   }
 }
