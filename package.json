@@ -99,6 +99,10 @@
       "types": "./dist/i18n/index.d.ts",
       "import": "./dist/i18n/index.js"
     },
+    "./runtime/main-menu": {
+      "types": "./dist/runtime/main-menu.d.ts",
+      "import": "./dist/runtime/main-menu.js"
+    },
     "./runtime/corner-buttons": {
       "types": "./dist/runtime/corner-buttons.d.ts",
       "import": "./dist/runtime/corner-buttons.js"
