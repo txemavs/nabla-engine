@@ -2075,6 +2075,7 @@ export class SceneView {
       grounded: sim.player.grounded,
       rising: seated ? 0 : velocity.y,
       speed,
+      runAbove: (simulationDefaults.walkSpeed + simulationDefaults.sprintSpeed) / 2,
       crouching: sim.stance !== 'standing',
       seated,
     })
