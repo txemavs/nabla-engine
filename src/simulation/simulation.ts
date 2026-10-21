@@ -417,6 +417,29 @@ export class Simulation {
       waited: 0,
     }
   }
+  /**
+   * Move the on-foot player to `position` (body centre, metres) and, when given, face `yaw`
+   * (radians, the input yaw). Velocity and ground contact are reset, a queued jump is dropped and
+   * a pending spawn guard is cancelled. Ignored while seated in a vehicle.
+   */
+  relocatePlayer(position: Vec3Tuple, yaw?: number): void {
+    if (!position.every(Number.isFinite) || (yaw !== undefined && !Number.isFinite(yaw)))
+      throw new Error('Invalid player relocation')
+    if (this.vehicleId) return
+    const body = this.playerBody
+    body.position.set(...position)
+    body.previousPosition.copy(body.position)
+    body.interpolatedPosition.copy(body.position)
+    body.velocity.setZero()
+    body.angularVelocity.setZero()
+    body.aabbNeedsUpdate = true
+    body.wakeUp()
+    this.grounded = false
+    this.support = null
+    this.jumpPending = false
+    this.groundHold = null
+    if (yaw !== undefined) this.input = { ...this.input, yaw }
+  }
   /** True while {@link holdForGround} still waits for collision under the actor. */
   get groundHeld(): boolean {
     return this.groundHold !== null
