@@ -182,6 +182,9 @@ export const engineEn: Readonly<Record<string, string>> = {
     'Requests: {manifests} manifests · {cells} downloads · {installing} installing · {failed} failed',
   'loading.terrain': 'Loading terrain…',
   'loading.terrain-status': 'Loading terrain · {parts}…',
+  'locale.en': 'English',
+  'locale.es': 'Spanish',
+  'locale.eu': 'Basque',
   'manage.apply-settings-and-reload': 'Apply settings and reload',
   'manage.backup-of-the-saved-game-graphics-sound-camera-v':
     'Backup of the saved game, graphics, sound, camera, vehicle, controller and headset preferences. Downloaded maps and scenes are not part of it.',

@@ -186,6 +186,9 @@ export const engineEu: Readonly<Record<string, string>> = {
     'Eskaerak: {manifests} manifestu · {cells} deskarga · {installing} instalatzen · {failed} errorearekin',
   'loading.terrain': 'Lurrazala kargatzen…',
   'loading.terrain-status': 'Lurrazala kargatzen · {parts}…',
+  'locale.en': 'Ingelesa',
+  'locale.es': 'Gaztelania',
+  'locale.eu': 'Euskara',
   'manage.apply-settings-and-reload': 'Aplikatu ezarpenak eta birkargatu',
   'manage.backup-of-the-saved-game-graphics-sound-camera-v':
     'Jokoaren, grafikoen, soinuaren, kameren, ibilgailuen, kontrolen eta betaurrekoen hobespen gordeen kopia. Deskargatutako mapak eta eszenak ez daude kopia honetan.',
