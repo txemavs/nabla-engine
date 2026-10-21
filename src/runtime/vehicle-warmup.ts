@@ -1,3 +1,4 @@
+import { nextPaint } from './next-paint.js'
 /** Prepare the mounted vehicle presentation, rather than the unmodified source GLB. */
 import * as THREE from 'three'
 import type { Entity } from '../entity/schema.js'
@@ -39,10 +40,7 @@ export class VehicleWarmup {
     const checkpoint = async (phase: string) => {
       await progress?.(phase)
       // A task after rAF allows the browser to paint before expensive synchronous work.
-      await new Promise<void>((resolve) => {
-        if (typeof document !== 'undefined' && document.hidden) setTimeout(resolve, 0)
-        else requestAnimationFrame(() => setTimeout(resolve, 0))
-      })
+      await nextPaint()
     }
     if (this.disposed) return
     const { renderer, scene } = this.target
