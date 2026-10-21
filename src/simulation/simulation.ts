@@ -70,7 +70,6 @@ import {
   Quaternion,
   Sphere,
   Trimesh,
-  Capsule,
   type CollisionDebugLines,
   Vec3,
   World,
@@ -118,13 +117,9 @@ const SPAWN_PROBE_DOWN = 60
 /** Seconds the spawn guard waits for collision before releasing the actor anyway. */
 const SPAWN_HOLD_LIMIT = 30
 const PLAYER_RADIUS = simulationDefaults.playerRadius
-/**
- * The walker's collider: a capsule of the stance's half height. Its round bottom rides over seams
- * and small lips that stopped the old box's edges; prone (half height below the radius) narrows.
- */
-function playerCapsule(halfHeight: number): Capsule {
-  const radius = Math.min(PLAYER_RADIUS, halfHeight)
-  return new Capsule(halfHeight - radius, radius)
+/** The walker's collider for a stance's half height (a box; trimeshes fix internal edges). */
+function playerShape(halfHeight: number): Box {
+  return new Box(new Vec3(PLAYER_RADIUS, halfHeight, PLAYER_RADIUS))
 }
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
@@ -680,7 +675,7 @@ export class Simulation {
       linearDamping: 0,
       angularDamping: 1,
     })
-    this.playerBody.addShape(playerCapsule(this.playerHalfHeight))
+    this.playerBody.addShape(playerShape(this.playerHalfHeight))
     this.playerBody.updateMassProperties()
     this.playerBody.position.set(...spawn.transform.position)
     this.playerBody.position.y += this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT
@@ -1756,7 +1751,7 @@ export class Simulation {
     this.footStance = next
     const half = this.playerHalfHeight
     this.playerBody.removeShape(this.playerBody.shapes[0])
-    this.playerBody.addShape(playerCapsule(half))
+    this.playerBody.addShape(playerShape(half))
     this.playerBody.position.vadd(
       this.radialUp(this.playerBody).scale(half - oldHalf),
       this.playerBody.position,
