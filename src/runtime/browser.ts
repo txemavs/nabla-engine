@@ -232,6 +232,22 @@ import {
   type LightTuning,
 } from './light-tuning.js'
 export {
+  AVATAR_ANIM_STATES,
+  AVATAR_STRIDE_SPEED,
+  PlayerBody,
+  PlayerBodyRig,
+  localAvatarState,
+  type AvatarAnimState,
+  type AvatarInput,
+  type AvatarNetState,
+  type PlayerBodyAssets,
+} from '../render/entity/player-body.js'
+import {
+  PlayerBodyRig,
+  type AvatarNetState,
+  type PlayerBodyAssets,
+} from '../render/entity/player-body.js'
+export {
   lightTuningBase,
   lightTuningDefaults,
   lightTuningRanges,
@@ -5875,6 +5891,20 @@ export class GameRuntime {
   }
   get headlampEnabled(): boolean {
     return this.headlamp.enabled
+  }
+  private playerBodyRig: PlayerBodyRig | null = null
+  /**
+   * Give the on-foot player a skinned body (see player-body.ts for the asset contract); null
+   * removes it. Resolves with the rig so remote players can share it ({@link PlayerBodyRig.create}).
+   */
+  async setPlayerBody(assets: PlayerBodyAssets | null): Promise<PlayerBodyRig | null> {
+    this.playerBodyRig = assets ? await PlayerBodyRig.load(assets) : null
+    this.view.setPlayerBody(this.playerBodyRig?.create() ?? null)
+    return this.playerBodyRig
+  }
+  /** The local player's body state to send to other clients (null without a body). */
+  get avatarState(): AvatarNetState | null {
+    return this.view.avatarNetState
   }
   setHeadlamp(enabled: boolean): void {
     this.headlamp.enabled = enabled && !this.session.simulation?.player.vehicleId
