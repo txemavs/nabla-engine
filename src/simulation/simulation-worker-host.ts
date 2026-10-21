@@ -37,7 +37,17 @@ export type SimulationRequest =
       mirror?: boolean
     }
   | { id: number; type: 'step'; elapsed: number; input?: PlayerInput; waterLevel?: number }
-  | { id: number; type: 'call'; method: string; args: unknown[]; quiet?: boolean }
+  /** `orElse`: when the method answers null/undefined, call this one (same args) instead. */
+  | { id: number; type: 'call'; method: string; args: unknown[]; quiet?: boolean; orElse?: string }
+  /** Hot-reloaded terrain: prepare answers whether a commit is ready; commit applies it. */
+  | { id: number; type: 'planet'; op: 'prepare'; previousId: string; tile: unknown }
+  | { id: number; type: 'planet'; op: 'commit' }
+  /**
+   * `capturePlanetSupport` with heights the render side sampled under each actor ([x, y, z,
+   * ground]): the host samples the nearest one. `restore` runs the captured restore by token.
+   */
+  | { id: number; type: 'support'; op: 'capture'; token: number; heights: number[][] }
+  | { id: number; type: 'support'; op: 'restore'; token: number }
   /** Assign a public field (e.g. `terrainSupportPaused`). */
   | { id: number; type: 'set'; property: string; value: unknown }
   /** Scenery pole handles live in the host; the main thread refers to them by number. */
@@ -89,6 +99,10 @@ export interface SimulationReads {
   velocities: Record<string, Vec3Tuple>
   /** Vehicle id → per-vehicle reads. A read that threw stores its error message instead. */
   vehicles: Record<string, VehicleReads>
+  groundHeld: boolean
+  roadAssist: Simulation['roadAssist']
+  collisionStats: Simulation['collisionStats']
+  sceneryActors: Vec3Tuple[]
 }
 
 export interface VehicleReads {
@@ -100,6 +114,13 @@ export interface VehicleReads {
   damage: ReturnType<Simulation['vehicleDamage']>
   cargoCount: number
   cargoTrailer: string | null
+  engineMode: ReturnType<Simulation['engineMode']>
+  twoWheeledPose: ReturnType<Simulation['twoWheeledPose']>
+  forkliftPose: ReturnType<Simulation['forkliftPose']>
+  wheelVisualState: ReturnType<Simulation['wheelVisualState']>
+  angularVelocity: Vec3Tuple
+  hitchCandidate: string | null
+  dockingCandidate: string | null
 }
 
 type PoleHandle = ReturnType<Simulation['createSceneryPole']>
@@ -129,6 +150,13 @@ export function readSimulation(
       damage: sim.vehicleDamage(id),
       cargoCount: sim.cargoCount(id),
       cargoTrailer: sim.cargoTrailer(id),
+      engineMode: sim.engineMode(id),
+      twoWheeledPose: sim.twoWheeledPose(id),
+      forkliftPose: sim.forkliftPose(id),
+      wheelVisualState: sim.wheelVisualState(id),
+      angularVelocity: sim.entityAngularVelocity(id),
+      hitchCandidate: sim.hitchCandidate(id),
+      dockingCandidate: sim.dockingCandidate(id),
     }
   const velocities: SimulationReads['velocities'] = {}
   for (const id of sim.entityIds()) velocities[id] = sim.entityVelocity(id)
@@ -151,7 +179,28 @@ export function readSimulation(
     portals,
     velocities,
     vehicles,
+    groundHeld: sim.groundHeld,
+    roadAssist: { ...sim.roadAssist },
+    collisionStats: sim.collisionStats,
+    sceneryActors: sim.sceneryActors(),
   }
+}
+
+/** Nearest sampled ground height within 1 m (horizontally) of `position`. */
+export function sampledHeight(
+  heights: readonly number[][],
+  position: Vec3Tuple,
+): number | undefined {
+  let best: number | undefined
+  let nearest = 1
+  for (const [x, , z, ground] of heights) {
+    const d = Math.hypot(x - position[0], z - position[2])
+    if (d <= nearest) {
+      nearest = d
+      best = ground
+    }
+  }
+  return best
 }
 
 export type SimulationReply =
@@ -188,6 +237,8 @@ export function serveSimulation(port: SimulationPort): void {
   let sim: Simulation | null = null
   let exporter: QueryWorldExporter | null = null
   const poles = new Map<number, PoleHandle>()
+  const supports = new Map<number, () => void>()
+  let planetCommit: (() => void) | undefined
   const reply = (message: SimulationReply) => {
     const transfer = message.ok && message.query ? [message.query.poses.buffer] : []
     ;(port.postMessage as (m: unknown, t?: Transferable[]) => void)(message, transfer)
@@ -204,6 +255,8 @@ export function serveSimulation(port: SimulationPort): void {
         await initPhysics()
         sim?.dispose()
         poles.clear()
+        supports.clear()
+        planetCommit = undefined
         sim = new Simulation(message.scene, message.options)
         exporter = message.mirror ? new QueryWorldExporter() : null
         return { id: message.id, ok: true, ...state(sim) }
@@ -231,13 +284,46 @@ export function serveSimulation(port: SimulationPort): void {
         }
         return { id: message.id, ok: true, ...state(sim) }
       }
+      case 'planet': {
+        if (!sim) throw new Error('Simulation not created')
+        if (message.op === 'prepare') {
+          planetCommit = sim.preparePlanetReplacement(
+            message.previousId,
+            message.tile as Parameters<Simulation['preparePlanetReplacement']>[1],
+          )
+          return { id: message.id, ok: true, value: !!planetCommit }
+        }
+        const commit = planetCommit
+        planetCommit = undefined
+        commit?.()
+        return { id: message.id, ok: true, value: !!commit, ...state(sim) }
+      }
+      case 'support': {
+        if (!sim) throw new Error('Simulation not created')
+        if (message.op === 'capture') {
+          const heights = message.heights
+          supports.set(
+            message.token,
+            sim.capturePlanetSupport((p) => sampledHeight(heights, p)),
+          )
+          return { id: message.id, ok: true }
+        }
+        const restore = supports.get(message.token)
+        supports.delete(message.token)
+        restore?.()
+        return { id: message.id, ok: true, ...state(sim) }
+      }
       case 'call': {
         if (!sim) throw new Error('Simulation not created')
-        const target = (sim as unknown as Record<string, unknown>)[message.method]
-        const value =
-          typeof target === 'function'
+        if (message.method === 'discardPlanetReplacement') planetCommit = undefined
+        const run = (method: string) => {
+          const target = (sim as unknown as Record<string, unknown>)[method]
+          return typeof target === 'function'
             ? (target as (...args: unknown[]) => unknown).apply(sim, message.args)
             : target
+        }
+        let value = run(message.method)
+        if (value == null && message.orElse) value = run(message.orElse)
         // Commands can change state, so the snapshot is refreshed after every call.
         // Quiet commands skip the state; the next step (or a loud call) carries it.
         if (message.quiet) return { id: message.id, ok: true, value: structuredClone(value) }
@@ -248,6 +334,8 @@ export function serveSimulation(port: SimulationPort): void {
         sim = null
         exporter = null
         poles.clear()
+        supports.clear()
+        planetCommit = undefined
         return { id: message.id, ok: true }
     }
   }

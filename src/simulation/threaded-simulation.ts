@@ -11,9 +11,11 @@
  * - Instant queries (`shoot`, `cameraPosition`) run synchronously against a {@link QueryWorld}: a
  *   never-stepped main-thread Rapier world whose colliders are synced from the worker every step.
  *
- * What cannot stay synchronous (documented in docs/physics-worker.md): return values of commands
- * (HUD messages, `liftNearbyBike()`, ...) are not available to the caller, `preparePlanetCollisions`
- * answers with the previous worker reply, and command errors surface on the next `step()` instead
+ * Every Simulation method that returns a value is written out here (tsc enforces it, see
+ * {@link UnansweredInWorker}): per-vehicle reads come from the mirrored state, polled answers
+ * (`settleGround`, `preparePlanetCollisions`, ...) give the worker's previous reply, HUD-message
+ * commands answer '' (the worker's message lands in `lastMessage`), and terrain hot reload runs
+ * its swap and actor support in the worker. Command errors surface on the next `step()` instead
  * of throwing at the call site. Reads after a command and before the next step see the state as of
  * the previous step.
  */
@@ -36,12 +38,31 @@ export function physicsWorkerEnabled(search = globalThis.location?.search ?? '')
   return new URLSearchParams(search).get('physicsWorker') === '1'
 }
 
+type Fn = (...args: never[]) => unknown
+type MethodKeys<T> = { [K in keyof T]: T[K] extends Fn ? K : never }[keyof T]
+/** Simulation methods whose return type is not void: the caller may use what they answer. */
+type ValueMethods = {
+  [K in MethodKeys<Simulation>]: [ReturnType<Extract<Simulation[K], Fn>>] extends [void] ? never : K
+}[MethodKeys<Simulation>]
+/** Simulation getters/fields: answered by this class or by the mirrored {@link SimulationReads}. */
+type PropertyKeys = Exclude<keyof Simulation, MethodKeys<Simulation>>
 /**
- * Commands whose return value the game uses; answered with the worker's previous reply.
- * `settleGround` gates the reveal (`while (!sim.settleGround(...))`): a plain forwarded call
- * returns undefined, so without a lagged reply that loop never ended in worker mode.
+ * The facade forwards any method it does not define as a fire-and-forget command that returns
+ * undefined, and reads any property it does not define from {@link SimulationReads}. That is
+ * only right for void methods and mirrored reads: every value-returning method must be written
+ * out below (answered from the last worker state, main-thread state, or a documented fallback),
+ * and every property must be mirrored. Adding one to Simulation without that fails tsc here.
  */
-const LAGGED_RESULTS = new Set(['preparePlanetCollisions', 'settleGround'])
+export type UnansweredInWorker =
+  | Exclude<ValueMethods, keyof ThreadedSimulation>
+  | Exclude<PropertyKeys, keyof ThreadedSimulation | keyof SimulationReads>
+const everyValueAnswered: [UnansweredInWorker] extends [never]
+  ? true
+  : { 'Implement these in ThreadedSimulation': UnansweredInWorker } = true
+void everyValueAnswered
+
+/** HUD message of a command answered in the worker (not available synchronously; empty = none). */
+const NO_MESSAGE = ''
 
 /** Commands that skip the round trip when called again with the same roads/areas (by identity). */
 const IDENTITY_COMMANDS = new Set(['setSurfaceRoads', 'setSurfaceAreas'])
@@ -81,7 +102,12 @@ export class ThreadedSimulation {
   readonly query = new QueryWorld()
   private reads: SimulationReads | null = null
   private explosions: SimulationReads['explosions'] = []
+  /** Previous worker reply per `method(args)`, for reads that need the worker's own answer. */
   private readonly lagged = new Map<string, unknown>()
+  private readonly laggedInFlight = new Set<string>()
+  private nextSupport = 1
+  /** Last HUD message a forwarded command answered in the worker. */
+  lastMessage = NO_MESSAGE
   private gravityMultiplier: number = simulationDefaults.gravityScaleRange.default
   private readonly lastIdentity = new Map<string, unknown[]>()
   private failure: unknown = null
@@ -235,15 +261,37 @@ export class ThreadedSimulation {
     // portals, vehicles) knows the new ids without waiting for a step: during the intro no
     // steps run, and the view, monitors and portals read the new ids right away.
     const structural = ADDING_COMMANDS.has(method) || REMOVING_COMMANDS.has(method)
-    const sent = this.forward({ type: 'call', method, args, quiet: !structural })
-    if (LAGGED_RESULTS.has(method)) {
-      sent.then(
-        (value) => this.lagged.set(method, value),
-        () => {},
-      )
-      return this.lagged.get(method) ?? false
-    }
+    void this.forward({ type: 'call', method, args, quiet: !structural })
     return undefined
+  }
+
+  /** Forward a command whose answer is a HUD message; answered now with {@link NO_MESSAGE}. */
+  private message(method: string, args: unknown[], orElse?: string): string {
+    if (this.disposed) return NO_MESSAGE
+    this.forward({ type: 'call', method, args, orElse }).then(
+      (value) => {
+        if (typeof value === 'string' && value) this.lastMessage = value
+      },
+      () => {},
+    )
+    return NO_MESSAGE
+  }
+  /** Forward and answer with the worker's previous reply for the same call (`initial` before). */
+  private laggedCall<T>(method: string, args: unknown[], initial: T): T {
+    const key = method + JSON.stringify(args)
+    if (!this.disposed && !this.laggedInFlight.has(key)) {
+      this.laggedInFlight.add(key)
+      this.forward({ type: 'call', method, args, quiet: true })
+        .then(
+          (value) => this.lagged.set(key, value),
+          () => {},
+        )
+        .finally(() => this.laggedInFlight.delete(key))
+    }
+    return this.lagged.has(key) ? (this.lagged.get(key) as T) : initial
+  }
+  private vehicleReads(id: string | null | undefined) {
+    return id ? this.reads?.vehicles[id] : undefined
   }
 
   /** Wait for every forwarded command and mirror the resulting state. */
@@ -263,6 +311,188 @@ export class ThreadedSimulation {
     await this.worker.step(elapsed)
     this.throwFailure()
   }
+  // Lagged worker answers: polled until they change (reveal ground hold, planet collisions).
+  settleGround(force = false): boolean {
+    return this.laggedCall('settleGround', [force], false)
+  }
+  preparePlanetCollisions(): boolean {
+    return this.laggedCall('preparePlanetCollisions', [], false)
+  }
+  vehicleSunOccluded(id: string, direction: Vec3Tuple, range = 200): boolean {
+    // Keyed by vehicle only: the sun direction changes slowly and is re-asked every frame.
+    void direction
+    void range
+    return this.laggedCall('vehicleSunOccluded', [id], false)
+  }
+  entityCollisionParts(id: string): ReturnType<Simulation['entityCollisionParts']> {
+    return this.laggedCall('entityCollisionParts', [id], [])
+  }
+
+  // Per-vehicle reads mirrored with every worker state.
+  engineMode(id: string): ReturnType<Simulation['engineMode']> {
+    return this.vehicleReads(id)?.engineMode ?? 'normal'
+  }
+  twoWheeledPose(id: string): ReturnType<Simulation['twoWheeledPose']> {
+    return this.vehicleReads(id)?.twoWheeledPose ?? null
+  }
+  forkliftPose(id: string): ReturnType<Simulation['forkliftPose']> {
+    return this.vehicleReads(id)?.forkliftPose ?? null
+  }
+  wheelVisualState(id: string): ReturnType<Simulation['wheelVisualState']> {
+    return this.vehicleReads(id)?.wheelVisualState ?? null
+  }
+  entityAngularVelocity(id: string): Vec3Tuple {
+    return this.vehicleReads(id)?.angularVelocity ?? [0, 0, 0]
+  }
+  hitchCandidate(tractorId = this.player.vehicleId): string | null {
+    return this.vehicleReads(tractorId)?.hitchCandidate ?? null
+  }
+  dockingCandidate(id = this.player.vehicleId): string | null {
+    return this.vehicleReads(id)?.dockingCandidate ?? null
+  }
+  sceneryActors(): Vec3Tuple[] {
+    return this.reads?.sceneryActors ?? []
+  }
+
+  // Commands answering a HUD message: applied in the worker, the message is not synchronous.
+  interact(...args: Parameters<Simulation['interact']>): string {
+    return this.message('interact', args)
+  }
+  toggleFlight(): string {
+    return this.message('toggleFlight', [])
+  }
+  toggleDock(): string {
+    return this.message('toggleDock', [])
+  }
+  /**
+   * Null (nothing to hitch) only on foot, as inline. Seated, the worker tries the hitch and falls
+   * back to `toggleDock` itself, so `toggleHitch() ?? toggleDock()` never runs both.
+   */
+  toggleHitch(): string | null {
+    if (!this.player.vehicleId) return null
+    return this.message('toggleHitch', [], 'toggleDock')
+  }
+  cycleHelmMode(): string {
+    return this.message('cycleHelmMode', [])
+  }
+  setHelmMode(...args: Parameters<Simulation['setHelmMode']>): string {
+    return this.message('setHelmMode', args)
+  }
+  automaticTransmission(): string {
+    return this.message('automaticTransmission', [])
+  }
+  shiftVehicle(direction: -1 | 1): string {
+    return this.message('shiftVehicle', [direction])
+  }
+  transferControls(): string {
+    return this.message('transferControls', [])
+  }
+  recoverVehicle(...args: Parameters<Simulation['recoverVehicle']>): string {
+    return this.message('recoverVehicle', args)
+  }
+  relocateVehicle(...args: Parameters<Simulation['relocateVehicle']>): string {
+    return this.message('relocateVehicle', args)
+  }
+  setEngineMode(...args: Parameters<Simulation['setEngineMode']>): string {
+    return this.message('setEngineMode', args)
+  }
+  setGarageDoor(...args: Parameters<Simulation['setGarageDoor']>): string {
+    return this.message('setGarageDoor', args)
+  }
+  setTrailerPlatform(...args: Parameters<Simulation['setTrailerPlatform']>): string {
+    return this.message('setTrailerPlatform', args)
+  }
+  adjustTrailerRamp(...args: Parameters<Simulation['adjustTrailerRamp']>): string {
+    return this.message('adjustTrailerRamp', args)
+  }
+  hitchTrailer(...args: Parameters<Simulation['hitchTrailer']>): string {
+    return this.message('hitchTrailer', args)
+  }
+  configurePortal(...args: Parameters<Simulation['configurePortal']>): string {
+    return this.message('configurePortal', args)
+  }
+  /** Ids released in the worker are not known yet: answers the trailers it is about to drop. */
+  unhitchTrailer(trailerId?: string): string[] {
+    this.command('unhitchTrailer', [trailerId])
+    return trailerId ? [trailerId] : []
+  }
+
+  // Commands whose boolean only says the call applied: true when the entity is known here.
+  liftNearbyBike(): boolean {
+    this.command('liftNearbyBike', [])
+    // A lift already under way answers true inline; a new one starts in the worker.
+    return !!this.reads?.playerBikeRecovery
+  }
+  holdEngine(): boolean {
+    this.command('holdEngine', [])
+    return true
+  }
+  startEngine(): boolean {
+    this.command('startEngine', [])
+    return true
+  }
+  setEntityKinematic(...args: Parameters<Simulation['setEntityKinematic']>): boolean {
+    this.command('setEntityKinematic', args)
+    return this.hasEntity(args[0])
+  }
+  setWheelVisualState(...args: Parameters<Simulation['setWheelVisualState']>): boolean {
+    this.command('setWheelVisualState', args)
+    return this.hasEntity(args[0])
+  }
+  moveKinematicEntity(...args: Parameters<Simulation['moveKinematicEntity']>): boolean {
+    this.command('moveKinematicEntity', args)
+    return this.hasEntity(args[0])
+  }
+  setFlightSpeedMode(...args: Parameters<Simulation['setFlightSpeedMode']>): boolean {
+    this.command('setFlightSpeedMode', args)
+    return this.hasEntity(args[0])
+  }
+
+  // Terrain hot reload: the collision swap and actor support run in the worker.
+  /** Undefined until the worker has prepared this replacement (the caller polls per frame). */
+  preparePlanetReplacement(
+    ...[previousId, tile]: Parameters<Simulation['preparePlanetReplacement']>
+  ): ReturnType<Simulation['preparePlanetReplacement']> {
+    const key = 'planet:' + previousId + '>' + (tile as { id?: string }).id
+    if (this.lagged.get(key) === true) {
+      this.lagged.delete(key)
+      return () => void this.forward({ type: 'planet', op: 'commit' })
+    }
+    if (!this.disposed && !this.laggedInFlight.has(key)) {
+      this.laggedInFlight.add(key)
+      this.forward({ type: 'planet', op: 'prepare', previousId, tile })
+        .then(
+          (ready) => this.lagged.set(key, ready),
+          () => {},
+        )
+        .finally(() => this.laggedInFlight.delete(key))
+    }
+    return undefined
+  }
+  /** Samples the render ground under each actor here; the worker keeps them on it. */
+  capturePlanetSupport(sample: (position: Vec3Tuple) => number | undefined): () => void {
+    const positions: Vec3Tuple[] = [this.player.position]
+    for (const { id } of this.reads?.vehicleList ?? [])
+      if (this.worker.snapshotOrNull?.entities[id])
+        positions.push(this.worker.entityTransform(id).position)
+    const heights: number[][] = []
+    for (const p of positions) {
+      const ground = sample(p)
+      if (ground !== undefined) heights.push([p[0], p[1], p[2], ground])
+    }
+    const token = this.nextSupport++
+    void this.forward({ type: 'support', op: 'capture', token, heights })
+    return () => void this.forward({ type: 'support', op: 'restore', token })
+  }
+
+  // Inline-only: the main-thread query world is fed by worker deltas, not by these.
+  queryState(): ReturnType<Simulation['queryState']> {
+    throw new Error('queryState is inline-only (the worker exports QueryWorld deltas)')
+  }
+  queryExclusions(): ReturnType<Simulation['queryExclusions']> {
+    throw new Error('queryExclusions is inline-only (the worker exports QueryWorld deltas)')
+  }
+
   /** Clamped here (same rule as Simulation) so callers get the value used without a round trip. */
   setGravityScale(scale: number): number {
     const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
