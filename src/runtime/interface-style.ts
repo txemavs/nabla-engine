@@ -8,20 +8,16 @@ import { interfaceControls, interfaceTheme, interfaceVariables } from './interfa
 export const defaultInterfaceStyles = `
 :root { ${interfaceVariables} --nabla-control-edge:20px; --nabla-control-bottom:60px; }
 /* ===== Buttons: the only button styles of the engine and its hosts. =====
-   Every size derives from these variables; hosts change variables (theme, scale), never rules.
+   Plain px sizes (one set for mouse, one for touch); hosts change variables, never rules.
    Corners place groups, groups place buttons; no scaling tricks, no overrides, no inline styles. */
 :root {
-  --nabla-ui-scale:0.66; --nabla-ui-margin:12px; --nabla-btn-gap:6px;
-  --nabla-btn-size:calc(36px * var(--nabla-ui-scale));
-  --nabla-btn-font:calc(14px * var(--nabla-ui-scale));
-  --nabla-btn-font-lg:calc(20px * var(--nabla-ui-scale));
-  --nabla-btn-pad:calc(8px * var(--nabla-ui-scale));
-  --nabla-btn-icon:calc(22px * var(--nabla-ui-scale));
-  --nabla-btn-wide:calc(78px * var(--nabla-ui-scale));
+  --nabla-ui-margin:12px; --nabla-btn-gap:6px;
+  --nabla-btn-size:24px; --nabla-btn-font:14px;
+  --nabla-btn-pad:6px; --nabla-btn-icon:16px; --nabla-btn-wide:52px;
   --nabla-btn-active:var(--accent);
   /* One button row on screen, for text aligned to the button grid (titles, hints). */
   --nabla-ui-row:var(--nabla-btn-size); }
-@media(pointer:coarse) { :root { --nabla-ui-scale:0.8; } }
+@media(pointer:coarse) { :root { --nabla-btn-size:30px; --nabla-btn-pad:7px; --nabla-btn-icon:18px; --nabla-btn-wide:62px; } }
 @media(max-width:600px) { :root { --nabla-ui-margin:8px; } }
 /* Corners: a group fixed --nabla-ui-margin from both edges. Use addCornerButton(). */
 .nabla-corner { position:fixed;pointer-events:auto; }
@@ -36,13 +32,12 @@ export const defaultInterfaceStyles = `
 .nabla-btn-group[hidden] { display:none; }
 /* A button with a dropdown panel: same box as the button, the panel hangs below it. */
 .nabla-btn-popover { position:relative;display:flex;flex:none; }
-.nabla-btn { ${interfaceControls} flex:none;display:inline-flex;align-items:center;justify-content:center;gap:calc(var(--nabla-btn-pad) / 2);box-sizing:border-box;height:var(--nabla-btn-size);min-width:var(--nabla-btn-size);margin:0;padding:0 var(--nabla-btn-pad);font:700 var(--nabla-btn-font)/1 Arial,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;touch-action:none; }
+.nabla-btn { ${interfaceControls} flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;box-sizing:border-box;height:var(--nabla-btn-size);min-height:var(--nabla-btn-size);min-width:var(--nabla-btn-size);margin:0;padding:0 var(--nabla-btn-pad);font:700 var(--nabla-btn-font)/1 Arial,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;touch-action:none; }
 .nabla-btn[hidden] { display:none; }
 .nabla-btn svg { display:block;flex:none;width:var(--nabla-btn-icon);height:var(--nabla-btn-icon); }
 .nabla-btn kbd { font:inherit;color:inherit; }
 .nabla-btn--icon,.nabla-btn:has(> svg:only-child) { width:var(--nabla-btn-size);padding:0; }
 .nabla-btn--wide { min-width:var(--nabla-btn-wide); }
-.nabla-btn--lg { font-size:var(--nabla-btn-font-lg); }
 .nabla-btn:hover:not(:disabled),.nabla-btn:active:not(:disabled) { background:${interfaceTheme.pressed}; }
 .nabla-btn:focus-visible { outline:2px solid var(--muted);outline-offset:2px; }
 .nabla-btn--active,.nabla-btn[aria-pressed="true"] { color:var(--nabla-btn-active);border-color:var(--nabla-btn-active); }
@@ -51,7 +46,7 @@ export const defaultInterfaceStyles = `
 .nabla-slider-panel { position:absolute;top:calc(100% + var(--nabla-btn-gap));right:0;z-index:1;display:flex;flex-direction:column;align-items:center;gap:var(--nabla-btn-gap);min-width:100%;box-sizing:border-box;color:var(--ink);text-align:center; }
 .nabla-slider-panel[hidden] { display:none; }
 .nabla-slider-panel label { display:flex;flex-direction:column;align-items:center;gap:var(--nabla-btn-gap);margin:0;padding:0; }
-.nabla-slider-panel label > :is(span,output) { ${interfaceControls} display:flex;align-items:center;justify-content:center;box-sizing:border-box;height:var(--nabla-btn-size);min-width:100%;padding:0 var(--nabla-btn-pad);font:700 var(--nabla-btn-font-lg)/1 Arial,sans-serif; }
+.nabla-slider-panel label > :is(span,output) { ${interfaceControls} display:flex;align-items:center;justify-content:center;box-sizing:border-box;height:var(--nabla-btn-size);min-height:var(--nabla-btn-size);min-width:100%;padding:0 var(--nabla-btn-pad);font:700 var(--nabla-btn-font)/1 Arial,sans-serif; }
 .nabla-slider-well { position:relative;width:40px;margin:0 auto; }
 .nabla-slider-notch { position:absolute;left:-5px;width:50px;height:2px;background:#aaa;pointer-events:none; }
 .nabla-vertical-range { appearance:none;writing-mode:vertical-lr;direction:rtl;width:40px;height:160px;margin:0;background:transparent;touch-action:none;cursor:pointer; }
@@ -64,8 +59,6 @@ body > .game-toolbar { flex-direction:column;align-items:flex-end;top:calc(var(-
 body > .game-toolbar .nabla-slider-panel { top:0;right:calc(100% + var(--nabla-btn-gap)); }
 .weapon-controls:not(.nabla-corner *) { position:absolute;right:8px;top:220px;z-index:48;max-width:260px; }
 /* ===== End of buttons. ===== */
-/* Gauges keep their own fixed layout and follow the UI scale as a whole. */
-:is(.touch-flight-bar,#speed-display,#gear-display) { zoom:var(--nabla-ui-scale); }
 .touch-driving .touch-driving-stack { position:fixed!important;left:var(--nabla-control-edge)!important;right:auto!important;bottom:var(--nabla-control-bottom)!important; }
 .touch-walk { position:fixed!important;inset:auto 0 var(--nabla-control-bottom)!important;padding:0 var(--nabla-control-edge)!important; }
 .touch-flight { position:fixed!important;inset:auto var(--nabla-control-edge) var(--nabla-control-bottom)!important;width:auto!important; }
