@@ -6,7 +6,12 @@ import {
   type PeerInfo,
   type SnapshotExtra,
   type NetEventData,
+  type WheelVisuals,
+  quantizeWheels,
 } from './protocol.js'
+
+const wheels = (state: WheelVisuals | null | undefined) =>
+  state ? { wheels: quantizeWheels(state) } : {}
 import type { Transport } from './transport.js'
 import { RemoteVehicle, type KinematicHost } from './remote-vehicle.js'
 import { defaultInterpolation, type InterpolationOptions } from './interpolation.js'
@@ -19,6 +24,8 @@ export interface StateSource {
   }
   entityVelocity(id: string): EntityState['velocity']
   entityAngularVelocity?(id: string): EntityState['angularVelocity']
+  /** Optional per-wheel look (steer, suspension, spin) of a wheeled entity; null otherwise. */
+  wheelVisualState?(id: string): WheelVisuals | null
 }
 
 export interface SnapshotSyncOptions {
@@ -165,6 +172,7 @@ export class SnapshotSync {
         rotation,
         velocity: host.entityVelocity(id),
         angularVelocity: host.entityAngularVelocity?.(id) ?? [0, 0, 0],
+        ...wheels(host.wheelVisualState?.(id)),
       }
     } catch {
       return null

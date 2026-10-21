@@ -13,24 +13,76 @@ messages so a client cannot impersonate another peer.
 - `zod`
 - `../math/frame/vectors.js`
 
-## callback@39
+## round
 
-[Implementation, line 39](../../../../src/net/protocol.ts#L39)
+[Implementation, line 47](../../../../src/net/protocol.ts#L47)
 
 ```ts
-callback@39(value): inferred by TypeScript; see implementation
+round(value: number, step: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.round`
+
+## quantizeWheels
+
+[Implementation, line 52](../../../../src/net/protocol.ts#L52)
+
+Round wheel values to what the eye can tell apart (1 mrad steer, 1 mm suspension, 0.1 rad/s
+spin) so a four-wheel car adds roughly 80 bytes of JSON per snapshot.
+
+```ts
+quantizeWheels(wheels: WheelVisuals): WheelVisuals
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `fix`
+
+## quantizeWheels.fix
+
+[Implementation, line 53](../../../../src/net/protocol.ts#L53)
+
+```ts
+fix(values: number[], step: number, digits: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `values.map`
+
+## quantizeWheels.fix.callback@54
+
+[Implementation, line 54](../../../../src/net/protocol.ts#L54)
+
+```ts
+callback@54(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `round`
+- `round(v, step).toFixed`
+
+## callback@68
+
+[Implementation, line 68](../../../../src/net/protocol.ts#L68)
+
+```ts
+callback@68(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Object.keys`
 
-## callback@49
+## callback@78
 
-[Implementation, line 49](../../../../src/net/protocol.ts#L49)
+[Implementation, line 78](../../../../src/net/protocol.ts#L78)
 
 ```ts
-callback@49(value): inferred by TypeScript; see implementation
+callback@78(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -39,7 +91,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## encodeMessage
 
-[Implementation, line 102](../../../../src/net/protocol.ts#L102)
+[Implementation, line 131](../../../../src/net/protocol.ts#L131)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -51,7 +103,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 107](../../../../src/net/protocol.ts#L107)
+[Implementation, line 136](../../../../src/net/protocol.ts#L136)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -66,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 117](../../../../src/net/protocol.ts#L117)
+[Implementation, line 146](../../../../src/net/protocol.ts#L146)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

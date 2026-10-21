@@ -1120,7 +1120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.constructor
 
-[Implementation, line 714](../../../../src/simulation/physics.ts#L714)
+[Implementation, line 733](../../../../src/simulation/physics.ts#L733)
 
 ```ts
 constructor(options: { chassisBody: Body indexRightAxis?: number indexUpAxis?: number indexForwardAxis?: number }): instance
@@ -1128,7 +1128,7 @@ constructor(options: { chassisBody: Body indexRightAxis?: number indexUpAxis?: n
 
 ## RaycastVehicle.addWheel
 
-[Implementation, line 725](../../../../src/simulation/physics.ts#L725)
+[Implementation, line 744](../../../../src/simulation/physics.ts#L744)
 
 ```ts
 addWheel(options: { chassisConnectionPointLocal: Vec3 directionLocal: Vec3 axleLocal: Vec3 radius: number suspensionRestLength: number suspensionStiffness?: number dampingRelaxation?: number dampingCompression?: number frictionSlip?: number maxSuspensionTravel?: number maxSuspensionForce?: number rollInfluence?: number }): inferred by TypeScript; see implementation
@@ -1146,7 +1146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.addToWorld
 
-[Implementation, line 760](../../../../src/simulation/physics.ts#L760)
+[Implementation, line 779](../../../../src/simulation/physics.ts#L779)
 
 ```ts
 addToWorld(world: World): inferred by TypeScript; see implementation
@@ -1160,7 +1160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.removeFromWorld
 
-[Implementation, line 766](../../../../src/simulation/physics.ts#L766)
+[Implementation, line 785](../../../../src/simulation/physics.ts#L785)
 
 ```ts
 removeFromWorld(world: World): inferred by TypeScript; see implementation
@@ -1173,7 +1173,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.setSteeringValue
 
-[Implementation, line 772](../../../../src/simulation/physics.ts#L772)
+[Implementation, line 791](../../../../src/simulation/physics.ts#L791)
 
 ```ts
 setSteeringValue(value: number, index: number): inferred by TypeScript; see implementation
@@ -1185,7 +1185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.applyEngineForce
 
-[Implementation, line 778](../../../../src/simulation/physics.ts#L778)
+[Implementation, line 797](../../../../src/simulation/physics.ts#L797)
 
 ```ts
 applyEngineForce(force: number, index: number): inferred by TypeScript; see implementation
@@ -1197,7 +1197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.setBrake
 
-[Implementation, line 784](../../../../src/simulation/physics.ts#L784)
+[Implementation, line 803](../../../../src/simulation/physics.ts#L803)
 
 ```ts
 setBrake(force: number, index: number): inferred by TypeScript; see implementation
@@ -1209,7 +1209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.updateWheelTransform
 
-[Implementation, line 790](../../../../src/simulation/physics.ts#L790)
+[Implementation, line 809](../../../../src/simulation/physics.ts#L809)
 
 ```ts
 updateWheelTransform(index: number): inferred by TypeScript; see implementation
@@ -1238,29 +1238,46 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wheel.raycastResult.reset`
 - `wheel.worldTransform.quaternion.copy`
 
-## RaycastVehicle.updateWheelTransform.callback@816
+## RaycastVehicle.updateWheelTransform.callback@841
 
-[Implementation, line 816](../../../../src/simulation/physics.ts#L816)
+[Implementation, line 841](../../../../src/simulation/physics.ts#L841)
 
 ```ts
-callback@816(b): inferred by TypeScript; see implementation
+callback@841(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.colliders.some`
 
-## RaycastVehicle.updateWheelTransform.callback@816.callback@816
+## RaycastVehicle.updateWheelTransform.callback@841.callback@841
 
-[Implementation, line 816](../../../../src/simulation/physics.ts#L816)
+[Implementation, line 841](../../../../src/simulation/physics.ts#L841)
 
 ```ts
-callback@816(c): inferred by TypeScript; see implementation
+callback@841(c): inferred by TypeScript; see implementation
 ```
+
+## RaycastVehicle.trackSpin
+
+[Implementation, line 850](../../../../src/simulation/physics.ts#L850)
+
+Spin bookkeeping: measure the controller's wheel rotation, or advance the received rate.
+
+```ts
+trackSpin(dt: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.atan2`
+- `Math.cos`
+- `Math.sin`
+- `this.controller?.wheelRotation`
 
 ## RaycastVehicle.preStep
 
-[Implementation, line 824](../../../../src/simulation/physics.ts#L824)
+[Implementation, line 865](../../../../src/simulation/physics.ts#L865)
 
 ```ts
 preStep(dt: number): inferred by TypeScript; see implementation
@@ -1271,15 +1288,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `chassis.isSleeping`
 - `chassis.wakeUp`
 - `this.controller.updateVehicle`
+- `this.trackSpin`
 - `this.wheelInfos.forEach`
 - `this.wheelInfos.some`
 
-## RaycastVehicle.preStep.callback@826
+## RaycastVehicle.preStep.callback@869
 
-[Implementation, line 826](../../../../src/simulation/physics.ts#L826)
+[Implementation, line 869](../../../../src/simulation/physics.ts#L869)
 
 ```ts
-callback@826(wheel, i): inferred by TypeScript; see implementation
+callback@869(wheel, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1289,20 +1307,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.controller!.setWheelFrictionSlip`
 - `this.controller!.setWheelSteering`
 
-## RaycastVehicle.preStep.callback@833
+## RaycastVehicle.preStep.callback@876
 
-[Implementation, line 833](../../../../src/simulation/physics.ts#L833)
+[Implementation, line 876](../../../../src/simulation/physics.ts#L876)
 
 ```ts
-callback@833(wheel): inferred by TypeScript; see implementation
+callback@876(wheel): inferred by TypeScript; see implementation
 ```
 
-## RaycastVehicle.preStep.callback@839
+## RaycastVehicle.preStep.callback@882
 
-[Implementation, line 839](../../../../src/simulation/physics.ts#L839)
+[Implementation, line 882](../../../../src/simulation/physics.ts#L882)
 
 ```ts
-callback@839(collider): inferred by TypeScript; see implementation
+callback@882(collider): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1311,7 +1329,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RaycastVehicle.rebuild
 
-[Implementation, line 842](../../../../src/simulation/physics.ts#L842)
+[Implementation, line 885](../../../../src/simulation/physics.ts#L885)
 
 ```ts
 rebuild(): inferred by TypeScript; see implementation
@@ -1331,7 +1349,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LockConstraint.constructor
 
-[Implementation, line 872](../../../../src/simulation/physics.ts#L872)
+[Implementation, line 915](../../../../src/simulation/physics.ts#L915)
 
 ```ts
 constructor(bodyA: Body, bodyB: Body, _options?: { maxForce?: number }): instance
@@ -1339,7 +1357,7 @@ constructor(bodyA: Body, bodyB: Body, _options?: { maxForce?: number }): instanc
 
 ## HingeConstraint.constructor
 
-[Implementation, line 880](../../../../src/simulation/physics.ts#L880)
+[Implementation, line 923](../../../../src/simulation/physics.ts#L923)
 
 Yaw articulation for a flat-ground trailer, in each body's local coordinates.
 
@@ -1353,7 +1371,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.rebase
 
-[Implementation, line 894](../../../../src/simulation/physics.ts#L894)
+[Implementation, line 937](../../../../src/simulation/physics.ts#L937)
 
 ```ts
 rebase(near: Vec3): void
@@ -1370,7 +1388,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.constructor
 
-[Implementation, line 913](../../../../src/simulation/physics.ts#L913)
+[Implementation, line 956](../../../../src/simulation/physics.ts#L956)
 
 ```ts
 constructor(options?: { gravity?: Vec3 }): instance
@@ -1384,7 +1402,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.addBody
 
-[Implementation, line 920](../../../../src/simulation/physics.ts#L920)
+[Implementation, line 963](../../../../src/simulation/physics.ts#L963)
 
 `refreshQueries` false defers the scene-query rebuild to the caller (one rebuild for a batch).
 
@@ -1400,7 +1418,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.removeBody
 
-[Implementation, line 926](../../../../src/simulation/physics.ts#L926)
+[Implementation, line 969](../../../../src/simulation/physics.ts#L969)
 
 ```ts
 removeBody(body: Body, refreshQueries = true): inferred by TypeScript; see implementation
@@ -1412,17 +1430,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.removeRigidBody`
 - `this.raw.updateSceneQueries`
 
-## World.removeBody.callback@933
+## World.removeBody.callback@976
 
-[Implementation, line 933](../../../../src/simulation/physics.ts#L933)
+[Implementation, line 976](../../../../src/simulation/physics.ts#L976)
 
 ```ts
-callback@933(b): inferred by TypeScript; see implementation
+callback@976(b): inferred by TypeScript; see implementation
 ```
 
 ## World.addConstraint
 
-[Implementation, line 935](../../../../src/simulation/physics.ts#L935)
+[Implementation, line 978](../../../../src/simulation/physics.ts#L978)
 
 ```ts
 addConstraint(constraint: LockConstraint): inferred by TypeScript; see implementation
@@ -1442,7 +1460,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.removeConstraint
 
-[Implementation, line 957](../../../../src/simulation/physics.ts#L957)
+[Implementation, line 1000](../../../../src/simulation/physics.ts#L1000)
 
 ```ts
 removeConstraint(constraint: LockConstraint): inferred by TypeScript; see implementation
@@ -1456,7 +1474,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.sweepSphere
 
-[Implementation, line 964](../../../../src/simulation/physics.ts#L964)
+[Implementation, line 1007](../../../../src/simulation/physics.ts#L1007)
 
 Sweep a tracked volume through the existing physics scene (no render-mesh raycasts).
 
@@ -1477,7 +1495,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## World.intersectsCuboid
 
-[Implementation, line 988](../../../../src/simulation/physics.ts#L988)
+[Implementation, line 1031](../../../../src/simulation/physics.ts#L1031)
 
 ```ts
 intersectsCuboid(center: Vec3, half: Vec3, ignoreBody?: Body): boolean
@@ -1490,29 +1508,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `center.vsub`
 - `this.raw.intersectionsWithShape`
 
-## World.intersectsCuboid.callback@994
+## World.intersectsCuboid.callback@1037
 
-[Implementation, line 994](../../../../src/simulation/physics.ts#L994)
+[Implementation, line 1037](../../../../src/simulation/physics.ts#L1037)
 
 ```ts
-callback@994(collider): inferred by TypeScript; see implementation
+callback@1037(collider): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `ignoreBody?.colliders.some`
 
-## World.intersectsCuboid.callback@994.callback@995
+## World.intersectsCuboid.callback@1037.callback@1038
 
-[Implementation, line 995](../../../../src/simulation/physics.ts#L995)
+[Implementation, line 1038](../../../../src/simulation/physics.ts#L1038)
 
 ```ts
-callback@995(own): inferred by TypeScript; see implementation
+callback@1038(own): inferred by TypeScript; see implementation
 ```
 
 ## World.raycastClosest
 
-[Implementation, line 1002](../../../../src/simulation/physics.ts#L1002)
+[Implementation, line 1045](../../../../src/simulation/physics.ts#L1045)
 
 ```ts
 raycastClosest(from: Vec3, to: Vec3, options: { skipBackfaces?: boolean }, result: RaycastResult): inferred by TypeScript; see implementation
@@ -1524,17 +1542,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `result.hitPointWorld.copy`
 - `this.raycastAll`
 
-## World.raycastClosest.callback@1009
+## World.raycastClosest.callback@1052
 
-[Implementation, line 1009](../../../../src/simulation/physics.ts#L1009)
+[Implementation, line 1052](../../../../src/simulation/physics.ts#L1052)
 
 ```ts
-callback@1009(hit): inferred by TypeScript; see implementation
+callback@1052(hit): inferred by TypeScript; see implementation
 ```
 
 ## World.raycastAll
 
-[Implementation, line 1019](../../../../src/simulation/physics.ts#L1019)
+[Implementation, line 1062](../../../../src/simulation/physics.ts#L1062)
 
 ```ts
 raycastAll(from: Vec3, to: Vec3, _options: { skipBackfaces?: boolean }, callback: (hit: RaycastResult) => void): inferred by TypeScript; see implementation
@@ -1551,12 +1569,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.intersectionsWithRay`
 - `to.vsub`
 
-## World.raycastAll.callback@1030
+## World.raycastAll.callback@1073
 
-[Implementation, line 1030](../../../../src/simulation/physics.ts#L1030)
+[Implementation, line 1073](../../../../src/simulation/physics.ts#L1073)
 
 ```ts
-callback@1030(hit): inferred by TypeScript; see implementation
+callback@1073(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1567,29 +1585,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `result.hitPointWorld.set`
 - `this.bodies.find`
 
-## World.raycastAll.callback@1030.callback@1031
+## World.raycastAll.callback@1073.callback@1074
 
-[Implementation, line 1031](../../../../src/simulation/physics.ts#L1031)
+[Implementation, line 1074](../../../../src/simulation/physics.ts#L1074)
 
 ```ts
-callback@1031(b): inferred by TypeScript; see implementation
+callback@1074(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.colliders.some`
 
-## World.raycastAll.callback@1030.callback@1031.callback@1032
+## World.raycastAll.callback@1073.callback@1074.callback@1075
 
-[Implementation, line 1032](../../../../src/simulation/physics.ts#L1032)
+[Implementation, line 1075](../../../../src/simulation/physics.ts#L1075)
 
 ```ts
-callback@1032(collider): inferred by TypeScript; see implementation
+callback@1075(collider): inferred by TypeScript; see implementation
 ```
 
 ## World.step
 
-[Implementation, line 1048](../../../../src/simulation/physics.ts#L1048)
+[Implementation, line 1091](../../../../src/simulation/physics.ts#L1091)
 
 ```ts
 step(dt: number): inferred by TypeScript; see implementation
@@ -1613,12 +1631,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.raw.step`
 - `vehicle.preStep`
 
-## World.step.callback@1070
+## World.step.callback@1113
 
-[Implementation, line 1070](../../../../src/simulation/physics.ts#L1070)
+[Implementation, line 1113](../../../../src/simulation/physics.ts#L1113)
 
 ```ts
-callback@1070(other): inferred by TypeScript; see implementation
+callback@1113(other): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1628,32 +1646,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.bodies.find`
 - `this.raw.contactPair`
 
-## World.step.callback@1070.callback@1071
+## World.step.callback@1113.callback@1114
 
-[Implementation, line 1071](../../../../src/simulation/physics.ts#L1071)
+[Implementation, line 1114](../../../../src/simulation/physics.ts#L1114)
 
 ```ts
-callback@1071(b): inferred by TypeScript; see implementation
+callback@1114(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.colliders.some`
 
-## World.step.callback@1070.callback@1071.callback@1072
+## World.step.callback@1113.callback@1114.callback@1115
 
-[Implementation, line 1072](../../../../src/simulation/physics.ts#L1072)
+[Implementation, line 1115](../../../../src/simulation/physics.ts#L1115)
 
 ```ts
-callback@1072(c): inferred by TypeScript; see implementation
+callback@1115(c): inferred by TypeScript; see implementation
 ```
 
-## World.step.callback@1070.callback@1079
+## World.step.callback@1113.callback@1122
 
-[Implementation, line 1079](../../../../src/simulation/physics.ts#L1079)
+[Implementation, line 1122](../../../../src/simulation/physics.ts#L1122)
 
 ```ts
-callback@1079(manifold, flipped): inferred by TypeScript; see implementation
+callback@1122(manifold, flipped): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

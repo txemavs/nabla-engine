@@ -1,4 +1,4 @@
-import type { EntityState } from './protocol.js'
+import type { EntityState, WheelVisuals } from './protocol.js'
 
 export interface TimedState {
   /** Sender clock, milliseconds. */
@@ -74,6 +74,22 @@ export function blendStates(a: EntityState, b: EntityState, alpha: number): Enti
     rotation: slerp(a.rotation, b.rotation, k),
     velocity: lerp3(a.velocity, b.velocity, k),
     angularVelocity: lerp3(a.angularVelocity, b.angularVelocity, k),
+    ...(a.wheels || b.wheels ? { wheels: blendWheels(a.wheels, b.wheels, k) } : {}),
+  }
+}
+
+/** Per-wheel linear blend; when the wheel counts differ (vehicle changed) the newer one wins. */
+export function blendWheels(
+  a: WheelVisuals | undefined,
+  b: WheelVisuals | undefined,
+  k: number,
+): WheelVisuals {
+  if (!a || !b || a.steer.length !== b.steer.length) return (k < 0.5 ? (a ?? b) : (b ?? a))!
+  const mix = (x: number[], y: number[]) => x.map((v, i) => v + ((y[i] ?? v) - v) * k)
+  return {
+    steer: mix(a.steer, b.steer),
+    suspension: mix(a.suspension, b.suspension),
+    spinRate: mix(a.spinRate, b.spinRate),
   }
 }
 

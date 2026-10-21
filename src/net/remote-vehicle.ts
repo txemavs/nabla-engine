@@ -1,6 +1,6 @@
 import type { Transform, Vec3Tuple } from '../math/frame/vectors.js'
 import { SnapshotBuffer, defaultInterpolation, type InterpolationOptions } from './interpolation.js'
-import type { EntityState, SnapshotExtra } from './protocol.js'
+import type { EntityState, SnapshotExtra, WheelVisuals } from './protocol.js'
 
 /**
  * The part of the simulation a remote entity needs. `Simulation` satisfies it structurally, so
@@ -14,6 +14,8 @@ export interface KinematicHost {
     velocity?: Vec3Tuple,
     angularVelocity?: Vec3Tuple,
   ): boolean
+  /** Optional: show received wheel values (steer, suspension, spin) instead of local raycasts. */
+  setWheelVisualState?(id: string, state: WheelVisuals | null): boolean
 }
 
 /**
@@ -23,6 +25,7 @@ export interface KinematicHost {
 export class RemoteVehicle {
   readonly buffer: SnapshotBuffer
   private attached = false
+  private wheelsDriven = false
   /**
    * Local entity mirroring the peer; null while the game is still placing it (snapshots are
    * buffered meanwhile). Hosts often assign their own ids on placement, so set it from there.
@@ -56,11 +59,18 @@ export class RemoteVehicle {
       state.velocity,
       state.angularVelocity,
     )
+    if (state.wheels && this.host.setWheelVisualState) {
+      this.host.setWheelVisualState(this.entityId, state.wheels)
+      this.wheelsDriven = true
+    }
     return state
   }
 
   /** Hand the body back to dynamic physics (for example before despawning or taking it over). */
   release(): void {
+    if (this.wheelsDriven && this.entityId !== null)
+      this.host.setWheelVisualState?.(this.entityId, null)
+    this.wheelsDriven = false
     if (this.attached && this.entityId !== null) this.host.setEntityKinematic(this.entityId, false)
     this.attached = false
   }

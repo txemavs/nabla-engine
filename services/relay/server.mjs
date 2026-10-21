@@ -52,6 +52,15 @@ function validExtra(extra) {
 const finiteArray = (value, length) =>
   Array.isArray(value) && value.length === length && value.every(Number.isFinite)
 
+/** Optional per-wheel look: three arrays of at most 16 finite numbers. */
+function validWheels(w) {
+  if (w === undefined) return true
+  if (!w || typeof w !== 'object') return false
+  return ['steer', 'suspension', 'spinRate'].every(
+    (k) => Array.isArray(w[k]) && w[k].length <= 16 && w[k].every(Number.isFinite),
+  )
+}
+
 function validSnapshot(message) {
   const s = message.state
   return (
@@ -63,6 +72,7 @@ function validSnapshot(message) {
     finiteArray(s.rotation, 4) &&
     finiteArray(s.velocity, 3) &&
     finiteArray(s.angularVelocity, 3) &&
+    validWheels(s.wheels) &&
     validExtra(message.extra)
   )
 }

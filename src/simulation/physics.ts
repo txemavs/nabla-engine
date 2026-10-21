@@ -682,6 +682,16 @@ export class Body {
   }
 }
 
+/**
+ * Per-wheel presentation values of a wheeled vehicle: steer angle (rad), suspension length (m)
+ * and spin rate (rad/s). Used to show a networked copy as its owner drives it.
+ */
+export interface WheelVisuals {
+  steer: number[]
+  suspension: number[]
+  spinRate: number[]
+}
+
 interface WheelState {
   connection: Vec3
   direction: Vec3
@@ -710,6 +720,15 @@ export class RaycastVehicle {
   indexUpAxis = 1
   indexForwardAxis = 2
   controller: ReturnType<RapierWorld['createVehicleController']> | null = null
+  /**
+   * Received wheel values that replace the raycast result in the wheel transforms (a remote copy
+   * driven by its owner). While set, the controller does not raycast or push the chassis.
+   */
+  visualOverride: WheelVisuals | null = null
+  /** Measured wheel spin rate per wheel, rad/s, from the last step. */
+  readonly spinRate: number[] = []
+  private readonly spinAngle: number[] = []
+  private readonly lastRotation: (number | undefined)[] = []
   private world: World | null = null
   constructor(options: {
     chassisBody: Body
@@ -792,15 +811,21 @@ export class RaycastVehicle {
     const body = this.chassisBody
     if (!wheel) return
     // Rapier's hard point is from the last vehicle update, before this step moved the chassis.
-    const length = this.controller?.wheelSuspensionLength(index) ?? wheel.suspensionRestLength
+    const override = this.visualOverride
+    const length = override
+      ? (override.suspension[index] ?? wheel.suspensionRestLength)
+      : (this.controller?.wheelSuspensionLength(index) ?? wheel.suspensionRestLength)
     const dir = body.quaternion.vmult(wheel.direction)
     const origin = body.pointToWorldFrame(wheel.connection)
     const dropped = dir.scale(length, new Vec3())
     origin.vadd(dropped, wheel.worldTransform.position)
-    const steer = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), wheel.steering)
+    const steer = new Quaternion().setFromAxisAngle(
+      new Vec3(0, 1, 0),
+      override ? (override.steer[index] ?? 0) : wheel.steering,
+    )
     const spin = new Quaternion().setFromAxisAngle(
       new Vec3(1, 0, 0),
-      this.controller?.wheelRotation(index) ?? 0,
+      override ? (this.spinAngle[index] ?? 0) : (this.controller?.wheelRotation(index) ?? 0),
     )
     wheel.worldTransform.quaternion.copy(body.quaternion.mult(steer).mult(spin))
     wheel.suspensionLength = length
@@ -821,7 +846,25 @@ export class RaycastVehicle {
         hit.z + (this.world?.origin.z ?? 0),
       )
   }
+  /** Spin bookkeeping: measure the controller's wheel rotation, or advance the received rate. */
+  private trackSpin(dt: number) {
+    for (let i = 0; i < this.wheelInfos.length; i++) {
+      if (this.visualOverride) {
+        this.spinAngle[i] =
+          ((this.spinAngle[i] ?? 0) + (this.visualOverride.spinRate[i] ?? 0) * dt) % (2 * Math.PI)
+        continue
+      }
+      const rotation = this.controller?.wheelRotation(i) ?? 0
+      const last = this.lastRotation[i]
+      const delta =
+        last === undefined ? 0 : Math.atan2(Math.sin(rotation - last), Math.cos(rotation - last))
+      this.spinRate[i] = dt > 0 ? delta / dt : 0
+      this.lastRotation[i] = rotation
+    }
+  }
   preStep(dt: number) {
+    this.trackSpin(dt)
+    if (this.visualOverride) return
     if (!this.controller || !this.chassisBody.raw) return
     this.wheelInfos.forEach((wheel, i) => {
       this.controller!.setWheelFrictionSlip(i, wheel.frictionSlip)

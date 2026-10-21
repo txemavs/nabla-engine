@@ -16,18 +16,47 @@ const roomId = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
 /** Free-form, small, game-defined description of a peer (for example its vehicle preset). */
 const meta = z.record(z.string(), z.union([z.string().max(128), finite, z.boolean()])).default({})
 
+const perWheel = z.array(finite).max(16)
+/**
+ * Optional per-wheel look of a wheeled vehicle: steer angle (rad), suspension length (m) and
+ * spin rate (rad/s). Quantised before sending (see `quantizeWheels`).
+ */
+export const wheelVisualsSchema = z.object({
+  steer: perWheel,
+  suspension: perWheel,
+  spinRate: perWheel,
+})
+export type WheelVisuals = { steer: number[]; suspension: number[]; spinRate: number[] }
+
 /** Rigid-body state of one networked entity, in simulation metres and seconds. */
 export const entityStateSchema = z.object({
   position: vec3,
   rotation: quat,
   velocity: vec3,
   angularVelocity: vec3,
+  wheels: wheelVisualsSchema.optional(),
 })
 export type EntityState = {
   position: Vec3Tuple
   rotation: QuatTuple
   velocity: Vec3Tuple
   angularVelocity: Vec3Tuple
+  wheels?: WheelVisuals
+}
+
+const round = (value: number, step: number) => Math.round(value / step) * step
+/**
+ * Round wheel values to what the eye can tell apart (1 mrad steer, 1 mm suspension, 0.1 rad/s
+ * spin) so a four-wheel car adds roughly 80 bytes of JSON per snapshot.
+ */
+export function quantizeWheels(wheels: WheelVisuals): WheelVisuals {
+  const fix = (values: number[], step: number, digits: number) =>
+    values.map((v) => +round(v, step).toFixed(digits))
+  return {
+    steer: fix(wheels.steer, 0.001, 3),
+    suspension: fix(wheels.suspension, 0.001, 3),
+    spinRate: fix(wheels.spinRate, 0.1, 1),
+  }
 }
 
 /**

@@ -86,12 +86,47 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
+- `blendWheels`
 - `lerp3`
 - `slerp`
 
+## blendWheels
+
+[Implementation, line 82](../../../../src/net/interpolation.ts#L82)
+
+Per-wheel linear blend; when the wheel counts differ (vehicle changed) the newer one wins.
+
+```ts
+blendWheels(a: WheelVisuals | undefined, b: WheelVisuals | undefined, k: number): WheelVisuals
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mix`
+
+## blendWheels.mix
+
+[Implementation, line 88](../../../../src/net/interpolation.ts#L88)
+
+```ts
+mix(x: number[], y: number[]): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `x.map`
+
+## blendWheels.mix.callback@88
+
+[Implementation, line 88](../../../../src/net/interpolation.ts#L88)
+
+```ts
+callback@88(v, i): inferred by TypeScript; see implementation
+```
+
 ## extrapolate
 
-[Implementation, line 80](../../../../src/net/interpolation.ts#L80)
+[Implementation, line 96](../../../../src/net/interpolation.ts#L96)
 
 ```ts
 extrapolate(state: EntityState, seconds: number): EntityState
@@ -99,7 +134,7 @@ extrapolate(state: EntityState, seconds: number): EntityState
 
 ## lerp3
 
-[Implementation, line 87](../../../../src/net/interpolation.ts#L87)
+[Implementation, line 103](../../../../src/net/interpolation.ts#L103)
 
 ```ts
 lerp3(a: readonly [number, number, number], b: readonly [number, number, number], k: number): [number, number, number]
@@ -107,7 +142,7 @@ lerp3(a: readonly [number, number, number], b: readonly [number, number, number]
 
 ## slerp
 
-[Implementation, line 96](../../../../src/net/interpolation.ts#L96)
+[Implementation, line 112](../../../../src/net/interpolation.ts#L112)
 
 Shortest-arc quaternion slerp of [x, y, z, w] tuples; the result is normalised.
 

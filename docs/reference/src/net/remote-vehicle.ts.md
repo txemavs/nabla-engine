@@ -12,7 +12,7 @@
 
 ## RemoteVehicle.constructor
 
-[Implementation, line 31](../../../../src/net/remote-vehicle.ts#L31)
+[Implementation, line 34](../../../../src/net/remote-vehicle.ts#L34)
 
 A locally spawned body that mirrors one remote peer. It is switched to kinematic so local
 physics cannot push it, but local bodies still collide against it.
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.push
 
-[Implementation, line 42](../../../../src/net/remote-vehicle.ts#L42)
+[Implementation, line 45](../../../../src/net/remote-vehicle.ts#L45)
 
 A locally spawned body that mirrors one remote peer. It is switched to kinematic so local
 physics cannot push it, but local bodies still collide against it.
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteVehicle.update
 
-[Implementation, line 48](../../../../src/net/remote-vehicle.ts#L48)
+[Implementation, line 51](../../../../src/net/remote-vehicle.ts#L51)
 
 Call once per frame before `Simulation.step`. Returns the applied state, if any.
 
@@ -55,10 +55,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.buffer.sample`
 - `this.host.moveKinematicEntity`
 - `this.host.setEntityKinematic`
+- `this.host.setWheelVisualState`
 
 ## RemoteVehicle.release
 
-[Implementation, line 63](../../../../src/net/remote-vehicle.ts#L63)
+[Implementation, line 70](../../../../src/net/remote-vehicle.ts#L70)
 
 Hand the body back to dynamic physics (for example before despawning or taking it over).
 
@@ -69,3 +70,4 @@ release(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.host.setEntityKinematic`
+- `this.host.setWheelVisualState`

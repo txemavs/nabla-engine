@@ -71,6 +71,7 @@ import {
   Trimesh,
   Vec3,
   World,
+  type WheelVisuals,
 } from './physics.js'
 import { isMapBuilding, type Entity, type Transform, type Vec3Tuple } from '../entity/schema.js'
 import { parseScene, replaceMapScene, type SceneDocument } from '../scene/document.js'
@@ -1269,6 +1270,37 @@ export class Simulation {
     if (kinematic && id === this.vehicleId) return false
     body.setKinematic(kinematic)
     if (!kinematic) body.wakeUp()
+    return true
+  }
+  /**
+   * Per-wheel steer (rad), suspension length (m) and spin rate (rad/s) of a wheeled vehicle, for
+   * showing it elsewhere as driven; null for unknown ids or vehicles without wheels.
+   */
+  wheelVisualState(id: string): WheelVisuals | null {
+    const r = this.vehicles.get(id)?.raycast
+    if (!r?.wheelInfos.length) return null
+    return {
+      steer: r.wheelInfos.map((w) => w.steering),
+      suspension: r.wheelInfos.map(
+        (w, i) => r.controller?.wheelSuspensionLength(i) ?? w.suspensionLength,
+      ),
+      spinRate: r.wheelInfos.map((_, i) => r.spinRate[i] ?? 0),
+    }
+  }
+  /**
+   * Drive a vehicle's wheel visuals from received values instead of its own raycasts (a remote
+   * copy, normally kinematic); null returns it to local physics. False without wheels.
+   */
+  setWheelVisualState(id: string, state: WheelVisuals | null): boolean {
+    const r = this.vehicles.get(id)?.raycast
+    if (!r?.wheelInfos.length) return false
+    r.visualOverride = state
+      ? {
+          steer: [...state.steer],
+          suspension: [...state.suspension],
+          spinRate: [...state.spinRate],
+        }
+      : null
     return true
   }
   /** Drive a kinematic entity toward `transform` over the next step; velocities are informative. */
