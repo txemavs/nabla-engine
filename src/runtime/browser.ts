@@ -1,3 +1,4 @@
+import { createMonitorAvatar } from '../render/entity/avatar.js'
 import { threadedSimulation } from '../simulation/threaded-simulation.js'
 import { PerfMeter } from './perf-meter.js'
 import {
@@ -5926,7 +5927,7 @@ export class GameRuntime {
     this.view.setPlayerBody(this.bodyRig?.create() ?? null)
     return this.bodyRig
   }
-  /** The local player's body state to send to other clients (null without a body). */
+  /** The local player's avatar state to send to other clients (with or without a body; null before the first frame). */
   get avatarState(): AvatarNetState | null {
     return this.view.avatarNetState
   }
@@ -5936,6 +5937,13 @@ export class GameRuntime {
    */
   get playerBodyRig(): PlayerBodyRig | null {
     return this.bodyRig
+  }
+  /**
+   * A new floating helmet-monitor avatar (the head without a body, faces −Z), for hosts that
+   * draw remote players as heads; add it with {@link attachSceneryLayer}.
+   */
+  createHelmetAvatar(): THREE.Group {
+    return createMonitorAvatar()
   }
   setHeadlamp(enabled: boolean): void {
     this.headlamp.enabled = enabled && !this.session.simulation?.player.vehicleId

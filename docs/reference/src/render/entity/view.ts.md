@@ -2321,11 +2321,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `body.root.position.set`
 - `body.root.position.sub`
 - `localAvatarState`
+- `this.headOnlyNetState`
+- `this.root.worldToLocal`
+
+## SceneView.headOnlyNetState
+
+[Implementation, line 2046](../../../../../src/render/entity/view.ts#L2046)
+
+```ts
+headOnlyNetState(sim: Simulation, seated: boolean): AvatarNetState
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`
+- `localAvatarState`
+- `this.avatar.getWorldPosition`
 - `this.root.worldToLocal`
 
 ## SceneView.updateRideSmoothing
 
-[Implementation, line 2046](../../../../../src/render/entity/view.ts#L2046)
+[Implementation, line 2076](../../../../../src/render/entity/view.ts#L2076)
 
 Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
 flight follow the real pose exactly (and restart the filter).
@@ -2347,17 +2363,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.rideSmoothing.update`
 - `this.scratchQuaternions[0].fromArray`
 
-## SceneView.updateRideSmoothing.callback@2051
+## SceneView.updateRideSmoothing.callback@2081
 
-[Implementation, line 2051](../../../../../src/render/entity/view.ts#L2051)
+[Implementation, line 2081](../../../../../src/render/entity/view.ts#L2081)
 
 ```ts
-callback@2051(e): inferred by TypeScript; see implementation
+callback@2081(e): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.hitSprite
 
-[Implementation, line 2069](../../../../../src/render/entity/view.ts#L2069)
+[Implementation, line 2099](../../../../../src/render/entity/view.ts#L2099)
 
 ```ts
 hitSprite(ray: THREE.Raycaster): THREE.Intersection | undefined
@@ -2373,12 +2389,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.updateMatrixWorld`
 - `this.sprites.values`
 
-## SceneView.hitSprite.callback@2073
+## SceneView.hitSprite.callback@2103
 
-[Implementation, line 2073](../../../../../src/render/entity/view.ts#L2073)
+[Implementation, line 2103](../../../../../src/render/entity/view.ts#L2103)
 
 ```ts
-callback@2073(hit): inferred by TypeScript; see implementation
+callback@2103(hit): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2390,7 +2406,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.signal
 
-[Implementation, line 2086](../../../../../src/render/entity/view.ts#L2086)
+[Implementation, line 2116](../../../../../src/render/entity/view.ts#L2116)
 
 ```ts
 signal(id: string, side: number): void
@@ -2403,7 +2419,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.scrapeSparks
 
-[Implementation, line 2095](../../../../../src/render/entity/view.ts#L2095)
+[Implementation, line 2125](../../../../../src/render/entity/view.ts#L2125)
 
 Footpeg scrape sparks: while a two-wheeler is down on its peg (`TwoWheeledPose.scrape`), the
 bullet-impact sparks (`sparks`) stream from the touching point on the inside of the turn,
@@ -2434,7 +2450,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.renderMirrors
 
-[Implementation, line 2137](../../../../../src/render/entity/view.ts#L2137)
+[Implementation, line 2167](../../../../../src/render/entity/view.ts#L2167)
 
 ```ts
 renderMirrors(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, vehicleId: string | null, now: number, paintSky?: (camera: THREE.PerspectiveCamera) => void): void
@@ -2445,12 +2461,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.carMirrors].sort`
 - `mirrors.render`
 
-## SceneView.renderMirrors.callback@2151
+## SceneView.renderMirrors.callback@2181
 
-[Implementation, line 2151](../../../../../src/render/entity/view.ts#L2151)
+[Implementation, line 2181](../../../../../src/render/entity/view.ts#L2181)
 
 ```ts
-callback@2151([a], [b]): inferred by TypeScript; see implementation
+callback@2181([a], [b]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2459,7 +2475,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.setupMaterials
 
-[Implementation, line 2156](../../../../../src/render/entity/view.ts#L2156)
+[Implementation, line 2186](../../../../../src/render/entity/view.ts#L2186)
 
 Traverse all materials and call the callback for CSM setup.
 
@@ -2473,7 +2489,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.registerMaterials
 
-[Implementation, line 2163](../../../../../src/render/entity/view.ts#L2163)
+[Implementation, line 2193](../../../../../src/render/entity/view.ts#L2193)
 
 ```ts
 registerMaterials(root: THREE.Object3D, callback: (material: THREE.Material) => void): void
@@ -2483,12 +2499,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `root.traverse`
 
-## SceneView.registerMaterials.callback@2167
+## SceneView.registerMaterials.callback@2197
 
-[Implementation, line 2167](../../../../../src/render/entity/view.ts#L2167)
+[Implementation, line 2197](../../../../../src/render/entity/view.ts#L2197)
 
 ```ts
-callback@2167(object): inferred by TypeScript; see implementation
+callback@2197(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2498,7 +2514,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.rearLampAnchor
 
-[Implementation, line 2176](../../../../../src/render/entity/view.ts#L2176)
+[Implementation, line 2206](../../../../../src/render/entity/view.ts#L2206)
 
 The node that says where a model's tail lamp is (`nabla.anchor = "light.tail.brake"`), if any.
 
@@ -2513,17 +2529,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.rearLampAnchors.has`
 - `this.rearLampAnchors.set`
 
-## SceneView.rearLampAnchor.callback@2179
+## SceneView.rearLampAnchor.callback@2209
 
-[Implementation, line 2179](../../../../../src/render/entity/view.ts#L2179)
+[Implementation, line 2209](../../../../../src/render/entity/view.ts#L2209)
 
 ```ts
-callback@2179(node): inferred by TypeScript; see implementation
+callback@2209(node): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.captureOccupiedLights
 
-[Implementation, line 2191](../../../../../src/render/entity/view.ts#L2191)
+[Implementation, line 2221](../../../../../src/render/entity/view.ts#L2221)
 
 ```ts
 captureOccupiedLights(vehicleId: string | null, sim: Simulation): void
@@ -2548,17 +2564,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.vehicleLights.groundGlow`
 - `this.vehicleLights.rearGroundGlow`
 
-## SceneView.captureOccupiedLights.callback@2196
+## SceneView.captureOccupiedLights.callback@2226
 
-[Implementation, line 2196](../../../../../src/render/entity/view.ts#L2196)
+[Implementation, line 2226](../../../../../src/render/entity/view.ts#L2226)
 
 ```ts
-callback@2196(item): inferred by TypeScript; see implementation
+callback@2226(item): inferred by TypeScript; see implementation
 ```
 
 ## SceneView.captureOccupiedLights.rigOffset
 
-[Implementation, line 2204](../../../../../src/render/entity/view.ts#L2204)
+[Implementation, line 2234](../../../../../src/render/entity/view.ts#L2234)
 
 ```ts
 rigOffset(result: THREE.Vector3, x: number, y: number, z: number): inferred by TypeScript; see implementation
@@ -2573,7 +2589,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneView.dispose
 
-[Implementation, line 2261](../../../../../src/render/entity/view.ts#L2261)
+[Implementation, line 2291](../../../../../src/render/entity/view.ts#L2291)
 
 ```ts
 dispose(): void
@@ -2615,12 +2631,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.tracers.dispose`
 - `this.vehicleLights.dispose`
 
-## SceneView.dispose.callback@2286
+## SceneView.dispose.callback@2316
 
-[Implementation, line 2286](../../../../../src/render/entity/view.ts#L2286)
+[Implementation, line 2316](../../../../../src/render/entity/view.ts#L2316)
 
 ```ts
-callback@2286(texture): inferred by TypeScript; see implementation
+callback@2316(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -2629,7 +2645,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## riderHeadOffset
 
-[Implementation, line 2301](../../../../../src/render/entity/view.ts#L2301)
+[Implementation, line 2331](../../../../../src/render/entity/view.ts#L2331)
 
 Rider head (and cockpit eye) offset for a two-wheeler rider moved by `shift` ([x, z] chassis
 metres, +z back): the head follows the body sideways and fore-aft and drops a little as the

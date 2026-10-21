@@ -2022,8 +2022,12 @@ export class SceneView {
    */
   private updatePlayerBody(sim: Simulation, vehicleId: string | null, elapsed: number): void {
     const body = this.playerBody
-    if (!body) return
     const seated = !!vehicleId
+    if (!body) {
+      // No body (head-only hosts): the same network state, from the avatar's feet.
+      this.playerNetState = this.headOnlyNetState(sim, seated)
+      return
+    }
     const velocity = this.avatarFollow.velocity
     const speed = seated ? 0 : Math.hypot(velocity.x, velocity.z)
     const previous = this.playerBodyState
@@ -2058,6 +2062,32 @@ export class SceneView {
     // Scene (view root) space, not the floating render origin: the same on every client.
     const feet = this.root.worldToLocal(body.root.getWorldPosition(this.scratchVectors[3]))
     this.playerNetState = {
+      animState: state,
+      yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
+      position: [feet.x, feet.y, feet.z],
+      speed,
+    }
+  }
+  private headOnlyNetState(sim: Simulation, seated: boolean): AvatarNetState {
+    const velocity = this.avatarFollow.velocity
+    const speed = seated ? 0 : Math.hypot(velocity.x, velocity.z)
+    const state = localAvatarState(this.playerBodyState, {
+      grounded: sim.player.grounded,
+      rising: seated ? 0 : velocity.y,
+      speed,
+      crouching: sim.stance !== 'standing',
+      seated,
+    })
+    this.playerBodyState = state
+    const half =
+      sim.stance === 'prone'
+        ? 0.2
+        : sim.stance === 'crouching'
+          ? 0.5
+          : simulationDefaults.playerHalfHeight
+    const feet = this.root.worldToLocal(this.avatar.getWorldPosition(this.scratchVectors[3]))
+    if (!seated) feet.y -= half
+    return {
       animState: state,
       yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
       position: [feet.x, feet.y, feet.z],

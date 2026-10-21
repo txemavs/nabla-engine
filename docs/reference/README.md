@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **597 modules; 7361 executable function definitions**.
+Coverage: **597 modules; 7362 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -45,7 +45,7 @@ Coverage: **597 modules; 7361 executable function definitions**.
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 11 |
 | [game/light-ui.ts](game/light-ui.ts.md) | 9 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
-| [game/loading.ts](game/loading.ts.md) | 21 |
+| [game/loading.ts](game/loading.ts.md) | 20 |
 | [game/main.ts](game/main.ts.md) | 1 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 16 |
@@ -314,7 +314,7 @@ Coverage: **597 modules; 7361 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 29 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 162 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 163 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
@@ -415,7 +415,7 @@ Coverage: **597 modules; 7361 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 499 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 500 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
