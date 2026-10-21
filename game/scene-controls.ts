@@ -144,7 +144,7 @@ export function objectChoices(): ObjectChoice[] {
 /** Button text for the selected entry: "Añadir vehículo", "Añadir portal", … */
 export function addLabel(choiceId: string): string {
   const object = objectChoices().find((item) => item.id === choiceId)
-  if (!object) return 'Añadir vehículo'
+  if (!object) return t('scene.add-vehicle')
   return `Añadir ${object.label.charAt(0).toLowerCase()}${object.label.slice(1)}`
 }
 
@@ -289,7 +289,7 @@ export function bindSceneControls(
     'time-range',
     'range',
     { min: '0', max: '1439', step: '1', value: '720' },
-    'Hora del día',
+    t('scene.time-of-day'),
   )
   const timeInput = field(
     'time-input',
@@ -302,10 +302,10 @@ export function bindSceneControls(
       inputmode: 'numeric',
       autocomplete: 'off',
     },
-    'Hora (HH:MM)',
+    t('scene.time-hh-mm'),
   )
   const timeRow = document.createElement('label')
-  timeRow.append('Hora del día', timeRange, timeInput)
+  timeRow.append(t('scene.time-of-day'), timeRange, timeInput)
   const timeSpeed = field(
     'time-speed',
     'range',
@@ -315,49 +315,49 @@ export function bindSceneControls(
       step: '1',
       value: '1',
     },
-    'Velocidad del tiempo',
+    t('scene.time-speed'),
   )
   const timeSpeedLabel = document.createElement('span')
   timeSpeedLabel.id = 'time-speed-label'
   timeSpeedLabel.textContent = '×1'
   const timeSpeedRow = document.createElement('label')
-  timeSpeedRow.append('Velocidad del tiempo ', timeSpeedLabel, timeSpeed)
+  timeSpeedRow.append(t('scene.time-speed') + ' ', timeSpeedLabel, timeSpeed)
   const timeLive = button('time-live', 'Ahora')
-  timeLive.title = 'Usar la hora real: el sol sigue al reloj'
+  timeLive.title = t('scene.use-the-real-time-the-sun-follows-the-clock')
 
   const sky = check('planet-sky', 'Cielo')
-  const sun = check('planet-sun', 'Sol y destello')
-  sun.label.title = 'Disco solar, destello y luz direccional'
+  const sun = check('planet-sun', t('scene.sun-and-flare'))
+  sun.label.title = t('scene.sun-disc-flare-and-directional-light')
 
   const seaNow = document.createElement('p')
   seaNow.id = 'sea-now'
   seaNow.setAttribute('role', 'status')
-  const seaEnabled = check('planet-sea', 'Mostrar el mar')
+  const seaEnabled = check('planet-sea', t('scene.show-the-sea'))
   const seaAttrs = {
     min: String(SEA_RANGE.min),
     max: String(SEA_RANGE.max),
     step: String(SEA_RANGE.step),
   }
-  const seaRange = field('sea-range', 'range', { ...seaAttrs, value: '0' }, 'Nivel del mar (m)')
-  const seaInput = field('sea-input', 'number', { ...seaAttrs, value: '0' }, 'Nivel del mar (m)')
+  const seaRange = field('sea-range', 'range', { ...seaAttrs, value: '0' }, t('scene.sea-level-m'))
+  const seaInput = field('sea-input', 'number', { ...seaAttrs, value: '0' }, t('scene.sea-level-m'))
   const seaRow = document.createElement('label')
-  seaRow.append('Nivel (m)', seaRange, seaInput)
-  const seaTide = button('sea-tide', 'Marea automática')
-  seaTide.title = 'Volver a la marea simplificada (±1 m)'
+  seaRow.append(t('scene.level-m'), seaRange, seaInput)
+  const seaTide = button('sea-tide', t('scene.automatic-tide'))
+  seaTide.title = t('scene.back-to-the-simplified-tide-1-m')
 
   const clouds = check('planet-clouds', 'Nubes')
-  const artistic = check('planet-clouds-artistic', 'Nubes artísticas')
+  const artistic = check('planet-clouds-artistic', t('scene.artistic-clouds'))
   const cloudAmount = field(
     'planet-cloud-amount',
     'range',
     { min: '0', max: '100', step: '1', value: '35' },
-    'Cantidad de nubes',
+    t('scene.cloud-amount'),
   )
   const cloudAmountLabel = document.createElement('span')
   cloudAmountLabel.id = 'planet-cloud-amount-label'
   cloudAmountLabel.textContent = '35%'
   const cloudAmountRow = document.createElement('label')
-  cloudAmountRow.append('Cantidad de nubes ', cloudAmountLabel, cloudAmount)
+  cloudAmountRow.append(t('scene.cloud-amount') + ' ', cloudAmountLabel, cloudAmount)
 
   planet.append(
     group('Hora', 'scene-time', timeNow, timeRow, timeSpeedRow, timeLive),
@@ -370,7 +370,7 @@ export function bindSceneControls(
   const vehicles = menuSection('scene-vehicles', 'Vehículos')
   const choice = document.createElement('select')
   choice.id = 'vehicle-choice'
-  choice.setAttribute('aria-label', 'Vehículo para añadir')
+  choice.setAttribute('aria-label', t('scene.vehicle-to-add'))
   const vehicleGroup = document.createElement('optgroup')
   vehicleGroup.label = 'Vehículos'
   for (const item of vehicleChoices()) vehicleGroup.append(new Option(item.label, item.id))
@@ -379,8 +379,8 @@ export function bindSceneControls(
   for (const item of objectChoices()) objectGroup.append(new Option(item.label, item.id))
   choice.append(vehicleGroup, objectGroup)
   const choiceRow = document.createElement('label')
-  choiceRow.append('Qué añadir', choice)
-  const add = button('vehicle-add', 'Añadir vehículo')
+  choiceRow.append(t('scene.what-to-add'), choice)
+  const add = button('vehicle-add', t('scene.add-vehicle'))
   choice.addEventListener('change', () => (add.textContent = addLabel(choice.value)))
   const vehicleMessage = document.createElement('p')
   vehicleMessage.id = 'vehicle-message'
@@ -393,14 +393,14 @@ export function bindSceneControls(
   const mirrors = mirrorControls()
   const driverPose = driverPoseControls()
   // «Exportar posición de vehículos»: JSON for the start / host-vehicles config.
-  const exportButton = button('vehicle-export', 'Exportar posición de vehículos')
-  exportButton.title = 'Copia al portapapeles la posición de todos los vehículos (JSON)'
+  const exportButton = button('vehicle-export', t('scene.export-vehicle-positions'))
+  exportButton.title = t('scene.copy-every-vehicle-s-position-to-the-clipboard-j')
   const exportText = document.createElement('textarea')
   exportText.id = 'vehicle-export-text'
   exportText.readOnly = true
   exportText.rows = 6
   exportText.hidden = true
-  exportText.setAttribute('aria-label', 'Posición de vehículos (JSON)')
+  exportText.setAttribute('aria-label', t('scene.vehicle-positions-json'))
   vehicles.append(
     choiceRow,
     add,
@@ -575,21 +575,21 @@ export function bindSceneControls(
         item.dataset.vehicleId = spawned.id
         const name = document.createElement('span')
         name.textContent = spawned.name
-        const remove = button(`vehicle-remove-${spawned.id}`, 'Quitar vehículo')
+        const remove = button(`vehicle-remove-${spawned.id}`, t('scene.remove-vehicle'))
         remove.addEventListener('click', () => {
           try {
             runtime.removeSpawnedVehicle(spawned.id)
             vehicleMessage.textContent = `${spawned.name} quitado.`
           } catch {
-            vehicleMessage.textContent = 'Sal del vehículo (E) antes de quitarlo.'
+            vehicleMessage.textContent = t('scene.get-out-of-the-vehicle-e-before-removing-it')
           }
           renderList()
         })
         item.append(name, remove)
         if (runtime.setTrailerPlatform && /Portacoches|plataforma negra/.test(spawned.name)) {
           for (const [flat, label] of [
-            [false, 'Bajar rampa'],
-            [true, 'Horizontal · fijar coches'],
+            [false, t('scene.lower-ramp')],
+            [true, t('scene.level-pin-cars')],
           ] as const) {
             const control = button(`platform-${spawned.id}-${flat}`, label)
             control.addEventListener('click', () => {
@@ -612,7 +612,7 @@ export function bindSceneControls(
             vehicleMessage.textContent = `${placed.name} quitado.`
           } catch (error) {
             vehicleMessage.textContent =
-              'No se pudo quitar: ' + (error instanceof Error ? error.message : String(error))
+              t('scene.could-not-remove') + (error instanceof Error ? error.message : String(error))
           }
           renderList()
         })
@@ -622,7 +622,7 @@ export function bindSceneControls(
     }
     const groundError = (error: unknown, what: string) =>
       /ground/i.test(String(error instanceof Error ? error.message : error))
-        ? 'No hay terreno cargado delante de ti. Espera a que cargue o muévete e inténtalo de nuevo.'
+        ? t('scene.no-terrain-loaded-in-front-of-you-wait-for-it-to')
         : `No se pudo añadir ${what}: ` + (error instanceof Error ? error.message : String(error))
     add.addEventListener('click', async () => {
       const object = objectChoices().find((item) => item.id === choice.value)
@@ -637,7 +637,7 @@ export function bindSceneControls(
           )
           vehicleMessage.textContent =
             object.id === 'portal'
-              ? 'Portal añadido delante de ti. Su panel está detrás del marco: elige destino y pulsa Abrir.'
+              ? t('scene.portal-added-in-front-of-you-its-panel-is-behind')
               : `${object.label} añadido delante de ti.`
         } catch (error) {
           vehicleMessage.textContent = groundError(error, object.label.toLowerCase())
@@ -650,7 +650,7 @@ export function bindSceneControls(
       const entry = vehicleChoices().find((item) => item.id === choice.value)
       if (!entry) return
       add.disabled = true
-      vehicleMessage.textContent = 'Añadiendo…'
+      vehicleMessage.textContent = t('scene.adding')
       try {
         // `presetEntities` keeps hosted parts such as the carrier stern portal.
         const entities = presetEntities(entry.id, 'spawn-template')
@@ -658,7 +658,7 @@ export function bindSceneControls(
         await runtime.spawnVehicle(entities)
         vehicleMessage.textContent = `${entry.label} añadido delante de ti. Acércate y pulsa E para entrar.`
       } catch (error) {
-        vehicleMessage.textContent = groundError(error, 'el vehículo')
+        vehicleMessage.textContent = groundError(error, t('scene.the-vehicle'))
       } finally {
         add.disabled = false
         renderList()
@@ -677,9 +677,9 @@ export function bindSceneControls(
       exportText.value = json
       exportText.hidden = false
       exportText.select()
-      const done = () => (vehicleMessage.textContent = 'Posición de vehículos copiada (JSON).')
+      const done = () => (vehicleMessage.textContent = t('scene.vehicle-positions-copied-json'))
       const fallback = () =>
-        (vehicleMessage.textContent = 'No se pudo copiar: selecciona el texto y cópialo.')
+        (vehicleMessage.textContent = t('scene.could-not-copy-select-the-text-and-copy-it'))
       if (navigator.clipboard?.writeText) navigator.clipboard.writeText(json).then(done, fallback)
       else fallback()
     })
