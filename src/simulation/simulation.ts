@@ -70,6 +70,7 @@ import {
   Quaternion,
   Sphere,
   Trimesh,
+  type CollisionDebugLines,
   Vec3,
   World,
   type WheelVisuals,
@@ -116,6 +117,10 @@ const SPAWN_PROBE_DOWN = 60
 /** Seconds the spawn guard waits for collision before releasing the actor anyway. */
 const SPAWN_HOLD_LIMIT = 30
 const PLAYER_RADIUS = simulationDefaults.playerRadius
+/** The walker's collider for a stance's half height (a box; trimeshes fix internal edges). */
+function playerShape(halfHeight: number): Box {
+  return new Box(new Vec3(PLAYER_RADIUS, halfHeight, PLAYER_RADIUS))
+}
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 import type { ImpactSurface } from '../config/impact-sounds.js'
@@ -670,7 +675,7 @@ export class Simulation {
       linearDamping: 0,
       angularDamping: 1,
     })
-    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, this.playerHalfHeight, PLAYER_RADIUS)))
+    this.playerBody.addShape(playerShape(this.playerHalfHeight))
     this.playerBody.updateMassProperties()
     this.playerBody.position.set(...spawn.transform.position)
     this.playerBody.position.y += this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT
@@ -1746,7 +1751,7 @@ export class Simulation {
     this.footStance = next
     const half = this.playerHalfHeight
     this.playerBody.removeShape(this.playerBody.shapes[0])
-    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, half, PLAYER_RADIUS)))
+    this.playerBody.addShape(playerShape(half))
     this.playerBody.position.vadd(
       this.radialUp(this.playerBody).scale(half - oldHalf),
       this.playerBody.position,
@@ -1927,6 +1932,10 @@ export class Simulation {
           .map((v) => v.body),
       ),
     }
+  }
+  /** Wireframe of every collider, player included (Development › Show collision). */
+  collisionDebug(): CollisionDebugLines {
+    return this.world.debugLines()
   }
   /** Rapier world and entity bodies, read by the worker host to mirror a query world. */
   queryState(): { world: World; bodies: ReadonlyMap<string, Body> } {

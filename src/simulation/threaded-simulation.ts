@@ -21,6 +21,7 @@
  * of throwing at the call site. Reads after a command and before the next step see the state as of
  * the previous step.
  */
+import type { CollisionDebugLines } from './physics.js'
 import { QueryWorld } from './query-world.js'
 import { simulationDefaults } from '../config/simulation.js'
 import {
@@ -333,6 +334,10 @@ export class ThreadedSimulation {
     return NO_MESSAGE
   }
   /** Forward and answer with the worker's previous reply for the same call (`initial` before). */
+  /** Collider wireframe from the worker (Development › Show collision); polled only when shown. */
+  collisionDebug(): Promise<CollisionDebugLines> {
+    return this.forward({ type: 'call', method: 'collisionDebug', args: [], quiet: true }) as Promise<CollisionDebugLines>
+  }
   private laggedCall<T>(method: string, args: unknown[], initial: T): T {
     const key = method + JSON.stringify(args)
     if (!this.disposed && !this.laggedInFlight.has(key)) {

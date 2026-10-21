@@ -269,15 +269,32 @@ export class Heightfield {
   }
 }
 
+/** Vertical capsule (Y axis): a segment of half length `halfHeight` swept by `radius`. */
+export class Capsule {
+  halfHeight: number
+  radius: number
+  collisionResponse = true
+  boundingSphereRadius: number
+  constructor(halfHeight: number, radius: number) {
+    this.halfHeight = Math.max(0, halfHeight)
+    this.radius = radius
+    this.boundingSphereRadius = this.halfHeight + radius
+  }
+}
+
 /** Static triangle mesh. One collider for a whole surface, not a hull per face. */
 export class Trimesh {
   vertices: Float32Array
+  /** Both windings (queries and legacy users). */
   indices: Uint32Array
+  /** The authored winding only: the collider uses it with internal-edge fixing. */
+  forward: Uint32Array
   collisionResponse = true
   boundingSphereRadius: number
   constructor(vertices: Float32Array, indices: Uint32Array) {
     this.vertices = new Float32Array(vertices)
     const forward = new Uint32Array(indices)
+    this.forward = forward
     const both = new Uint32Array(forward.length * 2)
     both.set(forward)
     for (let i = 0; i < forward.length; i += 3) {
@@ -293,7 +310,7 @@ export class Trimesh {
   }
 }
 
-type Shape = Sphere | Box | Heightfield | Trimesh
+type Shape = Sphere | Box | Capsule | Heightfield | Trimesh
 
 export class RaycastResult {
   get hasHit(): boolean {
@@ -648,8 +665,8 @@ export class Body {
     if (shape instanceof Sphere) desc = api.ColliderDesc.ball(shape.radius)
     else if (shape instanceof Box)
       desc = api.ColliderDesc.cuboid(shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z)
-    else if (shape instanceof Trimesh)
-      desc = api.ColliderDesc.trimesh(shape.vertices, shape.indices)
+    else if (shape instanceof Capsule) desc = api.ColliderDesc.capsule(shape.halfHeight, shape.radius)
+    else if (shape instanceof Trimesh) desc = trimeshDesc(shape)
     else if (shape instanceof Heightfield) {
       const columns = shape.data.length
       const rows = shape.data[0]?.length ?? 0
@@ -680,6 +697,32 @@ export class Body {
     if (!this.collisionEnabled) desc.setEnabled(false)
     this.colliders[i] = this.world.raw.createCollider(desc, this.raw)
   }
+}
+
+/**
+ * Trimesh collider with internal-edge fixing (merged duplicate vertices, oriented pseudo-normals):
+ * bodies sliding across the seams between triangles of one surface no longer catch on the shared
+ * edges (ghost collisions). Falls back to the plain double-sided mesh if the topology is rejected.
+ */
+function trimeshDesc(shape: Trimesh) {
+  const api = R()
+  try {
+    const desc = api.ColliderDesc.trimesh(
+      shape.vertices,
+      shape.forward,
+      api.TriMeshFlags.FIX_INTERNAL_EDGES,
+    )
+    if (desc) return desc
+  } catch {
+    // Non-manifold topology: keep the legacy collider.
+  }
+  return api.ColliderDesc.trimesh(shape.vertices, shape.indices)
+}
+
+/** Line segments of every collider (Rapier debug render), world metres; colours RGBA. */
+export interface CollisionDebugLines {
+  vertices: Float32Array
+  colors: Float32Array
 }
 
 /**
@@ -1087,6 +1130,11 @@ export class World {
       callback(result)
       return true
     })
+  }
+  /** Wireframe of every collider (Rapier debug render). Copies, so they survive the next step. */
+  debugLines(): CollisionDebugLines {
+    const buffers = this.raw.debugRender()
+    return { vertices: new Float32Array(buffers.vertices), colors: new Float32Array(buffers.colors) }
   }
   step(dt: number) {
     this.raw.gravity = this.gravity

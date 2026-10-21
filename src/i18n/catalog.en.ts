@@ -301,6 +301,7 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.copy-json': 'Copy JSON',
   'settings.current-vehicle': 'Current vehicle',
   'settings.date-and-time': 'Date and time',
+  'settings.show-collision': 'Show collision',
   'settings.development': 'Development',
   'settings.diagnostics': 'Diagnostics',
   'settings.display': 'Display',

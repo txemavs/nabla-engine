@@ -95,6 +95,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-sign-shadows', 'dev'],
   ['settings-experimental-light-shadows', 'dev'],
   ['settings-config-planet', 'dev'],
+  ['settings-collision-debug', 'dev'],
   ['terrain-source', 'dev'],
   ['terrain-cache', 'dev'],
   ['settings-diagnostics', 'dev'],
@@ -296,6 +297,19 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         layers.querySelector(`input[data-layer="${id}"]`)?.closest('label'),
         t('settings.place-names'),
       )
+  }
+
+  // Desarrollo: «Mostrar colisiones», every collider and the player capsule as lines.
+  {
+    const section = fieldset('settings-collision-debug', t('settings.show-collision'))
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.checked = runtime.collisionDebug
+    input.addEventListener('change', () => runtime.setCollisionDebug(input.checked))
+    const label = doc.createElement('label')
+    label.append(t('settings.show-collision'), input)
+    section.append(label)
+    place(section)
   }
 
   // Desarrollo: the planet config text and «Copiar config».
