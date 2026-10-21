@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { HeldWeaponPreset } from '../catalog/weapons/held-library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
+import { bowModels, buildBowModel } from './bow-model.js'
 import { ViewmodelLighting } from './viewmodel-lighting.js'
 
 const euler = (r: readonly [number, number, number]) => new THREE.Euler(r[0], r[1], r[2], 'XYZ')
@@ -26,19 +27,35 @@ export class HeldWeapon {
   constructor(readonly preset: HeldWeaponPreset) {
     this.scene.add(this.lighting.root, this.rig)
     this.rig.add(this.model)
-    this.ready = preset.model
-      ? assets.instantiate(preset.model).then((object) => {
-          if (this.disposed) return disposeObject(object)
-          const picked = preset.node ? object.getObjectByName(preset.node) : object
-          if (!picked) throw new Error(`Weapon ${preset.id}: no node "${preset.node}"`)
-          const root = new THREE.Group()
-          root.scale.setScalar(preset.scale)
-          root.add(preset.node ? picked.clone(true) : picked)
-          if (preset.node) disposeObject(object)
-          this.source = root
-          this.model.add(root)
+    const bow = preset.bowModel ? bowModels[preset.bowModel] : undefined
+    if (preset.bowModel && !bow)
+      throw new Error(`Weapon ${preset.id}: no bow model "${preset.bowModel}"`)
+    this.ready = bow
+      ? assets.instantiate(bow.url).then((object) => {
+          try {
+            if (this.disposed) return
+            // The headset bow's own meshes: same cut, scale and orientation.
+            const root = new THREE.Group()
+            root.add(buildBowModel(object, bow.model).bow)
+            this.source = root
+            this.model.add(root)
+          } finally {
+            disposeObject(object)
+          }
         })
-      : Promise.resolve()
+      : preset.model
+        ? assets.instantiate(preset.model).then((object) => {
+            if (this.disposed) return disposeObject(object)
+            const picked = preset.node ? object.getObjectByName(preset.node) : object
+            if (!picked) throw new Error(`Weapon ${preset.id}: no node "${preset.node}"`)
+            const root = new THREE.Group()
+            root.scale.setScalar(preset.scale)
+            root.add(preset.node ? picked.clone(true) : picked)
+            if (preset.node) disposeObject(object)
+            this.source = root
+            this.model.add(root)
+          })
+        : Promise.resolve()
   }
 
   set visible(value: boolean) {

@@ -31,6 +31,12 @@ const heldSchema = z
     /** Use only this named node of `model` (for example the bow without its arrow). */
     node: z.string().min(1).max(120).optional(),
     scale: z.number().finite().positive().max(10).default(1),
+    /** Bow binding id (engine bowModels, e.g. `recurve-bow`): the same bow and string cut as
+     * the headset bow; replaces `model`, `node` and `scale`. */
+    bowModel: z
+      .string()
+      .regex(/^[a-z0-9-]{1,40}$/)
+      .optional(),
     view: pose.optional(),
     world: pose.optional(),
     melee: z
@@ -46,8 +52,14 @@ const heldSchema = z
     sources: z.record(z.string(), z.string().min(1).max(600)).optional(),
   })
   .strict()
-  .refine((preset) => preset.kind === 'placeholder' || (preset.model && preset.view), {
-    message: 'melee and bow presets need model and view',
+  .refine(
+    (preset) => preset.kind === 'placeholder' || ((preset.model || preset.bowModel) && preset.view),
+    {
+      message: 'melee and bow presets need model (or bowModel) and view',
+    },
+  )
+  .refine((preset) => preset.bowModel === undefined || preset.kind === 'bow', {
+    message: 'bowModel is for bow presets',
   })
   .refine((preset) => preset.kind !== 'melee' || preset.melee, {
     message: 'melee presets need melee',
