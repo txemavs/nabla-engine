@@ -24,9 +24,14 @@ There is no second room solver or projectile raycaster. Optional `onHit` receive
 the actual solver contact point; the demo connects it to the existing target.
 Gun mechanisms and their marks/sparks remain unchanged.
 
-`game/recurve-bow-model.ts` holds the demo binding. It must stay outside
-`assets/library/weapons/**/*.json`: that namespace is the firearm preset catalog,
-whose strict validation runs when AR initializes its pistols.
+The demo binding (`recurveBow`, with `bowModels` by id) lives in
+`src/runtime/bow-model.ts` and is exported from `@nabla/engine/xr/bow`. It is
+code, not JSON, so it stays outside `assets/library/weapons/**/*.json`, the
+strictly validated firearm preset catalog. `buildBowModel(asset, descriptor)`
+does the cut and transform for every bow: AR's `XRBow` and the held bow on foot
+(a held preset with `"bowModel": "recurve-bow"`) show the same meshes. The held
+bow is visual only for now; drawing and loosing arrows needs the main-thread
+Rapier World that only XR mounts.
 
 `loadModel(url, descriptor)` uses Engine's asset library. The descriptor names the
 bow/arrow nodes, authoring-to-metre transforms and static-string triangles to
