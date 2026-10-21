@@ -42,6 +42,8 @@ const GPU_WAIT = Symbol('gpu-wait')
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Manifest file names tried per static cell (see `fetchTileManifest`). Default `manifest.json`. */
+  manifestFiles?: readonly string[]
   /**
    * URL directory serving `basis_transcoder.js` and `basis_transcoder.wasm` (shipped in
    * `assets/basis/`), used only by KTX2-compressed tile GLBs. Default `/basis/`.
@@ -1255,6 +1257,7 @@ export class PlanetWorld {
             signal: this.controller.signal,
             cors: true,
             missingStatuses: [403, 404],
+            manifestFiles: this.sourceOptions.manifestFiles,
             onMissing: (value) => (status = value),
             packageLoader: this.sourceOptions.packageLoader,
             atlas: this.sourceOptions.atlas && {
