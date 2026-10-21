@@ -10,25 +10,33 @@
 - `../../entity/coords.js`
 - `./weapon-source.js`
 
-## callback@49
+## callback@56
 
-[Implementation, line 49](../../../../../src/catalog/weapons/held-library.ts#L49)
+[Implementation, line 56](../../../../../src/catalog/weapons/held-library.ts#L56)
 
 ```ts
-callback@49(preset): inferred by TypeScript; see implementation
+callback@56(preset): inferred by TypeScript; see implementation
 ```
 
-## callback@52
+## callback@61
 
-[Implementation, line 52](../../../../../src/catalog/weapons/held-library.ts#L52)
+[Implementation, line 61](../../../../../src/catalog/weapons/held-library.ts#L61)
 
 ```ts
-callback@52(preset): inferred by TypeScript; see implementation
+callback@61(preset): inferred by TypeScript; see implementation
+```
+
+## callback@64
+
+[Implementation, line 64](../../../../../src/catalog/weapons/held-library.ts#L64)
+
+```ts
+callback@64(preset): inferred by TypeScript; see implementation
 ```
 
 ## isHeldWeaponSource
 
-[Implementation, line 58](../../../../../src/catalog/weapons/held-library.ts#L58)
+[Implementation, line 70](../../../../../src/catalog/weapons/held-library.ts#L70)
 
 ```ts
 isHeldWeaponSource(data: unknown): boolean
@@ -36,7 +44,7 @@ isHeldWeaponSource(data: unknown): boolean
 
 ## heldWeaponPresets
 
-[Implementation, line 65](../../../../../src/catalog/weapons/held-library.ts#L65)
+[Implementation, line 77](../../../../../src/catalog/weapons/held-library.ts#L77)
 
 Melee, bow and placeholder presets found at startup.
 
@@ -57,12 +65,12 @@ Explicit throws in this body:
 
 - `new Error(\`Weapon preset ${source.file} is invalid\`, { cause: error })`
 
-## heldWeaponPresets.callback@76
+## heldWeaponPresets.callback@88
 
-[Implementation, line 76](../../../../../src/catalog/weapons/held-library.ts#L76)
+[Implementation, line 88](../../../../../src/catalog/weapons/held-library.ts#L88)
 
 ```ts
-callback@76(a, b): inferred by TypeScript; see implementation
+callback@88(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -71,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseHeldWeaponPreset
 
-[Implementation, line 81](../../../../../src/catalog/weapons/held-library.ts#L81)
+[Implementation, line 93](../../../../../src/catalog/weapons/held-library.ts#L93)
 
 Parse one held preset; for tests and hosts that build presets in code.
 
