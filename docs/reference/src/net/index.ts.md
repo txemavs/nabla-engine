@@ -13,6 +13,7 @@ Multiplayer building blocks: wire protocol, transports, snapshot sync and interp
 - `./websocket-transport.js`
 - `./interpolation.js`
 - `./remote-vehicle.js`
+- `./remote-avatar.js`
 - `./snapshot-sync.js`
 - `./net-worker.js`
 - `./net-worker-host.js`

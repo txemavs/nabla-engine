@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **596 modules; 7324 executable function definitions**.
+Coverage: **597 modules; 7361 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -53,7 +53,6 @@ Coverage: **596 modules; 7324 executable function definitions**.
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/recurve-bow-model.ts](game/recurve-bow-model.ts.md) | 0 |
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
-| [game/scenario-menu.ts](game/scenario-menu.ts.md) | 1 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 114 |
@@ -196,13 +195,14 @@ Coverage: **596 modules; 7324 executable function definitions**.
 | [src/math/solid/mesh.ts](src/math/solid/mesh.ts.md) | 26 |
 | [src/math/terrain/heightfield.ts](src/math/terrain/heightfield.ts.md) | 5 |
 | [src/net/index.ts](src/net/index.ts.md) | 0 |
-| [src/net/interpolation.ts](src/net/interpolation.ts.md) | 12 |
+| [src/net/interpolation.ts](src/net/interpolation.ts.md) | 18 |
 | [src/net/net-worker-host.ts](src/net/net-worker-host.ts.md) | 14 |
 | [src/net/net-worker.ts](src/net/net-worker.ts.md) | 19 |
 | [src/net/net.worker.ts](src/net/net.worker.ts.md) | 0 |
-| [src/net/protocol.ts](src/net/protocol.ts.md) | 9 |
+| [src/net/protocol.ts](src/net/protocol.ts.md) | 13 |
+| [src/net/remote-avatar.ts](src/net/remote-avatar.ts.md) | 5 |
 | [src/net/remote-vehicle.ts](src/net/remote-vehicle.ts.md) | 4 |
-| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 21 |
+| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 26 |
 | [src/net/transport.ts](src/net/transport.ts.md) | 10 |
 | [src/net/websocket-transport.ts](src/net/websocket-transport.ts.md) | 13 |
 | [src/planet/assemble/aeroway.ts](src/planet/assemble/aeroway.ts.md) | 5 |
@@ -296,6 +296,7 @@ Coverage: **596 modules; 7324 executable function definitions**.
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 14 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
+| [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 12 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
@@ -313,7 +314,7 @@ Coverage: **596 modules; 7324 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 29 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 159 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 162 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
@@ -414,7 +415,7 @@ Coverage: **596 modules; 7324 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 496 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 499 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |

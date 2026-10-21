@@ -89,9 +89,61 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Object.keys`
 
+## wrapAngle
+
+[Implementation, line 104](../../../../src/net/protocol.ts#L104)
+
+Angle wrapped to (−π, π].
+
+```ts
+wrapAngle(angle: number): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+
+## quantizeAvatar
+
+[Implementation, line 111](../../../../src/net/protocol.ts#L111)
+
+Wire form of an avatar sample: 1 cm position, 1 mrad yaw (wrapped), 1 cm/s speed.
+
+```ts
+quantizeAvatar(sample: AvatarSample): AvatarBlock
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Math.round`
+- `fix`
+- `wrapAngle`
+
+## quantizeAvatar.fix
+
+[Implementation, line 112](../../../../src/net/protocol.ts#L112)
+
+```ts
+fix(v: number, digits: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `v.toFixed`
+
+## decodeAvatar
+
+[Implementation, line 121](../../../../src/net/protocol.ts#L121)
+
+```ts
+decodeAvatar(block: AvatarBlock): AvatarSample
+```
+
 ## encodeMessage
 
-[Implementation, line 131](../../../../src/net/protocol.ts#L131)
+[Implementation, line 185](../../../../src/net/protocol.ts#L185)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -103,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 136](../../../../src/net/protocol.ts#L136)
+[Implementation, line 190](../../../../src/net/protocol.ts#L190)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -118,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 146](../../../../src/net/protocol.ts#L146)
+[Implementation, line 200](../../../../src/net/protocol.ts#L200)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

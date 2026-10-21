@@ -66,18 +66,43 @@ function validWheels(w) {
   )
 }
 
-function validSnapshot(message) {
-  const s = message.state
+function validState(s) {
   return (
-    Number.isFinite(message.t) &&
-    Number.isInteger(message.seq) &&
-    message.seq >= 0 &&
-    s &&
+    !!s &&
     finiteArray(s.position, 3) &&
     finiteArray(s.rotation, 4) &&
     finiteArray(s.velocity, 3) &&
     finiteArray(s.angularVelocity, 3) &&
-    validWheels(s.wheels) &&
+    validWheels(s.wheels)
+  )
+}
+
+/** Optional on-foot body block: p (feet, 3 numbers), y (yaw), s (speed >= 0), a (0..63). */
+function validAvatar(a) {
+  return (
+    !!a &&
+    typeof a === 'object' &&
+    finiteArray(a.p, 3) &&
+    Number.isFinite(a.y) &&
+    Number.isFinite(a.s) &&
+    a.s >= 0 &&
+    Number.isInteger(a.a) &&
+    a.a >= 0 &&
+    a.a <= 63
+  )
+}
+
+/** A snapshot carries a vehicle state, an on-foot avatar block, or both. */
+function validSnapshot(message) {
+  const hasState = message.state !== undefined
+  const hasAvatar = message.avatar !== undefined
+  return (
+    Number.isFinite(message.t) &&
+    Number.isInteger(message.seq) &&
+    message.seq >= 0 &&
+    (hasState || hasAvatar) &&
+    (!hasState || validState(message.state)) &&
+    (!hasAvatar || validAvatar(message.avatar)) &&
     validExtra(message.extra)
   )
 }
@@ -213,14 +238,24 @@ export function startRelay({
       } else if (message.type === 'snapshot') {
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || !validSnapshot(message)) return
-        member.position = message.state.position
+        member.position = message.state ? message.state.position : message.avatar.p
         member.positionAt = Date.now()
         forward(state.room, socket, member.position, {
           type: 'snapshot',
           peer: member.peer,
           t: message.t,
           seq: message.seq,
-          state: message.state,
+          ...(message.state ? { state: message.state } : {}),
+          ...(message.avatar
+            ? {
+                avatar: {
+                  p: message.avatar.p,
+                  y: message.avatar.y,
+                  s: message.avatar.s,
+                  a: message.avatar.a,
+                },
+              }
+            : {}),
           ...(message.extra ? { extra: message.extra } : {}),
         })
       } else if (message.type === 'event') {

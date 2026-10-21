@@ -2,8 +2,9 @@
 
 A dependency-light WebSocket relay for the engine's snapshot sync (`@nabla/engine/net`).
 It holds no game state: peers `join` a room, receive a `welcome` with their peer id and the
-current members, and every `snapshot` is forwarded to the other members with the sender's
-peer id stamped by the relay. Protocol: `src/net/protocol.ts`.
+current members, and every `snapshot` (a vehicle `state`, an on-foot `avatar` block
+`{p, y, s, a}`, or both; older clients ignore state-less ones) is forwarded to the other
+members with the sender's peer id stamped by the relay. Protocol: `src/net/protocol.ts`.
 
 ```sh
 cd services/relay && npm install && npm test
