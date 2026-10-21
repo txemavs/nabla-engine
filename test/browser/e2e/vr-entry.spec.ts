@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-test('PC VR entry appears before the clock only with ?vr=pc and immersive VR support', async ({
+test('PC VR entry appears before the clock with ?vr=pc and is dimmed with a reason without VR', async ({
   page,
 }) => {
   await page.route('**/vr-entry-check?vr=pc', (r) =>
@@ -32,7 +32,8 @@ test('PC VR entry appears before the clock only with ?vr=pc and immersive VR sup
     ;(navigator.xr as any).isSessionSupported = async () => false
     navigator.xr!.dispatchEvent(new Event('devicechange'))
   })
-  await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
+  await expect(page.locator('#euskadi-enter-vr')).toHaveAttribute('aria-disabled', 'true')
+  await expect(page.locator('#euskadi-enter-vr')).toHaveAttribute('title', /No hay casco VR/)
 })
 
 test('the normal game never touches navigator.xr', async ({ page }) => {
