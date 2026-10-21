@@ -416,6 +416,11 @@ export interface GameRuntimeOptions {
    * Omit for the default WebGL renderer, created here exactly as before.
    */
   backend?: RenderBackend
+  /**
+   * Image shown in the headset while the game prepares its first XR frame (e.g. the host logo).
+   * WebXR cannot replace the browser's own loading environment; this replaces it at once.
+   */
+  xrSplashUrl?: string
   /** Desktop FSR 1 upscaling, opt-in; immersive XR bypasses it. */
   fsr?: Partial<FsrSettings>
   /** Opt-in stall/shader capture; disabled during normal play. */
@@ -1296,12 +1301,17 @@ export class GameRuntime {
     })
     return this.xrLoading
   }
+  /** The XR system once {@link loadXR} has resolved, so a click can enter without awaiting. */
+  get loadedXR(): GameXR | null {
+    return this.xrSystem
+  }
   private createXR(parts: XRParts): GameXR {
     let desktopView:
       Pick<GameCameraState, 'mode' | 'firstPerson' | 'bodycam' | 'pitch' | 'headPitch'> | undefined
     const desktopSunVisible = this.sun.visible
     this.xrGrab = new parts.XRGrab(this.scene)
     this.xrForklift = new parts.XRForklift()
+    const splash = new parts.XRSplash(this.options.xrSplashUrl)
     const xr = new parts.GameXR(
       this.renderer,
       this.camera,
@@ -1321,10 +1331,25 @@ export class GameRuntime {
           const { mode, firstPerson, bodycam, pitch, headPitch } = this.cameraState
           desktopView = { mode, firstPerson, bodycam, pitch, headPitch }
           this.stopAttract()
+          // Submit frames from the first XR callback: the splash until the scene's shaders are
+          // compiled for the headset views, so the browser's loading room never stalls.
+          let warm = false
+          let frames = 0
+          splash.reset()
+          void this.renderer
+            .compileAsync(this.scene, this.camera)
+            .catch(() => {})
+            .then(() => {
+              warm = true
+            })
           this.renderer.setAnimationLoop((time, frame) => {
             if (!frame || this.disposed) return
             try {
               xr.update(frame)
+              if (!warm) {
+                splash.render(this.renderer, this.camera, ++frames > 1)
+                return
+              }
               this.frameXR(time)
             } catch (error) {
               this.pause()

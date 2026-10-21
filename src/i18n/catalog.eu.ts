@@ -479,5 +479,6 @@ export const engineEu: Readonly<Record<string, string>> = {
     'Ezin izan dira eskularruak kargatu; oinarrizko eskuak mantentzen dira.',
   'vr.virtual-reality': 'Errealitate birtuala',
   'vr.vr-not-available': 'VR ez dago erabilgarri',
+  'vr.waiting-headset': 'Jarri kaskoa eta egiaztatu Quest Link aktibo dagoela',
   'vr.x-open-close-grab-the-frame-to-place-it': 'X: ireki/itxi · Heldu markoa kokatzeko',
 }

@@ -244,6 +244,7 @@ try {
         })
   runtime = new GameRuntime({
     backend,
+    xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
