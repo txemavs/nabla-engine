@@ -274,3 +274,176 @@ export const MAIN_MENU_CSS = [
   `.nabla-start-entry svg { width:24px;height:24px; }`,
   `.nabla-start-entry:hover,.nabla-start-entry:focus-visible { color:#fff;border-color:rgba(255,255,255,.5);outline:none; }`,
 ].join('')
+
+/** One item of a {@link SideMenuSection}: a link (`href`), an action (`run`) or a note line. */
+export interface SideMenuEntry {
+  id?: string
+  /** i18n key of the label (or of the note text). */
+  labelKey: string
+  href?: string
+  /** Runs inside the click (so it may start a user-gesture API, e.g. an XR session). */
+  run?: () => void
+  /** A muted text line instead of a button. */
+  note?: boolean
+  /** Keep the menu open after the action (default: it closes). */
+  keepOpen?: boolean
+}
+
+/** A titled group of entries; without `titleKey` the entries stand on their own. */
+export interface SideMenuSection {
+  id: string
+  titleKey?: string
+  entries: readonly SideMenuEntry[]
+}
+
+export interface SideMenuOptions {
+  t: MenuTranslate
+  /** Element id of the menu. Default `nabla-side-menu`. */
+  id?: string
+  /** i18n key of the menu's aria-label. */
+  labelKey: string
+  sections: readonly SideMenuSection[]
+  /** The button that opens the menu (it does not close the menu on outside presses). */
+  toggle?: () => HTMLElement | null
+  /** Class set on <body> while open. Default `nabla-side-menu-open`. */
+  bodyClass?: string
+}
+
+export interface SideMenu {
+  nav: HTMLElement
+  readonly isOpen: boolean
+  setOpen: (open: boolean) => void
+  toggle: () => void
+  /** An entry (button, link or note) by its id. */
+  entry: (id: string) => HTMLElement | null
+}
+
+/**
+ * Narrow or touch screens: the menu drops down full width under the top row and its titled
+ * sections are a tree with one open at a time. Otherwise a left side panel with every section open.
+ */
+export const SIDE_MENU_COMPACT_QUERY =
+  '(max-width: 600px), (pointer: coarse) and (max-width: 900px)'
+
+/**
+ * The game's main menu, opened by the ☰ toggle. Hosts only configure sections and entries
+ * (i18n keys, links, actions); look: {@link SIDE_MENU_CSS} and the shared `.nabla-btn` buttons.
+ */
+export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu {
+  const nav = doc.createElement('nav')
+  nav.className = 'nabla-side-menu'
+  nav.id = options.id || 'nabla-side-menu'
+  nav.hidden = true
+  nav.setAttribute('aria-label', options.t(options.labelKey))
+  const bodyClass = options.bodyClass || 'nabla-side-menu-open'
+  const entries = new Map<string, HTMLElement>()
+  const groups: HTMLDetailsElement[] = []
+  const setOpen = (open: boolean) => {
+    nav.hidden = !open
+    doc.body.classList.toggle(bodyClass, open)
+    options.toggle?.()?.setAttribute('aria-expanded', String(open))
+    if (open) doc.exitPointerLock?.()
+  }
+  for (const section of options.sections) {
+    let box: HTMLElement
+    if (section.titleKey) {
+      const group = doc.createElement('details')
+      const title = doc.createElement('summary')
+      title.className = 'nabla-side-menu-title'
+      title.textContent = options.t(section.titleKey)
+      group.append(title)
+      groups.push(group)
+      box = group
+    } else box = doc.createElement('div')
+    box.className = 'nabla-side-menu-section'
+    box.dataset.section = section.id
+    for (const entry of section.entries) {
+      let item: HTMLElement
+      if (entry.note) {
+        item = doc.createElement('p')
+        item.className = 'nabla-side-menu-note'
+      } else if (entry.href) {
+        const link = doc.createElement('a')
+        link.href = entry.href
+        item = link
+      } else {
+        const button = doc.createElement('button')
+        button.type = 'button'
+        item = button
+      }
+      if (!entry.note) item.className = 'nabla-btn'
+      item.textContent = options.t(entry.labelKey)
+      if (entry.run)
+        item.addEventListener('click', () => {
+          if (!entry.keepOpen) setOpen(false)
+          entry.run!()
+        })
+      if (entry.id) {
+        item.id = entry.id
+        entries.set(entry.id, item)
+      }
+      box.append(item)
+    }
+    nav.append(box)
+  }
+  // Compact: one open titled section (details[name]); wide: all open, titles are plain headings.
+  const compact = doc.defaultView?.matchMedia(SIDE_MENU_COMPACT_QUERY)
+  const layout = () => {
+    const narrow = !!compact?.matches
+    nav.classList.toggle('is-compact', narrow)
+    groups.forEach((group, i) => {
+      if (narrow) group.name = `${nav.id}-sections`
+      else group.removeAttribute('name')
+      group.open = narrow ? i === 0 : true
+    })
+  }
+  compact?.addEventListener('change', layout)
+  layout()
+  nav.addEventListener('click', (event) => {
+    const summary = (event.target as HTMLElement).closest('summary')
+    if (summary && !nav.classList.contains('is-compact')) event.preventDefault()
+  })
+  doc.addEventListener('pointerdown', (event) => {
+    const target = event.target as Node
+    if (nav.hidden || nav.contains(target) || options.toggle?.()?.contains(target)) return
+    setOpen(false)
+  })
+  if (!doc.getElementById('nabla-side-menu-css')) {
+    const style = doc.createElement('style')
+    style.id = 'nabla-side-menu-css'
+    style.textContent = SIDE_MENU_CSS
+    doc.head.append(style)
+  }
+  doc.body.append(nav)
+  return {
+    nav,
+    get isOpen() {
+      return !nav.hidden
+    },
+    setOpen,
+    toggle: () => setOpen(nav.hidden !== false),
+    entry: (id) => entries.get(id) ?? null,
+  }
+}
+
+/** Side menu look: engine theme tokens, fixed px; buttons are the shared `.nabla-btn`. */
+export const SIDE_MENU_CSS = [
+  `.nabla-side-menu { position:fixed;z-index:110;top:0;bottom:0;left:0;box-sizing:border-box;width:280px;max-width:100vw;`,
+  `overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:56px 12px 12px;`,
+  `background:var(--surface,#181818);color:var(--ink,#eee);border-right:1px solid var(--line,#333);font:14px Arial,sans-serif; }`,
+  `.nabla-side-menu[hidden] { display:none; }`,
+  `.nabla-side-menu-section { display:flex;flex-direction:column;gap:6px;margin:0;padding:0;border:0; }`,
+  `.nabla-side-menu details.nabla-side-menu-section:not([open]) { gap:0; }`,
+  `.nabla-side-menu-title { display:block;list-style:none;margin:0 0 2px;font:700 11px/16px Arial,sans-serif;`,
+  `letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#999);cursor:default; }`,
+  `.nabla-side-menu-title::-webkit-details-marker { display:none; }`,
+  `.nabla-side-menu .nabla-btn { justify-content:flex-start;align-self:stretch;box-sizing:border-box;min-width:0;text-decoration:none; }`,
+  `.nabla-side-menu-note { margin:0;font-size:12px;color:var(--muted,#999); }`,
+  // Compact: full width under the top row, the titles are tree rows (one open).
+  `.nabla-side-menu.is-compact { right:0;bottom:auto;width:auto;max-height:100dvh;padding-top:48px;border-right:0;border-bottom:1px solid var(--line,#333); }`,
+  `.nabla-side-menu.is-compact .nabla-side-menu-title { cursor:pointer;padding:6px 0;font-size:12px; }`,
+  `.nabla-side-menu.is-compact .nabla-side-menu-title::before { content:'▸';display:inline-block;width:14px; }`,
+  `.nabla-side-menu.is-compact details[open] > .nabla-side-menu-title::before { content:'▾'; }`,
+  `.nabla-side-menu.is-compact details > :not(summary) { margin-left:14px; }`,
+  `.nabla-side-menu.is-compact details > .nabla-btn { width:calc(100% - 14px); }`,
+].join('')
