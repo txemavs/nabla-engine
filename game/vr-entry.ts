@@ -6,6 +6,7 @@ import {
   playModeFromSearch,
   vrModeQuery,
 } from '@nabla/engine/runtime/settings-scope'
+import { t } from '@nabla/engine/i18n'
 
 /** The page was opened in a VR mode (`?vr=pc` PC browser + Link, `?vr=headset` in the headset). */
 export function pcVRRequested(search = location.search): boolean {
@@ -57,7 +58,7 @@ export function mountVREntry(runtime: GameRuntime): void {
   button.type = 'button'
   button.className = 'nabla-btn nabla-btn--icon'
   button.hidden = true
-  button.title = 'casco: jugar en el casco VR'
+  button.title = t('vr.enter')
   button.setAttribute('aria-label', button.title)
   button.innerHTML = icon
   let disposed = false
@@ -87,7 +88,7 @@ export function mountVREntry(runtime: GameRuntime): void {
       .loadXR()
       .then((xr) => xr.enter())
       .then(() => document.querySelector<HTMLCanvasElement>('#game-canvas')?.focus())
-      .catch((error) => say(`No se pudo entrar en VR: ${String(error)}`))
+      .catch((error) => say(t('vr.enter-failed', { error: String(error) })))
       .finally(() => {
         button.disabled = false
       })

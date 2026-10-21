@@ -4,6 +4,7 @@ import './settings-scope-boot.js'
 import { applySplashSkin, splashMessageAt } from '@nabla/engine/runtime/splash'
 import { readBootConfig } from './boot.js'
 import { resolveEntry } from './entry.js'
+import { applyDocumentLocale, t } from '@nabla/engine/i18n'
 
 const bootStatus = document.getElementById('loading-status')
 const bootMark = performance.now()
@@ -17,10 +18,11 @@ const bootSay = (text: string) => {
     bootStatus.textContent = hostSplash.messages ? splashMessageAt(hostSplash.messages, 0) : text
 }
 /** Keep the HTML from saying «Initializing...» while modules and the entry probe run. */
-bootSay('Cargando el motor…')
+applyDocumentLocale()
+bootSay(t('boot.loading-engine'))
 
 const entry = await resolveEntry()
-bootSay(entry.mode === 'terrain' ? 'Cargando el terreno…' : 'Preparando la sesión…')
+bootSay(entry.mode === 'terrain' ? t('boot.loading-terrain') : t('boot.preparing-the-session'))
 console.info(
   `[nabla-boot] entry ${entry.mode} after ${(performance.now() - bootMark).toFixed(0)}ms`,
 )

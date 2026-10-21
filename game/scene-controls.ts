@@ -25,6 +25,7 @@ import { steeringWheelControls, type SteeringWheelRuntime } from './steering-whe
 import { mirrorControls, type MirrorRuntime } from './mirror-controls.js'
 import { driverPoseControls, type DriverPoseRuntime } from './driver-pose-controls.js'
 import { assignVehicleColor } from './vehicle-colors.js'
+import { t } from '@nabla/engine/i18n'
 
 /** Sea level limits in metres, as in Studio's sea-surface controls. */
 export const SEA_RANGE = { min: -5, max: 50, step: 0.1 } as const
@@ -627,7 +628,7 @@ export function bindSceneControls(
       const object = objectChoices().find((item) => item.id === choice.value)
       if (object) {
         add.disabled = true
-        vehicleMessage.textContent = 'Cargando vehículo…'
+        vehicleMessage.textContent = t('boot.loading-vehicle')
         try {
           await runtime.spawnEntities(
             createPlaceable(object.id, `place-${object.id}`),

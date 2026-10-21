@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { describeLoading, spanishLoadError } from '../../game/loading-text.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { describeLoading, describeLoadError } from '../../game/loading-text.js'
+import { setLocale } from '@nabla/engine/i18n'
 
 const idle = { manifestsInFlight: 0, cellsInFlight: 0, installing: 0, failed: 0, missing: 0 }
 
 describe('loading text', () => {
+  beforeAll(() => setLocale('es'))
+  afterAll(() => setLocale(null))
+
   it('shows the cells ready, in flight and absent, never an index total', () => {
     const { status } = describeLoading({ loaded: 3, missing: 2, pending: 4, failed: 0 }, idle)
     expect(status).toBe(
@@ -47,7 +51,12 @@ describe('loading text', () => {
 
   it('phrases every error kind in Spanish', () => {
     const at = (kind: string, status?: number) =>
-      spanishLoadError({ kind, message: 'boom', status, url: '/t/z/15/1/2/manifest.json' } as never)
+      describeLoadError({
+        kind,
+        message: 'boom',
+        status,
+        url: '/t/z/15/1/2/manifest.json',
+      } as never)
     expect(at('http', 500)).toContain('HTTP 500')
     expect(at('timeout')).toContain('no respondió a tiempo')
     expect(at('insecure')).toContain('https')

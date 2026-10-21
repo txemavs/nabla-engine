@@ -11,6 +11,7 @@ import type {
 import type { SceneView } from '../render/entity/view.js'
 import type { GameCameraSettings } from '../config/camera.js'
 import { Scene as EffectScene, WebGLRenderTarget } from 'three'
+import { t } from '../i18n/index.js'
 
 /** Compile hidden common effects and upload their buffers in an offscreen draw before play. */
 export async function warmEffectPresentation(
@@ -70,19 +71,19 @@ export async function warmGamePresentation(target: PresentationWarmup): Promise<
   const fov = camera.fov
   try {
     signal?.throwIfAborted()
-    await target.onProgress?.('Compilando shaders: vista exterior')
+    await target.onProgress?.(t('load.preparing-exterior-shaders'))
     camera.fov = settings.chaseFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     signal?.throwIfAborted()
-    await target.onProgress?.('Compilando shaders: cabina')
+    await target.onProgress?.(t('load.preparing-cockpit-shaders'))
     camera.fov = settings.firstPersonFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     const now = performance.now()
     for (const id of view.mirroredVehicles) {
       signal?.throwIfAborted()
-      await target.onProgress?.('Preparando espejos: ' + id)
+      await target.onProgress?.(t('load.mirrors', { id }))
       view.renderMirrors(renderer as WebGLRenderer, scene, camera, id, now)
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
     }

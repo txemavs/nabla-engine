@@ -99,6 +99,10 @@
       "types": "./dist/runtime/settings-scope.d.ts",
       "import": "./dist/runtime/settings-scope.js"
     },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    },
     "./runtime/corner-buttons": {
       "types": "./dist/runtime/corner-buttons.d.ts",
       "import": "./dist/runtime/corner-buttons.js"

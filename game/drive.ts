@@ -246,7 +246,6 @@ try {
     backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
-    locale: 'es',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     gravityScale: resolveGravityScale(),
