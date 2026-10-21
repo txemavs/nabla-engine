@@ -176,7 +176,23 @@ export class GameRuntime {
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
     const ticks = sim.stats.ticks
-    this.session.step(elapsed, { ...input, jump: input.jump || this.jumpRequested }, waterLevel)
+    const stepped = this.session.step(
+      elapsed,
+      { ...input, jump: input.jump || this.jumpRequested },
+      waterLevel,
+    )
+    // A worker-hosted simulation resolves later; the rest of the frame waits for it.
+    if (stepped) return stepped.then(() => this.afterStep(sim, ticks, elapsed, now, document))
+    return this.afterStep(sim, ticks, elapsed, now, document)
+  }
+  /** Boarding and portal bookkeeping once the step has run. */
+  private afterStep(
+    sim: NonNullable<GameRuntime['simulation']>,
+    ticks: number,
+    elapsed: number,
+    now: number,
+    document: SceneDocument,
+  ) {
     if (sim.stats.ticks !== ticks) this.jumpRequested = false
     const crossing = sim.portalEvent
     let event: typeof crossing = null

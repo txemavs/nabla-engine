@@ -24,6 +24,7 @@ Spanish interface; UI labels are quoted where needed to locate a control.
 | [Vehicle control profiles](vehicle-controls.md)  | Pick the touch rig and HUD per vehicle; register new types       |
 | [Videotiro review](videotiro-review.md)          | Understand the original layered scenarios and proposed reuse     |
 | [Architecture](architecture.md)                  | Understand ownership, units, scene validation and simulation     |
+| [Physics worker](physics-worker.md)              | Run physics in a Web Worker (`?physicsWorker=1`) and measure it  |
 | [Vehicle assets](vehicle-assets.md)              | Understand the original models, mounts and carrier physics       |
 | [Geography](geography.md)                        | Understand GPS, maps, planetary scale, horizon and the sky clock |
 | [Experimental drone](experimental-betaflight.md) | Run the Agency quad controller in the shared AR room physics     |

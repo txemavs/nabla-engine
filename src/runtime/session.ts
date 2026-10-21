@@ -6,12 +6,19 @@
 import { simulationDefaults } from '../config/simulation.js'
 import { initPhysics } from '../simulation/physics.js'
 import { Simulation, idleInput, type PlayerInput } from '../simulation/simulation.js'
+import {
+  ThreadedSimulation,
+  physicsWorkerEnabled,
+  threadedSimulation,
+} from '../simulation/threaded-simulation.js'
 import type { SceneDocument } from '../scene/document.js'
 
 export type SessionState = 'stopped' | 'loading' | 'playing' | 'paused' | 'disposed'
 export type PlayOptions = NonNullable<ConstructorParameters<typeof Simulation>[1]> & {
   vehicleId?: string
   collisionDistance?: number
+  /** Host the simulation in a Web Worker. Defaults to the `?physicsWorker=1` URL switch. */
+  physicsWorker?: boolean
 }
 
 /** One simulation per play session. No DOM, renderer, input listeners or private clock.
@@ -41,16 +48,24 @@ export class PlaySession {
     this.stop()
     const generation = ++this.generation
     const scene = structuredClone(document)
-    const settings = { ...options }
+    const { physicsWorker = physicsWorkerEnabled(), ...settings } = options
     this.phase = 'loading'
     try {
       await initPhysics()
       if (generation !== this.generation) throw new Error('Play session cancelled')
-      const simulation = new Simulation(scene, settings)
+      const simulation = physicsWorker
+        ? await ThreadedSimulation.start(scene, settings)
+        : new Simulation(scene, settings)
+      if (generation !== this.generation) {
+        simulation.dispose()
+        throw new Error('Play session cancelled')
+      }
       try {
         if (settings.collisionDistance !== undefined)
           simulation.setCollisionDistance(settings.collisionDistance)
         if (settings.vehicleId) simulation.startInVehicle(settings.vehicleId)
+        // Worker commands are asynchronous: wait for their state before handing the sim out.
+        await threadedSimulation(simulation)?.refresh()
       } catch (error) {
         simulation.dispose()
         throw error
@@ -64,14 +79,18 @@ export class PlaySession {
     }
   }
 
-  /** Call once from the owning runtime's frame. Paused time is never accumulated. */
-  step(elapsed: number, input: PlayerInput = idleInput(), waterLevel = 0): void {
+  /**
+   * Call once from the owning runtime's frame. Paused time is never accumulated.
+   * Inline physics steps synchronously; a worker-hosted simulation returns a promise the frame
+   * awaits before rendering.
+   */
+  step(elapsed: number, input: PlayerInput = idleInput(), waterLevel = 0): void | Promise<void> {
     this.assertAlive()
     if (this.phase !== 'playing' || !this.current) return
     if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error('Invalid frame duration')
     this.current.setInput(input)
     this.current.setWaterLevel(waterLevel)
-    this.current.step(Math.min(elapsed, simulationDefaults.maxFrameSeconds))
+    return this.current.step(Math.min(elapsed, simulationDefaults.maxFrameSeconds))
   }
 
   /** Clear movement commands and suspend stepping; retain the simulation for resume. */

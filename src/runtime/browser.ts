@@ -502,6 +502,10 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
   }
 }
 
+/** A frame that yields the game step result (a promise when physics runs in a worker). */
+type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
+type FrameSteps = Generator<unknown, void, unknown>
+
 export class GameRuntime {
   readonly xr: GameXR
   readonly game = new SharedGameRuntime()
@@ -1456,6 +1460,45 @@ export class GameRuntime {
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
   private frameXR(time: number): void {
+    GameRuntime.prototype.driveFrame.call(this, GameRuntime.prototype.frameXRSteps.call(this, time))
+  }
+  /**
+   * Advance a frame generator. Inline physics returns plain values and the whole frame runs
+   * synchronously, exactly as before. A worker step yields a promise: the frame resumes (and
+   * renders) when it resolves, and frames requested meanwhile are skipped.
+   */
+  private frameBusy = false
+  private driveFrame(steps: FrameSteps, resumed = false, sent?: unknown): void {
+    if (this.frameBusy && !resumed) return
+    for (let next = steps.next(sent); !next.done; next = steps.next(sent)) {
+      const value = next.value
+      if (value instanceof Promise) {
+        this.frameBusy = true
+        value.then(
+          (result: unknown) => {
+            this.frameBusy = false
+            // Stopped or paused while the worker stepped: drop the rest of this frame.
+            if (this.disposed || this.session.state !== 'playing') return
+            try {
+              GameRuntime.prototype.driveFrame.call(this, steps, true, result)
+            } catch (error) {
+              this.pause()
+              this.options.onError?.(error)
+            }
+          },
+          (error: unknown) => {
+            this.frameBusy = false
+            if (this.disposed || this.session.state !== 'playing') return
+            this.pause()
+            this.options.onError?.(error)
+          },
+        )
+        return
+      }
+      sent = value
+    }
+  }
+  private *frameXRSteps(time: number): FrameSteps {
     const started = performance.now()
     const sim = this.session.simulation
     if (!sim || this.session.state !== 'playing') return
@@ -1588,7 +1631,7 @@ export class GameRuntime {
     }
     const water = worldWater(this.document.water, this.document.sky)
     const physicsStarted = performance.now()
-    this.game.step(dt, input, water.level, time)
+    yield this.game.step(dt, input, water.level, time)
     const physicsMs = performance.now() - physicsStarted
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.sync(sim, dt, true, 0, 0)
@@ -1775,7 +1818,12 @@ export class GameRuntime {
     })
   }
 
+  /** Run one desktop frame; with the physics worker it pauses at the step until the state arrives. */
   private frame(time: number): void {
+    // Called through the prototype so hosts and tests may invoke it on a partial runtime.
+    GameRuntime.prototype.driveFrame.call(this, GameRuntime.prototype.frameSteps.call(this, time))
+  }
+  private *frameSteps(time: number): FrameSteps {
     const sim = this.session.simulation
     if (this.disposed || !sim || this.session.state !== 'playing') return
     if (!Number.isFinite(time)) throw new Error('Invalid frame time')
@@ -1921,7 +1969,7 @@ export class GameRuntime {
     const water = worldWater(this.document.water, this.document.sky)
     this.environment.ocean.setLevel(water.level)
     const physicsStart = performance.now()
-    const crossing = this.game.step(dt, input, water.level, time)
+    const crossing = (yield this.game.step(dt, input, water.level, time)) as StepResult
     this.usbFeedback.update(
       vehicleId ? sim.vehicleFeedback(vehicleId) : null,
       availableGamepads(),
