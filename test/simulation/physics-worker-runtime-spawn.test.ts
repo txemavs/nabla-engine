@@ -93,4 +93,13 @@ describe('physics worker: entities spawned at runtime', () => {
     }
     close()
   })
+
+  it('answers setGravityScale with the value used (menu slider read undefined)', async () => {
+    const { sim, close } = await threaded()
+    expect(sim.setGravityScale(1.5)).toBe(1.5)
+    expect(sim.gravityScale).toBe(1.5)
+    expect(sim.setGravityScale(Number.NaN)).toBe(1)
+    await expect(sim.step(1 / 60)).resolves.toBeUndefined()
+    close()
+  })
 })
