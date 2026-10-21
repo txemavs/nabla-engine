@@ -23,6 +23,10 @@ export const basqueMessages: Readonly<Record<string, string>> = {
   'Dipped beams': 'Gurutzatze-argiak',
   'Automatic lights': 'Argi automatikoak',
   'Weapon holstered': 'Arma gordeta',
+  'coming soon': 'laster',
+  'hold left click to draw, release to shoot':
+    'eutsi ezkerreko klikari tenkatzeko, askatu jaurtitzeko',
+  'left click: strike': 'ezkerreko klika: kolpea',
   'Weapon drawn': 'Arma aterata',
   'Laser on': 'Laserra piztuta',
   'Laser off': 'Laserra itzalita',

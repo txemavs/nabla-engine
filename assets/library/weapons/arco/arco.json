@@ -1,0 +1,34 @@
+{
+  "id": "arco",
+  "name": "Arco",
+  "kind": "bow",
+  "slot": 4,
+  "bowModel": "arco",
+  "view": {
+    "position": [
+      -0.2,
+      -0.15,
+      -0.5
+    ],
+    "rotation": [
+      0,
+      0,
+      0.2
+    ]
+  },
+  "world": {
+    "position": [
+      -0.3,
+      1.1,
+      -0.35
+    ],
+    "rotation": [
+      0,
+      0,
+      0
+    ]
+  },
+  "sources": {
+    "model": "Engine bow binding arco (src/runtime/bow-model.ts), the same bow as the headset XRBow; original model, assets/library/weapons/arco/README.md"
+  }
+}

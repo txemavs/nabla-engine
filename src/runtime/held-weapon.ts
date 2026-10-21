@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { HeldWeaponPreset } from '../catalog/weapons/held-library.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
+import { bowModels, bowString, buildBowModel, createBowString, setBowString } from './bow-model.js'
 import { ViewmodelLighting } from './viewmodel-lighting.js'
 
 const euler = (r: readonly [number, number, number]) => new THREE.Euler(r[0], r[1], r[2], 'XYZ')
@@ -22,23 +23,49 @@ export class HeldWeapon {
   private swingStart = -Infinity
   private enabled = false
   private disposed = false
+  private bowLine: THREE.Line | null = null
+  private nocked: THREE.Object3D | null = null
+  /** The bow's own arrow mesh (bow presets), for hosts that show loosed arrows. */
+  arrowTemplate: THREE.Mesh | null = null
 
   constructor(readonly preset: HeldWeaponPreset) {
     this.scene.add(this.lighting.root, this.rig)
     this.rig.add(this.model)
-    this.ready = preset.model
-      ? assets.instantiate(preset.model).then((object) => {
-          if (this.disposed) return disposeObject(object)
-          const picked = preset.node ? object.getObjectByName(preset.node) : object
-          if (!picked) throw new Error(`Weapon ${preset.id}: no node "${preset.node}"`)
-          const root = new THREE.Group()
-          root.scale.setScalar(preset.scale)
-          root.add(preset.node ? picked.clone(true) : picked)
-          if (preset.node) disposeObject(object)
-          this.source = root
-          this.model.add(root)
+    const bow = preset.bowModel ? bowModels[preset.bowModel] : undefined
+    if (preset.bowModel && !bow)
+      throw new Error(`Weapon ${preset.id}: no bow model "${preset.bowModel}"`)
+    this.ready = bow
+      ? assets.instantiate(bow.url).then((object) => {
+          try {
+            if (this.disposed) return
+            // The headset bow's own meshes: same cut, scale and orientation.
+            const root = new THREE.Group()
+            const parts = buildBowModel(object, bow.model)
+            root.add(parts.bow)
+            this.arrowTemplate = parts.arrow
+            this.bowLine = createBowString()
+            this.nocked = parts.arrow.clone()
+            this.nocked.visible = false
+            root.add(this.bowLine, this.nocked)
+            this.source = root
+            this.model.add(root)
+          } finally {
+            disposeObject(object)
+          }
         })
-      : Promise.resolve()
+      : preset.model
+        ? assets.instantiate(preset.model).then((object) => {
+            if (this.disposed) return disposeObject(object)
+            const picked = preset.node ? object.getObjectByName(preset.node) : object
+            if (!picked) throw new Error(`Weapon ${preset.id}: no node "${preset.node}"`)
+            const root = new THREE.Group()
+            root.scale.setScalar(preset.scale)
+            root.add(preset.node ? picked.clone(true) : picked)
+            if (preset.node) disposeObject(object)
+            this.source = root
+            this.model.add(root)
+          })
+        : Promise.resolve()
   }
 
   set visible(value: boolean) {
@@ -79,6 +106,16 @@ export class HeldWeapon {
         new THREE.Quaternion().setFromEuler(euler([arc[0] * s, arc[1] * s, arc[2] * s])),
       )
     }
+  }
+
+  /** Show the draw (metres of pull, 0 at rest) on the string and the nocked arrow. */
+  setDraw(distance: number): void {
+    if (!this.bowLine || !this.nocked) return
+    const pull = Number.isFinite(distance) ? Math.max(0, distance) : 0
+    const nock = new THREE.Vector3(0, 0, bowString.restZ + pull)
+    setBowString(this.bowLine, nock)
+    this.nocked.visible = pull > 0
+    this.nocked.position.set(0, 0, nock.z - bowString.arrowLead)
   }
 
   /** Third-person copy on the avatar; hidden in first person. */

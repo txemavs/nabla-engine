@@ -9,11 +9,12 @@
 - `three`
 - `../catalog/weapons/held-library.js`
 - `../render/entity/assets.js`
+- `./bow-model.js`
 - `./viewmodel-lighting.js`
 
 ## euler
 
-[Implementation, line 6](../../../../src/runtime/held-weapon.ts#L6)
+[Implementation, line 7](../../../../src/runtime/held-weapon.ts#L7)
 
 ```ts
 euler(r: readonly [number, number, number]): inferred by TypeScript; see implementation
@@ -25,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldWeapon.constructor
 
-[Implementation, line 26](../../../../src/runtime/held-weapon.ts#L26)
+[Implementation, line 31](../../../../src/runtime/held-weapon.ts#L31)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.
@@ -37,18 +38,42 @@ constructor(readonly preset: HeldWeaponPreset): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Error`
 - `Promise.resolve`
 - `assets.instantiate`
+- `assets.instantiate(bow.url).then`
 - `assets.instantiate(preset.model).then`
 - `this.rig.add`
 - `this.scene.add`
 
-## HeldWeapon.constructor.callback@30
+Explicit throws in this body:
 
-[Implementation, line 30](../../../../src/runtime/held-weapon.ts#L30)
+- `new Error(\`Weapon ${preset.id}: no bow model "${preset.bowModel}"\`)`
+
+## HeldWeapon.constructor.callback@38
+
+[Implementation, line 38](../../../../src/runtime/held-weapon.ts#L38)
 
 ```ts
-callback@30(object): inferred by TypeScript; see implementation
+callback@38(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Group`
+- `buildBowModel`
+- `createBowString`
+- `disposeObject`
+- `parts.arrow.clone`
+- `root.add`
+- `this.model.add`
+
+## HeldWeapon.constructor.callback@57
+
+[Implementation, line 57](../../../../src/runtime/held-weapon.ts#L57)
+
+```ts
+callback@57(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -68,7 +93,7 @@ Explicit throws in this body:
 
 ## HeldWeapon.visible
 
-[Implementation, line 44](../../../../src/runtime/held-weapon.ts#L44)
+[Implementation, line 71](../../../../src/runtime/held-weapon.ts#L71)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.
@@ -80,7 +105,7 @@ visible(value: boolean): inferred by TypeScript; see implementation
 
 ## HeldWeapon.visible
 
-[Implementation, line 48](../../../../src/runtime/held-weapon.ts#L48)
+[Implementation, line 75](../../../../src/runtime/held-weapon.ts#L75)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.
@@ -92,7 +117,7 @@ visible(): boolean
 
 ## HeldWeapon.swinging
 
-[Implementation, line 52](../../../../src/runtime/held-weapon.ts#L52)
+[Implementation, line 79](../../../../src/runtime/held-weapon.ts#L79)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.
@@ -109,7 +134,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldWeapon.swing
 
-[Implementation, line 57](../../../../src/runtime/held-weapon.ts#L57)
+[Implementation, line 84](../../../../src/runtime/held-weapon.ts#L84)
 
 Start a swing; false while one is in progress or for non-melee weapons.
 
@@ -123,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldWeapon.swingProgress
 
-[Implementation, line 64](../../../../src/runtime/held-weapon.ts#L64)
+[Implementation, line 91](../../../../src/runtime/held-weapon.ts#L91)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.
@@ -140,7 +165,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldWeapon.pose
 
-[Implementation, line 70](../../../../src/runtime/held-weapon.ts#L70)
+[Implementation, line 97](../../../../src/runtime/held-weapon.ts#L97)
 
 Pose offset at `now`: sin-shaped arc out and back.
 
@@ -159,9 +184,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `target.quaternion.setFromEuler`
 - `this.swingProgress`
 
+## HeldWeapon.setDraw
+
+[Implementation, line 112](../../../../src/runtime/held-weapon.ts#L112)
+
+Show the draw (metres of pull, 0 at rest) on the string and the nocked arrow.
+
+```ts
+setDraw(distance: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Number.isFinite`
+- `THREE.Vector3`
+- `setBowString`
+- `this.nocked.position.set`
+
 ## HeldWeapon.syncWorld
 
-[Implementation, line 85](../../../../src/runtime/held-weapon.ts#L85)
+[Implementation, line 122](../../../../src/runtime/held-weapon.ts#L122)
 
 Third-person copy on the avatar; hidden in first person.
 
@@ -178,17 +221,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.world.add`
 - `this.world.traverse`
 
-## HeldWeapon.syncWorld.callback@94
+## HeldWeapon.syncWorld.callback@131
 
-[Implementation, line 94](../../../../src/runtime/held-weapon.ts#L94)
+[Implementation, line 131](../../../../src/runtime/held-weapon.ts#L131)
 
 ```ts
-callback@94(node): inferred by TypeScript; see implementation
+callback@131(node): inferred by TypeScript; see implementation
 ```
 
 ## HeldWeapon.render
 
-[Implementation, line 104](../../../../src/runtime/held-weapon.ts#L104)
+[Implementation, line 141](../../../../src/runtime/held-weapon.ts#L141)
 
 First-person pass over the rendered world, same contract as the sidearm viewmodel.
 
@@ -212,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## HeldWeapon.dispose
 
-[Implementation, line 139](../../../../src/runtime/held-weapon.ts#L139)
+[Implementation, line 176](../../../../src/runtime/held-weapon.ts#L176)
 
 Held non-firearm weapon (melee or bow) from its preset. First person draws it in its own
 viewmodel pass, lit by copies of the world lights; third person hangs a clone on the avatar.

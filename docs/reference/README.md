@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **597 modules; 7363 executable function definitions**.
+Coverage: **598 modules; 7384 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -51,7 +51,6 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 16 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
-| [game/recurve-bow-model.ts](game/recurve-bow-model.ts.md) | 0 |
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
@@ -128,7 +127,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/catalog/vehicles/preset-source.browser.ts](src/catalog/vehicles/preset-source.browser.ts.md) | 2 |
 | [src/catalog/vehicles/preset-source.ts](src/catalog/vehicles/preset-source.ts.md) | 5 |
 | [src/catalog/vehicles/trailer-boxes.ts](src/catalog/vehicles/trailer-boxes.ts.md) | 5 |
-| [src/catalog/weapons/held-library.ts](src/catalog/weapons/held-library.ts.md) | 6 |
+| [src/catalog/weapons/held-library.ts](src/catalog/weapons/held-library.ts.md) | 7 |
 | [src/catalog/weapons/index.ts](src/catalog/weapons/index.ts.md) | 0 |
 | [src/catalog/weapons/library.ts](src/catalog/weapons/library.ts.md) | 8 |
 | [src/catalog/weapons/slots.ts](src/catalog/weapons/slots.ts.md) | 6 |
@@ -415,7 +414,8 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 500 |
+| [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 505 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -432,7 +432,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 7 |
-| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 13 |
+| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 15 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
@@ -501,7 +501,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
 | [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 37 |
 | [src/runtime/xr-body-anchor.ts](src/runtime/xr-body-anchor.ts.md) | 3 |
-| [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 26 |
+| [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 23 |
 | [src/runtime/xr-calibration-screen.ts](src/runtime/xr-calibration-screen.ts.md) | 38 |
 | [src/runtime/xr-calibration.ts](src/runtime/xr-calibration.ts.md) | 18 |
 | [src/runtime/xr-debug.ts](src/runtime/xr-debug.ts.md) | 10 |
@@ -593,8 +593,9 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
+| [src/simulation/weapons/arrow-flight.ts](src/simulation/weapons/arrow-flight.ts.md) | 9 |
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
-| [src/simulation/weapons/bow.ts](src/simulation/weapons/bow.ts.md) | 6 |
+| [src/simulation/weapons/bow.ts](src/simulation/weapons/bow.ts.md) | 7 |
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 17 |
 | [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 17 |
 | [src/simulation/weapons/hk-variants.ts](src/simulation/weapons/hk-variants.ts.md) | 0 |
