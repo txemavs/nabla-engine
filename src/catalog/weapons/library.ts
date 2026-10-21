@@ -110,6 +110,25 @@ const presetSchema = z
     ammunition: ammunitionSchema.optional(),
     recoil: recoilSchema.optional(),
     casing: casingSchema.optional(),
+    /**
+     * Recorded sounds (URLs). `shot` replaces the synthesised gunshot; in automatic `autoLoop`
+     * loops while the trigger is held and `autoTail` plays on release. `cues` replace
+     * procedural handling sounds by name (magazine-out, magazine-in, slide-back, slide-forward).
+     */
+    audio: z
+      .object({
+        shot: z.string().min(1).max(200).optional(),
+        autoLoop: z.string().min(1).max(200).optional(),
+        autoTail: z.string().min(1).max(200).optional(),
+        cues: z
+          .partialRecord(
+            z.enum(['magazine-out', 'magazine-in', 'slide-back', 'slide-forward', 'dry']),
+            z.string().min(1).max(200),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /** Citations for the numbers above, by key. */
     sources: z.record(z.string(), z.string().min(1).max(600)).optional(),
     /** Values without a source, each marked `TODO(unverified)`. */

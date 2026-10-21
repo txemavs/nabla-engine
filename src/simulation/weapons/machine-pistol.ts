@@ -25,8 +25,9 @@ export const machinePistol = Object.freeze({
 })
 
 /** HUD label of a fire mode. */
-export function fireModeLabel(mode: FireMode): string {
-  return mode === 'burst30' ? 'EXPERIMENTAL · RÁFAGA 30' : 'SEMI'
+export function fireModeLabel(mode: FireMode, selectFire = false): string {
+  if (mode === 'semi') return 'SEMI'
+  return selectFire ? 'AUTO' : 'EXPERIMENTAL · RÁFAGA 30'
 }
 
 export function nextFireMode(mode: FireMode): FireMode {

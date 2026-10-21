@@ -10,6 +10,7 @@ import { ImpactMarks } from '../render/entity/impact-marks.js'
 import { ShotSparks } from '../render/entity/shot-sparks.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { Sidearm } from './sidearm.js'
+import { FirearmSamples } from '../audio/firearm-samples.js'
 import type { WeaponPreset } from '../catalog/weapons/library.js'
 import { XRLoadout } from './xr-loadout.js'
 import type { GameXR } from './xr.js'
@@ -27,6 +28,12 @@ export class XRARWeapons {
   readonly ready: Promise<void>
   private readonly contacts = new XRItemContacts()
   private readonly audio = new VehicleAudio()
+  private readonly samples = new Map<Sidearm, FirearmSamples>()
+  private samplesFor(weapon: Sidearm): FirearmSamples {
+    let samples = this.samples.get(weapon)
+    if (!samples) this.samples.set(weapon, (samples = new FirearmSamples(this.audio)))
+    return samples
+  }
   private readonly impacts = new ImpactMarks()
   private readonly sparks = new ShotSparks()
   private casingMotion: CasingMotion | null = null
@@ -160,8 +167,12 @@ export class XRARWeapons {
         pending.push(shot)
         if (shot.fired) {
           this.eject(weapon, false)
-          this.audio.weaponSound('hammer', barrel?.origin.toArray())
-          this.audio.gunshot(barrel?.origin.toArray(), shot.locked)
+          this.samplesFor(weapon).shot(
+            weapon.preset,
+            barrel?.origin.toArray() ?? [0, 0, 0],
+            weapon.fireMode === 'burst30',
+            !!shot.locked,
+          )
           if (barrel) {
             this.ray.set(barrel.origin, barrel.target.sub(barrel.origin).normalize())
             this.ray.far = weapon.range
@@ -171,6 +182,9 @@ export class XRARWeapons {
         }
       }
       pistol.triggerDown = down
+      const samples = this.samples.get(weapon)
+      if (samples?.looping && (!down || weapon.state.chamber === 0))
+        samples.release(weapon.worldMuzzle()?.toArray() ?? [0, 0, 0])
       for (const event of pending) {
         if (event.cartridgeEjected) this.eject(weapon, true)
         this.sound(event, weapon)
@@ -244,10 +258,11 @@ export class XRARWeapons {
 
   private sound(event: FirearmEvent, weapon: Sidearm): void {
     const position = weapon.worldMuzzle()?.toArray()
-    if (event.dry) this.audio.weaponSound('dry', position)
-    if (event.magazineDropped) this.audio.weaponSound('magazine-out', position)
-    if (event.magazineSeated) this.audio.weaponSound('magazine-in', position)
-    if (event.slideReleased) this.audio.weaponSound('slide-forward', position)
+    const samples = this.samplesFor(weapon)
+    if (event.dry) samples.cue(weapon.preset, 'dry', position)
+    if (event.magazineDropped) samples.cue(weapon.preset, 'magazine-out', position)
+    if (event.magazineSeated) samples.cue(weapon.preset, 'magazine-in', position)
+    if (event.slideReleased) samples.cue(weapon.preset, 'slide-forward', position)
     if (event.manualSlideLocked) this.audio.weaponSound('slide-lock', position)
   }
 

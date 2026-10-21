@@ -61,12 +61,16 @@ const ADS_POSE = weaponViewTuning.aimed
 
 /** Presentation rig of an assembled model (`assets/rigs/weapons/*.rig.json`). */
 interface WeaponRig {
-  parts: { slide: string; trigger: string; magazine: string }
+  parts: { slide: string; trigger: string; magazine: string; selector?: string }
   presentation: {
     slide: { axis: number[]; travel: number }
     trigger: { axis: number[]; angle: number }
     magazine: { axis: number[]; distance: number }
+    /** Fire selector lever: rotation per state, radians about `axis`. */
+    selector?: { axis: number[]; angles: { safe: number; semi: number; auto: number } }
   }
+  /** Optional sockets; `ejection` places ejected cases when the model has no ChamberExterior. */
+  sockets?: { ejection?: string }
 }
 const defaultRig: WeaponRig = {
   parts: { slide: 'Slide', trigger: 'Trigger', magazine: 'Magazine' },
@@ -128,6 +132,7 @@ export class Sidearm {
   private rig: WeaponRig = defaultRig
   private slide: Part | null = null
   private triggerPart: Part | null = null
+  private selector: Part | null = null
   private magazine: Part | null = null
   private chamberRound: THREE.Object3D | null = null
   private inspection: {
@@ -266,6 +271,10 @@ export class Sidearm {
           this.slide = part(object, this.rig.parts.slide)
           this.triggerPart = part(object, this.rig.parts.trigger)
           this.magazine = part(object, this.rig.parts.magazine)
+          this.selector = this.rig.parts.selector ? part(object, this.rig.parts.selector) : null
+          // Magazine stretch for extended magazines is relative to this weapon's own magazine.
+          if (this.magazine && preset.firearm)
+            this.magazine.object.userData.nativeCapacity = preset.firearm.magazineCapacity
           this.chamberRound = object.getObjectByName('ChamberRound') ?? null
           poseHKDetails(object, 0, this.state.magazine)
           const accessory = object.getObjectByName('LightLaserModule')
@@ -518,6 +527,10 @@ export class Sidearm {
   get fireMode(): FireMode {
     return this.mode
   }
+  /** Select-fire preset (`firearm.automaticRpm`): M toggles SEMI/AUTO without a magazine swap. */
+  get selectFire(): boolean {
+    return !!this.nativeRpm
+  }
   /** Fire mode never changes the ammunition inside an existing item. */
   setFireMode(mode: FireMode): void {
     this.mode = mode
@@ -751,11 +764,23 @@ export class Sidearm {
     )
   }
 
+  /** World pose of a rig socket: position, its +X as right and +Y as up. */
+  private socketPose(root: THREE.Object3D, name: string | undefined) {
+    const socket = name ? root.getObjectByName(name) : undefined
+    if (!socket) return null
+    socket.updateWorldMatrix(true, false)
+    return {
+      position: socket.getWorldPosition(new THREE.Vector3()),
+      right: new THREE.Vector3(1, 0, 0).transformDirection(socket.matrixWorld),
+      up: new THREE.Vector3(0, 1, 0).transformDirection(socket.matrixWorld),
+    }
+  }
+
   /** Eye-relative in first person, world-space in third person. */
   ejectionPose(firstPerson: boolean, worldFov: number) {
     const root = firstPerson ? this.model : this.worldRoot
     if (!root) return null
-    const pose = ejectionPort(root)
+    const pose = ejectionPort(root) ?? this.socketPose(root, this.rig.sockets?.ejection)
     if (!pose || !firstPerson) return pose
     const right = pose.position.clone().add(pose.right)
     const up = pose.position.clone().add(pose.up)
@@ -933,6 +958,7 @@ export class Sidearm {
     for (const source of [
       this.slide,
       this.triggerPart,
+      this.selector,
       this.magazine,
       this.hammer,
       this.lever,
@@ -1173,7 +1199,11 @@ export class Sidearm {
   }
 
   worldChamber(): THREE.Vector3 | null {
-    return ejectionPort(this.model)?.position ?? null
+    return (
+      ejectionPort(this.model)?.position ??
+      this.socketPose(this.model, this.rig.sockets?.ejection)?.position ??
+      null
+    )
   }
 
   cartridgeClone(): THREE.Object3D | null {
@@ -1208,6 +1238,16 @@ export class Sidearm {
       this.triggerPart.object.quaternion
         .copy(this.triggerPart.restQuaternion)
         .multiply(new THREE.Quaternion().setFromAxisAngle(axis(p.trigger.axis), this.triggerPose))
+    if (this.selector && p.selector) {
+      const angle = this.safetyOn
+        ? p.selector.angles.safe
+        : this.mode === 'burst30'
+          ? p.selector.angles.auto
+          : p.selector.angles.semi
+      this.selector.object.quaternion
+        .copy(this.selector.restQuaternion)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(axis(p.selector.axis), angle))
+    }
     const shown = reloadPresentation(
       this.state.reloadAction === 'slide-release' ? 'none' : this.state.reload,
       now - this.state.reloadStartMs,
@@ -1427,6 +1467,7 @@ async function loadRig(url: string): Promise<WeaponRig | null> {
     return {
       parts: { ...defaultRig.parts, ...rig.parts },
       presentation: { ...defaultRig.presentation, ...rig.presentation },
+      sockets: rig.sockets,
     }
   } catch {
     return null

@@ -344,6 +344,52 @@ export class VehicleAudio {
     this.shots++
   }
 
+  private sampleBuffers = new Map<string, Promise<AudioBuffer | null>>()
+  /**
+   * Recorded weapon sample at the weapon emitter (data-driven presets). Decoded once per URL;
+   * a sample still loading is skipped rather than played late. `shot` counts as a gunshot.
+   */
+  weaponSample(
+    url: string,
+    position?: readonly number[],
+    options: { loop?: boolean; shot?: boolean } = {},
+  ): { stop: () => void } | null {
+    const context = this.context
+    const frame = this.frame()
+    if (!context || !frame?.audible || !this.weaponEmitter) return null
+    let pending = this.sampleBuffers.get(url)
+    if (!pending) {
+      pending = fetch(url)
+        .then((response) => (response.ok ? response.arrayBuffer() : null))
+        .then((data) => (data ? context.decodeAudioData(data) : null))
+        .catch(() => null)
+      this.sampleBuffers.set(url, pending)
+      let ready: AudioBuffer | null | undefined
+      void pending.then((buffer) => (ready = buffer))
+      this.sampleReady.set(url, () => ready)
+    }
+    if (options.shot) this.shots++
+    const buffer = this.sampleReady.get(url)?.()
+    if (!buffer) return null
+    this.weaponEmitter.setPosition(position ?? this.eye)
+    const source = context.createBufferSource()
+    source.buffer = buffer
+    source.loop = !!options.loop
+    source.connect(this.weaponEmitter.input)
+    source.onended = () => source.disconnect()
+    source.start(frame.time)
+    return {
+      stop: () => {
+        try {
+          source.stop()
+        } catch {
+          /* Already stopped. */
+        }
+      },
+    }
+  }
+  private sampleReady = new Map<string, () => AudioBuffer | null | undefined>()
+
   /** Short dual-tone vehicle horn, through the existing SFX mixer and mute policy. */
   horn(): void {
     const frame = this.frame()
