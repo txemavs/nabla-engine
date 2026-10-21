@@ -44,7 +44,7 @@ export const defaultInterfaceStyles = `
 .nabla-btn--disabled,.nabla-btn[aria-disabled="true"],.nabla-btn:disabled { opacity:.5;cursor:default; }
 /* Colour modifiers: red for a stop/escape action, green for play/go. */
 .nabla-btn--danger,.nabla-btn--danger:hover:not(:disabled),.nabla-btn--danger:active:not(:disabled) { color:#fff;background:#c62828;border-color:#c62828; }
-.nabla-btn--key { font-size:calc(var(--nabla-btn-font) - 2px); }
+.nabla-btn--key { font-size:10px; }
 .nabla-btn--go,.nabla-btn--go:hover:not(:disabled),.nabla-btn--go:active:not(:disabled) { color:#fff;background:#2e7d32;border-color:#2e7d32; }
 /* Dropdown panel of a popover (FOV, quality, clock): value box + vertical slider. */
 .nabla-slider-panel { position:absolute;top:calc(100% + var(--nabla-btn-gap));right:0;z-index:1;display:flex;flex-direction:column;align-items:center;gap:var(--nabla-btn-gap);min-width:100%;box-sizing:border-box;color:var(--ink);text-align:center; }
