@@ -1,4 +1,11 @@
 import { smokeDensity } from './smoke-density.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 /** Small bounded powder-smoke bursts, in the pistol presentation's local space. */
 import * as THREE from 'three'
 import { analyticParticles, EPOCH_MS, NEVER, PARTICLE_MOTION_GLSL } from './gpu-particles.js'
@@ -26,30 +33,36 @@ class AnalyticMuzzleSmoke {
     this.material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      uniforms: { smokeDensity, height: { value: 750 }, now: { value: 0 } },
+      uniforms: { smokeDensity, height: { value: 750 }, now: { value: 0 }, ...softSmokeUniforms() },
       vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
         ${PARTICLE_MOTION_GLSL}
-        attribute float birth; attribute float slot; varying float t; uniform float height; uniform float now;
-        void main(){float age=(now-birth)/1000.0; age=age>=0.0&&age<${LIFE_S.toFixed(1)}?age:-1.0; t=age;
+        attribute float birth; attribute float slot; varying float t; uniform float height; uniform float now; varying float smokeSeed;
+        ${SOFT_VERTEX_PARS}
+        void main(){smokeSeed=fract(slot*0.618+0.13);float age=(now-birth)/1000.0; age=age>=0.0&&age<${LIFE_S.toFixed(1)}?age:-1.0; t=age;
           vec4 p=modelViewMatrix*vec4(age>=0.0?nablaMuzzleSmokePosition(position,slot,age):position,1.0);
           gl_Position=projectionMatrix*p;
+          ${softVertex('p')}
           gl_PointSize=age>=0.0?clamp((0.009+age*0.06)*height*projectionMatrix[1][1]/max(0.05,-p.z),1.0,100.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
       fragmentShader: `
         uniform float smokeDensity;
         #include <logdepthbuf_pars_fragment>
-        varying float t;
-        void main(){float d=length(gl_PointCoord-0.5)*2.0;
-          if(t<0.0||d>1.0)discard;
-          gl_FragColor=vec4(0.85,0.87,0.89,pow(1.0-d,2.0)*(1.0-t/0.7)*0.32*smokeDensity);
+        varying float t; varying float smokeSeed;
+        ${SOFT_FRAGMENT_PARS}
+        void main(){
+          if(t<0.0)discard;
+          vec4 c=nablaSmoke(vec3(0.85,0.87,0.89),(1.0-t/0.7)*0.32*smokeDensity,t/0.7,smokeSeed,t*1.5,0.05);
+          if(c.a<0.002)discard;
+          gl_FragColor=c;
           #include <logdepthbuf_fragment>
         }`,
     })
     this.root = new THREE.Points(this.geometry, this.material)
     this.root.name = 'Muzzle powder smoke'
+    softConsumer(this.material)
     this.root.visible = false
     this.root.frustumCulled = false
   }
