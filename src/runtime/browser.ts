@@ -143,7 +143,8 @@ import {
   type WeaponPoseTuning,
 } from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
-import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
+import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
+import { FirearmSamples } from '../audio/firearm-samples.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
@@ -590,6 +591,10 @@ export class GameRuntime {
   /** Melee or bow from a numbered weapon slot; exclusive with the drawn sidearm. */
   private heldWeapon: HeldWeapon | null = null
   private heldDrawn = false
+  private firearmSamplesVoice: FirearmSamples | null = null
+  private get firearmSamples(): FirearmSamples {
+    return (this.firearmSamplesVoice ??= new FirearmSamples(this.effects.audio))
+  }
   private readonly inventory = new PickupInventory()
   private ownedWeaponId: string | null = null
   private readonly pickupModels = new Map<string, THREE.Group>()
@@ -2292,7 +2297,9 @@ export class GameRuntime {
       )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
-      this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
+      this.fireModeBadge?.show(
+        this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode, this.sidearm.selectFire) : null,
+      )
       this.options.canvas.dataset.fireMode = this.sidearm.fireMode
       this.updateSidearmLaser(sim, time)
     } else {
@@ -5008,6 +5015,11 @@ export class GameRuntime {
       )
     }
     const automatic = sidearm.fireMode === 'burst30'
+    if (
+      this.firearmSamples.looping &&
+      (!this.triggerDown || !sidearm.visible || sidearm.state.chamber === 0)
+    )
+      this.firearmSamples.release(weaponPosition)
     const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
     if (yaw && !tracked) {
       if (sim.player.vehicleId) this.cameraState.headYaw += yaw
@@ -5029,8 +5041,7 @@ export class GameRuntime {
         )
       if (shot) events.push(shot)
       if (shot?.fired) {
-        this.effects.audio.weaponSound('hammer', weaponPosition)
-        this.effects.audio.gunshot(weaponPosition, !!shot.locked)
+        this.firearmSamples.shot(sidearm.preset, weaponPosition, automatic, !!shot.locked)
         if (this.gallery.lastImpact)
           this.effects.audio.metalImpact(
             this.gallery.lastImpact.point,
@@ -5054,13 +5065,15 @@ export class GameRuntime {
     }
     for (const event of events) {
       if (event.cartridgeEjected) this.ejectCartridge(sim, eyes, sidearm)
-      if (event.dry) this.effects.audio.weaponSound('dry', weaponPosition)
+      if (event.dry) this.firearmSamples.cue(sidearm.preset, 'dry', weaponPosition)
       if (event.magazineDropped) {
-        this.effects.audio.weaponSound('magazine-out', weaponPosition)
+        this.firearmSamples.cue(sidearm.preset, 'magazine-out', weaponPosition)
         if (event.droppedMagazine) this.dropMagazine(sim, eyes, event.droppedMagazine)
       }
-      if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
-      if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
+      if (event.magazineSeated)
+        this.firearmSamples.cue(sidearm.preset, 'magazine-in', weaponPosition)
+      if (event.slideReleased)
+        this.firearmSamples.cue(sidearm.preset, 'slide-forward', weaponPosition)
       if (event.manualSlideLocked) {
         this.effects.audio.weaponSound('slide-lock', weaponPosition)
         this.options.onMessage?.('Corredera bloqueada · F para desbloquear')
@@ -5679,7 +5692,7 @@ export class GameRuntime {
     ) {
       this.sidearm.inspect(performance.now(), action === 'weapon.chamber')
       if (action === 'weapon.chamber')
-        this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
+        this.firearmSamples.cue(this.sidearm?.preset, 'slide-back', this.camera.position.toArray())
       return
     }
     if (
@@ -5700,6 +5713,18 @@ export class GameRuntime {
     }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
     // the pistol) M keeps its game meaning (helm mode / its notice).
+    if (
+      action === 'weapon.auto' &&
+      this.weaponDrawn &&
+      !sim.player.vehicleId &&
+      this.sidearm?.selectFire
+    ) {
+      this.sidearm.setFireMode(nextFireMode(this.sidearm.fireMode))
+      this.triggerDown = false
+      this.effects.audio.weaponSound('safety', this.camera.position.toArray())
+      this.options.onMessage?.(this.sidearm.fireMode === 'semi' ? 'SEMI' : 'AUTO')
+      return
+    }
     if (action === 'weapon.auto' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
       this.magazineAction = 'automatic'
       this.triggerDown = false

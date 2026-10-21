@@ -25,7 +25,9 @@ export function poseMagazineCapacity(magazine: Object3D, capacity: number): void
     magazine.userData.magazineMouthY = bounds.max.y
   }
   const top = magazine.userData.magazineMouthY as number
-  const factor = capacity > 13 ? 1.75 : 1
+  // userData.nativeCapacity: the owning weapon's own magazine (default the 13-round pistol).
+  const native = (magazine.userData.nativeCapacity as number | undefined) ?? 13
+  const factor = capacity > native ? 1.75 : 1
   for (const body of magazine.children) {
     if (body.name === 'MagazineTopRound') continue
     const rest = (body.userData.magazineShapeRest ??= {

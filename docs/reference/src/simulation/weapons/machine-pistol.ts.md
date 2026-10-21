@@ -25,12 +25,12 @@ an experimental mode, not data for a real machine pistol.
 HUD label of a fire mode.
 
 ```ts
-fireModeLabel(mode: FireMode): string
+fireModeLabel(mode: FireMode, selectFire = false): string
 ```
 
 ## nextFireMode
 
-[Implementation, line 32](../../../../../src/simulation/weapons/machine-pistol.ts#L32)
+[Implementation, line 33](../../../../../src/simulation/weapons/machine-pistol.ts#L33)
 
 ```ts
 nextFireMode(mode: FireMode): FireMode
@@ -38,7 +38,7 @@ nextFireMode(mode: FireMode): FireMode
 
 ## autoIntervalMs
 
-[Implementation, line 37](../../../../../src/simulation/weapons/machine-pistol.ts#L37)
+[Implementation, line 38](../../../../../src/simulation/weapons/machine-pistol.ts#L38)
 
 Milliseconds between automatic shots.
 
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## specForMode
 
-[Implementation, line 42](../../../../../src/simulation/weapons/machine-pistol.ts#L42)
+[Implementation, line 43](../../../../../src/simulation/weapons/machine-pistol.ts#L43)
 
 The firearm spec for a mode: RÁFAGA has the 30-round magazine and a cycle no slower than its rate.
 
@@ -67,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## pullTrigger
 
-[Implementation, line 56](../../../../../src/simulation/weapons/machine-pistol.ts#L56)
+[Implementation, line 57](../../../../../src/simulation/weapons/machine-pistol.ts#L57)
 
 One trigger sample in either mode. In RÁFAGA a held trigger counts as a fresh press once the
 automatic interval has passed since the last shot, so it keeps firing until released or empty.
@@ -83,7 +83,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.constructor
 
-[Implementation, line 84](../../../../../src/simulation/weapons/machine-pistol.ts#L84)
+[Implementation, line 85](../../../../../src/simulation/weapons/machine-pistol.ts#L85)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -94,7 +94,7 @@ constructor(private readonly random: () => number = Math.random): instance
 
 ## RecoilYaw.kick
 
-[Implementation, line 86](../../../../../src/simulation/weapons/machine-pistol.ts#L86)
+[Implementation, line 87](../../../../../src/simulation/weapons/machine-pistol.ts#L87)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -109,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.step
 
-[Implementation, line 91](../../../../../src/simulation/weapons/machine-pistol.ts#L91)
+[Implementation, line 92](../../../../../src/simulation/weapons/machine-pistol.ts#L92)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -124,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RecoilYaw.total
 
-[Implementation, line 98](../../../../../src/simulation/weapons/machine-pistol.ts#L98)
+[Implementation, line 99](../../../../../src/simulation/weapons/machine-pistol.ts#L99)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.
@@ -135,7 +135,7 @@ total(): number
 
 ## RecoilYaw.reset
 
-[Implementation, line 102](../../../../../src/simulation/weapons/machine-pistol.ts#L102)
+[Implementation, line 103](../../../../../src/simulation/weapons/machine-pistol.ts#L103)
 
 Sideways recoil: each shot adds a random kick; with the trigger released the offset decays back
 to zero. `step` returns the yaw change (rad) since the previous call, to add to the aim.

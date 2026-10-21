@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **553 modules; 6620 executable function definitions**.
+Coverage: **554 modules; 6637 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -86,6 +86,7 @@ Coverage: **553 modules; 6620 executable function definitions**.
 | [src/audio/destruction.ts](src/audio/destruction.ts.md) | 4 |
 | [src/audio/diesel-engine.ts](src/audio/diesel-engine.ts.md) | 6 |
 | [src/audio/engine-start.ts](src/audio/engine-start.ts.md) | 6 |
+| [src/audio/firearm-samples.ts](src/audio/firearm-samples.ts.md) | 5 |
 | [src/audio/gear-clack.ts](src/audio/gear-clack.ts.md) | 8 |
 | [src/audio/gear-click.ts](src/audio/gear-click.ts.md) | 6 |
 | [src/audio/graph.ts](src/audio/graph.ts.md) | 2 |
@@ -104,7 +105,7 @@ Coverage: **553 modules; 6620 executable function definitions**.
 | [src/audio/turbine.ts](src/audio/turbine.ts.md) | 3 |
 | [src/audio/v4-engine.ts](src/audio/v4-engine.ts.md) | 21 |
 | [src/audio/vehicle-sound.ts](src/audio/vehicle-sound.ts.md) | 3 |
-| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 59 |
+| [src/audio/vehicle.ts](src/audio/vehicle.ts.md) | 67 |
 | [src/audio/weapon-handling.ts](src/audio/weapon-handling.ts.md) | 3 |
 | [src/catalog/globe.ts](src/catalog/globe.ts.md) | 1 |
 | [src/catalog/highway.ts](src/catalog/highway.ts.md) | 1 |
@@ -386,7 +387,7 @@ Coverage: **553 modules; 6620 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 469 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 470 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -433,7 +434,7 @@ Coverage: **553 modules; 6620 executable function definitions**.
 | [src/runtime/shader-diagnostics.ts](src/runtime/shader-diagnostics.ts.md) | 4 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 5 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 93 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 95 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -463,7 +464,7 @@ Coverage: **553 modules; 6620 executable function definitions**.
 | [src/runtime/weapon-wheel.ts](src/runtime/weapon-wheel.ts.md) | 5 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
-| [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 36 |
+| [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 37 |
 | [src/runtime/xr-body-anchor.ts](src/runtime/xr-body-anchor.ts.md) | 3 |
 | [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 26 |
 | [src/runtime/xr-calibration-screen.ts](src/runtime/xr-calibration-screen.ts.md) | 38 |
