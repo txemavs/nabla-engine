@@ -105,6 +105,8 @@ import type { FieldLightOptions } from '../render/entity/field-lights.js'
 import type { VehicleLightMode } from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
+import { HeldWeapon } from './held-weapon.js'
+import { weaponSlots } from '../catalog/weapons/slots.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
 import {
   readSidearmTuning,
@@ -139,9 +141,11 @@ import {
   normalizeWeaponPoses,
   type WeaponPose,
   type WeaponPoseTuning,
+  weaponPoseStorageKey,
 } from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
-import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
+import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
+import { FirearmSamples } from '../audio/firearm-samples.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
@@ -585,6 +589,13 @@ export class GameRuntime {
   private readonly pipeline = new GameRenderPipeline()
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
+  /** Melee or bow from a numbered weapon slot; exclusive with the drawn sidearm. */
+  private heldWeapon: HeldWeapon | null = null
+  private heldDrawn = false
+  private firearmSamplesVoice: FirearmSamples | null = null
+  private get firearmSamples(): FirearmSamples {
+    return (this.firearmSamplesVoice ??= new FirearmSamples(this.effects.audio))
+  }
   private readonly inventory = new PickupInventory()
   private ownedWeaponId: string | null = null
   private readonly pickupModels = new Map<string, THREE.Group>()
@@ -758,7 +769,8 @@ export class GameRuntime {
     }
   })()
 
-  private weaponPoses: WeaponPoseTuning = (() => {
+  /** Shared legacy tuning: the baseline for weapons whose rig has no `poses`. */
+  private readonly legacyWeaponPoses: WeaponPoseTuning = (() => {
     try {
       return normalizeWeaponPoses(
         JSON.parse(browserStorage()?.getItem('nabla.weaponPoses') ?? '{}'),
@@ -767,6 +779,31 @@ export class GameRuntime {
       return normalizeWeaponPoses()
     }
   })()
+  /** Resolved poses per weapon id (local override over rig poses over legacy tuning). */
+  private readonly weaponPoseCache = new Map<string, WeaponPoseTuning>()
+  private get weaponPoses(): WeaponPoseTuning {
+    const sidearm = this.sidearm
+    const id = sidearm?.preset?.id
+    if (!id) return this.legacyWeaponPoses
+    const cached = this.weaponPoseCache.get(id)
+    if (cached) return cached
+    const base = this.weaponPoseBaseline
+    let result = base
+    try {
+      const saved = browserStorage()?.getItem(weaponPoseStorageKey(id))
+      if (saved) result = normalizeWeaponPoses(JSON.parse(saved), base)
+    } catch {
+      /* Optional persistence. */
+    }
+    // Cache only once the rig (and its poses) has loaded.
+    if (sidearm.rigPoses !== undefined) this.weaponPoseCache.set(id, result)
+    return result
+  }
+  /** Poses without local edits: the rig file's `poses`, else the shared legacy tuning. */
+  private get weaponPoseBaseline(): WeaponPoseTuning {
+    const rig = this.sidearm?.rigPoses
+    return rig ? normalizeWeaponPoses(rig, this.legacyWeaponPoses) : this.legacyWeaponPoses
+  }
   private smokeOn = true
   private planet: {
     sky: boolean
@@ -1471,6 +1508,9 @@ export class GameRuntime {
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
+    this.heldWeapon?.dispose()
+    this.heldWeapon = null
+    this.heldDrawn = false
     this.clearPickups()
     this.accidentReplacement?.clear()
     this.drivingPrepared.clear()
@@ -1535,6 +1575,7 @@ export class GameRuntime {
     this.xrLoadout?.pistols[1]?.weapon.dispose()
     this.xrLoadout?.dispose()
     this.sidearm?.dispose()
+    this.heldWeapon?.dispose()
     this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
@@ -2225,6 +2266,10 @@ export class GameRuntime {
         ? { point: new THREE.Vector3(...hit.point), normal: new THREE.Vector3(...hit.normal) }
         : null
     })
+    if (this.heldWeapon) {
+      this.heldWeapon.visible = this.heldDrawn && !sim.player.vehicleId
+      this.heldWeapon.syncWorld(this.view.avatar, time, eyes)
+    }
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.slidePosePreview =
@@ -2271,7 +2316,9 @@ export class GameRuntime {
       )
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
-      this.fireModeBadge?.show(this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode) : null)
+      this.fireModeBadge?.show(
+        this.sidearm.visible ? fireModeLabel(this.sidearm.fireMode, this.sidearm.selectFire) : null,
+      )
       this.options.canvas.dataset.fireMode = this.sidearm.fireMode
       this.updateSidearmLaser(sim, time)
     } else {
@@ -2507,6 +2554,14 @@ export class GameRuntime {
         time,
         this.camera.aspect,
         eyes || this.sidearmAimPreview,
+        this.scene,
+        this.camera,
+      )
+      this.heldWeapon?.render(
+        this.renderer,
+        time,
+        this.camera.aspect,
+        eyes,
         this.scene,
         this.camera,
       )
@@ -4302,14 +4357,27 @@ export class GameRuntime {
       this.sidearm.previewFlash()
     }
   }
+  /** Firearm the pose menu edits: the selected slot weapon, or the default sidearm. */
+  get weaponPoseTarget(): { id: string | null; name: string; rig: string | null } {
+    const preset = this.sidearm?.preset
+    return { id: preset?.id ?? null, name: preset?.name ?? 'Pistola', rig: preset?.rig ?? null }
+  }
   get weaponPoseTuning(): WeaponPoseTuning {
     return normalizeWeaponPoses(this.weaponPoses)
   }
+  /** Poses of the edited weapon before local edits, for "reset". */
+  get weaponPoseDefaults(): WeaponPoseTuning {
+    return normalizeWeaponPoses(this.weaponPoseBaseline)
+  }
   setWeaponPoseTuning(value: WeaponPoseTuning): void {
-    this.weaponPoses = normalizeWeaponPoses(value)
-    if (this.sidearm) this.sidearm.poseTuning = this.weaponPoses
+    const id = this.sidearm?.preset?.id
+    const key = id ? weaponPoseStorageKey(id) : 'nabla.weaponPoses'
+    const poses = normalizeWeaponPoses(value, id ? this.weaponPoseBaseline : undefined)
+    if (id) this.weaponPoseCache.set(id, poses)
+    else Object.assign(this.legacyWeaponPoses, poses)
+    if (this.sidearm) this.sidearm.poseTuning = poses
     try {
-      browserStorage()?.setItem('nabla.weaponPoses', JSON.stringify(this.weaponPoses))
+      browserStorage()?.setItem(key, JSON.stringify(poses))
     } catch {
       /* Optional persistence. */
     }
@@ -4979,6 +5047,11 @@ export class GameRuntime {
       )
     }
     const automatic = sidearm.fireMode === 'burst30'
+    if (
+      this.firearmSamples.looping &&
+      (!this.triggerDown || !sidearm.visible || sidearm.state.chamber === 0)
+    )
+      this.firearmSamples.release(weaponPosition)
     const yaw = sidearm.recoilYaw.step(dt, automatic && this.triggerDown)
     if (yaw && !tracked) {
       if (sim.player.vehicleId) this.cameraState.headYaw += yaw
@@ -5000,8 +5073,7 @@ export class GameRuntime {
         )
       if (shot) events.push(shot)
       if (shot?.fired) {
-        this.effects.audio.weaponSound('hammer', weaponPosition)
-        this.effects.audio.gunshot(weaponPosition, !!shot.locked)
+        this.firearmSamples.shot(sidearm.preset, weaponPosition, automatic, !!shot.locked)
         if (this.gallery.lastImpact)
           this.effects.audio.metalImpact(
             this.gallery.lastImpact.point,
@@ -5025,13 +5097,15 @@ export class GameRuntime {
     }
     for (const event of events) {
       if (event.cartridgeEjected) this.ejectCartridge(sim, eyes, sidearm)
-      if (event.dry) this.effects.audio.weaponSound('dry', weaponPosition)
+      if (event.dry) this.firearmSamples.cue(sidearm.preset, 'dry', weaponPosition)
       if (event.magazineDropped) {
-        this.effects.audio.weaponSound('magazine-out', weaponPosition)
+        this.firearmSamples.cue(sidearm.preset, 'magazine-out', weaponPosition)
         if (event.droppedMagazine) this.dropMagazine(sim, eyes, event.droppedMagazine)
       }
-      if (event.magazineSeated) this.effects.audio.weaponSound('magazine-in', weaponPosition)
-      if (event.slideReleased) this.effects.audio.weaponSound('slide-forward', weaponPosition)
+      if (event.magazineSeated)
+        this.firearmSamples.cue(sidearm.preset, 'magazine-in', weaponPosition)
+      if (event.slideReleased)
+        this.firearmSamples.cue(sidearm.preset, 'slide-forward', weaponPosition)
       if (event.manualSlideLocked) {
         this.effects.audio.weaponSound('slide-lock', weaponPosition)
         this.options.onMessage?.('Corredera bloqueada · F para desbloquear')
@@ -5081,6 +5155,89 @@ export class GameRuntime {
     if (!casing || this.casingMeshes) return
     this.casingMeshes = new Casings(casing.lengthM, casing.rimDiameterM)
     this.view.root.add(this.casingMeshes.root)
+  }
+  /**
+   * Number-key loadout from preset data (`weaponSlots()`). The same key again holsters.
+   * Firearms reuse the sidearm path; melee and bow use `HeldWeapon`; placeholders only report.
+   */
+  selectWeaponSlot(slot: number): void {
+    this.assertAlive()
+    const entry = weaponSlots().find((item) => item.slot === slot)
+    if (!entry) return
+    if (entry.kind === 'placeholder') {
+      this.options.onMessage?.(`${entry.name}: próximamente`)
+      return
+    }
+    const sim = this.session.simulation
+    if (!sim) return
+    this.fireRequested = false
+    this.triggerDown = false
+    if (entry.kind === 'firearm') {
+      this.heldDrawn = false
+      if (this.weaponDrawn && this.sidearm?.preset?.id === entry.id) {
+        this.weaponDrawn = false
+        this.sidearm.setAiming(false)
+        this.options.onMessage?.(this.text('Weapon holstered'))
+        return
+      }
+      if (!this.inventory.has(entry.id)) {
+        const position: Vec3Tuple = [...sim.renderPlayerPosition]
+        const id = `slot-${entry.slot}-${entry.id}`
+        this.inventory.add({ id, itemId: entry.id, name: entry.name, position })
+        this.inventory.take(id, position)
+      }
+      this.ownedWeaponId = entry.id
+      if (this.sidearm?.preset?.id !== entry.id) {
+        this.sidearm?.dispose()
+        this.sidearm = this.createSidearm(entry.preset)
+      }
+      this.weaponDrawn = true
+      this.sidearm.visible = true
+      this.sidearm.setAiming(false)
+      this.options.onMessage?.(entry.name)
+      return
+    }
+    if (this.heldDrawn && this.heldWeapon?.preset.id === entry.id) {
+      this.heldDrawn = false
+      this.options.onMessage?.(this.text('Weapon holstered'))
+      return
+    }
+    if (this.weaponDrawn) {
+      this.weaponDrawn = false
+      this.sidearm?.setAiming(false)
+      this.view.laser.enabled = false
+      if (this.weaponLight) this.weaponLight.intensity = 0
+    }
+    if (this.heldWeapon?.preset.id !== entry.id) {
+      this.heldWeapon?.dispose()
+      this.heldWeapon = new HeldWeapon(entry.preset)
+      void this.heldWeapon.ready.catch((error) => this.options.onError?.(error))
+    }
+    this.heldDrawn = true
+    this.options.onMessage?.(
+      entry.kind === 'melee' ? `${entry.name} · clic izquierdo: golpe` : entry.name,
+    )
+  }
+  /** Active numbered slot, or null with empty hands. */
+  get activeWeaponSlot(): number | null {
+    const id = this.heldDrawn
+      ? this.heldWeapon?.preset.id
+      : this.weaponDrawn
+        ? this.sidearm?.preset?.id
+        : undefined
+    return id === undefined ? null : (weaponSlots().find((item) => item.id === id)?.slot ?? null)
+  }
+  private swingHeldWeapon(): void {
+    const sim = this.session.simulation
+    const weapon = this.heldWeapon
+    const melee = weapon?.preset.melee
+    if (!sim || !weapon || !melee || sim.player.vehicleId) return
+    if (!weapon.swing(performance.now())) return
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+    const origin = new THREE.Vector3(...sim.renderPlayerPosition)
+    origin.y += 1.4
+    const hit = sim.shoot(origin.toArray(), forward.toArray(), melee.reachM, melee.impulse)
+    this.options.canvas.dataset.meleeHit = hit ? (hit.entityId ?? 'static') : ''
   }
   private createSidearm(preset?: ConstructorParameters<typeof Sidearm>[1]): Sidearm {
     return new Sidearm(
@@ -5243,6 +5400,10 @@ export class GameRuntime {
     if (this.inspector) return
     if (this.session.state !== 'playing') return
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
+    if (this.heldDrawn && !this.weaponDrawn) {
+      if (down && button === 0) this.swingHeldWeapon()
+      return
+    }
     if (!this.weaponDrawn) return
     const action = sidearmButtonAction(button, down)
     if (
@@ -5509,6 +5670,16 @@ export class GameRuntime {
       this.wheelDebug.toggle()
       return
     }
+    const slotAction = /^weapon\.slot(\d)$/.exec(action)
+    if (slotAction) {
+      if (!sim.player.vehicleId) this.selectWeaponSlot(Number(slotAction[1]))
+      return
+    }
+    if (action === 'holster' && this.heldDrawn) {
+      this.heldDrawn = false
+      this.options.onMessage?.(this.text('Weapon holstered'))
+      return
+    }
     if (action === 'holster') {
       if (!this.weaponOwned) return
       this.weaponDrawn = !this.weaponDrawn
@@ -5553,7 +5724,7 @@ export class GameRuntime {
     ) {
       this.sidearm.inspect(performance.now(), action === 'weapon.chamber')
       if (action === 'weapon.chamber')
-        this.effects.audio.weaponSound('slide-back', this.camera.position.toArray())
+        this.firearmSamples.cue(this.sidearm?.preset, 'slide-back', this.camera.position.toArray())
       return
     }
     if (
@@ -5574,6 +5745,18 @@ export class GameRuntime {
     }
     // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
     // the pistol) M keeps its game meaning (helm mode / its notice).
+    if (
+      action === 'weapon.auto' &&
+      this.weaponDrawn &&
+      !sim.player.vehicleId &&
+      this.sidearm?.selectFire
+    ) {
+      this.sidearm.setFireMode(nextFireMode(this.sidearm.fireMode))
+      this.triggerDown = false
+      this.effects.audio.weaponSound('safety', this.camera.position.toArray())
+      this.options.onMessage?.(this.sidearm.fireMode === 'semi' ? 'SEMI' : 'AUTO')
+      return
+    }
     if (action === 'weapon.auto' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
       this.magazineAction = 'automatic'
       this.triggerDown = false

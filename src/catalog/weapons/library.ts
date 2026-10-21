@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { vector } from '../../entity/coords.js'
 import { readWeaponPresetSources } from './weapon-source.js'
+import { isHeldWeaponSource } from './held-library.js'
 
 /**
  * A weapon preset is a JSON file under assets/library/weapons or assets/custom/weapons.
@@ -20,6 +21,8 @@ const firearmSchema = z
     triggerPullSingleN: positive.max(200).optional(),
     triggerPullDoubleN: positive.max(200).optional(),
     semiAutomatic: z.literal(true),
+    /** Select-fire weapons: cyclic rate in automatic, which becomes the default mode. */
+    automaticRpm: positive.max(2000).optional(),
     slideLocksOnEmpty: z.boolean(),
     cycleMs: positive.max(2000),
     reloadMs: z
@@ -78,6 +81,8 @@ const presetSchema = z
     id: z.string().regex(/^[a-z0-9-]{1,40}$/),
     name: z.string().min(1).max(80),
     order: z.number().int().min(0).max(100),
+    /** Number key (1-9) that selects this weapon on foot; see `weaponSlots()`. */
+    slot: z.number().int().min(1).max(9).optional(),
     /** Legacy split assets (body + optional slide), used when there is no assembled `model`. */
     body: z.string().min(1).max(200).optional(),
     slide: z.string().min(1).max(200).optional(),
@@ -105,6 +110,25 @@ const presetSchema = z
     ammunition: ammunitionSchema.optional(),
     recoil: recoilSchema.optional(),
     casing: casingSchema.optional(),
+    /**
+     * Recorded sounds (URLs). `shot` replaces the synthesised gunshot; in automatic `autoLoop`
+     * loops while the trigger is held and `autoTail` plays on release. `cues` replace
+     * procedural handling sounds by name (magazine-out, magazine-in, slide-back, slide-forward).
+     */
+    audio: z
+      .object({
+        shot: z.string().min(1).max(200).optional(),
+        autoLoop: z.string().min(1).max(200).optional(),
+        autoTail: z.string().min(1).max(200).optional(),
+        cues: z
+          .partialRecord(
+            z.enum(['magazine-out', 'magazine-in', 'slide-back', 'slide-forward', 'dry']),
+            z.string().min(1).max(200),
+          )
+          .optional(),
+      })
+      .strict()
+      .optional(),
     /** Citations for the numbers above, by key. */
     sources: z.record(z.string(), z.string().min(1).max(600)).optional(),
     /** Values without a source, each marked `TODO(unverified)`. */
@@ -129,6 +153,8 @@ export function weaponPresets(): WeaponPreset[] {
   if (cached) return cached
   const presets: WeaponPreset[] = []
   for (const source of readWeaponPresetSources()) {
+    // Presets with a `kind` (melee, bow, placeholder) belong to held-library.ts.
+    if (isHeldWeaponSource(source.data)) continue
     try {
       presets.push(presetSchema.parse(source.data))
     } catch (error) {

@@ -25,8 +25,9 @@ export const machinePistol = Object.freeze({
 })
 
 /** HUD label of a fire mode. */
-export function fireModeLabel(mode: FireMode): string {
-  return mode === 'burst30' ? 'EXPERIMENTAL · RÁFAGA 30' : 'SEMI'
+export function fireModeLabel(mode: FireMode, selectFire = false): string {
+  if (mode === 'semi') return 'SEMI'
+  return selectFire ? 'AUTO' : 'EXPERIMENTAL · RÁFAGA 30'
 }
 
 export function nextFireMode(mode: FireMode): FireMode {
@@ -39,12 +40,13 @@ export function autoIntervalMs(rpm: number = machinePistol.rpm): number {
 }
 
 /** The firearm spec for a mode: RÁFAGA has the 30-round magazine and a cycle no slower than its rate. */
-export function specForMode(base: FirearmSpec, mode: FireMode): FirearmSpec {
+export function specForMode(base: FirearmSpec, mode: FireMode, nativeRpm?: number): FirearmSpec {
   if (mode === 'semi') return base
+  // A select-fire preset (`firearm.automaticRpm`) keeps its own magazine and rate.
   return {
     ...base,
-    magazineCapacity: machinePistol.magazineCapacity,
-    cycleMs: Math.min(base.cycleMs, autoIntervalMs()),
+    magazineCapacity: nativeRpm ? base.magazineCapacity : machinePistol.magazineCapacity,
+    cycleMs: Math.min(base.cycleMs, autoIntervalMs(nativeRpm)),
   }
 }
 
@@ -58,6 +60,7 @@ export function pullTrigger(
   mode: FireMode,
   pressed: boolean,
   now: number,
+  rpm?: number,
 ): FirearmEvent {
   if (
     mode === 'burst30' &&
@@ -65,7 +68,7 @@ export function pullTrigger(
     state.triggerHeld &&
     state.chamber > 0 &&
     !state.slideLocked &&
-    now - state.lastShotMs >= autoIntervalMs()
+    now - state.lastShotMs >= autoIntervalMs(rpm)
   )
     state.triggerHeld = false
   return trigger(state, spec, pressed, now)

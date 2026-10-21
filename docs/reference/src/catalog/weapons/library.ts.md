@@ -9,26 +9,27 @@
 - `zod`
 - `../../entity/coords.js`
 - `./weapon-source.js`
+- `./held-library.js`
 
-## callback@32
+## callback@35
 
-[Implementation, line 32](../../../../../src/catalog/weapons/library.ts#L32)
+[Implementation, line 35](../../../../../src/catalog/weapons/library.ts#L35)
 
 ```ts
-callback@32(r): inferred by TypeScript; see implementation
+callback@35(r): inferred by TypeScript; see implementation
 ```
 
-## callback@121
+## callback@145
 
-[Implementation, line 121](../../../../../src/catalog/weapons/library.ts#L121)
+[Implementation, line 145](../../../../../src/catalog/weapons/library.ts#L145)
 
 ```ts
-callback@121(preset): inferred by TypeScript; see implementation
+callback@145(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPresets
 
-[Implementation, line 128](../../../../../src/catalog/weapons/library.ts#L128)
+[Implementation, line 152](../../../../../src/catalog/weapons/library.ts#L152)
 
 Every preset found at startup, in menu order. An empty weapons folder yields none.
 
@@ -40,6 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Error`
 - `Set`
+- `isHeldWeaponSource`
 - `presetSchema.parse`
 - `presets.push`
 - `presets.sort`
@@ -52,12 +54,12 @@ Explicit throws in this body:
 - `new Error(\`Weapon preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate weapon preset id ${preset.id}\`)`
 
-## weaponPresets.callback@138
+## weaponPresets.callback@164
 
-[Implementation, line 138](../../../../../src/catalog/weapons/library.ts#L138)
+[Implementation, line 164](../../../../../src/catalog/weapons/library.ts#L164)
 
 ```ts
-callback@138(a, b): inferred by TypeScript; see implementation
+callback@164(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasWeaponPreset
 
-[Implementation, line 147](../../../../../src/catalog/weapons/library.ts#L147)
+[Implementation, line 173](../../../../../src/catalog/weapons/library.ts#L173)
 
 ```ts
 hasWeaponPreset(id: string): boolean
@@ -77,17 +79,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weaponPresets`
 - `weaponPresets().some`
 
-## hasWeaponPreset.callback@148
+## hasWeaponPreset.callback@174
 
-[Implementation, line 148](../../../../../src/catalog/weapons/library.ts#L148)
+[Implementation, line 174](../../../../../src/catalog/weapons/library.ts#L174)
 
 ```ts
-callback@148(preset): inferred by TypeScript; see implementation
+callback@174(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPreset
 
-[Implementation, line 151](../../../../../src/catalog/weapons/library.ts#L151)
+[Implementation, line 177](../../../../../src/catalog/weapons/library.ts#L177)
 
 ```ts
 weaponPreset(id: string): WeaponPreset
@@ -103,10 +105,10 @@ Explicit throws in this body:
 
 - `new Error(\`No weapon preset "${id}"\`)`
 
-## weaponPreset.callback@152
+## weaponPreset.callback@178
 
-[Implementation, line 152](../../../../../src/catalog/weapons/library.ts#L152)
+[Implementation, line 178](../../../../../src/catalog/weapons/library.ts#L178)
 
 ```ts
-callback@152(entry): inferred by TypeScript; see implementation
+callback@178(entry): inferred by TypeScript; see implementation
 ```

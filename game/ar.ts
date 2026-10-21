@@ -6,6 +6,8 @@ import { XRMenuGesture, ARTouchControls } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
 import { XRBow } from '@nabla/engine/xr/bow'
 import bowModel from './recurve-bow-model.js'
+import { ARHeldWeapons } from './ar-held-weapons.js'
+import { weaponPresets, weaponSlots, type WeaponPreset } from '@nabla/engine'
 import { ARDrone } from '@nabla/engine/experimental/betaflight'
 import { hasVehiclePreset, presetVehicle } from '@nabla/engine/vehicles'
 import * as THREE from 'three'
@@ -181,6 +183,8 @@ let bowGeneration = 0
 let bowLoading = false
 let bowReady: Promise<void> | undefined
 const hoop = new XRHoop(scene)
+const held = new ARHeldWeapons(scene)
+const heldPresets = ARHeldWeapons.presets()
 balls.afterPhysicsStep = () => hoop.sampleBalls(balls.ballSamples)
 const drone = new ARDrone(scene, () => balls.physicsWorld)
 drone.lightButtonIndex = 5
@@ -237,7 +241,11 @@ const touchControls = new ARTouchControls({
 })
 xr.domOverlayRoot = mobileAR ? touchControls.root : undefined
 xr.screenTouchEnabled = false
-const weapons = new XRARWeapons(scene, camera, xr, document.body, 0)
+// Slotted firearms after the default pistol (for example Euskadi's MP5) ride in the same loadout.
+const extraFirearms = weaponSlots()
+  .filter((slot) => slot.kind === 'firearm' && slot.id !== weaponPresets()[0]?.id)
+  .map((slot) => slot.preset as WeaponPreset)
+const weapons = new XRARWeapons(scene, camera, xr, document.body, 0, extraFirearms)
 void weapons.ready.catch(report)
 if (mobileAR) {
   touchControls.root.querySelector<HTMLButtonElement>(':scope > button')!.hidden = true
@@ -258,6 +266,20 @@ if (mobileAR) {
 }
 
 weapons.physicsWorld = () => balls.physicsWorld
+held.onStrike = (origin, direction, distance) =>
+  weapons.strike(
+    origin,
+    direction,
+    distance,
+    [
+      ...screen.targets,
+      ...collisionSurfaces(),
+      ...hoop.collisionSurfaces,
+      ...balls.targets,
+      ...rc.targets,
+    ],
+    performance.now(),
+  )
 weapons.onHit = (object, point, direction) => {
   if (xr.calibrationScreen?.hit(object, point)) return true
   const vehicle = rc.hit(object, point, direction)
@@ -346,6 +368,8 @@ screen.mainMenuOrder = [
   'quality',
   'radio',
   'pistol',
+  ...extraFirearms.map((preset) => `firearm-${preset.id}`),
+  ...heldPresets.map((preset) => `held-${preset.id}`),
   'ball',
   'model',
   'board',
@@ -373,6 +397,30 @@ const addBow = async () => {
   }
 }
 screen.mainMenu = () => [
+  ...extraFirearms.map((preset) => ({
+    id: `firearm-${preset.id}`,
+    label: preset.name,
+    run: () => {
+      const added = weapons.loadout.addPistol(preset.id)
+      room.setMessage(
+        added
+          ? `${preset.name} añadida al cuerpo. Cógela con agarre; gatillo para disparar.`
+          : `Ya tienes la ${preset.name}.`,
+      )
+    },
+  })),
+  ...heldPresets.map((preset) => ({
+    id: `held-${preset.id}`,
+    label: preset.name,
+    run: () => {
+      void held
+        .spawn(preset, camera)
+        .then(() =>
+          room.setMessage(`${preset.name}: agárrala con el agarre cerca de la empuñadura.`),
+        )
+        .catch(report)
+    },
+  })),
   {
     id: 'pistol',
     label: 'Pistola',
@@ -424,6 +472,7 @@ screen.mainMenu = () => [
 ]
 const freeEnvironment = () => {
   hoop.clear()
+  held.clear()
   bowGeneration++
   bow.clear()
   droneGeneration++
@@ -771,6 +820,7 @@ renderer.setAnimationLoop((time, frame) => {
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
             !rc.owns(h.grip) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -783,6 +833,20 @@ renderer.setAnimationLoop((time, frame) => {
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
             !rc.owns(h.grip) &&
+            !held.owns(h.grip) &&
+            !xr.calibrationOwns(h.source)),
+      ),
+      dt,
+    )
+    held.update(
+      hands.filter(
+        (h) =>
+          held.owns(h.grip) ||
+          (!hoop.owns(h.grip) &&
+            !bow.owns(h.grip) &&
+            !balls.owns(h.grip) &&
+            !rc.owns(h.grip) &&
+            !weapons.loadout.occupied(h) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -795,6 +859,7 @@ renderer.setAnimationLoop((time, frame) => {
             !bow.owns(h.grip) &&
             !rc.owns(h.grip) &&
             !weapons.loadout.occupied(h) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       dt,
@@ -813,6 +878,7 @@ renderer.setAnimationLoop((time, frame) => {
             !bow.owns(h.grip) &&
             !weapons.loadout.occupied(h) &&
             !balls.owns(h.grip) &&
+            !held.owns(h.grip) &&
             !xr.calibrationOwns(h.source)),
       ),
       [...collisionSurfaces(), ...screen.collisionSurfaces, ...hoop.collisionSurfaces],
@@ -949,6 +1015,7 @@ addEventListener(
     hoop.dispose()
     bowGeneration++
     bow.dispose()
+    held.clear()
     droneGeneration++
     drone.clear()
     model.dispose()
