@@ -570,9 +570,11 @@ class AnalyticShotSparks {
       [this.geometry, 'sparkData'],
       [this.puffGeometry, 'puffData'],
     ] as const) {
+      // A range over every slot, not an empty range list: the burst written right after this
+      // adds its own range, and three would then upload only that one, leaving the GPU with
+      // births on the old epoch that replay as the clock catches up with them.
       const attribute = geometry.getAttribute(name) as THREE.BufferAttribute
-      attribute.clearUpdateRanges()
-      attribute.needsUpdate = true
+      markRange(attribute, 0, attribute.count)
     }
   }
 }
