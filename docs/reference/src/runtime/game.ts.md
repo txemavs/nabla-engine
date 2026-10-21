@@ -259,11 +259,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.step
 
-[Implementation, line 165](../../../../src/runtime/game.ts#L165)
+[Implementation, line 166](../../../../src/runtime/game.ts#L166)
 
 Advance physics and synchronize boarding and local portal camera transitions.
 Elapsed time is seconds, water level is metres and now is milliseconds.
-Preserve a queued jump until a physics tick occurs. Return a newly observed
+A queued jump is sent once: the simulation latches it until its next physics tick (inline
+and worker alike), so one press is one jump. Return a newly observed
 player/vehicle portal crossing, or null when no relevant crossing occurred.
 
 ```ts
@@ -299,7 +300,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Boarding and portal bookkeeping once the step has run.
 
 ```ts
-afterStep(sim: NonNullable<GameRuntime['simulation']>, ticks: number, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
+afterStep(sim: NonNullable<GameRuntime['simulation']>, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -309,17 +310,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `last.quaternion.clone`
 - `this.cameraState.telemetry.update`
 
-## GameRuntime.afterStep.callback@215
+## GameRuntime.afterStep.callback@213
 
-[Implementation, line 215](../../../../src/runtime/game.ts#L215)
+[Implementation, line 213](../../../../src/runtime/game.ts#L213)
 
 ```ts
-callback@215(e): inferred by TypeScript; see implementation
+callback@213(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 246](../../../../src/runtime/game.ts#L246)
+[Implementation, line 244](../../../../src/runtime/game.ts#L244)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -338,7 +339,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 257](../../../../src/runtime/game.ts#L257)
+[Implementation, line 255](../../../../src/runtime/game.ts#L255)
 
 Compatibility with existing hosts using key codes; prefer dispatch with an InputAction.
 
@@ -353,7 +354,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispatch
 
-[Implementation, line 262](../../../../src/runtime/game.ts#L262)
+[Implementation, line 260](../../../../src/runtime/game.ts#L260)
 
 Preferred entry for keyboard, XR and other hosts: no physical key codes.
 
