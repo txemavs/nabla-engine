@@ -4,7 +4,7 @@ import { touchActionIcon } from '../src/runtime/touch-icons.js'
 import { mountXRDeviceInfo } from './xr-device-info.js'
 import { XRMenuGesture, ARTouchControls } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
-import { XRBow, recurveBow } from '@nabla/engine/xr/bow'
+import { XRBow, defaultBow } from '@nabla/engine/xr/bow'
 import { ARHeldWeapons } from './ar-held-weapons.js'
 import { weaponPresets, weaponSlots, type WeaponPreset } from '@nabla/engine'
 import { ARDrone } from '@nabla/engine/experimental/betaflight'
@@ -384,7 +384,7 @@ const addBow = async () => {
   const generation = ++bowGeneration
   try {
     await balls.ready
-    bowReady ??= bow.loadModel(recurveBow.url, recurveBow.model)
+    bowReady ??= bow.loadModel(defaultBow.url, defaultBow.model)
     await bowReady
     if (generation !== bowGeneration) return
     bow.spawn(camera)

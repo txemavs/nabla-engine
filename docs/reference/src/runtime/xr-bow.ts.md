@@ -19,7 +19,7 @@
 
 ## squeeze
 
-[Implementation, line 33](../../../../src/runtime/xr-bow.ts#L33)
+[Implementation, line 35](../../../../src/runtime/xr-bow.ts#L35)
 
 ```ts
 squeeze(hand: GrabHand): inferred by TypeScript; see implementation
@@ -27,7 +27,7 @@ squeeze(hand: GrabHand): inferred by TypeScript; see implementation
 
 ## XRBow.loadModel
 
-[Implementation, line 50](../../../../src/runtime/xr-bow.ts#L50)
+[Implementation, line 52](../../../../src/runtime/xr-bow.ts#L52)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -45,7 +45,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.constructor
 
-[Implementation, line 87](../../../../src/runtime/xr-bow.ts#L87)
+[Implementation, line 89](../../../../src/runtime/xr-bow.ts#L89)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -57,7 +57,7 @@ constructor(private readonly scene: THREE.Scene, private readonly getWorld: () =
 
 ## XRBow.arrowCount
 
-[Implementation, line 91](../../../../src/runtime/xr-bow.ts#L91)
+[Implementation, line 93](../../../../src/runtime/xr-bow.ts#L93)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -69,7 +69,7 @@ arrowCount(): number
 
 ## XRBow.owns
 
-[Implementation, line 94](../../../../src/runtime/xr-bow.ts#L94)
+[Implementation, line 96](../../../../src/runtime/xr-bow.ts#L96)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -81,7 +81,7 @@ owns(grip: THREE.Group): boolean
 
 ## XRBow.arrowModel
 
-[Implementation, line 97](../../../../src/runtime/xr-bow.ts#L97)
+[Implementation, line 99](../../../../src/runtime/xr-bow.ts#L99)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -100,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.spawn
 
-[Implementation, line 109](../../../../src/runtime/xr-bow.ts#L109)
+[Implementation, line 111](../../../../src/runtime/xr-bow.ts#L111)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -143,7 +143,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.updateString
 
-[Implementation, line 159](../../../../src/runtime/xr-bow.ts#L159)
+[Implementation, line 161](../../../../src/runtime/xr-bow.ts#L161)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -166,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.interact
 
-[Implementation, line 178](../../../../src/runtime/xr-bow.ts#L178)
+[Implementation, line 180](../../../../src/runtime/xr-bow.ts#L180)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -212,44 +212,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.worldToLocal`
 - `this.updateString`
 
-## XRBow.interact.callback@180
+## XRBow.interact.callback@182
 
-[Implementation, line 180](../../../../src/runtime/xr-bow.ts#L180)
+[Implementation, line 182](../../../../src/runtime/xr-bow.ts#L182)
 
 ```ts
-callback@180(h): inferred by TypeScript; see implementation
+callback@182(h): inferred by TypeScript; see implementation
 ```
 
-## XRBow.interact.callback@189
+## XRBow.interact.callback@191
 
-[Implementation, line 189](../../../../src/runtime/xr-bow.ts#L189)
-
-```ts
-callback@189(h): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `THREE.Vector3`
-- `h.grip.getWorldPosition`
-- `h.grip.getWorldPosition(new THREE.Vector3()).distanceTo`
-- `squeeze`
-- `this.pressed.has`
-
-## XRBow.interact.callback@211
-
-[Implementation, line 211](../../../../src/runtime/xr-bow.ts#L211)
+[Implementation, line 191](../../../../src/runtime/xr-bow.ts#L191)
 
 ```ts
-callback@211(h): inferred by TypeScript; see implementation
-```
-
-## XRBow.interact.callback@236
-
-[Implementation, line 236](../../../../src/runtime/xr-bow.ts#L236)
-
-```ts
-callback@236(h): inferred by TypeScript; see implementation
+callback@191(h): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -260,17 +236,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `squeeze`
 - `this.pressed.has`
 
-## XRBow.interact.callback@250
+## XRBow.interact.callback@213
 
-[Implementation, line 250](../../../../src/runtime/xr-bow.ts#L250)
+[Implementation, line 213](../../../../src/runtime/xr-bow.ts#L213)
 
 ```ts
-callback@250(h): inferred by TypeScript; see implementation
+callback@213(h): inferred by TypeScript; see implementation
+```
+
+## XRBow.interact.callback@238
+
+[Implementation, line 238](../../../../src/runtime/xr-bow.ts#L238)
+
+```ts
+callback@238(h): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `h.grip.getWorldPosition`
+- `h.grip.getWorldPosition(new THREE.Vector3()).distanceTo`
+- `squeeze`
+- `this.pressed.has`
+
+## XRBow.interact.callback@252
+
+[Implementation, line 252](../../../../src/runtime/xr-bow.ts#L252)
+
+```ts
+callback@252(h): inferred by TypeScript; see implementation
 ```
 
 ## XRBow.cancel
 
-[Implementation, line 253](../../../../src/runtime/xr-bow.ts#L253)
+[Implementation, line 255](../../../../src/runtime/xr-bow.ts#L255)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -287,7 +287,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.fire
 
-[Implementation, line 258](../../../../src/runtime/xr-bow.ts#L258)
+[Implementation, line 260](../../../../src/runtime/xr-bow.ts#L260)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -314,7 +314,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.sync
 
-[Implementation, line 292](../../../../src/runtime/xr-bow.ts#L292)
+[Implementation, line 294](../../../../src/runtime/xr-bow.ts#L294)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -346,12 +346,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.quaternion.copy`
 - `this.root.updateWorldMatrix`
 
-## XRBow.sync.callback@310
+## XRBow.sync.callback@312
 
-[Implementation, line 310](../../../../src/runtime/xr-bow.ts#L310)
+[Implementation, line 312](../../../../src/runtime/xr-bow.ts#L312)
 
 ```ts
-callback@310(other): inferred by TypeScript; see implementation
+callback@312(other): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -360,12 +360,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `other.parent`
 - `this.bowWorld!.raw.contactPair`
 
-## XRBow.sync.callback@310.callback@313
+## XRBow.sync.callback@312.callback@315
 
-[Implementation, line 313](../../../../src/runtime/xr-bow.ts#L313)
+[Implementation, line 315](../../../../src/runtime/xr-bow.ts#L315)
 
 ```ts
-callback@313(manifold): inferred by TypeScript; see implementation
+callback@315(manifold): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -377,7 +377,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.removeArrow
 
-[Implementation, line 332](../../../../src/runtime/xr-bow.ts#L332)
+[Implementation, line 334](../../../../src/runtime/xr-bow.ts#L334)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -396,7 +396,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.clear
 
-[Implementation, line 337](../../../../src/runtime/xr-bow.ts#L337)
+[Implementation, line 339](../../../../src/runtime/xr-bow.ts#L339)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.
@@ -418,12 +418,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root?.traverse`
 - `this.string?.geometry.dispose`
 
-## XRBow.clear.callback@346
+## XRBow.clear.callback@348
 
-[Implementation, line 346](../../../../src/runtime/xr-bow.ts#L346)
+[Implementation, line 348](../../../../src/runtime/xr-bow.ts#L348)
 
 ```ts
-callback@346(object): inferred by TypeScript; see implementation
+callback@348(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -434,7 +434,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRBow.dispose
 
-[Implementation, line 364](../../../../src/runtime/xr-bow.ts#L364)
+[Implementation, line 366](../../../../src/runtime/xr-bow.ts#L366)
 
 Opt-in physical two-hand bow. World, collisions, session and timing belong to the host.
 Grip near the handle to carry it; the other grip pulls/releases the string.

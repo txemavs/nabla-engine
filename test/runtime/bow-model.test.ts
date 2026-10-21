@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { bowModels, buildBowModel, recurveBow } from '../../src/runtime/bow-model.js'
+import { bowModels, buildBowModel, defaultBow, recurveBow } from '../../src/runtime/bow-model.js'
 import { parseHeldWeaponPreset } from '../../src/catalog/weapons/held-library.js'
 
 const mesh = (name: string) => {
@@ -25,24 +25,25 @@ describe('shared bow model', () => {
     expect(bow.geometry).not.toBe(source.geometry)
     expect(arrow.userData.bowModelPart).toBe(true)
   })
-  it('names the recurve bow for held presets', () => {
+  it('names the bows for held presets (arco by default)', () => {
     expect(bowModels['recurve-bow']).toBe(recurveBow)
+    expect(defaultBow).toBe(bowModels.arco)
     const preset = parseHeldWeaponPreset({
       id: 'recurve-bow',
       name: 'Bow',
       kind: 'bow',
       slot: 4,
-      bowModel: 'recurve-bow',
+      bowModel: 'arco',
       view: { position: [0, 0, 0], rotation: [0, 0, 0] },
     })
-    expect(preset.bowModel).toBe('recurve-bow')
+    expect(preset.bowModel).toBe('arco')
     expect(() =>
       parseHeldWeaponPreset({
         id: 'k',
         name: 'K',
         kind: 'prop',
         slot: 3,
-        bowModel: 'recurve-bow',
+        bowModel: 'arco',
         model: '/m.glb',
         view: { position: [0, 0, 0], rotation: [0, 0, 0] },
       }),

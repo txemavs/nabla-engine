@@ -80,8 +80,34 @@ export const recurveBow: BowModel = {
   },
 }
 
+/**
+ * Arco: the engine's own bow (original model, assets/library/weapons/arco/README.md). Authored in
+ * engine metres and axes (grip at the origin, +Y up, -Z to the target, string at +Z), so no cut
+ * or transform; its `Bow_String` node is unused (the engine draws the string).
+ */
+export const arcoBow: BowModel = {
+  url: '/library/weapons/arco/arco.glb',
+  model: {
+    bowNode: 'Bow',
+    arrowNode: 'Arrow',
+    stringTriangles: [],
+    bowScale: 1,
+    bowRotationX: 0,
+    bowOffset: [0, 0, 0],
+    arrowScale: 1,
+    arrowRotationX: 0,
+    arrowOffset: [0, 0, 0],
+  },
+}
+
+/** The bow web (held, slot 4) and XR use unless a host names another. */
+export const defaultBow: BowModel = arcoBow
+
 /** Bindings by id, as named by a held bow preset's `bowModel`. */
-export const bowModels: Readonly<Record<string, BowModel>> = { 'recurve-bow': recurveBow }
+export const bowModels: Readonly<Record<string, BowModel>> = {
+  arco: arcoBow,
+  'recurve-bow': recurveBow,
+}
 
 /**
  * The bow (its static string triangles removed) and one arrow, cloned out of `asset` and

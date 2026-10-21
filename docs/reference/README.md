@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **604 modules; 7427 executable function definitions**.
+Coverage: **604 modules; 7428 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |

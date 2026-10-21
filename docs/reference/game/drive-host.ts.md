@@ -16,7 +16,7 @@ drive.ts. Kept on a global symbol so every module copy sees the same host.
 
 ## setDriveHost
 
-[Implementation, line 25](../../../game/drive-host.ts#L25)
+[Implementation, line 26](../../../game/drive-host.ts#L26)
 
 ```ts
 setDriveHost(host: DriveHost): void
@@ -24,7 +24,7 @@ setDriveHost(host: DriveHost): void
 
 ## driveHost
 
-[Implementation, line 29](../../../game/drive-host.ts#L29)
+[Implementation, line 30](../../../game/drive-host.ts#L30)
 
 ```ts
 driveHost(): DriveHost

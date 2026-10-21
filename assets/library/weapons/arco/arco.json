@@ -1,9 +1,9 @@
 {
-  "id": "recurve-bow",
+  "id": "arco",
   "name": "Arco",
   "kind": "bow",
   "slot": 4,
-  "bowModel": "recurve-bow",
+  "bowModel": "arco",
   "view": {
     "position": [
       -0.2,
@@ -29,6 +29,6 @@
     ]
   },
   "sources": {
-    "model": "Engine bow binding recurve-bow (src/runtime/bow-model.ts): the same GLB, node, string cut and transform as the headset XRBow"
+    "model": "Engine bow binding arco (src/runtime/bow-model.ts), the same bow as the headset XRBow; original model, assets/library/weapons/arco/README.md"
   }
 }
