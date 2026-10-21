@@ -1,4 +1,4 @@
-import { mountVREntry } from './vr-entry.js'
+import { mountVREntry, pcVRRequested } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { bindVR, preloadVR } from './vr-ui.js'
@@ -175,7 +175,13 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
     scene,
-    preloadVehicles: solo ? [] : menuPreloadVehicles(boot.preloadVehicles),
+    // VR modes: boarding must never load on demand in the headset, so the bike and car join.
+    preloadVehicles: solo
+      ? []
+      : menuPreloadVehicles([
+          ...(boot.preloadVehicles ?? []),
+          ...(pcVRRequested() ? ['vfr800', 'car'] : []),
+        ]),
     accidentReplacementVehicles: solo ? [] : menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
     sea: true,
     restParkedOnGround: true,
