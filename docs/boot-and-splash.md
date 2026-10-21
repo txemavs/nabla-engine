@@ -90,7 +90,7 @@ The engine exposes splash slots in `@nabla/engine/runtime/splash`:
 ```ts
 interface EngineSplashSkin {
   logoUrl?: string // image shown above the title
-  title?: string // default "NABLA ENGINE"; '' hides the title
+  title?: string // default none: the engine splash is the Nabla ▽, one message line and the bar
   messages?: readonly string[] // load lines, chosen by boot phase; [] = no host load texts
   status?: boolean // false hides every load text (status + detail lines), any layout
   themeCss?: string // injected once as <style data-nabla-splash-theme>
@@ -150,7 +150,7 @@ For a TV-style boot with no branding other than the engine's own mark:
 text (including the engine's streaming lines) in the `centered` and `corner` layouts too.
 
 Set `NABLA_BOOT` in `<head>`: an inline script in the demo page then applies the mark layout at
-first paint, before `main.ts` loads, so neither "NABLA ENGINE" nor "Cargando el motor…" flashes.
+first paint, before `main.ts` loads, so "Cargando el motor…" never flashes.
 (With `VITE_NABLA_BOOT` the skin is applied when `main.ts` starts.) `messages: []` also makes the
 early boot lines empty in any layout; a host that sets messages sees its first message instead of
 the demo's Spanish lines.
