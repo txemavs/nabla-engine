@@ -10,7 +10,7 @@ import { t } from '../i18n/index.js'
  * - `centered`: classic full-screen Nabla boot card.
  * - `corner`: status box bottom-left (attract / TV-style boot).
  * - `mark`: mark-only pre-attract. Black screen with only the logo (default: the Nabla ▽ mark,
- *   `nablaMarkUrl`), small in the bottom-right corner; no title, load texts, progress or tile grid.
+ *   `nablaMarkUrl`), small in the bottom-right corner; no title, load texts or progress.
  *   The page lifts the black curtain once attract draws the planet; the mark stays until play.
  */
 export type SplashLayout = 'centered' | 'corner' | 'mark'
@@ -41,7 +41,7 @@ export const nablaMarkUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURICompo
 export interface EngineSplashSkin {
   /** Image URL for the splash logo; omit to keep the default Nabla mark when present in the DOM. */
   logoUrl?: string
-  /** Main title text (default: "NABLA ENGINE"); `''` hides the title. */
+  /** Main title text (default: none, the splash is the Nabla ▽, one message and the bar); `''` hides it. */
   title?: string
   /**
    * Rotating or sequential load messages shown while the host waits.
@@ -69,7 +69,7 @@ export interface EngineSplashSkin {
 }
 
 export const defaultNablaSplashSkin: Readonly<EngineSplashSkin> = Object.freeze({
-  title: 'NABLA ENGINE',
+  title: '',
   messages: [t('boot.loading-engine'), t('boot.preparing-the-sky'), t('boot.loading-terrain')],
   layout: 'centered',
 })

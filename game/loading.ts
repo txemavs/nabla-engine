@@ -1,5 +1,6 @@
 /**
- * Loading screen controller for the 3x3 initial tile grid.
+ * Loading screen controller: Nabla mark, one message line and a progress bar on real progress
+ * (the initial map tiles when the page loads terrain, otherwise the boot phase).
  */
 
 import { mapTileAt, mapTileId, type MapTile } from '@nabla/engine/scene'
@@ -20,10 +21,10 @@ export class LoadingScreen {
   private screen: HTMLElement
   private status: HTMLElement
   private progressBar: HTMLElement
-  private tileIndicators: HTMLElement[]
   private centerTile: MapTile | null = null
   private grid3x3: MapTile[] = []
   private loadedTiles = new Set<string>()
+  private phase = 0
   private skin: EngineSplashSkin
 
   /** Default Nabla skin; hosts pass logo, title, messages, layout and theme CSS. */
@@ -31,7 +32,6 @@ export class LoadingScreen {
     this.screen = document.getElementById('loading-screen')!
     this.status = document.getElementById('loading-status')!
     this.progressBar = document.getElementById('loading-progress-bar')!
-    this.tileIndicators = Array.from(document.querySelectorAll('.tile-indicator'))
     this.skin = applySplashSkin(this.screen, skin)
   }
 
@@ -46,7 +46,9 @@ export class LoadingScreen {
 
   /** Show the host message for a 0..1 boot phase, unless a more specific status follows. */
   setPhase(progress: number): void {
-    const message = splashMessageAt(this.skin.messages, Math.min(1, Math.max(0, progress)))
+    this.phase = Math.max(this.phase, Math.min(1, Math.max(0, progress)))
+    const message = splashMessageAt(this.skin.messages, this.phase)
+    this.updateIndicators()
     if (message) this.setStatus(message)
   }
 
@@ -57,16 +59,6 @@ export class LoadingScreen {
 
   setTiles(tiles: MapTile[]): void {
     this.grid3x3 = [...tiles]
-    const grid = document.getElementById('loading-tiles')!
-    grid.replaceChildren(
-      ...tiles.map(() => {
-        const indicator = document.createElement('div')
-        indicator.className = 'tile-indicator'
-        return indicator
-      }),
-    )
-    grid.style.gridTemplateColumns = `repeat(${tiles.length === 4 ? 2 : 3}, 1fr)`
-    this.tileIndicators = Array.from(grid.children) as HTMLElement[]
     this.loadedTiles.clear()
     this.updateIndicators()
   }
@@ -115,20 +107,8 @@ export class LoadingScreen {
 
   private updateIndicators(): void {
     const progress = this.getProgress()
-    const percent = progress.total > 0 ? (progress.loaded / progress.total) * 100 : 0
-    this.progressBar.style.width = `${percent}%`
-
-    let index = 0
-    for (const tile of this.grid3x3) {
-      if (index < this.tileIndicators.length) {
-        const indicator = this.tileIndicators[index]
-        const isLoaded = this.loadedTiles.has(mapTileId(tile))
-        const isCenter = this.centerTile && mapTileId(tile) === mapTileId(this.centerTile)
-        indicator.classList.toggle('loaded', isLoaded)
-        indicator.classList.toggle('center', !!isCenter)
-      }
-      index++
-    }
+    const fraction = progress.total > 0 ? progress.loaded / progress.total : this.phase
+    this.progressBar.style.width = `${Math.round(fraction * 100)}%`
   }
 
   setStatus(message: string): void {

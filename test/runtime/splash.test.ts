@@ -83,11 +83,12 @@ function splashDom() {
 }
 
 describe('engine splash skin', () => {
-  it('keeps the Nabla default when the host passes nothing', () => {
-    expect(resolveSplashSkin()).toMatchObject({ title: 'NABLA ENGINE', layout: 'centered' })
+  it('keeps the Nabla default (no title) when the host passes nothing', () => {
+    expect(resolveSplashSkin()).toMatchObject({ title: '', layout: 'centered' })
     const { root, title, status } = splashDom()
     applySplashSkin(root as never)
-    expect(title.textContent).toBe('NABLA ENGINE')
+    expect(title.textContent).toBe('')
+    expect(title.hidden).toBe(true)
     expect(status.textContent).toBe(defaultNablaSplashSkin.messages![0])
     expect(root.dataset.splashLayout).toBe('centered')
   })
