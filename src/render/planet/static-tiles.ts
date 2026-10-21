@@ -57,6 +57,12 @@ export interface StaticTileProviderOptions {
   missingStatuses?: readonly number[]
   /** Called with the status when a tile is reported missing. */
   onMissing?: (status: number) => void
+  /**
+   * Manifest file names tried in order per cell, e.g. `['manifest.compressed.json', 'manifest.json']`
+   * for a test set published next to the production manifests; a missing one moves to the next.
+   * Default `['manifest.json']`. Ignored for a pinned `publication`.
+   */
+  manifestFiles?: readonly string[]
   /** Where Atlas packages are fetched and verified. Default: on the main thread. */
   packageLoader?: AtlasPackageLoader
 }
@@ -90,8 +96,8 @@ export function normalizeTilesBase(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, '')
 }
 
-export function tileManifestUrl(tile: MapTile, baseUrl: string): string {
-  return `${normalizeTilesBase(baseUrl)}/${mapTilePath(tile)}/manifest.json`
+export function tileManifestUrl(tile: MapTile, baseUrl: string, file = 'manifest.json'): string {
+  return `${normalizeTilesBase(baseUrl)}/${mapTilePath(tile)}/${file}`
 }
 
 const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\])$/
@@ -132,8 +138,28 @@ export async function fetchTileManifest(
   tile: MapTile,
   options: StaticTileProviderOptions,
 ): Promise<PlanetManifest | undefined> {
+  if (options.publication) return fetchOneManifest(tile, options, options.publication.manifestUrl)
+  const [last, ...earlier] = [...(options.manifestFiles ?? ['manifest.json'])].reverse()
+  for (const file of earlier.reverse()) {
+    let missing = false
+    const url = tileManifestUrl(tile, options.baseUrl, file)
+    const manifest = await fetchOneManifest(
+      tile,
+      { ...options, onMissing: () => (missing = true) },
+      url,
+    )
+    if (!missing) return manifest
+  }
+  return fetchOneManifest(tile, options, tileManifestUrl(tile, options.baseUrl, last))
+}
+
+/** One manifest request: undefined when missing, a StaticTileError for every other failure. */
+async function fetchOneManifest(
+  tile: MapTile,
+  options: StaticTileProviderOptions,
+  url: string,
+): Promise<PlanetManifest | undefined> {
   const { baseUrl, signal, cors = true } = options
-  const url = options.publication?.manifestUrl ?? tileManifestUrl(tile, baseUrl)
   assertSecureTileBase(
     url,
     options.pageProtocol ?? (typeof location !== 'undefined' ? location.protocol : undefined),

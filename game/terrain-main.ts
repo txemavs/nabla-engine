@@ -187,6 +187,11 @@ try {
     tiles: {
       baseUrl: config.base,
       mode: 'static',
+      // ?tileManifest=compressed: per-cell compressed test manifests, production ones as fallback.
+      manifestFiles:
+        params.get('tileManifest') === 'compressed'
+          ? ['manifest.compressed.json', 'manifest.json']
+          : undefined,
       meshMaxZoom: params.get('meshMaxZoom') === '16' ? 16 : 15,
       developmentRefresh: params.get('tileRefresh') === '1',
       horizon: false,
