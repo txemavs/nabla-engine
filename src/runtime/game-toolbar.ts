@@ -1,4 +1,5 @@
 import { cameraFovRange } from './camera-fov.js'
+import { insertOrdered } from './corner-buttons.js'
 
 /** Shared layout, icon appearance and ordered groups for the gameplay action rail. */
 export class GameToolbar {
@@ -14,28 +15,12 @@ export class GameToolbar {
     write: (value: number) => void,
     resolution?: { read: () => number; write: (value: number) => void },
   ) {
-    if (!document.getElementById('nabla-vertical-sliders')) {
-      const style = document.createElement('style')
-      style.id = 'nabla-vertical-sliders'
-      style.textContent = `.nabla-vertical-range { appearance:none;writing-mode:vertical-lr;direction:rtl;width:40px;height:160px;background:transparent;touch-action:none;cursor:pointer; }
-.nabla-vertical-range::-webkit-slider-runnable-track { width:4px;background:#4448;border-radius:2px; }
-.nabla-vertical-range::-webkit-slider-thumb { appearance:none;width:40px;height:40px;margin-left:-18px;background:var(--button,#252525);border:1px solid var(--line,#555);border-radius:2px; }
-.nabla-vertical-range::-moz-range-track { width:4px;background:#4448; }
-.nabla-vertical-range::-moz-range-thumb { width:38px;height:38px;background:#252525;border:1px solid #555;border-radius:2px; }
-.nabla-slider-well { position:relative;width:40px;margin:8px auto; }
-.nabla-slider-notch { position:absolute;left:-5px;width:50px;height:2px;background:#aaa;pointer-events:none; }
-.nabla-slider-panel { text-align:center;min-width:64px; }
-.nabla-slider-panel label { display:flex;align-items:center;flex-direction:column;gap:6px; }`
-      document.head.append(style)
-    }
-    this.root.className =
-      'game-toolbar nabla-btn-group nabla-corner nabla-corner--tr'
+    this.root.className = 'game-toolbar nabla-btn-group nabla-corner nabla-corner--tr'
     this.root.setAttribute('role', 'group')
     this.root.setAttribute('aria-label', 'Controles del juego')
     this.setVisible(false)
     const group = document.createElement('div')
     group.className = 'nabla-btn-popover'
-    group.style.order = '30'
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset.toolbarLabel = 'FOV'
@@ -90,12 +75,11 @@ export class GameToolbar {
     button.addEventListener('pointerdown', (e) => e.stopPropagation(), options)
     panel.append(label)
     group.append(button, panel)
-    this.root.append(group)
+    insertOrdered(this.root, group, 30)
     if (resolution) {
       const scales = [0.5, 1, 1.5, 2]
       const rg = document.createElement('div')
       rg.className = 'nabla-btn-popover'
-      rg.style.order = '31'
       const rb = document.createElement('button')
       rb.type = 'button'
       rb.dataset.toolbarLabel = 'QLTY'
@@ -149,7 +133,7 @@ export class GameToolbar {
       rl.append(value, ri)
       rp.append(rl)
       rg.append(rb, rp)
-      this.root.append(rg)
+      insertOrdered(this.root, rg, 31)
     }
     host.append(this.root)
   }
@@ -167,7 +151,6 @@ export class GameToolbar {
     button.setAttribute('aria-label', label)
     button.innerHTML = icon
     GameToolbar.styleButton(button)
-    button.style.order = String(order)
     button.addEventListener('pointerdown', (e) => e.stopPropagation(), {
       signal: this.lifetime.signal,
     })
@@ -187,12 +170,11 @@ export class GameToolbar {
       },
       { signal: this.lifetime.signal },
     )
-    this.root.append(button)
+    insertOrdered(this.root, button, order)
   }
   mount(group: HTMLElement, order: number): void {
     group.classList.add('nabla-btn-group')
-    group.style.order = String(order)
-    this.root.append(group)
+    insertOrdered(this.root, group, order)
     group.querySelectorAll('button').forEach((button) => GameToolbar.styleButton(button))
   }
   setVisible(visible: boolean): void {
