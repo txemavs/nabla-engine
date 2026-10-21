@@ -1,16 +1,24 @@
-/** Per-runtime localization with English fallback; no process-wide language state. */
-import { spanishMessages } from './messages.es.js'
-export type RuntimeLocale = 'en' | 'es'
+/**
+ * Gameplay notices (toasts, HUD hints, touch labels). Their keys are the English templates, so a
+ * call site reads as the text it shows; Spanish and Basque live in messages.es.ts / messages.eu.ts
+ * and are part of the engine catalogs (src/i18n).
+ */
+import { activeLocale, registeredCatalogs, translate, type Locale } from '../i18n/i18n.js'
+import '../i18n/engine-catalog.js'
+
+export type RuntimeLocale = Locale
 export type RuntimeText = (message: string, ...values: (string | number)[]) => string
 
-/** Hosts may override individual templates. Missing translations retain readable English. */
+/**
+ * Text function for one runtime. `locale` defaults to the page locale (`?locale=`); hosts may
+ * override individual templates. Missing translations keep readable English.
+ */
 export function createRuntimeText(
-  locale: RuntimeLocale = 'en',
+  locale: RuntimeLocale = activeLocale(),
   overrides: Readonly<Record<string, string>> = {},
 ): RuntimeText {
-  const messages = locale === 'es' ? { ...spanishMessages, ...overrides } : overrides
   return (message, ...values) =>
-    (messages[message] ?? message).replace(/\{(\d+)\}/g, (token, index: string) =>
-      String(values[Number(index)] ?? token),
-    )
+    message in overrides
+      ? translate({ en: overrides }, 'en', message, values)
+      : translate(registeredCatalogs(), locale, message, values)
 }

@@ -50,6 +50,7 @@ import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
 import { fpsReadout } from './fps-readout.js'
+import { t } from '@nabla/engine/i18n'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()
@@ -139,7 +140,6 @@ try {
     backend,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
-    locale: 'es',
     // Until the game is shown only the spawn cell and its three neighbours stream; reveal then lifts
     // the startup restriction and the full streaming radius follows (one ~40 MB cell at a time
     // instead of the whole area at once).
@@ -253,7 +253,9 @@ try {
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   preloadVR(runtime)
   loading.setStatus(
-    config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
+    config.tile
+      ? t('boot.loading-terrain-tile', { tile: mapTileId(config.tile) })
+      : t('boot.loading-terrain'),
   )
   void runBootPhase(runtime, loading, boot)
   // Host vehicles are placed inside play(), before the reveal: their models, lights and

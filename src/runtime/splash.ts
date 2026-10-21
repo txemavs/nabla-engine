@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 /**
  * Host-skinnable engine splash / loading chrome.
  * Default Nabla skin remains; hosts (e.g. Euskadi Online) override logo, title,
@@ -69,7 +70,7 @@ export interface EngineSplashSkin {
 
 export const defaultNablaSplashSkin: Readonly<EngineSplashSkin> = Object.freeze({
   title: 'NABLA ENGINE',
-  messages: ['Cargando el motor…', 'Preparando el cielo…', 'Cargando el terreno…'],
+  messages: [t('boot.loading-engine'), t('boot.preparing-the-sky'), t('boot.loading-terrain')],
   layout: 'centered',
 })
 

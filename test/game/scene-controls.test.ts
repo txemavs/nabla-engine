@@ -121,6 +121,6 @@ describe('add menu objects', () => {
     expect(addLabel('portal')).toBe('Añadir portal')
     expect(addLabel('gallery')).toBe('Añadir galería 2.5D')
     expect(addLabel('globe')).toBe('Añadir farola de barrio')
-    expect(addLabel('carrier')).toBe('Añadir vehículo')
+    expect(addLabel('carrier')).toBe('Add vehicle')
   })
 })
