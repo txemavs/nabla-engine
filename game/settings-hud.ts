@@ -22,11 +22,7 @@ import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls
 import { createSettingsManagement } from './settings-management.js'
 import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
-import {
-  weaponPoseNames,
-  normalizeWeaponPoses,
-  type WeaponPose,
-} from '../src/runtime/weapon-pose-tuning.js'
+import { weaponPoseNames, type WeaponPose } from '../src/runtime/weapon-pose-tuning.js'
 import {
   sidearmTuningDefaults,
   sidearmTuningRanges,
@@ -1186,6 +1182,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const note = doc.createElement('p')
     note.textContent =
       'Giros en grados y posición en milímetros. F tiene ajustes propios; F+Z y F+X usan posturas independientes, sin sumar giros. 0 conserva el giro original. Se guardan en este navegador.'
+    const target = doc.createElement('p')
+    target.style.fontWeight = 'bold'
     const select = doc.createElement('select')
     select.setAttribute('aria-label', 'Postura del arma')
     for (const [value, text] of Object.entries(weaponPoseNames)) {
@@ -1200,11 +1198,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       number: HTMLInputElement
     }> = []
     const refresh = () => {
+      const weapon = runtime.weaponPoseTarget
+      target.textContent = `Editando: ${weapon.name}${weapon.rig ? ` · ${weapon.rig}` : ''} (elige el arma con su tecla 1-5)`
       const values = runtime.weaponPoseTuning[select.value as WeaponPose]
       for (const { axis, range, number } of controls)
         range.value = number.value = String(values[axis])
     }
-    group.append(note, select)
+    group.append(note, target, select)
+    group.addEventListener('pointerenter', () => refresh())
     for (const [axis, title] of [
       ['pitch', 'Arriba / abajo'],
       ['yaw', 'Izquierda / derecha'],
@@ -1256,7 +1257,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     stop.onclick = () => runtime.previewWeaponPose(null)
     reset.onclick = () => {
       const values = runtime.weaponPoseTuning
-      values[select.value as WeaponPose] = normalizeWeaponPoses()[select.value as WeaponPose]
+      values[select.value as WeaponPose] = runtime.weaponPoseDefaults[select.value as WeaponPose]
       runtime.setWeaponPoseTuning(values)
       refresh()
       runtime.previewWeaponPose(select.value as WeaponPose)
@@ -1270,9 +1271,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     exportText.style.width = '100%'
     exportText.rows = 12
     copy.onclick = async () => {
+      const weapon = runtime.weaponPoseTarget
       const text = JSON.stringify(
         {
           version: 2,
+          weapon: weapon.id,
+          rig: weapon.rig,
+          hint: 'Paste "poses" into the rig JSON as a top-level "poses" key.',
           positionUnits: 'millimeters',
           units: 'degrees',
           angles: 'offsets from reviewed poses',
