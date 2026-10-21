@@ -46,6 +46,23 @@ function afterGameLoaded(): Promise<void> {
 }
 
 /**
+ * The casco click: requests the immersive session synchronously, inside the user gesture.
+ * `enter()` calls `navigator.xr.requestSession` before its first await and the XR code is
+ * already loaded by the support probe, so no promise hop or settings work comes first.
+ */
+export function startVREntry(runtime: Pick<GameRuntime, 'loadedXR' | 'loadXR'>): Promise<void> {
+  const loaded = runtime.loadedXR
+  const entering = loaded ? loaded.enter() : runtime.loadXR().then((xr) => xr.enter())
+  if (activePlayMode() === 'pc') {
+    installSettingsScope('headset-pc')
+    const url = new URL(location.href)
+    url.searchParams.set('vr', vrModeQuery['headset-pc'])
+    history.replaceState(history.state, '', url)
+  }
+  return entering
+}
+
+/**
  * One `casco` button, just left of the clock in the top-right row, shown only when
  * `navigator.xr.isSessionSupported('immersive-vr')` is true. The probe runs after the game has
  * loaded: an installed OpenXR runtime (Quest Link, SteamVR) can stall `navigator.xr`, and boot
@@ -77,19 +94,15 @@ export function mountVREntry(runtime: GameRuntime): void {
     void runtime.loadXR().catch(() => {})
   }
   button.onclick = () => {
-    if (activePlayMode() === 'pc') {
-      installSettingsScope('headset-pc')
-      const url = new URL(location.href)
-      url.searchParams.set('vr', vrModeQuery['headset-pc'])
-      history.replaceState(history.state, '', url)
-    }
     button.disabled = true
-    void runtime
-      .loadXR()
-      .then((xr) => xr.enter())
+    const entering = startVREntry(runtime)
+    // Quest Link keeps the request pending until the headset is worn and Link is active.
+    const waiting = setTimeout(() => say(t('vr.waiting-headset')), 8000)
+    void entering
       .then(() => document.querySelector<HTMLCanvasElement>('#game-canvas')?.focus())
       .catch((error) => say(t('vr.enter-failed', { error: String(error) })))
       .finally(() => {
+        clearTimeout(waiting)
         button.disabled = false
       })
   }

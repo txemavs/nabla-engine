@@ -471,5 +471,6 @@ export const engineEs: Readonly<Record<string, string>> = {
     'No se pudieron cargar los guantes; se mantienen las manos básicas.',
   'vr.virtual-reality': 'Realidad virtual',
   'vr.vr-not-available': 'VR no disponible',
+  'vr.waiting-headset': 'Ponte el casco y comprueba que Quest Link está activo',
   'vr.x-open-close-grab-the-frame-to-place-it': 'X: abrir/cerrar · Agarra el marco para colocarlo',
 }
