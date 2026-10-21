@@ -106,6 +106,13 @@ export class Gallery {
   lastGlassImpact: [number, number, number] | null = null
   /** Where the last shot rang a surface, and which kind (`config/impact-sounds.ts`); null when silent. */
   lastImpact: { point: [number, number, number]; surface: ImpactSurface } | null = null
+  /** Solid hit of the last `shoot` (entity, world point and normal, damage applied); else null. */
+  lastHit: {
+    entityId: string | null
+    point: Vec3Tuple
+    normal: Vec3Tuple
+    damage: number
+  } | null = null
   /** Where the last shot burst a balloon and how big the explosion is (1 = a vehicle); null when none. */
   lastBurst: { point: [number, number, number]; scale: number } | null = null
   private elapsed = 0
@@ -178,6 +185,7 @@ export class Gallery {
   ): boolean {
     this.lastGlassImpact = null
     this.lastImpact = null
+    this.lastHit = null
     this.lastBurst = null
     let rayView = shotView(sim, view.document, camera, range)
     const foreground = new THREE.Raycaster()
@@ -284,6 +292,12 @@ export class Gallery {
     )
     if (hit) {
       sim.damageVehicle(hit.entityId, damage)
+      this.lastHit = {
+        entityId: hit.entityId,
+        point: [...hit.point] as Vec3Tuple,
+        normal: [...hit.normal] as Vec3Tuple,
+        damage,
+      }
       // Scene entities (vehicles, props): parent the mark so it rides with them.
       // Planet buildings and other static colliders have no entity id — anchor in
       // view.root, which shares the floating-origin shift with world meshes.
