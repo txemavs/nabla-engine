@@ -50,7 +50,9 @@ const REMOVING_COMMANDS = new Set(['removeVehicle', 'removePlaced'])
 
 /** A command that names an entity the worker no longer (or not yet) has: logged and dropped. */
 export function isUnknownEntityError(error: unknown): boolean {
-  return /^(Unknown (entity|vehicle|portal)|No vehicle)\b/.test(String((error as Error)?.message ?? error))
+  return /^(Unknown (entity|vehicle|portal)|No vehicle)\b/.test(
+    String((error as Error)?.message ?? error),
+  )
 }
 
 type Quat = Transform['rotation']
@@ -223,7 +225,11 @@ export class ThreadedSimulation {
         this.pending.set(entity.id, entity)
     if (REMOVING_COMMANDS.has(method))
       for (const id of [args[0]].flat() as string[]) this.pending.delete(id)
-    const sent = this.forward({ type: 'call', method, args, quiet: true })
+    // Adding/removing entities asks for the full state back at once, so the mirror (poses,
+    // portals, vehicles) knows the new ids without waiting for a step: during the intro no
+    // steps run, and the view, monitors and portals read the new ids right away.
+    const structural = ADDING_COMMANDS.has(method) || REMOVING_COMMANDS.has(method)
+    const sent = this.forward({ type: 'call', method, args, quiet: !structural })
     if (LAGGED_RESULTS.has(method)) {
       sent.then(
         (value) => this.lagged.set(method, value),
@@ -323,10 +329,13 @@ export class ThreadedSimulation {
     return this.explosions.splice(0)
   }
   portalIds(): string[] {
-    return Object.keys(this.state().portals)
+    const ids = Object.keys(this.state().portals)
+    for (const [id, entity] of this.pending) if (entity.portal && !ids.includes(id)) ids.push(id)
+    return ids
   }
   portalState(id: string): ReturnType<Simulation['portalState']> {
-    const portal = this.state().portals[id]
+    // A mouth added this frame is known here before the worker's reply: it joins as authored.
+    const portal = this.state().portals[id] ?? this.pending.get(id)?.portal
     if (!portal) throw new Error('Unknown portal')
     return { ...portal }
   }

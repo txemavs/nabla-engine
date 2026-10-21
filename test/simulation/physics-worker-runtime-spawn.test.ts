@@ -7,6 +7,7 @@ import {
 import { ThreadedSimulation, threadedSimulation } from '../../src/simulation/threaded-simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
+import { presetEntities } from '../../src/catalog/vehicles/library.js'
 import type { SceneDocument } from '../../src/scene/document.js'
 
 async function threaded() {
@@ -59,6 +60,26 @@ describe('physics worker: entities spawned at runtime', () => {
       expect.stringMatching(/Unknown|No vehicle/),
     )
     warn.mockRestore()
+    close()
+  })
+
+  it('knows a carrier spawned during the intro (no steps): portal, pose and vehicle', async () => {
+    const { sim, close } = await threaded()
+    const added = presetEntities('carrier', 'spawned-2', [0, 1.2, -20])
+    const mouth = added.find((e) => e.portal)!
+    sim.addVehicles(added)
+    // Same frame: the view and monitors read the new mouth (was 'Unknown portal').
+    expect(sim.portalIds()).toContain(mouth.id)
+    expect(sim.portalState(mouth.id).mode).toBe(mouth.portal!.mode)
+    expect(sim.entityTransform(mouth.id).position.every(Number.isFinite)).toBe(true)
+    // No step runs (intro): the add's own reply brings the worker state.
+    await threadedSimulation(sim)!.whenEntities(
+      added.map((e) => e.id),
+      2000,
+    )
+    expect(sim.vehicleList().map((v) => v.id)).toContain('spawned-2')
+    expect(sim.portalState(mouth.id)).toBeTruthy()
+    expect(() => sim.vehicleInfo('spawned-2')).not.toThrow()
     close()
   })
 })
