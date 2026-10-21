@@ -445,6 +445,9 @@ describe('world gravity scale', () => {
     expect(sim.setGravityScale(10)).toBe(simulationDefaults.gravityScaleRange.max)
     expect(sim.setGravityScale(0.1)).toBe(simulationDefaults.gravityScaleRange.min)
     sim.dispose()
+  })
+})
+
 describe('spawn ground guard', () => {
   it('holds a spawn until ground collision is under it and settles it on that surface', () => {
     const sim = new Simulation(scene())
