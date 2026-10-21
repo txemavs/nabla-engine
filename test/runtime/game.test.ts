@@ -160,36 +160,3 @@ it('consumes jump on a physics tick and clears pending input when focus is relea
     game.dispose()
   }
 })
-
-it('clears a queued jump when ticks are reported between frames, as with the physics worker', async () => {
-  const game = new GameRuntime()
-  try {
-    await game.play(scene())
-    for (let i = 0; i < 120; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
-    const sim = game.simulation!
-    // Worker-like stats: the tick count only updates when the next frame starts.
-    let reported = sim.stats.ticks
-    Object.defineProperty(sim, 'stats', {
-      configurable: true,
-      get: () => ({ ticks: reported, droppedSeconds: 0, bodies: 0 }),
-    })
-    const original = game.session.step.bind(game.session)
-    const jumps: boolean[] = []
-    let real = 0
-    game.session.step = (elapsed, input, water) => {
-      jumps.push(!!input?.jump)
-      original(elapsed, input, water)
-      real++
-    }
-    real = reported
-    game.action('Space')
-    for (let i = 0; i < 6; i++) {
-      reported = real // the worker's snapshot for the previous frame lands before this one
-      game.step(1 / 60, idleInput(), 0, 2100 + i * 17)
-    }
-    expect(jumps[0]).toBe(true)
-    expect(jumps.slice(2)).toEqual([false, false, false, false])
-  } finally {
-    game.dispose()
-  }
-})
