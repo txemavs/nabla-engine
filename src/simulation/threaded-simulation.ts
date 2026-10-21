@@ -26,7 +26,7 @@ import {
 } from './simulation-worker-host.js'
 import { Simulation, type PlayerInput } from './simulation.js'
 import type { SceneDocument } from '../scene/document.js'
-import type { Transform, Vec3Tuple } from '../entity/schema.js'
+import type { Entity, Transform, Vec3Tuple } from '../entity/schema.js'
 
 type SimulationOptions = ConstructorParameters<typeof Simulation>[1]
 
@@ -43,6 +43,28 @@ const IDENTITY_COMMANDS = new Set(['setSurfaceRoads', 'setSurfaceAreas'])
 
 const vehicleError = (id: string) => new Error('Unknown vehicle: ' + id)
 
+/** Commands that add entities: their ids exist here at once, in the worker after its next step. */
+const ADDING_COMMANDS = new Set(['addVehicles', 'addPlaced'])
+/** Commands that remove entities (by id or ids). */
+const REMOVING_COMMANDS = new Set(['removeVehicle', 'removePlaced'])
+
+/** A command that names an entity the worker no longer (or not yet) has: logged and dropped. */
+export function isUnknownEntityError(error: unknown): boolean {
+  return /^(Unknown (entity|vehicle|portal)|No vehicle)\b/.test(String((error as Error)?.message ?? error))
+}
+
+type Quat = Transform['rotation']
+const mulQuat = (a: Quat, b: Quat): Quat => [
+  a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+  a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+  a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
+]
+const rotate = (q: Quat, v: Vec3Tuple): Vec3Tuple => {
+  const r = mulQuat(mulQuat(q, [v[0], v[1], v[2], 0]), [-q[0], -q[1], -q[2], q[3]])
+  return [r[0], r[1], r[2]]
+}
+
 /** The worker-hosted stand-in behind `sim`, or null for an inline {@link Simulation}. */
 export function threadedSimulation(sim: object | null | undefined): ThreadedSimulation | null {
   return sim instanceof ThreadedSimulation ? sim : null
@@ -57,6 +79,9 @@ export class ThreadedSimulation {
   private failure: unknown = null
   private nextPole = 1
   private disposed = false
+  /** Entities added here whose ids the worker's snapshot does not show yet. */
+  private readonly pending = new Map<string, Entity>()
+  private waiters: { ids: string[]; resolve: () => void }[] = []
 
   private constructor(
     readonly worker: WorkerSimulation,
@@ -69,6 +94,7 @@ export class ThreadedSimulation {
         this.reads = reply.reads
         this.explosions.push(...reply.reads.explosions)
       }
+      if (reply.snapshot) this.settlePending(reply.snapshot.entities)
     }
   }
 
@@ -115,9 +141,71 @@ export class ThreadedSimulation {
   private forward(message: Parameters<WorkerSimulation['request']>[0]): Promise<unknown> {
     const sent = this.worker.request(message)
     sent.catch((error: unknown) => {
+      // A command racing a despawn (or naming an id the worker never had) is not fatal.
+      if (isUnknownEntityError(error)) {
+        console.warn(
+          '[physics-worker] dropped command:',
+          String((error as Error)?.message ?? error),
+        )
+        return
+      }
       this.failure ??= error
     })
     return sent
+  }
+
+  private settlePending(entities: Record<string, unknown>): void {
+    for (const id of [...this.pending.keys()]) if (id in entities) this.pending.delete(id)
+    if (!this.waiters.length) return
+    this.waiters = this.waiters.filter((waiter) => {
+      if (waiter.ids.some((id) => this.pending.has(id))) return true
+      waiter.resolve()
+      return false
+    })
+  }
+
+  /**
+   * Resolves once the worker's snapshot holds `ids` (added with addVehicles/addPlaced), so a host
+   * can register views that read vehicle state. Gives up after `timeoutMs` (reads then fall back
+   * to the authored transform) rather than stalling the caller.
+   */
+  whenEntities(ids: readonly string[], timeoutMs = 5000): Promise<void> {
+    const waiting = ids.filter((id) => this.pending.has(id))
+    if (!waiting.length || this.disposed) return Promise.resolve()
+    return new Promise((resolve) => {
+      const waiter = { ids: waiting, resolve }
+      this.waiters.push(waiter)
+      setTimeout(() => {
+        if (!this.waiters.includes(waiter)) return
+        this.waiters = this.waiters.filter((w) => w !== waiter)
+        console.warn('[physics-worker] entities not in the worker yet:', waiting.join(', '))
+        resolve()
+      }, timeoutMs)
+    })
+  }
+
+  /** Authored world transform of a pending entity (parent chain composed). */
+  private pendingTransform(id: string, interpolated: boolean): Transform | null {
+    const entity = this.pending.get(id)
+    if (!entity) return null
+    const local = entity.transform
+    if (!entity.parentId) return { position: [...local.position], rotation: [...local.rotation] }
+    const parent = this.hasEntity(entity.parentId)
+      ? this.entityTransform(entity.parentId, interpolated)
+      : null
+    if (!parent) return { position: [...local.position], rotation: [...local.rotation] }
+    const offset = rotate(parent.rotation, local.position)
+    return {
+      position: [
+        parent.position[0] + offset[0],
+        parent.position[1] + offset[1],
+        parent.position[2] + offset[2],
+      ],
+      rotation: mulQuat(parent.rotation, local.rotation),
+    }
+  }
+  private hasEntity(id: string): boolean {
+    return this.pending.has(id) || !!this.worker.snapshotOrNull?.entities[id]
   }
 
   private command(method: string, args: unknown[]): unknown {
@@ -130,6 +218,11 @@ export class ThreadedSimulation {
       this.lastIdentity.set(method, next)
       args = [next]
     }
+    if (ADDING_COMMANDS.has(method))
+      for (const entity of (args[0] as Entity[] | undefined) ?? [])
+        this.pending.set(entity.id, entity)
+    if (REMOVING_COMMANDS.has(method))
+      for (const id of [args[0]].flat() as string[]) this.pending.delete(id)
     const sent = this.forward({ type: 'call', method, args, quiet: true })
     if (LAGGED_RESULTS.has(method)) {
       sent.then(
@@ -182,13 +275,19 @@ export class ThreadedSimulation {
     return this.worker.playerFrame
   }
   entityTransform(id: string, interpolated = false): Transform {
+    if (!this.worker.snapshotOrNull?.entities[id]) {
+      const pending = this.pendingTransform(id, interpolated)
+      if (pending) return pending
+    }
     return this.worker.entityTransform(id, interpolated)
   }
   wheelTransforms(id: string, interpolated = false): Transform[] {
     return this.worker.wheelTransforms(id, interpolated)
   }
   entityIds(): string[] {
-    return Object.keys(this.worker.snapshot.entities)
+    const ids = Object.keys(this.worker.snapshot.entities)
+    for (const id of this.pending.keys()) if (!ids.includes(id)) ids.push(id)
+    return ids
   }
   get portalEvent(): Simulation['portalEvent'] {
     return this.state().portalEvent
@@ -307,6 +406,7 @@ export class ThreadedSimulation {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    for (const waiter of this.waiters.splice(0)) waiter.resolve()
     this.worker.dispose().then(
       () => this.terminate(),
       () => this.terminate(),
