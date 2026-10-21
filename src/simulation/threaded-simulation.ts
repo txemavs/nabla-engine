@@ -35,8 +35,12 @@ export function physicsWorkerEnabled(search = globalThis.location?.search ?? '')
   return new URLSearchParams(search).get('physicsWorker') === '1'
 }
 
-/** Commands whose return value the game uses; answered with the worker's previous reply. */
-const LAGGED_RESULTS = new Set(['preparePlanetCollisions'])
+/**
+ * Commands whose return value the game uses; answered with the worker's previous reply.
+ * `settleGround` gates the reveal (`while (!sim.settleGround(...))`): a plain forwarded call
+ * returns undefined, so without a lagged reply that loop never ended in worker mode.
+ */
+const LAGGED_RESULTS = new Set(['preparePlanetCollisions', 'settleGround'])
 
 /** Commands that skip the round trip when called again with the same roads/areas (by identity). */
 const IDENTITY_COMMANDS = new Set(['setSurfaceRoads', 'setSurfaceAreas'])

@@ -82,4 +82,15 @@ describe('physics worker: entities spawned at runtime', () => {
     expect(() => sim.vehicleInfo('spawned-2')).not.toThrow()
     close()
   })
+
+  it('releases the reveal ground hold without steps (worker boot reaches play)', async () => {
+    const { sim, close } = await threaded()
+    // Same loop as GameRuntime.play() before the reveal; no steps run during the intro.
+    const started = performance.now()
+    while (!sim.settleGround(performance.now() - started > 1000)) {
+      expect(performance.now() - started).toBeLessThan(3000)
+      await new Promise((resolve) => setTimeout(resolve, 16))
+    }
+    close()
+  })
 })
