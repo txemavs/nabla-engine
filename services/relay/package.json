@@ -10,7 +10,7 @@
     "test": "node --test server.test.mjs"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=20"
   },
   "dependencies": {
     "ws": "^8.18.0"

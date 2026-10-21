@@ -191,3 +191,66 @@ test('forgets a member position after POSITION_TTL without snapshots', async () 
   far.close()
   await relay.close()
 })
+
+const tryOpen = (port, headers) =>
+  new Promise((resolve) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`, { headers })
+    socket.on('open', () => {
+      socket.close()
+      resolve('open')
+    })
+    socket.on('unexpected-response', (_req, res) => resolve(res.statusCode))
+    socket.on('error', () => resolve('error'))
+  })
+
+test('rejects WebSocket upgrades from origins that are not allowed', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  assert.equal(await tryOpen(relay.port, { Origin: 'https://euskadi.online' }), 'open')
+  assert.equal(await tryOpen(relay.port, { Origin: 'http://localhost:10001' }), 'open')
+  assert.equal(await tryOpen(relay.port, { Origin: 'https://evil.example' }), 403)
+  assert.equal(await tryOpen(relay.port, {}), 'open')
+  await relay.close()
+  const custom = await startRelay({
+    port: 0,
+    host: '127.0.0.1',
+    log: () => {},
+    allowedOrigins: ['http://localhost:5173'],
+  })
+  assert.equal(await tryOpen(custom.port, { Origin: 'http://localhost:5173' }), 'open')
+  assert.equal(await tryOpen(custom.port, { Origin: 'https://euskadi.online' }), 403)
+  await custom.close()
+  const any = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, allowedOrigins: ['*'] })
+  assert.equal(await tryOpen(any.port, { Origin: 'https://evil.example' }), 'open')
+  await any.close()
+})
+
+test('refuses to open more than MAX_ROOMS rooms', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, maxRooms: 2 })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  const c = await connect(relay.port)
+  const d = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'one', meta: {} })
+  await a.next('welcome')
+  b.json({ type: 'join', version: 1, room: 'two', meta: {} })
+  await b.next('welcome')
+  c.json({ type: 'join', version: 1, room: 'three', meta: {} })
+  assert.equal((await c.next('error')).message, 'Too many rooms')
+  // Joining an existing room is still fine.
+  d.json({ type: 'join', version: 1, room: 'one', meta: {} })
+  await d.next('welcome')
+  // Once a room empties, a new one can open.
+  b.close()
+  await new Promise((r) => setTimeout(r, 100))
+  c.json({ type: 'join', version: 1, room: 'three', meta: {} })
+  await c.next('welcome')
+  for (const s of [a, c, d]) s.close()
+  await relay.close()
+})
+
+test('GET /health answers 200', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  const res = await fetch(`http://127.0.0.1:${relay.port}/health`)
+  assert.equal(res.status, 200)
+  await relay.close()
+})

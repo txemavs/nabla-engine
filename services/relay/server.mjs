@@ -4,12 +4,17 @@
  * It keeps no game state: it assigns peer ids, announces joins and leaves, and forwards
  * snapshots to the other members of the same room with the sender's peer id stamped on them.
  *
- *   PORT=10003 node services/relay/server.mjs
+ *   PORT=8787 node services/relay/server.mjs
  *
  * Each member gets a slot (0, 1, 2…; the lowest free one in its room) and the palette colour at
  * that slot, sent in `welcome` and `joined`; both are released when the member leaves.
  *
- * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 8 peers),
+ * Configuration is environment-only (no secrets, no config files):
+ * Env: PORT (default 8787), HOST (default 0.0.0.0), MAX_ROOM (default 64 peers per room),
+ * MAX_ROOMS (default 256 rooms; a join that would open a new room beyond this is refused),
+ * ALLOWED_ORIGINS (comma-separated; default https://euskadi.online,http://localhost:10001;
+ * '*' allows any): a WebSocket upgrade whose Origin header is not listed is rejected with 403.
+ * Requests without an Origin header (non-browser clients, tests) are allowed.
  * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer),
  * PALETTE (comma-separated #rrggbb, default eight distinct car colours),
  * MAX_EVENTS (default 15 game events/s per peer; extra events are dropped),
@@ -27,6 +32,13 @@ import { WebSocketServer } from 'ws'
 export const PROTOCOL_VERSION = 1
 const ROOM = /^[A-Za-z0-9_-]{1,64}$/
 const COLOR = /^#[0-9a-fA-F]{6}$/
+export const DEFAULT_ALLOWED_ORIGINS = ['https://euskadi.online', 'http://localhost:10001']
+const list = (value) =>
+  String(value ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean)
+
 export const DEFAULT_PALETTE = [
   '#c0392b', // red
   '#2471a3', // blue
@@ -111,9 +123,13 @@ function cleanMeta(meta) {
 
 /** Start a relay; resolves once listening. Returns { port, close }. */
 export function startRelay({
-  port = Number(process.env.PORT ?? 10003),
+  port = Number(process.env.PORT ?? 8787),
   host = process.env.HOST ?? '0.0.0.0',
   maxRoom = Number(process.env.MAX_ROOM ?? 64),
+  maxRooms = Number(process.env.MAX_ROOMS ?? 256),
+  allowedOrigins = process.env.ALLOWED_ORIGINS !== undefined
+    ? list(process.env.ALLOWED_ORIGINS)
+    : DEFAULT_ALLOWED_ORIGINS,
   maxFrame = Number(process.env.MAX_FRAME ?? 4096),
   maxRate = Number(process.env.MAX_RATE ?? 60),
   maxEvents = Number(process.env.MAX_EVENTS ?? 15),
@@ -136,7 +152,18 @@ export function startRelay({
     }
     res.writeHead(404).end()
   })
-  const wss = new WebSocketServer({ server: http, maxPayload: maxFrame })
+  const anyOrigin = allowedOrigins.includes('*')
+  const origins = new Set(allowedOrigins.map((o) => o.replace(/\/+$/, '')))
+  const wss = new WebSocketServer({
+    server: http,
+    maxPayload: maxFrame,
+    // Browsers always send Origin; non-browser clients (tests, tools) may omit it.
+    verifyClient: ({ origin }, done) => {
+      const ok = !origin || anyOrigin || origins.has(origin)
+      if (!ok) log('reject origin', origin)
+      done(ok, ok ? undefined : 403, ok ? undefined : 'Origin not allowed')
+    },
+  })
   const send = (socket, message) => {
     if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message))
   }
@@ -190,6 +217,8 @@ export function startRelay({
         if (typeof message.room !== 'string' || !ROOM.test(message.room))
           return send(socket, { type: 'error', message: 'Invalid room' })
         leave(socket)
+        if (!rooms.has(message.room) && rooms.size >= maxRooms)
+          return send(socket, { type: 'error', message: 'Too many rooms' })
         const members = rooms.get(message.room) ?? new Map()
         if (members.size >= maxRoom) return send(socket, { type: 'error', message: 'Room is full' })
         const peer = randomUUID().slice(0, 8)
