@@ -1,3 +1,4 @@
+import { nextPaint } from '../../runtime/next-paint.js'
 /**
  * Get a GLB ready before it is shown: fetch and parse it once (shared `AssetLibrary` cache),
  * upload its textures one per frame, and compile its shader programs with `compileAsync`
@@ -42,12 +43,8 @@ export function materialTextures(root: THREE.Object3D): THREE.Texture[] {
   return [...textures]
 }
 
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve())
-    else setTimeout(resolve, 0)
-  })
-}
+/** Next paint, also while an immersive XR session pauses window rAF (see next-paint.ts). */
+const nextFrame = (): Promise<void> => nextPaint()
 
 export class AssetWarmup {
   private readonly warmed = new Map<string, Promise<void>>()
