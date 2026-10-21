@@ -16,6 +16,8 @@
  * RADIUS (default 250 m; 0 = everyone): interest management. A snapshot is forwarded only to
  * members within RADIUS metres (horizontal x/z) of its sender's last position; members that
  * have not sent a position yet receive everything. Clients show/hide inside this (e.g. 200/220 m).
+ * POSITION_TTL (default 3000 ms): a member's position is forgotten this long after its last
+ * snapshot (e.g. it got out on foot and stopped sending), so it receives everything again.
  */
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
@@ -116,6 +118,7 @@ export function startRelay({
   maxRate = Number(process.env.MAX_RATE ?? 60),
   maxEvents = Number(process.env.MAX_EVENTS ?? 15),
   radius = Number(process.env.RADIUS ?? 250),
+  positionTtl = Number(process.env.POSITION_TTL ?? 3000),
   palette = (process.env.PALETTE ?? '').split(',').filter((c) => COLOR.test(c.trim())).length
     ? process.env.PALETTE.split(',')
         .map((c) => c.trim())
@@ -143,8 +146,12 @@ export function startRelay({
   /** Interest: forward to members near the sender's position (or not located yet). */
   const near = (a, b) => !(radius > 0) || !a || !b || Math.hypot(a[0] - b[0], a[2] - b[2]) <= radius
   const forward = (room, from, position, message) => {
-    for (const [socket, member] of rooms.get(room) ?? [])
-      if (socket !== from && near(position, member.position)) send(socket, message)
+    const now = Date.now()
+    for (const [socket, member] of rooms.get(room) ?? []) {
+      // A receiver that stopped sending snapshots no longer has a reliable position.
+      const fresh = member.position && now - member.positionAt <= positionTtl
+      if (socket !== from && near(position, fresh ? member.position : null)) send(socket, message)
+    }
   }
   const leave = (socket) => {
     const { room } = socket.nabla
@@ -207,6 +214,7 @@ export function startRelay({
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || !validSnapshot(message)) return
         member.position = message.state.position
+        member.positionAt = Date.now()
         forward(state.room, socket, member.position, {
           type: 'snapshot',
           peer: member.peer,

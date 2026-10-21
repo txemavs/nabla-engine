@@ -150,3 +150,44 @@ test('forwards snapshots only to members within RADIUS of the sender', async () 
   c.close()
   await relay.close()
 })
+
+test('forgets a member position after POSITION_TTL without snapshots', async () => {
+  const relay = await startRelay({
+    port: 0,
+    host: '127.0.0.1',
+    log: () => {},
+    radius: 200,
+    positionTtl: 150,
+  })
+  const at = (x) => ({ ...state, position: [x, 0, 0] })
+  const join = async () => {
+    const s = await connect(relay.port)
+    s.json({ type: 'join', version: 1, room: 'ttl', meta: {} })
+    await s.next('welcome')
+    return s
+  }
+  const seen = (s) => {
+    const seqs = new Set()
+    s.on('message', (d) => {
+      const m = JSON.parse(String(d))
+      if (m.type === 'snapshot') seqs.add(m.seq)
+    })
+    return seqs
+  }
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+  const a = await join()
+  const far = await join()
+  const farGot = seen(far)
+  far.json({ type: 'snapshot', t: 0, seq: 1, state: at(1000) })
+  await wait(50)
+  a.json({ type: 'snapshot', t: 1, seq: 2, state: at(0) })
+  await wait(100)
+  assert.equal(farGot.has(2), false) // fresh and 1 km away: filtered
+  await wait(200) // `far` stops sending (e.g. on foot)
+  a.json({ type: 'snapshot', t: 2, seq: 3, state: at(0) })
+  await wait(100)
+  assert.equal(farGot.has(3), true) // position forgotten: receives everything
+  a.close()
+  far.close()
+  await relay.close()
+})
