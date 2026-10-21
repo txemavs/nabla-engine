@@ -11,7 +11,7 @@
 
 ## sampleLaserSmoke
 
-[Implementation, line 14](../../../../../src/render/entity/laser-smoke.ts#L14)
+[Implementation, line 18](../../../../../src/render/entity/laser-smoke.ts#L18)
 
 Bounded density profile along a beam, in its own scene frame.
 
@@ -39,6 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `inverse.clone`
 - `inverse.clone().multiply`
 - `pool.root.updateWorldMatrix`
+- `pool.sync`
 - `position.dot`
 - `position.lengthSq`
 - `result.fill`

@@ -9,12 +9,243 @@
 - `./laser-smoke.js`
 - `./smoke-density.js`
 - `three`
-- `../webgpu-substitutes.js`
-- `./particle-nodes.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
 
-## ExhaustSmoke.constructor
+## SmokeBatch.callback@58
 
-[Implementation, line 42](../../../../../src/render/entity/exhaust-smoke.ts#L42)
+[Implementation, line 58](../../../../../src/render/entity/exhaust-smoke.ts#L58)
+
+```ts
+callback@58(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector4`
+
+## SmokeBatch.constructor
+
+[Implementation, line 62](../../../../../src/render/entity/exhaust-smoke.ts#L62)
+
+```ts
+constructor(): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Points`
+- `THREE.ShaderMaterial`
+- `THREE.Sphere`
+- `THREE.Vector3`
+- `attribute.setUsage`
+- `this.geometry.setAttribute`
+- `this.geometry.setDrawRange`
+- `this.geometry.setIndex`
+- `this.index.setUsage`
+
+## SmokeBatch.constructor.callback@113
+
+[Implementation, line 113](../../../../../src/render/entity/exhaust-smoke.ts#L113)
+
+```ts
+callback@113(_renderer, scene): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `drawnIn`
+
+## SmokeBatch.lease
+
+[Implementation, line 123](../../../../../src/render/entity/exhaust-smoke.ts#L123)
+
+First free clock slot and ring offset for `capacity` particles, or undefined.
+
+```ts
+lease(emitter: AnalyticExhaustSmoke): { slot: number; offset: number } | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `this.clocks[slot].set`
+- `this.slots.findIndex`
+
+## SmokeBatch.lease.callback@124
+
+[Implementation, line 124](../../../../../src/render/entity/exhaust-smoke.ts#L124)
+
+```ts
+callback@124(s): inferred by TypeScript; see implementation
+```
+
+## SmokeBatch.lease.callback@127
+
+[Implementation, line 127](../../../../../src/render/entity/exhaust-smoke.ts#L127)
+
+```ts
+callback@127(s): s is AnalyticExhaustSmoke
+```
+
+## SmokeBatch.lease.callback@128
+
+[Implementation, line 128](../../../../../src/render/entity/exhaust-smoke.ts#L128)
+
+```ts
+callback@128(s): inferred by TypeScript; see implementation
+```
+
+## SmokeBatch.lease.callback@129
+
+[Implementation, line 129](../../../../../src/render/entity/exhaust-smoke.ts#L129)
+
+```ts
+callback@129(a, b): inferred by TypeScript; see implementation
+```
+
+## SmokeBatch.release
+
+[Implementation, line 141](../../../../../src/render/entity/exhaust-smoke.ts#L141)
+
+```ts
+release(slot: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.reindex`
+
+## SmokeBatch.reindex
+
+[Implementation, line 147](../../../../../src/render/entity/exhaust-smoke.ts#L147)
+
+Draw the leased rings in emitter creation order.
+
+```ts
+reindex(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.geometry.setDrawRange`
+- `this.index.clearUpdateRanges`
+
+## SmokeBatch.reindex.callback@149
+
+[Implementation, line 149](../../../../../src/render/entity/exhaust-smoke.ts#L149)
+
+```ts
+callback@149(s): s is AnalyticExhaustSmoke
+```
+
+## SmokeBatch.reindex.callback@150
+
+[Implementation, line 150](../../../../../src/render/entity/exhaust-smoke.ts#L150)
+
+```ts
+callback@150(a, b): inferred by TypeScript; see implementation
+```
+
+## SmokeBatch.empty
+
+[Implementation, line 161](../../../../../src/render/entity/exhaust-smoke.ts#L161)
+
+```ts
+empty(): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.slots.every`
+
+## SmokeBatch.empty.callback@162
+
+[Implementation, line 162](../../../../../src/render/entity/exhaust-smoke.ts#L162)
+
+```ts
+callback@162(s): inferred by TypeScript; see implementation
+```
+
+## SmokeBatch.dispose
+
+[Implementation, line 165](../../../../../src/render/entity/exhaust-smoke.ts#L165)
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.geometry.dispose`
+- `this.points.material.dispose`
+- `this.points.removeFromParent`
+
+## SmokePool.constructor
+
+[Implementation, line 176](../../../../../src/render/entity/exhaust-smoke.ts#L176)
+
+The shared batches of one scene space (the `space` emitters express particles in).
+
+```ts
+constructor(private readonly space: THREE.Object3D): instance
+```
+
+## SmokePool.lease
+
+[Implementation, line 177](../../../../../src/render/entity/exhaust-smoke.ts#L177)
+
+The shared batches of one scene space (the `space` emitters express particles in).
+
+```ts
+lease(emitter: AnalyticExhaustSmoke): NonNullable<AnalyticExhaustSmoke['lease']>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `batch.lease`
+- `this.addBatch`
+
+Explicit throws in this body:
+
+- `new Error(\`Exhaust smoke capacity ${emitter.capacity} > ${BATCH_PARTICLES}\`)`
+
+## SmokePool.addBatch
+
+[Implementation, line 187](../../../../../src/render/entity/exhaust-smoke.ts#L187)
+
+The shared batches of one scene space (the `space` emitters express particles in).
+
+```ts
+addBatch(): SmokeBatch
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `SmokeBatch`
+- `this.batches.push`
+- `this.space.add`
+
+## SmokePool.dispose
+
+[Implementation, line 193](../../../../../src/render/entity/exhaust-smoke.ts#L193)
+
+The shared batches of one scene space (the `space` emitters express particles in).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `batch.dispose`
+
+## AnalyticExhaustSmoke.constructor
+
+[Implementation, line 234](../../../../../src/render/entity/exhaust-smoke.ts#L234)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -23,19 +254,31 @@ constructor(private readonly outlet: THREE.Object3D, private readonly space: THR
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Float32Array`
-- `THREE.BufferAttribute`
+- `Float64Array`
+- `SmokePool`
 - `THREE.Color`
 - `THREE.MathUtils.clamp`
-- `THREE.Points`
-- `THREE.ShaderMaterial`
-- `exhaustSmokeSprites`
 - `laserSmokePools.add`
-- `setWebGPUSubstitute`
-- `this.geometry.setAttribute`
+- `pools.get`
+- `pools.set`
 
-## ExhaustSmoke.setEnabled
+## AnalyticExhaustSmoke.constructor.sync
 
-[Implementation, line 103](../../../../../src/render/entity/exhaust-smoke.ts#L103)
+[Implementation, line 266](../../../../../src/render/entity/exhaust-smoke.ts#L266)
+
+```ts
+sync(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.particles`
+
+## AnalyticExhaustSmoke.setEnabled
+
+[Implementation, line 273](../../../../../src/render/entity/exhaust-smoke.ts#L273)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -44,13 +287,14 @@ setEnabled(enabled: boolean): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.MathUtils.clamp`
-- `this.life.fill`
+- `this.lifetimes.fill`
+- `this.releaseLease`
 
-## ExhaustSmoke.setAmount
+## AnalyticExhaustSmoke.setAmount
 
-[Implementation, line 113](../../../../../src/render/entity/exhaust-smoke.ts#L113)
+[Implementation, line 284](../../../../../src/render/entity/exhaust-smoke.ts#L284)
 
-Scale particle emission without changing the size or lifetime of each puff.
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
 
 ```ts
 setAmount(amount: number): void
@@ -60,9 +304,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.MathUtils.clamp`
 
-## ExhaustSmoke.update
+## AnalyticExhaustSmoke.update
 
-[Implementation, line 117](../../../../../src/render/entity/exhaust-smoke.ts#L117)
+[Implementation, line 288](../../../../../src/render/entity/exhaust-smoke.ts#L288)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -82,8 +328,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bounds.getCenter`
 - `bounds.isEmpty`
 - `new THREE.Box3().setFromObject`
+- `this.clock.relQ`
+- `this.clock.relS`
+- `this.clock.step`
 - `this.direction.transformDirection`
-- `this.life.some`
 - `this.movement.copy`
 - `this.movement.copy(this.source).sub`
 - `this.movement.length`
@@ -92,23 +340,53 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.outlet.getWorldPosition`
 - `this.outlet.updateWorldMatrix`
 - `this.previous.copy`
+- `this.rebase`
+- `this.releaseLease`
 - `this.source.addScaledVector`
 - `this.source.toArray`
 - `this.space.matrixWorld.clone`
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
+- `this.write`
 
-## ExhaustSmoke.update.callback@167
+## AnalyticExhaustSmoke.warmUp
 
-[Implementation, line 167](../../../../../src/render/entity/exhaust-smoke.ts#L167)
+[Implementation, line 350](../../../../../src/render/entity/exhaust-smoke.ts#L350)
+
+Make the shared draw visible (and compiled) while `on`, even without particles.
 
 ```ts
-callback@167(v): inferred by TypeScript; see implementation
+warmUp(on: boolean): void
 ```
 
-## ExhaustSmoke.dispose
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 173](../../../../../src/render/entity/exhaust-smoke.ts#L173)
+- `Math.max`
+- `batch.reindex`
+- `this.pool.addBatch`
+
+## AnalyticExhaustSmoke.particles
+
+[Implementation, line 357](../../../../../src/render/entity/exhaust-smoke.ts#L357)
+
+Current positions and life of the ring, evaluated with the shader's maths.
+
+```ts
+particles(): SmokeParticles
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `smokePosition`
+- `this.origins.subarray`
+- `this.velocities.subarray`
+
+## AnalyticExhaustSmoke.dispose
+
+[Implementation, line 376](../../../../../src/render/entity/exhaust-smoke.ts#L376)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
 
 ```ts
 dispose(): void
@@ -116,14 +394,195 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(this.root.material as THREE.ShaderMaterial).dispose`
 - `laserSmokePools.delete`
-- `this.geometry.dispose`
+- `pools.delete`
+- `this.pool.dispose`
+- `this.releaseLease`
 - `this.root.removeFromParent`
+
+## AnalyticExhaustSmoke.ensureLease
+
+[Implementation, line 388](../../../../../src/render/entity/exhaust-smoke.ts#L388)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
+
+```ts
+ensureLease(): NonNullable<AnalyticExhaustSmoke['lease']>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `lease.batch.reindex`
+- `markRange`
+- `this.clock.rebase`
+- `this.pool.lease`
+
+## AnalyticExhaustSmoke.write
+
+[Implementation, line 406](../../../../../src/render/entity/exhaust-smoke.ts#L406)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
+
+```ts
+write(i: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(batch.position.array as Float32Array).set`
+- `(batch.tint.array as Float32Array).set`
+- `(batch.velocity.array as Float32Array).set`
+- `markRange`
+- `this.clock.relQ`
+- `this.clock.relS`
+- `this.ensureLease`
+- `this.origins.subarray`
+- `this.tints.subarray`
+- `this.velocities.subarray`
+
+## AnalyticExhaustSmoke.rebase
+
+[Implementation, line 424](../../../../../src/render/entity/exhaust-smoke.ts#L424)
+
+Move the float epoch to now and rewrite the ring's birth clocks against it.
+
+```ts
+rebase(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `markRange`
+- `this.clock.rebase`
+- `this.clock.relQ`
+- `this.clock.relS`
+
+## AnalyticExhaustSmoke.releaseLease
+
+[Implementation, line 435](../../../../../src/render/entity/exhaust-smoke.ts#L435)
+
+Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader.
+
+```ts
+releaseLease(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.lease.batch.release`
+
+## ExhaustSmoke.constructor
+
+[Implementation, line 452](../../../../../src/render/entity/exhaust-smoke.ts#L452)
+
+Exhaust, damage, burning-wreck and debris-fire smoke. Under WebGL the emitters of one scene
+space share one analytic GPU draw (gpu-particles.ts); under WebGPU each keeps the former CPU
+simulation and its sprite substitute (legacy-particles.ts).
+
+```ts
+constructor(outlet: THREE.Object3D, space: THREE.Object3D, options: ExhaustSmokeOptions = {}): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `AnalyticExhaustSmoke`
+- `LegacyExhaustSmoke`
+- `analyticParticles`
+
+## ExhaustSmoke.setEnabled
+
+[Implementation, line 459](../../../../../src/render/entity/exhaust-smoke.ts#L459)
+
+Exhaust, damage, burning-wreck and debris-fire smoke. Under WebGL the emitters of one scene
+space share one analytic GPU draw (gpu-particles.ts); under WebGPU each keeps the former CPU
+simulation and its sprite substitute (legacy-particles.ts).
+
+```ts
+setEnabled(enabled: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.setEnabled`
+
+## ExhaustSmoke.setAmount
+
+[Implementation, line 464](../../../../../src/render/entity/exhaust-smoke.ts#L464)
+
+Scale particle emission without changing the size or lifetime of each puff.
+
+```ts
+setAmount(amount: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.setAmount`
+
+## ExhaustSmoke.update
+
+[Implementation, line 468](../../../../../src/render/entity/exhaust-smoke.ts#L468)
+
+Exhaust, damage, burning-wreck and debris-fire smoke. Under WebGL the emitters of one scene
+space share one analytic GPU draw (gpu-particles.ts); under WebGPU each keeps the former CPU
+simulation and its sprite substitute (legacy-particles.ts).
+
+```ts
+update(dt: number, running: boolean, load: number, speedKmh = 0): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## ExhaustSmoke.warmUp
+
+[Implementation, line 473](../../../../../src/render/entity/exhaust-smoke.ts#L473)
+
+Keep the smoke drawable (so its shader compiles) during a warm-up render.
+
+```ts
+warmUp(on: boolean): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.warmUp`
+
+## ExhaustSmoke.particles
+
+[Implementation, line 479](../../../../../src/render/entity/exhaust-smoke.ts#L479)
+
+Current positions, life and tints of the emitter's particles.
+
+```ts
+particles(): SmokeParticles
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `geometry.getAttribute`
+- `this.impl.particles`
+
+## ExhaustSmoke.dispose
+
+[Implementation, line 489](../../../../../src/render/entity/exhaust-smoke.ts#L489)
+
+Exhaust, damage, burning-wreck and debris-fire smoke. Under WebGL the emitters of one scene
+space share one analytic GPU draw (gpu-particles.ts); under WebGPU each keeps the former CPU
+simulation and its sprite substitute (legacy-particles.ts).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`
 
 ## s3SmokeAmount
 
-[Implementation, line 182](../../../../../src/render/entity/exhaust-smoke.ts#L182)
+[Implementation, line 495](../../../../../src/render/entity/exhaust-smoke.ts#L495)
 
 Loaded S3 quantity rises from 10% at 1000 rpm to 200% at 7000; releasing gas leaves 10%.
 

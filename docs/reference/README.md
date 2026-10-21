@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **549 modules; 6565 executable function definitions**.
+Coverage: **551 modules; 6658 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -254,18 +254,20 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 16 |
 | [src/render/entity/ejection-port.ts](src/render/entity/ejection-port.ts.md) | 2 |
 | [src/render/entity/entity-nodes.ts](src/render/entity/entity-nodes.ts.md) | 26 |
-| [src/render/entity/exhaust-smoke.ts](src/render/entity/exhaust-smoke.ts.md) | 7 |
+| [src/render/entity/exhaust-smoke.ts](src/render/entity/exhaust-smoke.ts.md) | 39 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 47 |
+| [src/render/entity/gpu-particles.ts](src/render/entity/gpu-particles.ts.md) | 10 |
 | [src/render/entity/headlamp.ts](src/render/entity/headlamp.ts.md) | 5 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 15 |
 | [src/render/entity/laser-smoke.ts](src/render/entity/laser-smoke.ts.md) | 1 |
+| [src/render/entity/legacy-particles.ts](src/render/entity/legacy-particles.ts.md) | 24 |
 | [src/render/entity/magazine-shape.ts](src/render/entity/magazine-shape.ts.md) | 2 |
 | [src/render/entity/magazines.ts](src/render/entity/magazines.ts.md) | 4 |
 | [src/render/entity/mirror-nodes.ts](src/render/entity/mirror-nodes.ts.md) | 3 |
 | [src/render/entity/monitor-face.ts](src/render/entity/monitor-face.ts.md) | 4 |
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
-| [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 6 |
+| [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 14 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
@@ -275,13 +277,13 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/render/entity/ship-lights.ts](src/render/entity/ship-lights.ts.md) | 14 |
 | [src/render/entity/shot-laser-nodes.ts](src/render/entity/shot-laser-nodes.ts.md) | 9 |
 | [src/render/entity/shot-laser.ts](src/render/entity/shot-laser.ts.md) | 9 |
-| [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 7 |
+| [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 21 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 6 |
 | [src/render/entity/smoke-density.ts](src/render/entity/smoke-density.ts.md) | 1 |
 | [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 9 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 8 |
-| [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
+| [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 10 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 24 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 157 |
