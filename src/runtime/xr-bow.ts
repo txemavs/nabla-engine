@@ -1,5 +1,7 @@
 import { assets, disposeObject } from '../render/entity/assets.js'
 export {
+  arcoBow,
+  defaultBow,
   bowModels,
   buildBowModel,
   recurveBow,

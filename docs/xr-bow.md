@@ -5,7 +5,7 @@ Draw distance determines launch speed from spring energy and arrow mass. Draws b
 6 cm, invalid distances, cancellation and tracking loss produce no shot.
 `@nabla/engine/xr/bow` exports the optional `XRBow` presentation/input adapter.
 
-The AR monitor has **Añadir arco**. It loads the supplied recurve bow and one of
+The AR monitor has **Añadir arco**. It loads the default bow (Arco) and one of
 its included arrows. Grab near the handle with either controller's grip. Keep
 holding it; bring the other hand to the middle of the string, hold that grip,
 pull backwards and release the string grip to shoot. Release the handle to drop
@@ -24,22 +24,27 @@ There is no second room solver or projectile raycaster. Optional `onHit` receive
 the actual solver contact point; the demo connects it to the existing target.
 Gun mechanisms and their marks/sparks remain unchanged.
 
-The demo binding (`recurveBow`, with `bowModels` by id) lives in
+The default bow is `arcoBow` (`defaultBow`): an original model,
+`assets/library/weapons/arco/`, no third-party licence. The older recurve demo
+binding (`recurveBow`, CC BY-NC, kept but not default) and `bowModels` by id live in
 `src/runtime/bow-model.ts` and is exported from `@nabla/engine/xr/bow`. It is
 code, not JSON, so it stays outside `assets/library/weapons/**/*.json`, the
 strictly validated firearm preset catalog. `buildBowModel(asset, descriptor)`
 does the cut and transform for every bow: AR's `XRBow` and the held bow on foot
-(a held preset with `"bowModel": "recurve-bow"`) show the same meshes. The held
-bow is visual only for now; drawing and loosing arrows needs the main-thread
-Rapier World that only XR mounts.
+(a held preset with `"bowModel": "arco"`) show the same meshes. On foot,
+hold the left button to draw (`timedDraw` feeds the same `BowDraw` rules) and
+release to loose; `ArrowFlight` flies the arrow with gravity through
+`Simulation.shoot` (worker and main thread) and hits go through the gallery
+(marks, targets, glass, momentum push).
 
 `loadModel(url, descriptor)` uses Engine's asset library. The descriptor names the
 bow/arrow nodes, authoring-to-metre transforms and static-string triangles to
 replace with a dynamic string. It works on cloned geometry and keeps the original
-GLB intact. Resource provenance and **CC-BY-NC-4.0** noncommercial licensing are
-recorded in `assets/library/weapons/recurve-bow/README.md`. The licensed resource
-is demo content, not an unrestricted engine asset. Importing the engine adapter
-does not load it; another host can provide another model descriptor.
+GLB intact. The default Arco is original and needs no credit
+(`assets/library/weapons/arco/README.md`). The recurve bow is kept as an
+alternative binding; its provenance and **CC-BY-NC-4.0** noncommercial licence are
+in `assets/library/weapons/recurve-bow/README.md`. Importing the engine adapter
+loads no model; another host can provide another descriptor.
 
 The implementation is reusable in web/VR/AR with the same shared World and draw
 rules; only the AR demo currently mounts it. Tests cover energy/limits, intentional
