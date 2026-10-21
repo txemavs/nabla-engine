@@ -53,7 +53,11 @@ import { MuzzleSmoke } from '../render/entity/muzzle-smoke.js'
 import { poseHKDetails } from './hk-presentation.js'
 import { ViewmodelLighting } from './viewmodel-lighting.js'
 import { warmEffectPresentation } from './presentation-warmup.js'
-import { normalizeWeaponPoses, type WeaponPoseTuning } from './weapon-pose-tuning.js'
+import {
+  normalizeWeaponPoses,
+  type PartialWeaponPoses,
+  type WeaponPoseTuning,
+} from './weapon-pose-tuning.js'
 
 /** Hip (default) and ADS viewmodel poses — centred for iron sights, no UI reticle. */
 const HIP_POSE = weaponViewTuning.hip
@@ -71,6 +75,8 @@ interface WeaponRig {
   }
   /** Optional sockets; `ejection` places ejected cases when the model has no ChamberExterior. */
   sockets?: { ejection?: string }
+  /** Reviewed hold poses for this weapon (degrees / millimetres), exported by the pose menu. */
+  poses?: PartialWeaponPoses
 }
 const defaultRig: WeaponRig = {
   parts: { slide: 'Slide', trigger: 'Trigger', magazine: 'Magazine' },
@@ -103,6 +109,8 @@ interface Part {
 export class Sidearm {
   private readonly scene = new THREE.Scene()
   poseTuning: WeaponPoseTuning = normalizeWeaponPoses()
+  /** Poses from the rig file: undefined while loading, null when the rig has none. */
+  rigPoses: PartialWeaponPoses | null | undefined = undefined
   bodycamEnabled = false
   bodycamYaw = 0
   bodycamPitch = 0
@@ -241,6 +249,7 @@ export class Sidearm {
       fallbackMaterial.dispose()
     }
     let loading: Promise<unknown> = Promise.resolve()
+    if (!preset?.model || !preset.rig) this.rigPoses = null
     if (preset?.model) {
       const model = assetUrlForQuality(
         { url: preset.model, lowUrl: preset.modelLow },
@@ -250,6 +259,7 @@ export class Sidearm {
         .then(([object, rig]) => {
           if (this.disposed) return disposeObject(object)
           if (rig) this.rig = rig
+          this.rigPoses = rig?.poses ?? null
           const assembly = new THREE.Group()
           assembly.scale.setScalar(preset.scale)
           assembly.position.set(...preset.assembly)
@@ -1468,6 +1478,7 @@ async function loadRig(url: string): Promise<WeaponRig | null> {
       parts: { ...defaultRig.parts, ...rig.parts },
       presentation: { ...defaultRig.presentation, ...rig.presentation },
       sockets: rig.sockets,
+      poses: rig.poses,
     }
   } catch {
     return null

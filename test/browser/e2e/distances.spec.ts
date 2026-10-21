@@ -70,6 +70,8 @@ test('distances section gathers existing and new controls and applies them live'
       muzzleFlashTuning: { x: 0, y: 0, z: -72, intensity: 100 },
       tunnelEnabled: true,
       weaponPoseTuning: structuredClone(weaponPoseDefaults),
+      weaponPoseDefaults: structuredClone(weaponPoseDefaults),
+      weaponPoseTarget: { id: null, name: 'Pistola', rig: null },
       smokePercent: 50,
       smokeEnabled: true,
       sidearmTuning: { ...sidearmTuningDefaults },

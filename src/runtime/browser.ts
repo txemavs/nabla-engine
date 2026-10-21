@@ -141,6 +141,7 @@ import {
   normalizeWeaponPoses,
   type WeaponPose,
   type WeaponPoseTuning,
+  weaponPoseStorageKey,
 } from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
 import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
@@ -768,7 +769,8 @@ export class GameRuntime {
     }
   })()
 
-  private weaponPoses: WeaponPoseTuning = (() => {
+  /** Shared legacy tuning: the baseline for weapons whose rig has no `poses`. */
+  private readonly legacyWeaponPoses: WeaponPoseTuning = (() => {
     try {
       return normalizeWeaponPoses(
         JSON.parse(browserStorage()?.getItem('nabla.weaponPoses') ?? '{}'),
@@ -777,6 +779,31 @@ export class GameRuntime {
       return normalizeWeaponPoses()
     }
   })()
+  /** Resolved poses per weapon id (local override over rig poses over legacy tuning). */
+  private readonly weaponPoseCache = new Map<string, WeaponPoseTuning>()
+  private get weaponPoses(): WeaponPoseTuning {
+    const sidearm = this.sidearm
+    const id = sidearm?.preset?.id
+    if (!id) return this.legacyWeaponPoses
+    const cached = this.weaponPoseCache.get(id)
+    if (cached) return cached
+    const base = this.weaponPoseBaseline
+    let result = base
+    try {
+      const saved = browserStorage()?.getItem(weaponPoseStorageKey(id))
+      if (saved) result = normalizeWeaponPoses(JSON.parse(saved), base)
+    } catch {
+      /* Optional persistence. */
+    }
+    // Cache only once the rig (and its poses) has loaded.
+    if (sidearm.rigPoses !== undefined) this.weaponPoseCache.set(id, result)
+    return result
+  }
+  /** Poses without local edits: the rig file's `poses`, else the shared legacy tuning. */
+  private get weaponPoseBaseline(): WeaponPoseTuning {
+    const rig = this.sidearm?.rigPoses
+    return rig ? normalizeWeaponPoses(rig, this.legacyWeaponPoses) : this.legacyWeaponPoses
+  }
   private smokeOn = true
   private planet: {
     sky: boolean
@@ -4330,14 +4357,27 @@ export class GameRuntime {
       this.sidearm.previewFlash()
     }
   }
+  /** Firearm the pose menu edits: the selected slot weapon, or the default sidearm. */
+  get weaponPoseTarget(): { id: string | null; name: string; rig: string | null } {
+    const preset = this.sidearm?.preset
+    return { id: preset?.id ?? null, name: preset?.name ?? 'Pistola', rig: preset?.rig ?? null }
+  }
   get weaponPoseTuning(): WeaponPoseTuning {
     return normalizeWeaponPoses(this.weaponPoses)
   }
+  /** Poses of the edited weapon before local edits, for "reset". */
+  get weaponPoseDefaults(): WeaponPoseTuning {
+    return normalizeWeaponPoses(this.weaponPoseBaseline)
+  }
   setWeaponPoseTuning(value: WeaponPoseTuning): void {
-    this.weaponPoses = normalizeWeaponPoses(value)
-    if (this.sidearm) this.sidearm.poseTuning = this.weaponPoses
+    const id = this.sidearm?.preset?.id
+    const key = id ? weaponPoseStorageKey(id) : 'nabla.weaponPoses'
+    const poses = normalizeWeaponPoses(value, id ? this.weaponPoseBaseline : undefined)
+    if (id) this.weaponPoseCache.set(id, poses)
+    else Object.assign(this.legacyWeaponPoses, poses)
+    if (this.sidearm) this.sidearm.poseTuning = poses
     try {
-      browserStorage()?.setItem('nabla.weaponPoses', JSON.stringify(this.weaponPoses))
+      browserStorage()?.setItem(key, JSON.stringify(poses))
     } catch {
       /* Optional persistence. */
     }

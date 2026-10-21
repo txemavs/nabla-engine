@@ -25,10 +25,19 @@ export type WeaponPoseTuning = Record<WeaponPose, WeaponAngles>
 export { weaponPoseDefaults } from '../config/gameplay-tuning.js'
 import { weaponPoseDefaults } from '../config/gameplay-tuning.js'
 
-export function normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning {
+/** Rig-file pose overrides: any subset of poses and axes (degrees / millimetres). */
+export type PartialWeaponPoses = Partial<Record<WeaponPose, Partial<WeaponAngles>>>
+
+/** Per-weapon local storage key; the unsuffixed key is the shared legacy tuning. */
+export const weaponPoseStorageKey = (weaponId: string): string => `nabla.weaponPoses.${weaponId}`
+
+export function normalizeWeaponPoses(
+  value: PartialWeaponPoses = {},
+  base: WeaponPoseTuning = weaponPoseDefaults,
+): WeaponPoseTuning {
   const result = {} as WeaponPoseTuning
   for (const key of Object.keys(weaponPoseNames) as WeaponPose[]) {
-    result[key] = { ...weaponPoseDefaults[key] }
+    result[key] = { ...(base[key] ?? weaponPoseDefaults[key]) }
     for (const axis of ['pitch', 'yaw', 'roll', 'x', 'y', 'z'] as const) {
       const n = value?.[key]?.[axis]
       if (typeof n === 'number' && Number.isFinite(n))

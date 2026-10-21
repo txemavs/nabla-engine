@@ -139,6 +139,8 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       tunnelEnabled: true,
       setTunnelEnabled: () => {},
       weaponPoseTuning: structuredClone(weaponPoseDefaults),
+      weaponPoseDefaults: structuredClone(weaponPoseDefaults),
+      weaponPoseTarget: { id: null, name: 'Pistola', rig: null },
       smokePercent: 50,
       smokeEnabled: true,
       setSmokeEnabled: (enabled: boolean) => {
