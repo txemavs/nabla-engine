@@ -3057,7 +3057,7 @@ export class GameRuntime {
     const vehicle = Array.isArray(template) ? template[0] : (template as Entity)
     if (!vehicle) throw new Error('A vehicle template is required')
     const sim = this.session.simulation
-    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    if (!sim) throw new Error('A running game is required')
     const player = sim.player
     const own = player.vehicleId
       ? this.document.entities.find((e) => e.id === player.vehicleId)
@@ -3115,20 +3115,22 @@ export class GameRuntime {
       if (child.parentId !== vehicle.id)
         throw new Error(`Entity ${child.id} must be hosted by ${vehicle.id}`)
     const sim = this.session.simulation
-    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    if (!sim) throw new Error('A running game is required')
     const [x, , z] = position
     // Place the parked model now. Full driving preparation is deferred until first entry.
     // Behind an intro (`beforeReveal`) the host's cards cover loading; no badge over them.
-    const hide =
-      this.options.canvas.dataset.reveal === 'preparing'
-        ? () => {}
-        : showLoadingBadge(this.options.canvas.parentElement, this.text('Waiting for terrain…'))
     let ground: number
-    try {
-      ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
-    } finally {
-      hide()
-    }
+    if (this.world) {
+      const hide =
+        this.options.canvas.dataset.reveal === 'preparing'
+          ? () => {}
+          : showLoadingBadge(this.options.canvas.parentElement, this.text('Waiting for terrain…'))
+      try {
+        ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
+      } finally {
+        hide()
+      }
+    } else ground = this.sceneGroundHeight(sim.player.position, x, z)
     this.assertAlive()
     if (this.session.simulation !== sim) throw new Error('Vehicle placement session ended')
     const id = `spawned-${++this.spawnSequence}`
@@ -3162,6 +3164,33 @@ export class GameRuntime {
     // Parked geometry must be visible even before its driving presentation is prepared.
     await modelsReady
     return id
+  }
+  /**
+   * Ground height under local (x, z) when the game runs without terrain tiles: the first
+   * upward-facing drawn surface (host scenery layers, static entities) below a point 2 m above
+   * the player, else the surface under the player, else 1 m below the player.
+   */
+  private sceneGroundHeight(player: Vec3Tuple, x: number, z: number): number {
+    const root = this.view.root
+    root.updateMatrixWorld(true)
+    const shown = (object: THREE.Object3D | null): boolean => {
+      for (let o = object; o && o !== root; o = o.parent) if (!o.visible) return false
+      return true
+    }
+    const normal = new THREE.Vector3()
+    const top = player[1] + 2
+    const below = (px: number, pz: number): number | null => {
+      const origin = root.localToWorld(new THREE.Vector3(px, top, pz))
+      const down = root.localToWorld(new THREE.Vector3(px, top - 1, pz)).sub(origin).normalize()
+      const ray = new THREE.Raycaster(origin, down, 0, 1000)
+      for (const hit of ray.intersectObject(root, true)) {
+        if (!hit.face || !shown(hit.object)) continue
+        normal.copy(hit.face.normal).transformDirection(hit.object.matrixWorld)
+        if (normal.dot(down) < -0.7) return root.worldToLocal(hit.point.clone()).y
+      }
+      return null
+    }
+    return below(x, z) ?? below(player[0], player[2]) ?? player[1] - 1
   }
   /**
    * Prepare the mounted vehicle materials, instruments, textures, shaders and mirror views
@@ -3572,7 +3601,7 @@ export class GameRuntime {
   async spawnEntities(entities: readonly Entity[], distance = 4, name?: string): Promise<string> {
     this.assertAlive()
     const sim = this.session.simulation
-    if (!sim) throw new Error('A running game on loaded terrain is required')
+    if (!sim) throw new Error('A running game is required')
     const player = sim.player
     const own = player.vehicleId
       ? this.document.entities.find((e) => e.id === player.vehicleId)
@@ -3602,11 +3631,14 @@ export class GameRuntime {
   ): Promise<string> {
     this.assertAlive()
     const sim = this.session.simulation
-    if (!sim || !this.world) throw new Error('A running game on loaded terrain is required')
+    if (!sim) throw new Error('A running game is required')
     if (!entities.length) throw new Error('Nothing to place')
     const world = this.world
     const [x, , z] = position
-    const ground = await waitForGround(world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
+    const groundAt = (at: Vec3Tuple) => this.sceneGroundHeight(sim.player.position, at[0], at[2])
+    const ground = world
+      ? await waitForGround(world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
+      : groundAt(position)
     const group = `placed-${++this.placeSequence}`
     const ids = new Map(entities.map((e, i) => [e.id, `${group}-${i}`]))
     const turn = new THREE.Quaternion(0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2))
@@ -3618,7 +3650,7 @@ export class GameRuntime {
       const offset = new THREE.Vector3(local.x, 0, local.z).applyQuaternion(turn)
       const at: Vec3Tuple = [x + offset.x, 0, z + offset.z]
       // Nearby stage pieces read loaded ground directly; far ones fall back to the origin.
-      const below = offset.lengthSq() < 0.01 ? ground : (groundAtSeam(world, at) ?? ground)
+      const below = offset.lengthSq() < 0.01 ? ground : ((world ? groundAtSeam(world, at) : groundAt(at)) ?? ground)
       at[1] = below + local.y
       e.transform = {
         position: at,
