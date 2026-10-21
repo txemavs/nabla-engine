@@ -172,10 +172,14 @@ async function compare(
 }
 
 describe('physics worker with a main-thread query world', () => {
-  it('is off unless ?physicsWorker=1', () => {
-    expect(physicsWorkerEnabled('')).toBe(false)
-    expect(physicsWorkerEnabled('?physicsWorker=0')).toBe(false)
-    expect(physicsWorkerEnabled('?quality=low&physicsWorker=1')).toBe(true)
+  it('is on by default; ?physicsWorker=0 or no module workers keeps physics inline', () => {
+    const yes = () => true
+    expect(physicsWorkerEnabled('', yes)).toBe(true)
+    expect(physicsWorkerEnabled('?quality=low&physicsWorker=1', yes)).toBe(true)
+    expect(physicsWorkerEnabled('?physicsWorker=0', yes)).toBe(false)
+    expect(physicsWorkerEnabled('', () => false)).toBe(false)
+    // Node has no Worker global: the default there is inline.
+    expect(physicsWorkerEnabled('')).toBe(typeof Worker !== 'undefined')
   })
 
   it('answers raycasts identically while bodies fall and tumble', async () => {
