@@ -1,4 +1,6 @@
 /** Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder). */
+// Must stay first: VR modes keep their own saved settings (settings-scope.ts).
+import './settings-scope-boot.js'
 import { applySplashSkin, splashMessageAt } from '@nabla/engine/runtime/splash'
 import { readBootConfig } from './boot.js'
 import { resolveEntry } from './entry.js'

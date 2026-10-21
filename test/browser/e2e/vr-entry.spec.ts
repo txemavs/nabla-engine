@@ -22,11 +22,11 @@ test('PC VR entry appears before the clock with ?vr=pc and is dimmed with a reas
     }
     mountVREntry({ loadXR: async () => xr } as any)
   }, process.cwd())
-  await expect(page.locator('#euskadi-clock-group > :first-child')).toHaveAttribute(
+  await expect(page.locator('#euskadi-clock-group > :nth-child(2)')).toHaveAttribute(
     'id',
     'euskadi-enter-vr',
   )
-  await page.getByRole('button', { name: 'Entrar en realidad virtual' }).click()
+  await page.locator('#euskadi-enter-vr').click()
   await expect(page.locator('body')).toHaveAttribute('data-entered', 'true')
   await page.evaluate(() => {
     ;(navigator.xr as any).isSessionSupported = async () => false
@@ -36,7 +36,9 @@ test('PC VR entry appears before the clock with ?vr=pc and is dimmed with a reas
   await expect(page.locator('#euskadi-enter-vr')).toHaveAttribute('title', /No hay casco VR/)
 })
 
-test('the normal game never touches navigator.xr', async ({ page }) => {
+test('the normal game never touches navigator.xr and shows both VR entries as links', async ({
+  page,
+}) => {
   await page.route('**/vr-entry-check', (r) =>
     r.fulfill({
       contentType: 'text/html',
@@ -68,5 +70,7 @@ test('the normal game never touches navigator.xr', async ({ page }) => {
     return reads
   }, process.cwd())
   expect(touched).toBe(0)
-  await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
+  // Both entries are plain links outside a VR mode.
+  await expect(page.locator('[data-vr-mode]')).toHaveCount(2)
+  await expect(page.locator('#euskadi-enter-vr')).not.toHaveAttribute('aria-disabled', /./)
 })
