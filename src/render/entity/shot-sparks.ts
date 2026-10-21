@@ -3,6 +3,7 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 import {
   analyticParticles,
   EPOCH_MS,
+  markRange,
   NEVER,
   PARTICLE_MOTION_GLSL,
   SPARK_DROP,
@@ -191,9 +192,11 @@ class AnalyticShotSparks {
     this.epoch = now
     for (let s = 0; s < this.relativeBirths.length; s++)
       if (this.relativeBirths[s] !== NEVER) this.relativeBirths[s] += previous - now
+    // A range over every slot, not an empty range list: the burst written right after this
+    // adds its own range, and three would then upload only that one, leaving the GPU with
+    // births on the old epoch that replay as the clock catches up with them.
     const attribute = this.geometry.getAttribute('sparkBirth') as THREE.BufferAttribute
-    attribute.clearUpdateRanges()
-    attribute.needsUpdate = true
+    markRange(attribute, 0, attribute.count)
   }
 }
 
