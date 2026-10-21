@@ -6,7 +6,9 @@ import { interfaceControls, interfaceTheme, interfaceVariables } from './interfa
  * on top. Layout positions stay with each component; this sheet only skins them.
  */
 export const defaultInterfaceStyles = `
-:root { ${interfaceVariables} --nabla-control-edge:20px; --nabla-control-bottom:60px; }
+:root { ${interfaceVariables} --nabla-control-edge:20px; --nabla-control-bottom:60px; --nabla-ui-scale:0.66; }
+@media(pointer:coarse) { :root { --nabla-ui-scale:0.8; } }
+:is(.game-toolbar,.settings-toggle,.touch-driving-bar,.touch-flight-bar,#speed-display,#gear-display) { zoom:var(--nabla-ui-scale,1); }
 .game-toolbar button { ${interfaceControls} display:flex;align-items:center;justify-content:center;gap:6px;height:36px;min-width:36px;padding:0 8px;font:700 14px/1 Arial,sans-serif;cursor:pointer;touch-action:manipulation; }
 .game-toolbar button:hover:not(:disabled),.game-toolbar button:active:not(:disabled) { background:${interfaceTheme.pressed}; }
 .game-toolbar button:focus-visible { outline:2px solid var(--muted);outline-offset:2px; }
