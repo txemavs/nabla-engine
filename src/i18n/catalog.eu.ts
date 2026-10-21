@@ -307,6 +307,7 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.copy-json': 'JSONa kopiatu',
   'settings.current-vehicle': 'Uneko ibilgailua',
   'settings.date-and-time': 'Data eta ordua',
+  'settings.show-collision': 'Talkak erakutsi',
   'settings.development': 'Garapena',
   'settings.diagnostics': 'Diagnostikoa',
   'settings.display': 'Pantaila',
