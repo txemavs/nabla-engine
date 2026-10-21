@@ -51,6 +51,10 @@
       "types": "./dist/simulation/physics-api.d.ts",
       "import": "./dist/simulation/physics-api.js"
     },
+    "./net": {
+      "types": "./dist/net/index.d.ts",
+      "import": "./dist/net/index.js"
+    },
     "./vehicles/boat": {
       "types": "./dist/simulation/vehicles/boat.d.ts",
       "import": "./dist/simulation/vehicles/boat.js"

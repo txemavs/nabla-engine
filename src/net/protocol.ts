@@ -1,0 +1,148 @@
+/**
+ * Wire protocol shared by the browser session and the room relay (services/relay).
+ * Messages are JSON text frames. The relay only routes them; it stamps `peer` on forwarded
+ * messages so a client cannot impersonate another peer.
+ */
+import { z } from 'zod'
+import type { QuatTuple, Vec3Tuple } from '../math/frame/vectors.js'
+
+export const PROTOCOL_VERSION = 1
+
+const finite = z.number().finite()
+const vec3 = z.tuple([finite, finite, finite])
+const quat = z.tuple([finite, finite, finite, finite])
+const peerId = z.string().min(1).max(64)
+const roomId = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
+/** Free-form, small, game-defined description of a peer (for example its vehicle preset). */
+const meta = z.record(z.string(), z.union([z.string().max(128), finite, z.boolean()])).default({})
+
+const perWheel = z.array(finite).max(16)
+/**
+ * Optional per-wheel look of a wheeled vehicle: steer angle (rad), suspension length (m) and
+ * spin rate (rad/s). Quantised before sending (see `quantizeWheels`).
+ */
+export const wheelVisualsSchema = z.object({
+  steer: perWheel,
+  suspension: perWheel,
+  spinRate: perWheel,
+})
+export type WheelVisuals = { steer: number[]; suspension: number[]; spinRate: number[] }
+
+/** Rigid-body state of one networked entity, in simulation metres and seconds. */
+export const entityStateSchema = z.object({
+  position: vec3,
+  rotation: quat,
+  velocity: vec3,
+  angularVelocity: vec3,
+  wheels: wheelVisualsSchema.optional(),
+})
+export type EntityState = {
+  position: Vec3Tuple
+  rotation: QuatTuple
+  velocity: Vec3Tuple
+  angularVelocity: Vec3Tuple
+  wheels?: WheelVisuals
+}
+
+const round = (value: number, step: number) => Math.round(value / step) * step
+/**
+ * Round wheel values to what the eye can tell apart (1 mrad steer, 1 mm suspension, 0.1 rad/s
+ * spin) so a four-wheel car adds roughly 80 bytes of JSON per snapshot.
+ */
+export function quantizeWheels(wheels: WheelVisuals): WheelVisuals {
+  const fix = (values: number[], step: number, digits: number) =>
+    values.map((v) => +round(v, step).toFixed(digits))
+  return {
+    steer: fix(wheels.steer, 0.001, 3),
+    suspension: fix(wheels.suspension, 0.001, 3),
+    spinRate: fix(wheels.spinRate, 0.1, 1),
+  }
+}
+
+/**
+ * Small game-defined values sent with a snapshot and applied as-is (not interpolated), e.g. a
+ * lights bitfield. At most 16 keys.
+ */
+const extra = z
+  .record(z.string().max(32), z.union([finite, z.boolean(), z.string().max(64)]))
+  .refine((value) => Object.keys(value).length <= 16)
+export type SnapshotExtra = Record<string, number | boolean | string>
+const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
+
+/** Game event payload: up to 16 small values; arrays carry vectors (at most 4 numbers). */
+const eventData = z
+  .record(
+    z.string().max(32),
+    z.union([finite, z.boolean(), z.string().max(64), z.array(finite).max(4)]),
+  )
+  .refine((value) => Object.keys(value).length <= 16)
+export type NetEventData = Record<string, number | boolean | string | number[]>
+const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
+
+export const snapshotSchema = z.object({
+  type: z.literal('snapshot'),
+  /** Sender clock in milliseconds; only differences between one sender's samples matter. */
+  t: finite,
+  seq: z.number().int().nonnegative(),
+  state: entityStateSchema,
+  extra: extra.optional(),
+  peer: peerId.optional(),
+})
+export type SnapshotMessage = z.infer<typeof snapshotSchema>
+
+export const clientMessageSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('join'), version: z.literal(PROTOCOL_VERSION), room: roomId, meta }),
+  snapshotSchema,
+  /** One-off game event (e.g. a shot), relayed to the room with the sender stamped. */
+  z.object({ type: z.literal('event'), kind: eventKind, data: eventData }),
+  /** Replace this peer's `meta` (e.g. it changed vehicle); relayed to the room as `profile`. */
+  z.object({ type: z.literal('profile'), meta }),
+  z.object({ type: z.literal('leave') }),
+])
+export type ClientMessage = z.input<typeof clientMessageSchema>
+
+/** `slot` and `color` are assigned by the relay per room (first free entry of its palette). */
+const peerInfo = z.object({
+  peer: peerId,
+  meta,
+  slot: z.number().int().nonnegative().optional(),
+  color: color.optional(),
+})
+export type PeerInfo = z.infer<typeof peerInfo>
+
+export const serverMessageSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('welcome'),
+    peer: peerId,
+    room: roomId,
+    peers: z.array(peerInfo),
+    slot: z.number().int().nonnegative().optional(),
+    color: color.optional(),
+  }),
+  peerInfo.extend({ type: z.literal('joined') }),
+  z.object({ type: z.literal('left'), peer: peerId }),
+  z.object({ type: z.literal('profile'), peer: peerId, meta }),
+  z.object({ type: z.literal('event'), peer: peerId, kind: eventKind, data: eventData }),
+  snapshotSchema.extend({ peer: peerId }),
+  z.object({ type: z.literal('error'), message: z.string() }),
+])
+export type ServerMessage = z.infer<typeof serverMessageSchema>
+
+export function encodeMessage(message: ClientMessage | ServerMessage): string {
+  return JSON.stringify(message)
+}
+
+/** Parse a relay frame; malformed or unknown frames return null instead of throwing. */
+export function decodeServerMessage(data: string): ServerMessage | null {
+  try {
+    const parsed = serverMessageSchema.safeParse(JSON.parse(data))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
+
+/** True when `room` is usable as a relay room id (letters, digits, `_` and `-`). */
+export function isValidRoom(room: string): boolean {
+  return roomId.safeParse(room).success
+}
