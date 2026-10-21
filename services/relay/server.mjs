@@ -12,7 +12,10 @@
  * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 8 peers),
  * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer),
  * PALETTE (comma-separated #rrggbb, default eight distinct car colours),
- * MAX_EVENTS (default 15 game events/s per peer; extra events are dropped).
+ * MAX_EVENTS (default 15 game events/s per peer; extra events are dropped),
+ * RADIUS (default 250 m; 0 = everyone): interest management. A snapshot is forwarded only to
+ * members within RADIUS metres (horizontal x/z) of its sender's last position; members that
+ * have not sent a position yet receive everything. Clients show/hide inside this (e.g. 200/220 m).
  */
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
@@ -108,10 +111,11 @@ function cleanMeta(meta) {
 export function startRelay({
   port = Number(process.env.PORT ?? 10003),
   host = process.env.HOST ?? '0.0.0.0',
-  maxRoom = Number(process.env.MAX_ROOM ?? 8),
+  maxRoom = Number(process.env.MAX_ROOM ?? 64),
   maxFrame = Number(process.env.MAX_FRAME ?? 4096),
   maxRate = Number(process.env.MAX_RATE ?? 60),
   maxEvents = Number(process.env.MAX_EVENTS ?? 15),
+  radius = Number(process.env.RADIUS ?? 250),
   palette = (process.env.PALETTE ?? '').split(',').filter((c) => COLOR.test(c.trim())).length
     ? process.env.PALETTE.split(',')
         .map((c) => c.trim())
@@ -135,6 +139,12 @@ export function startRelay({
   }
   const broadcast = (room, from, message) => {
     for (const socket of rooms.get(room)?.keys() ?? []) if (socket !== from) send(socket, message)
+  }
+  /** Interest: forward to members near the sender's position (or not located yet). */
+  const near = (a, b) => !(radius > 0) || !a || !b || Math.hypot(a[0] - b[0], a[2] - b[2]) <= radius
+  const forward = (room, from, position, message) => {
+    for (const [socket, member] of rooms.get(room) ?? [])
+      if (socket !== from && near(position, member.position)) send(socket, message)
   }
   const leave = (socket) => {
     const { room } = socket.nabla
@@ -177,7 +187,12 @@ export function startRelay({
         if (members.size >= maxRoom) return send(socket, { type: 'error', message: 'Room is full' })
         const peer = randomUUID().slice(0, 8)
         const meta = cleanMeta(message.meta)
-        const peers = [...members.values()]
+        const peers = [...members.values()].map(({ peer, meta, slot, color }) => ({
+          peer,
+          meta,
+          slot,
+          color,
+        }))
         const used = new Set(peers.map((m) => m.slot))
         let slot = 0
         while (used.has(slot)) slot++
@@ -191,7 +206,8 @@ export function startRelay({
       } else if (message.type === 'snapshot') {
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || !validSnapshot(message)) return
-        broadcast(state.room, socket, {
+        member.position = message.state.position
+        forward(state.room, socket, member.position, {
           type: 'snapshot',
           peer: member.peer,
           t: message.t,

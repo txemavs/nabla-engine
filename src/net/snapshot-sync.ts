@@ -55,11 +55,29 @@ export interface SnapshotSyncOptions {
   onEvent?: (event: { peer: string; kind: string; data: NetEventData }) => void
   /** Called with this client's relay-assigned slot and colour once joined. */
   onWelcome?: (self: { peer: string; slot?: number; color?: string }) => void
+  /**
+   * Interest management: a peer appears once it is within `show` metres (horizontal) of the local
+   * player and disappears beyond `hide` (> show, so the edge does not flicker). Peers outside
+   * keep their info and reappear on the next snapshot in range. Off when omitted.
+   */
+  interest?: InterestRadius
+  /** Local player position for interest checks; defaults to the local entity's position. */
+  localPosition?: () => EntityState['position'] | null
   /** Snapshots per second, default 20. */
   rate?: number
   interpolation?: InterpolationOptions
   clock?: () => number
 }
+
+/** Show/hide distances (metres) of interest management; `hide` should exceed `show`. */
+export interface InterestRadius {
+  show: number
+  hide: number
+}
+
+/** Horizontal (x/z) distance in metres. */
+export const horizontalDistance = (a: readonly number[], b: readonly number[]): number =>
+  Math.hypot(a[0] - b[0], a[2] - b[2])
 
 /**
  * Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
@@ -76,6 +94,8 @@ export class SnapshotSync {
   private readonly peers = new Map<string, PeerInfo>()
   private meta: Record<string, string | number | boolean>
   readonly remotes = new Map<string, RemoteVehicle>()
+  /** Last reported position of every other peer, shown or not (interest management). */
+  private readonly lastPosition = new Map<string, EntityState['position']>()
   private seq = 0
   private lastSent = -Infinity
   private readonly interval: number
@@ -107,6 +127,11 @@ export class SnapshotSync {
   /** Call once per frame before stepping the simulation. */
   update(): void {
     const now = this.clock()
+    if (this.options.interest) {
+      const here = this.localPosition()
+      for (const peer of [...this.remotes.keys()])
+        if (!this.within(peer, this.options.interest.hide, here)) this.remove(peer)
+    }
     for (const [peer, remote] of this.remotes) {
       remote.update(now)
       if (!remote.extra || remote.entityId === null || !this.options.applyExtra) continue
@@ -163,6 +188,23 @@ export class SnapshotSync {
     this.dropAll()
   }
 
+  /** Local player position, or null when unknown (interest checks then let everyone in). */
+  private localPosition(): EntityState['position'] | null {
+    if (this.options.localPosition) return this.options.localPosition()
+    const id = this.options.localEntity()
+    if (!id) return null
+    try {
+      return this.options.host.entityTransform(id).position
+    } catch {
+      return null
+    }
+  }
+  /** Peer within `radius` of `here`; unknown positions count as outside, an unknown `here` as in. */
+  private within(peer: string, radius: number, here = this.localPosition()): boolean {
+    if (!here) return true
+    const there = this.lastPosition.get(peer)
+    return !!there && horizontalDistance(here, there) <= radius
+  }
   private read(id: string): EntityState | null {
     const { host } = this.options
     try {
@@ -201,6 +243,7 @@ export class SnapshotSync {
       case 'left':
         this.remove(message.peer)
         this.peers.delete(message.peer)
+        this.lastPosition.delete(message.peer)
         break
       case 'event':
         if (message.peer !== this.peerId)
@@ -216,8 +259,9 @@ export class SnapshotSync {
       }
       case 'snapshot':
         if (message.peer === this.peerId) break
-        if (!this.remotes.has(message.peer) && !this.peers.has(message.peer))
-          this.add({ peer: message.peer, meta: {} })
+        this.lastPosition.set(message.peer, message.state.position)
+        if (!this.remotes.has(message.peer))
+          this.add(this.peers.get(message.peer) ?? { peer: message.peer, meta: {} })
         this.remotes.get(message.peer)?.push(message.t, message.state, this.clock(), message.extra)
         break
       case 'error':
@@ -229,6 +273,8 @@ export class SnapshotSync {
     if (peer.peer === this.peerId) return
     this.peers.set(peer.peer, peer)
     if (this.remotes.has(peer.peer)) return
+    // Far (or not yet located) peers wait for a snapshot within the show radius.
+    if (this.options.interest && !this.within(peer.peer, this.options.interest.show)) return
     const remote = new RemoteVehicle(
       null,
       this.options.host,
@@ -271,6 +317,7 @@ export class SnapshotSync {
   private dropAll(): void {
     for (const peer of [...this.remotes.keys()]) this.remove(peer)
     this.peers.clear()
+    this.lastPosition.clear()
     this.peerId = null
   }
 }

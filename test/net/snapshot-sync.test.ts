@@ -342,3 +342,61 @@ describe('SnapshotSync events', () => {
     syncB.dispose()
   })
 })
+
+describe('SnapshotSync interest management', () => {
+  it('shows peers inside the show radius and despawns them past the hide radius', () => {
+    let now = 0
+    const clock = () => now
+    const net = relay()
+    let bx = 150
+    const a = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    const b = fakeHost(() => ({
+      position: [bx, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    const shown = new Set<string>()
+    const make = (host: typeof a.host, own: string, track: boolean) =>
+      new SnapshotSync({
+        transport: net.connect(),
+        room: 'test',
+        host,
+        clock,
+        localEntity: () => own,
+        interest: { show: 200, hide: 220 },
+        spawnRemote: (peer) => (track && shown.add(peer.peer), `remote-${peer.peer}`),
+        despawnRemote: (peer) => void (track && shown.delete(peer)),
+      })
+    const syncA = make(a.host, 'car-a', true)
+    const syncB = make(b.host, 'car-b', false)
+    const run = () => {
+      for (let i = 0; i < 6; i++) {
+        now += 50
+        syncB.update()
+        syncA.update()
+      }
+    }
+    run()
+    expect(shown.has('p2')).toBe(true)
+    bx = 210 // between show and hide: stays (hysteresis)
+    run()
+    expect(shown.has('p2')).toBe(true)
+    bx = 300
+    run()
+    expect(shown.has('p2')).toBe(false)
+    bx = 210 // back inside hide but outside show: stays hidden
+    run()
+    expect(shown.has('p2')).toBe(false)
+    bx = 100
+    run()
+    expect(shown.has('p2')).toBe(true)
+    syncA.dispose()
+    syncB.dispose()
+  })
+})
