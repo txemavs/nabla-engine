@@ -29,7 +29,7 @@ export class GameToolbar {
       document.head.append(style)
     }
     this.root.className =
-      'game-toolbar nabla-btn-group nabla-btn-group--column nabla-corner nabla-corner--tr'
+      'game-toolbar nabla-btn-group nabla-corner nabla-corner--tr'
     this.root.setAttribute('role', 'group')
     this.root.setAttribute('aria-label', 'Controles del juego')
     this.setVisible(false)
@@ -190,7 +190,7 @@ export class GameToolbar {
     this.root.append(button)
   }
   mount(group: HTMLElement, order: number): void {
-    group.classList.add('nabla-btn-group', 'nabla-btn-group--column')
+    group.classList.add('nabla-btn-group')
     group.style.order = String(order)
     this.root.append(group)
     group.querySelectorAll('button').forEach((button) => GameToolbar.styleButton(button))
