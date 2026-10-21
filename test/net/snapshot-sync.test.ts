@@ -468,3 +468,51 @@ describe('SnapshotSync on-foot avatars', () => {
     b.dispose()
   })
 })
+
+describe('SnapshotSync.switchRoom', () => {
+  it('drops the old room (cars and avatars) and joins the new one', () => {
+    let now = 0
+    const net = relay()
+    const host = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    })).host
+    const despawned: string[] = []
+    let disposed = 0
+    const make = (walker: boolean) =>
+      new SnapshotSync({
+        transport: net.connect(),
+        room: 'one',
+        host,
+        clock: () => now,
+        localEntity: () => null,
+        spawnRemote: (peer) => `car-${peer.peer}`,
+        despawnRemote: (_peer, id) => despawned.push(id),
+        localAvatar: walker
+          ? () => ({ position: [0, 0, 0], yaw: 0, speed: 0, anim: 0 })
+          : () => null,
+        remoteAvatar: () => ({ update: () => {}, dispose: () => disposed++ }),
+      })
+    const a = make(true)
+    const b = make(false)
+    for (let frame = 0; frame < 10; frame++) {
+      now = frame * 50
+      a.update()
+      b.update()
+    }
+    expect(b.avatars.size).toBe(1)
+    expect(b.remotes.size).toBe(1)
+    b.switchRoom('two')
+    expect(b.room).toBe('two')
+    // (The in-memory relay has no rooms, so its welcome lists A again; the real one does not.)
+    expect(b.avatars.size).toBe(0)
+    expect(disposed).toBe(1)
+    expect(despawned).toEqual(['car-p1'])
+    // Rejoined: the relay welcomed it again.
+    expect(b.peerId).not.toBeNull()
+    a.dispose()
+    b.dispose()
+  })
+})
