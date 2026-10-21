@@ -44,6 +44,8 @@ export class GameRuntime {
   private interior: string | null = null
   private portalSequence = 0
   private jumpRequested = false
+  /** Physics tick count seen when the jump was queued; the jump clears once a later tick is reported. */
+  private jumpRequestedTick = 0
   /**
    * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
    * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
@@ -175,9 +177,10 @@ export class GameRuntime {
     sim.setSurfaceAreas(this.recover.pavedAreas?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
-    const ticks = sim.stats.ticks
     this.session.step(elapsed, { ...input, jump: input.jump || this.jumpRequested }, waterLevel)
-    if (sim.stats.ticks !== ticks) this.jumpRequested = false
+    // The physics worker reports ticks asynchronously (between frames), so compare against
+    // the tick seen when the jump was queued rather than the tick before this step.
+    if (this.jumpRequested && sim.stats.ticks > this.jumpRequestedTick) this.jumpRequested = false
     const crossing = sim.portalEvent
     let event: typeof crossing = null
     if (crossing && crossing.sequence !== this.portalSequence) {
@@ -287,7 +290,10 @@ export class GameRuntime {
     }
     if (action === 'jump') {
       if (sim.liftNearbyBike()) return 'Levantando la moto'
-      if (!sim.player.vehicleId && !sim.playerEjection) this.jumpRequested = true
+      if (!sim.player.vehicleId && !sim.playerEjection) {
+        this.jumpRequested = true
+        this.jumpRequestedTick = sim.stats.ticks
+      }
     }
     return undefined
   }
