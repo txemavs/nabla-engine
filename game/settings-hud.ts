@@ -171,7 +171,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const toggle = doc.createElement('button')
   toggle.type = 'button'
   toggle.id = 'settings-toggle'
-  toggle.className = 'settings-toggle'
+  toggle.className = 'settings-toggle nabla-btn nabla-corner nabla-corner--tr'
   toggle.title = 'Abrir menú · rueda: ±1 h'
   toggle.classList.add('settings-clock')
   toggle.setAttribute('aria-label', 'Abrir ajustes')
@@ -1457,16 +1457,16 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       sections: ['settings-options-sidearm', 'settings-weapon-poses'],
     },
   ]
-  const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
+  const sections = new Map<
+    TabId,
+    { nav: HTMLElement; body: HTMLElement; toggle: HTMLButtonElement; active?: string }
+  >()
   const mobileLayout = window.matchMedia('(max-width:600px)')
+  // Narrow screens fold the tree under its own button (.settings-sections-toggle); the content
+  // always follows the tree in the pane.
   const positionContent = (tab: TabId) => {
     const layout = sections.get(tab)
-    if (!layout) return
-    const selected = layout.nav.querySelector<HTMLButtonElement>(
-      `button[data-section="${layout.active}"]`,
-    )
-    if (mobileLayout.matches && selected) selected.after(layout.body)
-    else paneEls.get(tab)!.append(layout.body)
+    if (layout) paneEls.get(tab)!.append(layout.body)
   }
   const onMenuResize = () => {
     for (const tab of paneEls.keys()) positionContent(tab)
@@ -1510,6 +1510,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       .querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
       ?.closest('details')
     if (category) category.open = true
+    layout.toggle.textContent =
+      layout.body.querySelector<HTMLElement>(`#${CSS.escape(id)}`)?.dataset.sectionTitle ?? id
+    layout.nav.removeAttribute('data-open')
+    layout.toggle.setAttribute('aria-expanded', 'false')
     positionContent(tab)
     layout.body.scrollTop = 0
     if (tab === 'planet' && id === 'settings-map' && !win.hidden) mapSection.refresh()
@@ -1523,8 +1527,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         nav.className = 'settings-sections'
         nav.setAttribute('aria-label', 'Secciones')
         body.className = 'settings-section-content'
+        const toggle = doc.createElement('button')
+        toggle.type = 'button'
+        toggle.className = 'settings-sections-toggle'
+        toggle.setAttribute('aria-expanded', 'false')
+        toggle.addEventListener('click', () => {
+          const open = !nav.hasAttribute('data-open')
+          nav.toggleAttribute('data-open', open)
+          toggle.setAttribute('aria-expanded', String(open))
+        })
         pane.append(nav, body)
-        layout = { nav, body }
+        layout = { nav, body, toggle }
         sections.set(tab, layout)
       }
       for (const section of [...pane.querySelectorAll<HTMLElement>(':scope > .menu-section')]) {
@@ -1562,7 +1575,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
             group = doc.createElement('details')
             group.className = 'settings-nav-group'
             group.dataset.navGroup = category.id
-            group.open = previousGroups.get(category.id) ?? true
+            // Exclusive accordion: one open group per tab (the active section's group).
+            group.name = `settings-nav-${tab}`
+            group.open = previousGroups.get(category.id) ?? false
             const summary = doc.createElement('summary')
             summary.textContent = category.label
             group.append(summary)
@@ -1575,7 +1590,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       // The mobile body may be nested in a group about to be replaced.
       pane.append(layout.body)
       alignSettingRows(layout.body)
-      layout.nav.replaceChildren(...items)
+      layout.nav.replaceChildren(layout.toggle, ...items)
       const chosen = ordered.find((el) => el.id === layout.active) ?? ordered[0]
       if (chosen) chooseSection(tab, chosen.id)
     }
