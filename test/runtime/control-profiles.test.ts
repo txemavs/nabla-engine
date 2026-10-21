@@ -11,7 +11,11 @@ import {
   unregisterControlProfile,
 } from '../../src/runtime/control-profiles.js'
 import { hudTelemetry, type GameHudState } from '../../src/runtime/hud.js'
-import { presetVehicle, vehiclePresets } from '../../src/catalog/vehicles/library.js'
+import {
+  presetVehicle,
+  vehiclePresetBucket,
+  vehiclePresets,
+} from '../../src/catalog/vehicles/library.js'
 import { vehicleField } from '../../src/entity/vehicle/field.js'
 
 const interior = { min: [0, 0, 0], max: [1, 1, 1], exit: [0, 0, 0] } as {
@@ -29,7 +33,8 @@ function seat(catalogId: string | null, flightMode = false) {
 
 describe('stock vehicle control profiles', () => {
   it('every stock preset declares a registered profile', () => {
-    for (const preset of vehiclePresets()) {
+    // Stock means shipped in assets/library; assets/custom models are this machine's own.
+    for (const preset of vehiclePresets().filter((p) => vehiclePresetBucket(p.id) === 'library')) {
       expect(preset.vehicle.controls, preset.id).toBeDefined()
       expect(hasControlProfile(preset.vehicle.controls!), preset.id).toBe(true)
       // The declaration agrees with what inference would pick for old scenes.

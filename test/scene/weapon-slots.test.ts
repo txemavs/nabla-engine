@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { weaponPresets } from '../../src/catalog/weapons/library.js'
+import { weaponPresetBucket, weaponPresets } from '../../src/catalog/weapons/library.js'
 import { parseHeldWeaponPreset } from '../../src/catalog/weapons/held-library.js'
 import { buildWeaponSlots } from '../../src/catalog/weapons/slots.js'
 import { keyboardAction, keyLabel } from '../../src/config/input-bindings.js'
@@ -26,7 +26,9 @@ describe('weapon slots', () => {
       slot: 3,
       order: 99,
     })
-    const slots = buildWeaponSlots(weaponPresets(), [katana, spare])
+    // Library firearms only: assets/custom weapons are this machine's own.
+    const stock = weaponPresets().filter((p) => weaponPresetBucket(p.id) === 'library')
+    const slots = buildWeaponSlots(stock, [katana, spare])
     expect(slots.map((s) => [s.slot, s.id, s.kind])).toEqual([
       [1, 'hk-compact', 'firearm'],
       [3, 'katana', 'melee'],
