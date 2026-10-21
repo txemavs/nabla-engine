@@ -50,9 +50,8 @@ export interface PlayerBodyAssets {
 
 /** Speeds the clips were authored for, m/s: their playback rate follows the real speed. */
 export const AVATAR_STRIDE_SPEED = { walk: 1.4, run: 3.5, crouch_walk: 0.8 } as const
-/** Above this horizontal speed a standing player walks; above `run`, runs. */
+/** Above this horizontal speed a player walks (or crouch-walks). */
 const MOVING = 0.25
-const RUNNING = 2.4
 const LOOPING = new Set<AvatarAnimState>([
   'idle',
   'walk',
@@ -74,6 +73,11 @@ export interface AvatarInput {
   speed: number
   crouching: boolean
   seated: boolean
+  /**
+   * Speed above which a standing player runs, m/s: the host passes the midpoint of its walk and
+   * sprint speeds, so normal walking plays `walk` and only sprinting plays `run`.
+   */
+  runAbove: number
 }
 
 /**
@@ -86,7 +90,7 @@ export function localAvatarState(previous: AvatarAnimState, input: AvatarInput):
     return previous === 'jump_start' || input.rising > 0.5 ? 'jump_start' : 'jump_loop'
   if (previous === 'jump_start' || previous === 'jump_loop') return 'jump_land'
   if (input.crouching) return input.speed > MOVING ? 'crouch_walk' : 'crouch_idle'
-  if (input.speed > RUNNING) return 'run'
+  if (input.speed > input.runAbove) return 'run'
   if (input.speed > MOVING) return 'walk'
   return 'idle'
 }
@@ -168,7 +172,7 @@ export class PlayerBody {
     }
     this.currentState = state
     const stride = AVATAR_STRIDE_SPEED[state as keyof typeof AVATAR_STRIDE_SPEED]
-    if (next) next.timeScale = stride ? THREE.MathUtils.clamp(speed / stride, 0.5, 2) : 1
+    if (next) next.timeScale = stride ? THREE.MathUtils.clamp(speed / stride, 0.5, 3) : 1
     this.mixer.update(Math.min(Math.max(dt, 0), 0.1))
   }
 

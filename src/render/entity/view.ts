@@ -2033,6 +2033,7 @@ export class SceneView {
       speed,
       crouching: sim.stance !== 'standing',
       seated,
+      runAbove: (simulationDefaults.walkSpeed + simulationDefaults.sprintSpeed) / 2,
     })
     if (previous === 'jump_land' && state === 'idle' && !body.finished) state = 'jump_land'
     this.playerBodyState = state
