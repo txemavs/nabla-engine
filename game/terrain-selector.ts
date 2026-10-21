@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** "Terreno" section of the menu: choose where the terrain comes from; applying reloads with that URL. */
 import {
   DEFAULT_PACKAGES_URL,
@@ -35,7 +36,7 @@ export function suggestedTilesUrl(
 }
 
 export function bindTerrainSelector(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
   reload: (search: string) => void = (next) => location.assign(location.pathname + next),
 ): void {

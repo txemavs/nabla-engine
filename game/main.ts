@@ -1,3 +1,4 @@
+import { pageAddress, pageSearch } from './page-query.js'
 /** Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder). */
 // Must stay first: VR modes keep their own saved settings (settings-scope.ts).
 import './settings-scope-boot.js'
@@ -27,8 +28,8 @@ console.info(
   `[nabla-boot] entry ${entry.mode} after ${(performance.now() - bootMark).toFixed(0)}ms`,
 )
 // Show the address that is really played, so reloading or sharing it repeats this session.
-if (entry.search !== location.search)
-  history.replaceState(null, '', entry.search || location.pathname)
+if (entry.search !== pageSearch())
+  history.replaceState(null, '', pageAddress(entry.search || location.pathname))
 // Literal import() paths so Vite can pre-transform both graphs (ternary was opaque).
 if (entry.mode === 'terrain') await import('./terrain-main.js')
 else await import('./drive.js')

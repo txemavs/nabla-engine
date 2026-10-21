@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
@@ -1312,7 +1313,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const management = createSettingsManagement(doc, {
     local: () => localStorage,
     session: () => sessionStorage,
-    search: () => location.search,
+    search: () => pageSearch(),
     reload: (search) => {
       const url = new URL(location.href)
       url.search = search

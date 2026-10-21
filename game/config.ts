@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /**
  * Game configuration from URL parameters and defaults.
  *
@@ -46,7 +47,7 @@ const ZAISA_IRUN = {
   altitude: 50,
 } as const
 
-export function parseGameConfig(search: string = location.search): GameConfig {
+export function parseGameConfig(search: string = pageSearch()): GameConfig {
   const params = new URLSearchParams(search)
 
   const coordinate = (key: string, fallback: number) => {

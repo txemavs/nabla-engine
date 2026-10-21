@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Scenarios · Euskadi Online</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: #111;
+        color: #eee;
+        font:
+          16px/1.45 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 28px 18px 40px;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 28px;
+      }
+      .lead {
+        margin: 0 0 22px;
+        color: #aaa;
+      }
+      #scenarios {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      article {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 18px;
+        background: #1c1c1c;
+        border: 1px solid #333;
+        border-radius: 10px;
+      }
+      article h2 {
+        margin: 0;
+        font-size: 21px;
+      }
+      article p {
+        margin: 0;
+        color: #bbb;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: auto;
+      }
+      .actions a {
+        flex: 1 1 auto;
+        padding: 12px 14px;
+        text-align: center;
+        font-weight: 600;
+        color: #111;
+        background: #ffb000;
+        border-radius: 6px;
+        text-decoration: none;
+      }
+      .actions a.vr {
+        color: #eee;
+        background: #2b2b2b;
+        border: 1px solid #555;
+      }
+      small,
+      small a {
+        color: #888;
+      }
+      footer {
+        margin-top: 26px;
+        color: #888;
+        font-size: 14px;
+      }
+      footer a {
+        color: #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Scenarios</h1>
+      <p class="lead">Small maps to drive, walk, fly and shoot with friends. Everyone in the same scenario plays together. Press F (or A on the right VR controller) to get in and out of vehicles.</p>
+      <section id="scenarios" aria-label="Scenarios"></section>
+      <p id="vr-hint" class="lead" hidden>
+        On a headset (Quest browser, or a PC headset with a WebXR browser) open a scenario and press
+        <b>Enter VR</b>.
+      </p>
+      <footer><a href="/">Back to Euskadi Online</a></footer>
+    </main>
+    <script type="module" src="./scenario-menu.ts"></script>
+  </body>
+</html>

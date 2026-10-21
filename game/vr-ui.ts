@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { t } from '@nabla/engine/i18n'
@@ -7,7 +8,7 @@ export function isImmersiveEntry(): boolean {
   return (
     location.pathname === '/xr.html' ||
     location.pathname === '/xr-demo.html' ||
-    new URLSearchParams(location.search).has('xr')
+    new URLSearchParams(pageSearch()).has('xr')
   )
 }
 
@@ -33,7 +34,7 @@ export function bindVR(runtime: GameRuntime): void {
 }
 
 function mountVR(runtime: GameRuntime): void {
-  if (new URLSearchParams(location.search).has('xr'))
+  if (new URLSearchParams(pageSearch()).has('xr'))
     void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
       console.warn(t('vr.the-gloves-could-not-be-loaded-keeping-the-basic'), error)
     })
@@ -73,7 +74,7 @@ function mountVR(runtime: GameRuntime): void {
     if (busy) return
     busy = true
     try {
-      const terrainBase = new URLSearchParams(location.search).get('terrain') || '/terrain'
+      const terrainBase = new URLSearchParams(pageSearch()).get('terrain') || '/terrain'
       const base =
         terrainBase === '/terrain' ? import.meta.env.VITE_TERRAIN_EXTRA || terrainBase : terrainBase
       progress(await runtime.loadNearestZ15(base, progress))
@@ -165,7 +166,7 @@ function mountVR(runtime: GameRuntime): void {
         button.disabled = false
       })
   }
-  if (new URLSearchParams(location.search).has('xr')) {
+  if (new URLSearchParams(pageSearch()).has('xr')) {
     const hint = document.getElementById('controls-hint')
     if (hint) hint.textContent = button.title
   }

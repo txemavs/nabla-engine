@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched). */
 import {
   ASPHALT_CONTRAST_DEFAULT,
@@ -34,7 +35,7 @@ function validContrast(value: unknown): number | undefined {
 export function resolveAsphaltContrast(
   hostDefault: number | undefined,
   storage: StorageLike | undefined = browserStorage(),
-  search: string = location.search,
+  search: string = pageSearch(),
 ): number {
   const url = validContrast(new URLSearchParams(search).get('asphaltContrast'))
   if (url !== undefined) return url

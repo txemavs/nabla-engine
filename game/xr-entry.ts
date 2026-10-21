@@ -1,6 +1,7 @@
+import { pageSearch } from './page-query.js'
 import { hasVehiclePreset } from '@nabla/engine/vehicles'
 /** XR uses the same host and runtime as test.html and Euskadi. No second simulation. */
-const params = new URLSearchParams(location.search)
+const params = new URLSearchParams(pageSearch())
 const destinations = document.querySelector<HTMLDetailsElement>('#xr-destinations')!
 destinations.open = !params.has('terrain') && !params.has('example')
 if (params.get('tile') === '16224/11998')
