@@ -13,7 +13,8 @@ ${interfaceTabStyles}
 .settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:transparent;border:0;border-radius:0;font:inherit;color:inherit;}
 .settings-header {display:flex;align-items:center;padding:0 30px;border-bottom:1px solid #333;}
 .settings-header strong{font:16px Arial,sans-serif!important;letter-spacing:2px;min-height:0!important;margin:0!important;color:var(--muted)}
-.settings-tabs{display:flex;align-items:stretch;gap:6px;padding:0 30px;border-bottom:1px solid var(--line);overflow-x:auto}
+.settings-tabs{display:flex;align-items:stretch;gap:6px;min-width:0;padding:0 30px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.settings-tabs>.settings-tab{flex:0 0 auto}
 .settings-console .settings-tab{margin:0;padding:0 22px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--muted);font-size:20px;white-space:nowrap}
 .settings-console .settings-tab[aria-selected=true]{border-bottom-color:var(--accent);background:var(--button);color:var(--ink)}
 .settings-panes,.settings-pane{min-height:0;height:100%;overflow:hidden}
@@ -85,6 +86,8 @@ ${interfaceTabStyles}
 .settings-window .settings-row-value input[type=range]{flex:1;width:100%;max-width:380px}
 .settings-row-value output{flex:none}
 @media(max-width:600px){
+ .settings-tabs{padding:0 8px;gap:2px}
+ .settings-console .settings-tab{padding:0 12px;font-size:17px}
  .settings-pane{display:block;overflow:auto}
  .settings-sections{overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding:6px 8px}
  .settings-window .settings-sections-toggle{display:none}
