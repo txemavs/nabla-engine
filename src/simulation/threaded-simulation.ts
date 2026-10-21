@@ -106,8 +106,11 @@ export class ThreadedSimulation {
   private readonly lagged = new Map<string, unknown>()
   private readonly laggedInFlight = new Set<string>()
   private nextSupport = 1
-  /** Last HUD message a forwarded command answered in the worker. */
-  lastMessage = NO_MESSAGE
+  /**
+   * HUD messages that forwarded commands answer in the worker (the call itself answers ''):
+   * the runtime routes them to its own `onMessage` once the worker replies.
+   */
+  onMessage: ((message: string) => void) | null = null
   private gravityMultiplier: number = simulationDefaults.gravityScaleRange.default
   private readonly lastIdentity = new Map<string, unknown[]>()
   private failure: unknown = null
@@ -270,7 +273,7 @@ export class ThreadedSimulation {
     if (this.disposed) return NO_MESSAGE
     this.forward({ type: 'call', method, args, orElse }).then(
       (value) => {
-        if (typeof value === 'string' && value) this.lastMessage = value
+        if (typeof value === 'string' && value && !this.disposed) this.onMessage?.(value)
       },
       () => {},
     )
@@ -420,8 +423,14 @@ export class ThreadedSimulation {
   // Commands whose boolean only says the call applied: true when the entity is known here.
   liftNearbyBike(): boolean {
     this.command('liftNearbyBike', [])
-    // A lift already under way answers true inline; a new one starts in the worker.
-    return !!this.reads?.playerBikeRecovery
+    // A lift under way answers true inline. A new one is predicted from the mirrored pose of the
+    // bike inline would pick (ridden, ejected from, or nearest): fallen or crashed and stopped.
+    // The worker still decides (reach, walls); this only keeps the press from also jumping.
+    if (this.reads?.playerBikeRecovery) return true
+    const id =
+      this.player.vehicleId ?? this.reads?.playerEjection?.vehicleId ?? this.reads?.nearestVehicle
+    const pose = this.twoWheeledPose(id ?? '')
+    return !!pose && (pose.fallen || pose.crashed) && Math.abs(pose.roadSpeed) < 1.5
   }
   holdEngine(): boolean {
     this.command('holdEngine', [])

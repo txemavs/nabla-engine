@@ -1351,6 +1351,9 @@ export class GameRuntime {
         planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
+      // Worker mode: command HUD messages arrive with the worker's reply, not as return values.
+      const threaded = threadedSimulation(simulation)
+      if (threaded) threaded.onMessage = (message) => this.options.onMessage?.(message)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
       this.startSequence =
