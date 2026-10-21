@@ -11,6 +11,8 @@ export interface XRQualitySettings {
   sparks: boolean
   hideOwnWheels: boolean
   roadDetail: number
+  /** Rig follows the vehicle heading only (no pitch/roll/bounce): comfort default. */
+  horizonLock: boolean
 }
 const key = 'nabla.xr.quality.v1'
 export function readXRQuality(): XRQualitySettings {
@@ -33,6 +35,7 @@ export function readXRQuality(): XRQualitySettings {
     effects: typeof value.effects === 'boolean' ? value.effects : true,
     shadows: value.shadows === true,
     roadDetail: number(value.roadDetail, 8, 1, 16),
+    horizonLock: value.horizonLock !== false,
   }
 }
 export function saveXRQuality(value: XRQualitySettings): void {

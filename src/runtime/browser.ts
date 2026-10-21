@@ -162,6 +162,9 @@ import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
 import { SceneryPhysics, type SceneryLayer } from './scenery-physics.js'
 import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
+import { nextPaint } from './next-paint.js'
+import { activePlayMode, isVRMode } from './settings-scope.js'
+import { XRDebugPanel } from './xr-debug.js'
 import { createEntity } from '../entity/schema.js'
 import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
@@ -1570,6 +1573,7 @@ export class GameRuntime {
   }
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
+  private xrDebug: XRDebugPanel | null = null
   private frameXR(time: number): void {
     const xr = this.xrSystem!
     const parts = this.xrParts!
@@ -1720,9 +1724,19 @@ export class GameRuntime {
     const physicsMs = performance.now() - physicsStarted
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.sync(sim, dt, true, 0, 0)
+    // Own body never shows in the headset (also during ejection / bike recovery), so no helmet
+    // shell or head pieces sit inside the eyes.
+    this.view.avatar.visible = false
     this.game.updateCamera(this.view, xr.anchorCamera, time, dt)
     const eye = xr.anchorCamera.position.clone()
     const rotation = xr.anchorCamera.quaternion.clone()
+    if (xr.quality.horizonLock) {
+      // Comfort: the rig follows the vehicle heading only. Pitch, roll, lean and suspension
+      // bounce of the cockpit camera would tilt the whole world inside the headset, which the
+      // inner ear does not feel (main cause of VR sickness); the head pose stays WebXR's alone.
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(rotation)
+      rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-forward.x, -forward.z))
+    }
     this.origin.set(0, 0, 0)
     if (
       new THREE.Vector3(...sim.player.position).length() > streamingDefaults.floatingOriginDistance
@@ -1891,6 +1905,27 @@ export class GameRuntime {
     this.options.canvas.dataset.cameraMode = 'vr'
     this.options.canvas.dataset.xrCalls = String(this.renderer.info.render.calls)
     this.effects.updateAudio(sim, this.document, eye)
+    if (enabled && isVRMode(activePlayMode())) {
+      this.xrDebug ??= new XRDebugPanel(this.camera, this)
+      const layer = this.renderer.xr.getBaseLayer?.() as
+        { framebufferWidth?: number; framebufferHeight?: number } | null | undefined
+      const tiles = this.world?.cellStats
+      this.xrDebug.sample({
+        time,
+        cpuMs: performance.now() - started,
+        physicsMs,
+        calls: this.renderer.info.render.calls,
+        triangles: this.renderer.info.render.triangles,
+        framebuffer:
+          layer?.framebufferWidth && layer.framebufferHeight
+            ? [layer.framebufferWidth, layer.framebufferHeight]
+            : null,
+        tiles: tiles
+          ? { loaded: tiles.loaded, visible: tiles.visible, pending: tiles.pending }
+          : null,
+        ...this.streaming,
+      })
+    }
     if (enabled)
       xr.recordStats(
         time,
@@ -3767,8 +3802,8 @@ export class GameRuntime {
   setStreaming(options: { distance?: number; cells?: number }): void {
     this.assertAlive()
     if (options.distance !== undefined) {
-      if (!Number.isFinite(options.distance) || options.distance < 500 || options.distance > 20000)
-        throw new Error('Load distance must be 500–20000 m')
+      if (!Number.isFinite(options.distance) || options.distance < 250 || options.distance > 20000)
+        throw new Error('Load distance must be 250–20000 m')
       this.quality = { ...this.quality, distance: options.distance }
       this.world?.setDistance(options.distance)
       // A longer radius needs more cells resident, unless the caller sets the number.
@@ -4505,10 +4540,7 @@ export class GameRuntime {
     this.options.canvas.dataset.loadingDetail = detail
     this.options.canvas.dataset.loadingDetailSince = String(performance.now())
     window.dispatchEvent(new CustomEvent('nabla-load-step'))
-    await new Promise<void>((resolve) => {
-      if (document.hidden) setTimeout(resolve, 0)
-      else requestAnimationFrame(() => setTimeout(resolve, 0))
-    })
+    await nextPaint()
   }
   private async prepareReveal(signal: AbortSignal): Promise<void> {
     const canvas = this.options.canvas
