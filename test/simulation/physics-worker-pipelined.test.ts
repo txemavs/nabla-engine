@@ -59,24 +59,32 @@ describe('physics worker: pipelined frames', () => {
     close()
   })
 
-  it('interpolated poses blend the last two snapshots at the render time', async () => {
+  it('every read shares one render timeline: vehicle, wheels, player and the camera seat', async () => {
     const { sim, threaded: t, close } = await threaded()
     sim.addVehicles([presetVehicle('car', 'car-1', [0, 3, -10])])
     await sim.step(1 / 60)
-    // Let the car fall for a few steps so consecutive snapshots differ.
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       t.advance(FIXED_STEP)
       await tick()
     }
-    const { previous, latest } = t.worker.clock
-    expect(previous && latest && latest.time > previous.time).toBe(true)
-    const before = previous!.snapshot.entities['car-1'][0].position[1]
-    const after = latest!.snapshot.entities['car-1'][0].position[1]
-    const y = sim.entityTransform('car-1', true).position[1]
-    const alpha = t.worker.clock.alpha
-    expect(y).toBeCloseTo(before + (after - before) * alpha, 5)
-    // Fixed (non-interpolated) reads stay the newest worker state.
-    expect(sim.entityTransform('car-1').position[1]).toBe(after)
+    const sample = t.worker.timeline.sample()!
+    const from = sample.a.snapshot.entities['car-1'][0].position[1]
+    const to = sample.b.snapshot.entities['car-1'][0].position[1]
+    const shown = sim.entityTransform('car-1', true)
+    expect(shown.position[1]).toBeCloseTo(from + (to - from) * sample.t, 5)
+    // Fixed and interpolated reads are the same pose (no second timeline).
+    expect(sim.entityTransform('car-1')).toEqual(shown)
+    // The seat the camera follows rides on the shown body, not on the worker's newest pose.
+    const info = sim.vehicleInfo('car-1', true)
+    const worker = t.worker.newest.entities['car-1'][1]
+    const seatWorker = info.driver[1] - shown.position[1]
+    const reads = (
+      t as unknown as {
+        reads: { vehicles: Record<string, { infoInterpolated: { driver: number[] } }> }
+      }
+    ).reads
+    const raw = reads.vehicles['car-1'].infoInterpolated.driver[1] - worker.position[1]
+    expect(seatWorker).toBeCloseTo(raw, 3)
     close()
   })
 })

@@ -10,7 +10,7 @@
  * {@link serveSimulation} is the worker side, {@link WorkerSimulation} the main-thread proxy.
  * The inline {@link Simulation} stays the default and the fallback for tests and Node.
  */
-import { SnapshotClock, lerpTransform } from './snapshot-clock.js'
+import { SnapshotTimeline, lerpAngle, lerpTransform, lerpVec } from './snapshot-clock.js'
 import { initPhysics } from './physics.js'
 import { FIXED_STEP, Simulation, type PlayerInput } from './simulation.js'
 import type { SceneDocument } from '../scene/document.js'
@@ -400,8 +400,14 @@ export class WorkerSimulation {
    * Pipelined mode ({@link ThreadedSimulation.advance}): interpolated reads blend the last two
    * snapshots at this clock's render time instead of reading the worker's own blend.
    */
-  readonly clock = new SnapshotClock<SimulationSnapshot>()
+  readonly timeline = new SnapshotTimeline<SimulationSnapshot>(2 * FIXED_STEP)
   pipelined = false
+  /** The blended snapshot of the current render time (rebuilt when it or the buffer changes). */
+  private rendered: {
+    time: number | null
+    latest: SimulationSnapshot
+    snapshot: SimulationSnapshot
+  } | null = null
   private readonly listener = (event: MessageEvent<SimulationReply>) => {
     const reply = event.data
     const entry = this.pending.get(reply.id)
@@ -409,7 +415,7 @@ export class WorkerSimulation {
     this.pending.delete(reply.id)
     if (reply.ok && reply.snapshot) {
       this.latest = reply.snapshot
-      this.clock.push(reply.snapshot, reply.snapshot.stats.ticks * FIXED_STEP)
+      this.timeline.push(reply.snapshot, reply.snapshot.stats.ticks * FIXED_STEP)
     }
     if (reply.ok) this.onState?.(reply)
     entry.resolve(reply)
@@ -461,50 +467,43 @@ export class WorkerSimulation {
     return this.latest
   }
   get player(): Simulation['player'] {
-    return this.snapshot.player
+    return this.view().player
   }
   get stats(): Simulation['stats'] {
     return this.snapshot.stats
   }
-  /** The previous snapshot and blend factor when pipelined reads interpolate, else null. */
-  private blend(): { previous: SimulationSnapshot; alpha: number } | null {
-    const previous = this.clock.previous
-    if (!this.pipelined || !previous || this.clock.latest?.snapshot !== this.latest) return null
-    return { previous: previous.snapshot, alpha: this.clock.alpha }
+  /**
+   * The state every main-thread read sees. Inline-equivalent (newest worker reply) until frames
+   * pipeline; then the snapshot blended at the timeline's render time, so camera, player,
+   * vehicles, wheels and attached objects all share one timeline.
+   */
+  private view(): SimulationSnapshot {
+    const latest = this.snapshot
+    if (!this.pipelined) return latest
+    const time = this.timeline.renderTime
+    const cached = this.rendered
+    if (cached && cached.time === time && cached.latest === latest) return cached.snapshot
+    const snapshot = blendSnapshot(latest, this.timeline.sample())
+    this.rendered = { time, latest, snapshot }
+    return snapshot
+  }
+  /** Newest worker reply, whatever the render time (pending-entity checks, structural reads). */
+  get newest(): SimulationSnapshot {
+    return this.snapshot
   }
   get renderPlayerPosition(): Vec3Tuple {
-    const now = this.snapshot.renderPlayerPosition
-    const blend = this.blend()
-    if (!blend) return now
-    // The player's fixed pose is not in `entities`: blend its render position the same way.
-    return lerpTransform(
-      { position: blend.previous.renderPlayerPosition, rotation: [0, 0, 0, 1] },
-      { position: now, rotation: [0, 0, 0, 1] },
-      blend.alpha,
-    ).position
+    return this.view().renderPlayerPosition
   }
   get playerFrame(): Transform | null {
-    const now = this.snapshot.playerFrame
-    const blend = this.blend()
-    const before = blend?.previous.playerFrame
-    return now && before ? lerpTransform(before, now, blend!.alpha) : now
+    return this.view().playerFrame
   }
   entityTransform(id: string, interpolated = false): Transform {
-    const pair = this.snapshot.entities[id]
+    const pair = this.view().entities[id]
     if (!pair) throw new Error('Unknown entity: ' + id)
-    if (!interpolated) return pair[0]
-    const blend = this.blend()
-    const before = blend?.previous.entities[id]
-    return before ? lerpTransform(before[0], pair[0], blend!.alpha) : pair[1]
+    return pair[interpolated ? 1 : 0]
   }
   wheelTransforms(id: string, interpolated = false): Transform[] {
-    const pair = this.snapshot.wheels[id]
-    if (!pair) return []
-    if (!interpolated) return pair[0]
-    const blend = this.blend()
-    const before = blend?.previous.wheels[id]?.[0]
-    if (!before || before.length !== pair[0].length) return pair[1]
-    return pair[0].map((wheel, i) => lerpTransform(before[i], wheel, blend!.alpha))
+    return this.view().wheels[id]?.[interpolated ? 1 : 0] ?? []
   }
 }
 
@@ -513,4 +512,55 @@ export function createWorkerSimulation(): WorkerSimulation {
   return new WorkerSimulation(
     new Worker(new URL('./simulation.worker.ts', import.meta.url), { type: 'module' }),
   )
+}
+
+/**
+ * `latest` with every pose replaced by its blend at `sample` (fixed and interpolated slots get
+ * the same pose: one timeline). Ids, stats and discrete state stay those of the newest reply.
+ */
+export function blendSnapshot(
+  latest: SimulationSnapshot,
+  sample: {
+    a: { snapshot: SimulationSnapshot; time: number }
+    b: { snapshot: SimulationSnapshot; time: number }
+    t: number
+  } | null,
+): SimulationSnapshot {
+  if (!sample) return latest
+  const { a, b, t } = sample
+  const span = b.time - a.time
+  const pose = (from: Transform | undefined, to: Transform | undefined, fallback: Transform) =>
+    from && to ? lerpTransform(from, to, t, span) : fallback
+  const entities: SimulationSnapshot['entities'] = {}
+  for (const [id, pair] of Object.entries(latest.entities)) {
+    const blended = pose(a.snapshot.entities[id]?.[0], b.snapshot.entities[id]?.[0], pair[1])
+    entities[id] = [blended, blended]
+  }
+  const wheels: SimulationSnapshot['wheels'] = {}
+  for (const [id, pair] of Object.entries(latest.wheels)) {
+    const from = a.snapshot.wheels[id]?.[0],
+      to = b.snapshot.wheels[id]?.[0]
+    const blended =
+      from && to && from.length === to.length && to.length === pair[0].length
+        ? to.map((wheel, i) => lerpTransform(from[i], wheel, t, span))
+        : pair[1]
+    wheels[id] = [blended, blended]
+  }
+  const pa = a.snapshot.player,
+    pb = b.snapshot.player
+  const sameBody = pa.vehicleId === pb.vehicleId && pb.vehicleId === latest.player.vehicleId
+  const player = sameBody
+    ? {
+        ...latest.player,
+        position: lerpVec(pa.position, pb.position, t),
+        yaw: lerpAngle(pa.yaw, pb.yaw, t),
+      }
+    : latest.player
+  const renderPlayerPosition = sameBody
+    ? lerpVec(a.snapshot.renderPlayerPosition, b.snapshot.renderPlayerPosition, t)
+    : latest.renderPlayerPosition
+  const fa = a.snapshot.playerFrame,
+    fb = b.snapshot.playerFrame
+  const playerFrame = sameBody && fa && fb ? lerpTransform(fa, fb, t, span) : latest.playerFrame
+  return { ...latest, entities, wheels, player, renderPlayerPosition, playerFrame }
 }
