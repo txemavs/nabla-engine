@@ -1,6 +1,7 @@
 /** Menu toggle for the R reset: nearest road/vía (default on) vs upright in place. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const RECOVER_TO_ROAD_STORAGE_KEY = 'nabla.recoverToRoad'
 
@@ -38,7 +39,7 @@ export function saveRecoverToRoadEnabled(
 
 /** Checkbox in its own «Conducción» section (shown under Ajustes → Opciones). */
 export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void {
-  const group = menuSection('driving-extras', 'Conducción')
+  const group = menuSection('driving-extras', t('settings.driving'))
   const label = document.createElement('label')
   label.title =
     'Al pulsar R el vehículo se endereza sobre la carretera más cercana. Desactivado: se endereza donde está.'

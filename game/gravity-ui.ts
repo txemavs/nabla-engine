@@ -2,6 +2,7 @@
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { simulationDefaults } from '@nabla/engine/config/simulation'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const GRAVITY_SCALE_STORAGE_KEY = 'nabla.gravityScale'
 const STEP = 0.1
@@ -47,7 +48,7 @@ function describe(scale: number): string {
 /** «Gravedad» slider in the «Conducción» section (Ajustes → Opciones). */
 export function bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void {
   const { min, max } = simulationDefaults.gravityScaleRange
-  const group = menuSection('driving-extras', 'Conducción')
+  const group = menuSection('driving-extras', t('settings.driving'))
   const label = document.createElement('label')
   label.title = 'Multiplica la gravedad del mundo. ×1.0 es la gravedad real (9.81 m/s²).'
   const input = document.createElement('input')

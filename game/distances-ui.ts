@@ -16,6 +16,7 @@ import {
 } from '../src/runtime/visibility-settings.js'
 import { browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 type Field = keyof VisibilitySettings
 
@@ -68,7 +69,7 @@ export function bindDistances(
   runtime: GameRuntime,
   storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = browserStorage(),
 ): HTMLElement {
-  const section = menuSection('settings-distances', 'Distancias')
+  const section = menuSection('settings-distances', t('settings.distances'))
   const live = runtime.visibility
   let remembered: Partial<VisibilitySettings> = {}
   try {
