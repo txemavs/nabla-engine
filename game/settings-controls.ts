@@ -6,32 +6,33 @@ import {
   keyLabel,
   type InputContext,
 } from '@nabla/engine/config/controls'
+import { t } from '@nabla/engine/i18n'
 
 export function createControlsSection(doc: Document): HTMLElement {
   const root = doc.createElement('fieldset')
   root.id = 'settings-controls'
   root.className = 'menu-section'
   const legend = doc.createElement('legend')
-  legend.textContent = 'Teclas'
+  legend.textContent = t('settings.keys')
   const tools = doc.createElement('div')
   tools.className = 'settings-key-tools'
   const search = doc.createElement('input')
   search.type = 'search'
-  search.placeholder = 'Buscar acción o tecla…'
-  search.setAttribute('aria-label', 'Buscar teclas')
+  search.placeholder = t('settings.keys.search')
+  search.setAttribute('aria-label', t('settings.keys.search-label'))
   const context = doc.createElement('select')
-  context.setAttribute('aria-label', 'Contexto de las teclas')
+  context.setAttribute('aria-label', t('settings.keys.context'))
   const contexts: Array<[string, InputContext | undefined]> = [
-    ['Todas las teclas', undefined],
-    ['A pie', { mode: 'walk' }],
-    ['Coche / camión', { mode: 'road' }],
-    ['Moto', { mode: 'bike' }],
-    ['Toro', { mode: 'forklift' }],
-    ['Vuelo', { mode: 'flight' }],
-    ['Arma', { mode: 'walk', weapon: true }],
-    ['Apuntando', { mode: 'walk', weapon: true, aiming: true }],
-    ['Menús', { mode: 'road', menu: true }],
-    ['Visor libre', { mode: 'viewer' }],
+    [t('settings.keys.ctx.all'), undefined],
+    [t('settings.keys.ctx.walk'), { mode: 'walk' }],
+    [t('settings.keys.ctx.road'), { mode: 'road' }],
+    [t('settings.keys.ctx.bike'), { mode: 'bike' }],
+    [t('settings.keys.ctx.forklift'), { mode: 'forklift' }],
+    [t('settings.keys.ctx.flight'), { mode: 'flight' }],
+    [t('settings.keys.ctx.weapon'), { mode: 'walk', weapon: true }],
+    [t('settings.keys.ctx.aiming'), { mode: 'walk', weapon: true, aiming: true }],
+    [t('settings.keys.ctx.menu'), { mode: 'road', menu: true }],
+    [t('settings.keys.ctx.viewer'), { mode: 'viewer' }],
   ]
   contexts.forEach(([label], index) => {
     const option = doc.createElement('option')
@@ -43,7 +44,7 @@ export function createControlsSection(doc: Document): HTMLElement {
   table.className = 'settings-key-table'
   const thead = doc.createElement('thead'),
     heading = doc.createElement('tr')
-  for (const label of ['Acción', 'Teclas']) {
+  for (const label of [t('settings.keys.action'), t('settings.keys')]) {
     const th = doc.createElement('th')
     th.scope = 'col'
     th.textContent = label

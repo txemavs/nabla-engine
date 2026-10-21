@@ -6,6 +6,7 @@ import {
 } from '@nabla/engine/render'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const ASPHALT_CONTRAST_STORAGE_KEY = 'nabla.asphaltContrast'
 
@@ -84,7 +85,7 @@ export function bindAsphaltContrastSlider(
   })
   const reset = document.createElement('button')
   reset.type = 'button'
-  reset.textContent = 'Por defecto'
+  reset.textContent = t('settings.default')
   reset.addEventListener('click', () => {
     runtime.setAsphaltContrast(fallback)
     try {

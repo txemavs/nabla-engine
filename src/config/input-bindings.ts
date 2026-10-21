@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 /** Physical input belongs here; simulation consumes semantic actions and PlayerInput. */
 export type InputMode = 'walk' | 'road' | 'bike' | 'forklift' | 'flight' | 'viewer' | 'launcher'
 export interface InputContext {
@@ -218,7 +219,7 @@ export function legacyInputAction(value: string): InputAction | undefined {
 }
 export function keyLabel(code: string): string {
   const special: Record<string, string> = {
-    Space: 'Espacio',
+    Space: t('input.key.space'),
     Tab: 'Tab',
     Escape: 'Esc',
     Enter: 'Enter',
