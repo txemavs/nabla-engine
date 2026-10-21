@@ -10,8 +10,10 @@ import {
   ParticleClock,
   PARTICLE_MOTION_GLSL,
   smokePosition,
+  SMOKE_RISE_ACCELERATION,
 } from './gpu-particles.js'
 import { LegacyExhaustSmoke } from './legacy-particles.js'
+import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 export interface ExhaustSmokeOptions {
   /** Fixed emission rate at 100% quantity; omitted uses engine load. */
   lifetime?: number
@@ -108,7 +110,23 @@ class SmokeBatch {
       }),
     )
     this.points.name = 'Engine exhaust smoke'
+    // Never three-culled (the sphere above is the fixed sort centre): off-screen culling uses
+    // the leased emitters' spawn bounds instead.
     this.points.frustumCulled = false
+    cullOffscreen(this.points, {
+      box: (target) => {
+        if (this.forced > 0) return target.set(EVERYWHERE.min, EVERYWHERE.max)
+        for (const emitter of this.slots) emitter?.bounds.unionInto(target)
+        return target
+      },
+      // Point diameter: (1 − life/lifetime)·1.4·size / max(1, depth), clamped to [1, 240] px.
+      pad: (camera, height, distance) => {
+        let size = 0
+        for (const emitter of this.slots) if (emitter) size = Math.max(size, emitter.size)
+        const px = Math.min(240, Math.max(1, (1.4 * size) / Math.max(1, distance)))
+        return pixelsToWorld(camera, height, distance, px + 1)
+      },
+    })
     this.points.visible = false
     this.points.onBeforeRender = (_renderer, scene) => {
       for (let i = 0; i < BATCH_EMITTERS; i++) {
@@ -197,6 +215,11 @@ class SmokePool {
 }
 
 const pools = new WeakMap<THREE.Object3D, SmokePool>()
+/** Bounds that are never culled (warm-up draws). */
+const EVERYWHERE = new THREE.Box3(
+  new THREE.Vector3(-Infinity, -Infinity, -Infinity),
+  new THREE.Vector3(Infinity, Infinity, Infinity),
+)
 let sequence = 0
 
 /** Analytic GPU exhaust smoke: spawn data written once, motion evaluated in the vertex shader. */
@@ -208,6 +231,8 @@ class AnalyticExhaustSmoke {
   private readonly pool: SmokePool
   private readonly smokePool: LaserSmokePool
   private readonly clock = new ParticleClock()
+  /** Where this emitter's live particles can be, in the space frame (off-screen culling). */
+  readonly bounds: SpawnBounds
   // CPU copies of the spawn data, for laser sampling and tests.
   private readonly origins: Float32Array
   private readonly velocities: Float32Array
@@ -238,6 +263,7 @@ class AnalyticExhaustSmoke {
   ) {
     this.capacity = options.capacity ?? 48
     this.size = options.size ?? 550
+    this.bounds = new SpawnBounds(options.lifetime ?? 1.4)
     const capacity = this.capacity
     this.origins = new Float32Array(capacity * 3)
     this.velocities = new Float32Array(capacity * 3)
@@ -305,6 +331,7 @@ class AnalyticExhaustSmoke {
     this.ready = true
     // The former per-particle integration step, now one clock step for the whole emitter.
     this.clock.step(dt)
+    this.bounds.advance(this.clock.s)
     this.carry = running
       ? this.carry +
         dt *
@@ -334,6 +361,7 @@ class AnalyticExhaustSmoke {
       this.birthS[i] = this.clock.s
       this.birthQ[i] = this.clock.q
       this.lastDeath = Math.max(this.lastDeath, this.clock.s + this.lifetimes[i])
+      this.expandBounds(i)
       this.write(i)
     }
     const live = this.clock.s < this.lastDeath
@@ -432,7 +460,31 @@ class AnalyticExhaustSmoke {
     markRange(batch.spawn, offset, this.capacity)
   }
 
+  /**
+   * Grow the bounds by particle `i`'s whole path: `p0 + v0·t` is linear, and the rise term
+   * `0.2·((Q − Q_b) − S_b·t)` lies in `[0, 0.2·t²]` for any frame steps.
+   */
+  private expandBounds(i: number): void {
+    const o = i * 3,
+      lifetime = this.lifetimes[i]
+    const x0 = this.origins[o],
+      y0 = this.origins[o + 1],
+      z0 = this.origins[o + 2]
+    const x1 = x0 + this.velocities[o] * lifetime,
+      y1 = y0 + this.velocities[o + 1] * lifetime,
+      z1 = z0 + this.velocities[o + 2] * lifetime
+    this.bounds.expand(
+      Math.min(x0, x1),
+      Math.min(y0, y1),
+      Math.min(z0, z1),
+      Math.max(x0, x1),
+      Math.max(y0, y1) + SMOKE_RISE_ACCELERATION * lifetime * lifetime,
+      Math.max(z0, z1),
+    )
+  }
+
   private releaseLease(): void {
+    this.bounds.clear()
     if (!this.lease) return
     this.lease.batch.release(this.lease.slot)
     this.lease = undefined

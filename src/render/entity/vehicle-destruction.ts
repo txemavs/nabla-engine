@@ -5,6 +5,18 @@ import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
 import { createLensFlare } from '../planet/lens-flare.js'
+import { analyticParticles } from './gpu-particles.js'
+import { mergedFlameGeometry, TONGUE_GLSL, WreckFlames } from './wreck-flames.js'
+import { cullOffscreen } from './effect-culling.js'
+
+/** Most glass fragments alive at once (one instanced draw). */
+const MAX_SHARDS = 96
+/** Fragments per broken pane. */
+const SHARDS_PER_PANE = 24
+/** Seconds a fragment lives. */
+const SHARD_LIFE = 1.5
+/** Bounding radius of a fragment (the tetrahedron's circumradius), metres. */
+const SHARD_RADIUS = 0.035
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
 export class VehicleDestruction {
@@ -70,6 +82,7 @@ export class VehicleDestruction {
     anchor: THREE.Group
     flames: THREE.Group
     material: THREE.MeshBasicMaterial
+    tongues?: WreckFlames
     clock: { value: number }
     smoke: ExhaustSmoke
   }[] = []
@@ -77,6 +90,8 @@ export class VehicleDestruction {
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
   private readonly flameGeometry = new THREE.PlaneGeometry(1, 1, 1, 16).translate(0, 0.5, 0)
+  /** The six tongues merged (WebGL), built on first use and shared by every wreck. */
+  private mergedFlames?: THREE.BufferGeometry
   // Keep the light count constant: adding the first explosion lamp otherwise recompiles
   // every lit material in the scene on the gameplay frame.
   private readonly light = new THREE.PointLight('#ff9b22', 0, 8, 2)
@@ -103,23 +118,41 @@ export class VehicleDestruction {
       fire: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
       flames: THREE.Group
       flameMaterial: THREE.MeshBasicMaterial
+      tongues?: WreckFlames
       smoke: ExhaustSmoke
       age: number
       clock: { value: number }
     }
   >()
   private readonly fragments = new THREE.InstancedMesh(
-    new THREE.TetrahedronGeometry(0.035),
+    new THREE.TetrahedronGeometry(SHARD_RADIUS),
     new THREE.MeshBasicMaterial({ color: '#b8e5ff', transparent: true, opacity: 0.65 }),
-    96,
+    MAX_SHARDS,
   )
-  private readonly shards: { position: THREE.Vector3; velocity: THREE.Vector3; age: number }[] = []
+  /**
+   * Glass fragments, oldest first, as a ring in preallocated arrays: `(x, y, z)` position and
+   * velocity and the age per slot. No allocation per frame or per pane.
+   */
+  private readonly shardPositions = new Float64Array(MAX_SHARDS * 3)
+  private readonly shardVelocities = new Float64Array(MAX_SHARDS * 3)
+  private readonly shardAges = new Float64Array(MAX_SHARDS)
+  /** Ring index of the oldest live fragment and the live count. */
+  private shardHead = 0
+  private shardCount = 0
+  private readonly shardDummy = new THREE.Object3D()
+  /** Local bounds of the live fragments, refreshed each update (for off-screen culling). */
+  private readonly shardBounds = new THREE.Box3()
   constructor(private readonly space: THREE.Group) {
     this.debris = new WreckDebris(space)
     this.balloons = new TrunkBalloons(space)
     this.root.name = 'Vehicle explosions'
     this.fragments.count = 0
+    this.fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    // Culled through its own bounds: the instanced sphere stays three's (fixed) sort centre.
     this.fragments.frustumCulled = false
+    cullOffscreen(this.fragments, {
+      box: (target) => target.copy(this.shardBounds),
+    })
     this.root.add(this.fragments, this.glassRoot)
     this.space.add(this.light)
     this.flare.intensity.value = 0
@@ -153,7 +186,7 @@ export class VehicleDestruction {
     for (const anchor of detached.slice(0, 8)) {
       if (this.debrisFires.length >= 48) break
       const clock = { value: 0 },
-        { flames, material } = this.createFlames(clock)
+        { flames, material, tongues } = this.createFlames(clock)
       flames.scale.setScalar(0.28)
       this.space.add(flames)
       flames.position.copy(anchor.position)
@@ -163,7 +196,7 @@ export class VehicleDestruction {
         size: 250,
       })
       this.root.add(smoke.root)
-      this.debrisFires.push({ anchor, flames, material, clock, smoke })
+      this.debrisFires.push({ anchor, flames, material, tongues, clock, smoke })
     }
     object.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return
@@ -191,7 +224,7 @@ export class VehicleDestruction {
       }
     })
     const { fire, clock } = this.createFire()
-    const { flames, material: flameMaterial } = this.createFlames(clock)
+    const { flames, material: flameMaterial, tongues } = this.createFlames(clock, true)
     fire.position.y = 0.5
     const smoke = new ExhaustSmoke(flames, this.space, {
       direction: [0, 1, 0],
@@ -209,7 +242,7 @@ export class VehicleDestruction {
     this.space.worldToLocal(flames.position)
     flames.position.y += 0.3
     this.root.add(smoke.root)
-    this.burns.set(id, { object, fire, flames, flameMaterial, smoke, age: 0, clock })
+    this.burns.set(id, { object, fire, flames, flameMaterial, tongues, smoke, age: 0, clock })
   }
   /**
    * The vehicle explosion's fireball, light and lens flash at `position` (scene space), `scale`
@@ -272,7 +305,14 @@ export class VehicleDestruction {
     fireNodes(fire.material, clock)
     return { fire, clock }
   }
-  private createFlames(clock: { value: number }) {
+  /**
+   * Six crossed flame planes. Under WebGL they are one merged draw ({@link WreckFlames}) with the
+   * per-tongue sway of a burning car (`animated`) evaluated in the vertex shader; the WebGPU
+   * backend keeps six meshes (its flame twin blends each draw over a fresh frame copy).
+   */
+  private createFlames(clock: { value: number }, animated = false) {
+    const merged = analyticParticles()
+    const sway = { value: animated ? 1 : 0 }
     const material = new THREE.MeshBasicMaterial({
       color: '#ffffff',
       transparent: true,
@@ -282,17 +322,20 @@ export class VehicleDestruction {
     })
     material.onBeforeCompile = (shader) => {
       shader.uniforms.flameTime = clock
+      shader.uniforms.flameAnimate = sway
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
+            (merged ? '\nattribute float flameTongue; uniform float flameAnimate;' : ''),
         )
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
           flameUv = uv;
           transformed.x += sin(uv.y * 7.0 - flameTime * 5.0) * uv.y * uv.y * 0.09;
-          transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;`,
+          transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;` +
+            (merged ? TONGUE_GLSL : ''),
         )
       shader.fragmentShader = shader.fragmentShader
         .replace(
@@ -318,11 +361,19 @@ export class VehicleDestruction {
           diffuseColor.a *= alpha * 0.8;`,
         )
     }
-    material.customProgramCacheKey = () => 'vehicle-flames-v2'
+    material.customProgramCacheKey = () =>
+      merged ? 'vehicle-flames-merged-v1' : 'vehicle-flames-v2'
     flameNodes(material, clock)
     const flames = new THREE.Group()
     flames.name = 'Wreck flames'
     flames.position.y = 0.3
+    if (merged) {
+      this.mergedFlames ??= mergedFlameGeometry(this.flameGeometry)
+      // The shader's `flameAnimate` is the same object the tongue order reads.
+      const tongues = new WreckFlames(this.mergedFlames, material, clock, sway)
+      flames.add(tongues.mesh)
+      return { flames, material, tongues }
+    }
     for (let i = 0; i < 6; i++) {
       const tongue = new THREE.Mesh(this.flameGeometry, material)
       tongue.rotation.y = ((i % 2) * Math.PI) / 2
@@ -330,7 +381,7 @@ export class VehicleDestruction {
       tongue.scale.set(0.7, 1.0 + (i % 3) * 0.2, 1)
       flames.add(tongue)
     }
-    return { flames, material }
+    return { flames, material, tongues: undefined }
   }
   /** Compile effect programs during loading and keep them alive across session resets. */
   async warm(
@@ -383,19 +434,28 @@ export class VehicleDestruction {
     }
   }
   glass(point: THREE.Vector3, direction: THREE.Vector3): void {
-    for (let i = 0; i < 24; i++) {
-      if (this.shards.length >= 96) this.shards.shift()
-      this.shards.push({
-        position: point.clone(),
-        velocity: direction
-          .clone()
-          .multiplyScalar(1.5)
-          .add(
-            new THREE.Vector3(Math.random() * 3 - 1.5, Math.random() * 2, Math.random() * 3 - 1.5),
-          ),
-        age: 0,
-      })
+    for (let i = 0; i < SHARDS_PER_PANE; i++) {
+      // Past the limit the oldest fragment makes room.
+      if (this.shardCount >= MAX_SHARDS) {
+        this.shardHead = (this.shardHead + 1) % MAX_SHARDS
+        this.shardCount--
+      }
+      const slot = (this.shardHead + this.shardCount++) % MAX_SHARDS
+      const rx = Math.random() * 3 - 1.5,
+        ry = Math.random() * 2,
+        rz = Math.random() * 3 - 1.5
+      this.shardPositions[slot * 3] = point.x
+      this.shardPositions[slot * 3 + 1] = point.y
+      this.shardPositions[slot * 3 + 2] = point.z
+      this.shardVelocities[slot * 3] = direction.x * 1.5 + rx
+      this.shardVelocities[slot * 3 + 1] = direction.y * 1.5 + ry
+      this.shardVelocities[slot * 3 + 2] = direction.z * 1.5 + rz
+      this.shardAges[slot] = 0
     }
+  }
+  /** Live glass fragments (tests and tools). */
+  get shardsAlive(): number {
+    return this.shardCount
   }
   update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
     for (const [id, entry] of this.damageSmoke) {
@@ -456,12 +516,15 @@ export class VehicleDestruction {
       const flash = burn.age < 0.4
       burn.fire.visible = flash
       burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
-      burn.flames.children.forEach((tongue, i) => {
-        const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
-        tongue.scale.y =
-          (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
-        tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
-      })
+      // Merged tongues sway in the vertex shader from the same age.
+      burn.tongues?.updateBounds()
+      if (!burn.tongues)
+        burn.flames.children.forEach((tongue, i) => {
+          const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
+          tongue.scale.y =
+            (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
+          tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
+        })
       burn.flameMaterial.opacity = Math.max(
         0,
         Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3),
@@ -508,25 +571,55 @@ export class VehicleDestruction {
         }
       }
     }
-    const dummy = new THREE.Object3D()
-    for (let i = this.shards.length - 1; i >= 0; i--) {
-      const shard = this.shards[i]
-      shard.age += dt
-      if (shard.age > 1.5) {
-        this.shards.splice(i, 1)
-        continue
-      }
-      shard.position.addScaledVector(shard.velocity, dt)
-      shard.velocity.y -= 9.8 * dt
+    this.updateShards(dt)
+  }
+  /**
+   * Same motion and matrices as the former per-object fragments (age, then `p += v·dt` and
+   * `v.y -= 9.8·dt`; rotation `(age·8, index, age·5)`), without allocation. Fragments age in
+   * order, so the expired ones are always the oldest at the head of the ring.
+   */
+  private updateShards(dt: number): void {
+    const p = this.shardPositions,
+      v = this.shardVelocities,
+      ages = this.shardAges
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS
+      ages[slot] += dt
     }
-    this.fragments.count = this.shards.length
-    this.shards.forEach((shard, i) => {
-      dummy.position.copy(shard.position)
-      dummy.rotation.set(shard.age * 8, i, shard.age * 5)
+    while (this.shardCount && ages[this.shardHead] > SHARD_LIFE) {
+      this.shardHead = (this.shardHead + 1) % MAX_SHARDS
+      this.shardCount--
+    }
+    const dummy = this.shardDummy
+    const bounds = this.shardBounds.makeEmpty()
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS,
+        o = slot * 3
+      if (ages[slot] > SHARD_LIFE) continue
+      p[o] += v[o] * dt
+      p[o + 1] += v[o + 1] * dt
+      p[o + 2] += v[o + 2] * dt
+      v[o + 1] -= 9.8 * dt
+    }
+    let i = 0
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS,
+        o = slot * 3
+      if (ages[slot] > SHARD_LIFE) continue
+      dummy.position.set(p[o], p[o + 1], p[o + 2])
+      dummy.rotation.set(ages[slot] * 8, i, ages[slot] * 5)
       dummy.updateMatrix()
       this.fragments.setMatrixAt(i, dummy.matrix)
-    })
-    this.fragments.instanceMatrix.needsUpdate = true
+      bounds.expandByPoint(dummy.position)
+      i++
+    }
+    if (i) bounds.expandByScalar(SHARD_RADIUS)
+    this.fragments.count = i
+    // Upload only the live matrices; nothing at all while no glass is flying.
+    if (i) {
+      this.fragments.instanceMatrix.addUpdateRange(0, i * 16)
+      this.fragments.instanceMatrix.needsUpdate = true
+    }
   }
   private remove(id: string): void {
     const burn = this.burns.get(id)
@@ -569,7 +662,8 @@ export class VehicleDestruction {
     }
     this.charred.clear()
     for (const id of this.burns.keys()) this.remove(id)
-    this.shards.length = 0
+    this.shardHead = this.shardCount = 0
+    this.shardBounds.makeEmpty()
     this.fragments.count = 0
     this.light.intensity = 0
     this.flare.intensity.value = 0
@@ -589,6 +683,7 @@ export class VehicleDestruction {
     this.warmSmoke?.dispose()
     this.geometry.dispose()
     this.flameGeometry.dispose()
+    this.mergedFlames?.dispose()
     this.fragments.geometry.dispose()
     ;(this.fragments.material as THREE.Material).dispose()
   }

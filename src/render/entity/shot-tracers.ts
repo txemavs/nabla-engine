@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { analyticParticles } from './gpu-particles.js'
 import { LegacyShotTracers } from './legacy-particles.js'
+import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 
 /** How long an air thread lingers after the shot, ms. */
 const LIFE_MS = 160
@@ -83,6 +84,8 @@ class AnalyticShotTracers {
   private epoch = 0
   private next = 0
   private disposed = false
+  /** Live threads (muzzle to impact), for off-screen culling. */
+  private readonly bounds = new SpawnBounds(LIFE_MS)
 
   constructor() {
     this.root.name = 'Shot tracers'
@@ -108,6 +111,12 @@ class AnalyticShotTracers {
       const fov = (camera as THREE.PerspectiveCamera).fov ?? 55
       this.pixelScale.value = height / (2 * Math.tan((fov * Math.PI) / 360))
     }
+    // Keeps its infinite sort sphere; skips GPU work when no thread can be seen. Pad: the widest
+    // thread, or its 1.5 px minimum.
+    cullOffscreen(this.mesh, {
+      box: (target) => this.bounds.unionInto(target),
+      pad: (camera, height, distance) => WIDTH[1] / 2 + pixelsToWorld(camera, height, distance, 2),
+    })
     this.root.add(this.mesh)
     this.root.raycast = () => undefined
   }
@@ -127,6 +136,15 @@ class AnalyticShotTracers {
     this.starts.set(origin, slot * 3)
     this.ends.set(end, slot * 3)
     this.data[slot] = now - this.epoch
+    this.bounds.advance(now)
+    this.bounds.expand(
+      Math.min(origin[0], end[0]),
+      Math.min(origin[1], end[1]),
+      Math.min(origin[2], end[2]),
+      Math.max(origin[0], end[0]),
+      Math.max(origin[1], end[1]),
+      Math.max(origin[2], end[2]),
+    )
     for (const name of ['tracerStart', 'tracerEnd', 'tracerBirth'] as const) {
       const attribute = this.geometry.getAttribute(name) as THREE.BufferAttribute
       attribute.addUpdateRange(slot * attribute.itemSize, attribute.itemSize)
@@ -142,6 +160,7 @@ class AnalyticShotTracers {
 
   clear(): void {
     this.births.fill(-Infinity)
+    this.bounds.clear()
     this.mesh.visible = false
   }
 

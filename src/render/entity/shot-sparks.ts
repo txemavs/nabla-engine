@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { Vec3Tuple } from '../../entity/schema.js'
 import { analyticParticles, EPOCH_MS, markRange, NEVER, SPARK_DROP } from './gpu-particles.js'
 import { LegacyShotSparks } from './legacy-particles.js'
+import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 
 const MAX_BURSTS = 32
 /** Streak slots per burst (a metal hit fills them all). */
@@ -305,6 +306,8 @@ class AnalyticShotSparks {
   private epoch = 0
   private next = 0
   private disposed = false
+  /** Every live burst's reach (sparks with bounces, dust, flash), for off-screen culling. */
+  private readonly bounds = new SpawnBounds(MAX_LIFE_MS)
 
   constructor() {
     this.root.name = 'Shot sparks'
@@ -338,6 +341,15 @@ class AnalyticShotSparks {
     }
     this.streaks.renderOrder = 5
     this.puffs.renderOrder = 5
+    // Both draws keep their infinite sort sphere; they skip GPU work when no burst can be seen.
+    // Pad: streaks are at least 1.2 px wide, dust and flash are world-sized (in the radius).
+    const cull = {
+      box: (target: THREE.Box3) => this.bounds.unionInto(target),
+      pad: (camera: THREE.Camera, height: number, distance: number) =>
+        pixelsToWorld(camera, height, distance, 3),
+    }
+    cullOffscreen(this.streaks, cull)
+    cullOffscreen(this.puffs, cull)
     // Point size in pixels needs the drawing-buffer height and vertical FOV.
     // Shared by both draws (streak width clamp and point size).
     const measure = (renderer: THREE.WebGLRenderer, camera: THREE.Camera) => {
@@ -388,6 +400,8 @@ class AnalyticShotSparks {
     const ax = tmpB2.crossVectors(axis, side).normalize()
     const ay = side.crossVectors(ax, axis).normalize()
     let longest = 0
+    let fastest = 0
+    let reach = 0
     for (let i = 0; i < PER_BURST; i++) {
       const s = burst * PER_BURST + i
       if (i >= count) {
@@ -411,6 +425,7 @@ class AnalyticShotSparks {
       tmpV.normalize().multiplyScalar(speed)
       const life = range(profile.life) * (Math.random() < 0.15 ? 1.35 : 1)
       longest = Math.max(longest, life)
+      fastest = Math.max(fastest, speed)
       this.origins.set(origin, s * 3)
       tmpV.toArray(this.velocities, s * 3)
       this.drifts.set(drift, s * 3)
@@ -451,10 +466,25 @@ class AnalyticShotSparks {
         )
         const life = 450 + Math.random() * 400
         longest = Math.max(longest, life)
+        // Dust drifts at most |v|/4 plus its rise; its sprite is at most 2.3 × 0.15 m wide.
+        reach = Math.max(reach, tmpV.length() / 4 + 0.12 * (life / 1000) + 0.18)
         this.puffData.set([rel, life, 0.07 + Math.random() * 0.08, 0], p * 4)
       }
     }
     this.lives[burst] = Math.max(longest, 70)
+    {
+      // A spark's dragged part goes at most |v0|/k; drift and gravity act for its whole life.
+      const seconds = Math.max(longest, 70) / 1000
+      const d = drift as ArrayLike<number>
+      const driftSpeed = Math.hypot(d[0], d[1], d[2])
+      reach = Math.max(
+        reach,
+        0.1,
+        fastest / SPARK_DRAG + driftSpeed * seconds + SPARK_DROP * seconds * seconds + 0.01,
+      )
+      this.bounds.advance(now)
+      this.bounds.expandSphere(origin[0], origin[1], origin[2], reach)
+    }
     for (const name of ['sparkOrigin', 'sparkVelocity', 'sparkDrift', 'sparkData'] as const)
       markRange(
         this.geometry.getAttribute(name) as THREE.BufferAttribute,
@@ -483,6 +513,7 @@ class AnalyticShotSparks {
 
   clear(): void {
     this.births.fill(-Infinity)
+    this.bounds.clear()
     this.streaks.visible = false
     this.puffs.visible = false
   }

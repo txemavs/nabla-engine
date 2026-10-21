@@ -532,11 +532,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.impacts.addSurface`
 - `this.onHit`
 - `this.ray.intersectObjects`
+- `this.ray.ray.direction.toArray`
 - `this.sparks.add`
 
 ## XRARWeapons.dispose
 
-[Implementation, line 324](../../../../src/runtime/xr-ar-weapons.ts#L324)
+[Implementation, line 328](../../../../src/runtime/xr-ar-weapons.ts#L328)
 
 Small mixed-reality host for the same carried weapons used by the game.
 

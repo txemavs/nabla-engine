@@ -9,9 +9,23 @@
 - `three`
 - `../../entity/schema.js`
 
+## markScale
+
+[Implementation, line 24](../../../../../src/render/entity/impact-marks.ts#L24)
+
+Random size of one mark, 0.8–1.25× (bullets do not leave identical holes).
+
+```ts
+markScale(): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.random`
+
 ## smoothstep
 
-[Implementation, line 23](../../../../../src/render/entity/impact-marks.ts#L23)
+[Implementation, line 28](../../../../../src/render/entity/impact-marks.ts#L28)
 
 ```ts
 smoothstep(edge0: number, edge1: number, x: number): number
@@ -24,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## impactMarkPixels
 
-[Implementation, line 33](../../../../../src/render/entity/impact-marks.ts#L33)
+[Implementation, line 38](../../../../../src/render/entity/impact-marks.ts#L38)
 
 RGBA texels of a shot mark: an opaque near-black hole with a soft dark scorch that fades
 to alpha 0 at the rim. No light pixels anywhere, so it only darkens the surface it sits on
@@ -44,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## impactMarkTexture
 
-[Implementation, line 55](../../../../../src/render/entity/impact-marks.ts#L55)
+[Implementation, line 60](../../../../../src/render/entity/impact-marks.ts#L60)
 
 ```ts
 impactMarkTexture(size = IMPACT_MARK_TEXTURE_SIZE): THREE.DataTexture
@@ -57,11 +71,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ImpactMarks.setLimit
 
-[Implementation, line 88](../../../../../src/render/entity/impact-marks.ts#L88)
+[Implementation, line 113](../../../../../src/render/entity/impact-marks.ts#L113)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
 
 ```ts
 setLimit(limit: number): void
@@ -73,82 +91,229 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number.isFinite`
-- `this.marks.shift`
-- `this.marks.shift()!.removeFromParent`
+- `this.remove`
 
 ## ImpactMarks.count
 
-[Implementation, line 94](../../../../../src/render/entity/impact-marks.ts#L94)
+[Implementation, line 119](../../../../../src/render/entity/impact-marks.ts#L119)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
 
 ```ts
 count(): number
 ```
 
+## ImpactMarks.batchCount
+
+[Implementation, line 123](../../../../../src/render/entity/impact-marks.ts#L123)
+
+Instanced draws currently holding marks (one per parent with marks).
+
+```ts
+batchCount(): number
+```
+
 ## ImpactMarks.warmupObject
 
-[Implementation, line 99](../../../../../src/render/entity/impact-marks.ts#L99)
+[Implementation, line 128](../../../../../src/render/entity/impact-marks.ts#L128)
 
-Shared GPU resources, without creating a live impact or consuming a pool entry.
+Shared GPU resources (the instanced program), without creating a live impact.
 
 ```ts
-warmupObject(): THREE.Mesh
+warmupObject(): THREE.InstancedMesh
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.Mesh`
+- `THREE.InstancedMesh`
 
-## ImpactMarks.take
+## ImpactMarks.matricesFor
 
-[Implementation, line 103](../../../../../src/render/entity/impact-marks.ts#L103)
+[Implementation, line 135](../../../../../src/render/entity/impact-marks.ts#L135)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Local matrices of the marks under `parent`, in instance order (tests and tools).
 
 ```ts
-take(): THREE.Group
+matricesFor(parent: THREE.Object3D): THREE.Matrix4[]
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `THREE.Group`
-- `THREE.Mesh`
-- `group.add`
-- `oldest.removeFromParent`
-- `this.marks.shift`
+- `batch.marks.map`
+- `this.batches.get`
+
+## ImpactMarks.matricesFor.callback@138
+
+[Implementation, line 138](../../../../../src/render/entity/impact-marks.ts#L138)
+
+```ts
+callback@138(_, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Matrix4`
+- `batch.mesh.getMatrixAt`
+
+## ImpactMarks.batchFor
+
+[Implementation, line 145](../../../../../src/render/entity/impact-marks.ts#L145)
+
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
+
+```ts
+batchFor(parent: THREE.Object3D): MarkBatch
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.InstancedMesh`
+- `mesh.instanceMatrix.setUsage`
+- `parent.add`
+- `this.batches.get`
+- `this.batches.set`
+- `this.spare.pop`
+
+## ImpactMarks.release
+
+[Implementation, line 163](../../../../../src/render/entity/impact-marks.ts#L163)
+
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
+
+```ts
+release(batch: MarkBatch): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `batch.mesh.removeFromParent`
+- `this.batches.delete`
+- `this.spare.push`
+
+## ImpactMarks.touched
+
+[Implementation, line 172](../../../../../src/render/entity/impact-marks.ts#L172)
+
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
+
+```ts
+touched(batch: MarkBatch, index: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `batch.mesh.instanceMatrix.addUpdateRange`
+
+## ImpactMarks.remove
+
+[Implementation, line 181](../../../../../src/render/entity/impact-marks.ts#L181)
+
+Drop one mark: the batch's last instance moves into its slot.
+
+```ts
+remove(mark: Mark): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `batch.mesh.getMatrixAt`
+- `batch.mesh.setMatrixAt`
+- `this.marks.indexOf`
+- `this.marks.splice`
+- `this.release`
+- `this.touched`
+
+## ImpactMarks.push
+
+[Implementation, line 204](../../../../../src/render/entity/impact-marks.ts#L204)
+
+Store `scratch`'s local matrix as a new mark under `parent`.
+
+```ts
+push(parent: THREE.Object3D): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `batch.marks.push`
+- `batch.mesh.setMatrixAt`
+- `this.batchFor`
+- `this.marks.push`
+- `this.remove`
+- `this.touched`
+
+## ImpactMarks.begin
+
+[Implementation, line 217](../../../../../src/render/entity/impact-marks.ts#L217)
+
+Reset the scratch transform with a random size (0.8–1.25×).
+
+```ts
+begin(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `markScale`
+- `scratch.position.set`
+- `scratch.quaternion.identity`
+- `scratch.scale.setScalar`
 
 ## ImpactMarks.place
 
-[Implementation, line 117](../../../../../src/render/entity/impact-marks.ts#L117)
+[Implementation, line 223](../../../../../src/render/entity/impact-marks.ts#L223)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
 
 ```ts
-place(mark: THREE.Group, point: Vec3Tuple, normal: Vec3Tuple, local: boolean): void
+place(point: Vec3Tuple, normal: Vec3Tuple): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.random`
 - `THREE.Vector3`
-- `mark.position.fromArray`
-- `mark.position.fromArray(point).addScaledVector`
-- `mark.quaternion.setFromUnitVectors`
-- `mark.rotateZ`
 - `n.lengthSq`
 - `n.set`
 - `new THREE.Vector3(...normal).normalize`
+- `scratch.position.fromArray`
+- `scratch.position.fromArray(point).addScaledVector`
+- `scratch.quaternion.setFromUnitVectors`
+- `scratch.rotateZ`
 
 ## ImpactMarks.addSurface
 
-[Implementation, line 128](../../../../../src/render/entity/impact-marks.ts#L128)
+[Implementation, line 233](../../../../../src/render/entity/impact-marks.ts#L233)
 
 Exact rendered surface hit, anchored in the moving mesh's local frame.
 
@@ -158,18 +323,18 @@ addSurface(parent: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `mark.removeFromParent`
-- `mark.scale.set`
-- `mark.updateMatrixWorld`
-- `parent.attach`
+- `inverse.copy`
+- `inverse.copy(parent.matrixWorld).invert`
 - `parent.updateWorldMatrix`
-- `this.marks.push`
+- `scratch.applyMatrix4`
+- `scratch.updateMatrix`
+- `this.begin`
 - `this.place`
-- `this.take`
+- `this.push`
 
 ## ImpactMarks.add
 
-[Implementation, line 141](../../../../../src/render/entity/impact-marks.ts#L141)
+[Implementation, line 246](../../../../../src/render/entity/impact-marks.ts#L246)
 
 Mark on a scene entity (car, prop, authored mesh) in that entity's local frame.
 
@@ -182,22 +347,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.random`
 - `THREE.Quaternion`
 - `THREE.Vector3`
-- `mark.quaternion.setFromUnitVectors`
-- `mark.removeFromParent`
-- `mark.rotateZ`
-- `mark.scale.set`
 - `n.lengthSq`
 - `n.set`
 - `new THREE.Quaternion(...pose.rotation).invert`
 - `new THREE.Vector3(...normal).normalize`
 - `new THREE.Vector3(...normal).normalize().applyQuaternion`
-- `parent.add`
-- `this.marks.push`
-- `this.take`
+- `scratch.quaternion.setFromUnitVectors`
+- `scratch.rotateZ`
+- `scratch.updateMatrix`
+- `this.begin`
+- `this.push`
 
 ## ImpactMarks.addWorld
 
-[Implementation, line 165](../../../../../src/render/entity/impact-marks.ts#L165)
+[Implementation, line 268](../../../../../src/render/entity/impact-marks.ts#L268)
 
 Mark on static world geometry (planet buildings, ground colliders, …).
 `root` must share the floating-origin shift with the hit meshes (e.g. `SceneView.root`
@@ -209,20 +372,16 @@ addWorld(root: THREE.Object3D, point: Vec3Tuple, normal: Vec3Tuple): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `mark.removeFromParent`
-- `mark.scale.set`
-- `root.add`
-- `this.marks.push`
+- `scratch.updateMatrix`
+- `this.begin`
 - `this.place`
-- `this.take`
+- `this.push`
 
 ## ImpactMarks.removeFor
 
-[Implementation, line 175](../../../../../src/render/entity/impact-marks.ts#L175)
+[Implementation, line 277](../../../../../src/render/entity/impact-marks.ts#L277)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Remove the marks whose batch hangs from `parent` or any of its descendants.
 
 ```ts
 removeFor(parent: THREE.Object3D): void
@@ -230,27 +389,34 @@ removeFor(parent: THREE.Object3D): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Set`
+- `this.batches.values`
 - `this.marks.filter`
+- `this.release`
 
-## ImpactMarks.removeFor.callback@176
+## ImpactMarks.removeFor.callback@283
 
-[Implementation, line 176](../../../../../src/render/entity/impact-marks.ts#L176)
+[Implementation, line 283](../../../../../src/render/entity/impact-marks.ts#L283)
 
 ```ts
-callback@176(mark): inferred by TypeScript; see implementation
+callback@283(mark): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `mark.removeFromParent`
+- `gone.has`
 
 ## ImpactMarks.clear
 
-[Implementation, line 185](../../../../../src/render/entity/impact-marks.ts#L185)
+[Implementation, line 288](../../../../../src/render/entity/impact-marks.ts#L288)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
 
 ```ts
 clear(): void
@@ -258,15 +424,20 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `mark.removeFromParent`
+- `this.batches.values`
+- `this.release`
 
 ## ImpactMarks.dispose
 
-[Implementation, line 190](../../../../../src/render/entity/impact-marks.ts#L190)
+[Implementation, line 293](../../../../../src/render/entity/impact-marks.ts#L293)
 
-Bounded shot marks. Entity hits parent into the hit object's local frame so they
-ride with vehicles; world hits (buildings and other static colliders without an
-entity id) parent under a scene root that shares the floating-origin shift.
+Bounded shot marks, one instanced draw per parent instead of one mesh per mark. Entity hits
+go into a batch parented to the hit object, with each mark's matrix in that object's local
+frame, so marks on a moving car ride with it at no per-frame cost (three composes the car's
+world matrix with the instance matrices on the GPU). World hits (buildings and other static
+colliders without an entity id) share one batch under a scene root that has the
+floating-origin shift. The instance matrices are the exact local matrices the former
+per-mark groups had.
 
 ```ts
 dispose(): void
@@ -274,6 +445,7 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `batch.mesh.dispose`
 - `this.clear`
 - `this.geom.dispose`
 - `this.material.dispose`

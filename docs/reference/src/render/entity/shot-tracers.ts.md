@@ -8,12 +8,18 @@
 
 - `three`
 - `../../entity/schema.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
+- `./effect-culling.js`
 
-## ShotTracers.constructor
+## AnalyticShotTracers.constructor
 
-[Implementation, line 24](../../../../../src/render/entity/shot-tracers.ts#L24)
+[Implementation, line 90](../../../../../src/render/entity/shot-tracers.ts#L90)
 
-Short-lived muzzle-to-impact streaks for sidearm shots (Agency ship / gallery feedback).
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
 
 ```ts
 constructor(): instance
@@ -21,25 +27,80 @@ constructor(): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Float32Array`
 - `THREE.BufferAttribute`
-- `THREE.LineSegments`
-- `this.geometry.setAttribute`
-- `this.geometry.setDrawRange`
+- `THREE.InstancedBufferAttribute`
+- `THREE.Mesh`
+- `THREE.Sphere`
+- `THREE.Vector3`
+- `cullOffscreen`
+- `g.setAttribute`
+- `g.setIndex`
 - `this.root.add`
 
-## ShotTracers.constructor.callback@32
+## AnalyticShotTracers.constructor.callback@109
 
-[Implementation, line 32](../../../../../src/render/entity/shot-tracers.ts#L32)
+[Implementation, line 109](../../../../../src/render/entity/shot-tracers.ts#L109)
 
 ```ts
-callback@32(): inferred by TypeScript; see implementation
+callback@109(renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
-## ShotTracers.add
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 35](../../../../../src/render/entity/shot-tracers.ts#L35)
+- `Math.tan`
+- `renderer.getDrawingBufferSize`
 
-Short-lived muzzle-to-impact streaks for sidearm shots (Agency ship / gallery feedback).
+## AnalyticShotTracers.constructor.box
+
+[Implementation, line 117](../../../../../src/render/entity/shot-tracers.ts#L117)
+
+```ts
+box(target): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.bounds.unionInto`
+
+## AnalyticShotTracers.constructor.pad
+
+[Implementation, line 118](../../../../../src/render/entity/shot-tracers.ts#L118)
+
+```ts
+pad(camera, height, distance): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pixelsToWorld`
+
+## AnalyticShotTracers.constructor.callback@121
+
+[Implementation, line 121](../../../../../src/render/entity/shot-tracers.ts#L121)
+
+```ts
+callback@121(): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotTracers.count
+
+[Implementation, line 125](../../../../../src/render/entity/shot-tracers.ts#L125)
+
+Live tracers at `now` (after `update`).
+
+```ts
+count(now: number): number
+```
+
+## AnalyticShotTracers.add
+
+[Implementation, line 131](../../../../../src/render/entity/shot-tracers.ts#L131)
+
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
 
 ```ts
 add(origin: Vec3Tuple, end: Vec3Tuple, now: number): void
@@ -47,17 +108,26 @@ add(origin: Vec3Tuple, end: Vec3Tuple, now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `Math.min`
 - `Number.isFinite`
-- `this.births.copyWithin`
-- `this.geometry.computeBoundingSphere`
-- `this.geometry.setDrawRange`
-- `this.positions.copyWithin`
+- `attribute.addUpdateRange`
+- `this.bounds.advance`
+- `this.bounds.expand`
+- `this.count`
+- `this.ends.set`
+- `this.geometry.getAttribute`
+- `this.rebase`
+- `this.starts.set`
 
-## ShotTracers.update
+## AnalyticShotTracers.update
 
-[Implementation, line 56](../../../../../src/render/entity/shot-tracers.ts#L56)
+[Implementation, line 155](../../../../../src/render/entity/shot-tracers.ts#L155)
 
-Short-lived muzzle-to-impact streaks for sidearm shots (Agency ship / gallery feedback).
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
 
 ```ts
 update(now: number): void
@@ -65,15 +135,16 @@ update(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.max`
-- `this.geometry.setDrawRange`
-- `this.positions.copyWithin`
+- `this.count`
 
-## ShotTracers.clear
+## AnalyticShotTracers.clear
 
-[Implementation, line 77](../../../../../src/render/entity/shot-tracers.ts#L77)
+[Implementation, line 161](../../../../../src/render/entity/shot-tracers.ts#L161)
 
-Short-lived muzzle-to-impact streaks for sidearm shots (Agency ship / gallery feedback).
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
 
 ```ts
 clear(): void
@@ -81,13 +152,17 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.geometry.setDrawRange`
+- `this.births.fill`
+- `this.bounds.clear`
 
-## ShotTracers.dispose
+## AnalyticShotTracers.dispose
 
-[Implementation, line 83](../../../../../src/render/entity/shot-tracers.ts#L83)
+[Implementation, line 167](../../../../../src/render/entity/shot-tracers.ts#L167)
 
-Short-lived muzzle-to-impact streaks for sidearm shots (Agency ship / gallery feedback).
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
 
 ```ts
 dispose(): void
@@ -99,3 +174,77 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.dispose`
 - `this.material.dispose`
 - `this.root.removeFromParent`
+
+## AnalyticShotTracers.rebase
+
+[Implementation, line 176](../../../../../src/render/entity/shot-tracers.ts#L176)
+
+Air threads along sidearm shots: a faint, thin, desaturated wake from the muzzle to the impact
+that widens and fades within LIFE_MS, like the heat haze a bullet leaves. Camera-facing quads
+expanded on the GPU from each shot's start, end and birth; one alpha-blended draw for all of
+them, and JS only writes one instance per shot. No refraction (no scene texture is available).
+
+```ts
+rebase(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `attribute.clearUpdateRanges`
+- `this.geometry.getAttribute`
+
+## ShotTracers.add
+
+[Implementation, line 192](../../../../../src/render/entity/shot-tracers.ts#L192)
+
+GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
+
+```ts
+add(origin: Vec3Tuple, end: Vec3Tuple, now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.add`
+
+## ShotTracers.update
+
+[Implementation, line 195](../../../../../src/render/entity/shot-tracers.ts#L195)
+
+GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
+
+```ts
+update(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## ShotTracers.clear
+
+[Implementation, line 198](../../../../../src/render/entity/shot-tracers.ts#L198)
+
+GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.clear`
+
+## ShotTracers.dispose
+
+[Implementation, line 201](../../../../../src/render/entity/shot-tracers.ts#L201)
+
+GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`
