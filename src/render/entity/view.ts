@@ -114,6 +114,12 @@ import { SceneGraph } from '../../scene/graph.js'
 import { parseScene, type SceneDocument } from '../../scene/document.js'
 import type { Simulation } from '../../simulation/simulation.js'
 import * as THREE from 'three'
+import {
+  localAvatarState,
+  type AvatarAnimState,
+  type AvatarNetState,
+  type PlayerBody,
+} from './player-body.js'
 
 function standardMaterial(
   parameters: THREE.MeshStandardMaterialParameters,
@@ -575,6 +581,21 @@ export class SceneView {
   private readonly avatarFollow = new AvatarFollow()
   private readonly avatarTransfer = new AvatarTransfer()
   private readonly ejectionTumble = new EjectionTumble()
+  private playerBody: PlayerBody | null = null
+  private playerBodyState: AvatarAnimState = 'idle'
+  private playerNetState: AvatarNetState | null = null
+  /** Give the player a skinned body under the monitor head (null removes it). */
+  setPlayerBody(body: PlayerBody | null): void {
+    this.playerBody?.dispose()
+    this.playerBody = body
+    this.playerBodyState = 'idle'
+    this.playerNetState = null
+    if (body) this.avatar.add(body.root)
+  }
+  /** The local player's body state for the network (null without a body). */
+  get avatarNetState(): AvatarNetState | null {
+    return this.playerNetState
+  }
   private graph: SceneGraph
   constructor(
     readonly document: SceneDocument,
@@ -1930,6 +1951,51 @@ export class SceneView {
       )
     }
     this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
+    this.updatePlayerBody(sim, vehicleId, elapsed)
+  }
+  /**
+   * Pose the skinned body (player-body.ts) under the monitor: on foot its feet stand on the
+   * ground and the monitor rides its head socket; seated it plays `drive` with the socket at
+   * the head pose.
+   */
+  private updatePlayerBody(sim: Simulation, vehicleId: string | null, elapsed: number): void {
+    const body = this.playerBody
+    if (!body) return
+    const seated = !!vehicleId
+    const velocity = this.avatarFollow.velocity
+    const speed = seated ? 0 : Math.hypot(velocity.x, velocity.z)
+    const previous = this.playerBodyState
+    let state = localAvatarState(previous, {
+      grounded: sim.player.grounded,
+      rising: seated ? 0 : velocity.y,
+      speed,
+      crouching: sim.stance !== 'standing',
+      seated,
+      runAbove: (simulationDefaults.walkSpeed + simulationDefaults.sprintSpeed) / 2,
+    })
+    if (previous === 'jump_land' && state === 'idle' && !body.finished) state = 'jump_land'
+    this.playerBodyState = state
+    const hover = sim.options.playerMode === 'hover'
+    body.root.visible = !hover && !sim.playerEjection
+    const half =
+      sim.stance === 'prone' ? 0.2 : sim.stance === 'crouching' ? 0.5 : simulationDefaults.playerHalfHeight
+    body.root.position.set(0, seated ? 0 : -half, 0)
+    body.animate(state, speed, elapsed)
+    const head = body.headIn(this.avatar, this.scratchVectors[3])
+    if (head && seated) body.root.position.sub(head)
+    else if (head && body.root.visible) {
+      // The monitor keeps its own sway; only its rest point moves to the socket.
+      this.monitor.position.x += head.x
+      this.monitor.position.z += head.z
+      this.monitor.position.y += head.y - 0.35
+    }
+    const feet = body.root.getWorldPosition(this.scratchVectors[3])
+    this.playerNetState = {
+      animState: state,
+      yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
+      position: [feet.x, feet.y, feet.z],
+      speed,
+    }
   }
   /**
    * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and
