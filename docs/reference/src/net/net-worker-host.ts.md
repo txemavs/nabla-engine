@@ -12,9 +12,26 @@ Messages are plain structured-clone objects (no SharedArrayBuffer, no COOP/COEP 
 
 - `./websocket-transport.js`
 
+## retryDelay
+
+[Implementation, line 36](../../../../src/net/net-worker-host.ts#L36)
+
+Backoff delay before attempt `failures` (1-based), with ±20 % jitter.
+
+```ts
+retryDelay(failures: number, retry: RetryOptions, random = Math.random): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`
+- `Math.round`
+- `random`
+
 ## serveNetWorker
 
-[Implementation, line 27](../../../../src/net/net-worker-host.ts#L27)
+[Implementation, line 50](../../../../src/net/net-worker-host.ts#L50)
 
 Serve one relay connection on `port` (the worker's global scope, or a MessagePort in tests).
 
@@ -26,12 +43,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `port.addEventListener`
 
-## serveNetWorker.callback@29
+## serveNetWorker.callback@52
 
-[Implementation, line 29](../../../../src/net/net-worker-host.ts#L29)
+[Implementation, line 52](../../../../src/net/net-worker-host.ts#L52)
 
 ```ts
-callback@29(url): inferred by TypeScript; see implementation
+callback@52(url): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -40,7 +57,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## serveNetWorker.flush
 
-[Implementation, line 36](../../../../src/net/net-worker-host.ts#L36)
+[Implementation, line 63](../../../../src/net/net-worker-host.ts#L63)
 
 ```ts
 flush(): inferred by TypeScript; see implementation
@@ -52,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## serveNetWorker.finish
 
-[Implementation, line 43](../../../../src/net/net-worker-host.ts#L43)
+[Implementation, line 70](../../../../src/net/net-worker-host.ts#L70)
 
 ```ts
 finish(reason: string): inferred by TypeScript; see implementation
@@ -64,41 +81,79 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `flush`
 - `port.postMessage`
 
-## serveNetWorker.callback@50
+## serveNetWorker.scheduleRetry
 
-[Implementation, line 50](../../../../src/net/net-worker-host.ts#L50)
+[Implementation, line 79](../../../../src/net/net-worker-host.ts#L79)
 
 ```ts
-callback@50({ data: command }): inferred by TypeScript; see implementation
+scheduleRetry(reason: string): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.max`
-- `createSocket`
+- `clearTimeout`
 - `finish`
-- `socket.addEventListener`
-- `socket.send`
-- `socket?.close`
+- `flush`
+- `port.postMessage`
+- `retryDelay`
+- `setTimeout`
 
-## serveNetWorker.callback@50.callback@60
+## serveNetWorker.scheduleRetry.callback@86
 
-[Implementation, line 60](../../../../src/net/net-worker-host.ts#L60)
+[Implementation, line 86](../../../../src/net/net-worker-host.ts#L86)
 
 ```ts
-callback@60(): inferred by TypeScript; see implementation
+callback@86(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `open`
+
+## serveNetWorker.lost
+
+[Implementation, line 92](../../../../src/net/net-worker-host.ts#L92)
+
+```ts
+lost(reason: string, from: WebSocketLike): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `scheduleRetry`
+
+## serveNetWorker.open
+
+[Implementation, line 95](../../../../src/net/net-worker-host.ts#L95)
+
+```ts
+open(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `createSocket`
+- `current.addEventListener`
+- `scheduleRetry`
+
+## serveNetWorker.open.callback@104
+
+[Implementation, line 104](../../../../src/net/net-worker-host.ts#L104)
+
+```ts
+callback@104(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `port.postMessage`
 
-## serveNetWorker.callback@50.callback@61
+## serveNetWorker.open.callback@109
 
-[Implementation, line 61](../../../../src/net/net-worker-host.ts#L61)
+[Implementation, line 109](../../../../src/net/net-worker-host.ts#L109)
 
 ```ts
-callback@61(event): inferred by TypeScript; see implementation
+callback@109(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -106,26 +161,42 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `queue.push`
 - `setTimeout`
 
-## serveNetWorker.callback@50.callback@66
+## serveNetWorker.open.callback@114
 
-[Implementation, line 66](../../../../src/net/net-worker-host.ts#L66)
+[Implementation, line 114](../../../../src/net/net-worker-host.ts#L114)
 
 ```ts
-callback@66(event): inferred by TypeScript; see implementation
+callback@114(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `finish`
+- `lost`
 
-## serveNetWorker.callback@50.callback@67
+## serveNetWorker.open.callback@115
 
-[Implementation, line 67](../../../../src/net/net-worker-host.ts#L67)
+[Implementation, line 115](../../../../src/net/net-worker-host.ts#L115)
 
 ```ts
-callback@67(): inferred by TypeScript; see implementation
+callback@115(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `lost`
+
+## serveNetWorker.callback@117
+
+[Implementation, line 117](../../../../src/net/net-worker-host.ts#L117)
+
+```ts
+callback@117({ data: command }): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `current?.close`
 - `finish`
+- `open`
+- `socket.send`

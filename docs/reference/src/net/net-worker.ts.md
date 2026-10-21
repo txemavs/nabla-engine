@@ -12,7 +12,7 @@
 
 ## defaultWorker
 
-[Implementation, line 25](../../../../src/net/net-worker.ts#L25)
+[Implementation, line 35](../../../../src/net/net-worker.ts#L35)
 
 ```ts
 defaultWorker(): NetWorkerLike
@@ -25,7 +25,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.constructor
 
-[Implementation, line 43](../../../../src/net/net-worker.ts#L43)
+[Implementation, line 54](../../../../src/net/net-worker.ts#L54)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -43,24 +43,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worker.addEventListener`
 - `this.worker.postMessage`
 
-## NetWorker.constructor.callback@57
+## NetWorker.constructor.callback@68
 
-[Implementation, line 57](../../../../src/net/net-worker.ts#L57)
+[Implementation, line 68](../../../../src/net/net-worker.ts#L68)
 
 ```ts
-callback@57({ data }): inferred by TypeScript; see implementation
+callback@68({ data }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.receive`
 
-## NetWorker.constructor.callback@58
+## NetWorker.constructor.callback@69
 
-[Implementation, line 58](../../../../src/net/net-worker.ts#L58)
+[Implementation, line 69](../../../../src/net/net-worker.ts#L69)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@69(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -71,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.inWorker
 
-[Implementation, line 70](../../../../src/net/net-worker.ts#L70)
+[Implementation, line 86](../../../../src/net/net-worker.ts#L86)
 
 True when the connection runs in a worker (false after falling back).
 
@@ -81,7 +81,7 @@ inWorker(): boolean
 
 ## NetWorker.status
 
-[Implementation, line 73](../../../../src/net/net-worker.ts#L73)
+[Implementation, line 89](../../../../src/net/net-worker.ts#L89)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -94,7 +94,7 @@ status(): TransportStatus
 
 ## NetWorker.send
 
-[Implementation, line 76](../../../../src/net/net-worker.ts#L76)
+[Implementation, line 92](../../../../src/net/net-worker.ts#L92)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -112,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.onOpen
 
-[Implementation, line 80](../../../../src/net/net-worker.ts#L80)
+[Implementation, line 96](../../../../src/net/net-worker.ts#L96)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -129,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.onMessage
 
-[Implementation, line 83](../../../../src/net/net-worker.ts#L83)
+[Implementation, line 99](../../../../src/net/net-worker.ts#L99)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -146,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.onClose
 
-[Implementation, line 86](../../../../src/net/net-worker.ts#L86)
+[Implementation, line 102](../../../../src/net/net-worker.ts#L102)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -161,9 +161,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.closed.add`
 
+## NetWorker.onRetry
+
+[Implementation, line 106](../../../../src/net/net-worker.ts#L106)
+
+Connection attempts that failed and will be retried (reason, delay in ms).
+
+```ts
+onRetry(listener: (reason: string, retryMs: number) => void): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.down.add`
+
 ## NetWorker.close
 
-[Implementation, line 89](../../../../src/net/net-worker.ts#L89)
+[Implementation, line 109](../../../../src/net/net-worker.ts#L109)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -182,7 +196,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.receive
 
-[Implementation, line 95](../../../../src/net/net-worker.ts#L95)
+[Implementation, line 115](../../../../src/net/net-worker.ts#L115)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -195,13 +209,15 @@ receive(event: NetWorkerEvent): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.closed.emit`
+- `this.down.emit`
 - `this.finish`
 - `this.messages.emit`
 - `this.opened.emit`
 
 ## NetWorker.finish
 
-[Implementation, line 105](../../../../src/net/net-worker.ts#L105)
+[Implementation, line 131](../../../../src/net/net-worker.ts#L131)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -219,7 +235,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NetWorker.useFallback
 
-[Implementation, line 112](../../../../src/net/net-worker.ts#L112)
+[Implementation, line 138](../../../../src/net/net-worker.ts#L138)
 
 Relay transport whose WebSocket and receive queue live in a Web Worker; the main thread only
 exchanges postMessage with it. Falls back to `WebSocketTransport` on the main thread when
@@ -237,48 +253,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `direct.onMessage`
 - `direct.onOpen`
 
-## NetWorker.useFallback.callback@113
+## NetWorker.useFallback.callback@139
 
-[Implementation, line 113](../../../../src/net/net-worker.ts#L113)
+[Implementation, line 139](../../../../src/net/net-worker.ts#L139)
 
 ```ts
-callback@113(url): inferred by TypeScript; see implementation
+callback@139(url): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `WebSocketTransport`
 
-## NetWorker.useFallback.callback@115
+## NetWorker.useFallback.callback@141
 
-[Implementation, line 115](../../../../src/net/net-worker.ts#L115)
+[Implementation, line 141](../../../../src/net/net-worker.ts#L141)
 
 ```ts
-callback@115(): inferred by TypeScript; see implementation
+callback@141(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.opened.emit`
 
-## NetWorker.useFallback.callback@116
+## NetWorker.useFallback.callback@142
 
-[Implementation, line 116](../../../../src/net/net-worker.ts#L116)
+[Implementation, line 142](../../../../src/net/net-worker.ts#L142)
 
 ```ts
-callback@116(data): inferred by TypeScript; see implementation
+callback@142(data): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.messages.emit`
 
-## NetWorker.useFallback.callback@117
+## NetWorker.useFallback.callback@143
 
-[Implementation, line 117](../../../../src/net/net-worker.ts#L117)
+[Implementation, line 143](../../../../src/net/net-worker.ts#L143)
 
 ```ts
-callback@117(reason): inferred by TypeScript; see implementation
+callback@143(reason): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
