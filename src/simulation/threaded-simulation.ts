@@ -106,6 +106,9 @@ export class ThreadedSimulation {
   private readonly lagged = new Map<string, unknown>()
   private readonly laggedInFlight = new Set<string>()
   private nextSupport = 1
+  /** Planet collision tiles the worker holds, by id (the object sent), and the last id list. */
+  private sentTiles = new Map<string, object>()
+  private lastTileIds = ''
   /**
    * HUD messages that forwarded commands answer in the worker (the call itself answers ''):
    * the runtime routes them to its own `onMessage` once the worker replies.
@@ -455,6 +458,23 @@ export class ThreadedSimulation {
   setFlightSpeedMode(...args: Parameters<Simulation['setFlightSpeedMode']>): boolean {
     this.command('setFlightSpeedMode', args)
     return this.hasEntity(args[0])
+  }
+
+  /**
+   * Called every frame with the resident collision tiles (megabytes of triangles). Only tiles
+   * the worker has not been sent cross the thread; an unchanged list sends nothing at all.
+   */
+  setPlanetTiles(...[tiles]: Parameters<Simulation['setPlanetTiles']>): void {
+    if (this.disposed) return
+    const ids = tiles.map((tile) => tile.id)
+    const added = tiles.filter((tile) => this.sentTiles.get(tile.id) !== tile)
+    const key = ids.join('|')
+    if (!added.length && key === this.lastTileIds) return
+    this.lastTileIds = key
+    const next = new Map<string, object>()
+    for (const tile of tiles) next.set(tile.id, tile)
+    this.sentTiles = next
+    void this.forward({ type: 'tiles', ids, added })
   }
 
   // Terrain hot reload: the collision swap and actor support run in the worker.

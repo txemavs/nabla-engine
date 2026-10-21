@@ -39,6 +39,11 @@ export type SimulationRequest =
   | { id: number; type: 'step'; elapsed: number; input?: PlayerInput; waterLevel?: number }
   /** `orElse`: when the method answers null/undefined, call this one (same args) instead. */
   | { id: number; type: 'call'; method: string; args: unknown[]; quiet?: boolean; orElse?: string }
+  /**
+   * `setPlanetTiles` by id: `added` carries only tiles the host has not been sent (or whose
+   * object changed); the rest are reused from its cache. Ids not listed are dropped from it.
+   */
+  | { id: number; type: 'tiles'; ids: string[]; added: unknown[] }
   /** Hot-reloaded terrain: prepare answers whether a commit is ready; commit applies it. */
   | { id: number; type: 'planet'; op: 'prepare'; previousId: string; tile: unknown }
   | { id: number; type: 'planet'; op: 'commit' }
@@ -239,6 +244,7 @@ export function serveSimulation(port: SimulationPort): void {
   const poles = new Map<number, PoleHandle>()
   const supports = new Map<number, () => void>()
   let planetCommit: (() => void) | undefined
+  let tiles = new Map<string, { id: string }>()
   const reply = (message: SimulationReply) => {
     const transfer = message.ok && message.query ? [message.query.poses.buffer] : []
     ;(port.postMessage as (m: unknown, t?: Transferable[]) => void)(message, transfer)
@@ -257,6 +263,7 @@ export function serveSimulation(port: SimulationPort): void {
         poles.clear()
         supports.clear()
         planetCommit = undefined
+        tiles = new Map()
         sim = new Simulation(message.scene, message.options)
         exporter = message.mirror ? new QueryWorldExporter() : null
         return { id: message.id, ok: true, ...state(sim) }
@@ -283,6 +290,20 @@ export function serveSimulation(port: SimulationPort): void {
           if (message.op === 'dispose') poles.delete(message.pole)
         }
         return { id: message.id, ok: true, ...state(sim) }
+      }
+      case 'tiles': {
+        if (!sim) throw new Error('Simulation not created')
+        const next = new Map<string, { id: string }>()
+        for (const tile of message.added as { id: string }[]) next.set(tile.id, tile)
+        for (const id of message.ids)
+          if (!next.has(id) && tiles.has(id)) next.set(id, tiles.get(id)!)
+        tiles = next
+        sim.setPlanetTiles(
+          message.ids.flatMap((id) => (tiles.has(id) ? [tiles.get(id)!] : [])) as Parameters<
+            Simulation['setPlanetTiles']
+          >[0],
+        )
+        return { id: message.id, ok: true }
       }
       case 'planet': {
         if (!sim) throw new Error('Simulation not created')

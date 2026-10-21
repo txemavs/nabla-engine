@@ -128,4 +128,32 @@ describe('physics worker: every value a Simulation answers is answered in worker
     expect(messages).toEqual(expected ? [expected] : [])
     close()
   })
+
+  it('sends each planet collision tile to the worker once, and nothing for an unchanged list', async () => {
+    const { sim, close } = await threaded()
+    const port = threadedSimulation(sim)!.worker.port as unknown as {
+      postMessage: (m: unknown) => void
+    }
+    const sent: { type: string; added?: unknown[] }[] = []
+    const post = port.postMessage.bind(port)
+    port.postMessage = (m: unknown) => {
+      sent.push(m as { type: string; added?: unknown[] })
+      post(m)
+    }
+    const tile = (id: string) => ({
+      id,
+      pose: { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+      chunks: [],
+    })
+    const a = tile('a'),
+      b = tile('b')
+    sim.setPlanetTiles([a] as never)
+    sim.setPlanetTiles([a] as never)
+    sim.setPlanetTiles([a, b] as never)
+    sim.setPlanetTiles([b] as never)
+    const tiles = sent.filter((m) => m.type === 'tiles')
+    expect(tiles.map((m) => m.added!.length)).toEqual([1, 1, 0])
+    await expect(sim.step(1 / 60)).resolves.toBeUndefined()
+    close()
+  })
 })
