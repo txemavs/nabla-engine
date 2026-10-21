@@ -24,11 +24,11 @@ export const defaultInterfaceStyles = `
 @media(pointer:coarse) { :root { --nabla-ui-scale:0.8; } }
 @media(max-width:600px) { :root { --nabla-ui-margin:8px; } }
 /* Corners: a group fixed --nabla-ui-margin from both edges. Use addCornerButton(). */
-.nabla-corner { position:fixed;z-index:48;pointer-events:auto; }
-.nabla-corner--tl { top:var(--nabla-ui-margin);left:var(--nabla-ui-margin); }
-.nabla-corner--tr { top:var(--nabla-ui-margin);right:var(--nabla-ui-margin); }
-.nabla-corner--bl { bottom:var(--nabla-ui-margin);left:var(--nabla-ui-margin); }
-.nabla-corner--br { bottom:var(--nabla-ui-margin);right:var(--nabla-ui-margin); }
+.nabla-corner { position:fixed;pointer-events:auto; }
+.nabla-corner--tl { z-index:var(--nabla-corner-tl-z,48);top:var(--nabla-ui-margin);left:var(--nabla-ui-margin); }
+.nabla-corner--tr { z-index:var(--nabla-corner-tr-z,48);top:var(--nabla-ui-margin);right:var(--nabla-ui-margin); }
+.nabla-corner--bl { z-index:var(--nabla-corner-bl-z,48);bottom:var(--nabla-ui-margin);left:var(--nabla-ui-margin); }
+.nabla-corner--br { z-index:var(--nabla-corner-br-z,48);bottom:var(--nabla-ui-margin);right:var(--nabla-ui-margin); }
 /* Groups: one row (or column) of equal-height buttons with one gap; never wraps unless asked. */
 .nabla-btn-group { display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:var(--nabla-btn-gap); }
 .nabla-btn-group--column { flex-direction:column;align-items:flex-end; }
