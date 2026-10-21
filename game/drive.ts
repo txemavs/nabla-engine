@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { mountVREntry } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
@@ -39,6 +40,8 @@ import {
   parseClusterCulling,
 } from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
+import { driveHost } from './drive-host.js'
+import { defaultWorldSource, hasTerrain } from './world-source.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
@@ -60,9 +63,9 @@ bindTerrainSelector()
 const attachSceneControls = bindSceneControls({ rememberInUrl: false })
 let runtime: GameRuntime | undefined
 try {
-  const solo = new URLSearchParams(location.search).get('solo') === '1'
+  const solo = new URLSearchParams(pageSearch()).get('solo') === '1'
   const config = parseGameConfig()
-  const flat = new URLSearchParams(location.search).get('example') === 'flat'
+  const flat = new URLSearchParams(pageSearch()).get('example') === 'flat'
   const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
   if (!hasVehiclePreset(config.vehicle))
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
@@ -112,12 +115,12 @@ try {
   }
   if (
     flat &&
-    (new URLSearchParams(location.search).has('gallery') ||
-      new URLSearchParams(location.search).has('remote'))
+    (new URLSearchParams(pageSearch()).has('gallery') ||
+      new URLSearchParams(pageSearch()).has('remote'))
   )
     scene.entities.push(...createGallery('demo-gallery'))
   let world: WorldContent | undefined
-  if (flat && new URLSearchParams(location.search).has('remote')) {
+  if (flat && new URLSearchParams(pageSearch()).has('remote')) {
     const remote = structuredClone(scene)
     remote.name = 'Galería remota'
     remote.geography!.longitude = 0.001
@@ -161,7 +164,7 @@ try {
     ]
   // Explicit flat-track load test: one simulation and shared asset cache for every copy.
   if (flat && solo) {
-    const raw = Number(new URLSearchParams(location.search).get('copies') ?? 1)
+    const raw = Number(new URLSearchParams(pageSearch()).get('copies') ?? 1)
     const copies = Number.isFinite(raw) ? Math.min(20, Math.max(1, Math.floor(raw))) : 1
     for (let i = 1; i < copies; i++) {
       const column = (i - 1) % 5
@@ -192,7 +195,9 @@ try {
       scene.entities.push(pallet)
     }
   }
-  const noTerrainTest = ['/test.html', '/xr.html'].includes(location.pathname)
+  const host = driveHost()
+  const worldSource = host.world ?? defaultWorldSource()
+  const noTerrainTest = !hasTerrain(worldSource)
 
   if (noTerrainTest) {
     if (!solo && !sceneHasPresetModel(scene.entities, 'vfr800'))
@@ -218,21 +223,21 @@ try {
   }
   const player = scene.entities.find((entity) => entity.id === vehicle.id)
   if (player) player.transform.rotation = headingRotation(config.spawn.heading)
-  const lights = flat && new URLSearchParams(location.search).has('lights')
+  const lights = flat && new URLSearchParams(pageSearch()).has('lights')
   if (lights) scene.sky = { mode: 'fixed', at: '2026-03-20T00:00:00.000Z' }
   const boot = readBootConfig()
   // Host defaults (e.g. `cityLabels: false`) and `&layers=`; this page keeps no stored layer choice.
   setHiddenTileLayers(
-    parseLayerSpec(new URLSearchParams(location.search).get('layers'), bootHiddenLayers(boot)),
+    parseLayerSpec(new URLSearchParams(pageSearch()).get('layers'), bootHiddenLayers(boot)),
   )
   // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
-  setTileClusterCulling(parseClusterCulling(location.search))
+  setTileClusterCulling(parseClusterCulling(pageSearch()))
   const loading = new LoadingScreen(boot.splash)
   loading.setTiles(
     flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
-  const rendererPreference = parseRendererPreference(location.search)
+  const rendererPreference = parseRendererPreference(pageSearch())
   const backend =
     rendererPreference === 'webgl'
       ? undefined
@@ -242,30 +247,31 @@ try {
           alpha: true,
           logarithmicDepthBuffer: true,
         })
+  host.prepareScene?.(scene)
   runtime = new GameRuntime({
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
-    performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
-    flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    performanceLog: new URLSearchParams(pageSearch()).get('perfLog') === '1',
+    flipCinematic: host.flipCinematic ?? resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
-      defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
+      defaults: hostSteeringWheelsFromSearch(pageSearch(), viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
     },
     shadowBias: resolveShadowBias(boot.shadowBias),
     // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
     mirrors: {
-      defaults: hostMirrorsFromSearch(location.search, viteHostMirrors()),
+      defaults: hostMirrorsFromSearch(pageSearch(), viteHostMirrors()),
       storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
     hud: true,
     touchControls:
-      new URLSearchParams(location.search).has('xr') || location.pathname === '/xr.html'
+      new URLSearchParams(pageSearch()).has('xr') || location.pathname === '/xr.html'
         ? false
         : 'always',
     display: readDisplaySettings(),
@@ -291,7 +297,7 @@ try {
             }),
         }
       : undefined,
-    depthOfField: new URLSearchParams(location.search).has('dof') ? true : undefined,
+    depthOfField: new URLSearchParams(pageSearch()).has('dof') ? true : undefined,
     performance: { preset: readQualityPreset() },
     tiles: noTerrainTest
       ? undefined
@@ -302,7 +308,7 @@ try {
             apiUrl: '/prepare',
             mode: config.staticTiles ? 'static' : 'dynamic',
             // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
-            osmRoads: osmRoadsRequested(location.search),
+            osmRoads: osmRoadsRequested(pageSearch()),
             // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
             ...(config.staticTiles && {
               atlas: { relief: 'engine' as const, photo: 'full' as const },
@@ -316,7 +322,7 @@ try {
     // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
     onDiagnostics: fpsReadout(
       () => document.getElementById('controls-hint'),
-      new URLSearchParams(location.search).has('diagnostics')
+      new URLSearchParams(pageSearch()).has('diagnostics')
         ? (sample) =>
             document
               .getElementById('game-canvas')!
@@ -344,11 +350,14 @@ try {
   preloadVR(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   bindTerrainCache(runtime)
-  if (new URLSearchParams(location.search).has('diagnostics'))
+  if (new URLSearchParams(pageSearch()).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
   void runBootPhase(runtime, loading, boot)
   restoreStartupLightSettings(runtime)
-  await runtime.play(!solo && noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
+  await runtime.play(
+    host.onFoot || (!solo && noTerrainTest) ? { playerMode: 'walk' } : { vehicleId: vehicle.id },
+  )
+  const hostReady = host.afterPlay?.(runtime)
   bindVR(runtime)
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
     const help = document.createElement('p')
@@ -366,12 +375,13 @@ try {
       'position:fixed;bottom:70px;left:12px;max-width:420px;background:#102632e8;color:white;padding:10px;pointer-events:none'
     document.body.append(help)
   }
-  if (noTerrainTest && (!solo || new URLSearchParams(location.search).has('xr')))
+  if (noTerrainTest && (!solo || new URLSearchParams(pageSearch()).has('xr')))
     runtime.equipTestSidearm()
   if (!solo && scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   if (scene.geography && config.portals?.length)
     await installHostPortals(runtime, scene.geography, config.portals)
+  await Promise.resolve(hostReady).catch(console.error)
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

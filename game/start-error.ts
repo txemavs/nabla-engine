@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** What the player sees when the terrain cannot start: Spanish text and, over a hole, a way out. */
 import type { GroundMissingError } from '@nabla/engine/runtime/core'
 import { type MapTile } from '@nabla/engine/scene'
@@ -77,7 +78,7 @@ export function searchForDefaultStart(search: string, base: string): string {
 export async function startError(
   error: unknown,
   base: string,
-  search: string = location.search,
+  search: string = pageSearch(),
 ): Promise<StartError> {
   const message = describeStartError(error)
   if (!isGroundMissing(error)) return { message, actions: [] }

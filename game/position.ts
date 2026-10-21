@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 import { keyboardAction } from '@nabla/engine/config/controls'
 /** Where the player is, as latitude/longitude, and a way to go to any coordinates (menu section "Posición"). */
 import { formatLatLon, parseLatLon, type LatLon } from '@nabla/engine/planet/lat-lon'
@@ -84,7 +85,7 @@ export function showLocation(location: LatLon | null | undefined): void {
  * "no hay terreno" message with the button to the nearest available cell.
  */
 export function bindPosition(
-  search: string = location.search,
+  search: string = pageSearch(),
   navigate: (next: string) => void = (next) => location.assign(location.pathname + next),
 ): void {
   const section = menuSection('terrain-position', 'Posición')

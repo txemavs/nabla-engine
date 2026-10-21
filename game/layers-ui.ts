@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** Terrain layer selector (menu section "Capas"). Engine owns the layers and the drawing. */
 import {
   TILE_LAYERS,
@@ -26,7 +27,7 @@ function browserStorage(): LayerStorage | undefined {
  * `defaults`, the host's default hidden layers (e.g. `['places']` from `NABLA_BOOT.cityLabels: false`).
  */
 export function initialHiddenLayers(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: LayerStorage | undefined = browserStorage(),
   defaults: readonly string[] = [],
 ): string[] {
@@ -41,7 +42,7 @@ export function initialHiddenLayers(
  * version 2+ cells for inspection. It never collides; default (absent, `0`, `false`, `off`) hides it.
  * The OSM data for the GPS loads either way.
  */
-export function osmRoadsRequested(search: string = location.search): boolean {
+export function osmRoadsRequested(search: string = pageSearch()): boolean {
   const value = new URLSearchParams(search).get('osmRoads')
   return value !== null && !['0', 'false', 'off', 'no'].includes(value.trim().toLowerCase())
 }

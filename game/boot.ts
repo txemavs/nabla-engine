@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /**
  * Standalone-game boot policy: host splash skin, optional attract (planet-from-orbit) view
  * and the short machine probe that picks the auto resolution start.
@@ -111,7 +112,7 @@ function buildTimeBootJson(raw: string | undefined): HostBootConfig {
 
 /** Merge URL, build-time and page-supplied boot configuration. */
 export function readBootConfig(
-  search = location.search,
+  search = pageSearch(),
   page: Pick<Window, 'NABLA_BOOT'> | undefined = globalThis.window,
 ): HostBootConfig {
   const params = new URLSearchParams(search)
@@ -160,7 +161,7 @@ export async function runBootPhase(
   runtime: GameRuntime,
   loading: LoadingScreen,
   config: HostBootConfig,
-  search = location.search,
+  search = pageSearch(),
 ): Promise<void> {
   const canvas = document.getElementById('game-canvas')
   if (config.attract) {
