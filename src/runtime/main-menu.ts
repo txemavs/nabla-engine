@@ -38,6 +38,13 @@ export interface StartScreenOptions {
   enterKey: string
   /** Small lines under the title (i18n keys). */
   noticeKeys?: readonly string[]
+  /**
+   * Language links above ENTER: every locale but `locale`, labelled `locale.<code>`. Each reloads
+   * the same address with `?locale=<code>`, other parameters kept.
+   */
+  locales?: readonly string[]
+  /** The active locale (left out of the links). */
+  locale?: string
   entries?: readonly StartScreenEntry[]
   /** Called with the entries row, to add host widgets (e.g. the mobile quality button). */
   decorate?: (row: HTMLElement) => void
@@ -75,6 +82,21 @@ export function mountStartScreen(doc: Document, options: StartScreenOptions): St
     notice.className = 'nabla-start-notice'
     notice.textContent = options.t(key)
     panel.append(notice)
+  }
+  const others = (options.locales || []).filter((code) => code !== options.locale)
+  if (others.length) {
+    const nav = doc.createElement('nav')
+    nav.className = 'nabla-start-locales'
+    for (const code of others) {
+      const link = doc.createElement('a')
+      const url = new URL(doc.location.href)
+      url.searchParams.set('locale', code)
+      link.href = url.href
+      link.hreflang = code
+      link.textContent = options.t('locale.' + code)
+      nav.append(link)
+    }
+    panel.append(nav)
   }
   const button = doc.createElement('button')
   button.type = 'button'
@@ -222,7 +244,10 @@ export const MAIN_MENU_CSS = [
   `.nabla-start-logo { display:block;margin:0 auto 1em;max-width:60%; }`,
   `.nabla-start-title { margin:0 0 .4em;font:700 clamp(20px,3vw,36px)/1.1 var(--nabla-start-font,Arial,sans-serif); }`,
   `.nabla-start-notice { margin:.45em 0 0;font-size:clamp(10px,.85vw,12px);line-height:1.35;opacity:.78; }`,
-  `.nabla-start-enter { margin-top:1.2em;font:400 clamp(14px,1.4vw,18px) var(--nabla-start-font,Arial,sans-serif);`,
+  `.nabla-start-locales { display:flex;justify-content:center;gap:1.2em;margin-top:1em;font-size:clamp(11px,.95vw,13px); }`,
+  `.nabla-start-locales a { color:rgba(255,255,255,.78);text-decoration:none;letter-spacing:.08em; }`,
+  `.nabla-start-locales a:hover,.nabla-start-locales a:focus-visible { color:#fff;text-decoration:underline;outline:none; }`,
+  `.nabla-start-enter { margin-top:1em;font:400 clamp(14px,1.4vw,18px) var(--nabla-start-font,Arial,sans-serif);`,
   `letter-spacing:.45em;padding:.8em 1.6em .8em 2.05em;color:#fff;background:rgba(0,0,0,.35);cursor:pointer;`,
   `border:1px solid rgba(255,255,255,.75);border-radius:2px; }`,
   `.nabla-start-enter:hover,.nabla-start-enter:focus-visible { background:rgba(255,255,255,.16);outline:none; }`,

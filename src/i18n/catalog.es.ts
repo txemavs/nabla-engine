@@ -184,6 +184,9 @@ export const engineEs: Readonly<Record<string, string>> = {
     'Peticiones: {manifests} manifiestos · {cells} descargas · {installing} instalando · {failed} con error',
   'loading.terrain': 'Cargando el terreno…',
   'loading.terrain-status': 'Cargando el terreno · {parts}…',
+  'locale.en': 'Inglés',
+  'locale.es': 'Español',
+  'locale.eu': 'Euskera',
   'manage.apply-settings-and-reload': 'Aplicar ajustes y recargar',
   'manage.backup-of-the-saved-game-graphics-sound-camera-v':
     'Copia de las preferencias guardadas del juego, gráficos, sonido, cámaras, vehículos, mandos y casco. Los mapas descargados y las escenas no forman parte de esta copia.',
