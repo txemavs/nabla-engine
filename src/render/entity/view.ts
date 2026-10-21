@@ -605,6 +605,30 @@ export class SceneView {
   get headLightMount(): THREE.Object3D {
     return this.monitor
   }
+  private collisionLines: THREE.LineSegments | null = null
+  /** Collider wireframe (Development › Show collision) in simulation metres; null removes it. */
+  setCollisionLines(lines: { vertices: Float32Array; colors: Float32Array } | null): void {
+    if (!lines) {
+      this.collisionLines?.geometry.dispose()
+      ;(this.collisionLines?.material as THREE.Material | undefined)?.dispose()
+      this.collisionLines?.removeFromParent()
+      this.collisionLines = null
+      return
+    }
+    if (!this.collisionLines) {
+      this.collisionLines = new THREE.LineSegments(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthTest: false }),
+      )
+      this.collisionLines.name = 'collision-debug'
+      this.collisionLines.frustumCulled = false
+      this.collisionLines.renderOrder = 999
+      this.root.add(this.collisionLines)
+    }
+    const geometry = this.collisionLines.geometry
+    geometry.setAttribute('position', new THREE.BufferAttribute(lines.vertices, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(lines.colors, 4))
+  }
   setHeadLight(enabled: boolean): void {
     setMonitorFaceLight(this.monitor, enabled)
   }

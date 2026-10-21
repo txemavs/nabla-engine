@@ -5920,6 +5920,36 @@ export class GameRuntime {
   get headlampShadows(): boolean {
     return this.headlamp.shadows
   }
+  private collisionDebugTimer: ReturnType<typeof setInterval> | null = null
+  /** Development › Show collision: every collider as lines (polled at 2 Hz, nothing when off). */
+  get collisionDebug(): boolean {
+    return this.collisionDebugTimer !== null
+  }
+  setCollisionDebug(enabled: boolean): void {
+    if (this.collisionDebugTimer) clearInterval(this.collisionDebugTimer)
+    this.collisionDebugTimer = null
+    if (!enabled) {
+      this.view.setCollisionLines(null)
+      return
+    }
+    let busy = false
+    const poll = async () => {
+      const sim = this.session.simulation
+      if (busy || !sim) return
+      busy = true
+      try {
+        const threaded = threadedSimulation(sim)
+        const lines = threaded ? await threaded.collisionDebug() : await sim.collisionDebug()
+        if (this.collisionDebugTimer) this.view.setCollisionLines(lines)
+      } catch (error) {
+        console.warn('collision debug', error)
+      } finally {
+        busy = false
+      }
+    }
+    this.collisionDebugTimer = setInterval(poll, 500)
+    void poll()
+  }
   setHeadlampShadows(enabled: boolean): void {
     this.headlamp.shadows = enabled
     // Explicit local shadows work even when the quality tier disables sun shadows.

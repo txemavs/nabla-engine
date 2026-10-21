@@ -11,7 +11,7 @@
  */
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
 import type { Collider } from '@dimforge/rapier3d-compat'
-import { Body, Box, Sphere, Trimesh, World } from './physics.js'
+import { Body, Box, Capsule, Sphere, Trimesh, World } from './physics.js'
 import { cameraClearance, nearestShotHit, type QueryExclusions } from './scene-queries.js'
 import type { Simulation } from './simulation.js'
 import type { Vec3Tuple } from '../entity/schema.js'
@@ -21,6 +21,7 @@ type Quat = [number, number, number, number]
 export type QueryShape =
   | { kind: 'sphere'; radius: number }
   | { kind: 'box'; half: Vec3Tuple }
+  | { kind: 'capsule'; halfHeight: number; radius: number }
   | { kind: 'trimesh'; vertices: Float32Array; indices: Uint32Array }
   | { kind: 'heightfield'; data: number[][]; elementSize: number }
 
@@ -53,6 +54,8 @@ function describeShape(shape: Body['shapes'][number]): QueryShape {
   if (shape instanceof Sphere) return { kind: 'sphere', radius: shape.radius }
   if (shape instanceof Box)
     return { kind: 'box', half: [shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z] }
+  if (shape instanceof Capsule)
+    return { kind: 'capsule', halfHeight: shape.halfHeight, radius: shape.radius }
   if (shape instanceof Trimesh)
     return { kind: 'trimesh', vertices: shape.vertices, indices: shape.indices }
   return { kind: 'heightfield', data: shape.data, elementSize: shape.elementSize }
@@ -152,6 +155,9 @@ function colliderDesc(
       break
     case 'box':
       desc = RAPIER.ColliderDesc.cuboid(...shape.half)
+      break
+    case 'capsule':
+      desc = RAPIER.ColliderDesc.capsule(shape.halfHeight, shape.radius)
       break
     case 'trimesh':
       desc = RAPIER.ColliderDesc.trimesh(shape.vertices, shape.indices)
