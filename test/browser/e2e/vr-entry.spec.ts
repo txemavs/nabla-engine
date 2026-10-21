@@ -32,10 +32,10 @@ test('one casco button left of the clock when a headset is there; it enters PC V
   page,
 }) => {
   expect(await mount(page, true)).toBe(0)
-  const button = page.locator('#nabla-corner-tr > .nabla-btn', { hasText: 'casco' })
+  const button = page.locator('#nabla-corner-tr > .nabla-btn--icon[aria-label*="casco"]')
   await expect(button).toBeVisible()
   await expect(button).toHaveAttribute('data-order', '50')
-  await expect(page.locator('.nabla-btn', { hasText: 'casco' })).toHaveCount(1)
+  await expect(page.locator('.nabla-btn[aria-label*="casco"]')).toHaveCount(1)
   await button.click()
   await expect(page.locator('body')).toHaveAttribute('data-entered', 'true')
   expect(new URL(page.url()).searchParams.get('vr')).toBe('pc')
@@ -49,5 +49,5 @@ test('one casco button left of the clock when a headset is there; it enters PC V
 test('no casco button without immersive VR support', async ({ page }) => {
   await mount(page, false)
   await page.waitForTimeout(2500)
-  await expect(page.locator('.nabla-btn', { hasText: 'casco' })).toHaveCount(0)
+  await expect(page.locator('.nabla-btn[aria-label*="casco"]')).toHaveCount(0)
 })

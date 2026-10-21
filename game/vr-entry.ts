@@ -55,11 +55,11 @@ function afterGameLoaded(): Promise<void> {
 export function mountVREntry(runtime: GameRuntime): void {
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = 'nabla-btn'
+  button.className = 'nabla-btn nabla-btn--icon'
   button.hidden = true
-  button.title = 'Jugar en el casco VR'
+  button.title = 'casco: jugar en el casco VR'
   button.setAttribute('aria-label', button.title)
-  button.innerHTML = `${icon}<span>casco</span>`
+  button.innerHTML = icon
   let disposed = false
   const say = (text: string) => {
     const message = document.getElementById('game-message')
