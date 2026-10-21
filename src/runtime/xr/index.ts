@@ -11,3 +11,4 @@ export { XRObjectGrab } from '../xr-object-grab.js'
 export { XRTrackedHand } from '../xr-tracked-hands.js'
 
 export { XRMenuGesture } from '../xr-menu-gesture.js'
+export { XRHitTest, type XRHitPose } from '../xr-hit-test.js'

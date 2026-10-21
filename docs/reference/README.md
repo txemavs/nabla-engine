@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **549 modules; 6565 executable function definitions**.
+Coverage: **550 modules; 6580 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -379,7 +379,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/runtime/ar/map-quarters.ts](src/runtime/ar/map-quarters.ts.md) | 18 |
 | [src/runtime/ar/model.ts](src/runtime/ar/model.ts.md) | 41 |
 | [src/runtime/ar/room.ts](src/runtime/ar/room.ts.md) | 24 |
-| [src/runtime/ar/session.ts](src/runtime/ar/session.ts.md) | 4 |
+| [src/runtime/ar/session.ts](src/runtime/ar/session.ts.md) | 5 |
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
@@ -469,6 +469,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/runtime/xr-forklift.ts](src/runtime/xr-forklift.ts.md) | 7 |
 | [src/runtime/xr-grab.ts](src/runtime/xr-grab.ts.md) | 17 |
 | [src/runtime/xr-hand.ts](src/runtime/xr-hand.ts.md) | 31 |
+| [src/runtime/xr-hit-test.ts](src/runtime/xr-hit-test.ts.md) | 13 |
 | [src/runtime/xr-hoop.ts](src/runtime/xr-hoop.ts.md) | 14 |
 | [src/runtime/xr-hud.ts](src/runtime/xr-hud.ts.md) | 3 |
 | [src/runtime/xr-input.ts](src/runtime/xr-input.ts.md) | 6 |
@@ -485,7 +486,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/runtime/xr-scaled-body-contacts.ts](src/runtime/xr-scaled-body-contacts.ts.md) | 4 |
 | [src/runtime/xr-scaled-vehicles.ts](src/runtime/xr-scaled-vehicles.ts.md) | 20 |
 | [src/runtime/xr-screen-input.ts](src/runtime/xr-screen-input.ts.md) | 4 |
-| [src/runtime/xr-session.ts](src/runtime/xr-session.ts.md) | 24 |
+| [src/runtime/xr-session.ts](src/runtime/xr-session.ts.md) | 25 |
 | [src/runtime/xr-station-placement.ts](src/runtime/xr-station-placement.ts.md) | 12 |
 | [src/runtime/xr-stats.ts](src/runtime/xr-stats.ts.md) | 5 |
 | [src/runtime/xr-tracked-hands.ts](src/runtime/xr-tracked-hands.ts.md) | 8 |

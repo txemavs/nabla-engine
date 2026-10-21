@@ -8,10 +8,11 @@
 
 - `three`
 - `../xr.js`
+- `../xr-hit-test.js`
 
 ## GameAR.constructor
 
-[Implementation, line 7](../../../../../src/runtime/ar/session.ts#L7)
+[Implementation, line 10](../../../../../src/runtime/ar/session.ts#L10)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -25,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameAR.enterAR
 
-[Implementation, line 16](../../../../../src/runtime/ar/session.ts#L16)
+[Implementation, line 19](../../../../../src/runtime/ar/session.ts#L19)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -42,13 +43,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 Explicit throws in this body:
 
-- `new Error( 'Este navegador no admite AR unbounded con referencia de suelo. Actualiza Quest Browser; no se ha iniciado una sesión con límite.', )`
+- `new Error( 'This browser does not support immersive AR (WebXR). Use Chrome on an ARCore Android phone or Quest Browser.', )`
 - `error`
 - `new Error('This AR view requires passthrough.')`
 
+## GameAR.exit
+
+[Implementation, line 34](../../../../../src/runtime/ar/session.ts#L34)
+
+AR view of the same XR runtime. No application content or physics world is created.
+
+```ts
+exit(): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `super.exit`
+- `this.hitTest.stop`
+
 ## GameAR.visible
 
-[Implementation, line 31](../../../../../src/runtime/ar/session.ts#L31)
+[Implementation, line 38](../../../../../src/runtime/ar/session.ts#L38)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -58,7 +74,7 @@ visible(): boolean
 
 ## GameAR.update
 
-[Implementation, line 34](../../../../../src/runtime/ar/session.ts#L34)
+[Implementation, line 41](../../../../../src/runtime/ar/session.ts#L41)
 
 AR view of the same XR runtime. No application content or physics world is created.
 
@@ -73,3 +89,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.arCamera.position.set`
 - `this.arCamera.quaternion.set`
 - `this.arCamera.updateWorldMatrix`
+- `this.arRenderer.xr.getSession`
+- `this.hitTest.start`
+- `this.hitTest.update`

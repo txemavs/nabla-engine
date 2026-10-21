@@ -195,20 +195,43 @@ representan superficies WebXR, no objetos reconocidos; una malla de habitación 
 contener varios muebles. Actualizar su geometría mantiene color y material; al perder
 la superficie se libera también su material.
 
-## AR con referencia unbounded
+## AR reference spaces (Quest and Android)
 
-Las sesiones `immersive-ar` de `XRSessionController` requieren ahora `unbounded` y
-`local-floor`. El renderer y todas las consultas de cámara, mandos y habitación usan
-un **offset de unbounded**; `local-floor` sólo aporta la altura inicial del suelo.
-Se espera a tener ambas poses antes de habilitar interacción AR. Así no se supone
-que el origen unbounded sea el suelo ni se introduce una altura de usuario inventada.
-Al salir y volver a VR, el renderer vuelve a `local-floor`.
+`immersive-ar` sessions in `XRSessionController` now only require `local`. `unbounded`,
+`local-floor`, `hit-test`, `plane-detection`, `mesh-detection` and `anchors` are optional, so
+Chrome on ARCore Android phones accepts the session (ARCore does not offer `unbounded`).
 
-Si no se admite unbounded, se informa del error; no se abre automáticamente otra
-sesión con el modo antiguo. El modo de referencia no desactiva por la fuerza las
-protecciones del sistema: los avisos finales dependen de Quest Browser/Horizon OS y
-se deben verificar en el casco. Meta muestra unbounded para experiencias de mayor
-extensión en su [ejemplo RealMeasure](https://developers.meta.com/vr/documentation/web/web-sample-realmeasure/).
+- **Quest:** Quest Browser grants `unbounded`; behaviour is unchanged. The renderer and every
+  camera, controller and room query use an **unbounded offset**; `local-floor` only supplies the
+  initial floor height, and interaction waits for both poses.
+- **Android (ARCore):** without `unbounded` the session renders in `local-floor`. If the runtime
+  also refuses `local-floor`, it falls back to `local` (origin at the device's start pose, no
+  floor height); use hit-test to find real surfaces. The fallback is recorded as the
+  `unbounded-unavailable` diagnostic, and `referenceSpaceType` reports the active space.
+- **VR** still requires `local-floor`; there is no fallback in VR.
+
+Back on VR after AR, the renderer returns to `local-floor`.
+
+## Hit-test and placement (`XRHitTest`)
+
+`XRHitTest` (exported from `@nabla/engine/ar` and `@nabla/engine/xr`) wraps a WebXR hit-test
+source cast from the `viewer` space (the screen centre on a phone, the gaze on a headset). It
+owns no geometry or materials:
+
+```ts
+const ar = new GameAR(renderer, camera, scene, onSessionChanged, reportError)
+ar.hitTest.reticle = myReticle // any Object3D supplied by the host; shown only on a hit
+// On a tap / select:
+if (ar.hitTest.place(myObject)) {
+  /* myObject now sits on the surface */
+}
+```
+
+`GameAR` starts the source on its session and updates it every frame with the frame's render
+space (`referenceSpace`), so hits share the coordinates of cameras and room queries. `hit`
+returns the latest pose (reused object; copy to keep it), `supported` is true once the source
+exists, and `unavailable` is true when the session did not grant `hit-test`. Hosts own the
+reticle appearance and placement rules; the engine adds no scene content.
 
 Los coches R/C siguen utilizando `ARRoom.targets` mediante `XRScaledVehicles`: el
 cambio de referencia espacial no crea otra física ni cambia la escala de sus reglas.

@@ -4,6 +4,8 @@ import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 export class XRSessionController {
   private session: XRSession | null = null
   private floor: XRReferenceSpace | null = null
+  /** 'local' only when the runtime (e.g. some ARCore builds) refuses 'local-floor' in AR. */
+  private floorType: 'local-floor' | 'local' = 'local-floor'
   private unbounded: XRReferenceSpace | null = null
   private originOffset: Matrix4 | null = null
   private worldAnchor: XRAnchor | null = null
@@ -72,8 +74,12 @@ export class XRSessionController {
       (!this.worldAnchor || this.anchorTracked)
     )
   }
-  get referenceSpaceType(): 'unbounded' | 'local-floor' {
-    return this.unbounded ? 'unbounded' : 'local-floor'
+  get referenceSpaceType(): 'unbounded' | 'local-floor' | 'local' {
+    return this.unbounded ? 'unbounded' : this.floorType
+  }
+  /** The live XR session, for opt-in modules such as XRHitTest. */
+  get xrSession(): XRSession | null {
+    return this.session
   }
   private pending = false
   private closed = false
@@ -118,14 +124,22 @@ export class XRSessionController {
     let session: XRSession | undefined
     try {
       session = await system.requestSession(mode, {
-        requiredFeatures: mode === 'immersive-ar' ? ['unbounded', 'local-floor'] : ['local-floor'],
+        // AR: Quest grants unbounded; ARCore (Chrome Android) rejects sessions that require it.
+        requiredFeatures: mode === 'immersive-ar' ? ['local'] : ['local-floor'],
         ...(mode === 'immersive-ar' || handTracking
           ? {
               ...(domOverlayRoot ? { domOverlay: { root: domOverlayRoot } } : {}),
               optionalFeatures: [
                 ...(domOverlayRoot ? ['dom-overlay'] : []),
                 ...(mode === 'immersive-ar'
-                  ? ['plane-detection', 'mesh-detection', 'anchors']
+                  ? [
+                      'unbounded',
+                      'local-floor',
+                      'hit-test',
+                      'plane-detection',
+                      'mesh-detection',
+                      'anchors',
+                    ]
                   : []),
                 ...(handTracking ? ['hand-tracking'] : []),
               ],
@@ -145,13 +159,28 @@ export class XRSessionController {
       })
       session.addEventListener('visibilitychange', this.visibilityChanged)
       session.addEventListener('end', this.ended)
-      this.floor = await session.requestReferenceSpace('local-floor')
+      this.floorType = 'local-floor'
+      try {
+        this.floor = await session.requestReferenceSpace('local-floor')
+      } catch (error) {
+        if (mode !== 'immersive-ar') throw error
+        this.floorType = 'local'
+        this.floor = await session.requestReferenceSpace('local')
+      }
       if (this.session !== session || this.closed) return
       this.floor.addEventListener('reset', this.floorReset)
       if (mode === 'immersive-ar') {
-        this.unbounded = await session.requestReferenceSpace('unbounded')
+        try {
+          this.unbounded = await session.requestReferenceSpace('unbounded')
+        } catch (error) {
+          this.unbounded = null
+          this.recordDiagnostic('unbounded-unavailable', {
+            error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+            fallback: this.floorType,
+          })
+        }
         if (this.session !== session || this.closed) return
-        this.unbounded.addEventListener('reset', this.trackingReset)
+        this.unbounded?.addEventListener('reset', this.trackingReset)
       }
       this.xr.setReferenceSpaceType?.(this.referenceSpaceType)
       await this.xr.setSession(session)
@@ -376,6 +405,7 @@ export class XRSessionController {
     this.poseTracked = false
     this.session = null
     this.floor = null
+    this.floorType = 'local-floor'
     this.unbounded = null
     this.originOffset = null
     this.centerRequested = false
