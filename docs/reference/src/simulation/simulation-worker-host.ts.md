@@ -21,10 +21,78 @@ The inline {@link Simulation} stays the default and the fallback for tests and N
 - `./simulation.js`
 - `../scene/document.js`
 - `../entity/schema.js`
+- `./query-world.js`
+
+## attempt
+
+[Implementation, line 107](../../../../src/simulation/simulation-worker-host.ts#L107)
+
+```ts
+attempt(read: () => T): T | { error: string }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `read`
+
+## readSimulation
+
+[Implementation, line 116](../../../../src/simulation/simulation-worker-host.ts#L116)
+
+Evaluate every synchronous read the game makes, in the host, right after a step or command.
+
+```ts
+readSimulation(sim: Simulation, poles: ReadonlyMap<number, PoleHandle> = new Map()): SimulationReads
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `attempt`
+- `handle.pose`
+- `sim.cargoCount`
+- `sim.cargoTrailer`
+- `sim.catchDisk`
+- `sim.consumeExplosions`
+- `sim.entityIds`
+- `sim.entityVelocity`
+- `sim.nearestVehicle`
+- `sim.portalIds`
+- `sim.portalState`
+- `sim.vehicleDamage`
+- `sim.vehicleFeedback`
+- `sim.vehicleList`
+- `sim.vehicleSpec`
+- `sim.wheelContactInfo`
+
+## readSimulation.callback@124
+
+[Implementation, line 124](../../../../src/simulation/simulation-worker-host.ts#L124)
+
+```ts
+callback@124(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `sim.vehicleInfo`
+
+## readSimulation.callback@125
+
+[Implementation, line 125](../../../../src/simulation/simulation-worker-host.ts#L125)
+
+```ts
+callback@125(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `sim.vehicleInfo`
 
 ## snapshotSimulation
 
-[Implementation, line 59](../../../../src/simulation/simulation-worker-host.ts#L59)
+[Implementation, line 169](../../../../src/simulation/simulation-worker-host.ts#L169)
 
 Take the snapshot the main thread mirrors. Exported so tests can compare it with inline.
 
@@ -41,7 +109,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## serveSimulation
 
-[Implementation, line 77](../../../../src/simulation/simulation-worker-host.ts#L77)
+[Implementation, line 187](../../../../src/simulation/simulation-worker-host.ts#L187)
 
 ```ts
 serveSimulation(port: SimulationPort): void
@@ -49,13 +117,14 @@ serveSimulation(port: SimulationPort): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Map`
 - `Promise.resolve`
 - `port.addEventListener`
 - `port.start`
 
 ## serveSimulation.reply
 
-[Implementation, line 79](../../../../src/simulation/simulation-worker-host.ts#L79)
+[Implementation, line 191](../../../../src/simulation/simulation-worker-host.ts#L191)
 
 ```ts
 reply(message: SimulationReply): inferred by TypeScript; see implementation
@@ -63,11 +132,25 @@ reply(message: SimulationReply): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `port.postMessage`
+- `(port.postMessage as (m: unknown, t?: Transferable[]) => void)`
+
+## serveSimulation.state
+
+[Implementation, line 195](../../../../src/simulation/simulation-worker-host.ts#L195)
+
+```ts
+state(simulation: Simulation): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `exporter.export`
+- `readSimulation`
+- `snapshotSimulation`
 
 ## serveSimulation.handle
 
-[Implementation, line 80](../../../../src/simulation/simulation-worker-host.ts#L80)
+[Implementation, line 201](../../../../src/simulation/simulation-worker-host.ts#L201)
 
 ```ts
 handle(message: SimulationRequest): Promise<SimulationReply>
@@ -75,39 +158,46 @@ handle(message: SimulationRequest): Promise<SimulationReply>
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(pole[message.op] as (...a: unknown[]) => void)`
 - `(target as (...args: unknown[]) => unknown).apply`
 - `Error`
+- `QueryWorldExporter`
 - `Simulation`
 - `initPhysics`
+- `poles.clear`
+- `poles.delete`
+- `poles.get`
+- `poles.set`
+- `sim.createSceneryPole`
 - `sim.setInput`
 - `sim.setWaterLevel`
 - `sim.step`
 - `sim?.dispose`
-- `snapshotSimulation`
+- `state`
 - `structuredClone`
 
 Explicit throws in this body:
 
 - `new Error('Simulation not created')`
 
-## serveSimulation.callback@116
+## serveSimulation.callback@256
 
-[Implementation, line 116](../../../../src/simulation/simulation-worker-host.ts#L116)
+[Implementation, line 256](../../../../src/simulation/simulation-worker-host.ts#L256)
 
 ```ts
-callback@116(event: MessageEvent<SimulationRequest>): inferred by TypeScript; see implementation
+callback@256(event: MessageEvent<SimulationRequest>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `queue.then`
 
-## serveSimulation.callback@116.callback@118
+## serveSimulation.callback@256.callback@258
 
-[Implementation, line 118](../../../../src/simulation/simulation-worker-host.ts#L118)
+[Implementation, line 258](../../../../src/simulation/simulation-worker-host.ts#L258)
 
 ```ts
-callback@118(): inferred by TypeScript; see implementation
+callback@258(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -115,12 +205,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `handle`
 - `handle(message).then`
 
-## serveSimulation.callback@116.callback@118.callback@119
+## serveSimulation.callback@256.callback@258.callback@259
 
-[Implementation, line 119](../../../../src/simulation/simulation-worker-host.ts#L119)
+[Implementation, line 259](../../../../src/simulation/simulation-worker-host.ts#L259)
 
 ```ts
-callback@119(error: unknown): inferred by TypeScript; see implementation
+callback@259(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -130,7 +220,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.listener
 
-[Implementation, line 144](../../../../src/simulation/simulation-worker-host.ts#L144)
+[Implementation, line 284](../../../../src/simulation/simulation-worker-host.ts#L284)
 
 ```ts
 listener(event: MessageEvent<SimulationReply>): inferred by TypeScript; see implementation
@@ -139,15 +229,16 @@ listener(event: MessageEvent<SimulationReply>): inferred by TypeScript; see impl
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `entry.resolve`
+- `this.onState`
 - `this.pending.delete`
 - `this.pending.get`
 
 ## WorkerSimulation.constructor
 
-[Implementation, line 152](../../../../src/simulation/simulation-worker-host.ts#L152)
+[Implementation, line 295](../../../../src/simulation/simulation-worker-host.ts#L295)
 
 ```ts
-constructor(private readonly port: SimulationPort): instance
+constructor(readonly port: SimulationPort): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -157,7 +248,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.request
 
-[Implementation, line 156](../../../../src/simulation/simulation-worker-host.ts#L156)
+[Implementation, line 300](../../../../src/simulation/simulation-worker-host.ts#L300)
+
+Send any request; replies are applied in order.
 
 ```ts
 request(message: UnnumberedRequest): Promise<unknown>
@@ -167,12 +260,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Promise`
 
-## WorkerSimulation.request.callback@158
+## WorkerSimulation.request.callback@302
 
-[Implementation, line 158](../../../../src/simulation/simulation-worker-host.ts#L158)
+[Implementation, line 302](../../../../src/simulation/simulation-worker-host.ts#L302)
 
 ```ts
-callback@158(resolve, reject): inferred by TypeScript; see implementation
+callback@302(resolve, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -180,9 +273,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pending.set`
 - `this.port.postMessage`
 
-## WorkerSimulation.request.callback@158.resolve
+## WorkerSimulation.request.callback@302.resolve
 
-[Implementation, line 160](../../../../src/simulation/simulation-worker-host.ts#L160)
+[Implementation, line 304](../../../../src/simulation/simulation-worker-host.ts#L304)
 
 ```ts
 resolve(reply): inferred by TypeScript; see implementation
@@ -197,10 +290,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.create
 
-[Implementation, line 168](../../../../src/simulation/simulation-worker-host.ts#L168)
+[Implementation, line 312](../../../../src/simulation/simulation-worker-host.ts#L312)
 
 ```ts
-create(scene: SceneDocument, options?: SimulationOptions): Promise<void>
+create(scene: SceneDocument, options?: SimulationOptions, mirror = false): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -209,7 +302,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.step
 
-[Implementation, line 171](../../../../src/simulation/simulation-worker-host.ts#L171)
+[Implementation, line 315](../../../../src/simulation/simulation-worker-host.ts#L315)
 
 ```ts
 step(elapsed: number, input?: PlayerInput, waterLevel?: number): Promise<void>
@@ -221,7 +314,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.call
 
-[Implementation, line 175](../../../../src/simulation/simulation-worker-host.ts#L175)
+[Implementation, line 319](../../../../src/simulation/simulation-worker-host.ts#L319)
 
 ```ts
 call(method: K, ...args: Simulation[K] extends (...a: infer A) => unknown ? A : []): Promise<Simulation[K] extends (...a: never[]) => infer R ? Awaited<R> : Simulation[K]>
@@ -233,7 +326,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.dispose
 
-[Implementation, line 181](../../../../src/simulation/simulation-worker-host.ts#L181)
+[Implementation, line 325](../../../../src/simulation/simulation-worker-host.ts#L325)
 
 ```ts
 dispose(): Promise<void>
@@ -246,7 +339,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorkerSimulation.snapshot
 
-[Implementation, line 186](../../../../src/simulation/simulation-worker-host.ts#L186)
+[Implementation, line 330](../../../../src/simulation/simulation-worker-host.ts#L330)
 
 ```ts
 snapshot(): SimulationSnapshot
@@ -262,7 +355,7 @@ Explicit throws in this body:
 
 ## WorkerSimulation.player
 
-[Implementation, line 190](../../../../src/simulation/simulation-worker-host.ts#L190)
+[Implementation, line 334](../../../../src/simulation/simulation-worker-host.ts#L334)
 
 ```ts
 player(): Simulation['player']
@@ -270,7 +363,7 @@ player(): Simulation['player']
 
 ## WorkerSimulation.stats
 
-[Implementation, line 193](../../../../src/simulation/simulation-worker-host.ts#L193)
+[Implementation, line 337](../../../../src/simulation/simulation-worker-host.ts#L337)
 
 ```ts
 stats(): Simulation['stats']
@@ -278,7 +371,7 @@ stats(): Simulation['stats']
 
 ## WorkerSimulation.renderPlayerPosition
 
-[Implementation, line 196](../../../../src/simulation/simulation-worker-host.ts#L196)
+[Implementation, line 340](../../../../src/simulation/simulation-worker-host.ts#L340)
 
 ```ts
 renderPlayerPosition(): Vec3Tuple
@@ -286,7 +379,7 @@ renderPlayerPosition(): Vec3Tuple
 
 ## WorkerSimulation.playerFrame
 
-[Implementation, line 199](../../../../src/simulation/simulation-worker-host.ts#L199)
+[Implementation, line 343](../../../../src/simulation/simulation-worker-host.ts#L343)
 
 ```ts
 playerFrame(): Transform | null
@@ -294,7 +387,7 @@ playerFrame(): Transform | null
 
 ## WorkerSimulation.entityTransform
 
-[Implementation, line 202](../../../../src/simulation/simulation-worker-host.ts#L202)
+[Implementation, line 346](../../../../src/simulation/simulation-worker-host.ts#L346)
 
 ```ts
 entityTransform(id: string, interpolated = false): Transform
@@ -310,7 +403,7 @@ Explicit throws in this body:
 
 ## WorkerSimulation.wheelTransforms
 
-[Implementation, line 207](../../../../src/simulation/simulation-worker-host.ts#L207)
+[Implementation, line 351](../../../../src/simulation/simulation-worker-host.ts#L351)
 
 ```ts
 wheelTransforms(id: string, interpolated = false): Transform[]
@@ -318,7 +411,7 @@ wheelTransforms(id: string, interpolated = false): Transform[]
 
 ## createWorkerSimulation
 
-[Implementation, line 213](../../../../src/simulation/simulation-worker-host.ts#L213)
+[Implementation, line 357](../../../../src/simulation/simulation-worker-host.ts#L357)
 
 Start a module worker hosting the simulation (Vite worker import, as for Atlas packages).
 

@@ -272,27 +272,54 @@ step(elapsed: number, input: PlayerInput, waterLevel: number, now: number, docum
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `document.entities.find`
-- `last.position.clone`
-- `last.quaternion.clone`
 - `sim.setSurfaceAreas`
 - `sim.setSurfaceRoads`
-- `this.cameraState.telemetry.update`
+- `stepped.then`
+- `this.afterStep`
 - `this.recover.pavedAreas`
 - `this.recover.roads`
 - `this.session.step`
 
-## GameRuntime.step.callback@199
+## GameRuntime.step.callback@185
 
-[Implementation, line 199](../../../../src/runtime/game.ts#L199)
+[Implementation, line 185](../../../../src/runtime/game.ts#L185)
 
 ```ts
-callback@199(e): inferred by TypeScript; see implementation
+callback@185(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.afterStep`
+
+## GameRuntime.afterStep
+
+[Implementation, line 189](../../../../src/runtime/game.ts#L189)
+
+Boarding and portal bookkeeping once the step has run.
+
+```ts
+afterStep(sim: NonNullable<GameRuntime['simulation']>, ticks: number, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.entities.find`
+- `last.position.clone`
+- `last.quaternion.clone`
+- `this.cameraState.telemetry.update`
+
+## GameRuntime.afterStep.callback@215
+
+[Implementation, line 215](../../../../src/runtime/game.ts#L215)
+
+```ts
+callback@215(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 230](../../../../src/runtime/game.ts#L230)
+[Implementation, line 246](../../../../src/runtime/game.ts#L246)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -311,7 +338,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 241](../../../../src/runtime/game.ts#L241)
+[Implementation, line 257](../../../../src/runtime/game.ts#L257)
 
 Compatibility with existing hosts using key codes; prefer dispatch with an InputAction.
 
@@ -326,7 +353,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispatch
 
-[Implementation, line 246](../../../../src/runtime/game.ts#L246)
+[Implementation, line 262](../../../../src/runtime/game.ts#L262)
 
 Preferred entry for keyboard, XR and other hosts: no physical key codes.
 
