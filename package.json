@@ -91,6 +91,10 @@
       "types": "./dist/runtime/splash.d.ts",
       "import": "./dist/runtime/splash.js"
     },
+    "./runtime/corner-buttons": {
+      "types": "./dist/runtime/corner-buttons.d.ts",
+      "import": "./dist/runtime/corner-buttons.js"
+    },
     "./runtime/quality-preset": {
       "types": "./dist/runtime/quality-preset.d.ts",
       "import": "./dist/runtime/quality-preset.js"

@@ -9,6 +9,7 @@ export const settingsNavigationStyles = `
 ${interfaceTabStyles}
 .settings-window { ${interfaceVariables} position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;pointer-events:auto;background:transparent;color:var(--ink);font:var(--text-size)/1.4 Arial,sans-serif; }
 .settings-window[hidden],.settings-window [hidden]{display:none!important}
+/* Chrome scale: the console fills the window at its own zoom (see interface-style.ts). */
 .settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:transparent;border:0;border-radius:0;font:inherit;color:inherit;}
 .settings-header {display:flex;align-items:center;padding:0 30px;border-bottom:1px solid #333;}
 .settings-header strong{font:16px Arial,sans-serif!important;letter-spacing:2px;min-height:0!important;margin:0!important;color:var(--muted)}
@@ -35,8 +36,7 @@ ${interfaceTabStyles}
 .settings-window .menu-section .menu-section>legend{font-size:21px;padding:0 12px 0 0}
 .settings-window output{font:15px monospace;color:var(--ink)}.settings-window pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--button);padding:16px;font-size:13px}.settings-window textarea{font-size:14px}
 .settings-footer{display:flex;align-items:center;justify-content:space-between;padding:0 30px;border-top:1px solid var(--line)}.settings-footer small{margin:0;font-size:13px;line-height:1.3}.settings-footer button{font-size:13px;min-height:30px;margin:0;padding:4px 10px;color:var(--muted)}
-.settings-toggle{${interfaceVariables}${interfaceControls}position:fixed;top:12px;right:20px;z-index:110;min-width:64px;width:auto;height:40px;padding:4px 10px;cursor:pointer;}
-.settings-toggle[aria-expanded=true]{font-size:0!important;width:46px!important;min-width:46px!important}.settings-toggle[aria-expanded=true]::after{content:'↓';font:28px Arial,sans-serif;color:var(--ink)}
+.settings-toggle.nabla-corner{z-index:110;}
 .settings-is-open .game-toolbar{display:none!important}
 .settings-key-tools{display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap}.settings-key-tools input{flex:1;min-width:160px}.settings-key-table{width:100%;border-collapse:collapse;font-size:16px}.settings-key-table :is(th,td){border-bottom:1px solid #363636;padding:12px 0;text-align:left}.settings-key-table th{color:var(--muted);font-size:13px;font-weight:400}.settings-key-table td:last-child{text-align:right}.settings-key-table small{display:block;font:11px monospace;margin:4px 0 0}.settings-key-table kbd{display:inline-block;border:1px solid var(--line);padding:3px 8px;background:var(--button);border-radius:2px;font:14px monospace}
 .settings-tile-map{position:relative;width:100%;height:55vh;min-height:250px;background:#151515;border:1px solid var(--line);overflow:hidden}.settings-map-tile{position:absolute;display:grid;place-items:center;border:1px solid #444;background:#242424;font:11px monospace;overflow:hidden;white-space:nowrap}.settings-map-tile.state-visible{background:#31543e}.settings-map-tile.state-resident{background:#304336}.settings-map-tile.state-downloading{background:#243e54}.settings-map-tile.state-installing{background:#493e56}.settings-map-tile.state-retry{background:#592e2e}
@@ -56,6 +56,20 @@ ${interfaceTabStyles}
 @media(max-width:850px){.settings-pane{grid-template-columns:205px minmax(0,1fr)}.settings-section-content{padding:25px}.settings-tabs{padding:0 8px}.settings-console .settings-tab{padding:0 14px;font-size:17px}}
 @media(max-width:520px){.settings-pane{grid-template-columns:145px minmax(0,1fr)}.settings-sections{padding:18px 6px}.settings-window .settings-sections button[data-section]{padding:9px 7px;font-size:14px}.settings-section-content{padding:20px 14px}.settings-section-content>.menu-section::before{font-size:23px}.settings-nav-group summary{padding:9px 7px;font-size:14px}.settings-sections .settings-nav-group>button{margin-left:14px;width:calc(100% - 14px);font-size:13px}.settings-key-table{font-size:13px}.settings-key-table kbd{font-size:11px;white-space:normal}.settings-window input,.settings-window select{max-width:100%;min-width:0}.settings-window label{font-size:16px}.settings-header,.settings-footer{padding:0 16px}.settings-header strong{font-size:13px!important}.settings-window .settings-console{grid-template-rows:64px 52px minmax(0,1fr) 65px}}
 
+/* Dense section tree: compact rows, small indents, one open group (details[name]). */
+.settings-window .settings-sections{padding:10px 8px}
+.settings-window .settings-sections button[data-section]{min-height:30px;padding:4px 10px;margin:0 0 2px;font-size:15px;line-height:1.2}
+.settings-window .settings-sections .settings-nav-group{margin:0 0 4px}
+.settings-window .settings-nav-group summary{padding:4px 10px;font-size:15px;line-height:1.2}
+.settings-window .settings-sections .settings-nav-group>button{margin-left:14px;width:calc(100% - 14px);font-size:14px}
+.settings-sections-toggle{display:none}
+/* Content adapts to the width left by the tree: rows wrap, nothing scrolls sideways. */
+.settings-section-content{overflow-x:hidden}
+.settings-window label>*,.settings-row-name,.settings-row-value{min-width:0}
+.settings-window input[type=range]{min-width:80px}
+.settings-window .settings-section-content>.menu-section{max-width:100%}
+/* The bottom fps line never shows through the open settings window. */
+.settings-is-open #controls-hint{display:none!important}
 /* The settings window owns the interaction while the gameplay HUD is hidden. */
 .settings-is-open :is(.game-toolbar,.touch-driving,.touch-walk,.touch-flight,#settings-toggle){display:none!important}
 .settings-header{justify-content:space-between;gap:16px}
@@ -68,7 +82,11 @@ ${interfaceTabStyles}
 .settings-row-value output{flex:none}
 @media(max-width:600px){
  .settings-pane{display:block;overflow:auto}
- .settings-sections{overflow:visible;border-right:0;padding:12px 8px}
+ .settings-sections{overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding:6px 8px}
+ .settings-window .settings-sections-toggle{display:flex;align-items:center;gap:8px;width:100%;margin:0;min-height:36px;font-size:16px;text-align:left}
+ .settings-window .settings-sections-toggle::before{content:'☰'}
+ .settings-sections:not([data-open])>:not(.settings-sections-toggle){display:none}
+ .settings-sections[data-open]>.settings-sections-toggle{margin-bottom:6px}
  .settings-section-content{overflow:visible;padding:12px 14px 22px;margin:0 0 12px;min-width:0}
  .settings-section-content>.menu-section::before{display:none}
  .settings-window label.settings-inline-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;font-size:15px}
