@@ -10,6 +10,7 @@ import {
 } from '../../game/scene-controls.js'
 import {
   parseSeaParam,
+  parseLocationOverride,
   parseTerrainConfig,
   parseTimeParam,
   parseTimeSpeedParam,
@@ -122,5 +123,20 @@ describe('add menu objects', () => {
     expect(addLabel('gallery')).toBe('Añadir galería 2.5D')
     expect(addLabel('globe')).toBe('Añadir farola de barrio')
     expect(addLabel('carrier')).toBe('Añadir vehículo')
+  })
+})
+
+describe('?location=<lon>,<lat>', () => {
+  it('overrides lat/lon, longitude first', () => {
+    const config = parseTerrainConfig(
+      '?terrain=/terrain&lat=43.3386&lon=-1.7899&location=-1.7955898,43.3518326',
+    )
+    expect(config.start).toEqual({ latitude: 43.3518326, longitude: -1.7955898 })
+  })
+  it('ignores invalid values', () => {
+    for (const bad of ['abc', '-1.79', '1,2,3', '200,43', '-1.79,95', ''])
+      expect(parseLocationOverride(`?location=${bad}`)).toBeUndefined()
+    const config = parseTerrainConfig('?terrain=/terrain&lat=43.3386&lon=-1.7899&location=x,y')
+    expect(config.start).toEqual({ latitude: 43.3386, longitude: -1.7899 })
   })
 })
