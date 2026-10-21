@@ -1,15 +1,16 @@
-/** Shared visual language for HTML, CSS3D and canvas interfaces.
+/** Shared visual language for HTML, CSS3D and canvas interfaces (neutral greys, white accent:
+ * the Euskadi Online look is the engine default; hosts override variables, not rules).
  * Control height is a minimum; world-space hit regions keep their authored size.
  */
 export const interfaceTheme = {
   surface: '#1e1e1e',
   button: '#252525',
-  accent: '#2196f3',
+  accent: '#f5f5f5',
   background: '#121212',
   ink: '#eeeeee',
   muted: '#a6a6a6',
   line: '#444444',
-  selected: '#203547',
+  selected: '#3a3a3a',
   pressed: '#303030',
   radius: 2,
   textSize: 20,
@@ -33,7 +34,7 @@ export const interfaceControls = `
 /** Tabs share an underline-only selection, never the boxed button border. */
 export const interfaceTabStyles = `
 [role="tablist"] [role="tab"] { border:0!important;border-bottom:2px solid transparent!important;border-radius:0!important;box-shadow:none!important;background:transparent!important; }
-[role="tablist"] [role="tab"][aria-selected="true"] { border-bottom-color:var(--accent,#2196f3)!important;color:var(--ink,#eee); }
+[role="tablist"] [role="tab"][aria-selected="true"] { border-bottom-color:var(--accent,#f5f5f5)!important;color:var(--ink,#eee); }
 `
 export const monitorThemeStyles = `
 ${interfaceTabStyles}

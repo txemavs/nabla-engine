@@ -117,7 +117,7 @@ const styles = `
  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(200, 230, 255, 0.55); }
 .touch-driving-turbo.is-on {
  background: radial-gradient(circle at 35% 30%, #b8e4ff, #1a7cff 68%);
- box-shadow: 0 0 14px rgba(40, 160, 255, 0.75), inset 0 1px 0 rgba(230, 245, 255, 0.7); }
+ box-shadow: 0 0 14px rgba(255, 255, 255, 0.75), inset 0 1px 0 rgba(230, 245, 255, 0.7); }
 .touch-driving-gas { position: relative; width: 48px; height: 140px; }
 .touch-driving-rail { position: absolute; left: 50%; top: 16px; bottom: 16px; width: 4px;
  margin-left: -2px; border-radius: 2px; background: rgba(220, 232, 244, 0.16); }
