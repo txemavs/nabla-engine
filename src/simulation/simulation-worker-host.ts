@@ -327,6 +327,10 @@ export class WorkerSimulation {
     this.port.removeEventListener?.('message', this.listener)
     this.latest = null
   }
+  /** Latest snapshot, or null before the first step. */
+  get snapshotOrNull(): SimulationSnapshot | null {
+    return this.latest
+  }
   get snapshot(): SimulationSnapshot {
     if (!this.latest) throw new Error('Simulation not created')
     return this.latest

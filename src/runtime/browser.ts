@@ -1,3 +1,4 @@
+import { threadedSimulation } from '../simulation/threaded-simulation.js'
 import {
   readVehicleLights,
   writeVehicleLights,
@@ -3337,8 +3338,13 @@ export class GameRuntime {
       parentId: id,
     }))
     const added = [entity, ...hosted]
-    const modelsReady = this.view.addVehicles(added)
+    // Physics first: with the worker (`?physicsWorker=1`) the ids exist there only after its next
+    // step, and the vehicle view reads vehicle state as soon as it is registered.
     sim.addVehicles(added)
+    await threadedSimulation(sim)?.whenEntities(added.map((e) => e.id))
+    this.assertAlive()
+    if (this.session.simulation !== sim) throw new Error('Vehicle placement session ended')
+    const modelsReady = this.view.addVehicles(added)
     this.game.addVehicles(added)
     // Ships with an interior (carrier) get their helm/telemetry/map/systems/portal monitor
     // panels from the document; a carrier placed after start needs them rebuilt or its screens
