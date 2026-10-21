@@ -192,7 +192,7 @@ const PLAY_ICON =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4l13 8-13 8z"/></svg>'
 
 /**
- * Keep a menu toggle in step with the menu and the pointer lock: menu icon when closed, red «Esc»
+ * Keep a menu toggle in step with the menu and the pointer lock: menu icon when closed, red «ESC»
  * while the cursor is locked (Esc releases it), green play icon while the menu is open.
  */
 export function syncMenuToggle(
@@ -207,9 +207,10 @@ export function syncMenuToggle(
   button.classList.add('nabla-btn', 'nabla-btn--icon')
   button.classList.toggle('nabla-btn--go', mode === 'open')
   button.classList.toggle('nabla-btn--danger', mode === 'locked')
+  button.classList.toggle('nabla-btn--key', mode === 'locked')
   button.setAttribute('aria-pressed', String(state.open))
   if (mode === 'open') button.innerHTML = PLAY_ICON
-  else if (mode === 'locked') button.textContent = 'Esc'
+  else if (mode === 'locked') button.textContent = 'ESC'
   else button.innerHTML = MENU_ICON
   button.title = t(mode === 'open' ? keys.resume : mode === 'locked' ? keys.release : keys.open)
   button.setAttribute('aria-label', button.title)
