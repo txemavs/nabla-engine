@@ -159,7 +159,7 @@ export class GameRuntime {
   /**
    * Advance physics and synchronize boarding and local portal camera transitions.
    * Elapsed time is seconds, water level is metres and now is milliseconds.
-   * Preserve a queued jump until a physics tick occurs. Return a newly observed
+   * A queued jump is sent once (the simulation latches it until its next tick). Return a newly observed
    * player/vehicle portal crossing, or null when no relevant crossing occurred.
    */
   step(
@@ -175,9 +175,11 @@ export class GameRuntime {
     sim.setSurfaceAreas(this.recover.pavedAreas?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
-    const ticks = sim.stats.ticks
-    this.session.step(elapsed, { ...input, jump: input.jump || this.jumpRequested }, waterLevel)
-    if (sim.stats.ticks !== ticks) this.jumpRequested = false
+    const jump = input.jump || this.jumpRequested
+    // Sent once: the simulation latches a jump until its next physics tick (inline and worker
+    // alike), and a worker reports ticks between frames, so waiting for a tick resends it.
+    this.jumpRequested = false
+    this.session.step(elapsed, { ...input, jump }, waterLevel)
     const crossing = sim.portalEvent
     let event: typeof crossing = null
     if (crossing && crossing.sequence !== this.portalSequence) {
