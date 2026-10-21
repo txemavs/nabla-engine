@@ -1,8 +1,16 @@
 /**
- * Render clock for pipelined worker physics: the frame never waits for the worker's step. It
- * renders a time just behind the newest worker snapshot and interpolates every pose between the
- * two snapshots around that time. Snapshot times are the worker's own fixed-step clock
- * (`ticks × FIXED_STEP`), so the result does not depend on when replies arrive.
+ * One render timeline for pipelined worker physics. The frame never waits for the worker: it
+ * renders a simulation time a little behind the newest worker snapshot and blends the buffered
+ * snapshots around that time, and every render-facing read (vehicles, wheels, player, camera
+ * anchors) comes from that one blended state.
+ *
+ * - Snapshot times are the worker's fixed-step clock (`ticks × FIXED_STEP`), independent of when
+ *   replies arrive.
+ * - The render time follows `local clock + smoothed (worker time − arrival time) − delay`: the
+ *   offset is averaged over arrivals so irregular replies do not move it, corrections are eased
+ *   in over about half a second, and the render time never moves backwards.
+ * - When the buffer runs dry (render time past the newest snapshot) poses extrapolate for at
+ *   most {@link MAX_EXTRAPOLATION} seconds, then hold; nothing snaps.
  */
 import type { Transform, Vec3Tuple } from '../entity/schema.js'
 
@@ -12,44 +20,88 @@ export interface TimedSnapshot<S> {
   time: number
 }
 
-/** A pose that moves farther than this between two snapshots is a teleport: no blending. */
-export const TELEPORT_METRES = 25
+/** Snapshots kept to bracket the render time. */
+export const SNAPSHOT_BUFFER = 4
+/** Longest underrun bridged by extrapolation before poses hold, seconds. */
+export const MAX_EXTRAPOLATION = 0.05
+/** A render error larger than this (new simulation, long stall) resynchronises at once. */
+export const RESYNC_SECONDS = 0.5
+/** Faster than this between two snapshots is a teleport (relocation, respawn): no blending. */
+export const TELEPORT_SPEED = 400
 
-export class SnapshotClock<S> {
-  previous: TimedSnapshot<S> | null = null
-  latest: TimedSnapshot<S> | null = null
-  /** Simulation seconds being rendered; null until two snapshots exist. */
+export interface TimelineSample<S> {
+  a: TimedSnapshot<S>
+  b: TimedSnapshot<S>
+  /** Blend from a (0) to b (1); above 1 extrapolates past b. */
+  t: number
+}
+
+export class SnapshotTimeline<S> {
+  readonly entries: TimedSnapshot<S>[] = []
+  /** Local seconds, advanced by frames. */
+  private local = 0
+  /** Smoothed worker time minus local arrival time. */
+  private offset: number | null = null
+  /** Simulation seconds being rendered; null before the first frame with a snapshot. */
   renderTime: number | null = null
 
-  /** Record a worker snapshot. A snapshot with the same time replaces the newest one. */
+  /** @param delay How far behind the estimated worker time to render, seconds. */
+  constructor(readonly delay: number) {}
+
+  get latest(): TimedSnapshot<S> | null {
+    return this.entries[this.entries.length - 1] ?? null
+  }
+
   push(snapshot: S, time: number): void {
-    if (this.latest && time > this.latest.time) this.previous = this.latest
-    else if (this.latest && time < this.latest.time) {
-      // A new simulation (or a reset clock): start over.
-      this.previous = null
+    const last = this.latest
+    if (last && time < last.time) {
+      // A new simulation: start over.
+      this.entries.length = 0
+      this.offset = null
       this.renderTime = null
     }
-    this.latest = { snapshot, time }
+    if (last && time === last.time) this.entries[this.entries.length - 1] = { snapshot, time }
+    else this.entries.push({ snapshot, time })
+    if (this.entries.length > SNAPSHOT_BUFFER) this.entries.shift()
+    const sample = time - this.local
+    this.offset = this.offset === null ? sample : this.offset + (sample - this.offset) * 0.1
   }
 
-  /**
-   * Advance the rendered time by a frame. It stays inside [previous, latest]: behind, it catches
-   * up to the older snapshot; ahead of the newest, it holds there instead of extrapolating.
-   */
+  /** Advance the rendered time by a frame: monotonic, eased toward the estimated worker time. */
   advance(elapsed: number): void {
-    if (!this.latest) return
-    const floor = this.previous?.time ?? this.latest.time
-    const ceiling = this.latest.time
-    const next = (this.renderTime ?? floor) + Math.max(0, elapsed)
-    this.renderTime = Math.min(ceiling, Math.max(floor, next))
+    const dt = Math.max(0, elapsed)
+    this.local += dt
+    if (this.offset === null || !this.latest) return
+    const target = this.local + this.offset - this.delay
+    if (this.renderTime === null) {
+      this.renderTime = Math.min(target, this.latest.time)
+      return
+    }
+    let next = this.renderTime + dt
+    const error = target - next
+    if (Math.abs(error) > RESYNC_SECONDS) next = target
+    else next += error * Math.min(1, dt * 2)
+    this.renderTime = Math.max(this.renderTime, next)
   }
 
-  /** Blend factor between previous (0) and latest (1) at the rendered time. */
-  get alpha(): number {
-    const a = this.previous,
-      b = this.latest
-    if (!a || !b || this.renderTime === null || b.time <= a.time) return 1
-    return Math.min(1, Math.max(0, (this.renderTime - a.time) / (b.time - a.time)))
+  /** The two snapshots around the render time and the blend between them. */
+  sample(): TimelineSample<S> | null {
+    const entries = this.entries
+    if (!entries.length) return null
+    const last = entries[entries.length - 1]
+    const time = this.renderTime ?? last.time
+    if (entries.length === 1 || time <= entries[0].time) {
+      const first = entries.length === 1 ? last : entries[0]
+      return { a: first, b: first, t: 1 }
+    }
+    for (let i = 1; i < entries.length; i++) {
+      const a = entries[i - 1],
+        b = entries[i]
+      if (time <= b.time) return { a, b, t: (time - a.time) / (b.time - a.time) }
+    }
+    const a = entries[entries.length - 2]
+    const ahead = Math.min(time - last.time, MAX_EXTRAPOLATION)
+    return { a, b: last, t: 1 + ahead / (last.time - a.time) }
   }
 }
 
@@ -69,15 +121,23 @@ export function nlerpQuat(
   return [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
 }
 
-export function lerpTransform(a: Transform, b: Transform, t: number): Transform {
+/** Pose at `t` between a (0) and b (1), `span` seconds apart; a teleport shows b. */
+export function lerpTransform(a: Transform, b: Transform, t: number, span = 0): Transform {
+  if (t === 1) return b
   const d = Math.hypot(
     b.position[0] - a.position[0],
     b.position[1] - a.position[1],
     b.position[2] - a.position[2],
   )
-  if (t >= 1 || d > TELEPORT_METRES) return b
+  if (d > 1 + TELEPORT_SPEED * Math.max(span, 1 / 60)) return b
   return {
     position: lerpVec(a.position, b.position, t),
     rotation: nlerpQuat(a.rotation, b.rotation, t),
   }
+}
+
+/** Angle lerp along the shorter way (radians). */
+export function lerpAngle(a: number, b: number, t: number): number {
+  const d = Math.atan2(Math.sin(b - a), Math.cos(b - a))
+  return a + d * t
 }

@@ -335,7 +335,7 @@ export class ThreadedSimulation {
     this.throwFailure()
     if (this.disposed) return
     this.worker.pipelined = true
-    this.worker.clock.advance(elapsed)
+    this.worker.timeline.advance(elapsed)
     this.unsent += elapsed
     this.pump()
   }
@@ -659,9 +659,42 @@ export class ThreadedSimulation {
   vehicleInfo(id: string, interpolated = false): ReturnType<Simulation['vehicleInfo']> {
     const reads = this.state().vehicles[id]
     if (!reads) throw vehicleError(id)
-    const info = interpolated ? reads.infoInterpolated : reads.info
+    const info = interpolated || this.worker.pipelined ? reads.infoInterpolated : reads.info
     if ('error' in info) throw new Error(info.error)
-    return info
+    return this.worker.pipelined ? this.onRenderTimeline(id, info) : info
+  }
+  /**
+   * `driver` and `up` are world values on the worker's own blend of the newest reply; move them
+   * onto the render timeline's pose of the vehicle so a camera on the seat follows the body.
+   */
+  private onRenderTimeline(
+    id: string,
+    info: ReturnType<Simulation['vehicleInfo']>,
+  ): ReturnType<Simulation['vehicleInfo']> {
+    const worker = this.worker.newest.entities[id]?.[1]
+    if (!worker) return info
+    const shown = this.worker.entityTransform(id, true)
+    const inverse: Quat = [
+      -worker.rotation[0],
+      -worker.rotation[1],
+      -worker.rotation[2],
+      worker.rotation[3],
+    ]
+    const local = rotate(inverse, [
+      info.driver[0] - worker.position[0],
+      info.driver[1] - worker.position[1],
+      info.driver[2] - worker.position[2],
+    ])
+    const seat = rotate(shown.rotation, local)
+    return {
+      ...info,
+      driver: [
+        shown.position[0] + seat[0],
+        shown.position[1] + seat[1],
+        shown.position[2] + seat[2],
+      ],
+      up: rotate(shown.rotation, rotate(inverse, info.up)),
+    }
   }
   wheelContactInfo(id: string): ReturnType<Simulation['wheelContactInfo']> {
     return this.state().vehicles[id]?.wheelContacts ?? []
