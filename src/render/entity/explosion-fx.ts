@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 import { cullOffscreen, pixelsToWorld, SpawnBounds } from './effect-culling.js'
 import { NEVER } from './gpu-particles.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 
 /**
  * Analytic GPU explosions (WebGL): fireball, rising smoke, ground shockwave dust, embers, hot
@@ -41,6 +48,8 @@ const PUFF_VERTEX = /* glsl */ `
 attribute vec3 puffVelocity; attribute vec4 puffData; attribute vec2 puffExtra;
 uniform float fxNow; uniform float pixelScale;
 varying vec3 vEmit; varying vec4 vCover; varying float vSeed; varying float vKind;
+varying float vT; varying float vK; varying float vAge; varying float vSize;
+${SOFT_VERTEX_PARS}
 void main(){
   // puffData: birth (s, epoch-relative), life (s), size (m), kind. puffExtra: seed, ground y.
   float age = fxNow - puffData.x;
@@ -48,7 +57,7 @@ void main(){
   if (age < 0.0 || age > life) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 0.0; return; }
   float k = age / life;
   float kind = puffData.w, seed = puffExtra.x;
-  vKind = kind; vSeed = seed;
+  vKind = kind; vSeed = seed; vK = k; vAge = age; vT = 0.0;
   vec3 p = position;
   float size = puffData.z;
   vEmit = vec3(0.0); vCover = vec4(0.0);
@@ -64,6 +73,7 @@ void main(){
     vec3 red = vec3(0.55, 0.08, 0.02) * 1.0;
     vec3 c = T > 0.55 ? mix(orange, hot, (T - 0.55) / 0.45) : mix(red, orange, T / 0.55);
     vEmit = c * smoothstep(0.02, 0.25, T) * (1.0 - k);
+    vT = T * (1.0 - k * 0.5);
     float soot = smoothstep(0.75, 0.15, T);
     vCover = vec4(vec3(0.07, 0.065, 0.06), 0.82 * soot * pow(1.0 - k, 1.3));
   } else if (kind < 1.5) {
@@ -96,6 +106,8 @@ void main(){
   if (kind > 1.5 && kind < 2.5 && px < 1.6) { vEmit *= px / 1.6; px = 1.6; }
   gl_Position = projectionMatrix * view;
   gl_PointSize = px;
+  vSize = size;
+  ${softVertex('view')}
   #include <logdepthbuf_vertex>
   vec4 mvPosition = view;
   #include <fog_vertex>
@@ -103,26 +115,33 @@ void main(){
 `
 const PUFF_FRAGMENT = /* glsl */ `
 varying vec3 vEmit; varying vec4 vCover; varying float vSeed; varying float vKind;
+varying float vT; varying float vK; varying float vAge; varying float vSize;
 #include <common>
 #include <logdepthbuf_pars_fragment>
 #include <fog_pars_fragment>
+${SOFT_FRAGMENT_PARS}
 void main(){
   #include <logdepthbuf_fragment>
-  vec2 q = gl_PointCoord - 0.5;
-  float r = length(q) * 2.0;
-  if (r > 1.0) discard;
-  float soft;
-  if (vKind > 1.5 && vKind < 2.5) soft = pow(1.0 - r, 2.0);
-  else {
-    // Billowy edge: a few lobes per puff, rotated by its seed.
-    float a = atan(q.y, q.x);
-    float lobes = 0.82 + 0.1 * sin(a * 5.0 + vSeed * 40.0) + 0.08 * sin(a * 9.0 - vSeed * 23.0);
-    soft = smoothstep(lobes, lobes * 0.35, r);
+  vec3 rgb; float a;
+  if (vKind > 1.5 && vKind < 2.5) {
+    float r = length(gl_PointCoord - 0.5) * 2.0;
+    if (r > 1.0) discard;
+    float soft = pow(1.0 - r, 2.0);
+    rgb = vEmit * soft; a = 0.0;
+  } else {
+    // Procedural puff: density erodes with age, lit from above through itself, from below by fire.
+    vec4 puff = nablaPuff(gl_PointCoord, vSeed, vAge * (vSeed - 0.5) * 0.6);
+    float erosion = vKind < 0.5 ? 0.02 + 0.3 * vK : 0.02 + 0.35 * vK;
+    float shape = clamp((puff.r - erosion) * 2.2, 0.0, 1.0);
+    if (shape <= 0.001) discard;
+    float soft = nablaSoft(max(0.15, vSize * 0.4));
+    shape *= soft;
+    float sky = mix(0.45, 1.3, puff.g);
+    vec3 glow = vEmit * puff.b * 0.8;
+    vec3 emit = vKind < 0.5 ? nablaBlackbody(vT * (0.62 + 0.7 * puff.r)) * smoothstep(0.03, 0.2, vT) : glow;
+    a = vCover.a * shape;
+    rgb = vCover.rgb * sky * a + emit * shape * (vKind < 0.5 ? 1.0 - 0.6 * vK : 1.0) + (vKind < 0.5 ? glow * a : vec3(0.0));
   }
-  // Emission is brightest in the core.
-  vec3 light = vEmit * soft * (0.6 + 0.8 * (1.0 - r));
-  float a = vCover.a * soft;
-  vec3 rgb = vCover.rgb * a + light;
   #ifdef USE_FOG
     #ifdef FOG_EXP2
       float fogFactor = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
@@ -237,7 +256,7 @@ export class ExplosionEffects {
     this.puffs = new THREE.Points(
       pg,
       new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {}]),
+        uniforms: { ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog), ...softSmokeUniforms() },
         vertexShader: PUFF_VERTEX,
         fragmentShader: PUFF_FRAGMENT,
         transparent: true,
@@ -249,6 +268,7 @@ export class ExplosionEffects {
         toneMapped: false,
       }),
     )
+    softConsumer(this.puffs.material)
     this.puffs.material.uniforms.fxNow = this.now
     this.puffs.material.uniforms.pixelScale = this.pixelScale
     this.puffs.name = 'Explosion fire, smoke and dust'

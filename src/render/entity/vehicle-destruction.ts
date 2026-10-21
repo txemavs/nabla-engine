@@ -9,6 +9,14 @@ import { analyticParticles } from './gpu-particles.js'
 import { mergedFlameGeometry, TONGUE_GLSL, WreckFlames } from './wreck-flames.js'
 import { cullOffscreen } from './effect-culling.js'
 import { ExplosionEffects } from './explosion-fx.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softDepth,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 
 /** Most glass fragments alive at once (one instanced draw). */
 const MAX_SHARDS = 96
@@ -18,6 +26,30 @@ const SHARDS_PER_PANE = 24
 const SHARD_LIFE = 1.5
 /** Bounding radius of a fragment (the tetrahedron's circumradius), metres. */
 const SHARD_RADIUS = 0.035
+
+/**
+ * Flame tongue colour (WebGL): the former tongue shape, broken up by scrolling fbm noise (licks,
+ * detached tips), coloured by temperature through a black-body ramp (white-yellow root, orange
+ * body, dull red tips) and faded softly where it meets the car or the ground.
+ */
+const FLAME_REALISTIC_GLSL = /* glsl */ `#include <color_fragment>
+          float h = flameUv.y;
+          vec2 nuv = vec2(flameUv.x * 0.8 + float(gl_FrontFacing) * 0.37, h * 0.55 - flameTime * 0.85);
+          float n = texture2D(fireNoise, nuv).r;
+          float n2 = texture2D(fireNoise, nuv * 2.1 + vec2(0.13, -flameTime * 0.6)).g;
+          float sway = sin(h * 9.0 - flameTime * 8.0) * 0.08 * h + (n - 0.5) * 0.22 * h;
+          float x = abs(flameUv.x - 0.5 - sway);
+          float width = max(0.001, (1.0 - h) * 0.4 * (0.8 + 0.4 * n2));
+          float edge = 1.0 - smoothstep(width * 0.45, width, x);
+          float lick = h + (n2 - 0.5) * 0.45 * h;
+          float tip = 1.0 - smoothstep(0.55, 0.92, lick);
+          float alpha = edge * tip * smoothstep(0.0, 0.08, h);
+          // Temperature: hottest low in the core, cooling with height and towards the edges.
+          float temp = clamp((1.05 - h * 0.95) * (0.55 + 0.6 * n) * (0.45 + 0.55 * edge), 0.0, 1.0);
+          alpha *= smoothstep(0.06, 0.25, temp) * nablaSoft(0.12);
+          if (alpha < 0.02) discard;
+          diffuseColor.rgb = nablaBlackbody(temp) * 0.8 + vec3(0.12, 0.02, 0.0);
+          diffuseColor.a *= alpha * 0.85;`
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
 export class VehicleDestruction {
@@ -165,6 +197,8 @@ export class VehicleDestruction {
     this.root.add(this.fragments, this.glassRoot)
     // Beside `root`, which keeps its fixed children (fragments, glass).
     if (this.fx) this.space.add(this.fx.root)
+    // Soft smoke and fire: the depth copy between the opaque and transparent lists.
+    if (this.fx) this.space.add(softDepth.grabber)
     this.space.add(this.light)
     this.flare.intensity.value = 0
     this.flare.mesh.name = 'Explosion lens flare'
@@ -347,11 +381,18 @@ export class VehicleDestruction {
     material.onBeforeCompile = (shader) => {
       shader.uniforms.flameTime = clock
       shader.uniforms.flameAnimate = sway
+      if (merged) Object.assign(shader.uniforms, softSmokeUniforms())
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <common>',
           '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
-            (merged ? '\nattribute float flameTongue; uniform float flameAnimate;' : ''),
+            (merged
+              ? '\nattribute float flameTongue; uniform float flameAnimate;\n' + SOFT_VERTEX_PARS
+              : ''),
+        )
+        .replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\n' + (merged ? softVertex('mvPosition') : ''),
         )
         .replace(
           '#include <begin_vertex>',
@@ -364,11 +405,14 @@ export class VehicleDestruction {
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
+            (merged ? SOFT_FRAGMENT_PARS : ''),
         )
         .replace(
           '#include <color_fragment>',
-          `#include <color_fragment>
+          merged
+            ? FLAME_REALISTIC_GLSL
+            : `#include <color_fragment>
           float h = flameUv.y;
           float sway = sin(h * 9.0 - flameTime * 8.0) * 0.08 * h;
           float x = abs(flameUv.x - 0.5 - sway);
@@ -386,7 +430,8 @@ export class VehicleDestruction {
         )
     }
     material.customProgramCacheKey = () =>
-      merged ? 'vehicle-flames-merged-v1' : 'vehicle-flames-v2'
+      merged ? 'vehicle-flames-merged-v2' : 'vehicle-flames-v2'
+    if (merged) softConsumer(material)
     flameNodes(material, clock)
     const flames = new THREE.Group()
     flames.name = 'Wreck flames'
@@ -762,6 +807,7 @@ export class VehicleDestruction {
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
     this.fx?.dispose()
+    if (softDepth.grabber.parent === this.space) softDepth.grabber.removeFromParent()
     for (const fire of this.burstPool) fire.material.dispose()
     this.burstPool.length = 0
     this.warmFire?.material.dispose()
