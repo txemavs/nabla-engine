@@ -17,5 +17,6 @@ Optional immersive adapters; the existing runtime owns the simulation.
 - `../xr-object-grab.js`
 - `../xr-tracked-hands.js`
 - `../xr-menu-gesture.js`
+- `../xr-hit-test.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

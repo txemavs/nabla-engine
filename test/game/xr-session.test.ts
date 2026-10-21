@@ -119,8 +119,15 @@ test('requests an explicit AR session while retaining normal teardown', async ()
   const t = setup()
   await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
   expect(t.system.requestSession).toHaveBeenCalledWith('immersive-ar', {
-    requiredFeatures: ['unbounded', 'local-floor'],
-    optionalFeatures: ['plane-detection', 'mesh-detection', 'anchors'],
+    requiredFeatures: ['local'],
+    optionalFeatures: [
+      'unbounded',
+      'local-floor',
+      'hit-test',
+      'plane-detection',
+      'mesh-detection',
+      'anchors',
+    ],
   })
   expect(t.session.active).toBe(true)
   await t.session.exit()
@@ -170,15 +177,41 @@ test('AR uses an unbounded render space calibrated from the real floor and waits
   expect(t.xr.setReferenceSpaceType).toHaveBeenLastCalledWith('local-floor')
 })
 
-test('AR does not silently fall back to a limited session when unbounded is unsupported', async () => {
+test('AR surfaces session rejection without retrying', async () => {
   const t = setup()
   t.system.requestSession.mockRejectedValueOnce(
-    new DOMException('unbounded unavailable', 'NotSupportedError'),
+    new DOMException('ar unavailable', 'NotSupportedError'),
   )
   await expect(t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')).rejects.toThrow(
-    'unbounded unavailable',
+    'ar unavailable',
   )
   expect(t.system.requestSession).toHaveBeenCalledTimes(1)
+  expect(t.session.active).toBe(false)
+})
+
+test('mobile AR (ARCore) without unbounded keeps local-floor', async () => {
+  const t = setup()
+  t.native.requestReferenceSpace.mockImplementation(async (...args: unknown[]) => {
+    if (args[0] === 'unbounded') throw new DOMException('no', 'NotSupportedError')
+    return t.floor
+  })
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  expect(t.session.active).toBe(true)
+  expect(t.session.referenceSpaceType).toBe('local-floor')
+  expect(t.xr.setReferenceSpaceType).toHaveBeenLastCalledWith('local-floor')
+})
+
+test('mobile AR without local-floor falls back to local; VR still requires local-floor', async () => {
+  const t = setup()
+  t.native.requestReferenceSpace.mockImplementation(async (...args: unknown[]) => {
+    if (args[0] !== 'local') throw new DOMException('no', 'NotSupportedError')
+    return t.floor
+  })
+  await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar')
+  expect(t.session.referenceSpaceType).toBe('local')
+  expect(t.xr.setReferenceSpaceType).toHaveBeenLastCalledWith('local')
+  await t.session.exit()
+  await expect(t.enter()).rejects.toThrow('no')
   expect(t.session.active).toBe(false)
 })
 
@@ -285,8 +318,16 @@ test('hand tracking is opt-in and preserves AR room features', async () => {
   const t = setup()
   await t.session.enter(t.system as unknown as XRSystem, 'immersive-ar', true)
   expect(t.system.requestSession).toHaveBeenCalledWith('immersive-ar', {
-    requiredFeatures: ['unbounded', 'local-floor'],
-    optionalFeatures: ['plane-detection', 'mesh-detection', 'anchors', 'hand-tracking'],
+    requiredFeatures: ['local'],
+    optionalFeatures: [
+      'unbounded',
+      'local-floor',
+      'hit-test',
+      'plane-detection',
+      'mesh-detection',
+      'anchors',
+      'hand-tracking',
+    ],
   })
 })
 

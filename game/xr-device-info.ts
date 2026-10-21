@@ -56,7 +56,7 @@ function createInspector(summary: HTMLElement, text: HTMLElement, copy: HTMLButt
         : report.gamepadAccess
           ? 'Sin gamepads visibles. Pulsa un botón del mando para que el navegador pueda detectarlo.'
           : 'El navegador no permite consultar gamepads.',
-      'Demo AR actual: requiere unbounded y local-floor. Compatibilidad AR no garantiza esas funciones.',
+      'AR: unbounded and local-floor are optional (Quest uses unbounded; Android ARCore uses local-floor or local). hit-test is optional.',
     ].filter(Boolean)
   }
   const refresh = () => {

@@ -10,7 +10,7 @@
 
 ## XRSessionController.recordDiagnostic
 
-[Implementation, line 18](../../../../src/runtime/xr-session.ts#L18)
+[Implementation, line 20](../../../../src/runtime/xr-session.ts#L20)
 
 Bounded, explicit diagnostics. Never changes tracking, anchoring or reference transforms.
 
@@ -31,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.startDiagnostics
 
-[Implementation, line 33](../../../../src/runtime/xr-session.ts#L33)
+[Implementation, line 35](../../../../src/runtime/xr-session.ts#L35)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -46,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.diagnosticState
 
-[Implementation, line 37](../../../../src/runtime/xr-session.ts#L37)
+[Implementation, line 39](../../../../src/runtime/xr-session.ts#L39)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.exportDiagnostics
 
-[Implementation, line 50](../../../../src/runtime/xr-session.ts#L50)
+[Implementation, line 52](../../../../src/runtime/xr-session.ts#L52)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -77,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.visibilityChanged
 
-[Implementation, line 63](../../../../src/runtime/xr-session.ts#L63)
+[Implementation, line 65](../../../../src/runtime/xr-session.ts#L65)
 
 ```ts
 visibilityChanged(): void
@@ -90,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.referenceReady
 
-[Implementation, line 67](../../../../src/runtime/xr-session.ts#L67)
+[Implementation, line 69](../../../../src/runtime/xr-session.ts#L69)
 
 True once the initial tracking origin has been aligned to the real floor.
 
@@ -100,17 +100,27 @@ referenceReady(): boolean
 
 ## XRSessionController.referenceSpaceType
 
-[Implementation, line 75](../../../../src/runtime/xr-session.ts#L75)
+[Implementation, line 77](../../../../src/runtime/xr-session.ts#L77)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
 ```ts
-referenceSpaceType(): 'unbounded' | 'local-floor'
+referenceSpaceType(): 'unbounded' | 'local-floor' | 'local'
+```
+
+## XRSessionController.xrSession
+
+[Implementation, line 81](../../../../src/runtime/xr-session.ts#L81)
+
+The live XR session, for opt-in modules such as XRHitTest.
+
+```ts
+xrSession(): XRSession | null
 ```
 
 ## XRSessionController.constructor
 
-[Implementation, line 82](../../../../src/runtime/xr-session.ts#L82)
+[Implementation, line 88](../../../../src/runtime/xr-session.ts#L88)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -124,17 +134,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `JSON.parse`
 - `localStorage.getItem`
 
-## XRSessionController.constructor.callback@96
+## XRSessionController.constructor.callback@102
 
-[Implementation, line 96](../../../../src/runtime/xr-session.ts#L96)
+[Implementation, line 102](../../../../src/runtime/xr-session.ts#L102)
 
 ```ts
-callback@96(event: { at?: unknown; type?: unknown }): inferred by TypeScript; see implementation
+callback@102(event: { at?: unknown; type?: unknown }): inferred by TypeScript; see implementation
 ```
 
 ## XRSessionController.active
 
-[Implementation, line 105](../../../../src/runtime/xr-session.ts#L105)
+[Implementation, line 111](../../../../src/runtime/xr-session.ts#L111)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -144,7 +154,7 @@ active(): boolean
 
 ## XRSessionController.enter
 
-[Implementation, line 110](../../../../src/runtime/xr-session.ts#L110)
+[Implementation, line 116](../../../../src/runtime/xr-session.ts#L116)
 
 Call directly from a user gesture; never await feature detection before requesting.
 
@@ -154,6 +164,7 @@ enter(system: XRSystem, mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr', 
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `String`
 - `session.addEventListener`
 - `session.end`
 - `session.requestReferenceSpace`
@@ -163,7 +174,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.floor.addEventListener`
 - `this.recordDiagnostic`
 - `this.report`
-- `this.unbounded.addEventListener`
+- `this.unbounded?.addEventListener`
 - `this.xr.setReferenceSpaceType`
 - `this.xr.setSession`
 
@@ -173,7 +184,7 @@ Explicit throws in this body:
 
 ## XRSessionController.recenter
 
-[Implementation, line 177](../../../../src/runtime/xr-session.ts#L177)
+[Implementation, line 206](../../../../src/runtime/xr-session.ts#L206)
 
 ```ts
 recenter(): void
@@ -181,7 +192,7 @@ recenter(): void
 
 ## XRSessionController.floorReset
 
-[Implementation, line 185](../../../../src/runtime/xr-session.ts#L185)
+[Implementation, line 214](../../../../src/runtime/xr-session.ts#L214)
 
 ```ts
 floorReset(event: XRReferenceSpaceEvent): void
@@ -195,7 +206,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.trackingReset
 
-[Implementation, line 193](../../../../src/runtime/xr-session.ts#L193)
+[Implementation, line 222](../../../../src/runtime/xr-session.ts#L222)
 
 ```ts
 trackingReset(event: XRReferenceSpaceEvent): void
@@ -216,7 +227,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.installOrigin
 
-[Implementation, line 218](../../../../src/runtime/xr-session.ts#L218)
+[Implementation, line 247](../../../../src/runtime/xr-session.ts#L247)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -235,7 +246,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.update
 
-[Implementation, line 230](../../../../src/runtime/xr-session.ts#L230)
+[Implementation, line 259](../../../../src/runtime/xr-session.ts#L259)
 
 Preserve floor height; only horizontal position and yaw are recentered.
 
@@ -262,7 +273,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.updateWorldAnchor
 
-[Implementation, line 290](../../../../src/runtime/xr-session.ts#L290)
+[Implementation, line 319](../../../../src/runtime/xr-session.ts#L319)
 
 One physical room origin keeps every renderer and physics consumer in the same frame.
 
@@ -294,36 +305,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.originOffset.toArray`
 - `this.recordDiagnostic`
 
-## XRSessionController.updateWorldAnchor.callback@304
+## XRSessionController.updateWorldAnchor.callback@333
 
-[Implementation, line 304](../../../../src/runtime/xr-session.ts#L304)
+[Implementation, line 333](../../../../src/runtime/xr-session.ts#L333)
 
 ```ts
-callback@304(value): inferred by TypeScript; see implementation
+callback@333(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number.isFinite`
 
-## XRSessionController.updateWorldAnchor.callback@309
+## XRSessionController.updateWorldAnchor.callback@338
 
-[Implementation, line 309](../../../../src/runtime/xr-session.ts#L309)
+[Implementation, line 338](../../../../src/runtime/xr-session.ts#L338)
 
 ```ts
-callback@309(value, i): inferred by TypeScript; see implementation
+callback@338(value, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## XRSessionController.updateWorldAnchor.callback@338
+## XRSessionController.updateWorldAnchor.callback@367
 
-[Implementation, line 338](../../../../src/runtime/xr-session.ts#L338)
+[Implementation, line 367](../../../../src/runtime/xr-session.ts#L367)
 
 ```ts
-callback@338(anchor): inferred by TypeScript; see implementation
+callback@367(anchor): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -332,12 +343,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.diagnosticState`
 - `this.recordDiagnostic`
 
-## XRSessionController.updateWorldAnchor.callback@345
+## XRSessionController.updateWorldAnchor.callback@374
 
-[Implementation, line 345](../../../../src/runtime/xr-session.ts#L345)
+[Implementation, line 374](../../../../src/runtime/xr-session.ts#L374)
 
 ```ts
-callback@345(error: unknown): inferred by TypeScript; see implementation
+callback@374(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -347,7 +358,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.exit
 
-[Implementation, line 356](../../../../src/runtime/xr-session.ts#L356)
+[Implementation, line 385](../../../../src/runtime/xr-session.ts#L385)
 
 Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes.
 
@@ -361,7 +372,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.dispose
 
-[Implementation, line 361](../../../../src/runtime/xr-session.ts#L361)
+[Implementation, line 390](../../../../src/runtime/xr-session.ts#L390)
 
 Terminal: late permission grants are immediately ended.
 
@@ -375,7 +386,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRSessionController.ended
 
-[Implementation, line 366](../../../../src/runtime/xr-session.ts#L366)
+[Implementation, line 395](../../../../src/runtime/xr-session.ts#L395)
 
 ```ts
 ended(): void

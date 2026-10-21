@@ -13,3 +13,4 @@ export { XRMenuGesture } from '../xr-menu-gesture.js'
 export { inspectXRDevice, xrDeviceHint, type XRDeviceReport } from '../xr-device-info.js'
 
 export { ARTouchControls, type ARTouchAction } from './touch-controls.js'
+export { XRHitTest, type XRHitPose } from '../xr-hit-test.js'
