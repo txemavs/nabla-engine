@@ -7,21 +7,22 @@
 ## Module dependencies
 
 - `./smoke-density.js`
+- `./soft-smoke.js`
 - `three`
 - `./gpu-particles.js`
 - `./legacy-particles.js`
 
-## AnalyticMuzzleSmoke.callback@16
+## AnalyticMuzzleSmoke.callback@23
 
-[Implementation, line 16](../../../../../src/render/entity/muzzle-smoke.ts#L16)
+[Implementation, line 23](../../../../../src/render/entity/muzzle-smoke.ts#L23)
 
 ```ts
-callback@16(_, i): inferred by TypeScript; see implementation
+callback@23(_, i): inferred by TypeScript; see implementation
 ```
 
 ## AnalyticMuzzleSmoke.constructor
 
-[Implementation, line 22](../../../../../src/render/entity/muzzle-smoke.ts#L22)
+[Implementation, line 29](../../../../../src/render/entity/muzzle-smoke.ts#L29)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -35,11 +36,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.BufferAttribute`
 - `THREE.Points`
 - `THREE.ShaderMaterial`
+- `softConsumer`
+- `softSmokeUniforms`
+- `softVertex`
 - `this.geometry.setAttribute`
 
 ## AnalyticMuzzleSmoke.burst
 
-[Implementation, line 56](../../../../../src/render/entity/muzzle-smoke.ts#L56)
+[Implementation, line 69](../../../../../src/render/entity/muzzle-smoke.ts#L69)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -56,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticMuzzleSmoke.update
 
-[Implementation, line 68](../../../../../src/render/entity/muzzle-smoke.ts#L68)
+[Implementation, line 81](../../../../../src/render/entity/muzzle-smoke.ts#L81)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -70,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticMuzzleSmoke.particles
 
-[Implementation, line 74](../../../../../src/render/entity/muzzle-smoke.ts#L74)
+[Implementation, line 87](../../../../../src/render/entity/muzzle-smoke.ts#L87)
 
 Current positions and ages (−1 when dead), evaluated with the shader's maths.
 
@@ -86,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticMuzzleSmoke.dispose
 
-[Implementation, line 87](../../../../../src/render/entity/muzzle-smoke.ts#L87)
+[Implementation, line 100](../../../../../src/render/entity/muzzle-smoke.ts#L100)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -102,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticMuzzleSmoke.clear
 
-[Implementation, line 92](../../../../../src/render/entity/muzzle-smoke.ts#L92)
+[Implementation, line 105](../../../../../src/render/entity/muzzle-smoke.ts#L105)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -118,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticMuzzleSmoke.live
 
-[Implementation, line 97](../../../../../src/render/entity/muzzle-smoke.ts#L97)
+[Implementation, line 110](../../../../../src/render/entity/muzzle-smoke.ts#L110)
 
 Analytic GPU powder smoke: births written per burst, drift evaluated in the vertex shader.
 
@@ -128,7 +132,7 @@ live(now: number): boolean
 
 ## AnalyticMuzzleSmoke.writeBirths
 
-[Implementation, line 105](../../../../../src/render/entity/muzzle-smoke.ts#L105)
+[Implementation, line 118](../../../../../src/render/entity/muzzle-smoke.ts#L118)
 
 All 32 births against the current epoch (one 128-byte upload).
 
@@ -142,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.burst
 
-[Implementation, line 119](../../../../../src/render/entity/muzzle-smoke.ts#L119)
+[Implementation, line 132](../../../../../src/render/entity/muzzle-smoke.ts#L132)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -157,7 +161,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.update
 
-[Implementation, line 122](../../../../../src/render/entity/muzzle-smoke.ts#L122)
+[Implementation, line 135](../../../../../src/render/entity/muzzle-smoke.ts#L135)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -172,7 +176,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.particles
 
-[Implementation, line 126](../../../../../src/render/entity/muzzle-smoke.ts#L126)
+[Implementation, line 139](../../../../../src/render/entity/muzzle-smoke.ts#L139)
 
 Positions and ages (−1 when dead) at `now`.
 
@@ -188,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.dispose
 
-[Implementation, line 134](../../../../../src/render/entity/muzzle-smoke.ts#L134)
+[Implementation, line 147](../../../../../src/render/entity/muzzle-smoke.ts#L147)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -203,7 +207,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.clear
 
-[Implementation, line 137](../../../../../src/render/entity/muzzle-smoke.ts#L137)
+[Implementation, line 150](../../../../../src/render/entity/muzzle-smoke.ts#L150)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).

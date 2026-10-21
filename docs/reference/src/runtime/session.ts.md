@@ -53,6 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `Simulation`
 - `ThreadedSimulation.start`
+- `console.warn`
 - `initPhysics`
 - `physicsWorkerEnabled`
 - `simulation.dispose`
@@ -71,7 +72,7 @@ Explicit throws in this body:
 
 ## PlaySession.step
 
-[Implementation, line 87](../../../../src/runtime/session.ts#L87)
+[Implementation, line 94](../../../../src/runtime/session.ts#L94)
 
 Call once from the owning runtime's frame. Paused time is never accumulated.
 Inline physics steps synchronously; a worker-hosted simulation returns a promise the frame
@@ -91,6 +92,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.current.setInput`
 - `this.current.setWaterLevel`
 - `this.current.step`
+- `threaded.advance`
+- `threadedSimulation`
 
 Explicit throws in this body:
 
@@ -98,7 +101,7 @@ Explicit throws in this body:
 
 ## PlaySession.pause
 
-[Implementation, line 97](../../../../src/runtime/session.ts#L97)
+[Implementation, line 108](../../../../src/runtime/session.ts#L108)
 
 Clear movement commands and suspend stepping; retain the simulation for resume.
 
@@ -114,7 +117,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.resume
 
-[Implementation, line 105](../../../../src/runtime/session.ts#L105)
+[Implementation, line 116](../../../../src/runtime/session.ts#L116)
 
 Resume only a paused simulation; reject use after disposal.
 
@@ -128,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.stop
 
-[Implementation, line 111](../../../../src/runtime/session.ts#L111)
+[Implementation, line 122](../../../../src/runtime/session.ts#L122)
 
 Cancel pending initialization and release physics. Safe to repeat after disposal.
 
@@ -142,7 +145,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.dispose
 
-[Implementation, line 120](../../../../src/runtime/session.ts#L120)
+[Implementation, line 131](../../../../src/runtime/session.ts#L131)
 
 Stop and permanently close the session. Repeated disposal is harmless.
 
@@ -156,7 +159,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.assertAlive
 
-[Implementation, line 127](../../../../src/runtime/session.ts#L127)
+[Implementation, line 138](../../../../src/runtime/session.ts#L138)
 
 Enforce the terminal lifecycle state before operations that require a live owner.
 

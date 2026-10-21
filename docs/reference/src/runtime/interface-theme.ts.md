@@ -4,7 +4,8 @@
 
 [Source](../../../../src/runtime/interface-theme.ts)
 
-Shared visual language for HTML, CSS3D and canvas interfaces.
+Shared visual language for HTML, CSS3D and canvas interfaces (neutral greys, white accent:
+the Euskadi Online look is the engine default; hosts override variables, not rules).
 Control height is a minimum; world-space hit regions keep their authored size.
 
 ## Module dependencies

@@ -10,11 +10,12 @@
 - `../../entity/schema.js`
 - `./gpu-particles.js`
 - `./legacy-particles.js`
+- `./soft-smoke.js`
 - `./effect-culling.js`
 
 ## sparkPosition
 
-[Implementation, line 121](../../../../../src/render/entity/shot-sparks.ts#L121)
+[Implementation, line 128](../../../../../src/render/entity/shot-sparks.ts#L128)
 
 JS twin of `nablaSparkPath`.
 
@@ -34,7 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## sparkPosition.d
 
-[Implementation, line 128](../../../../../src/render/entity/shot-sparks.ts#L128)
+[Implementation, line 135](../../../../../src/render/entity/shot-sparks.ts#L135)
 
 ```ts
 d(x: number): inferred by TypeScript; see implementation
@@ -44,12 +45,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.exp`
 
-## sparkPosition.callback@130
+## sparkPosition.callback@137
 
-[Implementation, line 130](../../../../../src/render/entity/shot-sparks.ts#L130)
+[Implementation, line 137](../../../../../src/render/entity/shot-sparks.ts#L137)
 
 ```ts
-callback@130(i): inferred by TypeScript; see implementation
+callback@137(i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -58,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## sparkPosition.h
 
-[Implementation, line 149](../../../../../src/render/entity/shot-sparks.ts#L149)
+[Implementation, line 156](../../../../../src/render/entity/shot-sparks.ts#L156)
 
 ```ts
 h(i: number): inferred by TypeScript; see implementation
@@ -66,7 +67,7 @@ h(i: number): inferred by TypeScript; see implementation
 
 ## range
 
-[Implementation, line 255](../../../../../src/render/entity/shot-sparks.ts#L255)
+[Implementation, line 265](../../../../../src/render/entity/shot-sparks.ts#L265)
 
 ```ts
 range([lo, hi]: [number, number]): number
@@ -78,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.constructor
 
-[Implementation, line 312](../../../../../src/render/entity/shot-sparks.ts#L312)
+[Implementation, line 322](../../../../../src/render/entity/shot-sparks.ts#L322)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -102,11 +103,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `g.setAttribute`
 - `g.setIndex`
 - `pg.setAttribute`
+- `softConsumer`
 - `this.root.add`
 
 ## AnalyticShotSparks.constructor.box
 
-[Implementation, line 347](../../../../../src/render/entity/shot-sparks.ts#L347)
+[Implementation, line 357](../../../../../src/render/entity/shot-sparks.ts#L357)
 
 ```ts
 box(target: THREE.Box3): inferred by TypeScript; see implementation
@@ -118,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.constructor.pad
 
-[Implementation, line 348](../../../../../src/render/entity/shot-sparks.ts#L348)
+[Implementation, line 358](../../../../../src/render/entity/shot-sparks.ts#L358)
 
 ```ts
 pad(camera: THREE.Camera, height: number, distance: number): inferred by TypeScript; see implementation
@@ -130,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.constructor.measure
 
-[Implementation, line 355](../../../../../src/render/entity/shot-sparks.ts#L355)
+[Implementation, line 365](../../../../../src/render/entity/shot-sparks.ts#L365)
 
 ```ts
 measure(renderer: THREE.WebGLRenderer, camera: THREE.Camera): inferred by TypeScript; see implementation
@@ -141,41 +143,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.tan`
 - `renderer.getDrawingBufferSize`
 
-## AnalyticShotSparks.constructor.callback@360
+## AnalyticShotSparks.constructor.callback@370
 
-[Implementation, line 360](../../../../../src/render/entity/shot-sparks.ts#L360)
+[Implementation, line 370](../../../../../src/render/entity/shot-sparks.ts#L370)
 
 ```ts
-callback@360(renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@370(renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `measure`
 
-## AnalyticShotSparks.constructor.callback@361
+## AnalyticShotSparks.constructor.callback@371
 
-[Implementation, line 361](../../../../../src/render/entity/shot-sparks.ts#L361)
+[Implementation, line 371](../../../../../src/render/entity/shot-sparks.ts#L371)
 
 ```ts
-callback@361(renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@371(renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `measure`
 
-## AnalyticShotSparks.constructor.callback@363
+## AnalyticShotSparks.constructor.callback@374
 
-[Implementation, line 363](../../../../../src/render/entity/shot-sparks.ts#L363)
+[Implementation, line 374](../../../../../src/render/entity/shot-sparks.ts#L374)
 
 ```ts
-callback@363(): inferred by TypeScript; see implementation
+callback@374(): inferred by TypeScript; see implementation
 ```
 
 ## AnalyticShotSparks.add
 
-[Implementation, line 366](../../../../../src/render/entity/shot-sparks.ts#L366)
+[Implementation, line 377](../../../../../src/render/entity/shot-sparks.ts#L377)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -239,17 +241,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tmpV.set`
 - `tmpV.toArray`
 
-## AnalyticShotSparks.add.callback@464
+## AnalyticShotSparks.add.callback@475
 
-[Implementation, line 464](../../../../../src/render/entity/shot-sparks.ts#L464)
+[Implementation, line 475](../../../../../src/render/entity/shot-sparks.ts#L475)
 
 ```ts
-callback@464(c): inferred by TypeScript; see implementation
+callback@475(c): inferred by TypeScript; see implementation
 ```
 
 ## AnalyticShotSparks.update
 
-[Implementation, line 502](../../../../../src/render/entity/shot-sparks.ts#L502)
+[Implementation, line 513](../../../../../src/render/entity/shot-sparks.ts#L513)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -267,7 +269,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.clear
 
-[Implementation, line 514](../../../../../src/render/entity/shot-sparks.ts#L514)
+[Implementation, line 525](../../../../../src/render/entity/shot-sparks.ts#L525)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -285,7 +287,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.dispose
 
-[Implementation, line 521](../../../../../src/render/entity/shot-sparks.ts#L521)
+[Implementation, line 532](../../../../../src/render/entity/shot-sparks.ts#L532)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -307,7 +309,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## AnalyticShotSparks.livePositions
 
-[Implementation, line 533](../../../../../src/render/entity/shot-sparks.ts#L533)
+[Implementation, line 544](../../../../../src/render/entity/shot-sparks.ts#L544)
 
 Head positions of the live sparks at `now`, oldest burst first (the shader's maths).
 
@@ -325,25 +327,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.origins.subarray`
 - `this.velocities.subarray`
 
-## AnalyticShotSparks.livePositions.callback@536
+## AnalyticShotSparks.livePositions.callback@547
 
-[Implementation, line 536](../../../../../src/render/entity/shot-sparks.ts#L536)
+[Implementation, line 547](../../../../../src/render/entity/shot-sparks.ts#L547)
 
 ```ts
-callback@536(b): inferred by TypeScript; see implementation
+callback@547(b): inferred by TypeScript; see implementation
 ```
 
-## AnalyticShotSparks.livePositions.callback@537
+## AnalyticShotSparks.livePositions.callback@548
 
-[Implementation, line 537](../../../../../src/render/entity/shot-sparks.ts#L537)
+[Implementation, line 548](../../../../../src/render/entity/shot-sparks.ts#L548)
 
 ```ts
-callback@537(a, b): inferred by TypeScript; see implementation
+callback@548(a, b): inferred by TypeScript; see implementation
 ```
 
 ## AnalyticShotSparks.live
 
-[Implementation, line 556](../../../../../src/render/entity/shot-sparks.ts#L556)
+[Implementation, line 567](../../../../../src/render/entity/shot-sparks.ts#L567)
 
 Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
 the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
@@ -356,7 +358,7 @@ live(now: number): boolean
 
 ## AnalyticShotSparks.rebase
 
-[Implementation, line 562](../../../../../src/render/entity/shot-sparks.ts#L562)
+[Implementation, line 573](../../../../../src/render/entity/shot-sparks.ts#L573)
 
 Start a new float epoch at `now`: rewrite every live birth against it (rare).
 
@@ -366,12 +368,12 @@ rebase(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `attribute.clearUpdateRanges`
 - `geometry.getAttribute`
+- `markRange`
 
 ## ShotSparks.enabled
 
-[Implementation, line 598](../../../../../src/render/entity/shot-sparks.ts#L598)
+[Implementation, line 611](../../../../../src/render/entity/shot-sparks.ts#L611)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
@@ -383,7 +385,7 @@ enabled(): boolean
 
 ## ShotSparks.enabled
 
-[Implementation, line 601](../../../../../src/render/entity/shot-sparks.ts#L601)
+[Implementation, line 614](../../../../../src/render/entity/shot-sparks.ts#L614)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
@@ -395,7 +397,7 @@ enabled(enabled: boolean): inferred by TypeScript; see implementation
 
 ## ShotSparks.add
 
-[Implementation, line 604](../../../../../src/render/entity/shot-sparks.ts#L604)
+[Implementation, line 617](../../../../../src/render/entity/shot-sparks.ts#L617)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
@@ -411,7 +413,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.update
 
-[Implementation, line 607](../../../../../src/render/entity/shot-sparks.ts#L607)
+[Implementation, line 620](../../../../../src/render/entity/shot-sparks.ts#L620)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
@@ -427,7 +429,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.livePositions
 
-[Implementation, line 611](../../../../../src/render/entity/shot-sparks.ts#L611)
+[Implementation, line 624](../../../../../src/render/entity/shot-sparks.ts#L624)
 
 Positions of the live sparks at `now` (after `update(now)`).
 
@@ -443,7 +445,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.clear
 
-[Implementation, line 617](../../../../../src/render/entity/shot-sparks.ts#L617)
+[Implementation, line 630](../../../../../src/render/entity/shot-sparks.ts#L630)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
@@ -459,7 +461,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotSparks.dispose
 
-[Implementation, line 620](../../../../../src/render/entity/shot-sparks.ts#L620)
+[Implementation, line 633](../../../../../src/render/entity/shot-sparks.ts#L633)
 
 Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
 WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update

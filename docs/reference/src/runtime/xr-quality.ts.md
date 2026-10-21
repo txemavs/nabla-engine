@@ -9,7 +9,7 @@
 
 ## readXRQuality
 
-[Implementation, line 16](../../../../src/runtime/xr-quality.ts#L16)
+[Implementation, line 18](../../../../src/runtime/xr-quality.ts#L18)
 
 ```ts
 readXRQuality(): XRQualitySettings
@@ -24,7 +24,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readXRQuality.number
 
-[Implementation, line 21](../../../../src/runtime/xr-quality.ts#L21)
+[Implementation, line 23](../../../../src/runtime/xr-quality.ts#L23)
 
 ```ts
 number(n: unknown, fallback: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveXRQuality
 
-[Implementation, line 38](../../../../src/runtime/xr-quality.ts#L38)
+[Implementation, line 41](../../../../src/runtime/xr-quality.ts#L41)
 
 ```ts
 saveXRQuality(value: XRQualitySettings): void

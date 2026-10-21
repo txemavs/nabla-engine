@@ -10,10 +10,11 @@ Streaming overview uses the engine's existing tile states, without loading any e
 
 - `@nabla/engine/runtime/browser`
 - `../src/render/planet/debug.js`
+- `@nabla/engine/i18n`
 
 ## tileMapLayout
 
-[Implementation, line 5](../../../game/settings-map.ts#L5)
+[Implementation, line 6](../../../game/settings-map.ts#L6)
 
 ```ts
 tileMapLayout(tiles: readonly TileDiagnostic[]): inferred by TypeScript; see implementation
@@ -26,28 +27,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `cells.map`
 - `tiles.map`
 
-## tileMapLayout.callback@7
-
-[Implementation, line 7](../../../game/settings-map.ts#L7)
-
-```ts
-callback@7({ tile }): inferred by TypeScript; see implementation
-```
-
 ## tileMapLayout.callback@8
 
 [Implementation, line 8](../../../game/settings-map.ts#L8)
 
 ```ts
-callback@8(item): inferred by TypeScript; see implementation
+callback@8({ tile }): inferred by TypeScript; see implementation
 ```
 
-## tileMapLayout.callback@12
+## tileMapLayout.callback@9
 
-[Implementation, line 12](../../../game/settings-map.ts#L12)
+[Implementation, line 9](../../../game/settings-map.ts#L9)
 
 ```ts
-callback@12(cell): inferred by TypeScript; see implementation
+callback@9(item): inferred by TypeScript; see implementation
 ```
 
 ## tileMapLayout.callback@13
@@ -82,9 +75,17 @@ callback@15(cell): inferred by TypeScript; see implementation
 callback@16(cell): inferred by TypeScript; see implementation
 ```
 
+## tileMapLayout.callback@17
+
+[Implementation, line 17](../../../game/settings-map.ts#L17)
+
+```ts
+callback@17(cell): inferred by TypeScript; see implementation
+```
+
 ## createMapSection
 
-[Implementation, line 32](../../../game/settings-map.ts#L32)
+[Implementation, line 33](../../../game/settings-map.ts#L33)
 
 ```ts
 createMapSection(doc: Document, runtime: Pick<GameRuntime, 'terrainTiles'>): inferred by TypeScript; see implementation
@@ -95,6 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `doc.createElement`
 - `map.setAttribute`
 - `root.append`
+- `t`
 
 ## createMapSection.refresh
 

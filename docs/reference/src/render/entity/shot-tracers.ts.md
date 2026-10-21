@@ -190,12 +190,12 @@ rebase(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `attribute.clearUpdateRanges`
+- `attribute.addUpdateRange`
 - `this.geometry.getAttribute`
 
 ## ShotTracers.add
 
-[Implementation, line 192](../../../../../src/render/entity/shot-tracers.ts#L192)
+[Implementation, line 193](../../../../../src/render/entity/shot-tracers.ts#L193)
 
 GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
 
@@ -209,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotTracers.update
 
-[Implementation, line 195](../../../../../src/render/entity/shot-tracers.ts#L195)
+[Implementation, line 196](../../../../../src/render/entity/shot-tracers.ts#L196)
 
 GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
 
@@ -223,7 +223,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotTracers.clear
 
-[Implementation, line 198](../../../../../src/render/entity/shot-tracers.ts#L198)
+[Implementation, line 199](../../../../../src/render/entity/shot-tracers.ts#L199)
 
 GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
 
@@ -237,7 +237,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ShotTracers.dispose
 
-[Implementation, line 201](../../../../../src/render/entity/shot-tracers.ts#L201)
+[Implementation, line 202](../../../../../src/render/entity/shot-tracers.ts#L202)
 
 GPU tracers under WebGL; the former CPU line under WebGPU (see gpu-particles.ts).
 

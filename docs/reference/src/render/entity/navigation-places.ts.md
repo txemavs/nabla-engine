@@ -8,10 +8,11 @@
 
 - `three`
 - `../../planet/osm-snapshot.js`
+- `../../i18n/index.js`
 
 ## places
 
-[Implementation, line 12](../../../../../src/render/entity/navigation-places.ts#L12)
+[Implementation, line 13](../../../../../src/render/entity/navigation-places.ts#L13)
 
 ```ts
 places(): inferred by TypeScript; see implementation
@@ -19,7 +20,7 @@ places(): inferred by TypeScript; see implementation
 
 ## roads
 
-[Implementation, line 13](../../../../../src/render/entity/navigation-places.ts#L13)
+[Implementation, line 14](../../../../../src/render/entity/navigation-places.ts#L14)
 
 ```ts
 roads(): inferred by TypeScript; see implementation
@@ -27,7 +28,7 @@ roads(): inferred by TypeScript; see implementation
 
 ## setNavigationPlaces
 
-[Implementation, line 15](../../../../../src/render/entity/navigation-places.ts#L15)
+[Implementation, line 16](../../../../../src/render/entity/navigation-places.ts#L16)
 
 ```ts
 setNavigationPlaces(value: () => Iterable<NavigationPlace>): inferred by TypeScript; see implementation
@@ -35,7 +36,7 @@ setNavigationPlaces(value: () => Iterable<NavigationPlace>): inferred by TypeScr
 
 ## navigationPlaces
 
-[Implementation, line 18](../../../../../src/render/entity/navigation-places.ts#L18)
+[Implementation, line 19](../../../../../src/render/entity/navigation-places.ts#L19)
 
 ```ts
 navigationPlaces(): NavigationPlace[]
@@ -48,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## setNavigationRoads
 
-[Implementation, line 21](../../../../../src/render/entity/navigation-places.ts#L21)
+[Implementation, line 22](../../../../../src/render/entity/navigation-places.ts#L22)
 
 ```ts
 setNavigationRoads(value: () => Iterable<NavigationRoad>): inferred by TypeScript; see implementation
@@ -56,7 +57,7 @@ setNavigationRoads(value: () => Iterable<NavigationRoad>): inferred by TypeScrip
 
 ## navigationRoads
 
-[Implementation, line 24](../../../../../src/render/entity/navigation-places.ts#L24)
+[Implementation, line 25](../../../../../src/render/entity/navigation-places.ts#L25)
 
 ```ts
 navigationRoads(): NavigationRoad[]
@@ -69,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nearestLocality
 
-[Implementation, line 29](../../../../../src/render/entity/navigation-places.ts#L29)
+[Implementation, line 30](../../../../../src/render/entity/navigation-places.ts#L30)
 
 OSM settlement points are references, not municipal boundary polygons.
 
@@ -81,10 +82,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.hypot`
 - `places`
+- `t`
 
 ## segmentDistance
 
-[Implementation, line 42](../../../../../src/render/entity/navigation-places.ts#L42)
+[Implementation, line 47](../../../../../src/render/entity/navigation-places.ts#L47)
 
 ```ts
 segmentDistance(x: number, z: number, ax: number, az: number, bx: number, bz: number): number
@@ -98,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## polylineDistance
 
-[Implementation, line 57](../../../../../src/render/entity/navigation-places.ts#L57)
+[Implementation, line 62](../../../../../src/render/entity/navigation-places.ts#L62)
 
 ```ts
 polylineDistance(x: number, z: number, road: NavigationRoad): number
@@ -110,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nearestStreet
 
-[Implementation, line 74](../../../../../src/render/entity/navigation-places.ts#L74)
+[Implementation, line 79](../../../../../src/render/entity/navigation-places.ts#L79)
 
 Named street under the pose, or undefined when none is close enough.
 
@@ -127,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## navigationLabel
 
-[Implementation, line 99](../../../../../src/render/entity/navigation-places.ts#L99)
+[Implementation, line 104](../../../../../src/render/entity/navigation-places.ts#L104)
 
 Street when the OSM/scene road is under the car; city/locality otherwise.
 
@@ -142,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.request
 
-[Implementation, line 112](../../../../../src/render/entity/navigation-places.ts#L112)
+[Implementation, line 117](../../../../../src/render/entity/navigation-places.ts#L117)
 
 Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
 
@@ -156,7 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.request.yieldTask
 
-[Implementation, line 120](../../../../../src/render/entity/navigation-places.ts#L120)
+[Implementation, line 125](../../../../../src/render/entity/navigation-places.ts#L125)
 
 ```ts
 yieldTask(): inferred by TypeScript; see implementation
@@ -166,24 +168,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Promise`
 
-## NavigationPlaceLookup.request.yieldTask.callback@120
+## NavigationPlaceLookup.request.yieldTask.callback@125
 
-[Implementation, line 120](../../../../../src/render/entity/navigation-places.ts#L120)
+[Implementation, line 125](../../../../../src/render/entity/navigation-places.ts#L125)
 
 ```ts
-callback@120(resolve): inferred by TypeScript; see implementation
+callback@125(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `setTimeout`
 
-## NavigationPlaceLookup.request.callback@121
+## NavigationPlaceLookup.request.callback@126
 
-[Implementation, line 121](../../../../../src/render/entity/navigation-places.ts#L121)
+[Implementation, line 126](../../../../../src/render/entity/navigation-places.ts#L126)
 
 ```ts
-callback@121(): inferred by TypeScript; see implementation
+callback@126(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -197,22 +199,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `places`
 - `roads`
 - `segmentDistance`
+- `t`
 - `yieldTask`
 
-## NavigationPlaceLookup.request.callback@177
+## NavigationPlaceLookup.request.callback@182
 
-[Implementation, line 177](../../../../../src/render/entity/navigation-places.ts#L177)
+[Implementation, line 182](../../../../../src/render/entity/navigation-places.ts#L182)
 
 ```ts
-callback@177(): inferred by TypeScript; see implementation
+callback@182(): inferred by TypeScript; see implementation
 ```
 
-## NavigationPlaceLookup.request.callback@180
+## NavigationPlaceLookup.request.callback@185
 
-[Implementation, line 180](../../../../../src/render/entity/navigation-places.ts#L180)
+[Implementation, line 185](../../../../../src/render/entity/navigation-places.ts#L185)
 
 ```ts
-callback@180(): inferred by TypeScript; see implementation
+callback@185(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -221,7 +224,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.reset
 
-[Implementation, line 187](../../../../../src/render/entity/navigation-places.ts#L187)
+[Implementation, line 192](../../../../../src/render/entity/navigation-places.ts#L192)
 
 Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
 

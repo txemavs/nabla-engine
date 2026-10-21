@@ -4,29 +4,31 @@
 
 [Source](../../../game/loading-text.ts)
 
-Spanish loading text: what is happening and, when something fails, the last error, so nothing is silent.
+Loading text: what is happening and, when something fails, the last error, so nothing is silent.
 
 ## Module dependencies
 
 - `@nabla/engine/render`
+- `@nabla/engine/i18n`
 
-## spanishLoadError
+## describeLoadError
 
-[Implementation, line 12](../../../game/loading-text.ts#L12)
+[Implementation, line 13](../../../game/loading-text.ts#L13)
 
 Phrase the last streaming error for the player (kind and status come from the engine, not from parsing text).
 
 ```ts
-spanishLoadError(error: StreamError): string
+describeLoadError(error: StreamError): string
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `shortUrl`
+- `t`
 
 ## shortUrl
 
-[Implementation, line 32](../../../game/loading-text.ts#L32)
+[Implementation, line 33](../../../game/loading-text.ts#L33)
 
 ```ts
 shortUrl(url: string): string
@@ -41,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## describeLoading
 
-[Implementation, line 42](../../../game/loading-text.ts#L42)
+[Implementation, line 43](../../../game/loading-text.ts#L43)
 
 One status line and one detail line for the loading screen.
 
@@ -51,8 +53,9 @@ describeLoading(stats: LoadStats | null, diagnostics: LoadDiagnostics | null): {
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `describeLoadError`
 - `detail.join`
 - `detail.push`
 - `parts.join`
 - `parts.push`
-- `spanishLoadError`
+- `t`

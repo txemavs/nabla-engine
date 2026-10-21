@@ -570,11 +570,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.impacts.addSurface`
 - `this.onHit`
 - `this.ray.intersectObjects`
+- `this.ray.ray.direction.toArray`
 - `this.sparks.add`
 
 ## XRARWeapons.strike
 
-[Implementation, line 347](../../../../src/runtime/xr-ar-weapons.ts#L347)
+[Implementation, line 351](../../../../src/runtime/xr-ar-weapons.ts#L351)
 
 Non-firearm hit (for example a melee swing) through the same impact path as a shot:
 host onHit, sparks and marks. True when something within `distance` was hit.
@@ -593,7 +594,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRARWeapons.dispose
 
-[Implementation, line 366](../../../../src/runtime/xr-ar-weapons.ts#L366)
+[Implementation, line 370](../../../../src/runtime/xr-ar-weapons.ts#L370)
 
 Small mixed-reality host for the same carried weapons used by the game.
 

@@ -12,10 +12,11 @@ the aim baked into its asset. The engine applies, clamps and saves the choice pe
 ## Module dependencies
 
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## centredRange
 
-[Implementation, line 39](../../../game/mirror-controls.ts#L39)
+[Implementation, line 40](../../../game/mirror-controls.ts#L40)
 
 Slider limits centred on `centre` (degrees), within `range`.
 
@@ -30,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## formatMirrorDeg
 
-[Implementation, line 56](../../../game/mirror-controls.ts#L56)
+[Implementation, line 57](../../../game/mirror-controls.ts#L57)
 
 Degrees as shown to the player: sign, one decimal and a decimal comma, e.g. "+1,5°".
 
@@ -47,7 +48,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## describeMirrors
 
-[Implementation, line 63](../../../game/mirror-controls.ts#L63)
+[Implementation, line 64](../../../game/mirror-controls.ts#L64)
 
 Spanish summary, e.g. "izquierdo giro −2,0° · inclinación +1,0° | derecho giro 0,0° · …".
 
@@ -59,12 +60,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `MIRROR_SIDES.map`
 
-## describeMirrors.callback@64
+## describeMirrors.callback@65
 
-[Implementation, line 64](../../../game/mirror-controls.ts#L64)
+[Implementation, line 65](../../../game/mirror-controls.ts#L65)
 
 ```ts
-callback@64({ side, label }): inferred by TypeScript; see implementation
+callback@65({ side, label }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -73,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorBakeValues
 
-[Implementation, line 71](../../../game/mirror-controls.ts#L71)
+[Implementation, line 72](../../../game/mirror-controls.ts#L72)
 
 The values a host default (`?mirrors=`) or a bake takes, degrees per side.
 
@@ -87,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## slider
 
-[Implementation, line 80](../../../game/mirror-controls.ts#L80)
+[Implementation, line 81](../../../game/mirror-controls.ts#L81)
 
 ```ts
 slider(id: string, text: string, range: { min: number; max: number; step: number }): inferred by TypeScript; see implementation
@@ -103,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls
 
-[Implementation, line 101](../../../game/mirror-controls.ts#L101)
+[Implementation, line 102](../../../game/mirror-controls.ts#L102)
 
 Build the «Espejos» group (disabled until `bind`). `bind` returns `refresh`, which follows the
 player into and out of vehicles; call it periodically.
@@ -125,41 +126,43 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.append`
 - `rows.flatMap`
 - `status.setAttribute`
+- `t`
 
-## mirrorControls.callback@113
+## mirrorControls.callback@114
 
-[Implementation, line 113](../../../game/mirror-controls.ts#L113)
+[Implementation, line 114](../../../game/mirror-controls.ts#L114)
 
 ```ts
-callback@113({ side, label }): inferred by TypeScript; see implementation
+callback@114({ side, label }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `slider`
+- `t`
 
-## mirrorControls.callback@131
+## mirrorControls.callback@132
 
-[Implementation, line 131](../../../game/mirror-controls.ts#L131)
+[Implementation, line 132](../../../game/mirror-controls.ts#L132)
 
 ```ts
-callback@131(r): inferred by TypeScript; see implementation
+callback@132(r): inferred by TypeScript; see implementation
 ```
 
-## mirrorControls.callback@135
+## mirrorControls.callback@136
 
-[Implementation, line 135](../../../game/mirror-controls.ts#L135)
+[Implementation, line 136](../../../game/mirror-controls.ts#L136)
 
 ```ts
-callback@135(r): inferred by TypeScript; see implementation
+callback@136(r): inferred by TypeScript; see implementation
 ```
 
-## mirrorControls.callback@138
+## mirrorControls.callback@139
 
-[Implementation, line 138](../../../game/mirror-controls.ts#L138)
+[Implementation, line 139](../../../game/mirror-controls.ts#L139)
 
 ```ts
-callback@138(event): inferred by TypeScript; see implementation
+callback@139(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -168,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind
 
-[Implementation, line 142](../../../game/mirror-controls.ts#L142)
+[Implementation, line 143](../../../game/mirror-controls.ts#L143)
 
 ```ts
 bind(runtime: Partial<MirrorRuntime>): inferred by TypeScript; see implementation
@@ -183,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind.show
 
-[Implementation, line 144](../../../game/mirror-controls.ts#L144)
+[Implementation, line 145](../../../game/mirror-controls.ts#L145)
 
 ```ts
 show(adjustment: Record<string, GlassAngle>, syncSliders: boolean): inferred by TypeScript; see implementation
@@ -198,7 +201,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind.refresh
 
-[Implementation, line 159](../../../game/mirror-controls.ts#L159)
+[Implementation, line 160](../../../game/mirror-controls.ts#L160)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -210,10 +213,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `centredRange`
 - `mirrors?.sides.includes`
 - `show`
+- `t`
 
 ## mirrorControls.bind.change
 
-[Implementation, line 192](../../../game/mirror-controls.ts#L192)
+[Implementation, line 193](../../../game/mirror-controls.ts#L193)
 
 ```ts
 change(): inferred by TypeScript; see implementation
@@ -226,12 +230,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setMirrorAngle`
 - `show`
 
-## mirrorControls.bind.callback@203
+## mirrorControls.bind.callback@204
 
-[Implementation, line 203](../../../game/mirror-controls.ts#L203)
+[Implementation, line 204](../../../game/mirror-controls.ts#L204)
 
 ```ts
-callback@203(): inferred by TypeScript; see implementation
+callback@204(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

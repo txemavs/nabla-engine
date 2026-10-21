@@ -6,13 +6,16 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/corner-buttons`
 - `@nabla/engine/runtime/browser`
+- `@nabla/engine/runtime/settings-scope`
+- `@nabla/engine/i18n`
 
 ## pcVRRequested
 
-[Implementation, line 4](../../../game/vr-entry.ts#L4)
+[Implementation, line 12](../../../game/vr-entry.ts#L12)
 
-The page was opened as PC VR (`?vr=pc`, from the headset page).
+The page was opened in a VR mode (`?vr=pc` PC browser + Link, `?vr=headset` in the headset).
 
 ```ts
 pcVRRequested(search = location.search): boolean
@@ -20,80 +23,123 @@ pcVRRequested(search = location.search): boolean
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `URLSearchParams`
-- `new URLSearchParams(search).get`
+- `playModeFromSearch`
 
-## mountVREntry
+## immersiveVRSupported
 
-[Implementation, line 14](../../../game/vr-entry.ts#L14)
+[Implementation, line 23](../../../game/vr-entry.ts#L23)
 
-Enter the current world, keeping the user gesture required by WebXR. Only for the PC VR entry
-(`?vr=pc`, from the headset page): the normal game boot never touches `navigator.xr`, never
-checks session support and never loads the XR code, because an installed OpenXR runtime
-(Quest Link, SteamVR) can stall that boot.
+True only when a headset can start immersive VR here; never throws.
 
 ```ts
-mountVREntry(runtime: GameRuntime): void
+immersiveVRSupported(): Promise<boolean>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `MutationObserver`
-- `button.setAttribute`
-- `check`
-- `document.createElement`
-- `navigator.xr?.addEventListener`
-- `observer.observe`
-- `pcVRRequested`
-- `window.addEventListener`
+- `navigator.xr.isSessionSupported`
 
-## mountVREntry.place
-
-[Implementation, line 27](../../../game/vr-entry.ts#L27)
-
-```ts
-place(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `clock.prepend`
-- `document.getElementById`
-
-## mountVREntry.check
+## afterGameLoaded
 
 [Implementation, line 33](../../../game/vr-entry.ts#L33)
 
+Resolves once the page has loaded and gone idle, so the probe never competes with boot.
+
 ```ts
-check(): inferred by TypeScript; see implementation
+afterGameLoaded(): Promise<void>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `button.focus`
-- `button.remove`
-- `navigator.xr.isSessionSupported`
-- `place`
+- `Promise`
+- `idle`
+
+## afterGameLoaded.idle
+
+[Implementation, line 34](../../../game/vr-entry.ts#L34)
+
+```ts
+idle(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise`
+
+## afterGameLoaded.idle.callback@35
+
+[Implementation, line 35](../../../game/vr-entry.ts#L35)
+
+```ts
+callback@35(resolve): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `ric`
+- `setTimeout`
+
+## afterGameLoaded.idle.callback@35.callback@39
+
+[Implementation, line 39](../../../game/vr-entry.ts#L39)
+
+```ts
+callback@39(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `resolve`
+
+## afterGameLoaded.callback@43
+
+[Implementation, line 43](../../../game/vr-entry.ts#L43)
+
+```ts
+callback@43(resolve): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `window.addEventListener`
+
+## afterGameLoaded.callback@43.callback@44
+
+[Implementation, line 44](../../../game/vr-entry.ts#L44)
+
+```ts
+callback@44(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `idle`
+- `idle().then`
+
+## startVREntry
+
+[Implementation, line 53](../../../game/vr-entry.ts#L53)
+
+The casco click: requests the immersive session synchronously, inside the user gesture.
+`enter()` calls `navigator.xr.requestSession` before its first await and the XR code is
+already loaded by the support probe, so no promise hop or settings work comes first.
+
+```ts
+startVREntry(runtime: Pick<GameRuntime, 'loadedXR' | 'loadXR'>): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `URL`
+- `activePlayMode`
+- `history.replaceState`
+- `installSettingsScope`
+- `loaded.enter`
 - `runtime.loadXR`
-- `runtime.loadXR().catch`
+- `runtime.loadXR().then`
+- `url.searchParams.set`
 
-## mountVREntry.check.callback@42
-
-[Implementation, line 42](../../../game/vr-entry.ts#L42)
-
-```ts
-callback@42(): inferred by TypeScript; see implementation
-```
-
-## mountVREntry.callback@51
-
-[Implementation, line 51](../../../game/vr-entry.ts#L51)
-
-```ts
-callback@51(): inferred by TypeScript; see implementation
-```
-
-## mountVREntry.callback@51.callback@55
+## startVREntry.callback@55
 
 [Implementation, line 55](../../../game/vr-entry.ts#L55)
 
@@ -105,12 +151,98 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `xr.enter`
 
-## mountVREntry.callback@51.callback@56
+## mountVREntry
 
-[Implementation, line 56](../../../game/vr-entry.ts#L56)
+[Implementation, line 73](../../../game/vr-entry.ts#L73)
+
+One `casco` button, just left of the clock in the top-right row, shown only when
+`navigator.xr.isSessionSupported('immersive-vr')` is true. The probe runs after the game has
+loaded: an installed OpenXR runtime (Quest Link, SteamVR) can stall `navigator.xr`, and boot
+must never wait for it. On a PC page the click switches to the `headset-pc` settings profile
+(`?vr=pc`) and enters VR inside the same user gesture WebXR needs. The standalone headset
+profile (`?vr=headset`) is reached by address only; there it is the same button.
 
 ```ts
-callback@56(): inferred by TypeScript; see implementation
+mountVREntry(runtime: GameRuntime): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `afterGameLoaded`
+- `afterGameLoaded().then`
+- `button.setAttribute`
+- `document.createElement`
+- `t`
+- `window.addEventListener`
+
+## mountVREntry.say
+
+[Implementation, line 82](../../../game/vr-entry.ts#L82)
+
+```ts
+say(text: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `console.info`
+- `document.getElementById`
+
+## mountVREntry.check
+
+[Implementation, line 87](../../../game/vr-entry.ts#L87)
+
+```ts
+check(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `addCornerButton`
+- `immersiveVRSupported`
+- `runtime.loadXR`
+- `runtime.loadXR().catch`
+
+## mountVREntry.check.callback@94
+
+[Implementation, line 94](../../../game/vr-entry.ts#L94)
+
+```ts
+callback@94(): inferred by TypeScript; see implementation
+```
+
+## mountVREntry.callback@96
+
+[Implementation, line 96](../../../game/vr-entry.ts#L96)
+
+```ts
+callback@96(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setTimeout`
+- `startVREntry`
+
+## mountVREntry.callback@96.callback@100
+
+[Implementation, line 100](../../../game/vr-entry.ts#L100)
+
+```ts
+callback@100(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `say`
+- `t`
+
+## mountVREntry.callback@96.callback@102
+
+[Implementation, line 102](../../../game/vr-entry.ts#L102)
+
+```ts
+callback@102(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -118,37 +250,54 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.querySelector`
 - `document.querySelector<HTMLCanvasElement>('#game-canvas')?.focus`
 
-## mountVREntry.callback@51.callback@61
+## mountVREntry.callback@96.callback@103
 
-[Implementation, line 61](../../../game/vr-entry.ts#L61)
+[Implementation, line 103](../../../game/vr-entry.ts#L103)
 
 ```ts
-callback@61(error): inferred by TypeScript; see implementation
+callback@103(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
-- `document.getElementById`
+- `say`
+- `t`
 
-## mountVREntry.callback@51.callback@65
+## mountVREntry.callback@96.callback@104
 
-[Implementation, line 65](../../../game/vr-entry.ts#L65)
+[Implementation, line 104](../../../game/vr-entry.ts#L104)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@104(): inferred by TypeScript; see implementation
 ```
 
-## mountVREntry.callback@73
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 73](../../../game/vr-entry.ts#L73)
+- `clearTimeout`
+
+## mountVREntry.callback@109
+
+[Implementation, line 109](../../../game/vr-entry.ts#L109)
 
 ```ts
-callback@73(): inferred by TypeScript; see implementation
+callback@109(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `check`
+- `navigator.xr?.addEventListener`
+
+## mountVREntry.callback@116
+
+[Implementation, line 116](../../../game/vr-entry.ts#L116)
+
+```ts
+callback@116(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `button.remove`
 - `navigator.xr?.removeEventListener`
-- `observer.disconnect`

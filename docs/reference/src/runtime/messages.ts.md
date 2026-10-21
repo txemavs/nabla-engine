@@ -4,43 +4,39 @@
 
 [Source](../../../../src/runtime/messages.ts)
 
-Per-runtime localization with English fallback; no process-wide language state.
+Gameplay notices (toasts, HUD hints, touch labels). Their keys are the English templates, so a
+call site reads as the text it shows; Spanish and Basque live in messages.es.ts / messages.eu.ts
+and are part of the engine catalogs (src/i18n).
 
 ## Module dependencies
 
-- `./messages.es.js`
+- `../i18n/i18n.js`
+- `../i18n/engine-catalog.js`
 
 ## createRuntimeText
 
-[Implementation, line 7](../../../../src/runtime/messages.ts#L7)
+[Implementation, line 16](../../../../src/runtime/messages.ts#L16)
 
-Hosts may override individual templates. Missing translations retain readable English.
-
-```ts
-createRuntimeText(locale: RuntimeLocale = 'en', overrides: Readonly<Record<string, string>> = {}): RuntimeText
-```
-
-## createRuntimeText.callback@12
-
-[Implementation, line 12](../../../../src/runtime/messages.ts#L12)
+Text function for one runtime. `locale` defaults to the page locale (`?locale=`); hosts may
+override individual templates. Missing translations keep readable English.
 
 ```ts
-callback@12(message, ...values): inferred by TypeScript; see implementation
+createRuntimeText(locale: RuntimeLocale = activeLocale(), overrides: Readonly<Record<string, string>> = {}): RuntimeText
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(messages[message] ?? message).replace`
+- `activeLocale`
 
-## createRuntimeText.callback@12.callback@13
+## createRuntimeText.callback@20
 
-[Implementation, line 13](../../../../src/runtime/messages.ts#L13)
+[Implementation, line 20](../../../../src/runtime/messages.ts#L20)
 
 ```ts
-callback@13(token, index: string): inferred by TypeScript; see implementation
+callback@20(message, ...values): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Number`
-- `String`
+- `registeredCatalogs`
+- `translate`

@@ -10,7 +10,7 @@
 
 ## installInterfaceStyles
 
-[Implementation, line 35](../../../../src/runtime/interface-style.ts#L35)
+[Implementation, line 86](../../../../src/runtime/interface-style.ts#L86)
 
 Add the default chrome once per document (idempotent; hosts may override after it).
 

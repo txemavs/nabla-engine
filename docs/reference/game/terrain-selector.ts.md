@@ -11,10 +11,11 @@
 - `@nabla/engine/planet/terrain-source`
 - `./entry.js`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## configuredTilesUrl
 
-[Implementation, line 18](../../../game/terrain-selector.ts#L18)
+[Implementation, line 19](../../../game/terrain-selector.ts#L19)
 
 Build-time default for the tile host (VITE_NABLA_TILES_URL), else the public Atlas host.
 
@@ -24,7 +25,7 @@ configuredTilesUrl(): string
 
 ## suggestedTilesUrl
 
-[Implementation, line 26](../../../game/terrain-selector.ts#L26)
+[Implementation, line 27](../../../game/terrain-selector.ts#L27)
 
 What to show first in the tile URL field: the active one, the remembered one, the configured one.
 
@@ -34,7 +35,7 @@ suggestedTilesUrl(active: TerrainSource | null, stored: TerrainSource | null, co
 
 ## bindTerrainSelector
 
-[Implementation, line 36](../../../game/terrain-selector.ts#L36)
+[Implementation, line 37](../../../game/terrain-selector.ts#L37)
 
 ```ts
 bindTerrainSelector(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), reload: (search: string) => void = (next) => location.assign(location.pathname + next)): void
@@ -60,12 +61,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `suggestedTilesUrl`
 - `tilesLabel.append`
 
-## bindTerrainSelector.callback@39
+## bindTerrainSelector.callback@40
 
-[Implementation, line 39](../../../game/terrain-selector.ts#L39)
+[Implementation, line 40](../../../game/terrain-selector.ts#L40)
 
 ```ts
-callback@39(next): inferred by TypeScript; see implementation
+callback@40(next): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -74,7 +75,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindTerrainSelector.selected
 
-[Implementation, line 82](../../../game/terrain-selector.ts#L82)
+[Implementation, line 83](../../../game/terrain-selector.ts#L83)
 
 ```ts
 selected(): TerrainSourceKind
@@ -84,12 +85,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `TERRAIN_SOURCES.find`
 
-## bindTerrainSelector.selected.callback@83
+## bindTerrainSelector.selected.callback@84
 
-[Implementation, line 83](../../../game/terrain-selector.ts#L83)
+[Implementation, line 84](../../../game/terrain-selector.ts#L84)
 
 ```ts
-callback@83(entry): inferred by TypeScript; see implementation
+callback@84(entry): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -98,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindTerrainSelector.refresh
 
-[Implementation, line 84](../../../game/terrain-selector.ts#L84)
+[Implementation, line 85](../../../game/terrain-selector.ts#L85)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -108,12 +109,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `selected`
 
-## bindTerrainSelector.callback@91
+## bindTerrainSelector.callback@92
 
-[Implementation, line 91](../../../game/terrain-selector.ts#L91)
+[Implementation, line 92](../../../game/terrain-selector.ts#L92)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@92(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -122,4 +123,5 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `reload`
 - `saveTerrainSource`
 - `selected`
+- `t`
 - `withTerrainSource`
