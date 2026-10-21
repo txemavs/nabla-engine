@@ -467,5 +467,6 @@ export const engineEn: Readonly<Record<string, string>> = {
     'The gloves could not be loaded; keeping the basic hands.',
   'vr.virtual-reality': 'Virtual reality',
   'vr.vr-not-available': 'VR not available',
+  'vr.waiting-headset': 'Put on the headset and check that Quest Link is active',
   'vr.x-open-close-grab-the-frame-to-place-it': 'X: open/close · Grab the frame to place it',
 }
