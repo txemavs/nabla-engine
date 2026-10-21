@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { vector } from '../../entity/coords.js'
 import { readWeaponPresetSources } from './weapon-source.js'
+import { presetBucket, type PresetBucket } from '../preset-bucket.js'
 import { isHeldWeaponSource } from './held-library.js'
 
 /**
@@ -149,6 +150,8 @@ export type WeaponPreset = z.infer<typeof presetSchema>
 let cached: WeaponPreset[] | undefined
 
 /** Every preset found at startup, in menu order. An empty weapons folder yields none. */
+const buckets = new Map<string, PresetBucket>()
+
 export function weaponPresets(): WeaponPreset[] {
   if (cached) return cached
   const presets: WeaponPreset[] = []
@@ -156,7 +159,9 @@ export function weaponPresets(): WeaponPreset[] {
     // Presets with a `kind` (melee, bow, placeholder) belong to held-library.ts.
     if (isHeldWeaponSource(source.data)) continue
     try {
-      presets.push(presetSchema.parse(source.data))
+      const preset = presetSchema.parse(source.data)
+      buckets.set(preset.id, presetBucket(source.file))
+      presets.push(preset)
     } catch (error) {
       throw new Error(`Weapon preset ${source.file} is invalid`, { cause: error })
     }
@@ -168,6 +173,12 @@ export function weaponPresets(): WeaponPreset[] {
     seen.add(preset.id)
   }
   return (cached = presets)
+}
+
+/** `library` (ships with the engine) or `custom` (this machine only); undefined for unknown ids. */
+export function weaponPresetBucket(id: string): PresetBucket | undefined {
+  weaponPresets()
+  return buckets.get(id)
 }
 
 export function hasWeaponPreset(id: string): boolean {
