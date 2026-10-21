@@ -99,6 +99,10 @@
       "types": "./dist/runtime/settings-scope.d.ts",
       "import": "./dist/runtime/settings-scope.js"
     },
+    "./runtime/corner-buttons": {
+      "types": "./dist/runtime/corner-buttons.d.ts",
+      "import": "./dist/runtime/corner-buttons.js"
+    },
     "./runtime/quality-preset": {
       "types": "./dist/runtime/quality-preset.d.ts",
       "import": "./dist/runtime/quality-preset.js"
