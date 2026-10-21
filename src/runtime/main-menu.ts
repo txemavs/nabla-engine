@@ -39,11 +39,10 @@ export interface StartScreenOptions {
   /** Small lines under the title (i18n keys). */
   noticeKeys?: readonly string[]
   /**
-   * Put the notices above the screen instead of in it, e.g. over a host title drawn between them
-   * and the ENTER block: `--nabla-start-over` is that title's height, so every element keeps the
-   * same `--nabla-start-gap`.
+   * Where the notices go: `inline` (default, in the screen) or `bottom` (their own block fixed at
+   * the bottom of the viewport, `--nabla-ui-margin` from the edge).
    */
-  noticesAbove?: boolean
+  noticePosition?: 'inline' | 'bottom'
   /**
    * Language links above ENTER: every locale but `locale`, labelled `locale.<code>`. Each reloads
    * the same address with `?locale=<code>`, other parameters kept.
@@ -83,11 +82,9 @@ export function mountStartScreen(doc: Document, options: StartScreenOptions): St
     title.textContent = options.t(options.titleKey)
     panel.append(title)
   }
-  const notices = options.noticesAbove ? doc.createElement('div') : panel
-  if (notices !== panel) {
-    notices.className = 'nabla-start-lead'
-    panel.append(notices)
-  }
+  const notices = options.noticePosition === 'bottom' ? doc.createElement('div') : panel
+  if (notices !== panel) notices.className = 'nabla-start-notes'
+  const parts = notices === panel ? [panel] : [panel, notices]
   for (const key of options.noticeKeys || []) {
     const notice = doc.createElement('p')
     notice.className = 'nabla-start-notice'
@@ -148,8 +145,8 @@ export function mountStartScreen(doc: Document, options: StartScreenOptions): St
     if (entered) return
     entered = true
     win.removeEventListener('keydown', onKey, true)
-    panel.classList.remove('is-on')
-    setTimeout(() => panel.remove(), 700)
+    for (const part of parts) part.classList.remove('is-on')
+    setTimeout(() => parts.forEach((part) => part.remove()), 700)
     options.onEnter(why)
   }
   button.addEventListener('click', () => enter('button'))
@@ -159,9 +156,9 @@ export function mountStartScreen(doc: Document, options: StartScreenOptions): St
       setTimeout(show, 16)
       return
     }
-    doc.body.append(panel)
+    doc.body.append(...parts)
     void panel.offsetWidth
-    panel.classList.add('is-on')
+    for (const part of parts) part.classList.add('is-on')
     if (!options.autoEnterFlag) return
     try {
       if (sessionStorage.getItem(options.autoEnterFlag) === '1') {
@@ -256,8 +253,11 @@ export const MAIN_MENU_CSS = [
   `.nabla-start,.nabla-start button { text-shadow:0 2px 14px rgba(0,0,0,.9); }`,
   `.nabla-start-logo { display:block;max-width:60%; }`,
   `.nabla-start-title { margin:0;font:700 clamp(20px,3vw,36px)/1.1 var(--nabla-start-font,Arial,sans-serif); }`,
-  `.nabla-start-lead { position:absolute;left:0;right:0;bottom:calc(100% + 2 * var(--nabla-start-gap,1em) + var(--nabla-start-over,0px));`,
-  `display:flex;flex-direction:column;gap:.3em; }`,
+  `.nabla-start-notes { position:fixed;left:0;right:0;bottom:var(--nabla-ui-margin,12px);z-index:1004;`,
+  `display:flex;flex-direction:column;align-items:center;gap:.3em;text-align:center;color:#fff;`,
+  `font-family:var(--nabla-start-font,Arial,sans-serif);text-shadow:0 2px 14px rgba(0,0,0,.9);`,
+  `pointer-events:none;opacity:0;transition:opacity .6s ease; }`,
+  `.nabla-start-notes.is-on { opacity:1; }`,
   `.nabla-start-notice { margin:0;font-size:clamp(10px,.85vw,12px);line-height:1.35;opacity:.78; }`,
   `.nabla-start-locales { display:flex;justify-content:center;gap:1.2em;font-size:clamp(11px,.95vw,13px); }`,
   `.nabla-start-locales a { color:rgba(255,255,255,.78);text-decoration:none;letter-spacing:.08em; }`,
