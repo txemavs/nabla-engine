@@ -263,6 +263,18 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   /** Move a section into its tab, keeping the `SECTION_TABS` order inside the pane. */
   const order = (id: string) => SECTION_TABS.findIndex(([section]) => section === id)
+  /**
+   * Host configuration of the sections, on <html>: `data-settings-hidden` lists section ids the
+   * page leaves out (their tree entries go too); a section's own `data-section-order` (a number)
+   * places it before (negative) or among the engine sections.
+   */
+  const hostHidden = () => new Set((doc.documentElement.dataset.settingsHidden ?? '').split(/\s+/))
+  const rankOf = (section: HTMLElement) => {
+    const own = Number(section.dataset.sectionOrder)
+    if (Number.isFinite(own) && section.dataset.sectionOrder !== undefined) return own
+    const index = order(section.id)
+    return index < 0 ? 999 : index
+  }
   const place = (el: HTMLElement) => {
     const tab = sectionTab(el.id)
     if (!tab) return
@@ -1465,14 +1477,28 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   ]
   const sections = new Map<
     TabId,
-    { nav: HTMLElement; body: HTMLElement; toggle: HTMLButtonElement; active?: string }
+    {
+      nav: HTMLElement
+      body: HTMLElement
+      toggle: HTMLButtonElement
+      active?: string
+      /** The player chose `active`; otherwise a refold reopens the first section in order. */
+      picked?: boolean
+    }
   >()
   const mobileLayout = window.matchMedia('(max-width:600px)')
   // Narrow screens fold the tree under its own button (.settings-sections-toggle); the content
   // always follows the tree in the pane.
+  // Wide screens: tree left, content right. Narrow screens: one tree, the open section's content
+  // directly under its entry (one open at a time).
   const positionContent = (tab: TabId) => {
     const layout = sections.get(tab)
-    if (layout) paneEls.get(tab)!.append(layout.body)
+    if (!layout) return
+    const entry = layout.active
+      ? layout.nav.querySelector<HTMLElement>(`button[data-section="${CSS.escape(layout.active)}"]`)
+      : null
+    if (mobileLayout.matches && entry) entry.after(layout.body)
+    else paneEls.get(tab)!.append(layout.body)
   }
   const onMenuResize = () => {
     for (const tab of paneEls.keys()) positionContent(tab)
@@ -1505,6 +1531,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const layout = sections.get(tab)
     if (!layout) return
     layout.active = id
+    layout.body.hidden = false
     for (const group of layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section'))
       group.hidden = group.id !== id
     for (const button of layout.nav.querySelectorAll<HTMLButtonElement>('button[data-section]')) {
@@ -1554,8 +1581,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         layout.body.append(section)
       }
       const ordered = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')].sort(
-        (a, b) => (order(a.id) < 0 ? 999 : order(a.id)) - (order(b.id) < 0 ? 999 : order(b.id)),
+        (a, b) => rankOf(a) - rankOf(b),
       )
+      const hidden = hostHidden()
+      for (const section of ordered)
+        section.toggleAttribute('data-section-hidden', hidden.has(section.id))
+      const shown = ordered.filter((section) => !hidden.has(section.id))
       const items: HTMLElement[] = []
       const previousGroups = new Map(
         [...layout.nav.querySelectorAll<HTMLDetailsElement>('details[data-nav-group]')].map(
@@ -1563,13 +1594,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         ),
       )
       const groups = new Map<string, HTMLDetailsElement>()
-      for (const section of ordered) {
+      for (const section of shown) {
         const button = doc.createElement('button')
         button.type = 'button'
         button.textContent = section.dataset.sectionTitle ?? section.id
         button.dataset.section = section.id
         button.addEventListener('click', () => {
           runtime.setSidearmAimPreview?.(false)
+          // Narrow tree: the open entry folds again on a second press.
+          const current = sections.get(tab)
+          if (mobileLayout.matches && current?.active === section.id && !current.body.hidden) {
+            current.body.hidden = true
+            button.removeAttribute('aria-current')
+            return
+          }
+          if (current) current.picked = true
           chooseSection(tab, section.id)
         })
         const category = navigationGroups.find(
@@ -1597,7 +1636,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       pane.append(layout.body)
       alignSettingRows(layout.body)
       layout.nav.replaceChildren(layout.toggle, ...items)
-      const chosen = ordered.find((el) => el.id === layout.active) ?? ordered[0]
+      const chosen =
+        (layout.picked ? shown.find((el) => el.id === layout.active) : undefined) ?? shown[0]
       if (chosen) chooseSection(tab, chosen.id)
     }
   }
@@ -1613,6 +1653,26 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       })
     : null
   observer?.observe(menu!, { childList: true })
+  // Host sections added straight to a pane (or a changed `data-settings-hidden`) refold the tree.
+  const refold = () => {
+    foldSections()
+    syncTabs()
+  }
+  const paneObserver = new MutationObserver((records) => {
+    if (
+      records.some((record) =>
+        [...record.addedNodes].some(
+          (node) => node instanceof HTMLElement && node.classList.contains('menu-section'),
+        ),
+      )
+    )
+      refold()
+  })
+  for (const pane of paneEls.values()) paneObserver.observe(pane, { childList: true })
+  new MutationObserver(refold).observe(doc.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-settings-hidden'],
+  })
 
   const style = doc.createElement('style')
   style.id = 'nabla-settings-hud-layout'

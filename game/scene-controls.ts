@@ -322,10 +322,10 @@ export function bindSceneControls(
   timeSpeedLabel.textContent = '×1'
   const timeSpeedRow = document.createElement('label')
   timeSpeedRow.append(t('scene.time-speed') + ' ', timeSpeedLabel, timeSpeed)
-  const timeLive = button('time-live', 'Ahora')
+  const timeLive = button('time-live', t('scene.now'))
   timeLive.title = t('scene.use-the-real-time-the-sun-follows-the-clock')
 
-  const sky = check('planet-sky', 'Cielo')
+  const sky = check('planet-sky', t('scene.sky'))
   const sun = check('planet-sun', t('scene.sun-and-flare'))
   sun.label.title = t('scene.sun-disc-flare-and-directional-light')
 
@@ -457,10 +457,10 @@ export function bindSceneControls(
       timeInput.value = formatClockTime(minutes)
       timeNow.textContent =
         clock.mode === 'live' && rate === 1
-          ? `Hora real: ${formatClockTime(minutes)} (sigue al reloj)`
+          ? t('scene.clock-live', { time: formatClockTime(minutes) })
           : clock.mode === 'live'
-            ? `Hora en marcha ×${rate}: ${formatClockTime(minutes)}`
-            : `Hora fija: ${formatClockTime(minutes)}`
+            ? t('scene.clock-running', { rate, time: formatClockTime(minutes) })
+            : t('scene.clock-fixed', { time: formatClockTime(minutes) })
       showSpeed()
     }
     const setMinutes = (minutes: number) => {

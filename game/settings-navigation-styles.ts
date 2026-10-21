@@ -13,7 +13,8 @@ ${interfaceTabStyles}
 .settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:transparent;border:0;border-radius:0;font:inherit;color:inherit;}
 .settings-header {display:flex;align-items:center;padding:0 30px;border-bottom:1px solid #333;}
 .settings-header strong{font:16px Arial,sans-serif!important;letter-spacing:2px;min-height:0!important;margin:0!important;color:var(--muted)}
-.settings-tabs{display:flex;align-items:stretch;gap:6px;padding:0 30px;border-bottom:1px solid var(--line);overflow-x:auto}
+.settings-tabs{display:flex;align-items:stretch;gap:6px;min-width:0;padding:0 30px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.settings-tabs>.settings-tab{flex:0 0 auto}
 .settings-console .settings-tab{margin:0;padding:0 22px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--muted);font-size:20px;white-space:nowrap}
 .settings-console .settings-tab[aria-selected=true]{border-bottom-color:var(--accent);background:var(--button);color:var(--ink)}
 .settings-panes,.settings-pane{min-height:0;height:100%;overflow:hidden}
@@ -56,6 +57,10 @@ ${interfaceTabStyles}
 @media(max-width:850px){.settings-pane{grid-template-columns:205px minmax(0,1fr)}.settings-section-content{padding:25px}.settings-tabs{padding:0 8px}.settings-console .settings-tab{padding:0 14px;font-size:17px}}
 @media(max-width:520px){.settings-pane{grid-template-columns:145px minmax(0,1fr)}.settings-sections{padding:18px 6px}.settings-window .settings-sections button[data-section]{padding:9px 7px;font-size:14px}.settings-section-content{padding:20px 14px}.settings-section-content>.menu-section::before{font-size:23px}.settings-nav-group summary{padding:9px 7px;font-size:14px}.settings-sections .settings-nav-group>button{margin-left:14px;width:calc(100% - 14px);font-size:13px}.settings-key-table{font-size:13px}.settings-key-table kbd{font-size:11px;white-space:normal}.settings-window input,.settings-window select{max-width:100%;min-width:0}.settings-window label{font-size:16px}.settings-header,.settings-footer{padding:0 16px}.settings-header strong{font-size:13px!important}.settings-window .settings-console{grid-template-rows:64px 52px minmax(0,1fr) 65px}}
 
+/* Shared buttons keep their own size inside the window (24px rows, 14px labels). */
+.settings-window .nabla-btn{height:24px;min-height:24px;margin:0;padding:0 8px;font:700 14px/1 Arial,sans-serif}
+.settings-button-list{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}
+.settings-window [data-section-hidden]{display:none!important}
 /* Dense section tree: compact rows, small indents, one open group (details[name]). */
 .settings-window .settings-sections{padding:10px 8px}
 .settings-window .settings-sections button[data-section]{min-height:30px;padding:4px 10px;margin:0 0 2px;font-size:15px;line-height:1.2}
@@ -81,13 +86,13 @@ ${interfaceTabStyles}
 .settings-window .settings-row-value input[type=range]{flex:1;width:100%;max-width:380px}
 .settings-row-value output{flex:none}
 @media(max-width:600px){
+ .settings-tabs{padding:0 8px;gap:2px}
+ .settings-console .settings-tab{padding:0 12px;font-size:17px}
  .settings-pane{display:block;overflow:auto}
  .settings-sections{overflow:visible;border-right:0;border-bottom:1px solid var(--line);padding:6px 8px}
- .settings-window .settings-sections-toggle{display:flex;align-items:center;gap:8px;width:100%;margin:0;min-height:36px;font-size:16px;text-align:left}
- .settings-window .settings-sections-toggle::before{content:'☰'}
- .settings-sections:not([data-open])>:not(.settings-sections-toggle){display:none}
- .settings-sections[data-open]>.settings-sections-toggle{margin-bottom:6px}
+ .settings-window .settings-sections-toggle{display:none}
  .settings-section-content{overflow:visible;padding:12px 14px 22px;margin:0 0 12px;min-width:0}
+ .settings-sections .settings-section-content{padding:6px 0 12px 12px;margin:0 0 6px 10px;border-left:1px solid var(--line)}
  .settings-section-content>.menu-section::before{display:none}
  .settings-window label.settings-inline-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;font-size:15px}
  .settings-row-value{gap:6px;flex-wrap:wrap}

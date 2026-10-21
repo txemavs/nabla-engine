@@ -12,6 +12,7 @@ import {
   type UsbMode,
 } from './controllers.js'
 import type { UsbFeedback } from './feedback.js'
+import { t } from '../../i18n/index.js'
 
 /** Host supplies controllers/feedback; the panel never accesses a simulation or synthesizes keys. */
 export function createUsbSettingsPanel(
@@ -27,22 +28,21 @@ export function createUsbSettingsPanel(
   root.id = 'settings-usb'
   root.className = 'menu-section usb-settings'
   const legend = doc.createElement('legend')
-  legend.textContent = 'Dispositivos USB'
+  legend.textContent = t('usb.title')
   root.append(legend)
   const note = doc.createElement('p')
-  note.textContent =
-    'Conecta el volante o joystick y mueve un eje o pulsa un botón. Calibra antes de conducir. Al volver al juego, deja los controles en reposo para activarlos.'
+  note.textContent = t('usb.note')
   root.append(note)
   const status = doc.createElement('p')
   status.setAttribute('role', 'status')
   const devices = doc.createElement('select')
-  devices.setAttribute('aria-label', 'Dispositivo USB')
+  devices.setAttribute('aria-label', t('usb.device'))
   const mode = doc.createElement('select')
-  mode.setAttribute('aria-label', 'Perfil USB')
+  mode.setAttribute('aria-label', t('usb.profile'))
   for (const [value, label] of [
-    ['road', 'Conducción'],
+    ['road', t('usb.mode.road')],
     ['flight', 'Joystick / HOTAS'],
-    ['drone', 'Emisora para drones'],
+    ['drone', t('usb.mode.drone')],
   ]) {
     const o = doc.createElement('option')
     o.value = value
