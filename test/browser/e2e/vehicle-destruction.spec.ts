@@ -132,12 +132,18 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
     runtime.tick(now + 16)
     const firstExplosionMs = performance.now() - now
     const programsAfter = renderer.info.programs?.length ?? 0
-    const burning = car.children.some(
-      (child) =>
-        (child as import('three').Mesh).isMesh &&
-        (child as import('three').Mesh).material &&
-        child.visible,
-    )
+    // The fireball is the flash sphere on the wreck (WebGPU) or the GPU explosion draw (WebGL).
+    const burning =
+      car.children.some(
+        (child) =>
+          (child as import('three').Mesh).isMesh &&
+          (child as import('three').Mesh).material &&
+          child.visible,
+      ) ||
+      view.root.children.some(
+        (child) =>
+          child.name === 'Explosion effects' && child.children.some((draw) => draw.visible),
+      )
     const effectCount = view.destruction.root.children.length
     const disabled = sim.vehicleDamage('car').destroyed && sim.vehicleInfo('car').rpm === 0
     const keptMaterials = [...originalMaterials].every(

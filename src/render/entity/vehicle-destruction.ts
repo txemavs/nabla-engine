@@ -8,6 +8,7 @@ import { createLensFlare } from '../planet/lens-flare.js'
 import { analyticParticles } from './gpu-particles.js'
 import { mergedFlameGeometry, TONGUE_GLSL, WreckFlames } from './wreck-flames.js'
 import { cullOffscreen } from './effect-culling.js'
+import { ExplosionEffects } from './explosion-fx.js'
 
 /** Most glass fragments alive at once (one instanced draw). */
 const MAX_SHARDS = 96
@@ -142,6 +143,14 @@ export class VehicleDestruction {
   private readonly shardDummy = new THREE.Object3D()
   /** Local bounds of the live fragments, refreshed each update (for off-screen culling). */
   private readonly shardBounds = new THREE.Box3()
+  /**
+   * GPU explosions, fragments and glass (WebGL). The WebGPU backend keeps the former flash
+   * sphere and CPU glass (its effect twins read CPU state).
+   */
+  private readonly fx = analyticParticles() ? new ExplosionEffects() : undefined
+  /** Ages of the GPU blasts still lighting the scene (light and lens flash only). */
+  private readonly flashes: { age: number; scale: number; position: THREE.Vector3 }[] = []
+  private readonly blastCenter = new THREE.Vector3()
   constructor(private readonly space: THREE.Group) {
     this.debris = new WreckDebris(space)
     this.balloons = new TrunkBalloons(space)
@@ -154,6 +163,8 @@ export class VehicleDestruction {
       box: (target) => target.copy(this.shardBounds),
     })
     this.root.add(this.fragments, this.glassRoot)
+    // Beside `root`, which keeps its fixed children (fragments, glass).
+    if (this.fx) this.space.add(this.fx.root)
     this.space.add(this.light)
     this.flare.intensity.value = 0
     this.flare.mesh.name = 'Explosion lens flare'
@@ -183,7 +194,9 @@ export class VehicleDestruction {
         node.visible = false
       }
     })
-    for (const anchor of detached.slice(0, 8)) {
+    // Four burning pieces per wreck (formerly eight): each costs a flame and a smoke draw, and the
+    // blast's own smoke column now carries the look.
+    for (const anchor of detached.slice(0, this.fx ? 4 : 8)) {
       if (this.debrisFires.length >= 48) break
       const clock = { value: 0 },
         { flames, material, tongues } = this.createFlames(clock)
@@ -243,6 +256,17 @@ export class VehicleDestruction {
     flames.position.y += 0.3
     this.root.add(smoke.root)
     this.burns.set(id, { object, fire, flames, flameMaterial, tongues, smoke, age: 0, clock })
+    if (this.fx) {
+      fire.visible = false
+      const box = new THREE.Box3().setFromObject(object)
+      const center = box.getCenter(this.blastCenter)
+      const ground = new THREE.Vector3(center.x, box.min.y, center.z)
+      this.space.worldToLocal(center)
+      this.space.worldToLocal(ground)
+      center.y = ground.y + Math.min(0.9, (center.y - ground.y) * 0.9)
+      this.fx.explode(center, ground.y)
+      this.flashes.push({ age: 0, scale: 1, position: center.clone() })
+    }
   }
   /**
    * The vehicle explosion's fireball, light and lens flash at `position` (scene space), `scale`
@@ -403,6 +427,9 @@ export class VehicleDestruction {
     this.warmSmoke ??= new ExhaustSmoke(this.space, this.space)
     this.warmSmoke.warmUp(true)
     this.root.add(this.warmFire, this.warmSmoke.root, this.warmFlames.flames)
+    const fxWarm = this.fx?.warmObjects() ?? []
+    const fxVisible = fxWarm.map((o) => o.visible)
+    for (const o of fxWarm) o.visible = true
     try {
       await renderer.compileAsync(scene, camera)
       // A draw also warms transparent front/back passes and uploads effect buffers.
@@ -410,7 +437,13 @@ export class VehicleDestruction {
       target.texture.colorSpace = renderer.outputColorSpace
       const previous = renderer.getRenderTarget()
       const culled = new Map<THREE.Object3D, boolean>()
-      for (const root of [parts, this.warmFire, this.warmSmoke.root, this.warmFlames.flames])
+      for (const root of [
+        parts,
+        this.warmFire,
+        this.warmSmoke.root,
+        this.warmFlames.flames,
+        ...fxWarm,
+      ])
         root.traverse((node) => {
           culled.set(node, node.frustumCulled)
           node.frustumCulled = false
@@ -431,9 +464,11 @@ export class VehicleDestruction {
       this.warmSmoke.warmUp(false)
       this.warmSmoke.root.removeFromParent()
       this.warmFlames.flames.removeFromParent()
+      fxWarm.forEach((o, i) => (o.visible = fxVisible[i]))
     }
   }
   glass(point: THREE.Vector3, direction: THREE.Vector3): void {
+    if (this.fx) return this.fx.glass(point, direction)
     for (let i = 0; i < SHARDS_PER_PANE; i++) {
       // Past the limit the oldest fragment makes room.
       if (this.shardCount >= MAX_SHARDS) {
@@ -455,7 +490,7 @@ export class VehicleDestruction {
   }
   /** Live glass fragments (tests and tools). */
   get shardsAlive(): number {
-    return this.shardCount
+    return this.fx ? this.fx.shardsAlive : this.shardCount
   }
   update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
     for (const [id, entry] of this.damageSmoke) {
@@ -503,18 +538,22 @@ export class VehicleDestruction {
           : burn.age < explosionTuning.flameSeconds
             ? 5 + Math.sin(burn.age * 17) * 2
             : 0
-      if (intensity > this.light.intensity) {
+      if (!this.fx && intensity > this.light.intensity) {
         this.light.intensity = intensity
         burn.fire.getWorldPosition(this.light.position)
         this.space.worldToLocal(this.light.position)
       }
-      if (burn.age < 0.25) {
+      if (this.fx && burn.age >= 0.4 && intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        this.light.position.copy(burn.flames.position)
+      }
+      if (!this.fx && burn.age < 0.25) {
         this.flare.intensity.value = 3 * (1 - burn.age / 0.25)
         burn.fire.getWorldPosition(this.flarePoint)
         this.flarePoint.y += 0.4
       }
       const flash = burn.age < 0.4
-      burn.fire.visible = flash
+      burn.fire.visible = flash && !this.fx
       burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
       // Merged tongues sway in the vertex shader from the same age.
       burn.tongues?.updateBounds()
@@ -572,6 +611,50 @@ export class VehicleDestruction {
       }
     }
     this.updateShards(dt)
+    if (this.fx) {
+      this.fx.update(dt)
+      this.updateFlashes(dt)
+    }
+  }
+  /**
+   * Blast light: a 30 ms rise to a white-yellow peak, an exponential fall through orange (the
+   * fireball cooling), plus the lens flash. One shared lamp; the brightest blast owns it.
+   */
+  private updateFlashes(dt: number): void {
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const f = this.flashes[i]
+      f.age += dt
+      if (f.age > 1.2) {
+        this.flashes.splice(i, 1)
+        continue
+      }
+      const rise = Math.min(1, f.age / 0.03)
+      const intensity = 70 * f.scale * rise * Math.exp(-f.age / 0.16)
+      if (intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        this.light.position.copy(f.position)
+        this.light.position.y += 0.6 * f.scale
+        // White-yellow at the peak, orange as the fireball cools.
+        this.light.color.setRGB(
+          1,
+          0.55 + 0.35 * Math.exp(-f.age / 0.1),
+          0.15 + 0.45 * Math.exp(-f.age / 0.08),
+        )
+        this.light.distance = 8 + 14 * f.scale * Math.exp(-f.age / 0.3)
+      }
+      if (f.age < 0.25) {
+        const flare = 3 * f.scale * (1 - f.age / 0.25)
+        if (flare > this.flare.intensity.value) {
+          this.flare.intensity.value = flare
+          this.flarePoint.copy(f.position)
+          this.flarePoint.y += 0.4 * f.scale
+        }
+      }
+    }
+    if (!this.flashes.length && this.light.intensity > 0) {
+      this.light.color.set('#ff9b22')
+      this.light.distance = 8
+    }
   }
   /**
    * Same motion and matrices as the former per-object fragments (age, then `p += v·dt` and
@@ -667,6 +750,8 @@ export class VehicleDestruction {
     this.fragments.count = 0
     this.light.intensity = 0
     this.flare.intensity.value = 0
+    this.flashes.length = 0
+    this.fx?.clear()
   }
   dispose(): void {
     this.clear()
@@ -676,6 +761,7 @@ export class VehicleDestruction {
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
+    this.fx?.dispose()
     for (const fire of this.burstPool) fire.material.dispose()
     this.burstPool.length = 0
     this.warmFire?.material.dispose()
