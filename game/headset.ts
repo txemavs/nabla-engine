@@ -1,5 +1,6 @@
 import { arMode } from './ar-mode.js'
 import { mountXRDeviceInfo } from './xr-device-info.js'
+import { t } from '@nabla/engine/i18n'
 /** Two self-contained entry cards. Supported AR is prepared in advance so
  * the Enter handler keeps the original user activation for WebXR. */
 const place = document.querySelector<HTMLSelectElement>('#xr-place')!
@@ -32,10 +33,10 @@ const update = () => {
 mountXRDeviceInfo(document.querySelector<HTMLElement>('#ar-panel')!)
 const mode = arMode()
 const modeSelector = document.createElement('select')
-modeSelector.setAttribute('aria-label', 'Modo de realidad aumentada')
+modeSelector.setAttribute('aria-label', t('headset.augmented-reality-mode'))
 for (const [value, label] of [
-  ['headset', 'AR para casco'],
-  ['mobile', 'AR para móvil · experimental'],
+  ['headset', t('headset.ar-for-headset')],
+  ['mobile', t('headset.ar-for-phone-experimental')],
 ]) {
   const option = document.createElement('option')
   option.value = value
@@ -52,7 +53,7 @@ modeSelector.addEventListener('change', () => {
 let arReady: Promise<void> | undefined
 function prepareAR(): Promise<void> {
   return (arReady ??= (async () => {
-    status.textContent = 'Preparando el entorno AR…'
+    status.textContent = t('headset.preparing-the-ar-environment')
     // Reuse the existing demo controls and application, without a second page or iframe.
     const { default: markup } = await import('./ar.html?raw')
     const template = new DOMParser().parseFromString(markup, 'text/html')
@@ -69,7 +70,8 @@ function prepareAR(): Promise<void> {
       canvas.hidden = !active
       if (!active) enter.focus()
     })
-    enter.textContent = mode === 'mobile' ? 'Entrar en AR móvil' : 'Entrar en AR para casco'
+    enter.textContent =
+      mode === 'mobile' ? t('headset.enter-phone-ar') : t('headset.enter-headset-ar')
     status.textContent = ''
   })().catch((error) => {
     status.textContent = `No se ha podido preparar AR: ${String(error)}. Recarga para intentarlo de nuevo.`
@@ -90,12 +92,14 @@ async function checkSupport() {
   const [vr, ar] = await Promise.all([supported('immersive-vr'), supported('immersive-ar')])
   ride.setAttribute('aria-disabled', String(!vr))
   ride.tabIndex = vr ? 0 : -1
-  ride.textContent = vr ? 'Entrar en realidad virtual' : 'VR no compatible en este navegador'
+  ride.textContent = vr
+    ? t('headset.enter-virtual-reality')
+    : t('headset.vr-not-supported-in-this-browser')
   pcVR.hidden = !vr
   if (ar) {
-    enter.textContent = 'Preparando realidad aumentada…'
+    enter.textContent = t('headset.preparing-augmented-reality')
     await prepareAR()
-  } else enter.textContent = 'AR no compatible en este navegador'
+  } else enter.textContent = t('headset.ar-not-supported-in-this-browser')
 }
 void checkSupport()
 place.addEventListener('change', update)

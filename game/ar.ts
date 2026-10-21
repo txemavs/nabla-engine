@@ -15,6 +15,7 @@ import { ARModel, DEFAULT_MODEL_MANIFEST } from './ar-model.js'
 import { ARRoom } from './ar-room.js'
 import { GameAR } from '@nabla/engine/ar'
 import { XRARWeapons } from '@nabla/engine/ar/weapons'
+import { t } from '@nabla/engine/i18n'
 
 // Optional embedding in the HeadSet launcher. Standalone ar.html keeps its preview.
 let hostSessionChanged: ((active: boolean) => void) | undefined
@@ -92,8 +93,8 @@ const loadModel = async () => {
       modelStatus.textContent = `R/C listo · 1:${rcScale.value}`
       room.setMessage(
         kind === 'f14'
-          ? 'F14: seta izq. gas/timón · derecha cabeceo/alabeo · B alas lento/rápido · agarre para lanzar'
-          : 'R/C: seta izq. gas/giro · derecha freno · agarre para coger',
+          ? t('ar.f14-left-stick-throttle-rudder-right-pitch-roll')
+          : t('ar.r-c-left-stick-throttle-turn-right-brake-grip-to'),
       )
       return
     }
@@ -104,9 +105,9 @@ const loadModel = async () => {
           : modelSource.value === 'file'
             ? modelFile.files?.[0]
             : modelUrl.value.trim()
-      if (!source) throw new Error('Elige un archivo o una URL en el menú antes de entrar en AR.')
-      modelStatus.textContent = 'Cargando maqueta…'
-      room.setMessage('Cargando maqueta…')
+      if (!source) throw new Error(t('ar.choose-a-file-or-a-url-in-the-menu-before-enteri'))
+      modelStatus.textContent = t('ar.loading-model')
+      room.setMessage(t('ar.loading-model'))
       await model.load(source)
       model.place(camera)
       if (modelSource.value === 'default') await model.loadNeighborhood()
@@ -146,8 +147,8 @@ const toggleControl = () => {
   rc.controls.place(camera)
   room.setMessage(
     rc.controls.enabled
-      ? 'Agarra el volante: gatillo derecho gas, izquierdo freno. Moto: gira el puño.'
-      : 'Conducción con setas.',
+      ? t('ar.grab-the-wheel-right-trigger-throttle-left-brake')
+      : t('ar.driving-with-thumbsticks'),
   )
   return rc.controls.enabled
 }
@@ -172,7 +173,7 @@ const nextScale = () => {
     )
       break
   }
-  room.setMessage('Escala para el próximo vehículo que añadas.')
+  room.setMessage(t('ar.scale-for-the-next-vehicle-you-add'))
   return '1:' + rcScale.value
 }
 void balls.ready.catch(report)
@@ -282,10 +283,10 @@ try {
     collisionMode = saved as CollisionMode
 } catch {}
 const collisionLabels = {
-  auto: 'Auto: habitación + mapa',
-  mesh: 'Malla habitación',
-  planes: 'Planos habitación',
-  map: 'Solo mapa',
+  auto: t('ar.auto-room-map'),
+  mesh: t('ar.room-mesh'),
+  planes: t('ar.room-planes'),
+  map: t('ar.map-only'),
 }
 const applyCollisionMode = () => room.setSource(collisionMode === 'map' ? 'auto' : collisionMode)
 applyCollisionMode()
@@ -364,7 +365,7 @@ const addBow = async () => {
     await bowReady
     if (generation !== bowGeneration) return
     bow.spawn(camera)
-    room.setMessage('Arco: agarre en empuñadura; con la otra mano agarra la cuerda, tira y suelta.')
+    room.setMessage(t('ar.bow-grip-the-handle-with-the-other-hand-grab-the'))
   } catch (error) {
     bowReady = undefined
     report(error)
@@ -380,8 +381,8 @@ screen.mainMenu = () => [
       const added = weapons.loadout.addPistol()
       room.setMessage(
         added
-          ? 'Pistola añadida a la funda. Cógela con agarre.'
-          : 'Ya tienes las dos pistolas. Puedes recogerlas o retirarlas en la papelera.',
+          ? t('ar.pistol-added-to-the-holster-take-it-with-grip')
+          : t('ar.you-already-have-both-pistols-pick-them-up-or-dr'),
       )
     },
   },
@@ -390,12 +391,12 @@ screen.mainMenu = () => [
     label: 'Canasta',
     run: () => {
       hoop.place(camera)
-      room.setMessage('Agarra la base negra para colocar la canasta. Pulsa su botón para fijarla.')
+      room.setMessage(t('ar.grab-the-black-base-to-place-the-hoop-press-its'))
     },
   },
   {
     id: 'bow',
-    label: bowLoading ? 'Cargando arco…' : 'Añadir arco',
+    label: bowLoading ? t('ar.loading-bow') : t('ar.add-bow'),
     run: () => {
       void addBow()
     },
@@ -405,7 +406,7 @@ screen.mainMenu = () => [
     label: 'Helicóptero',
     run: () => screen.navigate('experimental'),
   },
-  { id: 'ball', label: 'Añadir balón', run: () => roomAction(3) },
+  { id: 'ball', label: t('ar.add-ball'), run: () => roomAction(3) },
   {
     id: 'model',
     label: 'Mapa',
@@ -414,11 +415,11 @@ screen.mainMenu = () => [
       if (!model.root) addModel()
     },
   },
-  { id: 'scan', label: 'Escanear habitación', run: () => roomAction(0) },
+  { id: 'scan', label: t('ar.scan-room'), run: () => roomAction(0) },
   { id: 'environment', label: 'Entorno', run: () => screen.navigate('environment') },
   {
     id: 'surfaces',
-    label: room.surfacesVisible ? 'Ocultar superficies' : 'Ver superficies',
+    label: room.surfacesVisible ? t('ar.hide-surfaces') : t('ar.show-surfaces'),
     run: () => roomAction(1),
   },
 ]
@@ -432,7 +433,7 @@ const freeEnvironment = () => {
   rc.clear()
   balls.reset()
   modelSelectionChanged = true
-  modelStatus.textContent = 'Objetos retirados. Escaneo y ajustes conservados.'
+  modelStatus.textContent = t('ar.objects-removed-scan-and-settings-kept')
   room.setMessage(modelStatus.textContent)
 }
 const sendTrackingReport = async () => {
@@ -444,43 +445,46 @@ const sendTrackingReport = async () => {
       headers: { 'Content-Type': 'application/json' },
       body,
     })
-    if (!response.ok) throw new Error('No hay receptor local')
-    room.setMessage('Informe de seguimiento enviado. Ya puedes avisar.')
-    status.textContent = 'Informe de seguimiento enviado.'
+    if (!response.ok) throw new Error(t('ar.no-local-receiver'))
+    room.setMessage(t('ar.tracking-report-sent-you-can-tell-us-now'))
+    status.textContent = t('ar.tracking-report-sent')
   } catch {
     try {
       await navigator.clipboard.writeText(body)
-      room.setMessage('Informe copiado. Pégalo en el chat.')
-      status.textContent = 'Informe copiado.'
+      room.setMessage(t('ar.report-copied-paste-it-in-the-chat'))
+      status.textContent = t('ar.report-copied')
     } catch {
       const link = document.createElement('a')
       link.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
       link.download = 'nabla-xr-tracking.json'
       link.click()
       setTimeout(() => URL.revokeObjectURL(link.href), 1000)
-      status.textContent = 'Informe descargado.'
+      status.textContent = t('ar.report-downloaded')
     }
   }
 }
 const reportButton = document.createElement('button')
-reportButton.textContent = 'Enviar diagnóstico de seguimiento'
+reportButton.textContent = t('ar.send-tracking-diagnostics')
 reportButton.addEventListener('click', () => {
   void sendTrackingReport()
 })
 if (!document.getElementById('headset-launcher')) enter.parentElement!.append(reportButton)
 let lastRoomDiagnostic = -Infinity
 screen.environmentMenu = () => [
-  { label: 'Dispositivo y controles', run: () => room.setMessage(deviceInfo.lines().join(' · ')) },
+  {
+    label: t('ar.device-and-controls'),
+    run: () => room.setMessage(deviceInfo.lines().join(' · ')),
+  },
   ...environmentOptions(),
   {
-    label: 'Iniciar prueba Meta',
+    label: t('ar.start-meta-test'),
     run: () => {
       xr.session.startDiagnostics()
-      room.setMessage('Captura activa. Pulsa Meta, vuelve y envía el informe.')
+      room.setMessage(t('ar.capture-on-press-meta-come-back-and-send-the-rep'))
     },
   },
   {
-    label: 'Enviar diagnóstico',
+    label: t('ar.send-diagnostics'),
     run: () => {
       void sendTrackingReport()
     },
@@ -491,7 +495,7 @@ screen.environmentMenu = () => [
     run: () =>
       room.setSource(room.source === 'auto' ? 'mesh' : room.source === 'mesh' ? 'planes' : 'auto'),
   },
-  { label: 'Liberar memoria', run: freeEnvironment },
+  { label: t('ar.free-memory'), run: freeEnvironment },
   { label: `Reiniciar encestes (${hoop.score})`, run: () => hoop.resetScore() },
 ]
 const spawnDrone = async () => {
@@ -500,32 +504,30 @@ const spawnDrone = async () => {
   if (generation !== droneGeneration) return
   rc.clear()
   if (await drone.spawnModel(camera, '/library/aircraft/littlebird/littlebird.glb'))
-    room.setMessage(
-      'Helicóptero: arma motores en el monitor. Izq. altura/giro; der. avance/lateral. Y foco · X monitor (mantener 2 s para acercar).',
-    )
+    room.setMessage(t('ar.helicopter-arm-motors-on-the-monitor-left-height'))
 }
 screen.experimentalMenu = () => [
   {
-    label: drone.root ? 'Nuevo helicóptero (sustituir)' : 'Añadir helicóptero',
+    label: drone.root ? t('ar.new-helicopter-replace') : t('ar.add-helicopter'),
     run: () => {
       void spawnDrone().catch(report)
     },
   },
   {
-    label: drone.armed ? 'Desarmar motores' : 'Armar motores',
+    label: drone.armed ? t('ar.disarm-motors') : t('ar.arm-motors'),
     run: () => drone.setArmed(!drone.armed),
   },
   {
-    label: `Modo: ${drone.mode === 'angle' ? 'Angle · estabilizado' : 'Acro · manual'}`,
+    label: `Modo: ${drone.mode === 'angle' ? t('ar.angle-stabilised') : t('ar.acro-manual')}`,
     run: () => drone.setMode(drone.mode === 'angle' ? 'acro' : 'angle'),
   },
   {
-    label: drone.spotlightEnabled ? 'Foco: Sí · Y' : 'Foco: No · Y',
+    label: drone.spotlightEnabled ? t('ar.torch-yes-y') : t('ar.torch-no-y'),
     run: () => drone.toggleSpotlight(),
   },
-  { label: 'Recuperar aquí (desarma)', run: () => drone.reset(camera) },
+  { label: t('ar.recover-here-disarms'), run: () => drone.reset(camera) },
   {
-    label: 'Retirar helicóptero',
+    label: t('ar.remove-helicopter'),
     run: () => {
       droneGeneration++
       drone.clear()
@@ -548,7 +550,7 @@ screen.mapMenu = () => {
   if (!cells)
     return [
       {
-        label: modelLoading ? 'Cargando Zaisa…' : 'Cargar Zaisa',
+        label: modelLoading ? t('ar.loading-zaisa') : t('ar.load-zaisa'),
         run: () => {
           if (!modelLoading) addModel()
         },
@@ -560,11 +562,11 @@ screen.mapMenu = () => {
       label: `Actual: ${cells.current}`,
       run: () => room.setMessage(`Celda actual: ${cells.current}`),
     },
-    { label: 'Norte ↑', run: () => navigateMap(x, y - 1) },
+    { label: t('ar.north'), run: () => navigateMap(x, y - 1) },
     { label: 'Zaisa', run: () => navigateMap(16223, 11998) },
-    { label: 'Oeste ←', run: () => navigateMap(x - 1, y) },
-    { label: 'Sur ↓', run: () => navigateMap(x, y + 1) },
-    { label: 'Este →', run: () => navigateMap(x + 1, y) },
+    { label: t('ar.west'), run: () => navigateMap(x - 1, y) },
+    { label: t('ar.south'), run: () => navigateMap(x, y + 1) },
+    { label: t('ar.east-to'), run: () => navigateMap(x + 1, y) },
     ...cells.loaded.map((key) => ({
       label: `${key === cells.current ? '✓ ' : ''}Cargada: ${key}`,
       run: () => {
@@ -580,11 +582,11 @@ const radioVehicles: {
   label: string
 }[] = [
   { kind: 's3', label: 'S3 bestia' },
-  { kind: 'vfr', label: 'Moto VFR' },
-  { kind: 'truck', label: 'Camión + remolque' },
+  { kind: 'vfr', label: t('ar.vfr-motorbike') },
+  { kind: 'truck', label: t('ar.truck-trailer') },
   ...(hasVehiclePreset('bmw') ? [{ kind: 'bmw' as const, label: 'BMW' }] : []),
   { kind: 'f14', label: 'F14 Tomcat' },
-  { kind: 'forklift', label: 'Toro · tres palancas' },
+  { kind: 'forklift', label: t('ar.bull-three-levers') },
 ]
 let radioVehicleIndex = 0
 const selectedVehicle = () => radioVehicles[radioVehicleIndex]
@@ -599,35 +601,37 @@ screen.radioMenu = () => [
     preview: `/library/previews/${selectedVehicle().kind}.png`,
     run: () => addVehicle(selectedVehicle().kind),
   },
-  { label: 'Siguiente ›', run: () => selectRadioVehicle(1) },
+  { label: t('ar.next'), run: () => selectRadioVehicle(1) },
   {
-    label: 'Palé suelto',
+    label: t('ar.loose-pallet'),
     run: () =>
       room.setMessage(
         rc.addPallet(false)
-          ? 'Palé añadido · agárralo para colocarlo'
-          : 'Añade primero un vehículo',
+          ? t('ar.pallet-added-grab-it-to-place-it')
+          : t('ar.add-a-vehicle-first'),
       ),
   },
   {
-    label: 'Palé + caja de 1 m',
+    label: t('ar.pallet-1-m-box'),
     run: () =>
-      room.setMessage(rc.addPallet(true) ? 'Palé con caja añadido' : 'Añade primero un vehículo'),
+      room.setMessage(
+        rc.addPallet(true) ? t('ar.pallet-with-box-added') : t('ar.add-a-vehicle-first'),
+      ),
   },
   ...(rc.kind === 'f14'
     ? [
         {
-          label: `Vuelo: ${rc.simulation?.vehicleInfo('rc-0').flightSpeedMode === 'fast' ? 'Rápido · alas recogidas' : 'Lento · alas abiertas'}`,
+          label: `Vuelo: ${rc.simulation?.vehicleInfo('rc-0').flightSpeedMode === 'fast' ? t('ar.fast-wings-swept') : t('ar.slow-wings-out')}`,
           run: () => rc.toggleFlightSpeed(),
         },
       ]
     : [
         {
-          label: rc.controls.enabled ? 'Control real: Sí' : 'Control real: No',
+          label: rc.controls.enabled ? t('ar.real-control-yes') : t('ar.real-control-no'),
           run: toggleControl,
         },
       ]),
-  { label: 'Escala R/C 1:' + rcScale.value, run: nextScale },
+  { label: t('ar.r-c-scale-1') + rcScale.value, run: nextScale },
 ]
 weapons.disposalTest = screen.disposal.accepts
 balls.disposalTest = screen.disposal.accepts
@@ -641,10 +645,10 @@ bow.onHit = (point) => {
 }
 const arQualityKeys = ['scale', 'foveation', 'effects', 'impactLimit', 'sparks'] as const
 const arQualityLabels = [
-  'Escala resolución AR',
-  'Reducir detalle periférico',
+  t('ar.ar-resolution-scale'),
+  t('ar.reduce-peripheral-detail'),
   'Humo',
-  'Impactos visibles',
+  t('ar.visible-impacts'),
   'Chispas',
 ]
 xr.calibrationScreen!.qualityMenu = {
@@ -676,7 +680,7 @@ xr.calibrationScreen!.qualityMenu = {
   apply: () => {
     void renderer.xr.getSession()?.end().catch(report)
   },
-  status: () => 'Resolución: salir y volver a entrar en AR · Resto: en directo',
+  status: () => t('ar.resolution-leave-and-re-enter-ar-rest-live'),
 }
 xr.calibrationScreen!.root.scale.setScalar(0.65)
 void xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch(report)
@@ -737,7 +741,7 @@ renderer.setAnimationLoop((time, frame) => {
           ? [
               {
                 id: 'arm',
-                label: 'Armar / desarmar motores',
+                label: t('ar.arm-disarm-motors'),
                 icon: touchActionIcon('play'),
                 run: () => drone.setArmed(!drone.armed),
               },
@@ -907,23 +911,19 @@ enter.onclick = () => {
   rc.unlockAudio()
   weapons.unlock()
   enter.disabled = true
-  status.textContent = 'Solicitando realidad mixta…'
+  status.textContent = t('ar.requesting-mixed-reality')
   void xr
     .enterAR(navigator.xr!)
     .then(async () => {
       deviceInfo.setSession(renderer.xr.getSession())
       touchControls.update(mobileAR ? renderer.xr.getSession() : null, null, true)
       if (touchControls.mobile && !touchControls.available)
-        room.setMessage(
-          'Este navegador no ha concedido DOM Overlay: no puede mostrar los mandos táctiles sobre AR.',
-        )
+        room.setMessage(t('ar.this-browser-did-not-grant-dom-overlay-touch-con'))
       if (renderer.xr.getSession()?.environmentBlendMode === 'opaque') {
         await xr.exit()
-        throw new Error(
-          'El navegador ha devuelto una sesión opaca; esta prueba necesita passthrough.',
-        )
+        throw new Error(t('ar.the-browser-returned-an-opaque-session-this-test'))
       }
-      status.textContent = 'Realidad mixta lista. Puedes volver a entrar.'
+      status.textContent = t('ar.mixed-reality-ready-you-can-enter-again')
     })
     .catch(report)
     .finally(() => {
@@ -932,14 +932,14 @@ enter.onclick = () => {
 }
 void (async () => {
   if (!isSecureContext || !navigator.xr) {
-    status.textContent = 'Abre esta página por HTTPS en el navegador de Quest.'
+    status.textContent = t('ar.open-this-page-over-https-in-the-quest-browser')
     return
   }
   const supported = await navigator.xr.isSessionSupported('immersive-ar')
   enter.disabled = !supported
   status.textContent = supported
-    ? 'Compatible. Pulsa Entrar y acepta la sesión.'
-    : 'Este navegador no ofrece realidad mixta WebXR.'
+    ? t('ar.supported-press-enter-and-accept-the-session')
+    : t('ar.this-browser-does-not-offer-webxr-mixed-reality')
 })().catch(report)
 addEventListener(
   'pagehide',

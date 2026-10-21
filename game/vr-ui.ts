@@ -1,5 +1,6 @@
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
+import { t } from '@nabla/engine/i18n'
 
 /** An explicit XR entry: the XR page, the demo, or any page opened with `?xr`. */
 export function isImmersiveEntry(): boolean {
@@ -34,7 +35,7 @@ export function bindVR(runtime: GameRuntime): void {
 function mountVR(runtime: GameRuntime): void {
   if (new URLSearchParams(location.search).has('xr'))
     void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
-      console.warn('No se pudieron cargar los guantes; se mantienen las manos básicas.', error)
+      console.warn(t('vr.the-gloves-could-not-be-loaded-keeping-the-basic'), error)
     })
   runtime.xr.enableCalibrationScreen()
   bindXRQuality(runtime, [], false)
@@ -52,7 +53,7 @@ function mountVR(runtime: GameRuntime): void {
   document.body.classList.add('nabla-vr')
   const toolbar = document.createElement('nav')
   toolbar.id = 'vr-toolbar'
-  toolbar.setAttribute('aria-label', 'Realidad virtual')
+  toolbar.setAttribute('aria-label', t('vr.virtual-reality'))
   document.body.append(toolbar)
   let terrainStatus = '',
     fps = '— FPS'
@@ -61,7 +62,7 @@ function mountVR(runtime: GameRuntime): void {
     fps = text
   }
   screen.mainStatus = () =>
-    [fps, terrainStatus, 'X: abrir/cerrar · Agarra el marco para colocarlo']
+    [fps, terrainStatus, t('vr.x-open-close-grab-the-frame-to-place-it')]
       .filter(Boolean)
       .join(' · ')
   let busy = false
@@ -88,14 +89,14 @@ function mountVR(runtime: GameRuntime): void {
   screen.mainMenu = () => [
     {
       id: 'terrain',
-      label: busy ? 'Cargando Z15…' : 'Añadir Z15 cercano',
+      label: busy ? t('vr.loading-z15') : t('vr.add-nearby-z15'),
       run: () => {
         void loadTerrain()
       },
     },
     {
       id: 'places',
-      label: 'Elegir lugar y vehículo',
+      label: t('vr.choose-place-and-vehicle'),
       run: () => {
         void leave()
           .then(() => location.assign('/headset.html'))
@@ -106,7 +107,7 @@ function mountVR(runtime: GameRuntime): void {
     },
     {
       id: 'exit',
-      label: 'Salir de VR',
+      label: t('vr.exit-vr'),
       run: () => {
         void leave().catch((error) => {
           terrainStatus = String(error)
@@ -127,7 +128,7 @@ function mountVR(runtime: GameRuntime): void {
   screen.navigate('main')
   const menu = document.createElement('button')
   menu.id = 'vr-monitor'
-  menu.textContent = 'Monitor · X'
+  menu.textContent = t('vr.monitor-x')
   menu.onclick = () => runtime.xr.toggleMenu()
   toolbar.append(menu)
   const errorStatus = document.createElement('output')
@@ -135,9 +136,8 @@ function mountVR(runtime: GameRuntime): void {
   toolbar.append(errorStatus)
   const button = document.createElement('button')
   button.id = 'enter-vr'
-  button.textContent = 'Entrar en VR'
-  button.title =
-    'Stick izquierdo: moverse/dirección · Derecho: giro a pasos · A: entrar/salir · B: saltar/frenar · X: monitor principal · Y: recuperar. Dos pistolas en fundas laterales: mantén agarre para coger; gatillo para disparar. Cargador normal en pecho izquierdo, largo en derecho. Usa agarre para sacar, insertar o tirar cargadores y mover la corredera. Volante: acercar la mano, mantener agarre y girar; B frena.'
+  button.textContent = t('vr.enter-vr')
+  button.title = t('vr.left-stick-move-steer-right-snap-turn-a-enter-ex')
   toolbar.append(button)
   button.disabled = true
   if (!isSecureContext || !navigator.xr) {
@@ -148,10 +148,10 @@ function mountVR(runtime: GameRuntime): void {
     .isSessionSupported('immersive-vr')
     .then((supported) => {
       button.disabled = !supported
-      if (!supported) button.textContent = 'VR no disponible'
+      if (!supported) button.textContent = t('vr.vr-not-available')
     })
     .catch(() => {
-      button.textContent = 'VR no disponible'
+      button.textContent = t('vr.vr-not-available')
     })
   button.onclick = () => {
     runtime.startMusic() // Unlock Web Audio while this click still has user activation.
