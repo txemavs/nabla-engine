@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** Demo-owned display controls; Engine owns validation, frame pacing and buffer resizing. */
 import { resolveDisplaySettings, type DisplaySettings } from '@nabla/engine/config/display'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -8,7 +9,7 @@ import { readQualityPreset, saveQualityPreset } from '@nabla/engine/runtime/qual
  * The player's saved `scale` wins: `scale=<0.25..5>` fixes it (above 1 supersamples), `scale=auto` adapts live.
  * Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
  */
-export function readDisplaySettings(search = location.search): DisplaySettings {
+export function readDisplaySettings(search = pageSearch()): DisplaySettings {
   const params = new URLSearchParams(search)
   const scale = params.get('scale')
   const preset = readQualityPreset(search)
@@ -30,7 +31,7 @@ export function readDisplaySettings(search = location.search): DisplaySettings {
 }
 
 /** True when the player chose auto resolution (`scale=auto`); the boot probe then picks the start. */
-export function wantsAutoResolution(search = location.search): boolean {
+export function wantsAutoResolution(search = pageSearch()): boolean {
   return new URLSearchParams(search).get('scale') === 'auto'
 }
 
@@ -81,7 +82,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
     } else document.getElementById('game-canvas')?.focus()
   })
   // Only a scale the player picked is saved; otherwise a later quality change keeps its default.
-  let scaleChosen = new URLSearchParams(location.search).has('scale')
+  let scaleChosen = new URLSearchParams(pageSearch()).has('scale')
   const persist = () => {
     const url = new URL(location.href)
     const state = runtime.resolutionScaleState

@@ -1,9 +1,10 @@
+import { pageSearch } from './page-query.js'
 import { resolveFsr, type FsrSettings } from '../src/render/effects/fsr1.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 const KEY = 'nabla.fsr1'
 
 /** Apply before preload, so startup prepares the actual chosen render path. */
-export function readFsrSettings(search = location.search): FsrSettings {
+export function readFsrSettings(search = pageSearch()): FsrSettings {
   let saved: Partial<FsrSettings> = {}
   try {
     saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')

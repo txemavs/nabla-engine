@@ -5,10 +5,11 @@
  */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import type { SceneDocument } from '@nabla/engine/scene'
+import type { WorldSource } from './world-source.js'
 
 export interface DriveHost {
-  /** Boot on the flat test ground without terrain, as test.html and xr.html do. */
-  noTerrain?: boolean
+  /** What the player stands on; unset, the page decides (defaultWorldSource). */
+  world?: WorldSource
   /** Start on foot instead of in the page's vehicle. */
   onFoot?: boolean
   /** Overrides the flip-cinematic option. */

@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 import { addCornerButton } from '@nabla/engine/runtime/corner-buttons'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import {
@@ -9,7 +10,7 @@ import {
 import { t } from '@nabla/engine/i18n'
 
 /** The page was opened in a VR mode (`?vr=pc` PC browser + Link, `?vr=headset` in the headset). */
-export function pcVRRequested(search = location.search): boolean {
+export function pcVRRequested(search = pageSearch()): boolean {
   return playModeFromSearch(search) !== 'pc'
 }
 

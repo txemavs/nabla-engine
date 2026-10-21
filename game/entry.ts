@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** Which game mode a page runs and with which query: the URL first, then the remembered terrain choice. */
 import {
   chooseTerrainSource,
@@ -44,7 +45,7 @@ export function configuredPackagesUrl(): string {
 }
 
 export async function resolveEntry(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
   probe: (base: string) => Promise<boolean> = probeTerrainFolder,
   packagesUrl: string = configuredPackagesUrl(),

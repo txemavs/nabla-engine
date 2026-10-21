@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /**
  * Terrain cache and load radius in the "Terreno" menu section: disk cache size, cells kept in memory,
  * load radius and "Vaciar caché". The mechanisms are the engine's (the shared IndexedDB map cache and
@@ -32,7 +33,7 @@ export const DEFAULT_CACHE: TerrainCacheSettings = { diskMb: 1000 }
 
 /** Remembered values, overridden field by field by the URL. */
 export function currentCacheSettings(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
 ): TerrainCacheSettings {
   return resolveCacheSettings(
@@ -72,7 +73,7 @@ function choice(
 /** Build the «Caché» section (only with a «Terreno» section), apply the remembered settings, keep the usage line fresh. */
 export function bindTerrainCache(
   runtime: GameRuntime,
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
 ): void {
   // Only the terrain games have a «Terreno» source section; the cache gets its own «Caché» section
