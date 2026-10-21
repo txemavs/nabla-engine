@@ -39,6 +39,7 @@ import {
   parseClusterCulling,
 } from '@nabla/engine/render'
 import { mountSettingsHud } from './settings-hud.js'
+import { driveHost } from './drive-host.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
@@ -192,7 +193,9 @@ try {
       scene.entities.push(pallet)
     }
   }
-  const noTerrainTest = ['/test.html', '/xr.html'].includes(location.pathname)
+  const host = driveHost()
+  const noTerrainTest =
+    host.noTerrain === true || ['/test.html', '/xr.html'].includes(location.pathname)
 
   if (noTerrainTest) {
     if (!solo && !sceneHasPresetModel(scene.entities, 'vfr800'))
@@ -242,12 +245,13 @@ try {
           alpha: true,
           logarithmicDepthBuffer: true,
         })
+  host.prepareScene?.(scene)
   runtime = new GameRuntime({
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
-    flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    flipCinematic: host.flipCinematic ?? resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
@@ -348,7 +352,10 @@ try {
     Object.assign(window, { nablaRuntime: runtime })
   void runBootPhase(runtime, loading, boot)
   restoreStartupLightSettings(runtime)
-  await runtime.play(!solo && noTerrainTest ? { playerMode: 'walk' } : { vehicleId: vehicle.id })
+  await runtime.play(
+    host.onFoot || (!solo && noTerrainTest) ? { playerMode: 'walk' } : { vehicleId: vehicle.id },
+  )
+  host.afterPlay?.(runtime)
   bindVR(runtime)
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
     const help = document.createElement('p')
