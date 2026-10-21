@@ -1443,6 +1443,9 @@ export class GameRuntime {
         planetaryTerrain: !!document.geography?.planetary,
       })
       simulation.setCollisionDistance(this.quality.collisions)
+      // Worker mode: command HUD messages arrive with the worker's reply, not as return values.
+      const threaded = threadedSimulation(simulation)
+      if (threaded) threaded.onMessage = (message) => this.options.onMessage?.(message)
       this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
       // Frames step the simulation from here on, while the reveal still prepares. Hold the
       // actor until its ground collision is active, then settle it on that surface.

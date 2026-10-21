@@ -6,6 +6,7 @@ import {
 } from '../../src/simulation/simulation-worker-host.js'
 import {
   ThreadedSimulation,
+  threadedSimulation,
   type UnansweredInWorker,
 } from '../../src/simulation/threaded-simulation.js'
 import { Simulation } from '../../src/simulation/simulation.js'
@@ -112,6 +113,19 @@ describe('physics worker: every value a Simulation answers is answered in worker
     restore()
     expect(() => sim.queryState()).toThrow(/inline-only/)
     await expect(sim.step(1 / 60)).resolves.toBeUndefined()
+    close()
+  })
+
+  it('routes a command HUD message from the worker to onMessage', async () => {
+    const { sim, close } = await threaded()
+    const messages: string[] = []
+    threadedSimulation(sim)!.onMessage = (message) => messages.push(message)
+    expect(sim.setEngineMode('nobody', 'normal')).toBe('')
+    await sim.step(1 / 60)
+    const inline = new Simulation(scene(), {})
+    const expected = inline.setEngineMode('nobody', 'normal')
+    inline.dispose()
+    expect(messages).toEqual(expected ? [expected] : [])
     close()
   })
 })
