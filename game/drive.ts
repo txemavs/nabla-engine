@@ -357,7 +357,7 @@ try {
   await runtime.play(
     host.onFoot || (!solo && noTerrainTest) ? { playerMode: 'walk' } : { vehicleId: vehicle.id },
   )
-  host.afterPlay?.(runtime)
+  const hostReady = host.afterPlay?.(runtime)
   bindVR(runtime)
   if (config.vehicle === 'forklift' || config.vehicle === 'forklift-rc') {
     const help = document.createElement('p')
@@ -381,6 +381,7 @@ try {
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   if (scene.geography && config.portals?.length)
     await installHostPortals(runtime, scene.geography, config.portals)
+  await Promise.resolve(hostReady).catch(console.error)
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)

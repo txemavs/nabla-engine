@@ -17,7 +17,8 @@ export interface DriveHost {
   /** Edits the scene before the runtime is built. */
   prepareScene?(scene: SceneDocument): void
   /** Runs once play() has resolved. */
-  afterPlay?(runtime: GameRuntime): void
+  /** A returned promise keeps the loading screen up until it settles (e.g. the first world GLB). */
+  afterPlay?(runtime: GameRuntime): void | Promise<unknown>
 }
 
 const HOST = Symbol.for('nabla.driveHost')
