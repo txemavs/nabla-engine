@@ -1,4 +1,5 @@
 import { threadedSimulation } from '../simulation/threaded-simulation.js'
+import { PerfMeter } from './perf-meter.js'
 import {
   readVehicleLights,
   writeVehicleLights,
@@ -716,6 +717,10 @@ export class GameRuntime {
   private terrainLoad: AbortController | null = null
   private loading: AbortController | null = null
   private readonly revealGates: Promise<unknown>[] = []
+  /** `?performanceLog=1` per-second summary (frame, main CPU, physics main/worker, main idle). */
+  private readonly perfMeter = new PerfMeter((summary) => {
+    this.options.canvas.dataset.perf = JSON.stringify(summary)
+  })
   private readonly preparationGates: Promise<unknown>[] = []
   private readonly revealTasks: (() => Promise<unknown>)[] = []
   private startHold: Promise<unknown> | null = null
@@ -2556,6 +2561,19 @@ export class GameRuntime {
         this.stallLog.join('\n')
     }
     this.options.canvas.dataset.portalViews = String(this.pipeline.renderedPortals)
+    if (this.options.performanceLog) {
+      const threaded = threadedSimulation(sim)
+      this.perfMeter.frame(
+        threaded ? 'worker' : 'inline',
+        {
+          frameMs,
+          cpuMs: performance.now() - cpuStart,
+          physicsMainMs: physicsMs,
+          physicsWorkerMs: threaded?.workerStepMs ?? 0,
+        },
+        performance.now(),
+      )
+    }
     if (this.options.onDiagnostics) {
       const gpuTiming = this.pipeline.gpuTiming?.finish()
       this.options.onDiagnostics({

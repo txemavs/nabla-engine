@@ -90,7 +90,11 @@ export class PlaySession {
     if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error('Invalid frame duration')
     this.current.setInput(input)
     this.current.setWaterLevel(waterLevel)
-    return this.current.step(Math.min(elapsed, simulationDefaults.maxFrameSeconds))
+    const frame = Math.min(elapsed, simulationDefaults.maxFrameSeconds)
+    // Worker physics is pipelined: the frame renders the latest worker state and never waits.
+    const threaded = threadedSimulation(this.current)
+    if (threaded) return threaded.advance(frame)
+    return this.current.step(frame)
   }
 
   /** Clear movement commands and suspend stepping; retain the simulation for resume. */
