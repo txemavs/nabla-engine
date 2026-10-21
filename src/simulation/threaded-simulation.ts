@@ -18,6 +18,7 @@
  * the previous step.
  */
 import { QueryWorld } from './query-world.js'
+import { simulationDefaults } from '../config/simulation.js'
 import {
   WorkerSimulation,
   createWorkerSimulation,
@@ -81,6 +82,7 @@ export class ThreadedSimulation {
   private reads: SimulationReads | null = null
   private explosions: SimulationReads['explosions'] = []
   private readonly lagged = new Map<string, unknown>()
+  private gravityMultiplier: number = simulationDefaults.gravityScaleRange.default
   private readonly lastIdentity = new Map<string, unknown[]>()
   private failure: unknown = null
   private nextPole = 1
@@ -260,6 +262,16 @@ export class ThreadedSimulation {
     this.throwFailure()
     await this.worker.step(elapsed)
     this.throwFailure()
+  }
+  /** Clamped here (same rule as Simulation) so callers get the value used without a round trip. */
+  setGravityScale(scale: number): number {
+    const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
+    this.gravityMultiplier = Number.isFinite(scale) ? Math.min(max, Math.max(min, scale)) : fallback
+    this.command('setGravityScale', [this.gravityMultiplier])
+    return this.gravityMultiplier
+  }
+  get gravityScale(): number {
+    return this.gravityMultiplier
   }
   setInput(input: PlayerInput): void {
     if (
