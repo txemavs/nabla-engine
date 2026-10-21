@@ -89,7 +89,8 @@ export function installSettingsScope(
     globalThis as { NABLA_SETTINGS_DEFAULTS?: Partial<Record<VRPlayMode, Record<string, string>>> }
   ).NABLA_SETTINGS_DEFAULTS,
 ): PlayMode {
-  if (installed) return installed
+  // A PC page may switch once into a VR profile (the `casco` button); otherwise the first wins.
+  if (installed && !(installed === 'pc' && mode !== 'pc')) return installed
   installed = mode
   if (mode === 'pc' || !storage) return mode
   const get = storage.getItem.bind(storage)
