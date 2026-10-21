@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **549 modules; 6565 executable function definitions**.
+Coverage: **549 modules; 6566 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -67,7 +67,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 16 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
-| [game/terrain.ts](game/terrain.ts.md) | 14 |
+| [game/terrain.ts](game/terrain.ts.md) | 15 |
 | [game/vehicle-colors.ts](game/vehicle-colors.ts.md) | 3 |
 | [game/vehicle-group.ts](game/vehicle-group.ts.md) | 1 |
 | [game/vehicle-preview.ts](game/vehicle-preview.ts.md) | 3 |

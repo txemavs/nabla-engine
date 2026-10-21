@@ -203,11 +203,32 @@ Explicit throws in this body:
 
 - `new Error(\`El parámetro ${key} no es un número: ${raw}\`)`
 
-## parseTerrainConfig
+## parseLocationOverride
 
-[Implementation, line 185](../../../game/terrain.ts#L185)
+[Implementation, line 190](../../../game/terrain.ts#L190)
 
 Parse the URL. Errors are Spanish because they are shown to the player.
+
+`?location=<lon>,<lat>` (longitude first, decimal degrees): a session start override that wins
+over `lat`/`lon`, `ll` and `tile`, so hosts that prepend their own start (the closed Euskadi demo)
+can still be sent elsewhere. Anything not two finite in-range numbers is ignored (undefined).
+
+```ts
+parseLocationOverride(search: string = location.search): LatLon | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `URLSearchParams`
+- `isValidLatLon`
+- `new URLSearchParams(search).get`
+- `raw?.trim`
+- `raw?.trim().match`
+
+## parseTerrainConfig
+
+[Implementation, line 198](../../../game/terrain.ts#L198)
 
 ```ts
 parseTerrainConfig(search: string = location.search): TerrainConfig
@@ -228,6 +249,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `params.get`
 - `params.has`
 - `parseLatLon`
+- `parseLocationOverride`
 - `parseSeaParam`
 - `parseTileSpec`
 - `parseTimeParam`
@@ -252,7 +274,7 @@ Explicit throws in this body:
 
 ## startFromIndex
 
-[Implementation, line 264](../../../game/terrain.ts#L264)
+[Implementation, line 278](../../../game/terrain.ts#L278)
 
 Without tile/lat/lon, start over the centre of the first tile in the host's `index.json`
 ({ tiles: [{ z, x, y }] }, served by the dev server's terrain mount).
@@ -273,7 +295,7 @@ Explicit throws in this body:
 
 ## formatCells
 
-[Implementation, line 276](../../../game/terrain.ts#L276)
+[Implementation, line 290](../../../game/terrain.ts#L290)
 
 Spanish HUD text: cells loaded, cells the host does not have (holes), and those still arriving.
 
@@ -283,7 +305,7 @@ formatCells(stats: { loaded: number; missing: number; pending: number }): string
 
 ## portalsConfig
 
-[Implementation, line 285](../../../game/terrain.ts#L285)
+[Implementation, line 299](../../../game/terrain.ts#L299)
 
 `portals` only when the host listed some, so configs without portals keep their shape.
 
@@ -298,7 +320,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## engineModeParam
 
-[Implementation, line 291](../../../game/terrain.ts#L291)
+[Implementation, line 305](../../../game/terrain.ts#L305)
 
 `&engineMode=normal|beast` (or `bestia`): the start mode of cars with engine modes.
 
