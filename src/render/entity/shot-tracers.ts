@@ -177,8 +177,9 @@ class AnalyticShotTracers {
     const shift = this.epoch - now
     this.epoch = now
     for (let v = 0; v < MAX; v++) if (this.data[v] > -1e29) this.data[v] += shift
+    // Every slot, as a range: see AnalyticShotSparks.rebase (shot-sparks.ts).
     const attribute = this.geometry.getAttribute('tracerBirth') as THREE.BufferAttribute
-    attribute.clearUpdateRanges()
+    attribute.addUpdateRange(0, attribute.count * attribute.itemSize)
     attribute.needsUpdate = true
   }
 }
