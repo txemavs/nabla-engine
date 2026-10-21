@@ -29,7 +29,7 @@ test('corner row buttons share height, top and gap', async ({ page }) => {
       return wrap
     }
     // Inserted out of order on purpose: the API must sort by explicit order.
-    corner.addCornerButton('tr', button('12:34', 'nabla-btn--lg'), 60)
+    corner.addCornerButton('tr', button('12:34'), 60)
     corner.addCornerButton('tr', popover('FOV'), 30)
     corner.addCornerButton('tr', button('+'), 10)
     corner.addCornerButton('tr', button('casco'), 50)

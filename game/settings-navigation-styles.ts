@@ -10,7 +10,6 @@ ${interfaceTabStyles}
 .settings-window { ${interfaceVariables} position:fixed;inset:0;z-index:100;width:100vw;height:100dvh;pointer-events:auto;background:transparent;color:var(--ink);font:var(--text-size)/1.4 Arial,sans-serif; }
 .settings-window[hidden],.settings-window [hidden]{display:none!important}
 /* Chrome scale: the console fills the window at its own zoom (see interface-style.ts). */
-.settings-window > .settings-console {zoom:var(--nabla-ui-scale,1);}
 .settings-window .settings-console {display:grid;grid-template-rows:64px 60px minmax(0,1fr) 58px;width:100%;height:100%;min-height:0;padding:0;margin:0;overflow:hidden;transform-style:flat;background:transparent;border:0;border-radius:0;font:inherit;color:inherit;}
 .settings-header {display:flex;align-items:center;padding:0 30px;border-bottom:1px solid #333;}
 .settings-header strong{font:16px Arial,sans-serif!important;letter-spacing:2px;min-height:0!important;margin:0!important;color:var(--muted)}
