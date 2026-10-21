@@ -51,3 +51,12 @@ export class BowDraw {
     this.drawing = false
   }
 }
+
+/**
+ * Hold-to-draw from a button (mouse, touch, gamepad): the pull grows linearly to `maxDraw` over
+ * `fullDrawS`. The release speed then follows the same `BowDraw` rules as the headset bow.
+ */
+export function timedDraw(spec: Readonly<BowSpec>, heldSeconds: number, fullDrawS = 0.9): number {
+  if (!Number.isFinite(heldSeconds) || heldSeconds <= 0 || !(fullDrawS > 0)) return 0
+  return Math.min(spec.maxDraw, (spec.maxDraw * heldSeconds) / fullDrawS)
+}

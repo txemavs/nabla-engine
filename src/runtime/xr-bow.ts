@@ -11,7 +11,13 @@ import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
 import type { RigidBody, Collider } from '@dimforge/rapier3d-compat'
 import type { World } from '../simulation/physics.js'
 import { BowDraw } from '../simulation/weapons/bow.js'
-import { buildBowModel, type BowModelDescription } from './bow-model.js'
+import {
+  bowString,
+  buildBowModel,
+  createBowString,
+  setBowString,
+  type BowModelDescription,
+} from './bow-model.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import type { GrabHand } from './xr-grab.js'
 import type { XRDisposalTest } from './xr-disposal-portal.js'
@@ -122,14 +128,7 @@ export class XRBow {
           new THREE.MeshStandardMaterial({ color: 0x845e38, roughness: 0.75 }),
         ),
       )
-    this.string = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-      ]),
-      new THREE.LineBasicMaterial({ color: 0xe8dfce }),
-    )
+    this.string = createBowString()
     this.root.add(this.string)
     this.preview = this.arrowModel()
     this.preview.visible = false
@@ -161,13 +160,8 @@ export class XRBow {
     if (!this.root || !this.string || !this.preview) return
     const local = this.draw.drawing
       ? this.root.worldToLocal(this.nock.clone())
-      : new THREE.Vector3(0, 0, 0.155)
-    const attr = this.string.geometry.getAttribute('position') as THREE.BufferAttribute
-    attr.setXYZ(0, 0, -0.481, 0.155)
-    attr.setXYZ(1, local.x, local.y, local.z)
-    attr.setXYZ(2, 0, 0.481, 0.155)
-    attr.needsUpdate = true
-    this.string.geometry.computeBoundingSphere()
+      : new THREE.Vector3(0, 0, bowString.restZ)
+    setBowString(this.string, local)
     this.preview.visible = this.draw.drawing
     this.preview.position
       .copy(local)
@@ -175,7 +169,7 @@ export class XRBow {
         this.direction
           .clone()
           .applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()).invert()),
-        0.29,
+        bowString.arrowLead,
       )
     this.preview.quaternion
       .copy(this.root.getWorldQuaternion(new THREE.Quaternion()).invert())

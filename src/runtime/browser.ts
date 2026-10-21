@@ -158,6 +158,8 @@ import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
 import { fireSidearm, sidearmButtonAction } from './shooting.js'
 import { CasingMotion } from '../simulation/weapons/casings.js'
+import { ArrowFlight } from '../simulation/weapons/arrow-flight.js'
+import { BowDraw, timedDraw } from '../simulation/weapons/bow.js'
 import { Casings } from '../render/entity/casings.js'
 import { DroppedMagazines } from '../render/entity/magazines.js'
 import type { MagazineEntity } from '../simulation/weapons/magazine.js'
@@ -642,6 +644,12 @@ export class GameRuntime {
   /** Melee or bow from a numbered weapon slot; exclusive with the drawn sidearm. */
   private heldWeapon: HeldWeapon | null = null
   private heldDrawn = false
+  private bowDraw: BowDraw | null = null
+  private bowDrawStart = 0
+  private arrowFlight: ArrowFlight | null = null
+  private arrowTemplate: THREE.Mesh | null = null
+  private arrowMeshes: THREE.Mesh[] = []
+  private arrowsLoosed = 0
   private firearmSamplesVoice: FirearmSamples | null = null
   private get firearmSamples(): FirearmSamples {
     return (this.firearmSamplesVoice ??= new FirearmSamples(this.effects.audio))
@@ -1597,6 +1605,7 @@ export class GameRuntime {
     this.weaponDrawn = false
     this.heldWeapon?.dispose()
     this.heldWeapon = null
+    this.clearArrows()
     this.heldDrawn = false
     this.clearPickups()
     this.accidentReplacement?.clear()
@@ -2454,6 +2463,7 @@ export class GameRuntime {
       this.heldWeapon.visible = this.heldDrawn && !sim.player.vehicleId
       this.heldWeapon.syncWorld(this.view.avatar, time, eyes)
     }
+    this.updateBow(sim, dt)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.slidePosePreview =
@@ -5480,7 +5490,7 @@ export class GameRuntime {
     const entry = weaponSlots().find((item) => item.slot === slot)
     if (!entry) return
     if (entry.kind === 'placeholder') {
-      this.options.onMessage?.(`${entry.name}: próximamente`)
+      this.options.onMessage?.(`${entry.name}: ${this.text('coming soon')}`)
       return
     }
     const sim = this.session.simulation
@@ -5530,7 +5540,11 @@ export class GameRuntime {
     }
     this.heldDrawn = true
     this.options.onMessage?.(
-      entry.kind === 'melee' ? `${entry.name} · clic izquierdo: golpe` : entry.name,
+      entry.kind === 'melee'
+        ? `${entry.name} · ${this.text('left click: strike')}`
+        : entry.kind === 'bow'
+          ? `${entry.name} · ${this.text('hold left click to draw, release to shoot')}`
+          : entry.name,
     )
   }
   /** Active numbered slot, or null with empty hands. */
@@ -5541,6 +5555,91 @@ export class GameRuntime {
         ? this.sidearm?.preset?.id
         : undefined
     return id === undefined ? null : (weaponSlots().find((item) => item.id === id)?.slot ?? null)
+  }
+  /** Hold-to-draw bow on foot: the headset bow's draw rules, arrows flown by the simulation. */
+  private bowButton(down: boolean): void {
+    const sim = this.session.simulation
+    const weapon = this.heldWeapon
+    if (!sim || !weapon || weapon.preset.kind !== 'bow' || sim.player.vehicleId) return
+    const draw = (this.bowDraw ??= new BowDraw())
+    if (down) {
+      draw.start()
+      this.bowDrawStart = performance.now()
+      return
+    }
+    if (!draw.drawing) return
+    draw.pull(timedDraw(draw.spec, (performance.now() - this.bowDrawStart) / 1000))
+    const speed = draw.release()
+    weapon.setDraw(0)
+    if (speed <= 0) return
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
+    const origin = new THREE.Vector3(...sim.renderPlayerPosition)
+    origin.y += 1.4
+    origin.addScaledVector(forward, 0.4)
+    if (!this.arrowTemplate && weapon.arrowTemplate)
+      this.arrowTemplate = new THREE.Mesh(
+        weapon.arrowTemplate.geometry.clone(),
+        (Array.isArray(weapon.arrowTemplate.material)
+          ? weapon.arrowTemplate.material[0]
+          : weapon.arrowTemplate.material
+        ).clone(),
+      )
+    const flight = (this.arrowFlight ??= new ArrowFlight({ arrowMass: draw.spec.arrowMass }))
+    flight.launch(origin.toArray() as Vec3Tuple, forward.toArray() as Vec3Tuple, speed)
+    this.options.canvas.dataset.arrowsLoosed = String(++this.arrowsLoosed)
+    this.options.canvas.dataset.arrowSpeed = speed.toFixed(1)
+  }
+  private updateBow(sim: Simulation, dt: number): void {
+    const draw = this.bowDraw
+    if (draw?.drawing) {
+      const weapon = this.heldWeapon
+      if (!weapon || !this.heldDrawn || weapon.preset.kind !== 'bow' || sim.player.vehicleId) {
+        draw.cancel()
+        weapon?.setDraw(0)
+      } else {
+        draw.pull(timedDraw(draw.spec, (performance.now() - this.bowDrawStart) / 1000))
+        weapon.setDraw(draw.distance)
+      }
+    }
+    const flight = this.arrowFlight
+    if (!flight) return
+    const impacts = flight.update(dt, (from, direction, length) =>
+      sim.shoot(from, direction, length, 0),
+    )
+    for (const hit of impacts) {
+      // Marks, targets, glass and the push through the gallery, like a bullet's impact.
+      const dir = new THREE.Vector3(...hit.direction)
+      const firing = new THREE.PerspectiveCamera(50, 1, 0.01, 2)
+      firing.position.set(...hit.point).addScaledVector(dir, -0.5)
+      firing.lookAt(new THREE.Vector3(...hit.point))
+      firing.updateMatrixWorld(true)
+      this.gallery.shoot(sim, this.view, firing, 0.75, hit.momentum, 0)
+      this.options.canvas.dataset.arrowHit = hit.entityId ?? 'static'
+    }
+    const poses = flight.poses()
+    const template = this.arrowTemplate
+    if (template)
+      while (this.arrowMeshes.length < poses.length) {
+        const mesh = new THREE.Mesh(template.geometry, template.material)
+        mesh.castShadow = true
+        this.arrowMeshes.push(mesh)
+        this.view.root.add(mesh)
+      }
+    const back = new THREE.Vector3(0, 0, -1)
+    this.arrowMeshes.forEach((mesh, i) => {
+      const pose = poses[i]
+      mesh.visible = !!pose
+      if (!pose) return
+      mesh.position.set(...pose.position)
+      mesh.quaternion.setFromUnitVectors(back, new THREE.Vector3(...pose.direction))
+    })
+    this.options.canvas.dataset.arrows = String(flight.count)
+  }
+  private clearArrows(): void {
+    this.bowDraw?.cancel()
+    this.arrowFlight?.reset()
+    for (const mesh of this.arrowMeshes) mesh.removeFromParent()
+    this.arrowMeshes = []
   }
   private swingHeldWeapon(): void {
     const sim = this.session.simulation
@@ -5716,7 +5815,8 @@ export class GameRuntime {
     if (this.session.state !== 'playing') return
     if (down && !this.pointerLocked() && !this.pointerLockUnsupported()) return
     if (this.heldDrawn && !this.weaponDrawn) {
-      if (down && button === 0) this.swingHeldWeapon()
+      if (button === 0 && this.heldWeapon?.preset.kind === 'bow') this.bowButton(down)
+      else if (down && button === 0) this.swingHeldWeapon()
       return
     }
     if (!this.weaponDrawn) return
