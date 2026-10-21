@@ -20,9 +20,14 @@ export const defaultInterfaceStyles = `
 .nabla-corner--bl { bottom:calc(var(--nabla-ui-margin) / var(--nabla-ui-scale));left:calc(var(--nabla-ui-margin) / var(--nabla-ui-scale)); }
 .nabla-corner--br { bottom:calc(var(--nabla-ui-margin) / var(--nabla-ui-scale));right:calc(var(--nabla-ui-margin) / var(--nabla-ui-scale)); }
 .nabla-corner :is(.nabla-corner,.settings-toggle,.touch-flight-bar) { zoom:1; }
+/* A corner adopted into another corner (host stack) is laid out by that stack. */
+.nabla-corner .nabla-corner { position:static; }
 :is(.settings-toggle,.touch-flight-bar,#speed-display,#gear-display):not(.nabla-corner *) { zoom:var(--nabla-ui-scale,1); }
 /* Button groups: one row (or column) of equal buttons with one gap. */
-.nabla-btn-group { display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--nabla-btn-gap); }
+.nabla-btn-group { display:flex;flex-direction:row;flex-wrap:nowrap;align-items:flex-start;justify-content:flex-end;gap:var(--nabla-btn-gap); }
+/* Rows never wrap by default: a wrapping group inside a shrink-to-fit corner collapses to its
+   min-content width (one button per line). Opt in with --wrap where a row may break. */
+.nabla-btn-group--wrap { flex-wrap:wrap; }
 .nabla-btn-group--column { flex-direction:column;align-items:flex-end; }
 .nabla-btn-group[hidden],.nabla-btn[hidden] { display:none!important; }
 .nabla-btn { ${interfaceControls} flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;height:var(--nabla-btn-size);min-height:var(--nabla-btn-size);min-width:var(--nabla-btn-size);padding:0 8px;font:700 14px/1 Arial,sans-serif;cursor:pointer;touch-action:none; }
@@ -36,6 +41,8 @@ export const defaultInterfaceStyles = `
 .nabla-btn-popover { position:relative; }
 .nabla-slider-panel { position:absolute;right:calc(var(--nabla-btn-size) + 10px);bottom:0;width:76px;padding:8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);font:14px Arial,sans-serif;box-shadow:none; }
 /* Engine-only layout: the toolbar column under the menu button, weapon buttons below it. */
+/* A free-standing toolbar is a column; adopted into a host row it stays a row. */
+body > .game-toolbar,body > .game-toolbar .nabla-btn-group { flex-direction:column;align-items:flex-end; }
 .game-toolbar.nabla-corner--tr { top:calc((var(--nabla-ui-margin) + var(--nabla-ui-row) + 8px) / var(--nabla-ui-scale));max-height:calc(100% - 70px); }
 .weapon-controls:not(.nabla-corner *) { position:absolute;right:8px;top:220px;z-index:48;max-width:260px; }
 .touch-driving .touch-driving-stack { position:fixed!important;left:var(--nabla-control-edge)!important;right:auto!important;bottom:var(--nabla-control-bottom)!important; }
