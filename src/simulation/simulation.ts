@@ -9,6 +9,7 @@ import { MapCollisions } from './map-collisions.js'
 import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
+import { cameraClearance, nearestShotHit, type QueryExclusions } from './scene-queries.js'
 import {
   nearestRoadPoint,
   ROAD_SNAP_MAX_DISTANCE,
@@ -1203,6 +1204,14 @@ export class Simulation {
       })
     return parts
   }
+  /** Ids of every entity in the live scene, in document order. */
+  /** Ids of the portal mouths {@link portalState} answers for. */
+  portalIds(): string[] {
+    return this.portalEntities.map((e) => e.id)
+  }
+  entityIds(): string[] {
+    return this.document.entities.map((e) => e.id)
+  }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
     if (body) return interpolated ? this.displayedPose(body) : pose(body)
@@ -1687,39 +1696,16 @@ export class Simulation {
     /** What the hit body presents to a shot (scenery layers tag their poles); null when untagged. */
     surface: ImpactSurface | null
   } | null {
-    const ray = new Vec3(...direction)
-    if (
-      !Number.isFinite(range) ||
-      range <= 0 ||
-      !origin.every(Number.isFinite) ||
-      !direction.every(Number.isFinite) ||
-      ray.length() < 0.001
+    const hit = nearestShotHit(
+      this.world,
+      this.queryExclusions(),
+      origin,
+      direction,
+      range,
+      excludeEntityId ? this.bodies.get(excludeEntityId) : undefined,
     )
-      return null
-    ray.normalize()
-    const from = new Vec3(...origin),
-      to = from.vadd(ray.scale(Math.min(range, 1000)))
-    let nearest = Infinity
-    let point: Vec3 | null = null
-    let normal = new Vec3()
-    let body: Body | null = null
-    const occupiedBody = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
-    this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (
-        hit.body !== this.playerBody &&
-        hit.body !== occupiedBody &&
-        hit.body !== (excludeEntityId ? this.bodies.get(excludeEntityId) : undefined) &&
-        hit.distance < nearest
-      ) {
-        nearest = hit.distance
-        point = hit.hitPointWorld.clone()
-        normal = hit.hitNormalWorld.clone()
-        body = hit.body
-      }
-    })
-    if (!point || !body) return null
-    const target = body as Body,
-      impact = point as Vec3
+    if (!hit) return null
+    const { ray, point: impact, normal, body: target } = hit
     if (target.mass > 0 && Number.isFinite(impulse) && impulse > 0) {
       target.wakeUp()
       target.applyImpulse(ray.scale(Math.min(impulse, 50)), impact.vsub(target.position))
@@ -1730,6 +1716,23 @@ export class Simulation {
       entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
       surface: this.bodySurfaces.get(target) ?? null,
     }
+  }
+  /** Bodies instant queries skip; also mirrored to the main-thread query world. */
+  queryExclusions(): QueryExclusions {
+    const occupied = this.vehicleId ? (this.vehicles.get(this.vehicleId)?.body ?? null) : null
+    return {
+      player: this.playerBody,
+      occupied,
+      trailers: new Set(
+        [...this.vehicles.values()]
+          .filter((v) => this.vehicleId !== null && v.definition.tow?.vehicleId === this.vehicleId)
+          .map((v) => v.body),
+      ),
+    }
+  }
+  /** Rapier world and entity bodies, read by the worker host to mirror a query world. */
+  queryState(): { world: World; bodies: ReadonlyMap<string, Body> } {
+    return { world: this.world, bodies: this.bodies }
   }
 
   private updateGrounded(): void {
@@ -3131,23 +3134,7 @@ export class Simulation {
 
   /** Keeps a third-person camera in front of the nearest physical obstruction. */
   cameraPosition(target: Vec3Tuple, desired: Vec3Tuple): Vec3Tuple {
-    const from = new Vec3(...target),
-      to = new Vec3(...desired)
-    const delta = to.vsub(from),
-      total = delta.length()
-    if (total < 0.001) return [...target]
-    let distance = total
-    const active = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
-    const trailers = new Set(
-      [...this.vehicles.values()]
-        .filter((v) => this.vehicleId !== null && v.definition.tow?.vehicleId === this.vehicleId)
-        .map((v) => v.body),
-    )
-    this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (hit.body !== this.playerBody && hit.body !== active && !trailers.has(hit.body!))
-        distance = Math.min(distance, Math.max(0.15, hit.distance - 0.2))
-    })
-    return vec(from.vadd(delta.scale(distance / total)))
+    return cameraClearance(this.world, this.queryExclusions(), target, desired)
   }
   dispose(): void {
     if (this.disposed) return
