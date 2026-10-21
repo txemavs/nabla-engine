@@ -8,12 +8,16 @@ import {
   type NetEventData,
   type WheelVisuals,
   quantizeWheels,
+  quantizeAvatar,
+  decodeAvatar,
+  type AvatarSample,
 } from './protocol.js'
 
 const wheels = (state: WheelVisuals | null | undefined) =>
   state ? { wheels: quantizeWheels(state) } : {}
 import type { Transport } from './transport.js'
 import { RemoteVehicle, type KinematicHost } from './remote-vehicle.js'
+import { RemoteAvatar, type RemoteAvatarFactory } from './remote-avatar.js'
 import { defaultInterpolation, type InterpolationOptions } from './interpolation.js'
 
 /** Reads the local entity state; `Simulation` satisfies it with entityTransform/entityVelocity. */
@@ -44,6 +48,14 @@ export interface SnapshotSyncOptions {
   /** Game hook: remove the entity created for a peer that left. */
   despawnRemote: (peer: string, entityId: string) => void
   meta?: Record<string, string | number | boolean>
+  /**
+   * The local player's on-foot body to send (feet position in scene metres, heading, speed and a
+   * game-defined animation index), or null for none. Sent at the snapshot rate, alone when there
+   * is no local entity (on foot) or alongside it.
+   */
+  localAvatar?: () => AvatarSample | null
+  /** Game hook: build the view of a remote peer's body on its first avatar sample. */
+  remoteAvatar?: RemoteAvatarFactory
   /** Game values sent with each snapshot of the local entity (e.g. a lights bitfield). */
   readExtra?: (entityId: string) => SnapshotExtra | undefined
   /**
@@ -94,6 +106,8 @@ export class SnapshotSync {
   private readonly peers = new Map<string, PeerInfo>()
   private meta: Record<string, string | number | boolean>
   readonly remotes = new Map<string, RemoteVehicle>()
+  /** Remote on-foot bodies, per peer (only with a `remoteAvatar` factory). */
+  readonly avatars = new Map<string, RemoteAvatar>()
   /** Last reported position of every other peer, shown or not (interest management). */
   private readonly lastPosition = new Map<string, EntityState['position']>()
   private seq = 0
@@ -131,7 +145,10 @@ export class SnapshotSync {
       const here = this.localPosition()
       for (const peer of [...this.remotes.keys()])
         if (!this.within(peer, this.options.interest.hide, here)) this.remove(peer)
+      for (const peer of [...this.avatars.keys()])
+        if (!this.within(peer, this.options.interest.hide, here)) this.removeAvatar(peer)
     }
+    for (const avatar of this.avatars.values()) avatar.update(now)
     for (const [peer, remote] of this.remotes) {
       remote.update(now)
       if (!remote.extra || remote.entityId === null || !this.options.applyExtra) continue
@@ -142,17 +159,18 @@ export class SnapshotSync {
     }
     if (this.peerId === null || now - this.lastSent < this.interval) return
     const id = this.options.localEntity()
-    if (!id) return
-    const state = this.read(id)
-    if (!state) return
+    const state = id ? this.read(id) : null
+    const avatar = this.readAvatar()
+    if (!state && !avatar) return
     this.lastSent = now
-    const extra = this.options.readExtra?.(id)
+    const extra = id && state ? this.options.readExtra?.(id) : undefined
     this.options.transport.send(
       encodeMessage({
         type: 'snapshot',
         t: now,
         seq: this.seq++,
-        state,
+        ...(state ? { state } : {}),
+        ...(avatar ? { avatar } : {}),
         ...(extra ? { extra } : {}),
       }),
     )
@@ -205,6 +223,14 @@ export class SnapshotSync {
     const there = this.lastPosition.get(peer)
     return !!there && horizontalDistance(here, there) <= radius
   }
+  private readAvatar() {
+    try {
+      const sample = this.options.localAvatar?.()
+      return sample ? quantizeAvatar(sample) : null
+    } catch {
+      return null
+    }
+  }
   private read(id: string): EntityState | null {
     const { host } = this.options
     try {
@@ -242,6 +268,7 @@ export class SnapshotSync {
         break
       case 'left':
         this.remove(message.peer)
+        this.removeAvatar(message.peer)
         this.peers.delete(message.peer)
         this.lastPosition.delete(message.peer)
         break
@@ -259,14 +286,51 @@ export class SnapshotSync {
       }
       case 'snapshot':
         if (message.peer === this.peerId) break
-        this.lastPosition.set(message.peer, message.state.position)
-        if (!this.remotes.has(message.peer))
-          this.add(this.peers.get(message.peer) ?? { peer: message.peer, meta: {} })
-        this.remotes.get(message.peer)?.push(message.t, message.state, this.clock(), message.extra)
+        if (!message.state && !message.avatar) break
+        this.lastPosition.set(message.peer, message.state?.position ?? message.avatar!.p)
+        if (message.state) {
+          if (!this.remotes.has(message.peer))
+            this.add(this.peers.get(message.peer) ?? { peer: message.peer, meta: {} })
+          this.remotes
+            .get(message.peer)
+            ?.push(message.t, message.state, this.clock(), message.extra)
+        }
+        if (message.avatar)
+          this.receiveAvatar(message.peer, message.t, decodeAvatar(message.avatar))
         break
       case 'error':
         break
     }
+  }
+
+  private receiveAvatar(peer: string, t: number, sample: AvatarSample): void {
+    const factory = this.options.remoteAvatar
+    if (!factory || peer === this.peerId) return
+    let avatar = this.avatars.get(peer)
+    if (!avatar) {
+      if (this.options.interest && !this.within(peer, this.options.interest.show)) return
+      const created = new RemoteAvatar(this.options.interpolation ?? defaultInterpolation)
+      avatar = created
+      this.avatars.set(peer, created)
+      const info = this.peers.get(peer) ?? { peer, meta: {} }
+      const fail = (error: unknown) => {
+        if (this.avatars.get(peer) === created) this.avatars.delete(peer)
+        console.warn('[nabla/net] could not create the body of peer', peer, error)
+      }
+      try {
+        const view = factory(info)
+        if (view instanceof Promise) view.then((v) => created.attach(v), fail)
+        else created.attach(view)
+      } catch (error) {
+        fail(error)
+      }
+    }
+    avatar.push(t, sample, this.clock())
+  }
+
+  private removeAvatar(peer: string): void {
+    this.avatars.get(peer)?.dispose()
+    this.avatars.delete(peer)
   }
 
   private add(peer: PeerInfo): void {
@@ -316,6 +380,7 @@ export class SnapshotSync {
 
   private dropAll(): void {
     for (const peer of [...this.remotes.keys()]) this.remove(peer)
+    for (const peer of [...this.avatars.keys()]) this.removeAvatar(peer)
     this.peers.clear()
     this.lastPosition.clear()
     this.peerId = null

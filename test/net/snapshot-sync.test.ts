@@ -400,3 +400,71 @@ describe('SnapshotSync interest management', () => {
     syncB.dispose()
   })
 })
+
+describe('SnapshotSync on-foot avatars', () => {
+  it('sends the local body without a vehicle and shows the remote one interpolated', () => {
+    let now = 0
+    const clock = () => now
+    const net = relay()
+    const still = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    let ax = 0
+    let anim = 1
+    const shown: { x: number; yaw: number; anim: number }[] = []
+    const visibility: boolean[] = []
+    let disposed = 0
+    const spawned: string[] = []
+    const make = (walker: boolean) =>
+      new SnapshotSync({
+        transport: net.connect(),
+        room: 'feet',
+        host: still.host,
+        clock,
+        localEntity: () => null,
+        spawnRemote: (peer) => (spawned.push(peer.peer), null),
+        despawnRemote: () => {},
+        localAvatar: walker
+          ? () => ({ position: [ax, 0, 0], yaw: Math.PI - 0.01 + ax * 0.01, speed: 1.4, anim })
+          : () => null,
+        remoteAvatar: () => ({
+          update: (s) => shown.push({ x: s.position[0], yaw: s.yaw, anim: s.anim }),
+          setVisible: (v) => visibility.push(v),
+          dispose: () => disposed++,
+        }),
+      })
+    const a = make(true)
+    const b = make(false)
+    const joins = spawned.length
+    for (let frame = 0; frame < 60; frame++) {
+      now = frame * (1000 / 60)
+      ax = now / 1000 // 1 m/s
+      if (frame === 40) anim = 3
+      a.update()
+      b.update()
+    }
+    // On-foot snapshots never ask for a vehicle copy (only the joins did).
+    expect(spawned.length).toBe(joins)
+    expect(b.avatars.size).toBe(1)
+    const last = shown.at(-1)!
+    expect(last.x).toBeGreaterThan(0.8)
+    expect(last.x).toBeLessThan(0.95)
+    expect(last.anim).toBe(3)
+    // Yaw crosses ±π on the short arc: never near 0.
+    for (const s of shown) expect(Math.abs(s.yaw)).toBeGreaterThan(3)
+    expect(visibility).toEqual([true])
+    // A peer that stops sending its body (e.g. drives) is hidden, and disposed when it leaves.
+    for (let frame = 60; frame < 200; frame++) {
+      now = frame * (1000 / 60)
+      b.update()
+    }
+    expect(visibility).toEqual([true, false])
+    a.dispose()
+    expect(disposed).toBe(1)
+    expect(b.avatars.size).toBe(0)
+    b.dispose()
+  })
+})

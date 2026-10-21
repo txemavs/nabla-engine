@@ -3435,7 +3435,10 @@ export class GameRuntime {
     const top = player[1] + 2
     const below = (px: number, pz: number): number | null => {
       const origin = root.localToWorld(new THREE.Vector3(px, top, pz))
-      const down = root.localToWorld(new THREE.Vector3(px, top - 1, pz)).sub(origin).normalize()
+      const down = root
+        .localToWorld(new THREE.Vector3(px, top - 1, pz))
+        .sub(origin)
+        .normalize()
       const ray = new THREE.Raycaster(origin, down, 0, 1000)
       for (const hit of ray.intersectObject(root, true)) {
         if (!hit.face || !shown(hit.object)) continue
@@ -3975,7 +3978,10 @@ export class GameRuntime {
       const offset = new THREE.Vector3(local.x, 0, local.z).applyQuaternion(turn)
       const at: Vec3Tuple = [x + offset.x, 0, z + offset.z]
       // Nearby stage pieces read loaded ground directly; far ones fall back to the origin.
-      const below = offset.lengthSq() < 0.01 ? ground : ((world ? groundAtSeam(world, at) : groundAt(at)) ?? ground)
+      const below =
+        offset.lengthSq() < 0.01
+          ? ground
+          : ((world ? groundAtSeam(world, at) : groundAt(at)) ?? ground)
       at[1] = below + local.y
       e.transform = {
         position: at,
@@ -5892,19 +5898,26 @@ export class GameRuntime {
   get headlampEnabled(): boolean {
     return this.headlamp.enabled
   }
-  private playerBodyRig: PlayerBodyRig | null = null
+  private bodyRig: PlayerBodyRig | null = null
   /**
    * Give the on-foot player a skinned body (see player-body.ts for the asset contract); null
    * removes it. Resolves with the rig so remote players can share it ({@link PlayerBodyRig.create}).
    */
   async setPlayerBody(assets: PlayerBodyAssets | null): Promise<PlayerBodyRig | null> {
-    this.playerBodyRig = assets ? await PlayerBodyRig.load(assets) : null
-    this.view.setPlayerBody(this.playerBodyRig?.create() ?? null)
-    return this.playerBodyRig
+    this.bodyRig = assets ? await PlayerBodyRig.load(assets) : null
+    this.view.setPlayerBody(this.bodyRig?.create() ?? null)
+    return this.bodyRig
   }
   /** The local player's body state to send to other clients (null without a body). */
   get avatarState(): AvatarNetState | null {
     return this.view.avatarNetState
+  }
+  /**
+   * The loaded body rig (null until {@link setPlayerBody} resolves): remote players' bodies are
+   * `rig.create()`, added with {@link attachSceneryLayer} so they share `avatarState` positions.
+   */
+  get playerBodyRig(): PlayerBodyRig | null {
+    return this.bodyRig
   }
   setHeadlamp(enabled: boolean): void {
     this.headlamp.enabled = enabled && !this.session.simulation?.player.vehicleId

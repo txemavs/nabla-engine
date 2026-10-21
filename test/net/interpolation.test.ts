@@ -45,3 +45,23 @@ describe('slerp', () => {
     expect(q[3]).toBeGreaterThan(0.9)
   })
 })
+
+describe('avatar samples', () => {
+  it('blends yaw on the shortest arc, keeps the older animation and extrapolates 250 ms at most', async () => {
+    const { avatarSampleOps, lerpAngle } = await import('../../src/net/interpolation.js')
+    const { quantizeAvatar, decodeAvatar, wrapAngle } = await import('../../src/net/protocol.js')
+    expect(lerpAngle(3, -3, 0.5)).toBeCloseTo(Math.PI, 2)
+    const a = { position: [0, 0, 0] as [number, number, number], yaw: 0, speed: 0, anim: 0 }
+    const b = { ...a, position: [1, 0, 0] as [number, number, number], speed: 2, anim: 2 }
+    expect(avatarSampleOps.blend(a, b, 0.5)).toMatchObject({ speed: 1, anim: 0 })
+    expect(avatarSampleOps.blend(a, b, 1).anim).toBe(2)
+    const buffer = new SnapshotBuffer(undefined, avatarSampleOps)
+    buffer.push({ t: 0, state: a }, 0)
+    buffer.push({ t: 100, state: b }, 100)
+    // 1 s past the newest sample at 10 m/s: capped at 250 ms.
+    expect(buffer.sample(1200)!.position[0]).toBeCloseTo(3.5)
+    const q = quantizeAvatar({ position: [1.23456, 0, -2], yaw: 7, speed: 1.234, anim: 4 })
+    expect(q).toEqual({ p: [1.23, 0, -2], y: +wrapAngle(7).toFixed(3), s: 1.23, a: 4 })
+    expect(decodeAvatar(q).position).toEqual([1.23, 0, -2])
+  })
+})

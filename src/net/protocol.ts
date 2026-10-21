@@ -79,12 +79,66 @@ const eventData = z
 export type NetEventData = Record<string, number | boolean | string | number[]>
 const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
 
+/**
+ * Optional on-foot body of the sender (compact keys, quantised by {@link quantizeAvatar}):
+ * `p` feet position in scene metres, `y` heading in radians (0 faces −Z), `s` horizontal speed
+ * in m/s and `a` a game-defined animation index (the game keeps the name table).
+ */
+export const avatarBlockSchema = z.object({
+  p: vec3,
+  y: finite,
+  s: finite.nonnegative(),
+  a: z.number().int().min(0).max(63),
+})
+export type AvatarBlock = z.infer<typeof avatarBlockSchema>
+
+/** Decoded on-foot body sample (see {@link avatarBlockSchema}). */
+export interface AvatarSample {
+  position: Vec3Tuple
+  yaw: number
+  speed: number
+  anim: number
+}
+
+/** Angle wrapped to (−π, π]. */
+export function wrapAngle(angle: number): number {
+  const turn = Math.PI * 2
+  const wrapped = angle - turn * Math.floor((angle + Math.PI) / turn)
+  return wrapped === -Math.PI ? Math.PI : wrapped
+}
+
+/** Wire form of an avatar sample: 1 cm position, 1 mrad yaw (wrapped), 1 cm/s speed. */
+export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
+  const fix = (v: number, digits: number) => +v.toFixed(digits)
+  return {
+    p: [fix(sample.position[0], 2), fix(sample.position[1], 2), fix(sample.position[2], 2)],
+    y: fix(wrapAngle(sample.yaw), 3),
+    s: fix(Math.max(0, sample.speed), 2),
+    a: Math.max(0, Math.min(63, Math.round(sample.anim))),
+  }
+}
+
+export function decodeAvatar(block: AvatarBlock): AvatarSample {
+  return {
+    position: [block.p[0], block.p[1], block.p[2]],
+    yaw: block.y,
+    speed: block.s,
+    anim: block.a,
+  }
+}
+
+/**
+ * Snapshot of one sender: the rigid body it drives (`state`), its on-foot body (`avatar`), or
+ * both. Protocol 1 stays: `avatar` is additive, a state-less (on-foot only) snapshot is simply
+ * dropped by older relays and clients.
+ */
 export const snapshotSchema = z.object({
   type: z.literal('snapshot'),
   /** Sender clock in milliseconds; only differences between one sender's samples matter. */
   t: finite,
   seq: z.number().int().nonnegative(),
-  state: entityStateSchema,
+  state: entityStateSchema.optional(),
+  avatar: avatarBlockSchema.optional(),
   extra: extra.optional(),
   peer: peerId.optional(),
 })

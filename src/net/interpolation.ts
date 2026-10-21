@@ -1,9 +1,55 @@
-import type { EntityState, WheelVisuals } from './protocol.js'
+import { wrapAngle, type AvatarSample, type EntityState, type WheelVisuals } from './protocol.js'
 
-export interface TimedState {
+export interface TimedState<S = EntityState> {
   /** Sender clock, milliseconds. */
   t: number
-  state: EntityState
+  state: S
+}
+
+/** How a buffer blends two samples and runs past the newest one. */
+export interface SampleOps<S> {
+  blend(a: S, b: S, alpha: number): S
+  /** State `seconds` after `last`; `previous` is the sample before it, if any. */
+  extrapolate(last: TimedState<S>, previous: TimedState<S> | undefined, seconds: number): S
+}
+
+/** Rigid bodies: lerp/slerp, extrapolated with their velocity. */
+export const entityStateOps: SampleOps<EntityState> = {
+  blend: (a, b, k) => blendStates(a, b, k),
+  extrapolate: (last, _previous, seconds) => extrapolate(last.state, seconds),
+}
+
+/**
+ * On-foot bodies: position lerp, shortest-arc yaw, speed lerp; the animation index is discrete
+ * and taken from the older sample until the newer one is reached. Extrapolation uses the
+ * velocity between the last two samples.
+ */
+export const avatarSampleOps: SampleOps<AvatarSample> = {
+  blend: (a, b, alpha) => {
+    const k = Math.min(Math.max(alpha, 0), 1)
+    return {
+      position: lerp3(a.position, b.position, k),
+      yaw: lerpAngle(a.yaw, b.yaw, k),
+      speed: a.speed + (b.speed - a.speed) * k,
+      anim: k >= 1 ? b.anim : a.anim,
+    }
+  },
+  extrapolate: (last, previous, seconds) => {
+    if (seconds <= 0 || !previous) return last.state
+    const dt = (last.t - previous.t) / 1000
+    if (dt <= 0) return last.state
+    const [a, b] = [previous.state.position, last.state.position]
+    const k = seconds / dt
+    return {
+      ...last.state,
+      position: [b[0] + (b[0] - a[0]) * k, b[1] + (b[1] - a[1]) * k, b[2] + (b[2] - a[2]) * k],
+    }
+  },
+}
+
+/** Shortest-arc interpolation between two angles (radians); the result is wrapped. */
+export function lerpAngle(a: number, b: number, k: number): number {
+  return wrapAngle(a + wrapAngle(b - a) * k)
 }
 
 export interface InterpolationOptions {
@@ -25,17 +71,28 @@ export const defaultInterpolation: InterpolationOptions = {
  * Jitter buffer for one remote entity. It maps the sender clock onto the local clock with the
  * smallest observed offset (the least-delayed packet), then samples `delayMs` in the past.
  */
-export class SnapshotBuffer {
-  private readonly samples: TimedState[] = []
+export class SnapshotBuffer<S = EntityState> {
+  private readonly samples: TimedState<S>[] = []
   private offset: number | null = null
-  constructor(readonly options: InterpolationOptions = defaultInterpolation) {}
+  private readonly ops: SampleOps<S>
+  constructor(
+    readonly options: InterpolationOptions = defaultInterpolation,
+    ops?: SampleOps<S>,
+  ) {
+    this.ops = ops ?? (entityStateOps as unknown as SampleOps<S>)
+  }
+
+  /** Sender time (ms) of the newest sample, or null when empty. */
+  get newest(): number | null {
+    return this.samples.length ? this.samples[this.samples.length - 1].t : null
+  }
 
   get size(): number {
     return this.samples.length
   }
 
   /** Insert a sample received at local time `receivedAt` (ms). Late duplicates are ignored. */
-  push(sample: TimedState, receivedAt: number): void {
+  push(sample: TimedState<S>, receivedAt: number): void {
     const offset = receivedAt - sample.t
     // Track the fastest path, but let it drift up slowly so a clock skew cannot pin it forever.
     this.offset = this.offset === null ? offset : Math.min(offset, this.offset + 0.05)
@@ -47,7 +104,7 @@ export class SnapshotBuffer {
   }
 
   /** Interpolated state at local time `now` (ms), or null before the first sample. */
-  sample(now: number): EntityState | null {
+  sample(now: number): S | null {
     if (!this.samples.length || this.offset === null) return null
     const target = now - this.offset - this.options.delayMs
     const first = this.samples[0]
@@ -59,11 +116,11 @@ export class SnapshotBuffer {
       const alpha = (target - a.t) / Math.max(b.t - a.t, 1e-6)
       // Drop samples that can no longer be needed.
       if (i > 1) this.samples.splice(0, i - 1)
-      return blendStates(a.state, b.state, alpha)
+      return this.ops.blend(a.state, b.state, alpha)
     }
     const last = this.samples[this.samples.length - 1]
     const ahead = Math.min(target - last.t, this.options.maxExtrapolationMs) / 1000
-    return extrapolate(last.state, ahead)
+    return this.ops.extrapolate(last, this.samples[this.samples.length - 2], ahead)
   }
 }
 

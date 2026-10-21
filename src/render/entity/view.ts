@@ -2015,7 +2015,11 @@ export class SceneView {
     const hover = sim.options.playerMode === 'hover'
     body.root.visible = !hover && !sim.playerEjection
     const half =
-      sim.stance === 'prone' ? 0.2 : sim.stance === 'crouching' ? 0.5 : simulationDefaults.playerHalfHeight
+      sim.stance === 'prone'
+        ? 0.2
+        : sim.stance === 'crouching'
+          ? 0.5
+          : simulationDefaults.playerHalfHeight
     body.root.position.set(0, seated ? 0 : -half, 0)
     body.animate(state, speed, elapsed)
     const head = body.headIn(this.avatar, this.scratchVectors[3])
@@ -2026,7 +2030,8 @@ export class SceneView {
       this.monitor.position.z += head.z
       this.monitor.position.y += head.y - 0.35
     }
-    const feet = body.root.getWorldPosition(this.scratchVectors[3])
+    // Scene (view root) space, not the floating render origin: the same on every client.
+    const feet = this.root.worldToLocal(body.root.getWorldPosition(this.scratchVectors[3]))
     this.playerNetState = {
       animState: state,
       yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
