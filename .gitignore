@@ -27,3 +27,12 @@ local-backup/
 assets/custom/**
 !assets/custom/README.md
 assets/packs/
+
+# Local, unlicensed-for-redistribution models kept on disk only (not committed)
+/assets/library/planes/cessna/
+/assets/library/weapons/README.md
+/assets/library/weapons/bazooka/
+/assets/library/weapons/katana/
+/assets/library/weapons/mp5/
+/assets/library/weapons/recurve-bow/recurve-bow.json
+/assets/rigs/weapons/mp5.rig.json
