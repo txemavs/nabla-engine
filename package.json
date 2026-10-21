@@ -99,6 +99,14 @@
       "types": "./dist/i18n/index.d.ts",
       "import": "./dist/i18n/index.js"
     },
+    "./pwa": {
+      "types": "./dist/pwa/index.d.ts",
+      "import": "./dist/pwa/index.js"
+    },
+    "./runtime/pwa-install": {
+      "types": "./dist/runtime/pwa-install.d.ts",
+      "import": "./dist/runtime/pwa-install.js"
+    },
     "./runtime/main-menu": {
       "types": "./dist/runtime/main-menu.d.ts",
       "import": "./dist/runtime/main-menu.js"

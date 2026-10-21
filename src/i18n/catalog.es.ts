@@ -233,6 +233,11 @@ export const engineEs: Readonly<Record<string, string>> = {
     '+ lo gira hacia fuera (se ve más por fuera); − hacia dentro (más del costado)',
   'place.near': 'Cerca de {name}',
   'place.unknown': 'Localidad sin datos',
+  'pwa.install': 'Instalar app',
+  'pwa.offline.message':
+    'Este juego necesita conexión a internet. Compruébala y vuelve a intentarlo.',
+  'pwa.offline.retry': 'Reintentar',
+  'pwa.offline.title': 'Sin conexión',
   'scene.add-vehicle': 'Añadir vehículo',
   'scene.adding': 'Añadiendo…',
   'scene.artistic-clouds': 'Nubes artísticas',
