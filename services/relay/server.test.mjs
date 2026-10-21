@@ -31,6 +31,31 @@ const state = {
   angularVelocity: [0, 0, 0],
 }
 
+test('drops game events above the per-peer rate limit', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, maxEvents: 3 })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'r', meta: {} })
+  await a.next('welcome')
+  b.json({ type: 'join', version: 1, room: 'r', meta: {} })
+  await b.next('welcome')
+  for (let i = 0; i < 10; i++) a.json({ type: 'event', kind: 'shot', data: { i } })
+  await new Promise((r) => setTimeout(r, 300))
+  let got = 0
+  while (true) {
+    const next = await Promise.race([
+      b.next('event'),
+      new Promise((r) => setTimeout(() => r(null), 100)),
+    ])
+    if (!next) break
+    got++
+  }
+  assert.equal(got, 3)
+  a.close()
+  b.close()
+  await relay.close()
+})
+
 test('relays snapshots inside a room and announces joins and leaves', async () => {
   const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
   const a = await connect(relay.port)
@@ -63,6 +88,14 @@ test('relays snapshots inside a room and announces joins and leaves', async () =
   const profile = await b.next('profile')
   assert.equal(profile.peer, welcomeA.peer)
   assert.equal(profile.meta.vehicle, 'vfr800')
+  a.json({
+    type: 'event',
+    kind: 'shot',
+    data: { end: [1, 2, 3], damage: 12, target: welcomeB.peer },
+  })
+  const shot = await b.next('event')
+  assert.equal(shot.peer, welcomeA.peer)
+  assert.deepEqual(shot.data.end, [1, 2, 3])
   b.json({ type: 'join', version: 1, room: '../bad', meta: {} })
   assert.equal((await b.next('error')).message, 'Invalid room')
 

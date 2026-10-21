@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **556 modules; 6631 executable function definitions**.
+Coverage: **556 modules; 6638 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -185,9 +185,9 @@ Coverage: **556 modules; 6631 executable function definitions**.
 | [src/math/terrain/heightfield.ts](src/math/terrain/heightfield.ts.md) | 5 |
 | [src/net/index.ts](src/net/index.ts.md) | 0 |
 | [src/net/interpolation.ts](src/net/interpolation.ts.md) | 9 |
-| [src/net/protocol.ts](src/net/protocol.ts.md) | 4 |
+| [src/net/protocol.ts](src/net/protocol.ts.md) | 5 |
 | [src/net/remote-vehicle.ts](src/net/remote-vehicle.ts.md) | 4 |
-| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 15 |
+| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 17 |
 | [src/net/transport.ts](src/net/transport.ts.md) | 10 |
 | [src/net/websocket-transport.ts](src/net/websocket-transport.ts.md) | 13 |
 | [src/planet/assemble/aeroway.ts](src/planet/assemble/aeroway.ts.md) | 5 |
@@ -390,7 +390,7 @@ Coverage: **556 modules; 6631 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 466 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 470 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |

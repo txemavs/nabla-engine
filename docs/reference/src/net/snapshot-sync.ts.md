@@ -13,7 +13,7 @@
 
 ## SnapshotSync.constructor
 
-[Implementation, line 75](../../../../src/net/snapshot-sync.ts#L75)
+[Implementation, line 78](../../../../src/net/snapshot-sync.ts#L78)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -31,12 +31,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `transport.onMessage`
 - `transport.onOpen`
 
-## SnapshotSync.constructor.callback@78
+## SnapshotSync.constructor.callback@81
 
-[Implementation, line 78](../../../../src/net/snapshot-sync.ts#L78)
+[Implementation, line 81](../../../../src/net/snapshot-sync.ts#L81)
 
 ```ts
-callback@78(): inferred by TypeScript; see implementation
+callback@81(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -45,7 +45,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.constructor.join
 
-[Implementation, line 80](../../../../src/net/snapshot-sync.ts#L80)
+[Implementation, line 83](../../../../src/net/snapshot-sync.ts#L83)
 
 ```ts
 join(): inferred by TypeScript; see implementation
@@ -56,24 +56,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `encodeMessage`
 - `transport.send`
 
-## SnapshotSync.constructor.callback@91
+## SnapshotSync.constructor.callback@94
 
-[Implementation, line 91](../../../../src/net/snapshot-sync.ts#L91)
+[Implementation, line 94](../../../../src/net/snapshot-sync.ts#L94)
 
 ```ts
-callback@91(data): inferred by TypeScript; see implementation
+callback@94(data): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.receive`
 
-## SnapshotSync.constructor.callback@92
+## SnapshotSync.constructor.callback@95
 
-[Implementation, line 92](../../../../src/net/snapshot-sync.ts#L92)
+[Implementation, line 95](../../../../src/net/snapshot-sync.ts#L95)
 
 ```ts
-callback@92(): inferred by TypeScript; see implementation
+callback@95(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -82,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.update
 
-[Implementation, line 98](../../../../src/net/snapshot-sync.ts#L98)
+[Implementation, line 101](../../../../src/net/snapshot-sync.ts#L101)
 
 Call once per frame before stepping the simulation.
 
@@ -106,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.setMeta
 
-[Implementation, line 130](../../../../src/net/snapshot-sync.ts#L130)
+[Implementation, line 133](../../../../src/net/snapshot-sync.ts#L133)
 
 Replace this client's meta (for example after changing vehicle). Other peers receive it as a
 `profile` and respawn their copy of this client through `spawnRemote`.
@@ -120,9 +120,34 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `encodeMessage`
 - `this.options.transport.send`
 
+## SnapshotSync.sendEvent
+
+[Implementation, line 140](../../../../src/net/snapshot-sync.ts#L140)
+
+Send a one-off game event to the other peers of the room; false while not joined.
+
+```ts
+sendEvent(kind: string, data: NetEventData): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `encodeMessage`
+- `this.options.transport.send`
+
+## SnapshotSync.peerOfEntity
+
+[Implementation, line 147](../../../../src/net/snapshot-sync.ts#L147)
+
+Peer whose remote copy is `entityId`, or null.
+
+```ts
+peerOfEntity(entityId: string): string | null
+```
+
 ## SnapshotSync.dispose
 
-[Implementation, line 136](../../../../src/net/snapshot-sync.ts#L136)
+[Implementation, line 152](../../../../src/net/snapshot-sync.ts#L152)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -141,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.read
 
-[Implementation, line 143](../../../../src/net/snapshot-sync.ts#L143)
+[Implementation, line 159](../../../../src/net/snapshot-sync.ts#L159)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -159,7 +184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.receive
 
-[Implementation, line 158](../../../../src/net/snapshot-sync.ts#L158)
+[Implementation, line 174](../../../../src/net/snapshot-sync.ts#L174)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -174,6 +199,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `decodeServerMessage`
 - `this.add`
 - `this.clock`
+- `this.options.onEvent`
 - `this.options.onWelcome`
 - `this.peers.delete`
 - `this.peers.get`
@@ -185,7 +211,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.add
 
-[Implementation, line 200](../../../../src/net/snapshot-sync.ts#L200)
+[Implementation, line 220](../../../../src/net/snapshot-sync.ts#L220)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -212,7 +238,7 @@ Explicit throws in this body:
 
 ## SnapshotSync.add.placed
 
-[Implementation, line 210](../../../../src/net/snapshot-sync.ts#L210)
+[Implementation, line 230](../../../../src/net/snapshot-sync.ts#L230)
 
 ```ts
 placed(entityId: string | null): inferred by TypeScript; see implementation
@@ -224,12 +250,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.remotes.delete`
 - `this.remotes.get`
 
-## SnapshotSync.add.callback@227
+## SnapshotSync.add.callback@247
 
-[Implementation, line 227](../../../../src/net/snapshot-sync.ts#L227)
+[Implementation, line 247](../../../../src/net/snapshot-sync.ts#L247)
 
 ```ts
-callback@227(error): inferred by TypeScript; see implementation
+callback@247(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -239,7 +265,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.remove
 
-[Implementation, line 234](../../../../src/net/snapshot-sync.ts#L234)
+[Implementation, line 254](../../../../src/net/snapshot-sync.ts#L254)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.
@@ -259,7 +285,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotSync.dropAll
 
-[Implementation, line 243](../../../../src/net/snapshot-sync.ts#L243)
+[Implementation, line 263](../../../../src/net/snapshot-sync.ts#L263)
 
 Snapshot synchronisation for one room: sends the local entity at a fixed rate and mirrors
 every other peer onto a kinematic local body through a ~100 ms interpolation buffer.

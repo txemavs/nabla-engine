@@ -25,9 +25,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Object.keys`
 
+## callback@49
+
+[Implementation, line 49](../../../../src/net/protocol.ts#L49)
+
+```ts
+callback@49(value): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.keys`
+
 ## encodeMessage
 
-[Implementation, line 89](../../../../src/net/protocol.ts#L89)
+[Implementation, line 102](../../../../src/net/protocol.ts#L102)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -39,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 94](../../../../src/net/protocol.ts#L94)
+[Implementation, line 107](../../../../src/net/protocol.ts#L107)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -54,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 104](../../../../src/net/protocol.ts#L104)
+[Implementation, line 117](../../../../src/net/protocol.ts#L117)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

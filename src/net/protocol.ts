@@ -40,6 +40,16 @@ const extra = z
 export type SnapshotExtra = Record<string, number | boolean | string>
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 
+/** Game event payload: up to 16 small values; arrays carry vectors (at most 4 numbers). */
+const eventData = z
+  .record(
+    z.string().max(32),
+    z.union([finite, z.boolean(), z.string().max(64), z.array(finite).max(4)]),
+  )
+  .refine((value) => Object.keys(value).length <= 16)
+export type NetEventData = Record<string, number | boolean | string | number[]>
+const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
+
 export const snapshotSchema = z.object({
   type: z.literal('snapshot'),
   /** Sender clock in milliseconds; only differences between one sender's samples matter. */
@@ -54,6 +64,8 @@ export type SnapshotMessage = z.infer<typeof snapshotSchema>
 export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('join'), version: z.literal(PROTOCOL_VERSION), room: roomId, meta }),
   snapshotSchema,
+  /** One-off game event (e.g. a shot), relayed to the room with the sender stamped. */
+  z.object({ type: z.literal('event'), kind: eventKind, data: eventData }),
   /** Replace this peer's `meta` (e.g. it changed vehicle); relayed to the room as `profile`. */
   z.object({ type: z.literal('profile'), meta }),
   z.object({ type: z.literal('leave') }),
@@ -81,6 +93,7 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
   peerInfo.extend({ type: z.literal('joined') }),
   z.object({ type: z.literal('left'), peer: peerId }),
   z.object({ type: z.literal('profile'), peer: peerId, meta }),
+  z.object({ type: z.literal('event'), peer: peerId, kind: eventKind, data: eventData }),
   snapshotSchema.extend({ peer: peerId }),
   z.object({ type: z.literal('error'), message: z.string() }),
 ])

@@ -38,6 +38,13 @@ function relay() {
         server.send(
           encodeMessage({ type: 'welcome', peer, room: message.room, peers, slot, color }),
         )
+      } else if (message.type === 'event') {
+        const peer = members.get(server)!
+        for (const other of members.keys())
+          if (other !== server)
+            other.send(
+              encodeMessage({ type: 'event', peer, kind: message.kind, data: message.data }),
+            )
       } else if (message.type === 'profile') {
         const peer = members.get(server)!
         for (const other of members.keys())
@@ -290,6 +297,47 @@ describe('SnapshotSync profile changes', () => {
       ['p1', '', '#c0392b'],
     ])
     expect(despawned).toEqual(['r1', 'r2'])
+    syncA.dispose()
+    syncB.dispose()
+  })
+})
+
+describe('SnapshotSync events', () => {
+  it('relays game events to other peers and maps remote entities back to peers', () => {
+    const net = relay()
+    const host = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    }))
+    const gotA: unknown[] = []
+    const gotB: unknown[] = []
+    const syncA = new SnapshotSync({
+      transport: net.connect(),
+      room: 'e',
+      host: host.host,
+      localEntity: () => 'mine',
+      spawnRemote: (peer) => `copy-${peer.peer}`,
+      despawnRemote: () => {},
+      onEvent: (e) => gotA.push(e),
+    })
+    const syncB = new SnapshotSync({
+      transport: net.connect(),
+      room: 'e',
+      host: host.host,
+      localEntity: () => 'mine',
+      spawnRemote: (peer) => `copy-${peer.peer}`,
+      despawnRemote: () => {},
+      onEvent: (e) => gotB.push(e),
+    })
+    expect(syncA.peerOfEntity('copy-p2')).toBe('p2')
+    expect(syncA.peerOfEntity('nope')).toBeNull()
+    expect(syncA.sendEvent('shot', { end: [1, 2, 3], target: 'p2', damage: 10 })).toBe(true)
+    expect(gotB).toEqual([
+      { peer: 'p1', kind: 'shot', data: { end: [1, 2, 3], target: 'p2', damage: 10 } },
+    ])
+    expect(gotA).toEqual([])
     syncA.dispose()
     syncB.dispose()
   })

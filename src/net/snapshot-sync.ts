@@ -5,6 +5,7 @@ import {
   type EntityState,
   type PeerInfo,
   type SnapshotExtra,
+  type NetEventData,
 } from './protocol.js'
 import type { Transport } from './transport.js'
 import { RemoteVehicle, type KinematicHost } from './remote-vehicle.js'
@@ -43,6 +44,8 @@ export interface SnapshotSyncOptions {
    * false when they could not be applied yet (e.g. the model is still loading) to retry.
    */
   applyExtra?: (entityId: string, extra: SnapshotExtra, peer: string) => boolean | void
+  /** Game events from other peers (`sendEvent` on their side). */
+  onEvent?: (event: { peer: string; kind: string; data: NetEventData }) => void
   /** Called with this client's relay-assigned slot and colour once joined. */
   onWelcome?: (self: { peer: string; slot?: number; color?: string }) => void
   /** Snapshots per second, default 20. */
@@ -133,6 +136,19 @@ export class SnapshotSync {
       this.options.transport.send(encodeMessage({ type: 'profile', meta: this.meta }))
   }
 
+  /** Send a one-off game event to the other peers of the room; false while not joined. */
+  sendEvent(kind: string, data: NetEventData): boolean {
+    if (this.peerId === null || this.options.transport.status !== 'open') return false
+    this.options.transport.send(encodeMessage({ type: 'event', kind, data }))
+    return true
+  }
+
+  /** Peer whose remote copy is `entityId`, or null. */
+  peerOfEntity(entityId: string): string | null {
+    for (const [peer, remote] of this.remotes) if (remote.entityId === entityId) return peer
+    return null
+  }
+
   dispose(): void {
     if (this.options.transport.status === 'open')
       this.options.transport.send(encodeMessage({ type: 'leave' }))
@@ -177,6 +193,10 @@ export class SnapshotSync {
       case 'left':
         this.remove(message.peer)
         this.peers.delete(message.peer)
+        break
+      case 'event':
+        if (message.peer !== this.peerId)
+          this.options.onEvent?.({ peer: message.peer, kind: message.kind, data: message.data })
         break
       case 'profile': {
         if (message.peer === this.peerId) break

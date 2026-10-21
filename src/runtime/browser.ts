@@ -387,6 +387,16 @@ export interface VehiclePlacement {
   player: boolean
 }
 
+/** A shot fired by the local player, as reported to `GameRuntime.addShotListener`. */
+export interface ShotReport {
+  /** Weapon position, simulation world. */
+  origin: Vec3Tuple
+  /** Hit point, or where the bullet trace ended. */
+  end: Vec3Tuple
+  /** Solid hit: entity (null for map colliders), point, normal and the damage applied. */
+  hit: { entityId: string | null; point: Vec3Tuple; normal: Vec3Tuple; damage: number } | null
+}
+
 /** `GameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
 export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 
@@ -3512,6 +3522,46 @@ export class GameRuntime {
     const id = this.document.entities.find((e) => this.view.mirrorModel(e.id) === model)?.id
     return id ? this.view.mirrorSides(id).sort() : ['left', 'right']
   }
+  private readonly shotListeners = new Set<(shot: ShotReport) => void>()
+  /** Observe every shot the local player fires (after its hit is resolved). Returns an unsubscribe. */
+  addShotListener(listener: (shot: ShotReport) => void): () => void {
+    this.shotListeners.add(listener)
+    return () => this.shotListeners.delete(listener)
+  }
+  /**
+   * Show a shot fired elsewhere (for example by another player) with the local effects: tracer,
+   * gunshot, sparks, impact sound and a mark on `hit.entityId` when it names a local entity.
+   * Simulation-world coordinates; nothing is pushed or damaged.
+   */
+  showRemoteShot(shot: {
+    origin: Vec3Tuple
+    end: Vec3Tuple
+    hit?: { entityId?: string | null; point: Vec3Tuple; normal?: Vec3Tuple } | null
+  }): void {
+    this.assertAlive()
+    const now = performance.now()
+    if (![...shot.origin, ...shot.end].every(Number.isFinite)) return
+    this.view.tracers.add(shot.origin, shot.end, now)
+    this.effects.audio.gunshot(shot.origin)
+    const hit = shot.hit
+    if (!hit || !hit.point.every(Number.isFinite)) return
+    const normal = hit.normal?.every(Number.isFinite) ? hit.normal : undefined
+    this.view.sparks.add(hit.point, now, normal)
+    const sim = this.session.simulation
+    const entity = hit.entityId
+      ? this.document.entities.find((e) => e.id === hit.entityId)
+      : undefined
+    const object = hit.entityId ? this.view.objects.get(hit.entityId) : undefined
+    if (entity?.vehicle) this.effects.audio.metalImpact(hit.point)
+    if (object && sim && hit.entityId)
+      this.view.impacts.add(
+        object,
+        sim.entityTransform(hit.entityId),
+        hit.point,
+        normal ?? [0, 1, 0],
+      )
+    else this.view.impacts.addWorld(this.view.root, hit.point, normal ?? [0, 1, 0])
+  }
   /** Repaint a vehicle with the same paint path as the vehicle menu's colour option. */
   setVehiclePaint(id: string, color: string, finish: 'paint' | 'chrome' = 'paint'): void {
     this.assertAlive()
@@ -5037,6 +5087,15 @@ export class GameRuntime {
           this.gallery.lastBurst.scale,
         )
       if (shot) events.push(shot)
+      if (shot?.fired && this.shotListeners.size) {
+        const hit = this.gallery.lastHit
+        const report: ShotReport = {
+          origin: [...weaponPosition] as Vec3Tuple,
+          end: hit?.point ?? ((shot.end ? [...shot.end] : [...weaponPosition]) as Vec3Tuple),
+          hit: hit ? { ...hit } : null,
+        }
+        for (const listener of [...this.shotListeners]) listener(report)
+      }
       if (shot?.fired) {
         this.effects.audio.weaponSound('hammer', weaponPosition)
         this.effects.audio.gunshot(weaponPosition, !!shot.locked)

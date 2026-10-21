@@ -11,7 +11,8 @@
  *
  * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 8 peers),
  * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer),
- * PALETTE (comma-separated #rrggbb, default eight distinct car colours).
+ * PALETTE (comma-separated #rrggbb, default eight distinct car colours),
+ * MAX_EVENTS (default 15 game events/s per peer; extra events are dropped).
  */
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
@@ -66,6 +67,23 @@ function validSnapshot(message) {
   )
 }
 
+const KIND = /^[A-Za-z0-9_.-]{1,32}$/
+function validEventData(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false
+  const entries = Object.entries(data)
+  return (
+    entries.length <= 16 &&
+    entries.every(
+      ([key, value]) =>
+        key.length <= 32 &&
+        (typeof value === 'boolean' ||
+          Number.isFinite(value) ||
+          (typeof value === 'string' && value.length <= 64) ||
+          (Array.isArray(value) && value.length <= 4 && value.every(Number.isFinite))),
+    )
+  )
+}
+
 function cleanMeta(meta) {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return {}
   const out = {}
@@ -83,6 +101,7 @@ export function startRelay({
   maxRoom = Number(process.env.MAX_ROOM ?? 8),
   maxFrame = Number(process.env.MAX_FRAME ?? 4096),
   maxRate = Number(process.env.MAX_RATE ?? 60),
+  maxEvents = Number(process.env.MAX_EVENTS ?? 15),
   palette = (process.env.PALETTE ?? '').split(',').filter((c) => COLOR.test(c.trim())).length
     ? process.env.PALETTE.split(',')
         .map((c) => c.trim())
@@ -121,13 +140,14 @@ export function startRelay({
   }
 
   wss.on('connection', (socket) => {
-    socket.nabla = { room: null, windowStart: Date.now(), frames: 0 }
+    socket.nabla = { room: null, windowStart: Date.now(), frames: 0, events: 0 }
     socket.on('message', (data, binary) => {
       const state = socket.nabla
       const now = Date.now()
       if (now - state.windowStart >= 1000) {
         state.windowStart = now
         state.frames = 0
+        state.events = 0
       }
       if (++state.frames > maxRate || binary) return
       let message
@@ -168,6 +188,16 @@ export function startRelay({
           seq: message.seq,
           state: message.state,
           ...(message.extra ? { extra: message.extra } : {}),
+        })
+      } else if (message.type === 'event') {
+        const member = state.room && rooms.get(state.room)?.get(socket)
+        if (!member || typeof message.kind !== 'string' || !KIND.test(message.kind)) return
+        if (!validEventData(message.data) || ++state.events > maxEvents) return
+        broadcast(state.room, socket, {
+          type: 'event',
+          peer: member.peer,
+          kind: message.kind,
+          data: message.data,
         })
       } else if (message.type === 'profile') {
         const member = state.room && rooms.get(state.room)?.get(socket)
