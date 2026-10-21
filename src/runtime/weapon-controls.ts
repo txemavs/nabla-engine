@@ -11,9 +11,7 @@ export class WeaponControls {
     private readonly aim: (held: boolean) => void,
     toolbar?: GameToolbar,
   ) {
-    this.root.className = 'weapon-controls'
-    this.root.style.cssText =
-      'position:absolute;right:8px;top:220px;z-index:48;display:flex;flex-direction:column;gap:8px;pointer-events:auto;max-width:260px'
+    this.root.className = 'weapon-controls nabla-btn-group nabla-btn-group--column'
     const options = { signal: this.lifetime.signal }
     const aiming = (held: boolean) => {
       this.aiming = held
@@ -40,8 +38,7 @@ export class WeaponControls {
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         icon +
         '</svg>'
-      button.style.cssText =
-        'width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--button,#252525);color:var(--ink,#eee);touch-action:none;cursor:pointer'
+      GameToolbar.styleButton(button)
       button.addEventListener(
         'pointerdown',
         (event) => {
@@ -75,7 +72,7 @@ export class WeaponControls {
     this.setActive(false)
   }
   setActive(active: boolean): void {
-    this.root.style.display = active ? 'flex' : 'none'
+    this.root.hidden = !active
     if (!active && this.aiming) {
       this.aiming = false
       this.aim(false)

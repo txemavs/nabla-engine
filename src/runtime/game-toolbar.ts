@@ -4,9 +4,9 @@ import { cameraFovRange } from './camera-fov.js'
 export class GameToolbar {
   readonly root = document.createElement('div')
   private readonly lifetime = new AbortController()
+  /** Shared engine button look (`.nabla-btn` in interface-style.ts). */
   static styleButton(button: HTMLButtonElement): void {
-    button.style.cssText =
-      'width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--button,#252525);color:var(--ink,#eee);touch-action:none;cursor:pointer'
+    button.classList.add('nabla-btn')
   }
   constructor(
     host: HTMLElement,
@@ -28,14 +28,14 @@ export class GameToolbar {
 .nabla-slider-panel label { display:flex;align-items:center;flex-direction:column;gap:6px; }`
       document.head.append(style)
     }
-    this.root.className = 'game-toolbar'
+    this.root.className =
+      'game-toolbar nabla-btn-group nabla-btn-group--column nabla-corner nabla-corner--tr'
     this.root.setAttribute('role', 'group')
     this.root.setAttribute('aria-label', 'Controles del juego')
-    this.root.style.cssText =
-      'position:fixed;right:20px;top:72px;z-index:48;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto;max-height:calc(100% - 70px)'
     this.setVisible(false)
     const group = document.createElement('div')
-    group.style.cssText = 'order:30;position:relative'
+    group.className = 'nabla-btn-popover'
+    group.style.order = '30'
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset.toolbarLabel = 'FOV'
@@ -47,8 +47,6 @@ export class GameToolbar {
     GameToolbar.styleButton(button)
     const panel = document.createElement('div')
     panel.hidden = true
-    panel.style.cssText =
-      'position:absolute;right:46px;bottom:0;width:76px;padding:8px;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--surface,#1e1e1e);color:var(--ink,#eee);font:14px Arial,sans-serif'
     const label = document.createElement('label')
     const output = document.createElement('span')
     const input = document.createElement('input')
@@ -96,7 +94,8 @@ export class GameToolbar {
     if (resolution) {
       const scales = [0.5, 1, 1.5, 2]
       const rg = document.createElement('div')
-      rg.style.cssText = 'position:relative;order:31'
+      rg.className = 'nabla-btn-popover'
+      rg.style.order = '31'
       const rb = document.createElement('button')
       rb.type = 'button'
       rb.dataset.toolbarLabel = 'QLTY'
@@ -107,7 +106,6 @@ export class GameToolbar {
       const rp = document.createElement('div')
       rp.className = 'nabla-slider-panel'
       rp.hidden = true
-      rp.style.cssText = panel.style.cssText
       const value = document.createElement('output')
       const ri = document.createElement('input')
       ri.type = 'range'
@@ -192,13 +190,13 @@ export class GameToolbar {
     this.root.append(button)
   }
   mount(group: HTMLElement, order: number): void {
-    group.style.cssText =
-      'display:flex;flex-direction:column;align-items:center;gap:8px;order:' + order
+    group.classList.add('nabla-btn-group', 'nabla-btn-group--column')
+    group.style.order = String(order)
     this.root.append(group)
     group.querySelectorAll('button').forEach((button) => GameToolbar.styleButton(button))
   }
   setVisible(visible: boolean): void {
-    this.root.style.display = visible ? 'flex' : 'none'
+    this.root.hidden = !visible
   }
   dispose(): void {
     this.lifetime.abort()
