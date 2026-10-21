@@ -82,3 +82,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 ```ts
 cancel(): void
 ```
+
+## timedDraw
+
+[Implementation, line 59](../../../../../src/simulation/weapons/bow.ts#L59)
+
+Hold-to-draw from a button (mouse, touch, gamepad): the pull grows linearly to `maxDraw` over
+`fullDrawS`. The release speed then follows the same `BowDraw` rules as the headset bow.
+
+```ts
+timedDraw(spec: Readonly<BowSpec>, heldSeconds: number, fullDrawS = 0.9): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `Number.isFinite`

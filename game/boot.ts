@@ -1,4 +1,3 @@
-import { pageSearch } from './page-query.js'
 /**
  * Standalone-game boot policy: host splash skin, optional attract (planet-from-orbit) view
  * and the short machine probe that picks the auto resolution start.
@@ -10,6 +9,7 @@ import { pageSearch } from './page-query.js'
  * Per-setting exceptions (the URL wins) are noted on each field.
  * Defaults keep the classic centred Nabla splash, no attract, probe on in auto scale.
  */
+import { pageSearch } from './page-query.js'
 import type { EngineSplashSkin } from '@nabla/engine/runtime/splash'
 import type {
   AttractOptions,

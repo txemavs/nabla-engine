@@ -577,6 +577,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `showSpeed`
 - `skyRate`
 - `skyTime`
+- `t`
 
 ## bindSceneControls.callback@437.setMinutes
 

@@ -11,10 +11,11 @@ Menu slider for the world gravity multiplier (0.5×–3×, 1× = 9.81 m/s²), ap
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/config/simulation`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 11](../../../game/gravity-ui.ts#L11)
+[Implementation, line 12](../../../game/gravity-ui.ts#L12)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -22,7 +23,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveGravityScale
 
-[Implementation, line 20](../../../game/gravity-ui.ts#L20)
+[Implementation, line 21](../../../game/gravity-ui.ts#L21)
 
 Stored multiplier when it is inside the supported range, else 1.
 
@@ -39,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveGravityScale
 
-[Implementation, line 32](../../../game/gravity-ui.ts#L32)
+[Implementation, line 33](../../../game/gravity-ui.ts#L33)
 
 ```ts
 saveGravityScale(scale: number, storage: StorageLike | undefined = browserStorage()): void
@@ -53,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## describe
 
-[Implementation, line 43](../../../game/gravity-ui.ts#L43)
+[Implementation, line 44](../../../game/gravity-ui.ts#L44)
 
 ```ts
 describe(scale: number): string
@@ -66,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindGravityScaleSlider
 
-[Implementation, line 48](../../../game/gravity-ui.ts#L48)
+[Implementation, line 49](../../../game/gravity-ui.ts#L49)
 
 «Gravedad» slider in the «Conducción» section (Ajustes → Opciones).
 
@@ -84,10 +85,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `label.append`
 - `menuSection`
 - `sync`
+- `t`
 
 ## bindGravityScaleSlider.sync
 
-[Implementation, line 60](../../../game/gravity-ui.ts#L60)
+[Implementation, line 61](../../../game/gravity-ui.ts#L61)
 
 ```ts
 sync(scale: number): inferred by TypeScript; see implementation
@@ -99,12 +101,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `describe`
 - `input.setAttribute`
 
-## bindGravityScaleSlider.callback@65
+## bindGravityScaleSlider.callback@66
 
-[Implementation, line 65](../../../game/gravity-ui.ts#L65)
+[Implementation, line 66](../../../game/gravity-ui.ts#L66)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@66(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

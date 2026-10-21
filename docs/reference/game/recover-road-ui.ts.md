@@ -10,10 +10,11 @@ Menu toggle for the R reset: nearest road/vía (default on) vs upright in place.
 
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 9](../../../game/recover-road-ui.ts#L9)
+[Implementation, line 10](../../../game/recover-road-ui.ts#L10)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -21,7 +22,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveRecoverToRoadEnabled
 
-[Implementation, line 18](../../../game/recover-road-ui.ts#L18)
+[Implementation, line 19](../../../game/recover-road-ui.ts#L19)
 
 Resolve initial preference like the flip cinematic: localStorage > boot (URL/NABLA_BOOT) > on.
 
@@ -36,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveRecoverToRoadEnabled
 
-[Implementation, line 28](../../../game/recover-road-ui.ts#L28)
+[Implementation, line 29](../../../game/recover-road-ui.ts#L29)
 
 ```ts
 saveRecoverToRoadEnabled(enabled: boolean, storage: StorageLike | undefined = browserStorage()): void
@@ -49,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindRecoverToRoadToggle
 
-[Implementation, line 40](../../../game/recover-road-ui.ts#L40)
+[Implementation, line 41](../../../game/recover-road-ui.ts#L41)
 
 Checkbox in its own «Conducción» section (shown under Ajustes → Opciones).
 
@@ -65,13 +66,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.append`
 - `label.append`
 - `menuSection`
+- `t`
 
-## bindRecoverToRoadToggle.callback@49
+## bindRecoverToRoadToggle.callback@50
 
-[Implementation, line 49](../../../game/recover-road-ui.ts#L49)
+[Implementation, line 50](../../../game/recover-road-ui.ts#L50)
 
 ```ts
-callback@49(): inferred by TypeScript; see implementation
+callback@50(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

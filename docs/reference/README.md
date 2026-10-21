@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **597 modules; 7363 executable function definitions**.
+Coverage: **604 modules; 7427 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -28,6 +28,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [game/control-hints.ts](game/control-hints.ts.md) | 1 |
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
 | [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
+| [game/drive-host.ts](game/drive-host.ts.md) | 2 |
 | [game/drive.ts](game/drive.ts.md) | 17 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 4 |
@@ -49,13 +50,13 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [game/main.ts](game/main.ts.md) | 1 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 16 |
+| [game/page-query.ts](game/page-query.ts.md) | 3 |
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
-| [game/recurve-bow-model.ts](game/recurve-bow-model.ts.md) | 0 |
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 114 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 122 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
 | [game/settings-navigation-styles.ts](game/settings-navigation-styles.ts.md) | 0 |
@@ -67,6 +68,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [game/steering-wheel-controls.ts](game/steering-wheel-controls.ts.md) | 11 |
 | [game/telemetry.ts](game/telemetry.ts.md) | 1 |
 | [game/terrain-cache.ts](game/terrain-cache.ts.md) | 19 |
+| [game/terrain-host.ts](game/terrain-host.ts.md) | 2 |
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 16 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 15 |
@@ -75,6 +77,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [game/vehicle-preview.ts](game/vehicle-preview.ts.md) | 3 |
 | [game/vr-entry.ts](game/vr-entry.ts.md) | 21 |
 | [game/vr-ui.ts](game/vr-ui.ts.md) | 26 |
+| [game/world-source.ts](game/world-source.ts.md) | 2 |
 | [game/xr-calibration-ui.ts](game/xr-calibration-ui.ts.md) | 0 |
 | [game/xr-device-info.ts](game/xr-device-info.ts.md) | 15 |
 | [game/xr-entry.ts](game/xr-entry.ts.md) | 1 |
@@ -121,16 +124,17 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/catalog/presentation/motorcycle-paint.ts](src/catalog/presentation/motorcycle-paint.ts.md) | 2 |
 | [src/catalog/presentation/police-equipment.ts](src/catalog/presentation/police-equipment.ts.md) | 14 |
 | [src/catalog/presentation/road-vehicles.ts](src/catalog/presentation/road-vehicles.ts.md) | 22 |
+| [src/catalog/preset-bucket.ts](src/catalog/preset-bucket.ts.md) | 1 |
 | [src/catalog/props/pallet.ts](src/catalog/props/pallet.ts.md) | 1 |
 | [src/catalog/vehicles/generated-rigs.ts](src/catalog/vehicles/generated-rigs.ts.md) | 0 |
 | [src/catalog/vehicles/index.ts](src/catalog/vehicles/index.ts.md) | 0 |
-| [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 9 |
+| [src/catalog/vehicles/library.ts](src/catalog/vehicles/library.ts.md) | 10 |
 | [src/catalog/vehicles/preset-source.browser.ts](src/catalog/vehicles/preset-source.browser.ts.md) | 2 |
 | [src/catalog/vehicles/preset-source.ts](src/catalog/vehicles/preset-source.ts.md) | 5 |
 | [src/catalog/vehicles/trailer-boxes.ts](src/catalog/vehicles/trailer-boxes.ts.md) | 5 |
-| [src/catalog/weapons/held-library.ts](src/catalog/weapons/held-library.ts.md) | 6 |
+| [src/catalog/weapons/held-library.ts](src/catalog/weapons/held-library.ts.md) | 7 |
 | [src/catalog/weapons/index.ts](src/catalog/weapons/index.ts.md) | 0 |
-| [src/catalog/weapons/library.ts](src/catalog/weapons/library.ts.md) | 8 |
+| [src/catalog/weapons/library.ts](src/catalog/weapons/library.ts.md) | 9 |
 | [src/catalog/weapons/slots.ts](src/catalog/weapons/slots.ts.md) | 6 |
 | [src/catalog/weapons/weapon-source.browser.ts](src/catalog/weapons/weapon-source.browser.ts.md) | 2 |
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
@@ -314,7 +318,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 29 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 163 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 164 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
@@ -415,7 +419,8 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 500 |
+| [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 510 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -432,7 +437,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 7 |
-| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 13 |
+| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 15 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
@@ -442,7 +447,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/interface-theme.ts](src/runtime/interface-theme.ts.md) | 0 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
-| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 13 |
+| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 23 |
 | [src/runtime/map-inspector.ts](src/runtime/map-inspector.ts.md) | 5 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.eu.ts](src/runtime/messages.eu.ts.md) | 0 |
@@ -501,7 +506,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
 | [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 37 |
 | [src/runtime/xr-body-anchor.ts](src/runtime/xr-body-anchor.ts.md) | 3 |
-| [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 26 |
+| [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 23 |
 | [src/runtime/xr-calibration-screen.ts](src/runtime/xr-calibration-screen.ts.md) | 38 |
 | [src/runtime/xr-calibration.ts](src/runtime/xr-calibration.ts.md) | 18 |
 | [src/runtime/xr-debug.ts](src/runtime/xr-debug.ts.md) | 10 |
@@ -557,7 +562,7 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 126 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 129 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/query-world.ts](src/simulation/query-world.ts.md) | 26 |
@@ -566,12 +571,12 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
 | [src/simulation/scene-queries.ts](src/simulation/scene-queries.ts.md) | 5 |
 | [src/simulation/simulation-worker-host.ts](src/simulation/simulation-worker-host.ts.md) | 39 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 292 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 294 |
 | [src/simulation/simulation.worker.ts](src/simulation/simulation.worker.ts.md) | 0 |
 | [src/simulation/snapshot-clock.ts](src/simulation/snapshot-clock.ts.md) | 12 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
-| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 146 |
+| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 147 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
 | [src/simulation/vehicle-damage.ts](src/simulation/vehicle-damage.ts.md) | 6 |
@@ -593,8 +598,9 @@ Coverage: **597 modules; 7363 executable function definitions**.
 | [src/simulation/vehicles/wheeled/contracts.ts](src/simulation/vehicles/wheeled/contracts.ts.md) | 1 |
 | [src/simulation/vehicles/wheeled/index.ts](src/simulation/vehicles/wheeled/index.ts.md) | 0 |
 | [src/simulation/vehicles/wheeled/runtime.ts](src/simulation/vehicles/wheeled/runtime.ts.md) | 31 |
+| [src/simulation/weapons/arrow-flight.ts](src/simulation/weapons/arrow-flight.ts.md) | 9 |
 | [src/simulation/weapons/ballistics.ts](src/simulation/weapons/ballistics.ts.md) | 12 |
-| [src/simulation/weapons/bow.ts](src/simulation/weapons/bow.ts.md) | 6 |
+| [src/simulation/weapons/bow.ts](src/simulation/weapons/bow.ts.md) | 7 |
 | [src/simulation/weapons/casings.ts](src/simulation/weapons/casings.ts.md) | 17 |
 | [src/simulation/weapons/firearm.ts](src/simulation/weapons/firearm.ts.md) | 17 |
 | [src/simulation/weapons/hk-variants.ts](src/simulation/weapons/hk-variants.ts.md) | 0 |

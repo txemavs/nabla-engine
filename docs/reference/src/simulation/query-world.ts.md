@@ -25,7 +25,7 @@ The mirror is never stepped and never simulates anything.
 
 ## describeShape
 
-[Implementation, line 52](../../../../src/simulation/query-world.ts#L52)
+[Implementation, line 53](../../../../src/simulation/query-world.ts#L53)
 
 ```ts
 describeShape(shape: Body['shapes'][number]): QueryShape
@@ -33,18 +33,18 @@ describeShape(shape: Body['shapes'][number]): QueryShape
 
 ## shapeSignature
 
-[Implementation, line 61](../../../../src/simulation/query-world.ts#L61)
+[Implementation, line 64](../../../../src/simulation/query-world.ts#L64)
 
 ```ts
 shapeSignature(body: Body): string
 ```
 
-## shapeSignature.callback@63
+## shapeSignature.callback@66
 
-[Implementation, line 63](../../../../src/simulation/query-world.ts#L63)
+[Implementation, line 66](../../../../src/simulation/query-world.ts#L66)
 
 ```ts
-callback@63(s, i): inferred by TypeScript; see implementation
+callback@66(s, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shapeId
 
-[Implementation, line 73](../../../../src/simulation/query-world.ts#L73)
+[Implementation, line 76](../../../../src/simulation/query-world.ts#L76)
 
 ```ts
 shapeId(shape: object): number
@@ -66,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorldExporter.export
 
-[Implementation, line 82](../../../../src/simulation/query-world.ts#L82)
+[Implementation, line 85](../../../../src/simulation/query-world.ts#L85)
 
 Worker side: remembers what the main thread already has and produces the next delta.
 
@@ -89,20 +89,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `world.bodies.forEach`
 - `world.bodies.reduce`
 
-## QueryWorldExporter.export.callback@87
-
-[Implementation, line 87](../../../../src/simulation/query-world.ts#L87)
-
-```ts
-callback@87(n, body): inferred by TypeScript; see implementation
-```
-
 ## QueryWorldExporter.export.callback@90
 
 [Implementation, line 90](../../../../src/simulation/query-world.ts#L90)
 
 ```ts
-callback@90(body): inferred by TypeScript; see implementation
+callback@90(n, body): inferred by TypeScript; see implementation
+```
+
+## QueryWorldExporter.export.callback@93
+
+[Implementation, line 93](../../../../src/simulation/query-world.ts#L93)
+
+```ts
+callback@93(body): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -116,24 +116,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.sent.get`
 - `this.sent.set`
 
-## QueryWorldExporter.export.callback@90.callback@98
+## QueryWorldExporter.export.callback@93.callback@101
 
-[Implementation, line 98](../../../../src/simulation/query-world.ts#L98)
+[Implementation, line 101](../../../../src/simulation/query-world.ts#L101)
 
 ```ts
-callback@98(shape, s): inferred by TypeScript; see implementation
+callback@101(shape, s): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `describeShape`
 
-## QueryWorldExporter.export.callback@90.callback@110
+## QueryWorldExporter.export.callback@93.callback@113
 
-[Implementation, line 110](../../../../src/simulation/query-world.ts#L110)
+[Implementation, line 113](../../../../src/simulation/query-world.ts#L113)
 
 ```ts
-callback@110(_, s): inferred by TypeScript; see implementation
+callback@113(_, s): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -142,25 +142,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `collider.translation`
 - `poses.set`
 
-## QueryWorldExporter.export.callback@136
+## QueryWorldExporter.export.callback@139
 
-[Implementation, line 136](../../../../src/simulation/query-world.ts#L136)
+[Implementation, line 139](../../../../src/simulation/query-world.ts#L139)
 
 ```ts
-callback@136(b): inferred by TypeScript; see implementation
+callback@139(b): inferred by TypeScript; see implementation
 ```
 
-## QueryWorldExporter.export.callback@137
+## QueryWorldExporter.export.callback@140
 
-[Implementation, line 137](../../../../src/simulation/query-world.ts#L137)
+[Implementation, line 140](../../../../src/simulation/query-world.ts#L140)
 
 ```ts
-callback@137([id, body]): inferred by TypeScript; see implementation
+callback@140([id, body]): inferred by TypeScript; see implementation
 ```
 
 ## colliderDesc
 
-[Implementation, line 144](../../../../src/simulation/query-world.ts#L144)
+[Implementation, line 147](../../../../src/simulation/query-world.ts#L147)
 
 ```ts
 colliderDesc(shape: QueryShape, sensor: boolean): ReturnType<typeof RAPIER.ColliderDesc.cuboid> | null
@@ -170,6 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Float32Array`
 - `RAPIER.ColliderDesc.ball`
+- `RAPIER.ColliderDesc.capsule`
 - `RAPIER.ColliderDesc.cuboid`
 - `RAPIER.ColliderDesc.heightfield`
 - `RAPIER.ColliderDesc.trimesh`
@@ -178,7 +179,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.apply
 
-[Implementation, line 182](../../../../src/simulation/query-world.ts#L182)
+[Implementation, line 188](../../../../src/simulation/query-world.ts#L188)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -200,12 +201,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.world.origin.set`
 - `this.world.raw.updateSceneQueries`
 
-## QueryWorld.apply.callback@188
+## QueryWorld.apply.callback@194
 
-[Implementation, line 188](../../../../src/simulation/query-world.ts#L188)
+[Implementation, line 194](../../../../src/simulation/query-world.ts#L194)
 
 ```ts
-callback@188({ shape, sensor }): inferred by TypeScript; see implementation
+callback@194({ shape, sensor }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -213,12 +214,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `colliderDesc`
 - `this.world.raw.createCollider`
 
-## QueryWorld.apply.callback@196
+## QueryWorld.apply.callback@202
 
-[Implementation, line 196](../../../../src/simulation/query-world.ts#L196)
+[Implementation, line 202](../../../../src/simulation/query-world.ts#L202)
 
 ```ts
-callback@196(id): inferred by TypeScript; see implementation
+callback@202(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -227,7 +228,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.drop
 
-[Implementation, line 211](../../../../src/simulation/query-world.ts#L211)
+[Implementation, line 217](../../../../src/simulation/query-world.ts#L217)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -243,7 +244,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.exclusions
 
-[Implementation, line 220](../../../../src/simulation/query-world.ts#L220)
+[Implementation, line 226](../../../../src/simulation/query-world.ts#L226)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -260,7 +261,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.exclusions.get
 
-[Implementation, line 221](../../../../src/simulation/query-world.ts#L221)
+[Implementation, line 227](../../../../src/simulation/query-world.ts#L227)
 
 ```ts
 get(id: number | null): inferred by TypeScript; see implementation
@@ -270,12 +271,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.bodies.get`
 
-## QueryWorld.exclusions.callback@225
+## QueryWorld.exclusions.callback@231
 
-[Implementation, line 225](../../../../src/simulation/query-world.ts#L225)
+[Implementation, line 231](../../../../src/simulation/query-world.ts#L231)
 
 ```ts
-callback@225(id): inferred by TypeScript; see implementation
+callback@231(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -284,7 +285,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.shoot
 
-[Implementation, line 230](../../../../src/simulation/query-world.ts#L230)
+[Implementation, line 236](../../../../src/simulation/query-world.ts#L236)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -300,33 +301,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.exclusions`
 - `this.ids.entities.find`
 
-## QueryWorld.shoot.callback@237
+## QueryWorld.shoot.callback@243
 
-[Implementation, line 237](../../../../src/simulation/query-world.ts#L237)
+[Implementation, line 243](../../../../src/simulation/query-world.ts#L243)
 
 ```ts
-callback@237([id]): inferred by TypeScript; see implementation
+callback@243([id]): inferred by TypeScript; see implementation
 ```
 
-## QueryWorld.shoot.callback@248
+## QueryWorld.shoot.callback@254
 
-[Implementation, line 248](../../../../src/simulation/query-world.ts#L248)
+[Implementation, line 254](../../../../src/simulation/query-world.ts#L254)
 
 ```ts
-callback@248([, body]): inferred by TypeScript; see implementation
+callback@254([, body]): inferred by TypeScript; see implementation
 ```
 
-## QueryWorld.shoot.callback@252
+## QueryWorld.shoot.callback@258
 
-[Implementation, line 252](../../../../src/simulation/query-world.ts#L252)
+[Implementation, line 258](../../../../src/simulation/query-world.ts#L258)
 
 ```ts
-callback@252([, id]): inferred by TypeScript; see implementation
+callback@258([, id]): inferred by TypeScript; see implementation
 ```
 
 ## QueryWorld.cameraPosition
 
-[Implementation, line 257](../../../../src/simulation/query-world.ts#L257)
+[Implementation, line 263](../../../../src/simulation/query-world.ts#L263)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -341,7 +342,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## QueryWorld.bodyCount
 
-[Implementation, line 261](../../../../src/simulation/query-world.ts#L261)
+[Implementation, line 267](../../../../src/simulation/query-world.ts#L267)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 
@@ -351,7 +352,7 @@ bodyCount(): number
 
 ## QueryWorld.dispose
 
-[Implementation, line 265](../../../../src/simulation/query-world.ts#L265)
+[Implementation, line 271](../../../../src/simulation/query-world.ts#L271)
 
 Main-thread side: a never-stepped Rapier world answering instant queries.
 

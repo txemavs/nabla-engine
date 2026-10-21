@@ -6,13 +6,14 @@
 
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/config/controls`
 - `@nabla/engine/planet/lat-lon`
 - `./menu.js`
 
 ## jumpToPosition
 
-[Implementation, line 17](../../../game/position.ts#L17)
+[Implementation, line 18](../../../game/position.ts#L18)
 
 The URL for starting over the position written in `text`, keeping the rest of `search`.
 
@@ -35,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## currentPositionText
 
-[Implementation, line 38](../../../game/position.ts#L38)
+[Implementation, line 39](../../../game/position.ts#L39)
 
 The player's position as text, e.g. "43.33860, -1.78990".
 
@@ -49,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## copyText
 
-[Implementation, line 43](../../../game/position.ts#L43)
+[Implementation, line 44](../../../game/position.ts#L44)
 
 Copy text; works on plain-http pages, where `navigator.clipboard` does not exist.
 
@@ -69,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showLocation
 
-[Implementation, line 68](../../../game/position.ts#L68)
+[Implementation, line 69](../../../game/position.ts#L69)
 
 Show the player's position in the HUD as "lat, lon" (click to copy) and tell the menu.
 
@@ -84,12 +85,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `el.addEventListener`
 - `listener`
 
-## showLocation.callback@75
+## showLocation.callback@76
 
-[Implementation, line 75](../../../game/position.ts#L75)
+[Implementation, line 76](../../../game/position.ts#L76)
 
 ```ts
-callback@75(): inferred by TypeScript; see implementation
+callback@76(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -99,14 +100,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindPosition
 
-[Implementation, line 86](../../../game/position.ts#L86)
+[Implementation, line 87](../../../game/position.ts#L87)
 
 Menu section "Posición": the live latitude/longitude with a copy button, and a field that takes
 "latitud, longitud" and restarts at that spot. A spot over a cell the host lacks gets the usual
 "no hay terreno" message with the button to the nearest available cell.
 
 ```ts
-bindPosition(search: string = location.search, navigate: (next: string) => void = (next) => location.assign(location.pathname + next)): void
+bindPosition(search: string = pageSearch(), navigate: (next: string) => void = (next) => location.assign(location.pathname + next)): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -120,15 +121,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `menuSection`
 - `message.setAttribute`
 - `now.setAttribute`
+- `pageSearch`
 - `section.append`
 - `update`
 
-## bindPosition.callback@88
+## bindPosition.callback@89
 
-[Implementation, line 88](../../../game/position.ts#L88)
+[Implementation, line 89](../../../game/position.ts#L89)
 
 ```ts
-callback@88(next): inferred by TypeScript; see implementation
+callback@89(next): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -137,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindPosition.update
 
-[Implementation, line 116](../../../game/position.ts#L116)
+[Implementation, line 117](../../../game/position.ts#L117)
 
 ```ts
 update(position: LatLon | null): inferred by TypeScript; see implementation
@@ -147,12 +149,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `formatLatLon`
 
-## bindPosition.callback@123
+## bindPosition.callback@124
 
-[Implementation, line 123](../../../game/position.ts#L123)
+[Implementation, line 124](../../../game/position.ts#L124)
 
 ```ts
-callback@123(): inferred by TypeScript; see implementation
+callback@124(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -162,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindPosition.submit
 
-[Implementation, line 128](../../../game/position.ts#L128)
+[Implementation, line 129](../../../game/position.ts#L129)
 
 ```ts
 submit(): inferred by TypeScript; see implementation
@@ -173,12 +175,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `jumpToPosition`
 - `navigate`
 
-## bindPosition.callback@138
+## bindPosition.callback@139
 
-[Implementation, line 138](../../../game/position.ts#L138)
+[Implementation, line 139](../../../game/position.ts#L139)
 
 ```ts
-callback@138(event): inferred by TypeScript; see implementation
+callback@139(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

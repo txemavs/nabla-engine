@@ -11,10 +11,11 @@
 - `../../config/input-bindings.js`
 - `./controllers.js`
 - `./feedback.js`
+- `../../i18n/index.js`
 
 ## createUsbSettingsPanel
 
-[Implementation, line 17](../../../../../src/runtime/usb/settings-panel.ts#L17)
+[Implementation, line 18](../../../../../src/runtime/usb/settings-panel.ts#L18)
 
 Host supplies controllers/feedback; the panel never accesses a simulation or synthesizes keys.
 
@@ -53,6 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.append`
 - `row`
 - `status.setAttribute`
+- `t`
 - `target.append`
 - `target.setAttribute`
 - `templates.append`

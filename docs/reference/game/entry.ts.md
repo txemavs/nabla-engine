@@ -4,16 +4,15 @@
 
 [Source](../../../game/entry.ts)
 
-Which game mode a page runs and with which query: the URL first, then the remembered terrain choice.
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/planet/terrain-source`
 - `./terrain.js`
 
 ## browserStorage
 
-[Implementation, line 25](../../../game/entry.ts#L25)
+[Implementation, line 26](../../../game/entry.ts#L26)
 
 ```ts
 browserStorage(): SourceStorage | undefined
@@ -21,7 +20,7 @@ browserStorage(): SourceStorage | undefined
 
 ## configuredPackagesUrl
 
-[Implementation, line 39](../../../game/entry.ts#L39)
+[Implementation, line 40](../../../game/entry.ts#L40)
 
 URL parameters win (they keep every old link working). A URL that names no source uses the
 remembered choice; with none remembered, the package folder when it publishes the default start
@@ -35,10 +34,10 @@ configuredPackagesUrl(): string
 
 ## resolveEntry
 
-[Implementation, line 46](../../../game/entry.ts#L46)
+[Implementation, line 47](../../../game/entry.ts#L47)
 
 ```ts
-resolveEntry(search: string = location.search, storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder, packagesUrl: string = configuredPackagesUrl()): Promise<Entry>
+resolveEntry(search: string = pageSearch(), storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder, packagesUrl: string = configuredPackagesUrl()): Promise<Entry>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -54,6 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `merged.toString`
 - `next.set`
 - `next.toString`
+- `pageSearch`
 - `params.get`
 - `params.has`
 - `parseTerrainSource`
@@ -62,12 +62,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wantsTerrain`
 - `withTerrainSource`
 
-## resolveEntry.callback@73
+## resolveEntry.callback@74
 
-[Implementation, line 73](../../../game/entry.ts#L73)
+[Implementation, line 74](../../../game/entry.ts#L74)
 
 ```ts
-callback@73(key): inferred by TypeScript; see implementation
+callback@74(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

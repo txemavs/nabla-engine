@@ -9,10 +9,11 @@ Keyboard help reads the Engine catalog directly; no parallel list of assignments
 ## Module dependencies
 
 - `@nabla/engine/config/controls`
+- `@nabla/engine/i18n`
 
 ## createControlsSection
 
-[Implementation, line 10](../../../game/settings-controls.ts#L10)
+[Implementation, line 11](../../../game/settings-controls.ts#L11)
 
 ```ts
 createControlsSection(doc: Document): HTMLElement
@@ -29,16 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.append`
 - `search.addEventListener`
 - `search.setAttribute`
+- `t`
 - `table.append`
 - `thead.append`
 - `tools.append`
 
-## createControlsSection.callback@36
+## createControlsSection.callback@37
 
-[Implementation, line 36](../../../game/settings-controls.ts#L36)
+[Implementation, line 37](../../../game/settings-controls.ts#L37)
 
 ```ts
-callback@36([label], index): inferred by TypeScript; see implementation
+callback@37([label], index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -49,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createControlsSection.refresh
 
-[Implementation, line 62](../../../game/settings-controls.ts#L62)
+[Implementation, line 63](../../../game/settings-controls.ts#L63)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -68,20 +70,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `search.value.trim`
 - `search.value.trim().toLocaleLowerCase`
 
-## createControlsSection.refresh.callback@66
+## createControlsSection.refresh.callback@67
 
-[Implementation, line 66](../../../game/settings-controls.ts#L66)
-
-```ts
-callback@66([action, binding]): inferred by TypeScript; see implementation
-```
-
-## createControlsSection.refresh.callback@68
-
-[Implementation, line 68](../../../game/settings-controls.ts#L68)
+[Implementation, line 67](../../../game/settings-controls.ts#L67)
 
 ```ts
-callback@68(binding): inferred by TypeScript; see implementation
+callback@67([action, binding]): inferred by TypeScript; see implementation
 ```
 
 ## createControlsSection.refresh.callback@69
@@ -92,18 +86,26 @@ callback@68(binding): inferred by TypeScript; see implementation
 callback@69(binding): inferred by TypeScript; see implementation
 ```
 
+## createControlsSection.refresh.callback@70
+
+[Implementation, line 70](../../../game/settings-controls.ts#L70)
+
+```ts
+callback@70(binding): inferred by TypeScript; see implementation
+```
+
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
 - `[...new Set(binding.keys.map(keyLabel))].join`
 - `binding.keys.map`
 
-## createControlsSection.refresh.callback@80
+## createControlsSection.refresh.callback@81
 
-[Implementation, line 80](../../../game/settings-controls.ts#L80)
+[Implementation, line 81](../../../game/settings-controls.ts#L81)
 
 ```ts
-callback@80(action): inferred by TypeScript; see implementation
+callback@81(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -112,12 +114,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...new Set(inputBindings[action].keys.map(keyLabel))].join`
 - `inputBindings[action].keys.map`
 
-## createControlsSection.refresh.callback@84
+## createControlsSection.refresh.callback@85
 
-[Implementation, line 84](../../../game/settings-controls.ts#L84)
+[Implementation, line 85](../../../game/settings-controls.ts#L85)
 
 ```ts
-callback@84(row): inferred by TypeScript; see implementation
+callback@85(row): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -125,12 +127,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase`
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase('es').includes`
 
-## createControlsSection.refresh.callback@88
+## createControlsSection.refresh.callback@89
 
-[Implementation, line 88](../../../game/settings-controls.ts#L88)
+[Implementation, line 89](../../../game/settings-controls.ts#L89)
 
 ```ts
-callback@88(row): inferred by TypeScript; see implementation
+callback@89(row): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

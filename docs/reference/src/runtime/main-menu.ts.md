@@ -209,3 +209,147 @@ callback@234(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `options.onClick`
+
+## mountSideMenu
+
+[Implementation, line 332](../../../../src/runtime/main-menu.ts#L332)
+
+```ts
+mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `box.append`
+- `compact?.addEventListener`
+- `doc.addEventListener`
+- `doc.body.append`
+- `doc.createElement`
+- `doc.defaultView?.matchMedia`
+- `doc.getElementById`
+- `doc.head.append`
+- `entries.set`
+- `group.append`
+- `groups.push`
+- `item.addEventListener`
+- `layout`
+- `nav.addEventListener`
+- `nav.append`
+- `nav.setAttribute`
+- `options.t`
+
+## mountSideMenu.setOpen
+
+[Implementation, line 341](../../../../src/runtime/main-menu.ts#L341)
+
+```ts
+setOpen(open: boolean): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `doc.body.classList.toggle`
+- `doc.exitPointerLock`
+- `options.toggle`
+- `options.toggle?.()?.setAttribute`
+
+## mountSideMenu.callback@377
+
+[Implementation, line 377](../../../../src/runtime/main-menu.ts#L377)
+
+```ts
+callback@377(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entry.run!`
+- `setOpen`
+
+## mountSideMenu.layout
+
+[Implementation, line 391](../../../../src/runtime/main-menu.ts#L391)
+
+```ts
+layout(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `groups.forEach`
+- `nav.classList.toggle`
+
+## mountSideMenu.layout.callback@394
+
+[Implementation, line 394](../../../../src/runtime/main-menu.ts#L394)
+
+```ts
+callback@394(group, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `group.removeAttribute`
+
+## mountSideMenu.callback@402
+
+[Implementation, line 402](../../../../src/runtime/main-menu.ts#L402)
+
+```ts
+callback@402(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(event.target as HTMLElement).closest`
+- `event.preventDefault`
+- `nav.classList.contains`
+
+## mountSideMenu.callback@406
+
+[Implementation, line 406](../../../../src/runtime/main-menu.ts#L406)
+
+```ts
+callback@406(event): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `nav.contains`
+- `options.toggle`
+- `options.toggle?.()?.contains`
+- `setOpen`
+
+## mountSideMenu.isOpen
+
+[Implementation, line 420](../../../../src/runtime/main-menu.ts#L420)
+
+```ts
+isOpen(): inferred by TypeScript; see implementation
+```
+
+## mountSideMenu.toggle
+
+[Implementation, line 424](../../../../src/runtime/main-menu.ts#L424)
+
+```ts
+toggle(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setOpen`
+
+## mountSideMenu.entry
+
+[Implementation, line 425](../../../../src/runtime/main-menu.ts#L425)
+
+```ts
+entry(id): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entries.get`

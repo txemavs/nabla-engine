@@ -24,7 +24,7 @@ no root motion (the game moves the object). An `Object3D` with
 
 ## localAvatarState
 
-[Implementation, line 83](../../../../../src/render/entity/player-body.ts#L83)
+[Implementation, line 87](../../../../../src/render/entity/player-body.ts#L87)
 
 Next animation state from the player's movement. Pure, so the same rules hold wherever the
 state is computed. `previous` keeps the jump phases in order (start → loop → land).
@@ -35,7 +35,7 @@ localAvatarState(previous: AvatarAnimState, input: AvatarInput): AvatarAnimState
 
 ## PlayerBodyRig.constructor
 
-[Implementation, line 96](../../../../../src/render/entity/player-body.ts#L96)
+[Implementation, line 100](../../../../../src/render/entity/player-body.ts#L100)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -45,7 +45,7 @@ constructor(private readonly source: THREE.Object3D, readonly clips: readonly TH
 
 ## PlayerBodyRig.load
 
-[Implementation, line 100](../../../../../src/render/entity/player-body.ts#L100)
+[Implementation, line 104](../../../../../src/render/entity/player-body.ts#L104)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -63,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBodyRig.create
 
-[Implementation, line 110](../../../../../src/render/entity/player-body.ts#L110)
+[Implementation, line 114](../../../../../src/render/entity/player-body.ts#L114)
 
 A new body sharing this rig's geometry, materials and clips.
 
@@ -78,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.constructor
 
-[Implementation, line 126](../../../../../src/render/entity/player-body.ts#L126)
+[Implementation, line 130](../../../../../src/render/entity/player-body.ts#L130)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -97,17 +97,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mixer.clipAction`
 - `this.root.add`
 
-## PlayerBody.constructor.callback@132
+## PlayerBody.constructor.callback@136
 
-[Implementation, line 132](../../../../../src/render/entity/player-body.ts#L132)
+[Implementation, line 136](../../../../../src/render/entity/player-body.ts#L136)
 
 ```ts
-callback@132(object): inferred by TypeScript; see implementation
+callback@136(object): inferred by TypeScript; see implementation
 ```
 
 ## PlayerBody.state
 
-[Implementation, line 151](../../../../../src/render/entity/player-body.ts#L151)
+[Implementation, line 155](../../../../../src/render/entity/player-body.ts#L155)
 
 The state being shown (after a one-shot ends this is what follows it).
 
@@ -117,7 +117,7 @@ state(): AvatarAnimState | null
 
 ## PlayerBody.finished
 
-[Implementation, line 156](../../../../../src/render/entity/player-body.ts#L156)
+[Implementation, line 160](../../../../../src/render/entity/player-body.ts#L160)
 
 True when the one-shot clip of the current state has finished.
 
@@ -131,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.animate
 
-[Implementation, line 162](../../../../../src/render/entity/player-body.ts#L162)
+[Implementation, line 166](../../../../../src/render/entity/player-body.ts#L166)
 
 Show `state` at `speed` (m/s, sets the stride rate) and advance the clips by `dt`.
 
@@ -152,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.apply
 
-[Implementation, line 176](../../../../../src/render/entity/player-body.ts#L176)
+[Implementation, line 180](../../../../../src/render/entity/player-body.ts#L180)
 
 Remote players: place and animate from a network state.
 
@@ -168,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.headIn
 
-[Implementation, line 183](../../../../../src/render/entity/player-body.ts#L183)
+[Implementation, line 187](../../../../../src/render/entity/player-body.ts#L187)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -185,7 +185,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.dispose
 
-[Implementation, line 189](../../../../../src/render/entity/player-body.ts#L189)
+[Implementation, line 193](../../../../../src/render/entity/player-body.ts#L193)
 
 One player's body: its own skeleton and mixer over the shared rig.
 

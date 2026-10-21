@@ -4,12 +4,9 @@
 
 [Source](../../../game/terrain-cache.ts)
 
-Terrain cache and load radius in the "Terreno" menu section: disk cache size, cells kept in memory,
-load radius and "Vaciar caché". The mechanisms are the engine's (the shared IndexedDB map cache and
-PlanetWorld streaming) and Studio's vocabulary; this file only draws the controls.
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/render`
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/planet/terrain-cache`
@@ -21,24 +18,25 @@ PlanetWorld streaming) and Studio's vocabulary; this file only draws the control
 
 ## currentCacheSettings
 
-[Implementation, line 34](../../../game/terrain-cache.ts#L34)
+[Implementation, line 35](../../../game/terrain-cache.ts#L35)
 
 Remembered values, overridden field by field by the URL.
 
 ```ts
-currentCacheSettings(search: string = location.search, storage: SourceStorage | undefined = browserStorage()): TerrainCacheSettings
+currentCacheSettings(search: string = pageSearch(), storage: SourceStorage | undefined = browserStorage()): TerrainCacheSettings
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `browserStorage`
+- `pageSearch`
 - `parseStoredCache`
 - `resolveCacheSettings`
 - `storage?.getItem`
 
 ## applyCacheSettings
 
-[Implementation, line 46](../../../game/terrain-cache.ts#L46)
+[Implementation, line 47](../../../game/terrain-cache.ts#L47)
 
 Apply settings to a running game. Returns what the browser refused (e.g. no IndexedDB).
 
@@ -53,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## choice
 
-[Implementation, line 54](../../../game/terrain-cache.ts#L54)
+[Implementation, line 55](../../../game/terrain-cache.ts#L55)
 
 ```ts
 choice(id: string, text: string, values: readonly number[], format: (value: number) => string, current: number): { label: HTMLLabelElement; select: HTMLSelectElement }
@@ -70,22 +68,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `select.add`
 - `values.includes`
 
-## choice.callback@65
+## choice.callback@66
 
-[Implementation, line 65](../../../game/terrain-cache.ts#L65)
+[Implementation, line 66](../../../game/terrain-cache.ts#L66)
 
 ```ts
-callback@65(a, b): inferred by TypeScript; see implementation
+callback@66(a, b): inferred by TypeScript; see implementation
 ```
 
 ## bindTerrainCache
 
-[Implementation, line 73](../../../game/terrain-cache.ts#L73)
+[Implementation, line 74](../../../game/terrain-cache.ts#L74)
 
 Build the «Caché» section (only with a «Terreno» section), apply the remembered settings, keep the usage line fresh.
 
 ```ts
-bindTerrainCache(runtime: GameRuntime, search: string = location.search, storage: SourceStorage | undefined = browserStorage()): void
+bindTerrainCache(runtime: GameRuntime, search: string = pageSearch(), storage: SourceStorage | undefined = browserStorage()): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -103,6 +101,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `holes.addEventListener`
 - `memory.select.addEventListener`
 - `menuSection`
+- `pageSearch`
 - `panel?.addEventListener`
 - `parseStoredCache`
 - `refresh`
@@ -112,17 +111,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t`
 - `usage.setAttribute`
 
-## bindTerrainCache.callback@83
+## bindTerrainCache.callback@84
 
-[Implementation, line 83](../../../game/terrain-cache.ts#L83)
+[Implementation, line 84](../../../game/terrain-cache.ts#L84)
 
 ```ts
-callback@83(): inferred by TypeScript; see implementation
+callback@84(): inferred by TypeScript; see implementation
 ```
 
 ## bindTerrainCache.showHoles
 
-[Implementation, line 129](../../../game/terrain-cache.ts#L129)
+[Implementation, line 130](../../../game/terrain-cache.ts#L130)
 
 ```ts
 showHoles(): inferred by TypeScript; see implementation
@@ -132,18 +131,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `formatMissingReport`
 - `t`
-
-## bindTerrainCache.callback@136
-
-[Implementation, line 136](../../../game/terrain-cache.ts#L136)
-
-```ts
-callback@136(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `showHoles`
 
 ## bindTerrainCache.callback@137
 
@@ -155,11 +142,23 @@ callback@137(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `showHoles`
+
+## bindTerrainCache.callback@138
+
+[Implementation, line 138](../../../game/terrain-cache.ts#L138)
+
+```ts
+callback@138(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `runtime.clearMissingTiles`
 
 ## bindTerrainCache.change
 
-[Implementation, line 143](../../../game/terrain-cache.ts#L143)
+[Implementation, line 144](../../../game/terrain-cache.ts#L144)
 
 ```ts
 change(patch: TerrainCacheSettings): inferred by TypeScript; see implementation
@@ -179,43 +178,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `storage?.setItem`
 - `url.searchParams.set`
 
-## bindTerrainCache.change.callback@160
+## bindTerrainCache.change.callback@161
 
-[Implementation, line 160](../../../game/terrain-cache.ts#L160)
+[Implementation, line 161](../../../game/terrain-cache.ts#L161)
 
 ```ts
-callback@160(): inferred by TypeScript; see implementation
+callback@161(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t`
 
-## bindTerrainCache.change.callback@163
+## bindTerrainCache.change.callback@164
 
-[Implementation, line 163](../../../game/terrain-cache.ts#L163)
+[Implementation, line 164](../../../game/terrain-cache.ts#L164)
 
 ```ts
-callback@163(): inferred by TypeScript; see implementation
+callback@164(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 - `refresh`
-
-## bindTerrainCache.callback@170
-
-[Implementation, line 170](../../../game/terrain-cache.ts#L170)
-
-```ts
-callback@170(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `Number`
-- `change`
 
 ## bindTerrainCache.callback@171
 
@@ -243,12 +229,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `change`
 
-## bindTerrainCache.callback@175
+## bindTerrainCache.callback@173
 
-[Implementation, line 175](../../../game/terrain-cache.ts#L175)
+[Implementation, line 173](../../../game/terrain-cache.ts#L173)
 
 ```ts
-callback@175(): inferred by TypeScript; see implementation
+callback@173(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `change`
+
+## bindTerrainCache.callback@176
+
+[Implementation, line 176](../../../game/terrain-cache.ts#L176)
+
+```ts
+callback@176(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -259,7 +258,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindTerrainCache.refresh
 
-[Implementation, line 184](../../../game/terrain-cache.ts#L184)
+[Implementation, line 185](../../../game/terrain-cache.ts#L185)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -271,12 +270,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `formatMemoryCells`
 - `mapCacheStats`
 
-## bindTerrainCache.callback@198
+## bindTerrainCache.callback@199
 
-[Implementation, line 198](../../../game/terrain-cache.ts#L198)
+[Implementation, line 199](../../../game/terrain-cache.ts#L199)
 
 ```ts
-callback@198(): inferred by TypeScript; see implementation
+callback@199(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -285,12 +284,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `setInterval`
 
-## bindTerrainCache.callback@198.callback@202
+## bindTerrainCache.callback@199.callback@203
 
-[Implementation, line 202](../../../game/terrain-cache.ts#L202)
+[Implementation, line 203](../../../game/terrain-cache.ts#L203)
 
 ```ts
-callback@202(): inferred by TypeScript; see implementation
+callback@203(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

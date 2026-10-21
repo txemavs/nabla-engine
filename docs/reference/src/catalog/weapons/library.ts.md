@@ -9,29 +9,28 @@
 - `zod`
 - `../../entity/coords.js`
 - `./weapon-source.js`
+- `../preset-bucket.js`
 - `./held-library.js`
 
-## callback@35
+## callback@36
 
-[Implementation, line 35](../../../../../src/catalog/weapons/library.ts#L35)
+[Implementation, line 36](../../../../../src/catalog/weapons/library.ts#L36)
 
 ```ts
-callback@35(r): inferred by TypeScript; see implementation
+callback@36(r): inferred by TypeScript; see implementation
 ```
 
-## callback@145
+## callback@146
 
-[Implementation, line 145](../../../../../src/catalog/weapons/library.ts#L145)
+[Implementation, line 146](../../../../../src/catalog/weapons/library.ts#L146)
 
 ```ts
-callback@145(preset): inferred by TypeScript; see implementation
+callback@146(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPresets
 
-[Implementation, line 152](../../../../../src/catalog/weapons/library.ts#L152)
-
-Every preset found at startup, in menu order. An empty weapons folder yields none.
+[Implementation, line 155](../../../../../src/catalog/weapons/library.ts#L155)
 
 ```ts
 weaponPresets(): WeaponPreset[]
@@ -41,7 +40,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Error`
 - `Set`
+- `buckets.set`
 - `isHeldWeaponSource`
+- `presetBucket`
 - `presetSchema.parse`
 - `presets.push`
 - `presets.sort`
@@ -54,21 +55,36 @@ Explicit throws in this body:
 - `new Error(\`Weapon preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate weapon preset id ${preset.id}\`)`
 
-## weaponPresets.callback@164
+## weaponPresets.callback@169
 
-[Implementation, line 164](../../../../../src/catalog/weapons/library.ts#L164)
+[Implementation, line 169](../../../../../src/catalog/weapons/library.ts#L169)
 
 ```ts
-callback@164(a, b): inferred by TypeScript; see implementation
+callback@169(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `a.id.localeCompare`
 
+## weaponPresetBucket
+
+[Implementation, line 179](../../../../../src/catalog/weapons/library.ts#L179)
+
+`library` (ships with the engine) or `custom` (this machine only); undefined for unknown ids.
+
+```ts
+weaponPresetBucket(id: string): PresetBucket | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `buckets.get`
+- `weaponPresets`
+
 ## hasWeaponPreset
 
-[Implementation, line 173](../../../../../src/catalog/weapons/library.ts#L173)
+[Implementation, line 184](../../../../../src/catalog/weapons/library.ts#L184)
 
 ```ts
 hasWeaponPreset(id: string): boolean
@@ -79,17 +95,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weaponPresets`
 - `weaponPresets().some`
 
-## hasWeaponPreset.callback@174
+## hasWeaponPreset.callback@185
 
-[Implementation, line 174](../../../../../src/catalog/weapons/library.ts#L174)
+[Implementation, line 185](../../../../../src/catalog/weapons/library.ts#L185)
 
 ```ts
-callback@174(preset): inferred by TypeScript; see implementation
+callback@185(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPreset
 
-[Implementation, line 177](../../../../../src/catalog/weapons/library.ts#L177)
+[Implementation, line 188](../../../../../src/catalog/weapons/library.ts#L188)
 
 ```ts
 weaponPreset(id: string): WeaponPreset
@@ -105,10 +121,10 @@ Explicit throws in this body:
 
 - `new Error(\`No weapon preset "${id}"\`)`
 
-## weaponPreset.callback@178
+## weaponPreset.callback@189
 
-[Implementation, line 178](../../../../../src/catalog/weapons/library.ts#L178)
+[Implementation, line 189](../../../../../src/catalog/weapons/library.ts#L189)
 
 ```ts
-callback@178(entry): inferred by TypeScript; see implementation
+callback@189(entry): inferred by TypeScript; see implementation
 ```

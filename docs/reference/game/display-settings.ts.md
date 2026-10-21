@@ -4,52 +4,53 @@
 
 [Source](../../../game/display-settings.ts)
 
-Demo-owned display controls; Engine owns validation, frame pacing and buffer resizing.
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/config/display`
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/runtime/quality-preset`
 
 ## readDisplaySettings
 
-[Implementation, line 11](../../../game/display-settings.ts#L11)
+[Implementation, line 12](../../../game/display-settings.ts#L12)
 
 Read shareable URL overrides, falling back to Engine defaults for invalid input.
 The player's saved `scale` wins: `scale=<0.25..5>` fixes it (above 1 supersamples), `scale=auto` adapts live.
 Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
 
 ```ts
-readDisplaySettings(search = location.search): DisplaySettings
+readDisplaySettings(search = pageSearch()): DisplaySettings
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Number`
 - `URLSearchParams`
+- `pageSearch`
 - `params.get`
 - `readQualityPreset`
 - `resolveDisplaySettings`
 
 ## wantsAutoResolution
 
-[Implementation, line 33](../../../game/display-settings.ts#L33)
+[Implementation, line 34](../../../game/display-settings.ts#L34)
 
 True when the player chose auto resolution (`scale=auto`); the boot probe then picks the start.
 
 ```ts
-wantsAutoResolution(search = location.search): boolean
+wantsAutoResolution(search = pageSearch()): boolean
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URLSearchParams`
 - `new URLSearchParams(search).get`
+- `pageSearch`
 
 ## scaleLabel
 
-[Implementation, line 37](../../../game/display-settings.ts#L37)
+[Implementation, line 38](../../../game/display-settings.ts#L38)
 
 ```ts
 scaleLabel(runtime: GameRuntime): string
@@ -61,7 +62,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings
 
-[Implementation, line 44](../../../game/display-settings.ts#L44)
+[Implementation, line 45](../../../game/display-settings.ts#L45)
 
 Bind host controls; FPS/scale apply live, while a quality-profile change explicitly reloads.
 
@@ -78,7 +79,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.getElementById('display-apply-quality')!.addEventListener`
 - `document.getElementById('game-canvas')?.addEventListener`
 - `fps.addEventListener`
-- `new URLSearchParams(location.search).has`
+- `new URLSearchParams(pageSearch()).has`
+- `pageSearch`
 - `panel.addEventListener`
 - `readQualityPreset`
 - `scale.addEventListener`
@@ -86,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings.sync
 
-[Implementation, line 57](../../../game/display-settings.ts#L57)
+[Implementation, line 58](../../../game/display-settings.ts#L58)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -98,24 +100,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scaleLabel`
 - `steps.reduce`
 
-## bindDisplaySettings.sync.callback@61
+## bindDisplaySettings.sync.callback@62
 
-[Implementation, line 61](../../../game/display-settings.ts#L61)
+[Implementation, line 62](../../../game/display-settings.ts#L62)
 
 ```ts
-callback@61(best, value, i): inferred by TypeScript; see implementation
+callback@62(best, value, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## bindDisplaySettings.callback@72
+## bindDisplaySettings.callback@73
 
-[Implementation, line 72](../../../game/display-settings.ts#L72)
+[Implementation, line 73](../../../game/display-settings.ts#L73)
 
 ```ts
-callback@72(): inferred by TypeScript; see implementation
+callback@73(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +126,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings.releaseFocus
 
-[Implementation, line 76](../../../game/display-settings.ts#L76)
+[Implementation, line 77](../../../game/display-settings.ts#L77)
 
 ```ts
 releaseFocus(): inferred by TypeScript; see implementation
@@ -135,12 +137,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.getElementById`
 - `document.getElementById('game-canvas')?.blur`
 
-## bindDisplaySettings.callback@77
+## bindDisplaySettings.callback@78
 
-[Implementation, line 77](../../../game/display-settings.ts#L77)
+[Implementation, line 78](../../../game/display-settings.ts#L78)
 
 ```ts
-callback@77(): inferred by TypeScript; see implementation
+callback@78(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -152,7 +154,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings.persist
 
-[Implementation, line 85](../../../game/display-settings.ts#L85)
+[Implementation, line 86](../../../game/display-settings.ts#L86)
 
 ```ts
 persist(): inferred by TypeScript; see implementation
@@ -167,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings.applyFps
 
-[Implementation, line 93](../../../game/display-settings.ts#L93)
+[Implementation, line 94](../../../game/display-settings.ts#L94)
 
 ```ts
 applyFps(): inferred by TypeScript; see implementation
@@ -184,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDisplaySettings.applyScale
 
-[Implementation, line 104](../../../game/display-settings.ts#L104)
+[Implementation, line 105](../../../game/display-settings.ts#L105)
 
 ```ts
 applyScale(): inferred by TypeScript; see implementation
@@ -198,24 +200,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scale.checkValidity`
 - `sync`
 
-## bindDisplaySettings.callback@114
+## bindDisplaySettings.callback@115
 
-[Implementation, line 114](../../../game/display-settings.ts#L114)
+[Implementation, line 115](../../../game/display-settings.ts#L115)
 
 ```ts
-callback@114(): inferred by TypeScript; see implementation
+callback@115(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `fps.setCustomValidity`
 
-## bindDisplaySettings.callback@117
+## bindDisplaySettings.callback@118
 
-[Implementation, line 117](../../../game/display-settings.ts#L117)
+[Implementation, line 118](../../../game/display-settings.ts#L118)
 
 ```ts
-callback@117(): inferred by TypeScript; see implementation
+callback@118(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -224,12 +226,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setDisplay`
 - `sync`
 
-## bindDisplaySettings.callback@128
+## bindDisplaySettings.callback@129
 
-[Implementation, line 128](../../../game/display-settings.ts#L128)
+[Implementation, line 129](../../../game/display-settings.ts#L129)
 
 ```ts
-callback@128(): inferred by TypeScript; see implementation
+callback@129(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

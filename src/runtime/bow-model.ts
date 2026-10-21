@@ -17,6 +17,33 @@ export interface BowModelDescription {
   arrowOffset: readonly number[]
 }
 
+/** String geometry shared by every bow (bow-local metres): tips, rest nock, arrow lead. */
+export const bowString = Object.freeze({ tipY: 0.481, restZ: 0.155, arrowLead: 0.29 })
+
+/** The dynamic string that replaces the GLB's static one: tip, nock, tip. */
+export function createBowString(): THREE.Line {
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(),
+      new THREE.Vector3(),
+      new THREE.Vector3(),
+    ]),
+    new THREE.LineBasicMaterial({ color: 0xe8dfce }),
+  )
+  setBowString(line, new THREE.Vector3(0, 0, bowString.restZ))
+  return line
+}
+
+/** Move the string's nock point (bow-local); the tips stay. */
+export function setBowString(line: THREE.Line, nock: THREE.Vector3): void {
+  const attr = line.geometry.getAttribute('position') as THREE.BufferAttribute
+  attr.setXYZ(0, 0, -bowString.tipY, bowString.restZ)
+  attr.setXYZ(1, nock.x, nock.y, nock.z)
+  attr.setXYZ(2, 0, bowString.tipY, bowString.restZ)
+  attr.needsUpdate = true
+  line.geometry.computeBoundingSphere()
+}
+
 /** A bow GLB and how to cut it into the bow (string removed) and one arrow. */
 export interface BowModel {
   url: string
