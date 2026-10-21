@@ -4,8 +4,9 @@
  *
  * - Commands (`interact`, `setInput`, `addVehicles`, ...) are forwarded to the worker in call order
  *   and applied there before the next step, exactly where inline code would have applied them.
- * - `step()` returns a promise; the frame awaits it before rendering, so the render always reads
- *   the state of the step it just asked for (no overlap, no extra latency).
+ * - Frames use {@link ThreadedSimulation.advance} (pipelined): the frame never waits; it renders
+ *   the last two worker snapshots blended at a render clock just behind the newest one, while the
+ *   worker computes the next step. `step()` (awaited) remains for tests and setup.
  * - Reads (`player`, `entityTransform(id, true)`, `wheelTransforms(id, true)`, `vehicleInfo`, ...)
  *   come from the state the worker returns with every step: the same values inline getters give.
  * - Instant queries (`shoot`, `cameraPosition`) run synchronously against a {@link QueryWorld}: a
@@ -314,8 +315,46 @@ export class ThreadedSimulation {
   /** Advance the worker simulation; resolves once its state is mirrored here. */
   async step(elapsed: number): Promise<void> {
     this.throwFailure()
-    await this.worker.step(elapsed)
+    this.workerStepMs = await this.worker.step(elapsed)
     this.throwFailure()
+  }
+
+  /** Cost of the worker's latest step, ms (its own thread; for ?performanceLog=1). */
+  workerStepMs = 0
+  /** Frame time not yet sent to the worker (a step is in flight). */
+  private unsent = 0
+  private inFlight = false
+  /**
+   * Pipelined frame step: never waits. Moves the render clock by `elapsed` (interpolated reads
+   * blend the last two worker snapshots there) and hands the worker the time to simulate: at
+   * once when it is idle, else accumulated and sent the moment its current step replies. The
+   * worker computes the next step while this thread renders. Inputs and commands sent before
+   * reach the worker first, in order.
+   */
+  advance(elapsed: number): void {
+    this.throwFailure()
+    if (this.disposed) return
+    this.worker.pipelined = true
+    this.worker.clock.advance(elapsed)
+    this.unsent += elapsed
+    this.pump()
+  }
+  private pump(): void {
+    if (this.inFlight || this.disposed || this.unsent <= 0) return
+    const elapsed = this.unsent
+    this.unsent = 0
+    this.inFlight = true
+    this.worker.step(elapsed).then(
+      (ms) => {
+        this.workerStepMs = ms
+        this.inFlight = false
+        this.pump()
+      },
+      (error: unknown) => {
+        this.inFlight = false
+        this.failure ??= error
+      },
+    )
   }
   // Lagged worker answers: polled until they change (reveal ground hold, planet collisions).
   settleGround(force = false): boolean {

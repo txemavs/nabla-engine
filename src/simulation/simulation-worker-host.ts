@@ -10,8 +10,9 @@
  * {@link serveSimulation} is the worker side, {@link WorkerSimulation} the main-thread proxy.
  * The inline {@link Simulation} stays the default and the fallback for tests and Node.
  */
+import { SnapshotClock, lerpTransform } from './snapshot-clock.js'
 import { initPhysics } from './physics.js'
-import { Simulation, type PlayerInput } from './simulation.js'
+import { FIXED_STEP, Simulation, type PlayerInput } from './simulation.js'
 import type { SceneDocument } from '../scene/document.js'
 import type { Transform, Vec3Tuple } from '../entity/schema.js'
 import { QueryWorldExporter, type QueryWorldDelta } from './query-world.js'
@@ -271,8 +272,13 @@ export function serveSimulation(port: SimulationPort): void {
         if (!sim) throw new Error('Simulation not created')
         if (message.input) sim.setInput(message.input)
         if (message.waterLevel !== undefined) sim.setWaterLevel(message.waterLevel)
-        sim.step(message.elapsed)
-        return { id: message.id, ok: true, ...state(sim) }
+        {
+          const started = performance.now()
+          sim.step(message.elapsed)
+          // The step's own cost (ms), for ?performanceLog=1.
+          const stepMs = performance.now() - started
+          return { id: message.id, ok: true, value: stepMs, ...state(sim) }
+        }
       case 'set':
         if (!sim) throw new Error('Simulation not created')
         ;(sim as unknown as Record<string, unknown>)[message.property] = message.value
@@ -390,12 +396,21 @@ export class WorkerSimulation {
   private nextId = 1
   private pending = new Map<number, { resolve: (v: SimulationReply) => void }>()
   private latest: SimulationSnapshot | null = null
+  /**
+   * Pipelined mode ({@link ThreadedSimulation.advance}): interpolated reads blend the last two
+   * snapshots at this clock's render time instead of reading the worker's own blend.
+   */
+  readonly clock = new SnapshotClock<SimulationSnapshot>()
+  pipelined = false
   private readonly listener = (event: MessageEvent<SimulationReply>) => {
     const reply = event.data
     const entry = this.pending.get(reply.id)
     if (!entry) return
     this.pending.delete(reply.id)
-    if (reply.ok && reply.snapshot) this.latest = reply.snapshot
+    if (reply.ok && reply.snapshot) {
+      this.latest = reply.snapshot
+      this.clock.push(reply.snapshot, reply.snapshot.stats.ticks * FIXED_STEP)
+    }
     if (reply.ok) this.onState?.(reply)
     entry.resolve(reply)
   }
@@ -421,8 +436,9 @@ export class WorkerSimulation {
   async create(scene: SceneDocument, options?: SimulationOptions, mirror = false): Promise<void> {
     await this.request({ type: 'create', scene, options, mirror })
   }
-  async step(elapsed: number, input?: PlayerInput, waterLevel?: number): Promise<void> {
-    await this.request({ type: 'step', elapsed, input, waterLevel })
+  /** Step in the host; resolves with the step's own cost in ms once its state is mirrored. */
+  async step(elapsed: number, input?: PlayerInput, waterLevel?: number): Promise<number> {
+    return Number(await this.request({ type: 'step', elapsed, input, waterLevel })) || 0
   }
   /** Run any {@link Simulation} method (or read a property) in the host; results are cloned. */
   call<K extends keyof Simulation>(
@@ -450,19 +466,45 @@ export class WorkerSimulation {
   get stats(): Simulation['stats'] {
     return this.snapshot.stats
   }
+  /** The previous snapshot and blend factor when pipelined reads interpolate, else null. */
+  private blend(): { previous: SimulationSnapshot; alpha: number } | null {
+    const previous = this.clock.previous
+    if (!this.pipelined || !previous || this.clock.latest?.snapshot !== this.latest) return null
+    return { previous: previous.snapshot, alpha: this.clock.alpha }
+  }
   get renderPlayerPosition(): Vec3Tuple {
-    return this.snapshot.renderPlayerPosition
+    const now = this.snapshot.renderPlayerPosition
+    const blend = this.blend()
+    if (!blend) return now
+    // The player's fixed pose is not in `entities`: blend its render position the same way.
+    return lerpTransform(
+      { position: blend.previous.renderPlayerPosition, rotation: [0, 0, 0, 1] },
+      { position: now, rotation: [0, 0, 0, 1] },
+      blend.alpha,
+    ).position
   }
   get playerFrame(): Transform | null {
-    return this.snapshot.playerFrame
+    const now = this.snapshot.playerFrame
+    const blend = this.blend()
+    const before = blend?.previous.playerFrame
+    return now && before ? lerpTransform(before, now, blend!.alpha) : now
   }
   entityTransform(id: string, interpolated = false): Transform {
     const pair = this.snapshot.entities[id]
     if (!pair) throw new Error('Unknown entity: ' + id)
-    return pair[interpolated ? 1 : 0]
+    if (!interpolated) return pair[0]
+    const blend = this.blend()
+    const before = blend?.previous.entities[id]
+    return before ? lerpTransform(before[0], pair[0], blend!.alpha) : pair[1]
   }
   wheelTransforms(id: string, interpolated = false): Transform[] {
-    return this.snapshot.wheels[id]?.[interpolated ? 1 : 0] ?? []
+    const pair = this.snapshot.wheels[id]
+    if (!pair) return []
+    if (!interpolated) return pair[0]
+    const blend = this.blend()
+    const before = blend?.previous.wheels[id]?.[0]
+    if (!before || before.length !== pair[0].length) return pair[1]
+    return pair[0].map((wheel, i) => lerpTransform(before[i], wheel, blend!.alpha))
   }
 }
 
