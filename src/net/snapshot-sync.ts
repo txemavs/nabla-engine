@@ -116,7 +116,11 @@ export class SnapshotSync {
   private readonly clock: () => number
   private readonly unsubscribe: (() => void)[] = []
 
+  /** Room this client is in (or joining); see {@link switchRoom}. */
+  room: string
+
   constructor(private readonly options: SnapshotSyncOptions) {
+    this.room = options.room
     this.interval = 1000 / (options.rate ?? 20)
     this.meta = { ...(options.meta ?? {}) }
     this.clock = options.clock ?? (() => performance.now())
@@ -126,7 +130,7 @@ export class SnapshotSync {
         encodeMessage({
           type: 'join',
           version: PROTOCOL_VERSION,
-          room: options.room,
+          room: this.room,
           meta: this.meta,
         }),
       )
@@ -184,6 +188,21 @@ export class SnapshotSync {
     this.meta = { ...meta }
     if (this.peerId !== null && this.options.transport.status === 'open')
       this.options.transport.send(encodeMessage({ type: 'profile', meta: this.meta }))
+  }
+
+  /**
+   * Move this client to another room: every remote car and avatar of the old room is removed
+   * (through `despawnRemote` / the avatar views) and the relay is joined again with the same
+   * meta. The relay treats a join as leaving the previous room. No-op for the current room.
+   */
+  switchRoom(room: string): void {
+    if (room === this.room) return
+    this.room = room
+    this.dropAll()
+    if (this.options.transport.status === 'open')
+      this.options.transport.send(
+        encodeMessage({ type: 'join', version: PROTOCOL_VERSION, room, meta: this.meta }),
+      )
   }
 
   /** Send a one-off game event to the other peers of the room; false while not joined. */
