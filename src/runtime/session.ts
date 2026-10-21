@@ -17,7 +17,7 @@ export type SessionState = 'stopped' | 'loading' | 'playing' | 'paused' | 'dispo
 export type PlayOptions = NonNullable<ConstructorParameters<typeof Simulation>[1]> & {
   vehicleId?: string
   collisionDistance?: number
-  /** Host the simulation in a Web Worker. Defaults to the `?physicsWorker=1` URL switch. */
+  /** Host the simulation in a Web Worker. Defaults to on (`?physicsWorker=0` or no module workers: inline). */
   physicsWorker?: boolean
 }
 
@@ -53,9 +53,16 @@ export class PlaySession {
     try {
       await initPhysics()
       if (generation !== this.generation) throw new Error('Play session cancelled')
-      const simulation = physicsWorker
-        ? await ThreadedSimulation.start(scene, settings)
-        : new Simulation(scene, settings)
+      let simulation: Simulation
+      if (physicsWorker) {
+        try {
+          simulation = await ThreadedSimulation.start(scene, settings)
+        } catch (error) {
+          if (generation !== this.generation) throw error
+          console.warn('[nabla] physics worker unavailable, running physics inline:', error)
+          simulation = new Simulation(scene, settings)
+        }
+      } else simulation = new Simulation(scene, settings)
       if (generation !== this.generation) {
         simulation.dispose()
         throw new Error('Play session cancelled')

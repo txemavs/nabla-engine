@@ -3383,7 +3383,7 @@ export class GameRuntime {
       parentId: id,
     }))
     const added = [entity, ...hosted]
-    // Physics first: with the worker (`?physicsWorker=1`) the ids exist there only after its next
+    // Physics first: with the worker (the default) the ids exist there only after its next
     // step, and the vehicle view reads vehicle state as soon as it is registered.
     sim.addVehicles(added)
     await threadedSimulation(sim)?.whenEntities(added.map((e) => e.id))

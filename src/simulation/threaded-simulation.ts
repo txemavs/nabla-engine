@@ -1,6 +1,7 @@
 /**
  * Main-thread stand-in for a {@link Simulation} whose Rapier world and fixed tick run in a Web
- * Worker (`?physicsWorker=1`, off by default).
+ * Worker (the default; `?physicsWorker=0` keeps physics inline, as does a browser without module
+ * workers).
  *
  * - Commands (`interact`, `setInput`, `addVehicles`, ...) are forwarded to the worker in call order
  *   and applied there before the next step, exactly where inline code would have applied them.
@@ -34,9 +35,36 @@ import type { Entity, Transform, Vec3Tuple } from '../entity/schema.js'
 
 type SimulationOptions = ConstructorParameters<typeof Simulation>[1]
 
-/** `?physicsWorker=1` turns the worker on; anything else (or no window) keeps physics inline. */
-export function physicsWorkerEnabled(search = globalThis.location?.search ?? ''): boolean {
-  return new URLSearchParams(search).get('physicsWorker') === '1'
+/** Whether this runtime can start a module Worker (no `Worker`, or classic-only workers: no). */
+export function moduleWorkersSupported(): boolean {
+  if (typeof Worker === 'undefined' || typeof URL?.createObjectURL !== 'function') return false
+  let supported = false
+  try {
+    const url = URL.createObjectURL(new Blob([''], { type: 'text/javascript' }))
+    const probe = new Worker(url, {
+      get type() {
+        supported = true
+        return 'module' as const
+      },
+    })
+    probe.terminate()
+    URL.revokeObjectURL(url)
+  } catch {
+    return false
+  }
+  return supported
+}
+
+/**
+ * The physics worker is the default. `?physicsWorker=0` keeps physics inline (dev fallback), and so
+ * does a runtime without module workers.
+ */
+export function physicsWorkerEnabled(
+  search = globalThis.location?.search ?? '',
+  supported: () => boolean = moduleWorkersSupported,
+): boolean {
+  if (new URLSearchParams(search).get('physicsWorker') === '0') return false
+  return supported()
 }
 
 type Fn = (...args: never[]) => unknown
@@ -152,7 +180,26 @@ export class ThreadedSimulation {
     const threaded = new ThreadedSimulation(worker, options ?? {}, () =>
       (worker.port as { terminate?: () => void }).terminate?.(),
     )
-    await worker.create(scene, options, true)
+    const terminate = () => (worker.port as { terminate?: () => void }).terminate?.()
+    // A worker script that fails to load only reports an `error` event: fail the start instead of
+    // waiting forever, so the session can fall back to inline physics.
+    const target = worker.port as Partial<Pick<Worker, 'addEventListener'>>
+    const failed = new Promise<never>((_, reject) =>
+      target.addEventListener?.(
+        'error',
+        (event) =>
+          reject(
+            new Error(`Physics worker failed to load: ${(event as ErrorEvent).message ?? ''}`),
+          ),
+        { once: true },
+      ),
+    )
+    try {
+      await Promise.race([worker.create(scene, options, true), failed])
+    } catch (error) {
+      terminate()
+      throw error
+    }
     return threaded.facade()
   }
 
