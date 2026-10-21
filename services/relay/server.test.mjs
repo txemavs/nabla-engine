@@ -112,3 +112,41 @@ test('relays snapshots inside a room and announces joins and leaves', async () =
   c.close()
   await relay.close()
 })
+
+test('forwards snapshots only to members within RADIUS of the sender', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, radius: 200 })
+  const at = (x) => ({ ...state, position: [x, 0, 0] })
+  const join = async () => {
+    const s = await connect(relay.port)
+    s.json({ type: 'join', version: 1, room: 'r', meta: {} })
+    await s.next('welcome')
+    return s
+  }
+  const a = await join()
+  const b = await join()
+  const c = await join()
+  b.json({ type: 'snapshot', t: 0, seq: 1, state: at(100) })
+  c.json({ type: 'snapshot', t: 0, seq: 1, state: at(1000) })
+  await new Promise((r) => setTimeout(r, 100))
+  a.json({ type: 'snapshot', t: 1, seq: 2, state: at(0) })
+  const fromA = (s) =>
+    new Promise((resolve) => {
+      const poll = async () => {
+        for (;;) {
+          const m = await Promise.race([
+            s.next('snapshot'),
+            new Promise((r) => setTimeout(() => r(null), 200)),
+          ])
+          if (!m) return resolve(false)
+          if (m.seq === 2) return resolve(true)
+        }
+      }
+      poll()
+    })
+  assert.equal(await fromA(b), true)
+  assert.equal(await fromA(c), false)
+  a.close()
+  b.close()
+  c.close()
+  await relay.close()
+})

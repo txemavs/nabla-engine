@@ -1,6 +1,11 @@
 import { Listeners, type Transport, type TransportStatus } from './transport.js'
 import { WebSocketTransport } from './websocket-transport.js'
-import type { NetWorkerCommand, NetWorkerEvent } from './net-worker-host.js'
+import {
+  defaultRetry,
+  type NetWorkerCommand,
+  type NetWorkerEvent,
+  type RetryOptions,
+} from './net-worker-host.js'
 
 /** Minimal Worker shape, so tests can pass a MessagePort-backed stand-in. */
 export interface NetWorkerLike {
@@ -18,6 +23,11 @@ export interface NetWorkerOptions {
   flushMs?: number
   /** Worker to use; defaults to a module worker running `net.worker.js`. */
   createWorker?: () => NetWorkerLike
+  /**
+   * Reconnect after the relay drops or is unreachable (exponential backoff in the worker).
+   * Default 1 s doubling to 30 s; `{ minMs: 0 }` reports the first close as final.
+   */
+  retry?: RetryOptions
   /** Used when no worker can be started (no Worker API, or it fails before connecting). */
   fallback?: (url: string) => Transport
 }
@@ -37,6 +47,7 @@ export class NetWorker implements Transport {
   private direct: Transport | null = null
   private started = false
   private readonly opened = new Listeners<[]>()
+  private readonly down = new Listeners<[string, number]>()
   private readonly messages = new Listeners<[string]>()
   private readonly closed = new Listeners<[string]>()
 
@@ -63,7 +74,12 @@ export class NetWorker implements Transport {
         this.useFallback()
       } else this.finish('worker error')
     })
-    this.worker.postMessage({ type: 'connect', url, flushMs: options.flushMs ?? 0 })
+    this.worker.postMessage({
+      type: 'connect',
+      url,
+      flushMs: options.flushMs ?? 0,
+      retry: options.retry ?? defaultRetry,
+    })
   }
 
   /** True when the connection runs in a worker (false after falling back). */
@@ -86,6 +102,10 @@ export class NetWorker implements Transport {
   onClose(listener: (reason: string) => void) {
     return this.closed.add(listener)
   }
+  /** Connection attempts that failed and will be retried (reason, delay in ms). */
+  onRetry(listener: (reason: string, retryMs: number) => void) {
+    return this.down.add(listener)
+  }
   close(): void {
     if (this.direct) return this.direct.close()
     this.worker?.postMessage({ type: 'close' })
@@ -100,6 +120,12 @@ export class NetWorker implements Transport {
       this.opened.emit()
     } else if (event.type === 'frames') {
       for (const frame of event.data) this.messages.emit(frame)
+    } else if (event.type === 'down') {
+      // Lost or refused, retrying in the worker: listeners drop remote state and rejoin on open.
+      const wasOpen = this.state === 'open'
+      this.state = 'connecting'
+      if (wasOpen) this.closed.emit(event.reason)
+      this.down.emit(event.reason, event.retryMs)
     } else this.finish(event.reason)
   }
   private finish(reason: string): void {
