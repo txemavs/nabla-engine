@@ -1491,7 +1491,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   ]
   const sections = new Map<
     TabId,
-    { nav: HTMLElement; body: HTMLElement; toggle: HTMLButtonElement; active?: string }
+    {
+      nav: HTMLElement
+      body: HTMLElement
+      toggle: HTMLButtonElement
+      active?: string
+      /** The player chose `active`; otherwise a refold reopens the first section in order. */
+      picked?: boolean
+    }
   >()
   const mobileLayout = window.matchMedia('(max-width:600px)')
   // Narrow screens fold the tree under its own button (.settings-sections-toggle); the content
@@ -1615,6 +1622,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
             button.removeAttribute('aria-current')
             return
           }
+          if (current) current.picked = true
           chooseSection(tab, section.id)
         })
         const category = navigationGroups.find(
@@ -1642,7 +1650,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       pane.append(layout.body)
       alignSettingRows(layout.body)
       layout.nav.replaceChildren(layout.toggle, ...items)
-      const chosen = shown.find((el) => el.id === layout.active) ?? shown[0]
+      const chosen =
+        (layout.picked ? shown.find((el) => el.id === layout.active) : undefined) ?? shown[0]
       if (chosen) chooseSection(tab, chosen.id)
     }
   }
