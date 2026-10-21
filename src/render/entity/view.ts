@@ -33,7 +33,11 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
-import type { VehicleLightMode } from '../vehicle-presentation/light-controller.js'
+import type {
+  VehicleLampState,
+  VehicleLightMode,
+  VehicleLightSwitches,
+} from '../vehicle-presentation/light-controller.js'
 import { StartLights } from '../vehicle-presentation/start-lights.js'
 import {
   mountLandingGear,
@@ -490,6 +494,35 @@ export class SceneView {
     if (controller.level('high', 0, state, 0)) return 'high'
     return controller.level('low', 0, state, 0) ? 'low' : null
   }
+  /**
+   * Lamp inputs (power, brake, reverse) forced for vehicles nobody drives here, such as a car
+   * mirrored from another player. Without an entry, lamps follow the local simulation.
+   */
+  private readonly lampOverrides = new Map<string, VehicleLampState>()
+  /** Switch positions and lamp inputs of a vehicle's lights; null without a light controller. */
+  vehicleLightState(id: string): VehicleLightSwitches | null {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    if (!controller) return null
+    return { mode: controller.mode, highBeam: controller.highBeam, signal: controller.signal }
+  }
+  /**
+   * Drive a vehicle's existing light switches and lamp inputs from outside (for example from the
+   * network). `lamp: null` returns the lamp inputs to the local simulation.
+   */
+  setVehicleLightState(
+    id: string,
+    switches: Partial<VehicleLightSwitches> | null,
+    lamp: VehicleLampState | null,
+  ): boolean {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    if (lamp) this.lampOverrides.set(id, { ...lamp })
+    else this.lampOverrides.delete(id)
+    if (!controller) return false
+    if (switches?.mode !== undefined) controller.mode = switches.mode
+    if (switches?.highBeam !== undefined) controller.highBeam = switches.highBeam
+    if (switches?.signal !== undefined) controller.signal = Math.sign(switches.signal)
+    return true
+  }
   /** Lights after the start-up (`SceneViewOptions.startLights`); change `mode` to override. */
   readonly startLights = new StartLights()
   beginVehicleBeamFlash(id: string): boolean {
@@ -801,6 +834,7 @@ export class SceneView {
   }
   /** Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment. */
   removeVehicle(id: string): void {
+    this.lampOverrides.delete(id)
     const group = this.objects.get(id)
     for (const wheel of this.wheels.get(id) ?? []) {
       wheel.removeFromParent()
@@ -1781,7 +1815,7 @@ export class SceneView {
       const source = tractor ? sim.vehicleInfo(tractor) : info
       const controller = tractor ? this.authoredLights.get(tractor)?.controller : lights.controller
       lights.apply(
-        {
+        this.lampOverrides.get(tractor ?? id) ?? {
           powered: (tractor ?? id) === sim.player.vehicleId,
           braking: source.braking,
           reversing: source.reversing,
@@ -1816,7 +1850,11 @@ export class SceneView {
     for (const [id, lights] of this.carLights) {
       const info = sim.vehicleInfo(id)
       lights.update(
-        { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
+        this.lampOverrides.get(id) ?? {
+          powered: sim.player.vehicleId === id,
+          braking: info.braking,
+          reversing: info.reversing,
+        },
         lightNow,
         this.night,
       )

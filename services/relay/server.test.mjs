@@ -1,0 +1,256 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { WebSocket } from 'ws'
+import { startRelay } from './server.mjs'
+
+const connect = (port) =>
+  new Promise((resolve, reject) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`)
+    const inbox = []
+    const waiters = []
+    socket.on('message', (data) => {
+      const message = JSON.parse(String(data))
+      const waiter = waiters.findIndex((w) => w.type === message.type)
+      if (waiter >= 0) waiters.splice(waiter, 1)[0].resolve(message)
+      else inbox.push(message)
+    })
+    socket.next = (type) => {
+      const i = inbox.findIndex((m) => m.type === type)
+      if (i >= 0) return Promise.resolve(inbox.splice(i, 1)[0])
+      return new Promise((r) => waiters.push({ type, resolve: r }))
+    }
+    socket.json = (m) => socket.send(JSON.stringify(m))
+    socket.on('open', () => resolve(socket))
+    socket.on('error', reject)
+  })
+
+const state = {
+  position: [1, 2, 3],
+  rotation: [0, 0, 0, 1],
+  velocity: [0, 0, 0],
+  angularVelocity: [0, 0, 0],
+}
+
+test('drops game events above the per-peer rate limit', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, maxEvents: 3 })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'r', meta: {} })
+  await a.next('welcome')
+  b.json({ type: 'join', version: 1, room: 'r', meta: {} })
+  await b.next('welcome')
+  for (let i = 0; i < 10; i++) a.json({ type: 'event', kind: 'shot', data: { i } })
+  await new Promise((r) => setTimeout(r, 300))
+  let got = 0
+  while (true) {
+    const next = await Promise.race([
+      b.next('event'),
+      new Promise((r) => setTimeout(() => r(null), 100)),
+    ])
+    if (!next) break
+    got++
+  }
+  assert.equal(got, 3)
+  a.close()
+  b.close()
+  await relay.close()
+})
+
+test('relays snapshots inside a room and announces joins and leaves', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  const c = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'r1', meta: { vehicle: 's3' } })
+  const welcomeA = await a.next('welcome')
+  assert.deepEqual(welcomeA.peers, [])
+  b.json({ type: 'join', version: 1, room: 'r1', meta: {} })
+  const welcomeB = await b.next('welcome')
+  assert.equal(welcomeB.peers[0].peer, welcomeA.peer)
+  assert.equal(welcomeB.peers[0].meta.vehicle, 's3')
+  const joinedB = await a.next('joined')
+  assert.equal(joinedB.peer, welcomeB.peer)
+  assert.equal(welcomeA.slot, 0)
+  assert.equal(welcomeB.slot, 1)
+  assert.notEqual(welcomeA.color, welcomeB.color)
+  assert.equal(joinedB.color, welcomeB.color)
+  assert.equal(welcomeB.peers[0].color, welcomeA.color)
+  c.json({ type: 'join', version: 1, room: 'other', meta: {} })
+  await c.next('welcome')
+
+  a.json({ type: 'snapshot', t: 10, seq: 0, state, peer: 'spoofed', extra: { lights: 5 } })
+  const got = await b.next('snapshot')
+  assert.deepEqual(got.extra, { lights: 5 })
+  assert.equal(got.peer, welcomeA.peer)
+  assert.deepEqual(got.state.position, [1, 2, 3])
+
+  a.json({ type: 'profile', meta: { vehicle: 'vfr800' } })
+  const profile = await b.next('profile')
+  assert.equal(profile.peer, welcomeA.peer)
+  assert.equal(profile.meta.vehicle, 'vfr800')
+  a.json({
+    type: 'event',
+    kind: 'shot',
+    data: { end: [1, 2, 3], damage: 12, target: welcomeB.peer },
+  })
+  const shot = await b.next('event')
+  assert.equal(shot.peer, welcomeA.peer)
+  assert.deepEqual(shot.data.end, [1, 2, 3])
+  b.json({ type: 'join', version: 1, room: '../bad', meta: {} })
+  assert.equal((await b.next('error')).message, 'Invalid room')
+
+  a.close()
+  assert.equal((await b.next('left')).peer, welcomeA.peer)
+  // Slot 0 and its colour are free again for the next member.
+  const d = await connect(relay.port)
+  d.json({ type: 'join', version: 1, room: 'r1', meta: {} })
+  const welcomeD = await d.next('welcome')
+  assert.equal(welcomeD.slot, 0)
+  assert.equal(welcomeD.color, welcomeA.color)
+  d.close()
+  b.close()
+  c.close()
+  await relay.close()
+})
+
+test('forwards snapshots only to members within RADIUS of the sender', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, radius: 200 })
+  const at = (x) => ({ ...state, position: [x, 0, 0] })
+  const join = async () => {
+    const s = await connect(relay.port)
+    s.json({ type: 'join', version: 1, room: 'r', meta: {} })
+    await s.next('welcome')
+    return s
+  }
+  const a = await join()
+  const b = await join()
+  const c = await join()
+  b.json({ type: 'snapshot', t: 0, seq: 1, state: at(100) })
+  c.json({ type: 'snapshot', t: 0, seq: 1, state: at(1000) })
+  await new Promise((r) => setTimeout(r, 100))
+  a.json({ type: 'snapshot', t: 1, seq: 2, state: at(0) })
+  const fromA = (s) =>
+    new Promise((resolve) => {
+      const poll = async () => {
+        for (;;) {
+          const m = await Promise.race([
+            s.next('snapshot'),
+            new Promise((r) => setTimeout(() => r(null), 200)),
+          ])
+          if (!m) return resolve(false)
+          if (m.seq === 2) return resolve(true)
+        }
+      }
+      poll()
+    })
+  assert.equal(await fromA(b), true)
+  assert.equal(await fromA(c), false)
+  a.close()
+  b.close()
+  c.close()
+  await relay.close()
+})
+
+test('forgets a member position after POSITION_TTL without snapshots', async () => {
+  const relay = await startRelay({
+    port: 0,
+    host: '127.0.0.1',
+    log: () => {},
+    radius: 200,
+    positionTtl: 150,
+  })
+  const at = (x) => ({ ...state, position: [x, 0, 0] })
+  const join = async () => {
+    const s = await connect(relay.port)
+    s.json({ type: 'join', version: 1, room: 'ttl', meta: {} })
+    await s.next('welcome')
+    return s
+  }
+  const seen = (s) => {
+    const seqs = new Set()
+    s.on('message', (d) => {
+      const m = JSON.parse(String(d))
+      if (m.type === 'snapshot') seqs.add(m.seq)
+    })
+    return seqs
+  }
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+  const a = await join()
+  const far = await join()
+  const farGot = seen(far)
+  far.json({ type: 'snapshot', t: 0, seq: 1, state: at(1000) })
+  await wait(50)
+  a.json({ type: 'snapshot', t: 1, seq: 2, state: at(0) })
+  await wait(100)
+  assert.equal(farGot.has(2), false) // fresh and 1 km away: filtered
+  await wait(200) // `far` stops sending (e.g. on foot)
+  a.json({ type: 'snapshot', t: 2, seq: 3, state: at(0) })
+  await wait(100)
+  assert.equal(farGot.has(3), true) // position forgotten: receives everything
+  a.close()
+  far.close()
+  await relay.close()
+})
+
+const tryOpen = (port, headers) =>
+  new Promise((resolve) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`, { headers })
+    socket.on('open', () => {
+      socket.close()
+      resolve('open')
+    })
+    socket.on('unexpected-response', (_req, res) => resolve(res.statusCode))
+    socket.on('error', () => resolve('error'))
+  })
+
+test('rejects WebSocket upgrades from origins that are not allowed', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  assert.equal(await tryOpen(relay.port, { Origin: 'https://euskadi.online' }), 'open')
+  assert.equal(await tryOpen(relay.port, { Origin: 'http://localhost:10001' }), 'open')
+  assert.equal(await tryOpen(relay.port, { Origin: 'https://evil.example' }), 403)
+  assert.equal(await tryOpen(relay.port, {}), 'open')
+  await relay.close()
+  const custom = await startRelay({
+    port: 0,
+    host: '127.0.0.1',
+    log: () => {},
+    allowedOrigins: ['http://localhost:5173'],
+  })
+  assert.equal(await tryOpen(custom.port, { Origin: 'http://localhost:5173' }), 'open')
+  assert.equal(await tryOpen(custom.port, { Origin: 'https://euskadi.online' }), 403)
+  await custom.close()
+  const any = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, allowedOrigins: ['*'] })
+  assert.equal(await tryOpen(any.port, { Origin: 'https://evil.example' }), 'open')
+  await any.close()
+})
+
+test('refuses to open more than MAX_ROOMS rooms', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, maxRooms: 2 })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  const c = await connect(relay.port)
+  const d = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'one', meta: {} })
+  await a.next('welcome')
+  b.json({ type: 'join', version: 1, room: 'two', meta: {} })
+  await b.next('welcome')
+  c.json({ type: 'join', version: 1, room: 'three', meta: {} })
+  assert.equal((await c.next('error')).message, 'Too many rooms')
+  // Joining an existing room is still fine.
+  d.json({ type: 'join', version: 1, room: 'one', meta: {} })
+  await d.next('welcome')
+  // Once a room empties, a new one can open.
+  b.close()
+  await new Promise((r) => setTimeout(r, 100))
+  c.json({ type: 'join', version: 1, room: 'three', meta: {} })
+  await c.next('welcome')
+  for (const s of [a, c, d]) s.close()
+  await relay.close()
+})
+
+test('GET /health answers 200', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  const res = await fetch(`http://127.0.0.1:${relay.port}/health`)
+  assert.equal(res.status, 200)
+  await relay.close()
+})

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **549 modules; 6565 executable function definitions**.
+Coverage: **559 modules; 6688 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -183,6 +183,16 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/math/planar/polygon.ts](src/math/planar/polygon.ts.md) | 4 |
 | [src/math/solid/mesh.ts](src/math/solid/mesh.ts.md) | 26 |
 | [src/math/terrain/heightfield.ts](src/math/terrain/heightfield.ts.md) | 5 |
+| [src/net/index.ts](src/net/index.ts.md) | 0 |
+| [src/net/interpolation.ts](src/net/interpolation.ts.md) | 12 |
+| [src/net/net-worker-host.ts](src/net/net-worker-host.ts.md) | 14 |
+| [src/net/net-worker.ts](src/net/net-worker.ts.md) | 19 |
+| [src/net/net.worker.ts](src/net/net.worker.ts.md) | 0 |
+| [src/net/protocol.ts](src/net/protocol.ts.md) | 9 |
+| [src/net/remote-vehicle.ts](src/net/remote-vehicle.ts.md) | 4 |
+| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 21 |
+| [src/net/transport.ts](src/net/transport.ts.md) | 10 |
+| [src/net/websocket-transport.ts](src/net/websocket-transport.ts.md) | 13 |
 | [src/planet/assemble/aeroway.ts](src/planet/assemble/aeroway.ts.md) | 5 |
 | [src/planet/assemble/buildings.ts](src/planet/assemble/buildings.ts.md) | 17 |
 | [src/planet/assemble/cover.ts](src/planet/assemble/cover.ts.md) | 4 |
@@ -284,7 +294,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 5 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 24 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 157 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 159 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
 | [src/render/monitors/data.ts](src/render/monitors/data.ts.md) | 0 |
@@ -383,7 +393,7 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/runtime/ar/touch-controls.ts](src/runtime/ar/touch-controls.ts.md) | 8 |
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 463 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 470 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
@@ -515,13 +525,13 @@ Coverage: **549 modules; 6565 executable function definitions**.
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
 | [src/simulation/physics-api.ts](src/simulation/physics-api.ts.md) | 0 |
-| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 123 |
+| [src/simulation/physics.ts](src/simulation/physics.ts.md) | 126 |
 | [src/simulation/portal-clearance.ts](src/simulation/portal-clearance.ts.md) | 13 |
 | [src/simulation/portal-traversal.ts](src/simulation/portal-traversal.ts.md) | 19 |
 | [src/simulation/rider-ejection.ts](src/simulation/rider-ejection.ts.md) | 4 |
 | [src/simulation/road-assist.ts](src/simulation/road-assist.ts.md) | 7 |
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 278 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 287 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
