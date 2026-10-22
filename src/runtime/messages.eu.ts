@@ -126,4 +126,6 @@ export const basqueMessages: Readonly<Record<string, string>> = {
   'Gallery · {0}/{1} · {2} s · N restart': 'Galeria · {0}/{1} · {2} s · N berrabiarazi',
   'Portal frames must have matching dimensions': 'Markoek neurri berak izan behar dituzte',
   'Invalid portal destination': 'Atariaren helmuga baliogabea',
+  HP: 'Bizia',
+  'Down · respawn in {0} s': 'Erorita · {0} s barru itzuliko zara',
 }

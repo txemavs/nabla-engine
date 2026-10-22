@@ -97,6 +97,8 @@ const presetSchema = z
     slideTravel: z.number().finite().min(0).max(500),
     intervalMs: z.number().finite().min(20).max(5000),
     range: z.number().finite().min(1).max(1000),
+    /** Base damage of one hit on a character (× hit-zone multiplier, docs/combat.md). */
+    damage: z.number().finite().min(0).max(1000).optional(),
     impulse: z.number().finite().min(0).max(50),
     view: z
       .object({

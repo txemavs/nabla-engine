@@ -3,6 +3,7 @@
   "name": "Arco",
   "kind": "bow",
   "slot": 4,
+  "damage": 40,
   "bowModel": "arco",
   "view": {
     "position": [

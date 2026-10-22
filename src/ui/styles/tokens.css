@@ -84,6 +84,11 @@
   --nabla-color-well: rgba(22, 22, 22, 0.4);
   --nabla-color-rail: rgba(68, 68, 68, 0.53);
   --nabla-text-shadow: 0 1px 3px #000;
+  /* Combat HUD (combat.css): health bar fill, low-health fill and the hit flash. */
+  --nabla-color-health: var(--nabla-color-go);
+  --nabla-color-health-low: var(--nabla-color-danger);
+  --nabla-hit-flash: rgba(198, 40, 40, 0.42);
+  --nabla-health-width: 180px;
   /* Button active colour (lights, high beam set their own on the button). */
   --nabla-btn-active: var(--nabla-color-accent);
 

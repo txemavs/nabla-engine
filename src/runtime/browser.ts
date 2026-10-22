@@ -1,6 +1,11 @@
 import { createMonitorAvatar } from '../render/entity/avatar.js'
 import type { HeldPose } from '../render/entity/held-pose.js'
-export { defaultHeldPose, holdItem, heldPoseWorld, type HeldPose } from '../render/entity/held-pose.js'
+export {
+  defaultHeldPose,
+  holdItem,
+  heldPoseWorld,
+  type HeldPose,
+} from '../render/entity/held-pose.js'
 import { threadedSimulation } from '../simulation/threaded-simulation.js'
 import { PerfMeter } from './perf-meter.js'
 import {
@@ -212,7 +217,10 @@ import {
 } from './mirror-adjustment.js'
 import type { MirrorAdjustment, MirrorAngle } from '../render/entity/car-mirrors.js'
 import { VehicleMonitors } from './vehicle-monitors.js'
-import type { Simulation } from '../simulation/simulation.js'
+import { idleInput, type Simulation } from '../simulation/simulation.js'
+import { Combat } from './combat.js'
+import { CombatHud } from '../ui/combat-hud.js'
+import { weaponBaseDamage } from '../simulation/combat/damage.js'
 import * as THREE from 'three'
 import { parseScene, type SceneDocument } from '../scene/document.js'
 import { SceneView } from '../presentation/scene-view.js'
@@ -236,6 +244,13 @@ import {
   writeLightTuning,
   type LightTuning,
 } from './light-tuning.js'
+export {
+  Combat,
+  CHARACTER_HIT_PREFIX,
+  type CombatHitReport,
+  type CombatHealthInfo,
+  type CombatTargetOptions,
+} from './combat.js'
 export {
   AVATAR_ANIM_STATES,
   AVATAR_STRIDE_SPEED,
@@ -614,7 +629,6 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 /** A frame that yields the game step result (a promise when physics runs in a worker). */
 type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
 type FrameSteps = Generator<unknown, void, unknown>
-
 
 /** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
 export interface WeaponProp {
@@ -1215,6 +1229,21 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
     installEngineStyles(options.canvas.ownerDocument)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
+    this.combatHud = new CombatHud(options.canvas.parentElement!, {
+      health: this.text('HP'),
+      dead: (seconds) => this.text('Down · respawn in {0} s', seconds),
+    })
+    this.combat = new Combat({
+      now: () => performance.now() / 1000,
+      sceneOffset: () => this.view.root.position.clone(),
+      respawnLocal: (position) => this.respawnLocalPlayer(position),
+      localDied: () => {
+        this.weaponDrawn = false
+        this.heldDrawn = false
+        this.sidearm?.setAiming(false)
+      },
+      hud: this.combatHud,
+    })
     this.versionLabel = mountEngineVersionLabel(options.canvas.parentElement!)
     this.sky = new GeographicView(this.document, () => {})
     // Reattach after Play extraction: viewer still parents the flare; game must too.
@@ -1955,7 +1984,12 @@ export class GameRuntime {
     // a worker step: it renders the latest state while the step runs, and the time of frames that
     // could not start a step joins the next one (capped). Inline physics is unchanged.
     if (!this.xrStepPending) {
-      const stepped = this.game.step(dt + this.xrStepCarry, input, water.level, time)
+      const stepped = this.game.step(
+        dt + this.xrStepCarry,
+        this.combat.isDead() ? idleInput() : input,
+        water.level,
+        time,
+      )
       this.xrStepCarry = 0
       if (stepped instanceof Promise) {
         this.xrStepPending = stepped.then(
@@ -2344,7 +2378,12 @@ export class GameRuntime {
     const water = worldWater(this.document.water, this.document.sky)
     this.environment.ocean.setLevel(water.level)
     const physicsStart = performance.now()
-    const crossing = (yield this.game.step(dt, input, water.level, time)) as StepResult
+    const crossing = (yield this.game.step(
+      dt,
+      this.combat.isDead() ? idleInput() : input,
+      water.level,
+      time,
+    )) as StepResult
     this.usbFeedback.update(
       vehicleId ? sim.vehicleFeedback(vehicleId) : null,
       availableGamepads(),
@@ -2520,6 +2559,7 @@ export class GameRuntime {
       this.heldWeapon.syncWorld(this.view.avatar, time, eyes || !!this.localHeld)
     }
     this.weaponsToHand()
+    this.updateCombat(sim, dt)
     this.updateBow(sim, dt)
     this.updateRemoteArrows(sim, dt)
     this.view.heldPose = this.localHeld
@@ -5534,7 +5574,11 @@ export class GameRuntime {
       (this.fireRequested || (automatic && this.triggerDown)) &&
       (tracked || this.hasInput())
     ) {
-      const shot = fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes)
+      const shot = this.combat.isDead()
+        ? null
+        : fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes, this.combat, [
+            ...weaponPosition,
+          ] as Vec3Tuple)
       if (shot?.fired && this.gallery.lastGlassImpact)
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
       if (shot?.fired && this.gallery.lastBurst)
@@ -5755,7 +5799,10 @@ export class GameRuntime {
     root.add(frame)
     if (options.grip) {
       // Undo the third-person hip offset so the weapon sits at the root.
-      const hip = entry.kind === 'firearm' ? [0.24, -0.16, -0.32] : (entry.preset.world?.position ?? [0, 0, 0])
+      const hip =
+        entry.kind === 'firearm'
+          ? [0.24, -0.16, -0.32]
+          : (entry.preset.world?.position ?? [0, 0, 0])
       frame.position.set(-hip[0], -hip[1], -hip[2])
     }
     const weapon =
@@ -5838,6 +5885,7 @@ export class GameRuntime {
       )
     const flight = (this.arrowFlight ??= new ArrowFlight({ arrowMass: draw.spec.arrowMass }))
     flight.launch(origin.toArray() as Vec3Tuple, forward.toArray() as Vec3Tuple, speed)
+    this.lastArrowOrigin = origin.toArray() as Vec3Tuple
     this.emitFire({
       kind: 'bow',
       slot: this.activeWeaponSlot,
@@ -5862,8 +5910,15 @@ export class GameRuntime {
     }
     const flight = this.arrowFlight
     if (!flight) return
-    const impacts = flight.update(dt, (from, direction, length) =>
-      sim.shoot(from, direction, length, 0),
+    const bow = this.heldWeapon?.preset
+    const impacts = flight.update(
+      dt,
+      this.combat.shotQuery(
+        (from, direction, length) => sim.shoot(from, direction, length, 0),
+        bow?.id ?? 'arrow',
+        weaponBaseDamage(bow ?? { kind: 'bow' }),
+        () => this.lastArrowOrigin ?? undefined,
+      ),
     )
     for (const hit of impacts) {
       // Marks, targets, glass and the push through the gallery, like a bullet's impact.
@@ -5905,11 +5960,15 @@ export class GameRuntime {
     const weapon = this.heldWeapon
     const melee = weapon?.preset.melee
     if (!sim || !weapon || !melee || sim.player.vehicleId) return
-    if (!weapon.swing(performance.now())) return
+    if (this.combat.isDead() || !weapon.swing(performance.now())) return
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
     const origin = new THREE.Vector3(...sim.renderPlayerPosition)
     origin.y += 1.4
-    const hit = sim.shoot(origin.toArray(), forward.toArray(), melee.reachM, melee.impulse)
+    const hit = this.combat.shotQuery(
+      (from, direction, length) => sim.shoot(from, direction, length, melee.impulse),
+      weapon.preset.id,
+      weaponBaseDamage(weapon.preset),
+    )(origin.toArray(), forward.toArray(), melee.reachM)
     this.options.canvas.dataset.meleeHit = hit ? (hit.entityId ?? 'static') : ''
   }
   private createSidearm(preset?: ConstructorParameters<typeof Sidearm>[1]): Sidearm {
@@ -6260,6 +6319,74 @@ export class GameRuntime {
   }
   private bodyRig: PlayerBodyRig | null = null
   /**
+   * Character combat: health, hit zones, death and respawn for the local player, remote
+   * players (hosts add them with `combat.addTarget`) and test dummies. Contract: docs/combat.md.
+   */
+  readonly combat: Combat
+  private readonly combatHud: CombatHud
+  private readonly dummies: { id: string; body: PlayerBody }[] = []
+  private dummySequence = 0
+  /**
+   * A prota test dummy (offline target, never networked) standing 3 m in front of the player.
+   * Returns its target id, or null before the body rig or the simulation is ready.
+   */
+  spawnCombatDummy(): string | null {
+    const sim = this.session.simulation
+    const rig = this.bodyRig
+    if (!sim || !rig) return null
+    const body = rig.create()
+    const yaw = this.cameraState.yaw
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
+    const at = new THREE.Vector3(...sim.renderPlayerPosition).addScaledVector(forward, 3)
+    const down = sim.shoot([at.x, at.y + 2, at.z], [0, -1, 0], 10, 0)
+    const ground = this.world?.groundHeight(at.toArray()) ?? down?.point[1] ?? at.y - 0.9
+    const feet: Vec3Tuple = [at.x, ground, at.z]
+    body.root.position.fromArray(feet)
+    // Face the player.
+    body.root.rotation.set(0, yaw + Math.PI, 0)
+    body.animate('idle', 0, 0)
+    this.view.root.add(body.root)
+    const id = `dummy-${++this.dummySequence}`
+    this.dummies.push({ id, body })
+    this.combat.addTarget(id, body, { offline: true, spawn: feet })
+    return id
+  }
+  /** Remove every test dummy. */
+  clearCombatDummies(): void {
+    for (const dummy of this.dummies.splice(0)) {
+      this.combat.removeTarget(dummy.id)
+      dummy.body.dispose()
+    }
+  }
+  /** Number of test dummies in the scene. */
+  get combatDummyCount(): number {
+    return this.dummies.length
+  }
+  /** Back on foot at the scenario spawn (or `position`), simulation world. */
+  private respawnLocalPlayer(position?: Vec3Tuple): void {
+    const sim = this.session.simulation
+    if (!sim) return
+    if (sim.player.vehicleId) sim.interact()
+    const half = simulationDefaults.playerHalfHeight
+    let target = position ? ([position[0], position[1] + half, position[2]] as Vec3Tuple) : null
+    if (!target) {
+      const spawn = this.document.entities.find((entity) => entity.kind === 'spawn')
+      const p = spawn?.transform.position ?? this.combatSpawn ?? sim.player.position
+      const ground = this.world?.groundHeight([...p] as Vec3Tuple)
+      target = [p[0], (ground ?? p[1] - half) + half + 0.05, p[2]]
+    }
+    sim.relocatePlayer(target)
+  }
+  /** Where the player first stood on foot (respawn fallback). */
+  private combatSpawn: Vec3Tuple | null = null
+  /** Launch point of the last arrow (the bow's arrow rest): the fire origin of arrow hits. */
+  private lastArrowOrigin: Vec3Tuple | null = null
+  private updateCombat(sim: Simulation, dt: number): void {
+    if (!this.combatSpawn && !sim.player.vehicleId) this.combatSpawn = [...sim.player.position]
+    for (const dummy of this.dummies) dummy.body.animate('idle', 0, dt)
+    this.combat.update()
+  }
+  /**
    * Give the on-foot player a skinned body (see player-body.ts for the asset contract); null
    * removes it. Resolves with the rig so remote players can share it ({@link PlayerBodyRig.create}).
    */
@@ -6275,6 +6402,7 @@ export class GameRuntime {
     if (fallback && this.playerBodyChosen) return null
     this.bodyRig = rig
     this.view.setPlayerBody(this.bodyRig?.create() ?? null)
+    this.combat.setLocalBody(this.view.localPlayerBody)
     return this.bodyRig
   }
   /** The local player's avatar state to send to other clients (with or without a body; null before the first frame). */

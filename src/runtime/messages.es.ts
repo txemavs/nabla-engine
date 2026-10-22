@@ -126,4 +126,6 @@ export const spanishMessages: Readonly<Record<string, string>> = {
   'Gallery · {0}/{1} · {2} s · N restart': 'Galería · {0}/{1} · {2} s · N reiniciar',
   'Portal frames must have matching dimensions': 'Los marcos deben tener las mismas dimensiones',
   'Invalid portal destination': 'Destino de portal no válido',
+  HP: 'Vida',
+  'Down · respawn in {0} s': 'Abatido · reapareces en {0} s',
 }

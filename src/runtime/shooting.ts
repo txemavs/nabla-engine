@@ -5,6 +5,8 @@ import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
 import type { Sidearm } from './sidearm.js'
 import type { Gallery } from './gallery.js'
+import type { Combat } from './combat.js'
+import { weaponBaseDamage } from '../simulation/combat/damage.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import {
   bulletEnergy,
@@ -105,8 +107,21 @@ export function fireSidearm(
   camera: PerspectiveCamera,
   now: number,
   firstPerson: boolean,
+  combat?: Combat | null,
+  /** The fire origin (GameRuntime's weapon position) reported with character hits. */
+  fireOrigin?: Vec3,
 ): SidearmShot | null {
   if (!sidearm.visible) return null
+  // Characters (hit zones) stop the bullet too: the nearer of world and body wins.
+  const cast = (from: Vec3, dir: Vec3, length: number) => sim.shoot(from, dir, length, 0)
+  const query = combat
+    ? combat.shotQuery(
+        cast,
+        sidearm.preset?.id ?? 'sidearm',
+        weaponBaseDamage(sidearm.preset ?? {}),
+        fireOrigin,
+      )
+    : cast
   // Capture the pose before pulling the trigger adds recoil or ends an inspection.
   const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson, now)
   const event: SidearmShot = sidearm.pull(now)
@@ -129,13 +144,10 @@ export function fireSidearm(
   let impulse = sidearm.impulse
   if (load) {
     const { k, angle } = fitted(load)
-    const result = traceBullet(
-      load,
-      origin.toArray() as Vec3,
-      direction.toArray() as Vec3,
-      (from, dir, length) => sim.shoot(from, dir, length, 0),
-      { k, angle },
-    )
+    const result = traceBullet(load, origin.toArray() as Vec3, direction.toArray() as Vec3, query, {
+      k,
+      angle,
+    })
     destination = new Vector3(...result.end)
     if (result.hit) {
       normal = result.hit.normal
@@ -146,7 +158,7 @@ export function fireSidearm(
     }
     event.end = result.end
   } else {
-    const aimed = sim.shoot(origin.toArray(), direction.toArray(), sidearm.range, 0)
+    const aimed = query(origin.toArray() as Vec3, direction.toArray() as Vec3, sidearm.range)
     destination = aimed
       ? new Vector3(...aimed.point)
       : origin.clone().addScaledVector(direction, sidearm.range)

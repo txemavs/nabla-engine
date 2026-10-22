@@ -263,8 +263,12 @@ export const engineEn: Readonly<Record<string, string>> = {
   'scene.sea-level-m': 'Sea level (m)',
   'scene.show-the-sea': 'Show the sea',
   'scene.now': 'Now',
+  'settings.combat': 'Combat',
+  'settings.combat-note':
+    'A prota dummy 3 m ahead to shoot at: head ×4, neck ×2.5, torso ×1, arms ×0.6, legs ×0.75 of the weapon damage. It respawns 5 s after it falls.',
   'settings.distances': 'Distances',
   'settings.default': 'Default',
+  'settings.dummies': 'Dummies: {count}',
   'settings.keys': 'Keys',
   'settings.keys.action': 'Action',
   'settings.keys.search': 'Search action or key…',
@@ -280,6 +284,8 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.keys.ctx.aiming': 'Aiming',
   'settings.keys.ctx.menu': 'Menus',
   'settings.keys.ctx.viewer': 'Free viewer',
+  'settings.remove-dummies': 'Remove dummies',
+  'settings.spawn-dummy': 'Spawn test dummy',
   'usb.title': 'USB devices',
   'usb.note':
     'Connect the wheel or joystick and move an axis or press a button. Calibrate before driving. When you return to the game, leave the controls at rest to activate them.',

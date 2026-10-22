@@ -3,6 +3,7 @@
   "name": "HK USP Compact 9mm",
   "order": 0,
   "slot": 1,
+  "damage": 25,
   "model": "/library/weapons/hk-compact/hk-compact-low.glb",
   "rig": "/rigs/weapons/hk-compact.rig.json",
   "scale": 1,
