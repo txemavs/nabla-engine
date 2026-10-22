@@ -3916,6 +3916,14 @@ export class GameRuntime {
     this.localHeld = pose ? { hand, pose } : null
   }
   private localHeld: { hand: 'left' | 'right'; pose: HeldPose } | null = null
+  /**
+   * Whether the local body's holstered pistol shows (a host inventory decides: only once one is
+   * in the holster); null leaves it to the drawn state.
+   */
+  setHolsterShown(shown: boolean | null): void {
+    this.holsterShown = shown
+  }
+  private holsterShown: boolean | null = null
   /** Whether the camera is at the player's eyes (first person) right now. */
   get firstPersonView(): boolean {
     const sim = this.session.simulation
@@ -5718,7 +5726,7 @@ export class GameRuntime {
   private weaponsToHand(): void {
     const body = this.view.localPlayerBody
     if (!body) return
-    body.setHolstered(!(this.weaponDrawn || this.heldDrawn))
+    body.setHolstered(this.holsterShown ?? !(this.weaponDrawn || this.heldDrawn))
     for (const object of [this.heldWeapon?.worldObject, this.sidearm?.worldObject])
       if (object?.visible) body.holdAtHand(object, true)
   }
