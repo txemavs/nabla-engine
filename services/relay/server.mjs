@@ -101,6 +101,21 @@ function validAvatar(a) {
 }
 
 const intIn = (n, min, max) => Number.isInteger(n) && n >= min && n <= max
+const numIn = (n, min, max) => Number.isFinite(n) && n >= min && n <= max
+
+/** Fire event (weapon presentation, no authority): slot, kind, origin, unit direction, range/speed. */
+function validFire(f) {
+  return (
+    intIn(f.w, 0, 63) &&
+    intIn(f.k, 0, 15) &&
+    finiteArray(f.o, 3) &&
+    f.o.every((v) => numIn(v, -1e6, 1e6)) &&
+    finiteArray(f.d, 3) &&
+    f.d.every((v) => numIn(v, -1.001, 1.001)) &&
+    (f.r === undefined || numIn(f.r, 0, 5000)) &&
+    (f.s === undefined || numIn(f.s, 0, 500))
+  )
+}
 
 /** Character inventory stacks: at most 32 of [slot 0..63, item 1..63, count -1..9999]. */
 function validStacks(list) {
@@ -292,6 +307,7 @@ export function startRelay({
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || typeof message.kind !== 'string' || !KIND.test(message.kind)) return
         if (!validEventData(message.data) || ++state.events > maxEvents) return
+        if (message.kind === 'fire' && !validFire(message.data)) return
         broadcast(state.room, socket, {
           type: 'event',
           peer: member.peer,

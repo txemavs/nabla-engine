@@ -79,6 +79,64 @@ const eventData = z
 export type NetEventData = Record<string, number | boolean | string | number[]>
 const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
 
+/** Event kind of {@link fireEventSchema}. */
+export const FIRE_EVENT = 'fire'
+/**
+ * A shot or arrow leaving a weapon (event kind `fire`): `w` the game's weapon slot (0 none), `k`
+ * a game-defined weapon kind index, `o` the origin (muzzle, arrow rest; scene metres, 1 cm), `d`
+ * the unit direction (1/1000) and optionally `r` the trace length (m) or `s` the launch speed
+ * (m/s). Presentation only: hits and damage are not part of it.
+ */
+export const fireEventSchema = z.object({
+  w: z.number().int().min(0).max(63),
+  k: z.number().int().min(0).max(15),
+  o: z.array(finite.min(-1e6).max(1e6)).length(3),
+  d: z.array(finite.min(-1.001).max(1.001)).length(3),
+  r: finite.min(0).max(5000).optional(),
+  s: finite.min(0).max(500).optional(),
+})
+export type FireEvent = z.infer<typeof fireEventSchema>
+
+export interface FireSample {
+  slot: number
+  kind: number
+  origin: Vec3Tuple
+  direction: Vec3Tuple
+  range?: number
+  speed?: number
+}
+
+/** Wire form of a fire event: 1 cm origin, unit direction to 1/1000. */
+export function quantizeFire(fire: FireSample): FireEvent {
+  const fix = (v: number, digits: number) => +v.toFixed(digits)
+  const n = Math.hypot(...fire.direction) || 1
+  return {
+    w: Math.max(0, Math.min(63, Math.round(fire.slot))),
+    k: Math.max(0, Math.min(15, Math.round(fire.kind))),
+    o: fire.origin.map((v) => fix(v, 2)),
+    d: fire.direction.map((v) => fix(v / n, 3)),
+    ...(fire.range !== undefined ? { r: fix(Math.min(5000, Math.max(0, fire.range)), 2) } : {}),
+    ...(fire.speed !== undefined ? { s: fix(Math.min(500, Math.max(0, fire.speed)), 2) } : {}),
+  }
+}
+
+/** A received fire event, or null when it is not one (bad or out-of-range data). */
+export function decodeFire(data: unknown): FireSample | null {
+  const parsed = fireEventSchema.safeParse(data)
+  if (!parsed.success) return null
+  const f = parsed.data
+  const n = Math.hypot(f.d[0], f.d[1], f.d[2])
+  if (!(n > 0.5)) return null
+  return {
+    slot: f.w,
+    kind: f.k,
+    origin: [f.o[0], f.o[1], f.o[2]],
+    direction: [f.d[0] / n, f.d[1] / n, f.d[2] / n],
+    ...(f.r !== undefined ? { range: f.r } : {}),
+    ...(f.s !== undefined ? { speed: f.s } : {}),
+  }
+}
+
 /**
  * Optional on-foot body of the sender (compact keys, quantised by {@link quantizeAvatar}):
  * `p` feet position in scene metres, `y` heading in radians (0 faces −Z), `s` horizontal speed
