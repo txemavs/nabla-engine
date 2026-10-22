@@ -385,12 +385,20 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
     setOpen(false)
   }
   doc.addEventListener('pointerdown', outside)
+  const onEscape = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || nav.hidden) return
+    event.preventDefault()
+    event.stopPropagation()
+    setOpen(false)
+  }
+  doc.addEventListener('keydown', onEscape, true)
   installEngineStyles(doc)
   doc.body.append(nav)
   return {
     nav,
     destroy: () => {
       doc.removeEventListener('pointerdown', outside)
+      doc.removeEventListener('keydown', onEscape, true)
       compact?.removeEventListener('change', layout)
       doc.body.classList.remove(bodyClass)
       nav.remove()
