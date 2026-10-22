@@ -82,13 +82,15 @@ const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
 /**
  * Optional on-foot body of the sender (compact keys, quantised by {@link quantizeAvatar}):
  * `p` feet position in scene metres, `y` heading in radians (0 faces −Z), `s` horizontal speed
- * in m/s and `a` a game-defined animation index (the game keeps the name table).
+ * in m/s and `a` a game-defined animation index (the game keeps the name table). Optional `w` is
+ * a game-defined held-item index (0 or absent: empty hands); older clients leave it out.
  */
 export const avatarBlockSchema = z.object({
   p: vec3,
   y: finite,
   s: finite.nonnegative(),
   a: z.number().int().min(0).max(63),
+  w: z.number().int().min(0).max(63).optional(),
 })
 export type AvatarBlock = z.infer<typeof avatarBlockSchema>
 
@@ -98,6 +100,8 @@ export interface AvatarSample {
   yaw: number
   speed: number
   anim: number
+  /** Game-defined held-item index; 0 (or absent) is empty hands. */
+  weapon?: number
 }
 
 /** Angle wrapped to (−π, π]. */
@@ -115,6 +119,7 @@ export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
     y: fix(wrapAngle(sample.yaw), 3),
     s: fix(Math.max(0, sample.speed), 2),
     a: Math.max(0, Math.min(63, Math.round(sample.anim))),
+    ...(sample.weapon ? { w: Math.max(0, Math.min(63, Math.round(sample.weapon))) } : {}),
   }
 }
 
@@ -124,6 +129,7 @@ export function decodeAvatar(block: AvatarBlock): AvatarSample {
     yaw: block.y,
     speed: block.s,
     anim: block.a,
+    weapon: block.w ?? 0,
   }
 }
 

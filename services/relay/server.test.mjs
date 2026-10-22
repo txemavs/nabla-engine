@@ -213,6 +213,12 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
   assert.equal(both.t, 4)
   assert.deepEqual(both.state.position, state.position)
   assert.equal(both.avatar.a, 9)
+  // Optional held item: forwarded when valid, the snapshot dropped when out of range.
+  a.json({ type: 'snapshot', t: 5, seq: 4, avatar: { ...avatar, w: 99 } })
+  a.json({ type: 'snapshot', t: 6, seq: 5, avatar: { ...avatar, w: 2 } })
+  const armed = await b.next('snapshot')
+  assert.equal(armed.t, 6)
+  assert.equal(armed.avatar.w, 2)
   a.close()
   b.close()
   await relay.close()

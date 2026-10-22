@@ -63,5 +63,11 @@ describe('avatar samples', () => {
     const q = quantizeAvatar({ position: [1.23456, 0, -2], yaw: 7, speed: 1.234, anim: 4 })
     expect(q).toEqual({ p: [1.23, 0, -2], y: +wrapAngle(7).toFixed(3), s: 1.23, a: 4 })
     expect(decodeAvatar(q).position).toEqual([1.23, 0, -2])
+    // Held item: optional on the wire (absent = empty hands), switched like the animation.
+    expect(decodeAvatar(q).weapon).toBe(0)
+    const armed = quantizeAvatar({ ...a, weapon: 2 })
+    expect(armed.w).toBe(2)
+    expect(decodeAvatar(armed).weapon).toBe(2)
+    expect(avatarSampleOps.blend({ ...a, weapon: 0 }, { ...b, weapon: 2 }, 0.5).weapon).toBe(0)
   })
 })
