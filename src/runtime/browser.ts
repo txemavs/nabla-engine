@@ -269,18 +269,27 @@ export {
 /**
  * The engine's default player body: Gepeto's "prota" with belt, holster (holstered USP) and
  * baton (assets/avatar/prota, credits in its LICENSES.md), animated by assets/avatar's clips.
+ * The player's saved actor (./actor.ts) replaces it at play.
  */
-const PROTA = '/avatar/prota/prota'
-export const DEFAULT_PLAYER_BODY: PlayerBodyAssets = {
-  model: `${PROTA}.glb`,
-  animations: '/avatar/avatar.anims.glb',
-  attachments: [
-    { model: `${PROTA}.belt.glb`, socket: 'BeltSocket' },
-    { model: `${PROTA}.holster.glb`, socket: 'HolsterSocket' },
-    { model: `${PROTA}.holster-usp.glb`, socket: 'HolsterGunSocket', role: 'holstered' },
-    { model: `${PROTA}.baton.glb`, socket: 'BatonSocket' },
-  ],
-}
+import {
+  DEFAULT_ACTOR,
+  actorBodyAssets,
+  actorProfile,
+  loadActor,
+  saveActor,
+  type ActorChoice,
+} from './actor.js'
+export {
+  ACTOR_COLORS,
+  ACTOR_COLOR_NAMES,
+  ACTOR_KINDS,
+  actorBodyAssets,
+  parseActor,
+  type ActorChoice,
+  type ActorColor,
+  type ActorKind,
+} from './actor.js'
+export const DEFAULT_PLAYER_BODY: PlayerBodyAssets = actorBodyAssets(DEFAULT_ACTOR)
 import {
   PlayerBodyRig,
   type PlayerBody,
@@ -1491,7 +1500,7 @@ export class GameRuntime {
     // Engine default avatar (assets/avatar): the mannequin under the monitor head, unless the
     // host called setPlayerBody (null keeps the head only).
     if (!this.playerBodyChosen)
-      void this.loadPlayerBody(DEFAULT_PLAYER_BODY, true).catch((error) =>
+      void this.loadPlayerBody(actorBodyAssets(this.actorChoice), true).catch((error) =>
         console.warn('player body', error),
       )
     this.assertAlive()
@@ -6409,14 +6418,39 @@ export class GameRuntime {
    */
   async setPlayerBody(assets: PlayerBodyAssets | null): Promise<PlayerBodyRig | null> {
     this.playerBodyChosen = true
+    this.headOnly = assets === null
     return this.loadPlayerBody(assets)
   }
+  /** The local player's actor (Settings → Options → Actor), saved in localStorage. */
+  get actor(): ActorChoice {
+    return this.actorChoice
+  }
+  /** Actor for the local player profile sent to peers: `kind:color` (e.g. `default:red`). */
+  get actorProfile(): string {
+    return actorProfile(this.actorChoice)
+  }
+  /** False on head-only pages (the host chose `setPlayerBody(null)`): no actor to pick. */
+  get actorSelectable(): boolean {
+    return !this.headOnly
+  }
+  /** Save the actor and wear it now (no reload); head-only pages only save it. */
+  async setActor(choice: ActorChoice): Promise<PlayerBodyRig | null> {
+    this.actorChoice = choice
+    saveActor(choice)
+    if (this.headOnly) return null
+    this.playerBodyChosen = true
+    return this.loadPlayerBody(actorBodyAssets(choice))
+  }
+  private actorChoice: ActorChoice = loadActor()
+  private headOnly = false
+  private bodyLoad = 0
   /** Host chose a body (or none, `null`): the engine default is then never loaded. */
   private playerBodyChosen = false
   private async loadPlayerBody(assets: PlayerBodyAssets | null, fallback = false) {
+    const load = ++this.bodyLoad
     const rig = assets ? await PlayerBodyRig.load(assets) : null
-    // The default arrives late; a host choice made meanwhile wins.
-    if (fallback && this.playerBodyChosen) return null
+    // The default arrives late; a host choice made meanwhile wins, and so does a later choice.
+    if ((fallback && this.playerBodyChosen) || load !== this.bodyLoad) return null
     this.bodyRig = rig
     this.view.setPlayerBody(this.bodyRig?.create() ?? null)
     this.combat.setLocalBody(this.view.localPlayerBody)
