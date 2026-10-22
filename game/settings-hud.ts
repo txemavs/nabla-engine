@@ -55,6 +55,8 @@ const TABS = [
   { id: 'options', label: t('settings.settings') },
   { id: 'objects', label: t('settings.objects') },
   { id: 'dev', label: t('settings.development') },
+  // The main menu's other sections (virtual reality, host links): main-menu.ts menuPane.
+  { id: 'more', label: t('settings.more') },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -1970,6 +1972,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     get isOpen() {
       return !win.hidden
     },
+    menuPane: paneEls.get('more'),
   })
 
   return {

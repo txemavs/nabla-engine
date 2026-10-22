@@ -417,6 +417,11 @@ export interface GameMenuSettings {
   open: (tab?: string) => void
   close: () => void
   readonly isOpen: boolean
+  /**
+   * Where the menu's other sections (virtual reality, host links, extra entries) are shown as
+   * titled `.menu-section` fieldsets. With it ☰ opens the settings window directly.
+   */
+  readonly menuPane?: HTMLElement
 }
 
 export interface GameMenuOptions {
@@ -457,6 +462,9 @@ const store = globalThis as unknown as {
   [PENDING_KEY]?: Map<string, SideMenuEntry[]>
 }
 
+/** Id prefix of the game section's tab entries (the settings window shows the tabs itself). */
+const MENU_TAB_ENTRY = 'nabla-menu-tab-'
+
 const SETTINGS_TABS: ReadonlyArray<readonly [tab: string, key: string]> = [
   ['planet', 'settings.world'],
   ['options', 'settings.settings'],
@@ -471,6 +479,7 @@ export function defaultGameMenuSections(): SideMenuSection[] {
       id: 'game',
       titleKey: 'menu.game',
       entries: SETTINGS_TABS.map(([tab, key]) => ({
+        id: `${MENU_TAB_ENTRY}${tab}`,
         labelKey: key,
         run: () => openGameSettings(tab),
       })),
@@ -530,6 +539,7 @@ function buildGameMenu(state: GameMenuState): void {
     if (note && note.hidden === noted) note.hidden = !noted
   }
   syncVR()
+  showInSettings(state, t)
   state.observer = new MutationObserver(syncVR)
   state.observer.observe(doc.body, {
     subtree: true,
@@ -537,6 +547,33 @@ function buildGameMenu(state: GameMenuState): void {
     attributes: true,
     attributeFilter: ['hidden'],
   })
+}
+
+/**
+ * The settings window is the full-screen menu: the side menu's sections (but the tab entries)
+ * move into its menu pane, one titled fieldset each, keeping their entries and listeners.
+ */
+function showInSettings(state: GameMenuState, t: MenuTranslate): void {
+  const pane = state.settings?.menuPane
+  const menu = state.menu
+  if (!pane || !menu) return
+  const { doc } = state
+  for (const box of [...menu.nav.querySelectorAll<HTMLElement>(':scope > .nabla-side-menu-section')]) {
+    const id = `nabla-menu-section-${box.dataset.section}`
+    doc.getElementById(id)?.remove()
+    const items = [...box.children].filter(
+      (child) => child.tagName !== 'SUMMARY' && !child.id.startsWith(MENU_TAB_ENTRY),
+    ) as HTMLElement[]
+    if (!items.length) continue
+    const group = doc.createElement('fieldset')
+    group.className = 'menu-section'
+    group.id = id
+    const legend = doc.createElement('legend')
+    const title = box.querySelector(':scope > summary')?.textContent
+    legend.textContent = title || items[0].textContent || t('menu.label')
+    group.append(legend, ...items)
+    pane.append(group)
+  }
 }
 
 /**
@@ -566,6 +603,7 @@ export function mountGameMenu(
     id: GAME_MENU_TOGGLE_ID,
     onClick: () => {
       if (state.settings?.isOpen) state.settings.close()
+      else if (state.settings?.menuPane) state.settings.open()
       else state.menu?.toggle()
     },
   })
@@ -577,7 +615,9 @@ export function mountGameMenu(
 /** settings-hud.ts: the window the menu's game entries open. */
 export function registerGameMenuSettings(settings: GameMenuSettings): void {
   const state = store[GAME_MENU_KEY]
-  if (state) state.settings = settings
+  if (!state) return
+  state.settings = settings
+  buildGameMenu(state)
 }
 
 /** Add entries to a section of the game menu (e.g. the XR page's own Enter VR and monitor). */

@@ -279,6 +279,7 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.actor-color-blue': 'Urdina',
   'settings.actor-color-green': 'Berdea',
   'settings.actor-color-orange': 'Laranja',
+  'settings.more': 'Gehiago',
   'settings.combat': 'Borroka',
   'settings.combat-note':
     'Prota panpina bat 3 m aurrean tiro egiteko: burua ×4, lepoa ×2,5, enborra ×1, besoak ×0,6, hankak ×0,75 armaren kaltearen. Erori eta 5 s geroago itzultzen da.',

@@ -278,6 +278,7 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.actor-color-blue': 'Azul',
   'settings.actor-color-green': 'Verde',
   'settings.actor-color-orange': 'Naranja',
+  'settings.more': 'Más',
   'settings.combat': 'Combate',
   'settings.combat-note':
     'Un muñeco prota a 3 m para disparar: cabeza ×4, cuello ×2,5, torso ×1, brazos ×0,6, piernas ×0,75 del daño del arma. Reaparece 5 s después de caer.',
