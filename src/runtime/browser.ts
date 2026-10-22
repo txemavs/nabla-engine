@@ -3916,12 +3916,16 @@ export class GameRuntime {
     origin: Vec3Tuple
     end: Vec3Tuple
     hit?: { entityId?: string | null; point: Vec3Tuple; normal?: Vec3Tuple } | null
+    /** Draw the tracer and play the gunshot (default true); false shows only the impact. */
+    tracer?: boolean
   }): void {
     this.assertAlive()
     const now = performance.now()
     if (![...shot.origin, ...shot.end].every(Number.isFinite)) return
-    this.view.tracers.add(shot.origin, shot.end, now)
-    this.effects.audio.gunshot(shot.origin)
+    if (shot.tracer !== false) {
+      this.view.tracers.add(shot.origin, shot.end, now)
+      this.effects.audio.gunshot(shot.origin)
+    }
     const hit = shot.hit
     if (!hit || !hit.point.every(Number.isFinite)) return
     const normal = hit.normal?.every(Number.isFinite) ? hit.normal : undefined
