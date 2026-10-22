@@ -128,3 +128,10 @@ Euskadi's whole theme is this block (`EUSKADI_HUD_CSS` in `euskadi-hud.ts`):
 plus the `--splash-*` tokens in `euskadi-boot.ts`. Its own elements use the engine classes
 (`nabla-place`, `nabla-help`, `nabla-status`, `nabla-readout`, `nabla-cta`, `nabla-catalog-*`).
 The film credits are an Euskadi component of their own.
+
+## First paint
+
+Every game page carries a small inline `<style id="nabla-critical">` before `ui-styles.ts`: dark
+`html` background, `<body>` hidden until `installEngineStyles` adds `nabla-styles-ready` to
+`<html>`, and `#error-message` hidden unless `.visible`. So nothing unstyled (no white page, no
+"Error" overlay) flashes before the stylesheet is in. New pages copy that block.

@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Nabla Engine · VR</title>
     <link rel="icon" type="image/svg+xml" href="/brand/source.svg" />
+    <!-- Critical CSS: nothing unstyled (or the error overlay) shows before ui-styles.ts runs. -->
+    <style id="nabla-critical">
+      html { background: #121212; color-scheme: dark; }
+      html:not(.nabla-styles-ready) body { visibility: hidden; }
+      #error-message:not(.visible) { display: none; }
+    </style>
     <script type="module" src="./ui-styles.ts"></script>
   </head>
   <body>
