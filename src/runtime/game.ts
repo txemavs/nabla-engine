@@ -45,7 +45,7 @@ export class GameRuntime {
   private portalSequence = 0
   private jumpRequested = false
   /**
-   * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
+   * recover (Y) reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
    * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
    */
   readonly recover: {

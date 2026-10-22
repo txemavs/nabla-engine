@@ -1,4 +1,5 @@
 import { pageSearch } from './page-query.js'
+import { actorHandAssets } from '../src/runtime/actor.js'
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { t } from '@nabla/engine/i18n'
@@ -35,10 +36,14 @@ export function bindVR(runtime: GameRuntime): void {
 }
 
 function mountVR(runtime: GameRuntime): void {
+  // The worn actor's hands (GameRuntime.setActor swaps them live); the glove is the fallback.
   if (new URLSearchParams(pageSearch()).has('xr'))
-    void runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch((error) => {
-      console.warn(t('vr.the-gloves-could-not-be-loaded-keeping-the-basic'), error)
-    })
+    void runtime.xr
+      .setActorHands(actorHandAssets(runtime.actor))
+      .catch(() => runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb'))
+      .catch((error) => {
+        console.warn(t('vr.the-gloves-could-not-be-loaded-keeping-the-basic'), error)
+      })
   runtime.xr.enableCalibrationScreen()
   bindXRQuality(runtime, [], false)
   const screen = runtime.xr.calibrationScreen!

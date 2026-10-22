@@ -162,7 +162,11 @@ export class PlayerBodyRig {
   }
 }
 
-function recolor(root: THREE.Object3D, colors: NonNullable<PlayerBodyAssets['colors']>): void {
+/** Swap materials tagged `nabla_color_slot` for tinted copies (bodies and XR hands share it). */
+export function recolor(
+  root: THREE.Object3D,
+  colors: NonNullable<PlayerBodyAssets['colors']>,
+): void {
   const done = new Map<THREE.Material, THREE.Material>()
   root.traverse((object) => {
     const mesh = object as THREE.Mesh
@@ -200,7 +204,9 @@ function alignBone(bone: THREE.Object3D, child: THREE.Object3D, direction: THREE
     .normalize()
   const turn = new THREE.Quaternion().setFromUnitVectors(along, direction.clone().normalize())
   const world = bone.getWorldQuaternion(new THREE.Quaternion()).premultiply(turn)
-  const parent = bone.parent ? bone.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()
+  const parent = bone.parent
+    ? bone.parent.getWorldQuaternion(new THREE.Quaternion())
+    : new THREE.Quaternion()
   bone.quaternion.copy(parent.invert().multiply(world))
   bone.updateWorldMatrix(false, true)
 }
@@ -295,7 +301,9 @@ export class PlayerBody {
    * `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig`). Null when
    * the rig has no such bones.
    */
-  armBones(hand: 'left' | 'right'): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null {
+  armBones(
+    hand: 'left' | 'right',
+  ): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null {
     const cached = this.arms.get(hand)
     if (cached !== undefined) return cached
     const side = hand === 'left' ? 'Left' : 'Right'
@@ -365,19 +373,29 @@ export class PlayerBody {
     const d = THREE.MathUtils.clamp(toTarget.length(), 1e-3, upper + lower - 1e-3)
     const u = toTarget.normalize()
     // Elbow plane: down and a little back from the body (world down, body back).
-    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()))
+    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(
+      this.root.getWorldQuaternion(new THREE.Quaternion()),
+    )
     const pole = new THREE.Vector3(0, -1, 0).addScaledVector(back, 0.4)
     const n = pole.sub(u.clone().multiplyScalar(pole.dot(u)))
     if (n.lengthSq() < 1e-6) n.set(0, -1, 0)
     n.normalize()
-    const cosA = THREE.MathUtils.clamp((upper * upper + d * d - lower * lower) / (2 * upper * d), -1, 1)
+    const cosA = THREE.MathUtils.clamp(
+      (upper * upper + d * d - lower * lower) / (2 * upper * d),
+      -1,
+      1,
+    )
     const elbow = a
       .clone()
       .addScaledVector(u, upper * cosA)
       .addScaledVector(n, upper * Math.sqrt(1 - cosA * cosA))
     const reach = a.clone().addScaledVector(u, d)
     alignBone(chain.arm, chain.forearm, elbow.clone().sub(a))
-    alignBone(chain.forearm, chain.hand, reach.sub(chain.forearm.getWorldPosition(new THREE.Vector3())))
+    alignBone(
+      chain.forearm,
+      chain.hand,
+      reach.sub(chain.forearm.getWorldPosition(new THREE.Vector3())),
+    )
   }
 
   /** Head socket position in `frame`'s local space (after the last {@link animate}). */

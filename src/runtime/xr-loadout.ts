@@ -1,4 +1,5 @@
 import { ShotLaser } from '../render/entity/shot-laser.js'
+import { bodySlotsAt, bodySlotsFor } from '../character/body-slots.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import { XRBodyAnchor } from './xr-body-anchor.js'
 import { XRCalibration } from './xr-calibration.js'
@@ -119,7 +120,9 @@ export class XRLoadout {
     scene.add(this.body, this.loose)
     this.allPistols = weapons.map((weapon, i) => {
       const holster = new THREE.Group()
-      holster.position.set([-0.25, 0.25][i] ?? 0, -0.57, -0.08)
+      // Body-slot table: the first pistol in the right holster, a second in the left one.
+      const [x, y, z] = bodySlotsFor('pistol')[i]?.xr ?? [0, -0.57, -0.08]
+      holster.position.set(x, y, z)
       holster.rotation.x = Math.PI
       this.body.add(holster)
       const pouch = new THREE.Mesh(this.geometry, this.material)
@@ -149,9 +152,10 @@ export class XRLoadout {
       this.lasers.push(laser)
       scene.add(laser.root)
     }
-    for (const x of [-0.14, 0.14]) {
+    // Magazine pockets: the chest slots of the body-slot table (R right, M left).
+    for (const { xr } of bodySlotsAt('chest')) {
       const pocket = new THREE.Group()
-      pocket.position.set(x, -0.3, -0.24)
+      pocket.position.set(...xr)
       this.body.add(pocket)
       this.pockets.push(pocket)
       const pouch = new THREE.Mesh(this.geometry, this.material)

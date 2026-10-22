@@ -36,10 +36,15 @@ describe('desktop and immersive interface separation', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const xr = {
       setHandModel: vi.fn().mockResolvedValue(undefined),
+      setActorHands: vi.fn().mockResolvedValue(undefined),
       enableCalibrationScreen: mounted,
     }
     // XR code is loaded on demand: the immersive UI mounts once loadXR resolves.
-    const runtime = { xr, loadXR: vi.fn(async () => xr) }
+    const runtime = {
+      xr,
+      actor: { kind: 'default', color: 'white' },
+      loadXR: vi.fn(async () => xr),
+    }
     expect(() => bindVR(runtime as unknown as GameRuntime)).not.toThrow()
     await vi.waitFor(() => expect(mounted).toHaveBeenCalled())
     expect(runtime.loadXR).toHaveBeenCalledOnce()

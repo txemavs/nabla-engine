@@ -1,17 +1,29 @@
 # Licences — "prota" player body
 
-All files in this folder are original work by **Gepeto** for this project (2026-10-22), no
-third-party mesh data. Same licence as the rest of the engine's original assets.
+All files in this folder are work by **Gepeto** for this project (2026-10-22). Same licence as the
+rest of the engine's original assets. Note: the prota base mesh (all versions) started from a
+**Tripo** (AI 3D generation) conversion that Gepeto then rebuilt; check Tripo's terms for the plan
+it was made with before any redistribution outside this project.
 
-| File                    | What                                                                                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prota.glb`             | Skinned body, 65 `mixamorig` bones (avatar v6 rest convention), 1.70 m. Sockets `HeadSocket`, `WeaponSocket_R`, `BeltSocket`, `BatonSocket`, `HolsterSocket`. Materials carry `extras.nabla_color_slot` (primary / secondary / tertiary / light). |
-| `prota.belt.glb`        | Duty belt, hung at `BeltSocket`.                                                                                                                                                                                                                  |
-| `prota.holster.glb`     | Holster, hung at `HolsterSocket`; `HolsterGunSocket` seats the pistol.                                                                                                                                                                            |
-| `prota.holster-usp.glb` | Gepeto's USP Compact v6 (`/workspace/gepeto/usp/hk-compact-low.glb`), reworked from the engine's own `library/weapons/hk-compact` model; shown in the holster with empty hands.                                                                   |
-| `prota.baton.glb`       | Baton, hung at `BatonSocket`.                                                                                                                                                                                                                     |
-| `prota.hands.glb`       | First-person / AR hands (skinned, mixamorig hand bones). Shipped, not wired yet.                                                                                                                                                                  |
+## v3 (current, 2026-10-22)
 
-Built with Gepeto's Blender pipeline (`build.py`, `pipe2.sh`) from an original base mesh made for
-this project. Animations are not included: the body uses `../avatar.anims.glb` (Quaternius
-UAL, CC0, see `../LICENSES.md`).
+Built with Gepeto's Blender pipeline (`build_v3.py`, `pipe_v3.sh`) from the prota FBX (19,772 tris,
+not decimated), with finger weight split. Sockets identical to v2 (0.0 mm difference).
+
+| File                                              | What                                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `prota.v3.low.glb`                                | **Default body.** 16,343 tris, 4 draw calls, solid materials with `extras.nabla_color_slot` (actor colours). |
+| `prota.v3.glb`                                    | Textured variant: one material `Prota_Tex`, 2048 px WebP base colour, 1 draw call. Shipped, not wired.  |
+| `prota.hands.v3.low.glb` / `prota.hands.v3.glb`   | First-person / AR hands (solid / textured). Shipped, not wired yet.                                     |
+| `prota.belt.v3.low.glb` / `prota.belt.v3.glb`     | Duty belt at `BeltSocket` (low is used).                                                                |
+| `prota.holster.v4.low.glb` / `prota.holster.v4.glb` | Holster at `HolsterSocket`; `HolsterGunSocket` seats the pistol (low is used).                        |
+| `prota.baton.v3.low.glb` / `prota.baton.v3.glb`   | Baton at `BatonSocket` (low is used).                                                                   |
+| `prota.holster-usp.glb`                           | Gepeto's USP Compact v6, reworked from the engine's own `library/weapons/hk-compact` model; unchanged.   |
+
+## v2 (previous, kept alongside)
+
+`prota.glb`, `prota.belt.glb`, `prota.holster.glb`, `prota.baton.glb`, `prota.hands.glb`: 65
+`mixamorig` bones (avatar v6 rest convention), 1.70 m, built with `build.py` / `pipe2.sh`.
+
+Animations are not included: the body uses `../avatar.anims.glb` (Quaternius UAL, CC0, see
+`../LICENSES.md`).

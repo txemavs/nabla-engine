@@ -29,6 +29,7 @@ import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls
 import { createSettingsManagement } from './settings-management.js'
 import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
+import { ACTOR_COLOR_NAMES, ACTOR_KINDS, parseActor } from '../src/runtime/actor.js'
 import { weaponPoseNames, type WeaponPose } from '../src/runtime/weapon-pose-tuning.js'
 import {
   sidearmTuningDefaults,
@@ -54,6 +55,8 @@ const TABS = [
   { id: 'options', label: t('settings.settings') },
   { id: 'objects', label: t('settings.objects') },
   { id: 'dev', label: t('settings.development') },
+  // The main menu's other sections (virtual reality, host links): main-menu.ts menuPane.
+  { id: 'more', label: t('settings.more') },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -72,6 +75,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-headlamp', 'planet'],
   ['settings-traffic-signs', 'planet'],
   ['settings-options-labels', 'planet'],
+  ['settings-actor', 'options'],
   ['display-quality-section', 'options'],
   ['settings-sharpness', 'options'],
   ['quality-shadows', 'options'],
@@ -135,6 +139,7 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-camera-fov': t('settings.field-of-view'),
   'settings-weapon': t('settings.weapon-wheel'),
   'settings-combat': t('settings.combat'),
+  'settings-actor': t('settings.actor'),
   'settings-options-sidearm': t('settings.aiming'),
   'settings-muzzle-flash': t('settings.muzzle-flash'),
   'settings-config-planet': t('settings.planet'),
@@ -660,6 +665,51 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     reset.textContent = t('settings.reset-weapon-wheel')
     reset.addEventListener('click', () => runtime.resetWeaponWheel())
     section.append(note, reset)
+    place(section)
+  }
+
+  // Opciones → Actor: the player's robot (src/runtime/actor.ts), worn live and saved. Head-only
+  // hosts leave it out (`data-settings-hidden="settings-actor"`).
+  if (typeof runtime.setActor === 'function' && runtime.actorSelectable) {
+    const section = fieldset('settings-actor', t('settings.actor'))
+    const choice = (id: string, label: string, values: ReadonlyArray<readonly [string, string]>) => {
+      const row = doc.createElement('label')
+      const select = doc.createElement('select')
+      select.id = id
+      for (const [value, text] of values) {
+        const option = doc.createElement('option')
+        option.value = value
+        option.textContent = text
+        select.append(option)
+      }
+      row.append(label + ' ', select)
+      section.append(row)
+      return select
+    }
+    const kind = choice(
+      'settings-actor-kind',
+      t('settings.actor-body'),
+      ACTOR_KINDS.map((id) => [id, t(`settings.actor-${id}`)] as const),
+    )
+    const color = choice(
+      'settings-actor-color',
+      t('settings.actor-color'),
+      ACTOR_COLOR_NAMES.map((id) => [id, t(`settings.actor-color-${id}`)] as const),
+    )
+    const sync = () => {
+      kind.value = runtime.actor.kind
+      color.value = runtime.actor.color
+      color.disabled = runtime.actor.kind !== 'default'
+    }
+    const apply = () => {
+      void runtime
+        .setActor(parseActor({ kind: kind.value, color: color.value }))
+        .catch((error) => globalThis.console.warn('actor', error))
+      sync()
+    }
+    kind.addEventListener('change', apply)
+    color.addEventListener('change', apply)
+    sync()
     place(section)
   }
 
@@ -1922,6 +1972,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     get isOpen() {
       return !win.hidden
     },
+    menuPane: paneEls.get('more'),
   })
 
   return {

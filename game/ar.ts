@@ -1,6 +1,7 @@
 import { mobileWeaponUI } from './ar-mobile-weapon.js'
 import { arMode } from './ar-mode.js'
 import { touchActionIcon } from '../src/runtime/touch-icons.js'
+import { actorHandAssets, loadActor } from '../src/runtime/actor.js'
 import { mountXRDeviceInfo } from './xr-device-info.js'
 import { XRMenuGesture, ARTouchControls } from '@nabla/engine/ar'
 import { XRHoop } from '@nabla/engine/xr/hoop'
@@ -731,7 +732,11 @@ xr.calibrationScreen!.qualityMenu = {
   status: () => t('ar.resolution-leave-and-re-enter-ar-rest-live'),
 }
 xr.calibrationScreen!.root.scale.setScalar(0.65)
-void xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch(report)
+// The saved actor's hands, the glove as fallback.
+void xr
+  .setActorHands(actorHandAssets(loadActor()))
+  .catch(() => xr.setHandModel('/library/hands/fps-hand-rigged.glb'))
+  .catch(report)
 xr.reservedInput = (source) =>
   xr.grabHands.some(
     (h) =>

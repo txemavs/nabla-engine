@@ -91,7 +91,7 @@ import {
 
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 
-/** R reset options; see `Simulation.recoverVehicle`. */
+/** recover (Y) reset options; see `Simulation.recoverVehicle`. */
 /** Read-only physical shapes for scaled contact adapters; never render mesh bounds. */
 export interface EntityCollisionPart {
   key: string
@@ -1466,7 +1466,7 @@ export class Simulation {
     }
   }
   /**
-   * Carriageways used to tell asphalt from grass. Pass the same roads the R reset snaps to
+   * Carriageways used to tell asphalt from grass. Pass the same roads the recover (Y) reset snaps to
    * (OSM navigation roads). Scene roads are always included. Omit or pass nothing to clear
    * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
    */
