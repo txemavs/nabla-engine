@@ -303,7 +303,7 @@ export function createTwoWheeledVehicle(
   }
 }
 
-/** Forget transient controller state, e.g. after an R reset uprighted the chassis. */
+/** Forget transient controller state, e.g. after an recover (Y) reset uprighted the chassis. */
 export function resetTwoWheeled(state: TwoWheeledState): void {
   state.handlebar = 0
   state.steerHold = 0
@@ -479,7 +479,7 @@ export function stepTwoWheeledVehicle(
   }
   state.comHeight = centreOfMassHeight(v)
   measureGroundPitch(v, dt, forward, frontContact, rearContact, gravityUp)
-  // Shift held (assists off): looping a wheelie or going over the front is a crash until R.
+  // Shift held (assists off): looping a wheelie or going over the front is a crash until recovered (Y).
   // The chassis angle against the horizontal is used, since the wheel rays lose the ground first.
   const nose = Math.asin(clamp(forward.dot(gravityUp), -1, 1))
   if (hooligan && !state.crashed && (Math.abs(nose) > tuning.crashPitch || up.dot(gravityUp) < 0))

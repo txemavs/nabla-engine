@@ -572,7 +572,7 @@ export interface GameRuntimeOptions {
    */
   flipCinematic?: boolean
   /**
-   * R reset puts the vehicle on the nearest road/vía (scene roads + streamed OSM roads)
+   * recover (Y) reset puts the vehicle on the nearest road/vía (scene roads + streamed OSM roads)
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
    */
   recoverToRoad?: boolean
@@ -4502,11 +4502,11 @@ export class GameRuntime {
     if (simulation) this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
     return this.worldGravityScale
   }
-  /** Whether R reset snaps to the nearest road/vía (default on). */
+  /** Whether recover (Y) reset snaps to the nearest road/vía (default on). */
   get recoverToRoadEnabled(): boolean {
     return this.game.recover.snapToRoad
   }
-  /** Choose between R reset on the nearest road/vía (true) or upright in place (false). */
+  /** Choose between recover (Y) reset on the nearest road/vía (true) or upright in place (false). */
   setRecoverToRoadEnabled(enabled: boolean): void {
     this.assertAlive()
     this.game.recover.snapToRoad = enabled

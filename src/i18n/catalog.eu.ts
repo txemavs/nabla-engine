@@ -368,6 +368,8 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.down-up-mm': 'Behera / gora (mm)',
   'settings.driver-and-mirrors': 'Gidaria eta ispiluak',
   'settings.driving': 'Gidatzea',
+  'settings.recover-road': 'Berragertu hurbileko bidean ({key})',
+  'settings.recover-road.title': '{key} sakatzean ibilgailua hurbileneko errepidean zuzentzen da. Desaktibatuta: dagoen lekuan zuzentzen da.',
   'settings.effects': 'Efektuak',
   'settings.enable-sign-and-pole-shadows': 'Seinaleen eta zutoinen itzalak aktibatu',
   'settings.enable-traffic-signs': 'Trafiko-seinaleak aktibatu',

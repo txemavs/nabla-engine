@@ -10,7 +10,7 @@ export interface TouchDrivingActions {
   play?: () => void
   interact: () => void
   camera: () => void
-  /** Respawn the vehicle, as the R key (recover onto the nearest road). Omitted: no button. */
+  /** Respawn the vehicle, as the recover key (Y) (recover onto the nearest road). Omitted: no button. */
   respawn?: () => void
   /** Host acquires gameplay focus and may unlock audio before reading commands. */
   engage?: () => void

@@ -362,6 +362,8 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.down-up-mm': 'Down / up (mm)',
   'settings.driver-and-mirrors': 'Driver and mirrors',
   'settings.driving': 'Driving',
+  'settings.recover-road': 'Respawn on nearest road ({key})',
+  'settings.recover-road.title': 'Pressing {key} rights the vehicle on the nearest road. Off: it is righted where it is.',
   'settings.effects': 'Effects',
   'settings.enable-sign-and-pole-shadows': 'Enable sign and pole shadows',
   'settings.enable-traffic-signs': 'Enable traffic signs',

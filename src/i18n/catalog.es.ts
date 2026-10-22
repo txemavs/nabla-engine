@@ -366,6 +366,8 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.down-up-mm': 'Abajo / arriba (mm)',
   'settings.driver-and-mirrors': 'Conductor y espejos',
   'settings.driving': 'Conducción',
+  'settings.recover-road': 'Reaparecer en vía cercana ({key})',
+  'settings.recover-road.title': 'Al pulsar {key} el vehículo se endereza sobre la carretera más cercana. Desactivado: se endereza donde está.',
   'settings.effects': 'Efectos',
   'settings.enable-sign-and-pole-shadows': 'Activar sombras de señales y postes',
   'settings.enable-traffic-signs': 'Activar señales de tráfico',

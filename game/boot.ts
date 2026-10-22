@@ -49,7 +49,7 @@ export interface HostBootConfig {
    */
   flipCinematic?: boolean
   /**
-   * R reset puts the vehicle on the nearest road/vía. Default on when omitted.
+   * recover (Y) reset puts the vehicle on the nearest road/vía. Default on when omitted.
    * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Opciones.
    */
   recoverToRoad?: boolean

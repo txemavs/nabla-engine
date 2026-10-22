@@ -3,7 +3,7 @@
  *
  * Wheel rays hit one terrain body (a single material) for a draped road, so the contact
  * has no surface id. The carriageway is the mapped centreline and its width: scene roads
- * plus the host's OSM navigation roads (the same ones the R reset snaps to). A contact
+ * plus the host's OSM navigation roads (the same ones the recover (Y) reset snaps to). A contact
  * inside that width is asphalt. Outside it, with road data loaded, it is grass. No road
  * data at all stays unknown — grip and skid colour are not invented.
  *
