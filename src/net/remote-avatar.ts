@@ -48,10 +48,18 @@ export class RemoteAvatar {
     this.lastReceived = receivedAt
   }
 
-  /** Hand over the view once built; a view arriving after {@link dispose} is disposed. */
+  /**
+   * Hand over the view once built; a view arriving after {@link dispose} is disposed, and a new
+   * view (rebuilt body) replaces and disposes the previous one, keeping the sample buffer.
+   */
   attach(view: RemoteAvatarView | null): void {
-    if (this.disposed) view?.dispose()
-    else this.view = view
+    if (this.disposed) {
+      view?.dispose()
+      return
+    }
+    if (this.view && this.view !== view) this.view.dispose()
+    this.view = view
+    this.visible = null
   }
 
   /** Call once per frame; returns the sample shown, or null when hidden or not ready. */
