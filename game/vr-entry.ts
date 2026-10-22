@@ -8,13 +8,14 @@ import {
   vrModeQuery,
 } from '@nabla/engine/runtime/settings-scope'
 import { t } from '@nabla/engine/i18n'
+import { GAME_MENU_VR_BUTTON_ID } from '../src/runtime/main-menu.js'
 
 /** The page was opened in a VR mode (`?vr=pc` PC browser + Link, `?vr=headset` in the headset). */
 export function pcVRRequested(search = pageSearch()): boolean {
   return playModeFromSearch(search) !== 'pc'
 }
 
-/** Order of the `casco` button in the top-right row: + 10, CAM 20, FOV 30, QLTY 40, casco 50, clock 60. */
+/** Order of the `casco` button in the top-right row (menu-only: the main menu offers it): + 10, CAM 20, FOV 30, QLTY 40, casco 50, clock 60. */
 export const VR_BUTTON_ORDER = 50
 
 const icon =
@@ -74,7 +75,9 @@ export function startVREntry(runtime: Pick<GameRuntime, 'loadedXR' | 'loadXR'>):
 export function mountVREntry(runtime: GameRuntime): void {
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = 'nabla-btn nabla-btn--icon'
+  // Offered from the main menu (Virtual reality › Enter); the corner keeps it for its click.
+  button.id = GAME_MENU_VR_BUTTON_ID
+  button.className = 'nabla-btn nabla-btn--icon nabla-btn--menu-only'
   button.hidden = true
   button.title = t('vr.enter')
   button.setAttribute('aria-label', button.title)

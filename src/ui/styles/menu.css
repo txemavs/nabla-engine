@@ -132,7 +132,8 @@
 .nabla-start-notes {
   position: fixed;
   right: 0;
-  bottom: var(--nabla-ui-margin);
+  /* Above the engine version line (bottom centre). */
+  bottom: calc(var(--nabla-space-1) + var(--nabla-font-xs) + var(--nabla-space-4));
   left: 0;
   z-index: var(--nabla-z-start);
   display: flex;

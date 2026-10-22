@@ -4,6 +4,12 @@ import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
 import { installEngineStyles } from '../src/ui/styles.js'
+import {
+  GAME_MENU_TOGGLE_ID,
+  mountGameMenu,
+  registerGameMenuSettings,
+} from '../src/runtime/main-menu.js'
+import { addCornerButton } from '../src/runtime/corner-buttons.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
 import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
@@ -1718,7 +1724,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     doc.body.classList.add('settings-is-open')
     if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
       mapSection.refresh()
-    ;(doc.getElementById('euskadi-options-toggle') ?? closeButton).focus()
+    ;(doc.getElementById(GAME_MENU_TOGGLE_ID) ?? closeButton).focus()
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
     doc.getElementById('game-canvas')?.blur()
     planetPanel?.refresh()
@@ -1862,6 +1868,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
   }
   doc.addEventListener('keydown', onKeyDown, true)
+
+  // The one main menu (☰ top-left): its game entries open this window on a tab. Hosts configure
+  // its sections with mountGameMenu() too; the engine defaults apply until they do.
+  mountGameMenu(doc, t, {}, (button) => addCornerButton('tl', button, 10))
+  registerGameMenuSettings({
+    open: (tab) => {
+      open()
+      const id = TABS.find((item) => item.id === tab)?.id
+      if (id) selectTab(id)
+    },
+    close,
+    get isOpen() {
+      return !win.hidden
+    },
+  })
 
   return {
     open,

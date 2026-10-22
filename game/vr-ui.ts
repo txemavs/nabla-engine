@@ -2,6 +2,7 @@ import { pageSearch } from './page-query.js'
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { t } from '@nabla/engine/i18n'
+import { addGameMenuEntries } from '../src/runtime/main-menu.js'
 
 /** An explicit XR entry: the XR page, the demo, or any page opened with `?xr`. */
 export function isImmersiveEntry(): boolean {
@@ -122,7 +123,6 @@ function mountVR(runtime: GameRuntime): void {
   menu.className = 'nabla-btn'
   menu.textContent = t('vr.monitor-x')
   menu.onclick = () => runtime.xr.toggleMenu()
-  toolbar.append(menu)
   const errorStatus = document.createElement('output')
   errorStatus.setAttribute('role', 'status')
   toolbar.append(errorStatus)
@@ -131,7 +131,11 @@ function mountVR(runtime: GameRuntime): void {
   button.className = 'nabla-btn'
   button.textContent = t('vr.enter-vr')
   button.title = t('vr.left-stick-move-steer-right-snap-turn-a-enter-ex')
-  toolbar.append(button)
+  // The XR page's own entries go in the main menu (Virtual reality), not a toolbar of their own.
+  addGameMenuEntries('vr', [
+    { id: 'enter-vr', labelKey: 'vr.enter-vr', element: button },
+    { id: 'vr-monitor', labelKey: 'vr.monitor-x', element: menu },
+  ])
   button.disabled = true
   if (!isSecureContext || !navigator.xr) {
     button.textContent = 'VR requiere HTTPS y WebXR'
