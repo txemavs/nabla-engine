@@ -4,7 +4,7 @@ import { MeshoptDecoder } from 'meshoptimizer'
 import { AssetPack } from '../render/entity/asset-pack.js'
 import { recolor } from '../render/entity/player-body.js'
 import type { ActorHandAssets } from './actor.js'
-import { buildActorHand, curlJoint, type ActorHand, type HandSide } from './xr-actor-hand.js'
+import { buildActorHand, poseActorHand, type ActorHand, type HandSide } from './xr-actor-hand.js'
 
 interface HandPose {
   name: string
@@ -309,12 +309,7 @@ export class XRControllerHand {
     if (actor) {
       for (const child of this.root.children) child.visible = child === actor.root
       if (this.indexTip.parent !== actor.tip) actor.tip.add(this.indexTip)
-      actor.fingers.forEach((joints, i) =>
-        joints.forEach((joint, j) => {
-          const curl = i === 0 ? Math.max(trigger, grip * 0.35) : grip
-          curlJoint(joint, curl * (i === 4 ? [0.35, 0.6, 0.65][j] : [1.1, 1.25, 0.9][j]))
-        }),
-      )
+      poseActorHand(actor, grip, trigger)
       return
     }
     this.thumb.rotation.y = 0.8 - grip * 0.65

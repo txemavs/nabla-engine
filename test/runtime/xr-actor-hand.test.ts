@@ -6,10 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { actorHandAssets } from '../../src/runtime/actor.js'
 import {
   buildActorHand,
-  curlJoint,
-  keepHandTriangles,
   mixamoFingerBone,
   mixamoHandBone,
+  poseActorHand,
 } from '../../src/runtime/xr-actor-hand.js'
 
 /** A tiny mixamorig rig: forearm + hand (+5×4 finger bones) per side, one triangle on each. */
@@ -79,31 +78,25 @@ describe('actor hands', () => {
     })
   })
 
-  it('keeps only the triangles skinned to the hand', () => {
-    const { root, mesh } = rig()
-    const names = new Set<string>()
-    root.getObjectByName(mixamoHandBone('left'))!.traverse((o) => names.add(o.name))
-    expect(keepHandTriangles(mesh, names)).toBe(true)
-    expect(Array.from(mesh.geometry.getIndex()!.array)).toEqual([3, 4, 5])
-  })
-
-  it('frames the hand on the grip (palm at origin, fingers -Z) and curls toward the palm', () => {
+  it('builds rigid phalanx pieces framed like the glove, curling toward the palm', () => {
     const { root } = rig()
     const hand = buildActorHand(root, 'left')!
     expect(hand).not.toBeNull()
+    // Only the left-hand triangle is kept, as one unskinned piece on the palm.
+    const pieces: THREE.Mesh[] = []
+    hand.root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) pieces.push(o as THREE.Mesh)
+    })
+    expect(pieces).toHaveLength(1)
+    expect(pieces[0]).not.toBeInstanceOf(THREE.SkinnedMesh)
+    expect(pieces[0].parent).toBe(hand.root)
     hand.root.updateMatrixWorld(true)
-    const wrist = hand.root
-      .getObjectByName(mixamoHandBone('left'))!
-      .getWorldPosition(new THREE.Vector3())
-    expect(Math.hypot(wrist.x, wrist.y)).toBeLessThan(1e-5)
-    expect(wrist.z).toBeGreaterThan(0.03)
-    const knuckle = hand.root
-      .getObjectByName(mixamoFingerBone('left', 1, 0))!
-      .getWorldPosition(new THREE.Vector3())
+    const knuckle = hand.fingers[1][0].getWorldPosition(new THREE.Vector3())
     expect(knuckle.z).toBeLessThan(-0.03)
+    expect(Math.abs(knuckle.y)).toBeLessThan(1e-5)
     const tip = () => hand.tip.getWorldPosition(new THREE.Vector3())
     const open = tip()
-    for (const joint of hand.fingers[0]) curlJoint(joint, 1)
+    poseActorHand(hand, 0, 1)
     hand.root.updateMatrixWorld(true)
     expect(tip().y).toBeLessThan(open.y - 0.01)
     expect(buildActorHand(new THREE.Group(), 'right')).toBeNull()
@@ -126,16 +119,16 @@ describe.each([
       const hand = buildActorHand(scene, side)!
       expect(hand).not.toBeNull()
       hand.root.updateMatrixWorld(true)
-      const box = new THREE.Box3()
+      const box = new THREE.Box3().setFromObject(hand.root)
+      let pieces = 0
       hand.root.traverse((o) => {
-        const mesh = o as THREE.SkinnedMesh
-        if (!mesh.isSkinnedMesh || !mesh.visible) return
-        mesh.skeleton.update()
-        const p = new THREE.Vector3()
-        const n = mesh.geometry.getIndex()!
-        for (let i = 0; i < n.count; i++)
-          box.expandByPoint(mesh.getVertexPosition(n.getX(i), p).applyMatrix4(mesh.matrixWorld))
+        if ((o as THREE.Mesh).isMesh) {
+          pieces++
+          expect(o).not.toBeInstanceOf(THREE.SkinnedMesh)
+        }
       })
+      // Palm plus most of the 15 phalanges as separate rigid pieces.
+      expect(pieces).toBeGreaterThanOrEqual(10)
       const size = box.getSize(new THREE.Vector3())
       // A hand, not an arm or a body: under 30 cm each way, around the wrist, fingers toward -Z.
       expect(Math.max(size.x, size.y, size.z)).toBeLessThan(0.3)
