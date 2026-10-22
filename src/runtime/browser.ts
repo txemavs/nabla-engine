@@ -374,6 +374,7 @@ import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigat
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
 import { t } from '../i18n/index.js'
+import type { WeaponLoadout } from '../character/weapon-loadout.js'
 
 export interface GameFrame {
   speedKmh: number
@@ -4028,7 +4029,7 @@ export class GameRuntime {
   releaseWeaponSlot(slot: number): void {
     const entry = weaponSlots().find((item) => item.slot === slot)
     if (!entry) return
-    if (this.activeWeaponSlot === slot) this.selectWeaponSlot(slot)
+    if (this.activeWeaponSlot === slot) this.showWeaponSlot(slot)
     if (this.ownedWeaponId === entry.id) {
       this.ownedWeaponId = null
       this.weaponDrawn = false
@@ -4633,6 +4634,7 @@ export class GameRuntime {
     this.triggerDown = false
   }
   get weaponOwned(): boolean {
+    if (this.loadout) return this.loadout.drawnSlot !== null || this.loadoutCarriesAny()
     return this.ownedWeaponId !== null && this.inventory.has(this.ownedWeaponId)
   }
   get worldPickups(): readonly WorldPickup[] {
@@ -5584,7 +5586,8 @@ export class GameRuntime {
     ).toArray()
     const canvas = this.options.canvas
     const events: FirearmEvent[] = [...grabEvents, sidearm.update(time)]
-    if (reload && sidearm.visible) events.push(sidearm.reload(time))
+    if (reload && sidearm.visible && (!this.loadout || this.loadout.reload().ok))
+      events.push(sidearm.reload(time))
     if (this.magazineAction && sidearm.visible) {
       const reload = sidearm.handleMagazine(this.magazineAction, time)
       events.push(reload)
@@ -5610,10 +5613,11 @@ export class GameRuntime {
       if (sim.player.vehicleId) this.cameraState.headYaw += yaw
       else this.cameraState.yaw += yaw
     }
+    if (this.fireRequested && !tracked && !this.hasInput()) this.noteFireRefusal('no input focus')
     if (
-      this.weaponOwned &&
       (this.fireRequested || (automatic && this.triggerDown)) &&
-      (tracked || this.hasInput())
+      (tracked || this.hasInput()) &&
+      this.mayFire(weaponPosition)
     ) {
       const shot = this.combat.isDead()
         ? null
@@ -5756,6 +5760,63 @@ export class GameRuntime {
   }
   private weaponSlotGate: ((slot: number) => boolean) | null = null
   /**
+   * The character's weapon owner (`character/weapon-loadout`). Set: every weapon decision (what is
+   * carried, drawn, may fire, reload) is the loadout's; the runtime only shows its state and turns
+   * keys into its actions. Null: the free number-key loadout of test pages.
+   */
+  setWeaponLoadout(loadout: WeaponLoadout | null): void {
+    this.detachLoadout?.()
+    this.detachLoadout = null
+    this.loadout = loadout
+    if (!loadout) return
+    this.detachLoadout = loadout.onChange(() => this.showLoadout())
+    this.showLoadout()
+  }
+  get weaponLoadout(): WeaponLoadout | null {
+    return this.loadout
+  }
+  private loadout: WeaponLoadout | null = null
+  private detachLoadout: (() => void) | null = null
+  private lastFireRefusal: string | null = null
+  private loadoutCarriesAny(): boolean {
+    return !!this.loadout && weaponSlots().some((entry) => this.loadout!.carries(entry.slot))
+  }
+  /** Show the loadout's drawn weapon (draw / holster the engine views to match). */
+  private showLoadout(): void {
+    const loadout = this.loadout
+    if (!loadout || !this.session.simulation || this.disposed) return
+    const target = loadout.drawnSlot
+    const current = this.activeWeaponSlot
+    if (target === current) return
+    if (current !== null) this.showWeaponSlot(current)
+    if (target !== null) this.showWeaponSlot(target)
+  }
+  private noteFireRefusal(reason: string | null): void {
+    if (reason && reason !== this.lastFireRefusal) console.info(`[weapon] fire refused: ${reason}`)
+    this.lastFireRefusal = reason
+    this.options.canvas.dataset.fireRefused = reason ?? ''
+  }
+  /** One shot may leave the drawn firearm now; asks the loadout (which asks its authority). */
+  private mayFire(origin: readonly number[]): boolean {
+    if (this.loadout) {
+      const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).toArray()
+      const verdict = this.loadout.fire(
+        [origin[0], origin[1], origin[2]],
+        [direction[0], direction[1], direction[2]],
+      )
+      if (!verdict.ok) {
+        this.fireRequested = false
+        this.noteFireRefusal(verdict.reason)
+        return false
+      }
+    } else if (!this.weaponOwned) {
+      this.noteFireRefusal('weapon not owned')
+      return false
+    }
+    this.noteFireRefusal(null)
+    return true
+  }
+  /**
    * Host handler for the body-slot keys (`weapon.slot<key>`, table in `character/body-slots`) and
    * the drop key: `select` returns true when it handled the slot (e.g. a pocket item), false to
    * fall back to the number-key weapon loadout. Null: number keys only, the drop key does nothing.
@@ -5770,6 +5831,16 @@ export class GameRuntime {
    */
   selectWeaponSlot(slot: number): void {
     this.assertAlive()
+    if (this.loadout) {
+      if (!weaponSlots().some((item) => item.slot === slot)) return
+      const result = this.loadout.toggleSlot(slot)
+      if (!result.ok) this.options.onMessage?.(result.reason)
+      return
+    }
+    this.showWeaponSlot(slot)
+  }
+  /** Draw (or, when drawn, holster) the engine view of weapon slot `slot`. */
+  private showWeaponSlot(slot: number): void {
     const entry = weaponSlots().find((item) => item.slot === slot)
     if (!entry) return
     if (entry.kind === 'placeholder') {
@@ -5782,7 +5853,7 @@ export class GameRuntime {
       entry.kind === 'firearm'
         ? this.weaponDrawn && this.sidearm?.preset?.id === entry.id
         : this.heldDrawn && this.heldWeapon?.preset.id === entry.id
-    if (!drawn && this.weaponSlotGate && !this.weaponSlotGate(slot)) {
+    if (!drawn && !this.loadout && this.weaponSlotGate && !this.weaponSlotGate(slot)) {
       this.options.onMessage?.(`${entry.name}: ${this.text('not carried')}`)
       return
     }
@@ -6666,6 +6737,11 @@ export class GameRuntime {
     if (bodySlot) {
       if (sim.player.vehicleId || this.bodySlotHost?.select(bodySlot)) return
       if (/^\d$/.test(bodySlot.key)) this.selectWeaponSlot(Number(bodySlot.key))
+      return
+    }
+    if (action === 'holster' && this.loadout) {
+      const result = this.loadout.toggleHolster()
+      if (!result.ok) this.options.onMessage?.(result.reason)
       return
     }
     if (action === 'holster' && this.heldDrawn) {
