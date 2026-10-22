@@ -275,6 +275,7 @@ export {
 import {
   DEFAULT_ACTOR,
   actorBodyAssets,
+  actorHandAssets,
   actorProfile,
   loadActor,
   parseActor,
@@ -286,6 +287,7 @@ export {
   ACTOR_COLOR_NAMES,
   ACTOR_KINDS,
   actorBodyAssets,
+  actorHandAssets,
   parseActor,
   type ActorChoice,
   type ActorColor,
@@ -6486,6 +6488,9 @@ export class GameRuntime {
     saveActor(choice)
     if (this.headOnly) return null
     this.playerBodyChosen = true
+    // In XR the controller hands follow the actor (only once XR code is loaded and hands worn).
+    if (this.xrLoaded && this.xr.wearsActorHands)
+      void this.xr.setActorHands(actorHandAssets(choice)).catch((error) => console.warn(error))
     return this.loadPlayerBody(actorBodyAssets(choice))
   }
   /**

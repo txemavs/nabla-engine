@@ -55,6 +55,23 @@ export function actorBodyAssets(choice: ActorChoice): PlayerBodyAssets {
   }
 }
 
+/** VR/AR hands of an actor: a mixamorig-skinned GLB whose hand triangles are kept. */
+export interface ActorHandAssets {
+  model: string
+  colors?: PlayerBodyAssets['colors']
+}
+
+/**
+ * Hands each actor wears in VR/AR, tinted with the same colour slot as its body. Prota has
+ * Gepeto's hands-only file; Polibot has none, so its hands are cut from the body mesh (triangles
+ * skinned to the hand and finger bones), see `xr-actor-hand.ts`.
+ */
+export function actorHandAssets(choice: ActorChoice): ActorHandAssets {
+  const body = actorBodyAssets(choice)
+  const model = choice.kind === 'polibot' ? body.model : `${PROTA}.hands.v3.low.glb`
+  return body.colors ? { model, colors: body.colors } : { model }
+}
+
 /** A choice from anything (stored JSON, a peer's profile string); unknown parts fall back. */
 export function parseActor(value: unknown): ActorChoice {
   let raw: unknown = value
@@ -63,8 +80,12 @@ export function parseActor(value: unknown): ActorChoice {
     raw = { kind, color }
   }
   const o = (raw ?? {}) as Partial<Record<keyof ActorChoice, unknown>>
-  const kind = ACTOR_KINDS.includes(o.kind as ActorKind) ? (o.kind as ActorKind) : DEFAULT_ACTOR.kind
-  const color = ACTOR_COLOR_NAMES.includes(o.color as ActorColor) ? (o.color as ActorColor) : DEFAULT_ACTOR.color
+  const kind = ACTOR_KINDS.includes(o.kind as ActorKind)
+    ? (o.kind as ActorKind)
+    : DEFAULT_ACTOR.kind
+  const color = ACTOR_COLOR_NAMES.includes(o.color as ActorColor)
+    ? (o.color as ActorColor)
+    : DEFAULT_ACTOR.color
   return { kind, color }
 }
 
@@ -82,7 +103,10 @@ export function loadActor(storage: Pick<Storage, 'getItem'> | null = safeStorage
   }
 }
 
-export function saveActor(choice: ActorChoice, storage: Pick<Storage, 'setItem'> | null = safeStorage()): void {
+export function saveActor(
+  choice: ActorChoice,
+  storage: Pick<Storage, 'setItem'> | null = safeStorage(),
+): void {
   try {
     storage?.setItem(ACTOR_STORAGE_KEY, actorProfile(choice))
   } catch {

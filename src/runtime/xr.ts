@@ -1,5 +1,6 @@
 import { XRScreenInput } from './xr-screen-input.js'
 import { XRTrackedHand } from './xr-tracked-hands.js'
+import type { ActorHandAssets } from './actor.js'
 import { readXRQuality, saveXRQuality, type XRQualitySettings } from './xr-quality.js'
 import { XRCalibrationScreen } from './xr-calibration-screen.js'
 import { XRCalibration } from './xr-calibration.js'
@@ -148,6 +149,14 @@ export class GameXR {
   /** Load application-owned articulated gloves, retaining procedural hands on failure. */
   async setHandModel(url: string): Promise<void> {
     await Promise.all(this.hands.map((hand) => hand.visual.loadModel(url)))
+  }
+
+  /** True once a page asked for actor hands (live actor changes then re-dress them). */
+  wearsActorHands = false
+  /** Wear the actor's hands on both controllers (live: call again when the actor changes). */
+  async setActorHands(assets: ActorHandAssets): Promise<void> {
+    this.wearsActorHands = true
+    await Promise.all(this.hands.map((hand) => hand.visual.loadActorModel(assets)))
   }
 
   constructor(
