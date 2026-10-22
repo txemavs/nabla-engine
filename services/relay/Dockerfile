@@ -5,7 +5,7 @@ FROM node:22-alpine
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
-COPY server.mjs ./
+COPY server.mjs combat.mjs ./
 ENV PORT=10003 HOST=0.0.0.0
 EXPOSE 10003
 USER node

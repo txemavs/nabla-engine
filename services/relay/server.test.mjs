@@ -247,3 +247,49 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
   b.close()
   await relay.close()
 })
+
+test('combat: relay applies hits, broadcasts health/death/respawn, health in the join snapshot', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, respawnDelay: 0.4, respawnTick: 50 })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'c', meta: {} })
+  const pa = (await a.next('welcome')).peer
+  b.json({ type: 'join', version: 1, room: 'c', meta: {} })
+  const pb = (await b.next('welcome')).peer
+  const hit = (data) => a.json({ type: 'event', kind: 'hit', data })
+  // Malformed, self or unknown targets: dropped; a hit never reaches anyone as such.
+  hit({ t: pb, d: 9999 })
+  hit({ t: pb, d: 10, r: [0, 0, 5] })
+  hit({ t: pa, d: 10 })
+  hit({ t: 'nobody', d: 10 })
+  hit({ t: pb, d: 25, z: 'torso', w: 'hk-compact', o: [0, 1, 0], r: [0, 0, -1], p: [0, 1.2, -3] })
+  for (const s of [a, b]) {
+    const h = await s.next('event')
+    assert.equal(h.peer, 'relay')
+    assert.equal(h.kind, 'health')
+    assert.deepEqual(h.data, { t: pb, h: 75, s: pa, z: 'torso', r: [0, 0, -1] })
+  }
+  // A late joiner gets the health.
+  const c = await connect(relay.port)
+  c.json({ type: 'join', version: 1, room: 'c', meta: {} })
+  assert.deepEqual((await c.next('welcome')).health, { [pb]: 75 })
+  // Head shot to 0: health then death; further hits ignored while dead; respawn after the delay.
+  hit({ t: pb, d: 100, z: 'head' })
+  assert.equal((await b.next('event')).data.h, 0)
+  const death = await b.next('event')
+  assert.equal(death.kind, 'death')
+  assert.equal(death.data.t, pb)
+  hit({ t: pb, d: 25 })
+  const respawn = await b.next('event')
+  assert.equal(respawn.kind, 'respawn')
+  assert.deepEqual(respawn.data, { t: pb })
+  // Clients cannot forge relay events.
+  a.json({ type: 'event', kind: 'health', data: { t: pb, h: 1 } })
+  const d = await connect(relay.port)
+  d.json({ type: 'join', version: 1, room: 'c', meta: {} })
+  assert.deepEqual((await d.next('welcome')).health, { [pb]: 100 })
+  const quiet = await Promise.race([b.next('event'), new Promise((r) => setTimeout(() => r(null), 150))])
+  assert.equal(quiet, null)
+  for (const s of [a, b, c, d]) s.close()
+  await relay.close()
+})

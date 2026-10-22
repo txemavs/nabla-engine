@@ -66,7 +66,13 @@ export interface SnapshotSyncOptions {
   /** Game events from other peers (`sendEvent` on their side). */
   onEvent?: (event: { peer: string; kind: string; data: NetEventData }) => void
   /** Called with this client's relay-assigned slot and colour once joined. */
-  onWelcome?: (self: { peer: string; slot?: number; color?: string }) => void
+  onWelcome?: (self: {
+    peer: string
+    slot?: number
+    color?: string
+    /** Health per peer (relay combat ledger), when the relay keeps one. */
+    health?: Record<string, number>
+  }) => void
   /**
    * Interest management: a peer appears once it is within `show` metres (horizontal) of the local
    * player and disappears beyond `hide` (> show, so the edge does not flicker). Peers outside
@@ -274,7 +280,12 @@ export class SnapshotSync {
         this.peerId = message.peer
         this.slot = message.slot
         this.color = message.color
-        this.options.onWelcome?.({ peer: message.peer, slot: message.slot, color: message.color })
+        this.options.onWelcome?.({
+          peer: message.peer,
+          slot: message.slot,
+          color: message.color,
+          ...(message.health ? { health: message.health } : {}),
+        })
         for (const peer of message.peers) this.add(peer)
         break
       case 'joined':

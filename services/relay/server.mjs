@@ -23,6 +23,7 @@ import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
+import { HealthLedger } from './combat.mjs'
 
 export const PROTOCOL_VERSION = 1
 const ROOM = /^[A-Za-z0-9_-]{1,64}$/
@@ -152,6 +153,25 @@ function validSnapshot(message) {
   )
 }
 
+const vec3 = (v, max) => finiteArray(v, 3) && v.every((n) => Math.abs(n) <= max)
+const ZONE = /^[a-z]{1,16}$/
+/** Character hit (combat, see docs/combat.md): target peer and damage; the rest optional. */
+function validHit(h) {
+  return (
+    typeof h.t === 'string' &&
+    h.t.length >= 1 &&
+    h.t.length <= 64 &&
+    numIn(h.d, 0, 400) &&
+    (h.z === undefined || (typeof h.z === 'string' && ZONE.test(h.z))) &&
+    (h.w === undefined || typeof h.w === 'string') &&
+    (h.o === undefined || vec3(h.o, 1e6)) &&
+    (h.r === undefined || vec3(h.r, 1.001)) &&
+    (h.p === undefined || vec3(h.p, 1e6))
+  )
+}
+/** `peer` of the events the relay sends itself (health, death, respawn). */
+export const RELAY_PEER = 'relay'
+
 const KIND = /^[A-Za-z0-9_.-]{1,32}$/
 function validEventData(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false
@@ -195,9 +215,34 @@ export function startRelay({
         .filter((c) => COLOR.test(c))
     : DEFAULT_PALETTE,
   log = (...args) => console.log(new Date().toISOString(), ...args),
+  respawnDelay = Number(process.env.RESPAWN_DELAY ?? 5),
+  respawnTick = Number(process.env.RESPAWN_TICK_MS ?? 250),
 } = {}) {
   /** room id -> Map<socket, { peer, meta }> */
   const rooms = new Map()
+  /** room id -> HealthLedger: the relay is the authority on character health. */
+  const ledgers = new Map()
+  const ledgerOf = (room) => {
+    let ledger = ledgers.get(room)
+    if (!ledger) ledgers.set(room, (ledger = new HealthLedger(undefined, respawnDelay)))
+    return ledger
+  }
+  const seconds = () => performance.now() / 1000
+  const toRoom = (room, message) => {
+    for (const socket of rooms.get(room)?.keys() ?? []) send(socket, message)
+  }
+  const relayEvent = (room, kind, data) =>
+    toRoom(room, { type: 'event', peer: RELAY_PEER, kind, data })
+  const respawns = setInterval(() => {
+    const now = seconds()
+    for (const [room, ledger] of ledgers)
+      for (const id of ledger.due(now)) {
+        ledger.respawn(id)
+        relayEvent(room, 'respawn', { t: id })
+        log('respawn', room, id)
+      }
+  }, respawnTick)
+  respawns.unref?.()
   const http = createServer((req, res) => {
     if (req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' })
@@ -231,7 +276,11 @@ export function startRelay({
     socket.nabla.room = null
     if (!members || !member) return
     members.delete(socket)
-    if (!members.size) rooms.delete(room)
+    ledgers.get(room)?.remove(member.peer)
+    if (!members.size) {
+      rooms.delete(room)
+      ledgers.delete(room)
+    }
     broadcast(room, socket, { type: 'left', peer: member.peer })
     log('leave', room, member.peer, `${members.size} left`)
   }
@@ -277,7 +326,20 @@ export function startRelay({
         members.set(socket, { peer, meta, slot, color })
         rooms.set(message.room, members)
         state.room = message.room
-        send(socket, { type: 'welcome', peer, room: message.room, peers, slot, color })
+        // Health of everyone already here (the newcomer starts full).
+        const ledger = ledgers.get(message.room)
+        const health = Object.fromEntries(
+          peers.filter((m) => ledger?.has(m.peer)).map((m) => [m.peer, ledger.get(m.peer).health]),
+        )
+        send(socket, {
+          type: 'welcome',
+          peer,
+          room: message.room,
+          peers,
+          slot,
+          color,
+          ...(Object.keys(health).length ? { health } : {}),
+        })
         broadcast(message.room, socket, { type: 'joined', peer, meta, slot, color })
         log('join', message.room, peer, `${members.size} in room`)
       } else if (message.type === 'snapshot') {
@@ -313,6 +375,28 @@ export function startRelay({
         if (!member || typeof message.kind !== 'string' || !KIND.test(message.kind)) return
         if (!validEventData(message.data) || ++state.events > maxEvents) return
         if (message.kind === 'fire' && !validFire(message.data)) return
+        if (message.kind === 'hit') {
+          // The shooter reports; the relay applies the damage and tells everyone (never the raw hit).
+          const hit = message.data
+          if (!validHit(hit) || hit.t === member.peer) return
+          const present = [...rooms.get(state.room).values()].some((m) => m.peer === hit.t)
+          const ledger = ledgerOf(state.room)
+          if (!present || ledger.get(hit.t).dead) return
+          const result = ledger.damage(hit.t, hit.d, seconds())
+          relayEvent(state.room, 'health', {
+            t: hit.t,
+            h: result.health,
+            s: member.peer,
+            ...(hit.z ? { z: hit.z } : {}),
+            ...(hit.r ? { r: hit.r } : {}),
+          })
+          if (result.died) {
+            relayEvent(state.room, 'death', { t: hit.t, s: member.peer, ...(hit.r ? { r: hit.r } : {}) })
+            log('death', state.room, hit.t, 'by', member.peer)
+          }
+          return
+        }
+        if (['health', 'death', 'respawn'].includes(message.kind)) return
         broadcast(state.room, socket, {
           type: 'event',
           peer: member.peer,
@@ -338,6 +422,7 @@ export function startRelay({
         port: actual,
         close: () =>
           new Promise((done) => {
+            clearInterval(respawns)
             for (const client of wss.clients) client.terminate()
             wss.close(() => http.close(() => done()))
           }),
