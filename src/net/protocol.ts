@@ -79,6 +79,84 @@ const eventData = z
 export type NetEventData = Record<string, number | boolean | string | number[]>
 const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
 
+/**
+ * Character damage over the relay (generic; see docs/combat.md). The shooter sends `hit`
+ * (`t` target peer, `z` zone, `w` weapon id, `d` damage, `o` origin, `r` unit direction, `p`
+ * entry point; all but `t` and `d` optional). The relay owns health and sends, from
+ * {@link RELAY_PEER}: `health` (`t`, `h` health, optional `z`, `r`, `s` shooter), `death` (`t`,
+ * optional `r`) and `respawn` (`t`, optional `p` feet position). Old relays forward `hit` as a
+ * plain event, which clients ignore.
+ */
+export const HIT_EVENT = 'hit'
+export const HEALTH_EVENT = 'health'
+export const DEATH_EVENT = 'death'
+export const RESPAWN_EVENT = 'respawn'
+/** `peer` of events the relay itself sends. */
+export const RELAY_PEER = 'relay'
+const v3 = (v: unknown): Vec3Tuple | undefined =>
+  Array.isArray(v) && v.length === 3 && v.every((n) => Number.isFinite(n))
+    ? ([v[0], v[1], v[2]] as Vec3Tuple)
+    : undefined
+const str = (v: unknown, max = 64): string | undefined =>
+  typeof v === 'string' && v.length > 0 && v.length <= max ? v : undefined
+export interface NetHit {
+  targetId: string
+  damage: number
+  zone?: string
+  weapon?: string
+  origin?: Vec3Tuple
+  direction?: Vec3Tuple
+  point?: Vec3Tuple
+}
+export function encodeHit(hit: NetHit): NetEventData {
+  const fix = (v: Vec3Tuple, digits: number) => v.map((n) => +n.toFixed(digits))
+  return {
+    t: hit.targetId,
+    d: Math.max(0, Math.min(400, Math.round(hit.damage))),
+    ...(hit.zone ? { z: hit.zone } : {}),
+    ...(hit.weapon ? { w: hit.weapon } : {}),
+    ...(hit.origin ? { o: fix(hit.origin, 2) } : {}),
+    ...(hit.direction ? { r: fix(hit.direction, 3) } : {}),
+    ...(hit.point ? { p: fix(hit.point, 2) } : {}),
+  }
+}
+export function decodeHit(data: NetEventData): NetHit | null {
+  const targetId = str(data.t)
+  const damage = data.d
+  if (!targetId || typeof damage !== 'number' || !(damage >= 0 && damage <= 400)) return null
+  return {
+    targetId,
+    damage,
+    zone: str(data.z, 16),
+    weapon: str(data.w),
+    origin: v3(data.o),
+    direction: v3(data.r),
+    point: v3(data.p),
+  }
+}
+export interface NetHealth {
+  targetId: string
+  health: number
+  zone?: string
+  direction?: Vec3Tuple
+  shooterId?: string
+  position?: Vec3Tuple
+}
+/** Decode a relay `health`, `death` or `respawn` event (null when malformed). */
+export function decodeHealthEvent(data: NetEventData): NetHealth | null {
+  const targetId = str(data.t)
+  if (!targetId) return null
+  const health = typeof data.h === 'number' && Number.isFinite(data.h) ? data.h : 0
+  return {
+    targetId,
+    health,
+    zone: str(data.z, 16),
+    direction: v3(data.r),
+    shooterId: str(data.s),
+    position: v3(data.p),
+  }
+}
+
 /** Event kind of {@link fireEventSchema}. */
 export const FIRE_EVENT = 'fire'
 /**
@@ -306,6 +384,8 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     peers: z.array(peerInfo),
     slot: z.number().int().nonnegative().optional(),
     color: color.optional(),
+    /** Health per peer from the relay's ledger (combat; absent on older relays). */
+    health: z.record(peerId, z.number().min(0).max(10000)).optional(),
   }),
   peerInfo.extend({ type: z.literal('joined') }),
   z.object({ type: z.literal('left'), peer: peerId }),

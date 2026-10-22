@@ -3964,6 +3964,14 @@ export class GameRuntime {
     this.holsterShown = shown
   }
   private holsterShown: boolean | null = null
+  /**
+   * Where the host's held weapon (see {@link setLocalHeldPose}) fires from, simulation world:
+   * its muzzle on the body. While a held pose is set, sidearm shots leave from here.
+   */
+  setHeldMuzzle(muzzle: (() => Vec3Tuple | null) | null): void {
+    this.heldMuzzle = muzzle
+  }
+  private heldMuzzle: (() => Vec3Tuple | null) | null = null
   /** Whether the camera is at the player's eyes (first person) right now. */
   get firstPersonView(): boolean {
     const sim = this.session.simulation
@@ -5576,9 +5584,18 @@ export class GameRuntime {
     ) {
       const shot = this.combat.isDead()
         ? null
-        : fireSidearm(sidearm, this.gallery, sim, this.view, this.camera, time, eyes, this.combat, [
-            ...weaponPosition,
-          ] as Vec3Tuple)
+        : fireSidearm(
+            sidearm,
+            this.gallery,
+            sim,
+            this.view,
+            this.camera,
+            time,
+            eyes,
+            this.combat,
+            [...weaponPosition] as Vec3Tuple,
+            this.localHeld ? (this.heldMuzzle?.() ?? null) : null,
+          )
       if (shot?.fired && this.gallery.lastGlassImpact)
         this.effects.audio.destruction(this.gallery.lastGlassImpact, true)
       if (shot?.fired && this.gallery.lastBurst)

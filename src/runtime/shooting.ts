@@ -61,7 +61,25 @@ export function sidearmAimRay(
   camera: PerspectiveCamera,
   firstPerson: boolean,
   now = 0,
+  /**
+   * Host-held weapon (a synced held-item pose): shots leave its muzzle (simulation world) toward
+   * what the camera looks at (world or character), whatever the view.
+   */
+  heldMuzzle?: Vec3 | null,
+  combat?: Combat | null,
 ): { origin: Vector3; direction: Vector3 } {
+  if (heldMuzzle) {
+    // Called before the render origin is applied: the camera position is simulation world.
+    const look = camera.getWorldDirection(new Vector3())
+    const at = camera.position.clone()
+    const eye = at.toArray() as Vec3
+    const world = sim.shoot(eye, look.toArray() as Vec3, sidearm.range, 0)
+    const far = world ? at.distanceTo(new Vector3(...world.point)) : sidearm.range
+    const body = combat?.raycast(eye, look.toArray() as Vec3, far)
+    const target = body ? new Vector3(...body.point) : at.clone().addScaledVector(look, far)
+    const origin = new Vector3(...heldMuzzle)
+    return { origin, direction: target.sub(origin).normalize() }
+  }
   const barrel = sidearm.accessoryRay(now, firstPerson, camera.fov, 'Barrel')
   if (barrel) {
     for (const point of [barrel.origin, barrel.target]) {
@@ -110,6 +128,8 @@ export function fireSidearm(
   combat?: Combat | null,
   /** The fire origin (GameRuntime's weapon position) reported with character hits. */
   fireOrigin?: Vec3,
+  /** See {@link sidearmAimRay}. */
+  heldMuzzle?: Vec3 | null,
 ): SidearmShot | null {
   if (!sidearm.visible) return null
   // Characters (hit zones) stop the bullet too: the nearer of world and body wins.
@@ -119,11 +139,20 @@ export function fireSidearm(
         cast,
         sidearm.preset?.id ?? 'sidearm',
         weaponBaseDamage(sidearm.preset ?? {}),
-        fireOrigin,
+        heldMuzzle ?? fireOrigin,
       )
     : cast
   // Capture the pose before pulling the trigger adds recoil or ends an inspection.
-  const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson, now)
+  const { origin, direction } = sidearmAimRay(
+    sidearm,
+    sim,
+    view,
+    camera,
+    firstPerson,
+    now,
+    heldMuzzle,
+    combat,
+  )
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
   const spread = sidearm.temperature.spreadRadians
