@@ -179,6 +179,10 @@ export class Sidearm {
       this.viewRig.add(this.model)
     this.trackedGrip = value
   }
+  /** The third-person copy made by {@link syncWorld}, or null. */
+  get worldObject(): THREE.Group | null {
+    return this.worldPresentation
+  }
   private get worldRoot(): THREE.Group | null {
     return this.tracked ? this.model : this.worldPresentation
   }

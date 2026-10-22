@@ -3,7 +3,15 @@
 Files: `avatar.glb` (skinned body, 41 `mixamorig` bones, 1.70 m, feet at y = 0, faces +Z, head
 socket marked `nabla_attach: createMonitorAvatar`) and `avatar.anims.glb` (clips `idle`, `walk`,
 `run`, `jump_start`, `jump_loop`, `jump_land`, `crouch_idle`, `crouch_walk`, `sit`, `drive`).
-The engine's default player body, served at `/avatar/…`.
+The mannequin body and the shared clips, served at `/avatar/…`.
+
+**Default body:** `prota/` (Gepeto's original "prota", 65 bones, belt + holster with the
+holstered USP + baton hung at its sockets, recolourable `nabla_color_slot` materials), using
+`avatar.anims.glb` for its clips. Credits: [prota/LICENSES.md](prota/LICENSES.md). The
+mannequin stays here for hosts that ask for it with `setPlayerBody({ model:
+'/avatar/avatar.glb', animations: '/avatar/avatar.anims.glb' })`. Held weapons go to
+`WeaponSocket_R` (grip on the socket); remote players get the same via
+`runtime.createWeaponProp(slot, body)`.
 Credits and licences: [LICENSES.md](LICENSES.md).
 
 Wiring: `GameRuntime.play()` loads it unless the host called `runtime.setPlayerBody(assets)` (its
@@ -18,11 +26,20 @@ Send per player, a few times a second:
 
 ```ts
 type AvatarNetState = {
-  animState: 'idle' | 'walk' | 'run' | 'jump_start' | 'jump_loop' | 'jump_land'
-    | 'crouch_idle' | 'crouch_walk' | 'sit' | 'drive'
-  yaw: number                       // radians, gameplay heading (0 faces −Z)
+  animState:
+    | 'idle'
+    | 'walk'
+    | 'run'
+    | 'jump_start'
+    | 'jump_loop'
+    | 'jump_land'
+    | 'crouch_idle'
+    | 'crouch_walk'
+    | 'sit'
+    | 'drive'
+  yaw: number // radians, gameplay heading (0 faces −Z)
   position: [number, number, number] // feet, local metres (world space of the scene)
-  speed: number                     // horizontal m/s (sets the stride rate)
+  speed: number // horizontal m/s (sets the stride rate)
 }
 ```
 
