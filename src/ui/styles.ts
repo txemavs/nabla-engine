@@ -48,6 +48,8 @@ export const ENGINE_STYLE_ID = 'nabla-ui-styles'
  */
 export function installEngineStyles(doc: Document | undefined = globalThis.document): boolean {
   if (!doc?.head) return false
+  // Pages hide <body> until this class is set (inline critical CSS, see docs/ui-theme.md).
+  doc.documentElement?.classList.add('nabla-styles-ready')
   if (doc.getElementById(ENGINE_STYLE_ID) || doc.querySelector('link[data-nabla-ui]')) return true
   const style = doc.createElement('style')
   style.id = ENGINE_STYLE_ID
