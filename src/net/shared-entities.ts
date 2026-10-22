@@ -98,6 +98,8 @@ interface Local {
   remote: RemoteVehicle
   /** Rest pose last applied while nobody drives (kinematic hold). */
   rested: string
+  /** True while {@link SharedEntities.update} holds the local object kinematic at rest. */
+  held: boolean
   gone: boolean
 }
 
@@ -165,6 +167,9 @@ export class SharedEntities {
     if (!e || !this.self) return false
     if (e.record.driver && e.record.driver !== this.self) return false
     e.record = { ...e.record, driver: this.self }
+    this.unhold(e)
+    // Our own physics now; the rest pose is held again after the next release.
+    e.rested = ''
     e.remote.release()
     e.remote = new RemoteVehicle(e.localId, this.host, this.interpolation)
     return this.send(ENTITY_CLAIM, { i: id })
@@ -229,6 +234,18 @@ export class SharedEntities {
         // Not a physics object (e.g. a ground item): nothing to hold.
       }
       e.rested = key
+      e.held = true
+    }
+  }
+  /** Give a held rest pose back to physics (a claimed vehicle must drive, not stay kinematic). */
+  private unhold(e: Local): void {
+    if (!e.held) return
+    e.held = false
+    if (e.localId === null) return
+    try {
+      this.host.setEntityKinematic(e.localId, false)
+    } catch {
+      // Not a physics object: nothing was held.
     }
   }
   /** Extras (lights…) last received for entities driven by others, by local id. */
@@ -256,6 +273,7 @@ export class SharedEntities {
         pending: !localId,
         remote: new RemoteVehicle(localId, this.host, this.interpolation),
         rested: localId && record.driver === this.self ? `${record.position}|${record.rotation}` : '',
+        held: false,
         gone: false,
       }
       this.entities.set(record.id, e)
@@ -266,6 +284,7 @@ export class SharedEntities {
     const was = e.record.driver
     e.record = record
     if (record.driver !== was) {
+      if (record.driver) this.unhold(e)
       e.remote.release()
       e.remote = new RemoteVehicle(e.localId, this.host, this.interpolation)
       // Rest pose applies again once nobody drives.

@@ -91,6 +91,23 @@ describe('shared entities', () => {
     expect(shared.list()).toEqual([])
   })
 
+  it('gives a re-claimed vehicle back to physics after holding it at rest', () => {
+    const { shared, kinematic } = setup()
+    shared.reset([decodeEntity(truck(null))!])
+    shared.update(0)
+    expect(kinematic.get('local-1')).toBe(true)
+    // Enter, leave, rest, enter again: our own physics body must be dynamic every time.
+    for (let i = 0; i < 2; i++) {
+      expect(shared.claim('other.1')).toBe(true)
+      expect(kinematic.get('local-1')).toBe(false)
+      shared.update(1)
+      expect(kinematic.get('local-1')).toBe(false)
+      expect(shared.release('other.1', { position: [5, 0, 5], rotation: [0, 0, 0, 1] })).toBe(true)
+      shared.update(2)
+      expect(kinematic.get('local-1')).toBe(true)
+    }
+  })
+
   it('publishes with its own id and adopts the existing local object', () => {
     const { shared, sent, spawned } = setup()
     const id = shared.publish('vehicle', { color: '#00ff00' }, { position: [0, 0, 0], rotation: [0, 0, 0, 1] }, 'car', { drive: true })
