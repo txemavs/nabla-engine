@@ -1,4 +1,5 @@
 import { createMonitorAvatar } from '../render/entity/avatar.js'
+import { bodySlotForAction, DROP_ACTION, type BodySlot } from '../character/body-slots.js'
 import type { HeldPose } from '../render/entity/held-pose.js'
 export {
   defaultHeldPose,
@@ -649,6 +650,12 @@ export interface WeaponProp {
   muzzle(): Vec3Tuple | null
   update(now?: number): void
   dispose(): void
+}
+
+/** Host side of the body-slot keys ({@link GameRuntime.setBodySlotHost}). */
+export interface BodySlotHost {
+  select(slot: BodySlot): boolean
+  drop(): void
 }
 
 export class GameRuntime {
@@ -4012,6 +4019,20 @@ export class GameRuntime {
     }
     return true
   }
+  /**
+   * Give up the firearm in `slot` (dropped by the host's inventory): holstered first if drawn,
+   * then no longer owned, so neither its key nor the holster key draws it again.
+   */
+  releaseWeaponSlot(slot: number): void {
+    const entry = weaponSlots().find((item) => item.slot === slot)
+    if (!entry) return
+    if (this.activeWeaponSlot === slot) this.selectWeaponSlot(slot)
+    if (this.ownedWeaponId === entry.id) {
+      this.ownedWeaponId = null
+      this.weaponDrawn = false
+      if (this.sidearm) this.sidearm.visible = false
+    }
+  }
   private readonly shotListeners = new Set<(shot: ShotReport) => void>()
   /** Observe every shot the local player fires (after its hit is resolved). Returns an unsubscribe. */
   addShotListener(listener: (shot: ShotReport) => void): () => void {
@@ -5725,10 +5746,6 @@ export class GameRuntime {
     this.view.root.add(this.casingMeshes.root)
   }
   /**
-   * Number-key loadout from preset data (`weaponSlots()`). The same key again holsters.
-   * Firearms reuse the sidearm path; melee and bow use `HeldWeapon`; placeholders only report.
-   */
-  /**
    * Host inventory gate for the number keys: a slot is drawn only while `gate(slot)` says the
    * player carries its item (null: every slot is free, as on test pages). Holstering is never gated.
    */
@@ -5736,6 +5753,19 @@ export class GameRuntime {
     this.weaponSlotGate = gate
   }
   private weaponSlotGate: ((slot: number) => boolean) | null = null
+  /**
+   * Host handler for the body-slot keys (`weapon.slot<key>`, table in `character/body-slots`) and
+   * the drop key: `select` returns true when it handled the slot (e.g. a pocket item), false to
+   * fall back to the number-key weapon loadout. Null: number keys only, the drop key does nothing.
+   */
+  setBodySlotHost(host: BodySlotHost | null): void {
+    this.bodySlotHost = host
+  }
+  private bodySlotHost: BodySlotHost | null = null
+  /**
+   * Number-key loadout from preset data (`weaponSlots()`). The same key again holsters.
+   * Firearms reuse the sidearm path; melee and bow use `HeldWeapon`; placeholders only report.
+   */
   selectWeaponSlot(slot: number): void {
     this.assertAlive()
     const entry = weaponSlots().find((item) => item.slot === slot)
@@ -6623,9 +6653,14 @@ export class GameRuntime {
       this.wheelDebug.toggle()
       return
     }
-    const slotAction = /^weapon\.slot(\d)$/.exec(action)
-    if (slotAction) {
-      if (!sim.player.vehicleId) this.selectWeaponSlot(Number(slotAction[1]))
+    if (action === DROP_ACTION) {
+      if (!sim.player.vehicleId) this.bodySlotHost?.drop()
+      return
+    }
+    const bodySlot = bodySlotForAction(action)
+    if (bodySlot) {
+      if (sim.player.vehicleId || this.bodySlotHost?.select(bodySlot)) return
+      if (/^\d$/.test(bodySlot.key)) this.selectWeaponSlot(Number(bodySlot.key))
       return
     }
     if (action === 'holster' && this.heldDrawn) {
