@@ -472,6 +472,16 @@ describe('spawn ground guard', () => {
     expect(sim.groundHeld).toBe(true)
     expect(sim.player.position[1]).toBe(before)
   })
+  it('does not settle a spawn on a collider far below the loaded terrain', () => {
+    const sim = new Simulation(scene())
+    finishStartUp(sim)
+    const before = sim.player.position[1]
+    // The render terrain says ground is 20 m up; the only collider is the floor far below it.
+    sim.holdForGround(before + 20)
+    advance(sim, 1)
+    expect(sim.groundHeld).toBe(true)
+    expect(sim.player.position[1]).toBe(before)
+  })
 })
 
 describe('relocatePlayer', () => {

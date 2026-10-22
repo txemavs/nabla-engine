@@ -118,6 +118,11 @@ const SPAWN_PROBE_UP = 5
 const SPAWN_PROBE_DOWN = 60
 /** Seconds the spawn guard waits for collision before releasing the actor anyway. */
 const SPAWN_HOLD_LIMIT = 30
+/**
+ * Spawn guard: a collider surface more than this far below the loaded render terrain the spawn
+ * was placed on is not the ground (the terrain collider is not installed yet), so keep waiting.
+ */
+const SPAWN_GROUND_TOLERANCE = 5
 const PLAYER_RADIUS = simulationDefaults.playerRadius
 /** The walker's collider for a stance's half height (a box; trimeshes fix internal edges). */
 function playerShape(halfHeight: number): Box {
@@ -422,6 +427,7 @@ export class Simulation {
     const body = this.controlledBody
     this.groundHold = {
       height: Math.max(body.position.y - visualGround, 0.05),
+      ground: visualGround,
       waited: 0,
     }
   }
@@ -452,7 +458,7 @@ export class Simulation {
   get groundHeld(): boolean {
     return this.groundHold !== null
   }
-  private groundHold: { height: number; waited: number } | null = null
+  private groundHold: { height: number; ground: number; waited: number } | null = null
   /**
    * Drive the spawn guard from the host while frames may not step the simulation (the reveal is
    * still preparing). True once released; `force` releases without ground (host timeout).
@@ -484,6 +490,10 @@ export class Simulation {
       (hit) => {
         const other = hit.body as (Body & { collisionEnabled?: boolean }) | null
         if (!other || other === body || other.mass > 0 || other.collisionEnabled === false) return
+        // The catch floor (sea level - 30 m) and anything far under the loaded terrain are not
+        // the spawn ground: settling on them dropped the actor onto the catch floor.
+        if (this.fallbackFloor.owns(other)) return
+        if (hit.hitPointWorld.y < hold.ground - SPAWN_GROUND_TOLERANCE) return
         if (hit.distance < nearest) {
           nearest = hit.distance
           surface = hit.hitPointWorld.y
