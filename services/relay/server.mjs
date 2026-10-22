@@ -122,6 +122,11 @@ function validFire(f) {
   )
 }
 
+/** Reload request: `{ w }` the weapon slot, nothing else. */
+function validReload(r) {
+  return r !== null && typeof r === 'object' && Object.keys(r).length === 1 && intIn(r.w, 0, 63)
+}
+
 /** Character inventory stacks: at most 32 of [slot 0..63, item 1..63, count -1..9999]. */
 function validStacks(list) {
   return (
@@ -245,6 +250,7 @@ export function startRelay({
   maxFrame = Number(process.env.MAX_FRAME ?? 4096),
   maxRate = Number(process.env.MAX_RATE ?? 60),
   maxEvents = Number(process.env.MAX_EVENTS ?? 15),
+  reloadInterval = Number(process.env.RELOAD_INTERVAL ?? 0.5),
   radius = Number(process.env.RADIUS ?? 250),
   positionTtl = Number(process.env.POSITION_TTL ?? 3000),
   palette = (process.env.PALETTE ?? '').split(',').filter((c) => COLOR.test(c.trim())).length
@@ -495,6 +501,14 @@ export function startRelay({
         if (!member || typeof message.kind !== 'string' || !KIND.test(message.kind)) return
         if (!validEventData(message.data) || ++state.events > maxEvents) return
         if (message.kind === 'fire' && !validFire(message.data)) return
+        if (message.kind === 'reload') {
+          // Slot bounds, a living reloader, at most one per RELOAD_INTERVAL seconds.
+          const now = seconds()
+          const ledger = ledgerOf(state.room)
+          if (!validReload(message.data) || (ledger.has(member.peer) && ledger.get(member.peer).dead)) return
+          if (now - (state.reloadAt ?? -Infinity) < reloadInterval) return
+          state.reloadAt = now
+        }
         if (message.kind === 'hit') {
           // The shooter reports; the relay applies the damage and tells everyone (never the raw hit).
           const hit = message.data

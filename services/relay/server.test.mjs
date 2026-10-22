@@ -280,9 +280,23 @@ test('combat: relay applies hits, broadcasts health/death/respawn, health in the
   assert.equal(death.kind, 'death')
   assert.equal(death.data.t, pb)
   hit({ t: pb, d: 25 })
+  // A dead peer cannot reload.
+  b.json({ type: 'event', kind: 'reload', data: { w: 1 } })
   const respawn = await b.next('event')
   assert.equal(respawn.kind, 'respawn')
   assert.deepEqual(respawn.data, { t: pb })
+  assert.equal((await a.next('event')).kind, 'health')
+  assert.equal((await a.next('event')).kind, 'death')
+  assert.equal((await a.next('event')).kind, 'respawn')
+  // Reload: slot bounds, alive, rate.
+  const reload = (s, data) => s.json({ type: 'event', kind: 'reload', data })
+  reload(a, { w: 64 })
+  reload(a, { w: 1, x: 1 })
+  reload(a, { w: 2 })
+  reload(a, { w: 3 })
+  const reloaded = await b.next('event')
+  assert.equal(reloaded.kind, 'reload')
+  assert.deepEqual(reloaded.data, { w: 2 })
   // Clients cannot forge relay events.
   a.json({ type: 'event', kind: 'health', data: { t: pb, h: 1 } })
   const d = await connect(relay.port)
