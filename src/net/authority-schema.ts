@@ -28,8 +28,17 @@ export const AUTHORITY_KIND = {
 export const authorityRequestSchema = z.discriminatedUnion('type', [
   /** Take a ground item (shared entity id); the authority grants it to exactly one player. */
   z.object({ type: z.literal('pickup'), item: AUTHORITY_ID }),
-  /** Put an item on the ground: `item` the game's item type, `count` 1..999. */
-  z.object({ type: z.literal('drop'), item: AUTHORITY_ID, count: z.number().int().min(1).max(999), position: vec3 }),
+  /**
+   * Put an item on the ground: `item` the game's item type, `count` 1..999. `id` only for a
+   * placed spawn item (one per area: the first placement wins); a dropped item gets a fresh id.
+   */
+  z.object({
+    type: z.literal('drop'),
+    item: AUTHORITY_ID,
+    count: z.number().int().min(1).max(999),
+    position: vec3,
+    id: AUTHORITY_ID.optional(),
+  }),
   /** A shot leaving a weapon (presentation): weapon slot, kind, origin, unit direction. */
   z.object({
     type: z.literal('fire'),

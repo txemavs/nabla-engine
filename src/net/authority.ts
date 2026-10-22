@@ -93,7 +93,8 @@ export class LocalAuthority implements GameAuthority {
         this.itemsL.emit({ type: 'removed', id: r.item, by: this.self })
         return true
       case 'drop': {
-        const item = { id: `${this.self}.${++this.next}`, item: r.item, count: r.count, position: r.position }
+        if (r.id && this.items.has(r.id)) return false
+        const item = { id: r.id ?? `${this.self}.${++this.next}`, item: r.item, count: r.count, position: r.position }
         this.items.set(item.id, item)
         this.itemsL.emit({ type: 'added', item })
         return true
@@ -122,6 +123,12 @@ export class LocalAuthority implements GameAuthority {
         // Presentation only: nobody else to tell offline.
         return true
     }
+  }
+  /** Take an item off the ground for nobody (e.g. a scenario swap). */
+  removeItem(id: string): boolean {
+    if (!this.items.delete(id)) return false
+    this.itemsL.emit({ type: 'removed', id, by: null })
+    return true
   }
   onItems(fn: (c: ItemChange) => void): Unsubscribe {
     for (const item of this.items.values()) fn({ type: 'added', item })
@@ -161,6 +168,7 @@ export class RelayAuthority implements GameAuthority {
   private readonly itemsL = new Listeners<ItemChange>()
   private readonly claimsL = new Listeners<ClaimChange>()
   private readonly healthL = new Listeners<HealthChange>()
+  private readonly shown = new Set<string>()
 
   constructor(
     private readonly link: RelayLink,
@@ -176,7 +184,10 @@ export class RelayAuthority implements GameAuthority {
       case 'pickup':
         return this.shared.remove(r.item)
       case 'drop':
-        return this.shared.publish('item', { item: r.item, n: r.count }, { position: r.position, rotation: [0, 0, 0, 1] }, null) !== null
+        // Fresh `<peer>.<n>` ids for drops; a spawn item's area id dedupes at the relay.
+        return (
+          this.shared.publish('item', { item: r.item, n: r.count }, { position: r.position, rotation: [0, 0, 0, 1] }, null, r.id ? { id: r.id } : {}) !== null
+        )
       case 'claim':
         return this.shared.claim(r.entity)
       case 'release':
@@ -198,15 +209,21 @@ export class RelayAuthority implements GameAuthority {
     else if (kind === 'death') this.healthL.emit({ type: 'death', target: h.targetId, shooter: h.shooterId })
     else this.healthL.emit({ type: 'respawn', target: h.targetId, health: h.health, position: h.position })
   }
+  /** Shared entity placed or changed (SharedEntityHooks `changed`). */
   entityChanged(record: SharedEntityRecord): void {
-    if (record.type === 'item') this.itemsL.emit({ type: 'added', item: itemOf(record) })
+    if (record.type === 'item') {
+      if (this.shown.has(record.id)) return
+      this.shown.add(record.id)
+      this.itemsL.emit({ type: 'added', item: itemOf(record) })
+    }
     else this.claimsL.emit({ entity: record.id, driver: record.driver, pose: { position: record.position, rotation: record.rotation } })
   }
+  /** Shared entity taken by `by` or gone (SharedEntityHooks `removed`, and `despawn` with null). */
   entityRemoved(record: SharedEntityRecord, by: string | null): void {
-    if (record.type === 'item') this.itemsL.emit({ type: 'removed', id: record.id, by })
+    if (record.type === 'item' && this.shown.delete(record.id)) this.itemsL.emit({ type: 'removed', id: record.id, by })
   }
   onItems(fn: (c: ItemChange) => void): Unsubscribe {
-    for (const r of this.shared.list()) if (r.type === 'item') fn({ type: 'added', item: itemOf(r) })
+    for (const r of this.shared.list()) if (this.shown.has(r.id)) fn({ type: 'added', item: itemOf(r) })
     return this.itemsL.add(fn)
   }
   onClaims(fn: (c: ClaimChange) => void): Unsubscribe {
@@ -220,6 +237,73 @@ export class RelayAuthority implements GameAuthority {
     // The relay runs the respawn timers.
   }
   dispose(): void {
+    for (const l of [this.itemsL, this.claimsL, this.healthL]) l.clear()
+  }
+}
+
+/**
+ * One authority for the game's lifetime that forwards to the current one: LocalAuthority while
+ * offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
+ * and replays the new one's, so a WeaponLoadout can keep a single authority.
+ */
+export class SwitchAuthority implements GameAuthority {
+  private target: GameAuthority
+  private stops: Unsubscribe[] = []
+  private readonly items = new Set<string>()
+  private readonly itemsL = new Listeners<ItemChange>()
+  private readonly claimsL = new Listeners<ClaimChange>()
+  private readonly healthL = new Listeners<HealthChange>()
+
+  constructor(initial: GameAuthority) {
+    this.target = initial
+    this.attach()
+  }
+  get current(): GameAuthority {
+    return this.target
+  }
+  get self(): string | null {
+    return this.target.self
+  }
+  /** Forward to `next` from now on. */
+  use(next: GameAuthority): void {
+    if (next === this.target) return
+    for (const stop of this.stops) stop()
+    for (const id of [...this.items]) this.item({ type: 'removed', id, by: null })
+    this.target = next
+    this.attach()
+  }
+  private attach(): void {
+    this.stops = [
+      this.target.onItems((c) => this.item(c)),
+      this.target.onClaims((c) => this.claimsL.emit(c)),
+      this.target.onHealth((c) => this.healthL.emit(c)),
+    ]
+  }
+  private item(c: ItemChange): void {
+    if (c.type === 'added') this.items.add(c.item.id)
+    else if (!this.items.delete(c.id)) return
+    this.itemsL.emit(c)
+  }
+  request(request: AuthorityRequest): boolean {
+    return this.target.request(request)
+  }
+  onItems(fn: (c: ItemChange) => void): Unsubscribe {
+    // Replay through the target (it knows positions), then follow.
+    this.target.onItems(fn)()
+    return this.itemsL.add(fn)
+  }
+  onClaims(fn: (c: ClaimChange) => void): Unsubscribe {
+    this.target.onClaims(fn)()
+    return this.claimsL.add(fn)
+  }
+  onHealth(fn: (c: HealthChange) => void): Unsubscribe {
+    return this.healthL.add(fn)
+  }
+  update(now: number): void {
+    this.target.update(now)
+  }
+  dispose(): void {
+    for (const stop of this.stops) stop()
     for (const l of [this.itemsL, this.claimsL, this.healthL]) l.clear()
   }
 }
