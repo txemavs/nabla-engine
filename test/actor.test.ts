@@ -12,6 +12,15 @@ describe('actor', () => {
     expect(body.model).toBe('/avatar/polibot/polibot.glb')
     expect(body.animations).toBe('/avatar/avatar.anims.glb')
   })
+  it("draws each peer with its own actor's body, never polibot for the default", () => {
+    // Remote players used to wear the local rig: a polibot viewer saw default:red as polibot.
+    const red = actorBodyAssets(parseActor('default:red'))
+    expect(red.model).toBe('/avatar/prota/prota.glb')
+    expect(red.model).not.toContain('polibot')
+    expect(red.colors).toEqual({ primary: '#c62828' })
+    expect(actorBodyAssets(parseActor('polibot:red')).model).toBe('/avatar/polibot/polibot.glb')
+    expect(actorBodyAssets(parseActor(undefined)).model).toBe('/avatar/prota/prota.glb')
+  })
   it('parses and stores kind:color, falling back on unknown parts', () => {
     expect(parseActor('polibot:green')).toEqual({ kind: 'polibot', color: 'green' })
     expect(parseActor('ghost:pink')).toEqual({ kind: 'default', color: 'white' })

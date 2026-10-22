@@ -276,6 +276,7 @@ import {
   actorBodyAssets,
   actorProfile,
   loadActor,
+  parseActor,
   saveActor,
   type ActorChoice,
 } from './actor.js'
@@ -6441,6 +6442,22 @@ export class GameRuntime {
     this.playerBodyChosen = true
     return this.loadPlayerBody(actorBodyAssets(choice))
   }
+  /**
+   * The body rig of another player's actor (their `actorProfile`, e.g. `polibot:white`; unknown
+   * or missing → the default), loaded once per actor and shared. Remote players must wear their
+   * own actor, not ours.
+   */
+  actorRig(profile: unknown): Promise<PlayerBodyRig> {
+    const key = actorProfile(parseActor(profile))
+    let rig = this.actorRigs.get(key)
+    if (!rig) {
+      rig = PlayerBodyRig.load(actorBodyAssets(parseActor(key)))
+      rig.catch(() => this.actorRigs.delete(key))
+      this.actorRigs.set(key, rig)
+    }
+    return rig
+  }
+  private readonly actorRigs = new Map<string, Promise<PlayerBodyRig>>()
   private actorChoice: ActorChoice = loadActor()
   private headOnly = false
   private bodyLoad = 0

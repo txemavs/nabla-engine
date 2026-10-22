@@ -349,7 +349,9 @@ export class SnapshotSync {
       case 'profile': {
         if (message.peer === this.peerId) break
         const known = this.peers.get(message.peer) ?? { peer: message.peer, meta: {} }
-        // Respawn with the new meta, keeping the relay slot and colour.
+        // Respawn with the new meta, keeping the relay slot and colour; a new actor (robot or
+        // colour) rebuilds the on-foot body too.
+        if (known.meta.actor !== message.meta.actor) this.removeAvatar(message.peer)
         this.remove(message.peer)
         this.add({ ...known, meta: message.meta })
         break
