@@ -351,9 +351,12 @@ export class SnapshotSync {
         const known = this.peers.get(message.peer) ?? { peer: message.peer, meta: {} }
         // Respawn with the new meta, keeping the relay slot and colour; a new actor (robot or
         // colour) rebuilds the on-foot body too.
-        if (known.meta.actor !== message.meta.actor) this.removeAvatar(message.peer)
+        const rebuild = known.meta.actor !== message.meta.actor
         this.remove(message.peer)
         this.add({ ...known, meta: message.meta })
+        // Rebuild the body now (a still peer sends no new sample), keeping its last pose.
+        const avatar = rebuild ? this.avatars.get(message.peer) : undefined
+        if (avatar) this.buildAvatar(message.peer, avatar)
         break
       }
       case 'snapshot':
@@ -378,28 +381,36 @@ export class SnapshotSync {
   }
 
   private receiveAvatar(peer: string, t: number, sample: AvatarSample): void {
-    const factory = this.options.remoteAvatar
-    if (!factory || peer === this.peerId) return
-    let avatar = this.avatars.get(peer)
-    if (!avatar) {
-      if (this.options.interest && !this.within(peer, this.options.interest.show)) return
-      const created = new RemoteAvatar(this.options.interpolation ?? defaultInterpolation)
-      avatar = created
-      this.avatars.set(peer, created)
-      const info = this.peers.get(peer) ?? { peer, meta: {} }
-      const fail = (error: unknown) => {
-        if (this.avatars.get(peer) === created) this.avatars.delete(peer)
-        console.warn('[nabla/net] could not create the body of peer', peer, error)
-      }
-      try {
-        const view = factory(info)
-        if (view instanceof Promise) view.then((v) => created.attach(v), fail)
-        else created.attach(view)
-      } catch (error) {
-        fail(error)
-      }
+    this.ensureAvatar(peer)?.push(t, sample, this.clock())
+  }
+
+  /** The peer's on-foot body (built from its meta actor), once it is within the show radius. */
+  private ensureAvatar(peer: string): RemoteAvatar | null {
+    if (!this.options.remoteAvatar || peer === this.peerId) return null
+    const known = this.avatars.get(peer)
+    if (known) return known
+    if (this.options.interest && !this.within(peer, this.options.interest.show)) return null
+    const created = new RemoteAvatar(this.options.interpolation ?? defaultInterpolation)
+    this.avatars.set(peer, created)
+    this.buildAvatar(peer, created)
+    return created
+  }
+
+  /** Build (or rebuild, keeping its samples) the body view of a peer from its current meta. */
+  private buildAvatar(peer: string, avatar: RemoteAvatar): void {
+    const factory = this.options.remoteAvatar!
+    const info = this.peers.get(peer) ?? { peer, meta: {} }
+    const fail = (error: unknown) => {
+      if (this.avatars.get(peer) === avatar && !avatar.view) this.avatars.delete(peer)
+      console.warn('[nabla/net] could not create the body of peer', peer, error)
     }
-    avatar.push(t, sample, this.clock())
+    try {
+      const view = factory(info)
+      if (view instanceof Promise) view.then((v) => avatar.attach(v), fail)
+      else avatar.attach(view)
+    } catch (error) {
+      fail(error)
+    }
   }
 
   private removeAvatar(peer: string): void {
