@@ -6,7 +6,7 @@ import { t } from '../i18n/index.js'
 export class GameToolbar {
   readonly root = document.createElement('div')
   private readonly lifetime = new AbortController()
-  /** Shared engine button look (`.nabla-btn` in interface-style.ts). */
+  /** Shared engine button look (`.nabla-btn` in src/ui/styles/buttons.css). */
   static styleButton(button: HTMLButtonElement): void {
     button.classList.add('nabla-btn')
   }

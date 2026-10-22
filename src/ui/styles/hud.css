@@ -1,0 +1,329 @@
+/*
+ * Gameplay HUD layout. Nothing overlaps:
+ *   top bar row      tl menu · place title            tr button bar
+ *   under the bar    help line (left)                 status line (right)
+ *   bottom           readout (fps / load step) left   fire mode above the br bar, br bar
+ * Narrow screens put the place title, then help/status, in rows under the top bar.
+ */
+
+/* Place title next to the menu button (city · date). */
+.nabla-place {
+  position: fixed;
+  top: var(--nabla-ui-margin);
+  left: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-space-4));
+  z-index: var(--nabla-z-hint);
+  display: var(--nabla-place-display);
+  width: max-content;
+  max-width: calc(
+    100vw - 2 * var(--nabla-ui-margin) - var(--nabla-bar-height) - var(--nabla-space-4)
+  );
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--nabla-color-ink);
+  text-align: left;
+  text-shadow: var(--nabla-text-shadow);
+  pointer-events: none;
+}
+.nabla-place-city {
+  height: var(--nabla-bar-height);
+  overflow: hidden;
+  font: 700 var(--nabla-font-title) / var(--nabla-bar-height) var(--nabla-font);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.nabla-place-city::after {
+  content: attr(data-game-date);
+  margin-left: var(--nabla-space-5);
+  font-size: var(--nabla-font-md);
+  font-weight: 400;
+}
+.nabla-place-city.is-empty {
+  visibility: hidden;
+}
+.nabla-place-street,
+.nabla-place-clock {
+  display: none;
+}
+
+/* Key help line, under the top bar on the left. */
+.nabla-help {
+  position: fixed;
+  top: var(--nabla-under-bar);
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hint);
+  max-width: calc(50vw - var(--nabla-ui-margin));
+  overflow: hidden;
+  color: var(--nabla-color-ink);
+  font: var(--nabla-hint-font) / var(--nabla-hint-line) var(--nabla-font);
+  text-align: left;
+  text-shadow: var(--nabla-text-shadow);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.nabla-help kbd {
+  padding: 0 var(--nabla-space-1);
+  border-radius: var(--nabla-radius);
+  font: 700 1em / inherit var(--nabla-font);
+}
+.nabla-help kbd.is-held {
+  background: var(--nabla-color-ink);
+  color: #000;
+  text-shadow: none;
+}
+
+/* Status line (game messages, weapon hints), under the top bar on the right. */
+.nabla-status {
+  position: fixed;
+  top: var(--nabla-under-bar);
+  right: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hint);
+  max-width: calc(50vw - var(--nabla-ui-margin));
+  overflow: hidden;
+  color: var(--nabla-color-ink);
+  font: var(--nabla-hint-font) / var(--nabla-hint-line) var(--nabla-font);
+  text-align: right;
+  text-shadow: var(--nabla-text-shadow);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.nabla-status:empty {
+  display: none;
+}
+.nabla-status button {
+  margin-left: var(--nabla-space-3);
+  pointer-events: auto;
+}
+
+/* Bottom-left readout: fps, renderer, load step. One line, small. */
+.nabla-readout,
+#controls-hint {
+  position: fixed;
+  bottom: var(--nabla-ui-margin);
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hint);
+  max-width: calc(100vw - 2 * var(--nabla-ui-margin));
+  color: var(--nabla-color-ink);
+  font: var(--nabla-font-sm) / 1.2 var(--nabla-font);
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--nabla-text-shadow);
+  opacity: 0.85;
+  pointer-events: none;
+}
+#controls-hint kbd {
+  display: inline-block;
+  margin: 0 var(--nabla-space-1);
+  padding: var(--nabla-space-1) var(--nabla-space-3);
+  border-radius: var(--nabla-radius-panel);
+  background: #333;
+}
+/* A warning dot inside a readout (e.g. tiles installing). */
+.nabla-readout-alert {
+  color: var(--nabla-color-error);
+}
+/* One bottom-left line: the engine readout wins when it has text. */
+body:has(#controls-hint:not(:empty)) .nabla-readout:not(.nabla-readout--step) {
+  display: none;
+}
+/* Touch screens (or a shown touch rig) have no room for the readout. */
+body:has(.touch-driving[data-visibility='always']) #controls-hint {
+  display: none;
+}
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  .nabla-readout,
+  #controls-hint {
+    display: none;
+  }
+}
+
+/* Engine version, bottom centre (corners belong to the bars). */
+.nabla-engine-version {
+  position: fixed;
+  bottom: var(--nabla-space-1);
+  left: 50%;
+  z-index: var(--nabla-z-hud);
+  color: #fff;
+  font:
+    var(--nabla-font-xs) / 1 system-ui,
+    sans-serif;
+  text-shadow: 0 1px 2px #000;
+  opacity: 0.35;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Fire mode (SEMI / AUTO) of a drawn firearm: right, just above the bottom bar. */
+.nabla-fire-mode {
+  position: fixed;
+  right: var(--nabla-ui-margin);
+  bottom: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-btn-gap));
+  z-index: var(--nabla-z-hint);
+  height: var(--nabla-bar-height);
+  padding: 0 var(--nabla-space-4);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-scrim);
+  color: #fff;
+  font: 600 var(--nabla-font-sm) / var(--nabla-bar-height) var(--nabla-font);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+.nabla-fire-mode.is-burst {
+  color: var(--nabla-color-warn);
+}
+
+/* Engine gameplay HUD (hud.ts): seated telemetry and the interaction hint, bottom-left,
+   above the readout line. */
+.nabla-game-hud {
+  display: var(--nabla-game-hud-display);
+  position: absolute;
+  bottom: calc(var(--nabla-ui-margin) + var(--nabla-hint-line) + var(--nabla-space-3));
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hint);
+  color: #fff;
+  font:
+    var(--nabla-font-md) system-ui,
+    sans-serif;
+  text-shadow: var(--nabla-text-shadow);
+  white-space: pre-line;
+  pointer-events: none;
+}
+.nabla-game-hud-telemetry {
+  display: block;
+  font-size: var(--nabla-font-title);
+}
+.nabla-game-hud-hint {
+  font: var(--nabla-hint-font) / var(--nabla-hint-line) var(--nabla-font);
+}
+
+/* Speed panel of the terrain page (#game-hud). */
+#game-hud {
+  position: fixed;
+  top: var(--nabla-under-bar);
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hud);
+  display: var(--nabla-speed-display);
+  flex-direction: column;
+  gap: var(--nabla-space-4);
+  padding: var(--nabla-space-5);
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-scrim);
+  font-size: var(--nabla-font-md);
+  pointer-events: none;
+}
+#game-hud.hidden {
+  display: none;
+}
+#speed-display {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+/* "Roads hidden" notice, top centre. */
+#road-hidden-hint {
+  position: fixed;
+  top: var(--nabla-under-bar);
+  left: 50%;
+  z-index: var(--nabla-z-hint);
+  display: flex;
+  align-items: center;
+  gap: var(--nabla-space-4);
+  padding: var(--nabla-space-2) var(--nabla-space-4);
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-scrim);
+  color: #ddd;
+  font-size: var(--nabla-font-md);
+  transform: translateX(-50%);
+}
+#road-hidden-hint.hidden {
+  display: none;
+}
+#road-hidden-hint button {
+  padding: var(--nabla-space-1) var(--nabla-space-4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--nabla-radius-panel);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* One primary call to action, bottom centre above the bar (e.g. Enter VR). */
+.nabla-cta {
+  position: fixed;
+  bottom: calc(var(--nabla-control-bottom) + var(--nabla-space-5));
+  left: 50%;
+  z-index: var(--nabla-z-hint);
+  padding: var(--nabla-space-4) var(--nabla-space-6);
+  border: 0;
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-highlight);
+  color: var(--nabla-color-on-highlight);
+  font: 600 var(--nabla-font-lg) var(--nabla-font);
+  transform: translateX(-50%);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.nabla-cta[hidden] {
+  display: none;
+}
+
+/* Narrow screens: title under the top bar, then the help or status line under the title. */
+@media (max-width: 600px) {
+  .nabla-place {
+    top: var(--nabla-under-bar);
+    left: var(--nabla-ui-margin);
+    max-width: calc(100vw - 2 * var(--nabla-ui-margin));
+  }
+  .nabla-help,
+  .nabla-status {
+    top: calc(var(--nabla-under-bar) + var(--nabla-bar-height) + var(--nabla-space-3));
+    right: var(--nabla-ui-margin);
+    left: var(--nabla-ui-margin);
+    max-width: none;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* States that clear the gameplay HUD:
+   - the settings window is open (it owns the screen),
+   - the loading screen is up,
+   - a host intro runs (`html.nabla-ui-hidden`, e.g. opening credits). */
+body.settings-is-open
+  :is(
+    .nabla-corner--tr,
+    .nabla-corner--br,
+    .nabla-place,
+    .nabla-help,
+    .nabla-status,
+    .nabla-readout,
+    .nabla-fire-mode,
+    #controls-hint,
+    .game-toolbar,
+    .touch-driving,
+    .touch-walk,
+    .touch-flight,
+    #settings-toggle
+  ) {
+  display: none;
+}
+body:has(#loading-screen:not(.hidden)) :is(.nabla-corner--tr, .nabla-corner--br, .nabla-place),
+html.nabla-ui-hidden
+  :is(
+    .nabla-corner,
+    .nabla-place,
+    .nabla-help,
+    .nabla-status,
+    .nabla-fire-mode,
+    #display-settings,
+    #settings-toggle,
+    #settings-window,
+    .touch-driving-bar
+  ) {
+  visibility: hidden;
+  pointer-events: none;
+}

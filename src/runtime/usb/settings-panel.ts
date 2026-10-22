@@ -50,7 +50,7 @@ export function createUsbSettingsPanel(
     mode.append(o)
   }
   const live = doc.createElement('pre')
-  live.style.cssText = 'font:14px monospace;white-space:pre-wrap;max-height:180px;overflow:auto'
+  live.className = 'nabla-usb-live'
   const bindings = doc.createElement('div')
   const target = doc.createElement('select')
   target.setAttribute('aria-label', 'Control a asignar')
@@ -68,7 +68,7 @@ export function createUsbSettingsPanel(
   }
   const row = (...children: Node[]) => {
     const div = doc.createElement('div')
-    div.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0'
+    div.className = 'nabla-usb-actions'
     div.append(...children)
     root.append(div)
     return div
@@ -340,7 +340,7 @@ export function createUsbSettingsPanel(
   }
   const json = doc.createElement('textarea')
   json.rows = 5
-  json.style.cssText = 'width:100%;font:14px monospace'
+  json.className = 'nabla-usb-json'
   json.setAttribute('aria-label', 'Perfiles USB JSON')
   row(
     button('Exportar perfiles', () => {

@@ -1,0 +1,147 @@
+/*
+ * Nabla engine UI tokens. Every screen-space component (HUD, corner bars, buttons, joysticks,
+ * side menu, settings window, hints, toasts, loading) reads only these custom properties.
+ * Hosts restyle by overriding tokens on :root (see docs/ui-theme.md); they never override rules.
+ * Sizes are plain px: one set for mouse/desktop, one for touch (pointer: coarse).
+ */
+:root {
+  /* Spacing scale (4 px grid). */
+  --nabla-space-1: 2px;
+  --nabla-space-2: 4px;
+  --nabla-space-3: 6px;
+  --nabla-space-4: 8px;
+  --nabla-space-5: 12px;
+  --nabla-space-6: 16px;
+  --nabla-space-7: 24px;
+
+  /* Screen edge margin and the gap between buttons of one bar. */
+  --nabla-ui-margin: 10px;
+  --nabla-btn-gap: 4px;
+
+  /* Corners. */
+  --nabla-radius: 2px;
+  --nabla-radius-panel: 4px;
+  --nabla-radius-pill: 999px;
+
+  /* Type. */
+  --nabla-font: Arial, Helvetica, sans-serif;
+  --nabla-font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --nabla-font-xs: 10px;
+  --nabla-font-sm: 11px;
+  --nabla-font-md: 13px;
+  --nabla-font-lg: 15px;
+  --nabla-font-xl: 18px;
+  --nabla-font-title: 20px;
+
+  /* Bars and buttons (desktop). A bar is one row of buttons: its height is the button height. */
+  --nabla-btn-size: 22px;
+  --nabla-btn-font: 12px;
+  --nabla-btn-key-font: 10px;
+  --nabla-btn-pad: 6px;
+  --nabla-btn-icon: 14px;
+  --nabla-btn-wide: 44px;
+  --nabla-bar-height: var(--nabla-btn-size);
+  /* Text lines that sit under a bar (hints, status) use this line height. */
+  --nabla-hint-font: 13px;
+  --nabla-hint-line: 16px;
+  /* Form controls inside panels (settings window, side menu, page panels). */
+  --nabla-control-height: 28px;
+  --nabla-control-font: 14px;
+
+  /* Joysticks and touch rigs. */
+  --nabla-stick-size: 112px;
+  --nabla-stick-knob: 36px;
+  --nabla-wheel-size: 140px;
+  --nabla-touch-btn: 44px;
+  --nabla-control-edge: 16px;
+  /* Joysticks and the wheel sit just above the bottom bar. */
+  --nabla-control-bottom: calc(
+    var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-space-5)
+  );
+  /* First text row under the top bar (help line, status line). */
+  --nabla-under-bar: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-space-3));
+
+  /* Colors: neutral greys, white accent. */
+  --nabla-color-bg: #121212;
+  --nabla-color-surface: #1e1e1e;
+  --nabla-color-surface-glass: rgba(24, 24, 24, 0.86);
+  --nabla-color-button: #252525;
+  --nabla-color-pressed: #303030;
+  --nabla-color-selected: #3a3a3a;
+  --nabla-color-line: #444444;
+  --nabla-color-line-soft: #363636;
+  --nabla-color-ink: #eeeeee;
+  --nabla-color-muted: #a6a6a6;
+  --nabla-color-accent: #f5f5f5;
+  /* Highlight: primary calls to action and catalog headings (a host brand colour). */
+  --nabla-color-highlight: #f5f5f5;
+  --nabla-color-on-highlight: #111;
+  --nabla-color-danger: #c62828;
+  --nabla-color-go: #2e7d32;
+  --nabla-color-warn: #ffcf5a;
+  --nabla-color-error: #ff4444;
+  --nabla-color-scrim: rgba(0, 0, 0, 0.55);
+  --nabla-color-well: rgba(22, 22, 22, 0.4);
+  --nabla-color-rail: rgba(68, 68, 68, 0.53);
+  --nabla-text-shadow: 0 1px 3px #000;
+  /* Button active colour (lights, high beam set their own on the button). */
+  --nabla-btn-active: var(--nabla-color-accent);
+
+  /* Optional HUD parts: hosts set a token to `none` to drop one. */
+  --nabla-place-display: block;
+  --nabla-speed-display: flex;
+  --nabla-game-hud-display: block;
+  --nabla-legacy-settings-display: block;
+  --nabla-settings-close-display: inline-flex;
+
+  /* Splash (loading screen). */
+  --splash-bg: #000;
+  --splash-fg: #eee;
+  --splash-muted: #888;
+  --splash-accent: #eee;
+  --splash-accent-2: #888;
+  --splash-track: #333;
+  --splash-logo-height: 66px;
+  --splash-mark-bg: #000;
+  /* Parts of the loading screen a host may drop (`none`). */
+  --splash-logo-display: block;
+  --splash-title-display: block;
+  --splash-status-display: block;
+  --splash-progress-display: block;
+
+  /* Z layers, bottom to top. */
+  --nabla-z-world: 0;
+  --nabla-z-hud: 10;
+  --nabla-z-hint: 30;
+  --nabla-z-touch: 44;
+  --nabla-z-bar: 48;
+  --nabla-z-toast: 50;
+  --nabla-z-settings: 100;
+  --nabla-z-menu: 110;
+  --nabla-z-menu-toggle: 120;
+  --nabla-z-loading: 1000;
+  --nabla-z-start: 1004;
+  --nabla-z-error: 2000;
+}
+
+/* Touch: bigger targets, same proportions. */
+@media (pointer: coarse) {
+  :root {
+    --nabla-btn-size: 28px;
+    --nabla-btn-font: 13px;
+    --nabla-btn-pad: 7px;
+    --nabla-btn-icon: 16px;
+    --nabla-btn-wide: 52px;
+    --nabla-control-height: 36px;
+  }
+}
+
+/* Narrow screens: tighter edges. */
+@media (max-width: 600px) {
+  :root {
+    --nabla-ui-margin: 8px;
+    --nabla-control-edge: 8px;
+    --nabla-stick-size: 104px;
+    --nabla-wheel-size: 128px;
+  }
+}

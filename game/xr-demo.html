@@ -1,68 +1,14 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="nabla-page">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Nabla · Quest 3 · Apuntar y HK</title>
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: #17242e;
-        color: #eef4f8;
-        font:
-          16px system-ui,
-          sans-serif;
-      }
-      canvas#viewport {
-        display: block;
-        width: 100vw;
-        height: 100dvh;
-      }
-      aside {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        width: min(420px, calc(100vw - 32px));
-        padding: 20px;
-        border-radius: 16px;
-        background: #101b27ee;
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 22px;
-      }
-      p {
-        line-height: 1.5;
-      }
-      button {
-        padding: 12px 16px;
-        margin: 0 6px 8px 0;
-        border: 0;
-        border-radius: 8px;
-        font: inherit;
-        background: #a9dcff;
-        color: #10202c;
-        cursor: pointer;
-      }
-      button:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-      #status {
-        min-height: 48px;
-      }
-      output {
-        display: block;
-        font-size: 13px;
-      }
-    </style>
+    <script type="module" src="./ui-styles.ts"></script>
   </head>
   <body>
     <canvas id="viewport" aria-label="Coche parado sobre un suelo de prueba"></canvas>
-    <aside>
+    <aside class="nabla-page-card">
       <h1>Nabla · Quest 3: apuntar y HK</h1>
       <p>
         Apunta al coche o a los tres bloques de prueba. Gatillo izquierdo: seleccionar. Gatillo
@@ -80,6 +26,5 @@
       </p>
     </aside>
     <script type="module" src="./xr.ts"></script>
-    <script type="module" src="./interface-theme.ts"></script>
   </body>
 </html>

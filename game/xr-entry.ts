@@ -16,7 +16,7 @@ for (const [vehicle, label] of [
   ['carrier', 'Nave'],
 ]) {
   const row = document.createElement('div')
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px'
+  row.className = 'nabla-panel-columns'
   for (const terrain of [false, true]) {
     const query = new URLSearchParams({ vehicle, solo: '1', quality: 'minimal', diagnostics: '1' })
     if (terrain) {
@@ -37,7 +37,7 @@ for (const [vehicle, label] of [
   tests.append(row)
 }
 const fleet = document.createElement('div')
-fleet.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px'
+fleet.className = 'nabla-panel-links'
 for (const copies of hasVehiclePreset('bmw') ? [1, 5, 10, 20] : []) {
   const link = document.createElement('a')
   link.href = `/xr.html?example=flat&solo=1&vehicle=bmw&copies=${copies}&quality=minimal&diagnostics=1`

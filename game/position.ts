@@ -52,7 +52,7 @@ export async function copyText(text: string): Promise<boolean> {
   const area = document.createElement('textarea')
   area.value = text
   area.setAttribute('readonly', '')
-  area.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
+  area.className = 'nabla-offscreen'
   document.body.append(area)
   area.select()
   try {

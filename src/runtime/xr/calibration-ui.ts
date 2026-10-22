@@ -7,11 +7,9 @@ export function bindXRCalibration(runtime: GameRuntime): void {
   type Pose = ReturnType<typeof calibration.get>
   const panel = document.createElement('details')
   panel.id = 'xr-calibration'
-  panel.style.cssText =
-    'position:fixed;left:12px;top:12px;z-index:10003;width:min(340px,calc(100vw - 100px));max-height:85vh;overflow:auto;background:#102632f5;color:#eefaff;border:1px solid #79bad4;border-radius:10px;padding:12px;font:14px system-ui;box-sizing:border-box'
+  panel.className = 'nabla-panel'
   const title = document.createElement('summary')
   title.textContent = 'Ajustes VR'
-  title.style.cursor = 'pointer'
   panel.append(title)
   const note = document.createElement('p')
   note.textContent =
@@ -19,7 +17,6 @@ export function bindXRCalibration(runtime: GameRuntime): void {
   const select = document.createElement('select')
   select.id = 'xr-calibration-object'
   select.setAttribute('aria-label', 'Objeto VR')
-  select.style.cssText = 'width:100%;padding:8px;margin-bottom:12px'
   for (const [id, name] of Object.entries(calibration.editableObjects)) {
     const option = document.createElement('option')
     option.value = id
@@ -31,7 +28,6 @@ export function bindXRCalibration(runtime: GameRuntime): void {
   const inputs = new Map<keyof Pose, HTMLInputElement>()
   const status = document.createElement('output')
   status.setAttribute('role', 'status')
-  status.style.cssText = 'display:block;margin-top:8px'
   const refresh = () => {
     const pose = calibration.get(select.value as Id)
     const fields = calibration.fields(select.value as Id)
@@ -50,8 +46,7 @@ export function bindXRCalibration(runtime: GameRuntime): void {
     rz: 'Giro Z',
   }) as [keyof Pose, string][]) {
     const row = document.createElement('label')
-    row.style.cssText =
-      'display:grid;grid-template-columns:1fr 88px;gap:8px;align-items:center;margin-bottom:8px'
+    row.className = 'nabla-panel-field'
     const text = document.createTextNode(label)
     labels.set(key, text)
     row.append(text)
@@ -61,7 +56,6 @@ export function bindXRCalibration(runtime: GameRuntime): void {
     input.min = '-360'
     input.max = '360'
     input.id = `xr-adjust-${key}`
-    input.style.cssText = 'width:100%;box-sizing:border-box;padding:6px'
     input.oninput = () => {
       if (!input.validity.valid || !Number.isFinite(input.valueAsNumber)) return
       calibration.set(select.value as Id, { [key]: input.valueAsNumber })
@@ -77,12 +71,11 @@ export function bindXRCalibration(runtime: GameRuntime): void {
     status.textContent = ''
   }
   const actions = document.createElement('div')
-  actions.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:12px'
+  actions.className = 'nabla-panel-actions'
   const button = (label: string, action: () => void) => {
     const b = document.createElement('button')
     b.type = 'button'
     b.textContent = label
-    b.style.cssText = 'padding:8px;cursor:pointer'
     b.onclick = action
     actions.append(b)
     return b

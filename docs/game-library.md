@@ -291,21 +291,22 @@ ancestor dependencies and source-tree aliases cannot hide packaging problems.
 
 ### Shared interface theme (HeadSet and monitors)
 
-`src/runtime/interface-theme.ts` is the shared source for the accepted Agency-style
-palette: surface `#1e1e1e`, controls `#252525`, accent `#2196f3`, 2 px corners,
-20 px text, 36 px minimum control height and no press displacement.
+All engine UI styles live in `src/ui/styles` (tokens first, then components); see
+[UI theme](ui-theme.md) for the token list and how a host overrides them.
 
-- HeadSet, AR and XR HTML entries install it through `game/interface-theme.ts`.
-- Ship and container CSS3D panels and the settings HUD append the same theme through
+- Every game and panel page links `src/ui/styles/index.css`; the runtime installs the same
+  sheets (`installEngineStyles`, `src/ui/styles.ts`) where a page has no link.
+- Ship and container CSS3D panels and the settings window use `monitors.css` through
   `vehicleMonitorStyleText()`; transform and interaction layout remain intact.
-- The AR/VR main menu canvas reads `interfaceTheme` directly. Its hit regions remain
-  at their original size; pressed buttons change colour without moving.
-- The calibration/quality HTML monitor receives `xrMonitorThemeStyles` through
-  `MonitorOptions.styleText`. `HtmlMonitor` appends that trusted inline CSS to its
-  rasterised document, so no external stylesheet fetch or per-frame CSS work is needed.
+- The AR/VR main menu canvas reads `interfaceTheme` (`src/ui/theme.ts`) directly. Its hit
+  regions remain at their original size; pressed buttons change colour without moving.
+- The calibration/quality HTML monitor receives `xrCalibrationStyleText` (tokens plus
+  `xr-calibration.css`) through `MonitorOptions.styleText`. `HtmlMonitor` appends that trusted
+  inline CSS to its rasterised document, so no external stylesheet fetch or per-frame CSS work
+  is needed.
 
-36 px is a minimum for ordinary page controls, not a replacement for the authored
-world-space contact regions. Gauge graphics and physics are independent of the theme.
+36 px is a minimum for world-space monitor controls, not a replacement for the authored
+contact regions. Gauge graphics and physics are independent of the theme.
 
 ### Unified HeadSet entry
 

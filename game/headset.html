@@ -1,130 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="nabla-page">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#121212" />
     <title>Nabla Engine</title>
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-      }
-      main {
-        width: min(1060px, 100%);
-        min-height: 100dvh;
-        margin: auto;
-        padding: 28px;
-        display: grid;
-        align-content: center;
-        gap: 24px;
-      }
-      h1 {
-        margin: 0;
-        text-align: center;
-        font-size: 22px;
-        font-weight: 400;
-      }
-      .modes {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-      }
-      .mode {
-        aspect-ratio: 1;
-        padding: 28px;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-      }
-      .mode header {
-        text-align: center;
-      }
-      .mode-code {
-        margin: 0;
-        font-size: 48px;
-        line-height: 1.1;
-        font-weight: 400;
-      }
-      h2 {
-        margin: 8px 0 0;
-        font-size: 22px;
-      }
-      .description {
-        margin: auto 0;
-        text-align: center;
-        color: #bbb;
-        font-size: 18px;
-        line-height: 1.6;
-      }
-      .selectors {
-        margin: auto 0;
-        display: grid;
-        gap: 14px;
-      }
-      label {
-        display: block;
-        font-size: 16px;
-        margin-bottom: 5px;
-      }
-      select {
-        width: 100%;
-      }
-      #headset-launcher .mode .launch {
-        width: 100%;
-        display: block;
-        text-align: center;
-        padding: 10px;
-        margin-top: 20px;
-        background: #252525;
-        border-color: #444;
-        text-decoration: none;
-      }
-      .launch[aria-disabled='true'] {
-        opacity: 0.45;
-        cursor: default;
-      }
-      #status {
-        margin: 8px 0 0;
-        font-size: 14px;
-        text-align: center;
-      }
-      #status:empty {
-        display: none;
-      }
-      .ar-storage {
-        display: none !important;
-      }
-      #viewport {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100dvh;
-        pointer-events: none;
-      }
-      [hidden] {
-        display: none !important;
-      }
-      @media (max-width: 760px) {
-        main {
-          padding: 20px;
-        }
-        .modes {
-          grid-template-columns: 1fr;
-          width: min(480px, 100%);
-          margin: auto;
-          gap: 20px;
-        }
-        .mode {
-          aspect-ratio: auto;
-          min-height: 420px;
-          width: 100%;
-          padding: 24px;
-        }
-      }
-    </style>
+    <script type="module" src="./ui-styles.ts"></script>
   </head>
   <body>
     <main id="headset-launcher">
@@ -184,6 +65,5 @@
       </div>
     </main>
     <script type="module" src="./headset.ts"></script>
-    <script type="module" src="./interface-theme.ts"></script>
   </body>
 </html>

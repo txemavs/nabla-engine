@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { HoopScoring, type HoopBallSample } from '../simulation/sports/hoop.js'
 import { XRStationPlacement, type StationHand } from './xr-station-placement.js'
-import { interfaceTheme as theme } from './interface-theme.js'
+import { interfaceTheme as theme } from '../ui/theme.js'
 import type { XRDisposalTest } from './xr-disposal-portal.js'
 
 /** Reusable hoop over the host's balls and room World. Placement is the same

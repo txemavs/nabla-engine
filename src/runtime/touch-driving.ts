@@ -1,6 +1,7 @@
 import { touchCoordinates } from './touch-coordinates.js'
 import { GameToolbar } from './game-toolbar.js'
 import { controlDefaults } from '../config/controls.js'
+import { installEngineStyles } from '../ui/styles.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import { touchActionIcon } from './touch-icons.js'
 import { resolveControlProfile, type ControlProfileVehicle } from './control-profiles.js'
@@ -86,95 +87,6 @@ function unitFromEvent(e: PointerEvent, el: HTMLElement, axis: 'x' | 'y') {
   return axis === 'x' ? clampUnit(r.x / (r.width / 2 || 1)) : clampUnit(r.y / (r.height / 2 || 1))
 }
 
-/**
- * Visual contract ported from agency-ui `AgencyStageDriveRig.vue` (CSS wheel,
- * accelerator rail/knob, red handbrake, turbo). Mapping from `drive.ts`.
- */
-const styles = `
-.touch-driving { display: none; position: absolute; inset: auto 8px 8px; z-index: 45;
- width: calc(100% - 16px); pointer-events: none; justify-content: space-between;
- align-items: flex-end; }
-.touch-driving > style { display: none; }
-.touch-driving-bar { display: flex; flex-direction: row; justify-content: flex-start; gap: 8px;
- align-self: end; margin-bottom: 8px; pointer-events: none; }
-.touch-driving-stack, .touch-driving-gas, .touch-driving-lever, .touch-driving-turbo,
-.touch-driving-wheel, .touch-driving-pilot { pointer-events: auto; touch-action: none;
- user-select: none; -webkit-user-select: none; }
-.touch-driving-stack { display: flex; flex-direction: column; align-items: center; }
-.touch-driving-lever { position: relative; width: 56px; height: 72px; margin-bottom: 6px; }
-.touch-driving-hb { position: absolute; left: 50%; width: 40px; height: 40px;
- margin: 0 0 0 -20px; border-radius: 50%; display: flex; align-items: center;
- justify-content: center; }
-.touch-driving-hb-dot { width: 18px; height: 18px; border-radius: 50%;
- background: radial-gradient(circle at 35% 30%, #ff6a48, #c41810 72%);
- box-shadow: inset 0 1px 0 rgba(255, 220, 200, 0.45); }
-.touch-driving-lever.is-on .touch-driving-hb-dot {
- background: radial-gradient(circle at 35% 30%, #ff8a60, #ff2a12 72%);
- box-shadow: 0 0 10px rgba(255, 60, 20, 0.55), inset 0 1px 0 rgba(255, 220, 200, 0.55); }
-.touch-driving-turbo { width: 36px; height: 36px; margin: 0 0 8px; padding: 0; border: none;
- border-radius: 50%; cursor: pointer;
- background: radial-gradient(circle at 35% 30%, #6ec8ff, #1568d8 72%);
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(200, 230, 255, 0.55); }
-.touch-driving-turbo.is-on {
- background: radial-gradient(circle at 35% 30%, #b8e4ff, #1a7cff 68%);
- box-shadow: 0 0 14px rgba(255, 255, 255, 0.75), inset 0 1px 0 rgba(230, 245, 255, 0.7); }
-.touch-driving-gas { position: relative; width: 48px; height: 140px; }
-.touch-driving-rail { position: absolute; left: 50%; top: 16px; bottom: 16px; width: 4px;
- margin-left: -2px; border-radius: 2px; background: rgba(220, 232, 244, 0.16); }
-.touch-driving-knob { position: absolute; left: 50%; width: 40px; height: 40px;
- margin: -20px 0 0 -20px; border-radius: 50%;
- background: radial-gradient(circle at 35% 30%, #f4f7fb, #b8c4d0 70%);
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7);
- transition: top 40ms linear; }
-/* Cockpit twist ring (circular visual; square hit target). Gated by showPilotTouchRing. */
-.touch-driving-pilot { position: absolute; left: 50%; top: auto; bottom: 52%; width: 180px;
- height: 180px; margin: 0 0 0 -90px; display: none; }
-.touch-driving.is-pilot .touch-driving-pilot { display: block; }
-.touch-driving-pilot-ring { display: block; width: 100%; height: 100%; border-radius: 50%;
- border: 2px solid rgba(220, 232, 244, 0.16);
- box-shadow: inset 0 0 0 48px rgba(8, 12, 16, 0.04); pointer-events: none; }
-.touch-driving-wheel { width: 148px; height: 148px; }
-.touch-driving-rim { display: block; width: 100%; height: 100%; border-radius: 50%;
- border: 14px solid #2a3036;
- box-shadow: inset 0 0 0 6px #0c0e10, 0 4px 16px rgba(0, 0, 0, 0.55);
- background: linear-gradient(90deg, transparent 46%, #1c2024 46%, #1c2024 54%, transparent 54%),
-  radial-gradient(circle at 50% 50%, #121518 0 38%, transparent 39%);
- opacity: 0.72; transition: transform 40ms linear; }
-.touch-driving button.touch-driving-action { pointer-events: auto; touch-action: none;
- user-select: none; min-height: 52px; min-width: 52px; background: #111827dd; color: #fff;
- border: 1px solid #66758d; border-radius: 10px; font: 14px system-ui, sans-serif; }
-.touch-driving button.touch-driving-action:active { background: #2563eb; }
-.touch-driving.is-idle { opacity: .72; }
-.touch-driving[data-visibility="always"] { display: flex; }
-.touch-driving[data-visibility="hidden"] { display: none; }
-@media (pointer: coarse) { .touch-driving[data-visibility="auto"] { display: flex; } }
-/* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
-.touch-driving[hidden] { display: none !important; }
-/* Fixed HUD chrome: accel + wheel slots always reserve space so entering a car does not jump the button row. */
-.touch-driving-chrome { display: flex; flex-direction: row; align-items: flex-end; gap: 10px;
- pointer-events: none; }
-.touch-driving-place { pointer-events: none; min-width: 120px; max-width: 220px; margin: 0 0 10px;
- color: #fff; text-shadow: 0 1px 4px #000; font-family: system-ui, sans-serif; }
-.touch-driving-city { font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; line-height: 1.1; }
-.touch-driving-street { font-size: 13px; opacity: 0.9; margin-top: 2px; }
-.touch-driving:not(.is-driving) .touch-driving-stack,
-.touch-driving:not(.is-driving) .touch-driving-wheel,
-.touch-driving:not(.is-driving) .touch-driving-pilot {
- visibility: hidden; pointer-events: none; }
-.touch-driving button.touch-driving-action { display: inline-flex; align-items: center; justify-content: center;
- padding: 0; width: 52px; height: 52px; }
-.touch-driving button.touch-driving-action svg { display: block; }
-/* Coarse pointers: action buttons stack on the left, above the clock (HUD is bottom: 16px).
-   Gas and brake sit just left of the wheel so the right and the bottom stay free to grab. */
-@media (pointer: coarse) {
-  .touch-driving-bar { position: absolute; left: 0; bottom: 132px; flex-direction: column;
-    margin-bottom: 0; }
-  .touch-driving-stack { position: absolute; right: 164px; bottom: 0; }
-  .touch-driving-place { margin-bottom: 320px; }
-}
-/* Host brand owns the top-left; do not bump .nabla-game-hud up. */
-
-`
 
 /** Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases. */
 export class TouchDriving {
@@ -206,9 +118,7 @@ export class TouchDriving {
   ) {
     this.root.className = 'touch-driving'
     this.root.dataset.visibility = visibility
-    const style = document.createElement('style')
-    style.textContent = styles
-    this.root.append(style)
+    installEngineStyles(document)
     this.root.setAttribute('aria-label', this.text('Touch controls'))
 
     const stack = document.createElement('div')
@@ -262,11 +172,11 @@ export class TouchDriving {
     stack.append(this.lever, this.turbo, gas)
 
     const place = document.createElement('div')
-    place.className = 'touch-driving-place'
+    place.className = 'touch-driving-place nabla-place'
     this.placeCity = document.createElement('div')
-    this.placeCity.className = 'touch-driving-city'
+    this.placeCity.className = 'touch-driving-city nabla-place-city'
     this.placeStreet = document.createElement('div')
-    this.placeStreet.className = 'touch-driving-street'
+    this.placeStreet.className = 'touch-driving-street nabla-place-street'
     place.append(this.placeCity, this.placeStreet)
 
     const chrome = document.createElement('div')

@@ -2,7 +2,7 @@ import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
-import { settingsNavigationStyles } from './settings-navigation-styles.js'
+import { installEngineStyles } from '../src/ui/styles.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
 import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
@@ -184,7 +184,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   win.setAttribute('aria-label', t('settings.settings'))
 
   const console = doc.createElement('div')
-  console.className = 'portal-console settings-console'
+  console.className = 'settings-console'
   const title = doc.createElement('strong')
   title.textContent = doc.documentElement.dataset.appName ?? t('settings.nabla-settings')
   const tabBar = doc.createElement('div')
@@ -1674,11 +1674,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     attributeFilter: ['data-settings-hidden'],
   })
 
-  const style = doc.createElement('style')
-  style.id = 'nabla-settings-hud-layout'
-  style.textContent = settingsNavigationStyles
-
-  doc.head.append(style)
+  installEngineStyles(doc)
   doc.body.append(toggle, win)
 
   planetPanel.bind(runtime)

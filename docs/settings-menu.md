@@ -2,8 +2,8 @@
 
 The Euskadi Online clock opens the HTML monitor defined in `game/settings-hud.ts`. While it is
 open, the same button shows a down arrow that folds the monitor away. It is the only close
-button; Escape closes too. Both return focus to the game. The style uses the variables and
-controls of `src/runtime/interface-theme.ts`, shared with the in-world monitors. This is the
+button; Escape closes too. Both return focus to the game. The style is `src/ui/styles/settings.css`, built on the engine UI tokens
+([UI theme](ui-theme.md)). This is the
 desktop interface: it does not change the XR/AR monitor menus or any simulation parameter.
 UI labels are Spanish (the game's language); this document and the code are English.
 
