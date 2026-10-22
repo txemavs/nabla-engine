@@ -239,19 +239,34 @@ export {
   AVATAR_STRIDE_SPEED,
   PlayerBody,
   PlayerBodyRig,
+  PLAYER_BODY_COLOR_SLOTS,
+  WEAPON_SOCKET,
   localAvatarState,
+  type PlayerBodyAttachment,
+  type PlayerBodyColorSlot,
   type AvatarAnimState,
   type AvatarInput,
   type AvatarNetState,
   type PlayerBodyAssets,
 } from '../render/entity/player-body.js'
-/** The engine's default player body (assets/avatar, credits in assets/avatar/LICENSES.md). */
-const DEFAULT_PLAYER_BODY: PlayerBodyAssets = {
-  model: '/avatar/avatar.glb',
+/**
+ * The engine's default player body: Gepeto's "prota" with belt, holster (holstered USP) and
+ * baton (assets/avatar/prota, credits in its LICENSES.md), animated by assets/avatar's clips.
+ */
+const PROTA = '/avatar/prota/prota'
+export const DEFAULT_PLAYER_BODY: PlayerBodyAssets = {
+  model: `${PROTA}.glb`,
   animations: '/avatar/avatar.anims.glb',
+  attachments: [
+    { model: `${PROTA}.belt.glb`, socket: 'BeltSocket' },
+    { model: `${PROTA}.holster.glb`, socket: 'HolsterSocket' },
+    { model: `${PROTA}.holster-usp.glb`, socket: 'HolsterGunSocket', role: 'holstered' },
+    { model: `${PROTA}.baton.glb`, socket: 'BatonSocket' },
+  ],
 }
 import {
   PlayerBodyRig,
+  type PlayerBody,
   type AvatarNetState,
   type PlayerBodyAssets,
 } from '../render/entity/player-body.js'
@@ -581,7 +596,6 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 /** A frame that yields the game step result (a promise when physics runs in a worker). */
 type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
 type FrameSteps = Generator<unknown, void, unknown>
-
 
 /** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
 export interface WeaponProp {
@@ -2484,6 +2498,7 @@ export class GameRuntime {
       this.heldWeapon.visible = this.heldDrawn && !sim.player.vehicleId
       this.heldWeapon.syncWorld(this.view.avatar, time, eyes)
     }
+    this.weaponsToHand()
     this.updateBow(sim, dt)
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
@@ -2529,6 +2544,7 @@ export class GameRuntime {
             )
           : this.camera.up,
       )
+      this.weaponsToHand()
       if (!this.fireModeBadge && this.options.canvas.parentElement)
         this.fireModeBadge = new FireModeBadge(this.options.canvas.parentElement)
       this.fireModeBadge?.show(
@@ -3039,6 +3055,7 @@ export class GameRuntime {
     if (this.sidearm) {
       this.sidearm.visible = !inspector
       this.sidearm.syncWorld(this.view.avatar, time, false)
+      this.weaponsToHand()
     }
     try {
       if (!inspector) this.renderer.setScissor(0, 0, 1, 1)
@@ -5574,7 +5591,23 @@ export class GameRuntime {
    * hangs from the same frame and hip pose as the local player's third-person weapon. Call
    * `update(now)` every frame and `dispose()` when done. Null for an unknown or placeholder slot.
    */
-  async createWeaponProp(slot: number): Promise<WeaponProp | null> {
+  /**
+   * Third-person weapons on the local body: the drawn one's grip at the hand socket (aim kept),
+   * the holstered pistol shown only with empty hands. No-op without a body or sockets.
+   */
+  private weaponsToHand(): void {
+    const body = this.view.localPlayerBody
+    if (!body) return
+    body.setHolstered(!(this.weaponDrawn || this.heldDrawn))
+    for (const object of [this.heldWeapon?.worldObject, this.sidearm?.worldObject])
+      if (object?.visible) body.holdAtHand(object, true)
+  }
+  /**
+   * A weapon for another player. Pass that player's `body` to hold it at the body's
+   * `WeaponSocket_R` (and hide its holstered pistol while shown); without one it floats at the
+   * standing pose like before.
+   */
+  async createWeaponProp(slot: number, body?: PlayerBody | null): Promise<WeaponProp | null> {
     const entry = weaponSlots().find((item) => item.slot === slot)
     if (!entry || entry.kind === 'placeholder') return null
     const root = new THREE.Group()
@@ -5590,8 +5623,15 @@ export class GameRuntime {
     return {
       root,
       slot,
-      update: (now = performance.now()) => weapon.syncWorld(frame, now, false),
+      update: (now = performance.now()) => {
+        weapon.syncWorld(frame, now, false)
+        const object = weapon.worldObject
+        if (!body || !object) return
+        body.setHolstered(!root.visible)
+        if (root.visible) body.holdAtHand(object)
+      },
       dispose: () => {
+        body?.setHolstered(true)
         weapon.dispose()
         root.removeFromParent()
       },

@@ -651,6 +651,10 @@ export class SceneView {
     // A body brings its own head: the monitor helmet is the head-only avatar (no body) alone.
     this.monitor.visible = !body
   }
+  /** The local player's body, or null (monitor helmet only). */
+  get localPlayerBody(): PlayerBody | null {
+    return this.playerBody
+  }
   /** The local player's body state for the network (null without a body). */
   get avatarNetState(): AvatarNetState | null {
     return this.playerNetState

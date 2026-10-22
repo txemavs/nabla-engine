@@ -118,6 +118,11 @@ export class HeldWeapon {
     this.nocked.position.set(0, 0, nock.z - bowString.arrowLead)
   }
 
+  /** The third-person copy made by {@link syncWorld}, or null. */
+  get worldObject(): THREE.Group | null {
+    return this.world
+  }
+
   /** Third-person copy on the avatar; hidden in first person. */
   syncWorld(parent: THREE.Object3D, now: number, firstPerson: boolean): void {
     if (!this.enabled || firstPerson || !this.source || !this.preset.world) {

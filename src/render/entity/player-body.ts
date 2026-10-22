@@ -7,7 +7,11 @@
  *
  * Asset contract: glTF, metres, Y-up, facing +Z, feet at y = 0, clips named as the states,
  * no root motion (the game moves the object). An `Object3D` with
- * `userData.nabla_attach === 'createMonitorAvatar'` is the head socket.
+ * `userData.nabla_attach === 'createMonitorAvatar'` is the head socket. Optional named sockets:
+ * `WeaponSocket_R` (held weapon: −Z barrel, +Y top; the weapon's `GripSocket` lands on it) and
+ * any socket an {@link PlayerBodyAttachment} names (belt, holster, baton…). Materials may carry
+ * `extras.nabla_color_slot` (`primary` / `secondary` / `tertiary` / `light`) for
+ * {@link PlayerBodyAssets.colors}.
  */
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -46,7 +50,30 @@ export interface AvatarNetState {
 export interface PlayerBodyAssets {
   model: string
   animations: string
+  /** Static parts hung at sockets, in order (a later part may use a socket of an earlier one). */
+  attachments?: readonly PlayerBodyAttachment[]
+  /** Colour overrides per material colour slot; unset slots keep the authored colour. */
+  colors?: Partial<Record<PlayerBodyColorSlot, THREE.ColorRepresentation>>
 }
+
+/** A static glTF part (belt, holster, holstered pistol…) attached at a named socket. */
+export interface PlayerBodyAttachment {
+  model: string
+  /** Name of the socket node in the body or in an earlier attachment. */
+  socket: string
+  /**
+   * `holstered`: the weapon shown on the body while no weapon is drawn
+   * ({@link PlayerBody.setHolstered}). Its `GripSocket`, if any, is ignored: the root sits at
+   * the socket.
+   */
+  role?: 'holstered'
+}
+
+export const PLAYER_BODY_COLOR_SLOTS = ['primary', 'secondary', 'tertiary', 'light'] as const
+export type PlayerBodyColorSlot = (typeof PLAYER_BODY_COLOR_SLOTS)[number]
+/** Socket the held weapon's `GripSocket` is placed on. */
+export const WEAPON_SOCKET = 'WeaponSocket_R'
+const HOLSTERED = 'nabla_holstered'
 
 /** Speeds the clips were authored for, m/s: their playback rate follows the real speed. */
 export const AVATAR_STRIDE_SPEED = { walk: 1.4, run: 3.5, crouch_walk: 0.8 } as const
@@ -104,11 +131,30 @@ export class PlayerBodyRig {
   static async load(assets: PlayerBodyAssets): Promise<PlayerBodyRig> {
     await MeshoptDecoder.ready
     const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
-    const [model, animations] = await Promise.all([
+    const parts = assets.attachments ?? []
+    const [model, animations, ...loaded] = await Promise.all([
       loader.loadAsync(assets.model),
       assets.animations === assets.model ? null : loader.loadAsync(assets.animations),
+      ...parts.map((part) => loader.loadAsync(part.model)),
     ])
-    return new PlayerBodyRig(model.scene, (animations ?? model).animations)
+    const source = model.scene
+    parts.forEach((part, index) => {
+      const socket = source.getObjectByName(part.socket)
+      if (!socket) {
+        console.warn(`player body: no socket ${part.socket} for ${part.model}`)
+        return
+      }
+      const scene = loaded[index].scene
+      scene.name =
+        part.model
+          .split('/')
+          .pop()
+          ?.replace(/\.glb$/, '') ?? 'attachment'
+      if (part.role === 'holstered') scene.userData[HOLSTERED] = true
+      socket.add(scene)
+    })
+    if (assets.colors) recolor(source, assets.colors)
+    return new PlayerBodyRig(source, (animations ?? model).animations)
   }
   /** A new body sharing this rig's geometry, materials and clips. */
   create(): PlayerBody {
@@ -116,12 +162,39 @@ export class PlayerBodyRig {
   }
 }
 
+function recolor(root: THREE.Object3D, colors: NonNullable<PlayerBodyAssets['colors']>): void {
+  const done = new Map<THREE.Material, THREE.Material>()
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh
+    if (!mesh.isMesh) return
+    const swap = (material: THREE.Material): THREE.Material => {
+      const slot = material.userData?.nabla_color_slot as PlayerBodyColorSlot | undefined
+      const color = slot ? colors[slot] : undefined
+      if (color === undefined || !('color' in material)) return material
+      let copy = done.get(material)
+      if (!copy) {
+        copy = material.clone()
+        ;(copy as THREE.MeshStandardMaterial).color.set(color)
+        done.set(material, copy)
+      }
+      return copy
+    }
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material)
+  })
+}
+
+const scratch = new THREE.Matrix4()
+const gripInverse = new THREE.Matrix4()
+
 /** One player's body: its own skeleton and mixer over the shared rig. */
 export class PlayerBody {
   /** Feet origin; facing −Z at yaw 0 like every game object. */
   readonly root = new THREE.Group()
   /** The head socket, or null when the asset has none. */
   readonly head: THREE.Object3D | null
+  /** Where a held weapon's grip goes ({@link WEAPON_SOCKET}), or null. */
+  readonly weaponSocket: THREE.Object3D | null
+  private readonly holstered: THREE.Object3D[] = []
   private readonly mixer: THREE.AnimationMixer
   private readonly actions = new Map<AvatarAnimState, THREE.AnimationAction>()
   private current: THREE.AnimationAction | null = null
@@ -135,9 +208,11 @@ export class PlayerBody {
     let head: THREE.Object3D | null = null
     model.traverse((object) => {
       if (object.userData.nabla_attach === 'createMonitorAvatar') head = object
+      if (object.userData[HOLSTERED]) this.holstered.push(object)
       if ((object as THREE.Mesh).isMesh) object.frustumCulled = false
     })
     this.head = head
+    this.weaponSocket = model.getObjectByName(WEAPON_SOCKET) ?? null
     this.mixer = new THREE.AnimationMixer(model)
     for (const state of AVATAR_ANIM_STATES) {
       const clip = THREE.AnimationClip.findByName(clips as THREE.AnimationClip[], state)
@@ -188,6 +263,50 @@ export class PlayerBody {
     if (!this.head) return null
     this.root.updateWorldMatrix(true, true)
     return frame.worldToLocal(this.head.getWorldPosition(target))
+  }
+
+  /** True when the body has a holstered weapon part. */
+  get hasHolster(): boolean {
+    return this.holstered.length > 0
+  }
+
+  /** Show or hide the holstered weapon (hide it while the player holds a weapon). */
+  setHolstered(visible: boolean): void {
+    for (const object of this.holstered) object.visible = visible
+  }
+
+  /**
+   * Move `weapon` (already in the scene graph) so its `GripSocket` (or its origin when it has
+   * none) sits on the hand's weapon socket. Call after {@link animate}. False without a socket.
+   * `keepOrientation`: only move it (the caller already aimed it); else take the socket's turn.
+   */
+  holdAtHand(weapon: THREE.Object3D, keepOrientation = false): boolean {
+    const socket = this.weaponSocket
+    const parent = weapon.parent
+    if (!socket || !parent) return false
+    this.root.updateWorldMatrix(true, true)
+    weapon.updateWorldMatrix(true, true)
+    const grip = weapon.getObjectByName('GripSocket')
+    if (keepOrientation) {
+      const target = socket.getWorldPosition(new THREE.Vector3())
+      const at = grip && grip !== weapon ? grip.getWorldPosition(new THREE.Vector3()) : null
+      const from = at ?? weapon.getWorldPosition(new THREE.Vector3())
+      const delta = parent.worldToLocal(target.clone()).sub(parent.worldToLocal(from))
+      weapon.position.add(delta)
+      weapon.updateMatrixWorld(true)
+      return true
+    }
+    gripInverse.identity()
+    if (grip && grip !== weapon)
+      gripInverse.copy(weapon.matrixWorld).invert().multiply(grip.matrixWorld).invert()
+    scratch
+      .copy(parent.matrixWorld)
+      .invert()
+      .multiply(socket.matrixWorld)
+      .multiply(gripInverse)
+      .decompose(weapon.position, weapon.quaternion, weapon.scale)
+    weapon.updateMatrixWorld(true)
+    return true
   }
 
   dispose(): void {
