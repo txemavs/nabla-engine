@@ -5573,8 +5573,10 @@ export class GameRuntime {
    * whose snapshots name the slot they hold). `root` stands at the feet; inside it the weapon
    * hangs from the same frame and hip pose as the local player's third-person weapon. Call
    * `update(now)` every frame and `dispose()` when done. Null for an unknown or placeholder slot.
+   * With `grip`, `root` is the weapon itself (no body frame or hip offset), for hosts that
+   * place it at a hand, a holster or on the ground; it faces −Z like the avatar.
    */
-  async createWeaponProp(slot: number): Promise<WeaponProp | null> {
+  async createWeaponProp(slot: number, options: { grip?: boolean } = {}): Promise<WeaponProp | null> {
     const entry = weaponSlots().find((item) => item.slot === slot)
     if (!entry || entry.kind === 'placeholder') return null
     const root = new THREE.Group()
@@ -5583,6 +5585,11 @@ export class GameRuntime {
     const frame = new THREE.Group()
     frame.position.y = simulationDefaults.playerHalfHeight
     root.add(frame)
+    if (options.grip) {
+      // Undo the third-person hip offset so the weapon sits at the root.
+      const hip = entry.kind === 'firearm' ? [0.24, -0.16, -0.32] : (entry.preset.world?.position ?? [0, 0, 0])
+      frame.position.set(-hip[0], -hip[1], -hip[2])
+    }
     const weapon =
       entry.kind === 'firearm' ? this.createSidearm(entry.preset) : new HeldWeapon(entry.preset)
     await weapon.ready
