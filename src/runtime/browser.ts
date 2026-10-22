@@ -5597,6 +5597,14 @@ export class GameRuntime {
       },
     }
   }
+  /**
+   * Where the player looks, as [yaw, pitch] in radians (yaw 0 faces −Z like the avatar, pitch up
+   * positive): the aim other clients give a held weapon.
+   */
+  get aimAngles(): [number, number] {
+    const d = this.camera.getWorldDirection(new THREE.Vector3())
+    return [Math.atan2(-d.x, -d.z), Math.asin(THREE.MathUtils.clamp(d.y, -1, 1))]
+  }
   /** Active numbered slot, or null with empty hands. */
   get activeWeaponSlot(): number | null {
     const id = this.heldDrawn

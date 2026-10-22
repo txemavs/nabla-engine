@@ -183,6 +183,63 @@ export class PlayerBody {
     this.animate(state.animState, state.speed, dt)
   }
 
+  /**
+   * Bones of one arm (upper arm, forearm, hand), found by name: `<Left|Right>Arm`,
+   * `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig:`). Null when
+   * the rig has no such bones.
+   */
+  armBones(hand: 'left' | 'right'): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null {
+    const cached = this.arms.get(hand)
+    if (cached !== undefined) return cached
+    const side = hand === 'left' ? 'Left' : 'Right'
+    const find = (suffix: string) => {
+      let found: THREE.Object3D | null = null
+      const tail = new RegExp(`(^|[:_])${side}${suffix}$`)
+      this.root.traverse((object) => {
+        if (!found && tail.test(object.name)) found = object
+      })
+      return found as THREE.Object3D | null
+    }
+    const arm = find('Arm')
+    const forearm = find('ForeArm')
+    const handBone = find('Hand')
+    const chain = arm && forearm && handBone ? { arm, forearm, hand: handBone } : null
+    this.arms.set(hand, chain)
+    return chain
+  }
+  private readonly arms = new Map<
+    'left' | 'right',
+    { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null
+  >()
+
+  /**
+   * Point one arm straight along `direction` (world space), over the animated pose: call after
+   * {@link animate}/{@link apply} every frame (e.g. a held pistol aimed where the player looks).
+   */
+  aimArm(hand: 'left' | 'right', direction: THREE.Vector3): void {
+    const chain = this.armBones(hand)
+    if (!chain || direction.lengthSq() === 0) return
+    const target = direction.clone().normalize()
+    const a = new THREE.Vector3()
+    const b = new THREE.Vector3()
+    const turn = new THREE.Quaternion()
+    const world = new THREE.Quaternion()
+    const parent = new THREE.Quaternion()
+    this.root.updateWorldMatrix(true, true)
+    for (const [bone, child] of [
+      [chain.arm, chain.forearm],
+      [chain.forearm, chain.hand],
+    ] as const) {
+      const along = child.getWorldPosition(a).sub(bone.getWorldPosition(b)).normalize()
+      turn.setFromUnitVectors(along, target)
+      bone.getWorldQuaternion(world).premultiply(turn)
+      if (bone.parent) bone.parent.getWorldQuaternion(parent)
+      else parent.identity()
+      bone.quaternion.copy(parent.invert().multiply(world))
+      bone.updateWorldMatrix(false, true)
+    }
+  }
+
   /** Head socket position in `frame`'s local space (after the last {@link animate}). */
   headIn(frame: THREE.Object3D, target = new THREE.Vector3()): THREE.Vector3 | null {
     if (!this.head) return null
