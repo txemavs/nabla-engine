@@ -641,13 +641,15 @@ export class SceneView {
   private playerBody: PlayerBody | null = null
   private playerBodyState: AvatarAnimState = 'idle'
   private playerNetState: AvatarNetState | null = null
-  /** Give the player a skinned body under the monitor head (null removes it). */
+  /** Give the player a skinned body (null removes it and shows the monitor helmet alone). */
   setPlayerBody(body: PlayerBody | null): void {
     this.playerBody?.dispose()
     this.playerBody = body
     this.playerBodyState = 'idle'
     this.playerNetState = null
     if (body) this.avatar.add(body.root)
+    // A body brings its own head: the monitor helmet is the head-only avatar (no body) alone.
+    this.monitor.visible = !body
   }
   /** The local player's body state for the network (null without a body). */
   get avatarNetState(): AvatarNetState | null {
