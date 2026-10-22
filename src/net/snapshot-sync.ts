@@ -11,6 +11,7 @@ import {
   quantizeAvatar,
   decodeAvatar,
   type AvatarSample,
+  RELAY_PEER,
 } from './protocol.js'
 
 const wheels = (state: WheelVisuals | null | undefined) =>
@@ -19,6 +20,7 @@ import type { Transport } from './transport.js'
 import { RemoteVehicle, type KinematicHost } from './remote-vehicle.js'
 import { RemoteAvatar, type RemoteAvatarFactory } from './remote-avatar.js'
 import { defaultInterpolation, type InterpolationOptions } from './interpolation.js'
+import { SharedEntities, decodeEntity, type SharedEntityHooks } from './shared-entities.js'
 
 /** Reads the local entity state; `Simulation` satisfies it with entityTransform/entityVelocity. */
 export interface StateSource {
@@ -79,6 +81,12 @@ export interface SnapshotSyncOptions {
    * keep their info and reappear on the next snapshot in range. Off when omitted.
    */
   interest?: InterestRadius
+  /**
+   * Relay-authoritative shared entities (vehicles anyone can take, ground items): the game's
+   * hooks for them. With it, the local entity is only streamed while it is a shared entity we
+   * drive (see `shared`).
+   */
+  shared?: SharedEntityHooks
   /** Local player position for interest checks; defaults to the local entity's position. */
   localPosition?: () => EntityState['position'] | null
   /** Snapshots per second, default 20. */
@@ -124,9 +132,19 @@ export class SnapshotSync {
 
   /** Room this client is in (or joining); see {@link switchRoom}. */
   room: string
+  /** Shared entities of the room (only with the `shared` option). */
+  readonly shared: SharedEntities | null
 
   constructor(private readonly options: SnapshotSyncOptions) {
     this.room = options.room
+    this.shared = options.shared
+      ? new SharedEntities(
+          options.shared,
+          options.host,
+          (kind, data) => this.sendEvent(kind, data),
+          options.interpolation ?? defaultInterpolation,
+        )
+      : null
     this.interval = 1000 / (options.rate ?? 20)
     this.meta = { ...(options.meta ?? {}) }
     this.clock = options.clock ?? (() => performance.now())
@@ -159,6 +177,15 @@ export class SnapshotSync {
         if (!this.within(peer, this.options.interest.hide, here)) this.removeAvatar(peer)
     }
     for (const avatar of this.avatars.values()) avatar.update(now)
+    if (this.shared) {
+      this.shared.update(now)
+      if (this.options.applyExtra)
+        for (const [localId, extra] of this.shared.extras()) {
+          const key = localId + JSON.stringify(extra)
+          if (this.appliedExtra.get(localId) === key) continue
+          if (this.options.applyExtra(localId, extra, '') !== false) this.appliedExtra.set(localId, key)
+        }
+    }
     for (const [peer, remote] of this.remotes) {
       remote.update(now)
       if (!remote.extra || remote.entityId === null || !this.options.applyExtra) continue
@@ -168,7 +195,10 @@ export class SnapshotSync {
         this.appliedExtra.set(peer, key)
     }
     if (this.peerId === null || now - this.lastSent < this.interval) return
-    const id = this.options.localEntity()
+    let id = this.options.localEntity()
+    // Shared mode: stream only a shared entity we drive, tagged with its id.
+    const sharedId = id && this.shared ? this.shared.idOfLocal(id) : null
+    if (this.shared && !(sharedId && this.shared.drives(sharedId))) id = null
     const state = id ? this.read(id) : null
     const avatar = this.readAvatar()
     if (!state && !avatar) return
@@ -182,6 +212,7 @@ export class SnapshotSync {
         ...(state ? { state } : {}),
         ...(avatar ? { avatar } : {}),
         ...(extra ? { extra } : {}),
+        ...(state && sharedId ? { e: sharedId } : {}),
       }),
     )
   }
@@ -286,6 +317,11 @@ export class SnapshotSync {
           color: message.color,
           ...(message.health ? { health: message.health } : {}),
         })
+        if (this.shared) {
+          this.shared.self = message.peer
+          const records = (message.entities ?? []).map(decodeEntity).filter((r) => r !== null)
+          this.shared.reset(records)
+        }
         for (const peer of message.peers) this.add(peer)
         break
       case 'joined':
@@ -303,6 +339,10 @@ export class SnapshotSync {
         this.lastPosition.delete(message.peer)
         break
       case 'event':
+        if (message.peer === RELAY_PEER && this.shared?.receive(message.kind, message.data)) {
+          this.options.onEvent?.({ peer: message.peer, kind: message.kind, data: message.data })
+          break
+        }
         if (message.peer !== this.peerId)
           this.options.onEvent?.({ peer: message.peer, kind: message.kind, data: message.data })
         break
@@ -318,7 +358,9 @@ export class SnapshotSync {
         if (message.peer === this.peerId) break
         if (!message.state && !message.avatar) break
         this.lastPosition.set(message.peer, message.state?.position ?? message.avatar!.p)
-        if (message.state) {
+        if (message.state && message.e && this.shared) {
+          this.shared.push(message.e, message.t, message.state, this.clock(), message.extra)
+        } else if (message.state) {
           if (!this.remotes.has(message.peer))
             this.add(this.peers.get(message.peer) ?? { peer: message.peer, meta: {} })
           this.remotes
@@ -411,6 +453,7 @@ export class SnapshotSync {
   private dropAll(): void {
     for (const peer of [...this.remotes.keys()]) this.remove(peer)
     for (const peer of [...this.avatars.keys()]) this.removeAvatar(peer)
+    this.shared?.clear()
     this.peers.clear()
     this.lastPosition.clear()
     this.peerId = null

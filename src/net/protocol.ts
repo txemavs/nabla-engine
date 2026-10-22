@@ -352,6 +352,8 @@ export const snapshotSchema = z.object({
   state: entityStateSchema.optional(),
   avatar: avatarBlockSchema.optional(),
   extra: extra.optional(),
+  /** Shared entity (see shared-entities.ts) that `state` drives; absent for the sender's own. */
+  e: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/).optional(),
   peer: peerId.optional(),
 })
 export type SnapshotMessage = z.infer<typeof snapshotSchema>
@@ -386,6 +388,8 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     color: color.optional(),
     /** Health per peer from the relay's ledger (combat; absent on older relays). */
     health: z.record(peerId, z.number().min(0).max(10000)).optional(),
+    /** Shared entities of the room, as entity event data (absent on older relays). */
+    entities: z.array(eventData).max(256).optional(),
   }),
   peerInfo.extend({ type: z.literal('joined') }),
   z.object({ type: z.literal('left'), peer: peerId }),
