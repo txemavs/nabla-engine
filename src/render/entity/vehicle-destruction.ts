@@ -4,6 +4,7 @@ import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
+import { TreeFires, fuelCurve, type FireSource } from './tree-fire.js'
 import { createLensFlare } from '../planet/lens-flare.js'
 import { analyticParticles } from './gpu-particles.js'
 import { mergedFlameGeometry, TONGUE_GLSL, WreckFlames } from './wreck-flames.js'
@@ -52,6 +53,34 @@ const FLAME_REALISTIC_GLSL = /* glsl */ `#include <color_fragment>
           diffuseColor.a *= alpha * 0.85;`
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
+/**
+ * Lingering wreck fire at `age` seconds: ignition after the blast, a flare-up as the fuel
+ * catches, fuel-driven decay to {@link explosionTuning.flameSeconds}, then embers that smoulder
+ * for `smoulder` more seconds. `strength` drives the flames (0..~1.25), `flicker` their height,
+ * `light` the fire lamp.
+ */
+export function wreckFire(
+  age: number,
+  flameSeconds: number,
+  smoulder = 10,
+): { strength: number; flicker: number; light: number } {
+  const t = age - 0.4
+  const strength = t > 0 && age < flameSeconds ? fuelCurve(t, flameSeconds - 0.4) : 0
+  const flicker =
+    1 + 0.1 * Math.sin(age * 13.3) * Math.sin(age * 7.1 + 1.3) + 0.06 * Math.sin(age * 29.7)
+  const ember =
+    age >= flameSeconds - 1 && age < flameSeconds + smoulder
+      ? (1 - (age - flameSeconds + 1) / (smoulder + 1)) *
+        (0.8 + 0.35 * Math.sin(age * 2.3) * Math.sin(age * 5.9))
+      : 0
+  return {
+    strength,
+    flicker,
+    light:
+      Math.max(ember, (1.5 + 4.5 * strength) * flicker) * (age < flameSeconds + smoulder ? 1 : 0),
+  }
+}
+
 export class VehicleDestruction {
   private readonly damageSmoke = new Map<
     string,
@@ -203,7 +232,54 @@ export class VehicleDestruction {
     this.flare.intensity.value = 0
     this.flare.mesh.name = 'Explosion lens flare'
     this.space.add(this.flare.mesh)
+    this.trees = new TreeFires(
+      space,
+      () => {
+        const clock = { value: Math.random() * 10 }
+        const kit = this.createFlames(clock, true)
+        return {
+          ...kit,
+          clock,
+          dispose: () => kit.material.dispose(),
+          update: (dt, strength) => {
+            clock.value += dt
+            kit.material.opacity = Math.min(1, strength * 1.4)
+            kit.tongues?.updateBounds()
+          },
+        }
+      },
+      (parent) => {
+        const anchor = new THREE.Object3D()
+        parent.add(anchor)
+        const smoke = new ExhaustSmoke(anchor, this.space, {
+          direction: [0, 1, 0],
+          color: '#1d1b19',
+          size: 1100,
+          emissionRate: 30,
+          capacity: 256,
+          lifetime: 6,
+          riseSpeed: 1.6,
+        })
+        this.root.add(smoke.root)
+        return {
+          root: anchor,
+          update: (dt, emitting, amount) => {
+            smoke.setEnabled(this.smokeEnabled)
+            smoke.setAmount(amount)
+            smoke.update(dt, emitting, 0.7)
+          },
+          dispose: () => {
+            smoke.dispose()
+            anchor.removeFromParent()
+          },
+        }
+      },
+    )
   }
+  /** Fire spreading into trees under burning wrecks and debris. */
+  readonly trees: TreeFires
+  private smokeEnabled = true
+  private readonly fireSources: FireSource[] = []
   /** Small weapon rupture: existing bounded debris pool and swept ground collision. */
   breakWeapon(object: THREE.Group): void {
     this.debris.explode(
@@ -555,11 +631,20 @@ export class VehicleDestruction {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
     this.debris.update(dt, cast)
     this.balloons.update(dt)
+    this.fireSources.length = 0
     for (let i = this.debrisFires.length - 1; i >= 0; i--) {
       const f = this.debrisFires[i]
       f.clock.value += dt
       f.flames.position.copy(f.anchor.position)
-      f.material.opacity = Math.max(0, 1 - f.clock.value / 6)
+      // Burning debris: catches, flares, burns its little fuel out in ~6 s.
+      const fuel = fuelCurve(f.clock.value, 6)
+      f.flames.scale.set(
+        0.28 * (0.6 + 0.4 * fuel),
+        0.28 * (0.45 + 0.6 * fuel),
+        0.28 * (0.6 + 0.4 * fuel),
+      )
+      f.material.opacity = Math.min(1, fuel * 1.4)
+      if (fuel > 0.3) this.fireSources.push({ position: f.flames.position, strength: fuel * 0.6 })
       f.smoke.setEnabled(smokeEnabled)
       f.smoke.update(dt, f.clock.value < 6, 0.5)
       if (f.clock.value > 9 || !f.anchor.parent) {
@@ -571,18 +656,17 @@ export class VehicleDestruction {
     }
     this.light.intensity = 0
     this.flare.intensity.value = 0
+    this.smokeEnabled = smokeEnabled
     for (const burn of this.burns.values()) {
       burn.object.getWorldPosition(burn.flames.position)
       this.space.worldToLocal(burn.flames.position)
       burn.flames.position.y += 0.3
       burn.age += dt
       burn.clock.value = burn.age
-      const intensity =
-        burn.age < 0.4
-          ? 40 * (1 - burn.age / 0.4)
-          : burn.age < explosionTuning.flameSeconds
-            ? 5 + Math.sin(burn.age * 17) * 2
-            : 0
+      const life = wreckFire(burn.age, explosionTuning.flameSeconds)
+      const intensity = burn.age < 0.4 ? 40 * (1 - burn.age / 0.4) : life.light
+      if (life.strength > 0.3)
+        this.fireSources.push({ position: burn.flames.position, strength: life.strength })
       if (!this.fx && intensity > this.light.intensity) {
         this.light.intensity = intensity
         burn.fire.getWorldPosition(this.light.position)
@@ -599,7 +683,10 @@ export class VehicleDestruction {
       }
       const flash = burn.age < 0.4
       burn.fire.visible = flash && !this.fx
-      burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
+      burn.flames.visible = !flash && life.strength > 0.01
+      // Fuel drives the flame size: low at ignition, tall at the flare-up, shrinking as it burns out.
+      const spread = 0.6 + 0.45 * Math.min(1, life.strength)
+      burn.flames.scale.set(spread, (0.45 + 0.7 * life.strength) * life.flicker, spread)
       // Merged tongues sway in the vertex shader from the same age.
       burn.tongues?.updateBounds()
       if (!burn.tongues)
@@ -609,10 +696,7 @@ export class VehicleDestruction {
             (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
           tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
         })
-      burn.flameMaterial.opacity = Math.max(
-        0,
-        Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3),
-      )
+      burn.flameMaterial.opacity = Math.min(1, life.strength * 1.6)
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
         flash ? 0.2 + burn.age * 8 : 0.8 + Math.sin(burn.age * 17) * 0.15,
@@ -630,6 +714,7 @@ export class VehicleDestruction {
       )
       burn.smoke.update(dt, burn.age < explosionTuning.smokeSeconds, 0.8)
     }
+    this.trees.update(dt, this.fireSources)
     for (let i = this.bursts.length - 1; i >= 0; i--) {
       const burst = this.bursts[i]
       burst.age += dt
@@ -796,10 +881,12 @@ export class VehicleDestruction {
     this.light.intensity = 0
     this.flare.intensity.value = 0
     this.flashes.length = 0
+    this.trees.clear()
     this.fx?.clear()
   }
   dispose(): void {
     this.clear()
+    this.trees.dispose()
     this.debris.dispose()
     this.balloons.dispose()
     this.root.removeFromParent()
