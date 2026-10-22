@@ -164,6 +164,18 @@ export const avatarBlockSchema = z.object({
     .optional(),
   h: z.tuple([z.number().int().min(0).max(63), z.number().int().min(0).max(63)]).optional(),
   v: z.tuple([finite.min(-3.2).max(3.2), finite.min(-1.6).max(1.6)]).optional(),
+  /** Held item pose in body space: grip position (m, 1 cm) and quaternion (1e-3). */
+  g: z
+    .tuple([
+      finite.min(-3).max(3),
+      finite.min(-3).max(3),
+      finite.min(-3).max(3),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+    ])
+    .optional(),
 })
 export type AvatarBlock = z.infer<typeof avatarBlockSchema>
 
@@ -179,6 +191,8 @@ export interface AvatarSample {
   inventory?: { i: [number, number, number][]; h: [number, number] }
   /** Aim [yaw, pitch] in radians while something is held. */
   aim?: [number, number]
+  /** Held item pose in body space (see render/entity/held-pose.ts). */
+  held?: { position: Vec3Tuple; quaternion: [number, number, number, number] }
 }
 
 /** Angle wrapped to (−π, π]. */
@@ -208,7 +222,23 @@ export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
           ] as [number, number],
         }
       : {}),
+    ...(sample.held ? { g: quantizeHeld(sample.held) } : {}),
   }
+}
+
+function quantizeHeld(held: NonNullable<AvatarSample['held']>): AvatarBlock['g'] {
+  const c = (v: number, m: number) => Math.max(-m, Math.min(m, v))
+  const [x, y, z, w] = held.quaternion
+  const n = Math.hypot(x, y, z, w) || 1
+  return [
+    +c(held.position[0], 3).toFixed(2),
+    +c(held.position[1], 3).toFixed(2),
+    +c(held.position[2], 3).toFixed(2),
+    +(x / n).toFixed(3),
+    +(y / n).toFixed(3),
+    +(z / n).toFixed(3),
+    +(w / n).toFixed(3),
+  ]
 }
 
 export function decodeAvatar(block: AvatarBlock): AvatarSample {
@@ -220,6 +250,14 @@ export function decodeAvatar(block: AvatarBlock): AvatarSample {
     weapon: block.w ?? 0,
     ...(block.i || block.h ? { inventory: { i: block.i ?? [], h: block.h ?? [0, 0] } } : {}),
     ...(block.v ? { aim: [block.v[0], block.v[1]] as [number, number] } : {}),
+    ...(block.g
+      ? {
+          held: {
+            position: [block.g[0], block.g[1], block.g[2]] as Vec3Tuple,
+            quaternion: [block.g[3], block.g[4], block.g[5], block.g[6]] as [number, number, number, number],
+          },
+        }
+      : {}),
   }
 }
 

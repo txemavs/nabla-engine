@@ -96,7 +96,11 @@ function validAvatar(a) {
     (a.i === undefined || validStacks(a.i)) &&
     (a.h === undefined || (Array.isArray(a.h) && a.h.length === 2 && a.h.every((n) => intIn(n, 0, 63)))) &&
     (a.v === undefined ||
-      (finiteArray(a.v, 2) && Math.abs(a.v[0]) <= 3.2 && Math.abs(a.v[1]) <= 1.6))
+      (finiteArray(a.v, 2) && Math.abs(a.v[0]) <= 3.2 && Math.abs(a.v[1]) <= 1.6)) &&
+    (a.g === undefined ||
+      (finiteArray(a.g, 7) &&
+        a.g.slice(0, 3).every((v) => Math.abs(v) <= 3) &&
+        a.g.slice(3).every((v) => Math.abs(v) <= 1.001)))
   )
 }
 
@@ -298,6 +302,7 @@ export function startRelay({
                   ...(message.avatar.i !== undefined ? { i: message.avatar.i } : {}),
                   ...(message.avatar.h !== undefined ? { h: message.avatar.h } : {}),
                   ...(message.avatar.v !== undefined ? { v: message.avatar.v } : {}),
+                  ...(message.avatar.g !== undefined ? { g: message.avatar.g } : {}),
                 },
               }
             : {}),

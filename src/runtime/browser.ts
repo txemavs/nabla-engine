@@ -1,4 +1,6 @@
 import { createMonitorAvatar } from '../render/entity/avatar.js'
+import type { HeldPose } from '../render/entity/held-pose.js'
+export { defaultHeldPose, holdItem, heldPoseWorld, type HeldPose } from '../render/entity/held-pose.js'
 import { threadedSimulation } from '../simulation/threaded-simulation.js'
 import { PerfMeter } from './perf-meter.js'
 import {
@@ -252,6 +254,7 @@ const DEFAULT_PLAYER_BODY: PlayerBodyAssets = {
 }
 import {
   PlayerBodyRig,
+  type PlayerBody,
   type AvatarNetState,
   type PlayerBodyAssets,
 } from '../render/entity/player-body.js'
@@ -2500,16 +2503,11 @@ export class GameRuntime {
     })
     if (this.heldWeapon) {
       this.heldWeapon.visible = this.heldDrawn && !sim.player.vehicleId
-      this.heldWeapon.syncWorld(this.view.avatar, time, eyes)
+      this.heldWeapon.syncWorld(this.view.avatar, time, eyes || !!this.localHeld)
     }
     this.updateBow(sim, dt)
     this.updateRemoteArrows(sim, dt)
-    this.view.armAim = this.localArmAim
-      ? {
-          hand: this.localArmAim,
-          direction: this.camera.getWorldDirection(this.scratchArmAim),
-        }
-      : null
+    this.view.heldPose = this.localHeld
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.slidePosePreview =
@@ -2546,7 +2544,7 @@ export class GameRuntime {
       this.sidearm.syncWorld(
         this.view.avatar,
         time,
-        eyes || this.sidearmAimPreview,
+        eyes || this.sidearmAimPreview || !!this.localHeld,
         aim,
         this.cameraState.mode === 'map'
           ? new THREE.Vector3(0, 1, 0).applyQuaternion(
@@ -3893,14 +3891,44 @@ export class GameRuntime {
     })
   }
   /**
-   * Point the local body's arm along the look direction (a held weapon aimed where the player
-   * looks), or null to leave the arms to the animation.
+   * The item the local body holds, as a body-space pose (see held-pose.ts): the arm reaches it by
+   * IK each frame, the same as on every other client. null leaves the arms to the animation.
+   * While set, the runtime's own third-person sidearm stays hidden (the host shows the item).
    */
-  setLocalArmAim(hand: 'left' | 'right' | null): void {
-    this.localArmAim = hand
+  setLocalHeldPose(hand: 'left' | 'right', pose: HeldPose | null): void {
+    this.localHeld = pose ? { hand, pose } : null
   }
-  private localArmAim: 'left' | 'right' | null = null
-  private readonly scratchArmAim = new THREE.Vector3()
+  private localHeld: { hand: 'left' | 'right'; pose: HeldPose } | null = null
+  /** Whether the camera is at the player's eyes (first person) right now. */
+  get firstPersonView(): boolean {
+    const sim = this.session.simulation
+    return !!sim && isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
+  }
+  /** The local player's skinned body, once loaded. */
+  get playerBody(): PlayerBody | null {
+    return this.view.localBody
+  }
+  /**
+   * Own the firearm in `slot` without drawing it (picked up), so the holster key can draw it.
+   */
+  grantWeaponSlot(slot: number): boolean {
+    const entry = weaponSlots().find((item) => item.slot === slot)
+    const sim = this.session.simulation
+    if (!entry || entry.kind !== 'firearm' || !sim) return false
+    if (!this.inventory.has(entry.id)) {
+      const position: Vec3Tuple = [...sim.renderPlayerPosition]
+      const id = `slot-${entry.slot}-${entry.id}`
+      this.inventory.add({ id, itemId: entry.id, name: entry.name, position })
+      this.inventory.take(id, position)
+    }
+    this.ownedWeaponId = entry.id
+    if (this.sidearm?.preset?.id !== entry.id) {
+      this.sidearm?.dispose()
+      this.sidearm = this.createSidearm(entry.preset)
+      this.sidearm.visible = this.weaponDrawn
+    }
+    return true
+  }
   private readonly shotListeners = new Set<(shot: ShotReport) => void>()
   /** Observe every shot the local player fires (after its hit is resolved). Returns an unsubscribe. */
   addShotListener(listener: (shot: ShotReport) => void): () => void {

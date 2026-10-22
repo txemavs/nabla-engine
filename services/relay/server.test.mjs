@@ -229,6 +229,13 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
   assert.deepEqual(carried.avatar.i, kit.i)
   assert.deepEqual(carried.avatar.h, kit.h)
   assert.deepEqual(carried.avatar.v, kit.v)
+  // Held item pose: forwarded when bounded, the snapshot dropped otherwise.
+  a.json({ type: 'snapshot', t: 10, seq: 9, avatar: { ...avatar, g: [9, 0, 0, 0, 0, 0, 1] } })
+  const g = [0.2, 1.3, -0.45, 0.1, 0, 0, 0.995]
+  a.json({ type: 'snapshot', t: 11, seq: 10, avatar: { ...avatar, g } })
+  const posed = await b.next('snapshot')
+  assert.equal(posed.t, 11)
+  assert.deepEqual(posed.avatar.g, g)
   // Fire events: forwarded when bounded, dropped otherwise; other kinds unchanged.
   a.json({ type: 'event', kind: 'fire', data: { w: 1, k: 0, o: [0, 1, 0], d: [0, 0, 7] } })
   const fire = { w: 1, k: 0, o: [1.5, 1.2, -3], d: [0, 0.6, -0.8], r: 40 }

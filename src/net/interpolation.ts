@@ -40,6 +40,7 @@ export const avatarSampleOps: SampleOps<AvatarSample> = {
           : k >= 1
             ? b.aim
             : a.aim,
+      held: a.held && b.held ? blendHeld(a.held, b.held, k) : k >= 1 ? b.held : a.held,
     }
   },
   extrapolate: (last, previous, seconds) => {
@@ -204,4 +205,20 @@ export function slerp(
   ]
   const length = Math.hypot(...q) || 1
   return [q[0] / length, q[1] / length, q[2] / length, q[3] / length]
+}
+
+function blendHeld(
+  a: NonNullable<AvatarSample['held']>,
+  b: NonNullable<AvatarSample['held']>,
+  k: number,
+): NonNullable<AvatarSample['held']> {
+  const [ax, ay, az, aw] = a.quaternion
+  let [bx, by, bz, bw] = b.quaternion
+  if (ax * bx + ay * by + az * bz + aw * bw < 0) [bx, by, bz, bw] = [-bx, -by, -bz, -bw]
+  const q = [ax + (bx - ax) * k, ay + (by - ay) * k, az + (bz - az) * k, aw + (bw - aw) * k]
+  const n = Math.hypot(...q) || 1
+  return {
+    position: lerp3(a.position, b.position, k),
+    quaternion: [q[0] / n, q[1] / n, q[2] / n, q[3] / n],
+  }
 }

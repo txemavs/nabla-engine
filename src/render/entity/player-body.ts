@@ -116,6 +116,20 @@ export class PlayerBodyRig {
   }
 }
 
+/** Turn `bone` (world space) so the direction to `child` points along `direction`. */
+function alignBone(bone: THREE.Object3D, child: THREE.Object3D, direction: THREE.Vector3): void {
+  if (direction.lengthSq() === 0) return
+  const along = child
+    .getWorldPosition(new THREE.Vector3())
+    .sub(bone.getWorldPosition(new THREE.Vector3()))
+    .normalize()
+  const turn = new THREE.Quaternion().setFromUnitVectors(along, direction.clone().normalize())
+  const world = bone.getWorldQuaternion(new THREE.Quaternion()).premultiply(turn)
+  const parent = bone.parent ? bone.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion()
+  bone.quaternion.copy(parent.invert().multiply(world))
+  bone.updateWorldMatrix(false, true)
+}
+
 /** One player's body: its own skeleton and mixer over the shared rig. */
 export class PlayerBody {
   /** Feet origin; facing −Z at yaw 0 like every game object. */
@@ -239,6 +253,38 @@ export class PlayerBody {
       bone.quaternion.copy(parent.invert().multiply(world))
       bone.updateWorldMatrix(false, true)
     }
+  }
+
+  /**
+   * Two-bone IK: bend `hand`'s arm so the hand reaches `target` (world space), elbow down and
+   * back; a target out of reach gets the arm stretched toward it. Call after {@link animate}.
+   */
+  reachHand(hand: 'left' | 'right', target: THREE.Vector3): void {
+    const chain = this.armBones(hand)
+    if (!chain) return
+    this.root.updateWorldMatrix(true, true)
+    const a = chain.arm.getWorldPosition(new THREE.Vector3())
+    const b = chain.forearm.getWorldPosition(new THREE.Vector3())
+    const c = chain.hand.getWorldPosition(new THREE.Vector3())
+    const upper = a.distanceTo(b)
+    const lower = b.distanceTo(c)
+    const toTarget = target.clone().sub(a)
+    const d = THREE.MathUtils.clamp(toTarget.length(), 1e-3, upper + lower - 1e-3)
+    const u = toTarget.normalize()
+    // Elbow plane: down and a little back from the body (world down, body back).
+    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()))
+    const pole = new THREE.Vector3(0, -1, 0).addScaledVector(back, 0.4)
+    const n = pole.sub(u.clone().multiplyScalar(pole.dot(u)))
+    if (n.lengthSq() < 1e-6) n.set(0, -1, 0)
+    n.normalize()
+    const cosA = THREE.MathUtils.clamp((upper * upper + d * d - lower * lower) / (2 * upper * d), -1, 1)
+    const elbow = a
+      .clone()
+      .addScaledVector(u, upper * cosA)
+      .addScaledVector(n, upper * Math.sqrt(1 - cosA * cosA))
+    const reach = a.clone().addScaledVector(u, d)
+    alignBone(chain.arm, chain.forearm, elbow.clone().sub(a))
+    alignBone(chain.forearm, chain.hand, reach.sub(chain.forearm.getWorldPosition(new THREE.Vector3())))
   }
 
   /** Head socket position in `frame`'s local space (after the last {@link animate}). */

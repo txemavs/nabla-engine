@@ -75,6 +75,17 @@ describe('avatar samples', () => {
     expect(kit).toMatchObject({ i: [[1, 1, 1]], h: [0, 1], v: [+wrapAngle(7).toFixed(3), 1.57] })
     expect(decodeAvatar(kit)).toMatchObject({ inventory: { i: [[1, 1, 1]], h: [0, 1] } })
     expect(avatarSampleOps.blend({ ...a, aim: [0, 0] }, { ...b, aim: [1, 0.5] }, 0.5).aim).toEqual([0.5, 0.25])
+    // Held item pose (body space): 1 cm / 1e-3 quaternion, normalised; blends.
+    const held = quantizeAvatar({ ...a, held: { position: [0.1234, 1.456, -0.5], quaternion: [0, 0, 0, 2] } })
+    expect(held.g).toEqual([0.12, 1.46, -0.5, 0, 0, 0, 1])
+    expect(decodeAvatar(held).held).toEqual({ position: [0.12, 1.46, -0.5], quaternion: [0, 0, 0, 1] })
+    expect(q.g).toBeUndefined()
+    const mid = avatarSampleOps.blend(
+      { ...a, held: { position: [0, 1, 0], quaternion: [0, 0, 0, 1] } },
+      { ...b, held: { position: [0, 2, 0], quaternion: [0, 0, 0, 1] } },
+      0.5,
+    ).held!
+    expect(mid.position[1]).toBeCloseTo(1.5)
     const { quantizeFire, decodeFire } = await import('../../src/net/protocol.js')
     const fire = quantizeFire({ slot: 1, kind: 0, origin: [1.234, 2, 3], direction: [0, 0, -2], range: 12.3456 })
     expect(fire).toEqual({ w: 1, k: 0, o: [1.23, 2, 3], d: [0, 0, -1], r: 12.35 })
