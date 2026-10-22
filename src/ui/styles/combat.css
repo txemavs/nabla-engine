@@ -1,0 +1,67 @@
+/* Combat HUD (src/ui/combat-hud.ts): health bar bottom centre, hit flash and death notice. */
+.nabla-health {
+  position: fixed;
+  bottom: var(--nabla-ui-margin);
+  left: 50%;
+  z-index: var(--nabla-z-hud);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nabla-space-2);
+  align-items: center;
+  width: var(--nabla-health-width);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.nabla-health[hidden] {
+  display: none;
+}
+.nabla-health-track {
+  width: 100%;
+  height: var(--nabla-space-4);
+  overflow: hidden;
+  border-radius: var(--nabla-radius-pill);
+  background: var(--nabla-color-rail);
+}
+.nabla-health-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--nabla-color-health);
+  transition: width 0.15s ease-out;
+}
+.nabla-health--low .nabla-health-fill {
+  background: var(--nabla-color-health-low);
+}
+.nabla-health-label {
+  color: var(--nabla-color-ink);
+  font: 700 var(--nabla-font-sm) / 1 var(--nabla-font);
+  text-shadow: var(--nabla-text-shadow);
+  font-variant-numeric: tabular-nums;
+}
+.nabla-hit-flash {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nabla-z-hud);
+  background: radial-gradient(ellipse at center, transparent 35%, var(--nabla-hit-flash));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease-out;
+}
+.nabla-hit-flash--on {
+  opacity: 1;
+  transition: none;
+}
+.nabla-death {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  z-index: var(--nabla-z-hint);
+  color: var(--nabla-color-error);
+  font: 700 var(--nabla-font-title) / 1.2 var(--nabla-font);
+  text-align: center;
+  text-shadow: var(--nabla-text-shadow);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.nabla-death[hidden] {
+  display: none;
+}

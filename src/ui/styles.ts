@@ -7,6 +7,7 @@
 import {
   base,
   buttons,
+  combat,
   hud,
   loading,
   menu,
@@ -29,6 +30,7 @@ export const engineStyleSheets = {
   settings,
   panels,
   loading,
+  combat,
 } as const
 
 /** The whole screen-space stylesheet as one string. */

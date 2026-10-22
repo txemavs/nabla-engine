@@ -268,8 +268,12 @@ export const engineEu: Readonly<Record<string, string>> = {
   'scene.sea-level-m': 'Itsas maila (m)',
   'scene.show-the-sea': 'Erakutsi itsasoa',
   'scene.now': 'Orain',
+  'settings.combat': 'Borroka',
+  'settings.combat-note':
+    'Prota panpina bat 3 m aurrean tiro egiteko: burua ×4, lepoa ×2,5, enborra ×1, besoak ×0,6, hankak ×0,75 armaren kaltearen. Erori eta 5 s geroago itzultzen da.',
   'settings.distances': 'Distantziak',
   'settings.default': 'Lehenetsia',
+  'settings.dummies': 'Panpinak: {count}',
   'settings.keys': 'Teklak',
   'settings.keys.action': 'Ekintza',
   'settings.keys.search': 'Bilatu ekintza edo tekla…',
@@ -285,6 +289,8 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.keys.ctx.aiming': 'Mira jartzen',
   'settings.keys.ctx.menu': 'Menuak',
   'settings.keys.ctx.viewer': 'Ikustaile librea',
+  'settings.remove-dummies': 'Panpinak kendu',
+  'settings.spawn-dummy': 'Proba-panpina jarri',
   'usb.title': 'USB gailuak',
   'usb.note':
     'Konektatu bolantea edo joystick-a eta mugitu ardatz bat edo sakatu botoi bat. Kalibratu gidatu aurretik. Jokora itzultzean, utzi kontrolak geldirik aktibatzeko.',

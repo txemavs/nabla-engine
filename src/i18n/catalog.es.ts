@@ -267,8 +267,12 @@ export const engineEs: Readonly<Record<string, string>> = {
   'scene.sea-level-m': 'Nivel del mar (m)',
   'scene.show-the-sea': 'Mostrar el mar',
   'scene.now': 'Ahora',
+  'settings.combat': 'Combate',
+  'settings.combat-note':
+    'Un muñeco prota a 3 m para disparar: cabeza ×4, cuello ×2,5, torso ×1, brazos ×0,6, piernas ×0,75 del daño del arma. Reaparece 5 s después de caer.',
   'settings.distances': 'Distancias',
   'settings.default': 'Por defecto',
+  'settings.dummies': 'Muñecos: {count}',
   'settings.keys': 'Teclas',
   'settings.keys.action': 'Acción',
   'settings.keys.search': 'Buscar acción o tecla…',
@@ -284,6 +288,8 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.keys.ctx.aiming': 'Apuntando',
   'settings.keys.ctx.menu': 'Menús',
   'settings.keys.ctx.viewer': 'Visor libre',
+  'settings.remove-dummies': 'Quitar muñecos',
+  'settings.spawn-dummy': 'Poner muñeco de prueba',
   'usb.title': 'Dispositivos USB',
   'usb.note':
     'Conecta el volante o joystick y mueve un eje o pulsa un botón. Calibra antes de conducir. Al volver al juego, deja los controles en reposo para activarlos.',

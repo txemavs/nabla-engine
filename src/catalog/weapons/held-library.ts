@@ -30,6 +30,8 @@ const heldSchema = z
     model: z.string().min(1).max(200).optional(),
     /** Use only this named node of `model` (for example the bow without its arrow). */
     node: z.string().min(1).max(120).optional(),
+    /** Base damage of one hit on a character (× hit-zone multiplier, docs/combat.md). */
+    damage: z.number().finite().min(0).max(1000).optional(),
     scale: z.number().finite().positive().max(10).default(1),
     /** Bow binding id (engine bowModels, e.g. `recurve-bow`): the same bow and string cut as
      * the headset bow; replaces `model`, `node` and `scale`. */
