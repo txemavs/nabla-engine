@@ -122,6 +122,14 @@ export class HeldWeapon {
   get worldObject(): THREE.Group | null {
     return this.world
   }
+  /**
+   * Where a shot leaves the third-person copy (the bow's arrow rest at its grip), world space;
+   * null while it is not shown.
+   */
+  worldOrigin(target = new THREE.Vector3()): THREE.Vector3 | null {
+    if (!this.world?.visible) return null
+    return this.world.getWorldPosition(target)
+  }
 
   /** Third-person copy on the avatar; hidden in first person. */
   syncWorld(parent: THREE.Object3D, now: number, firstPerson: boolean): void {

@@ -79,11 +79,72 @@ const eventData = z
 export type NetEventData = Record<string, number | boolean | string | number[]>
 const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
 
+/** Event kind of {@link fireEventSchema}. */
+export const FIRE_EVENT = 'fire'
+/**
+ * A shot or arrow leaving a weapon (event kind `fire`): `w` the game's weapon slot (0 none), `k`
+ * a game-defined weapon kind index, `o` the origin (muzzle, arrow rest; scene metres, 1 cm), `d`
+ * the unit direction (1/1000) and optionally `r` the trace length (m) or `s` the launch speed
+ * (m/s). Presentation only: hits and damage are not part of it.
+ */
+export const fireEventSchema = z.object({
+  w: z.number().int().min(0).max(63),
+  k: z.number().int().min(0).max(15),
+  o: z.array(finite.min(-1e6).max(1e6)).length(3),
+  d: z.array(finite.min(-1.001).max(1.001)).length(3),
+  r: finite.min(0).max(5000).optional(),
+  s: finite.min(0).max(500).optional(),
+})
+export type FireEvent = z.infer<typeof fireEventSchema>
+
+export interface FireSample {
+  slot: number
+  kind: number
+  origin: Vec3Tuple
+  direction: Vec3Tuple
+  range?: number
+  speed?: number
+}
+
+/** Wire form of a fire event: 1 cm origin, unit direction to 1/1000. */
+export function quantizeFire(fire: FireSample): FireEvent {
+  const fix = (v: number, digits: number) => +v.toFixed(digits)
+  const n = Math.hypot(...fire.direction) || 1
+  return {
+    w: Math.max(0, Math.min(63, Math.round(fire.slot))),
+    k: Math.max(0, Math.min(15, Math.round(fire.kind))),
+    o: fire.origin.map((v) => fix(v, 2)),
+    d: fire.direction.map((v) => fix(v / n, 3)),
+    ...(fire.range !== undefined ? { r: fix(Math.min(5000, Math.max(0, fire.range)), 2) } : {}),
+    ...(fire.speed !== undefined ? { s: fix(Math.min(500, Math.max(0, fire.speed)), 2) } : {}),
+  }
+}
+
+/** A received fire event, or null when it is not one (bad or out-of-range data). */
+export function decodeFire(data: unknown): FireSample | null {
+  const parsed = fireEventSchema.safeParse(data)
+  if (!parsed.success) return null
+  const f = parsed.data
+  const n = Math.hypot(f.d[0], f.d[1], f.d[2])
+  if (!(n > 0.5)) return null
+  return {
+    slot: f.w,
+    kind: f.k,
+    origin: [f.o[0], f.o[1], f.o[2]],
+    direction: [f.d[0] / n, f.d[1] / n, f.d[2] / n],
+    ...(f.r !== undefined ? { range: f.r } : {}),
+    ...(f.s !== undefined ? { speed: f.s } : {}),
+  }
+}
+
 /**
  * Optional on-foot body of the sender (compact keys, quantised by {@link quantizeAvatar}):
  * `p` feet position in scene metres, `y` heading in radians (0 faces −Z), `s` horizontal speed
  * in m/s and `a` a game-defined animation index (the game keeps the name table). Optional `w` is
  * a game-defined held-item index (0 or absent: empty hands); older clients leave it out.
+ * Optional character state (see `@nabla/engine/character`): `i` stored stacks as [slot, item,
+ * count] (count −1 infinite), `h` item index in each hand [left, right] (0 empty) and `v` the aim
+ * [yaw, pitch] in radians while something is held (yaw as `y`, pitch up positive).
  */
 export const avatarBlockSchema = z.object({
   p: vec3,
@@ -91,6 +152,30 @@ export const avatarBlockSchema = z.object({
   s: finite.nonnegative(),
   a: z.number().int().min(0).max(63),
   w: z.number().int().min(0).max(63).optional(),
+  i: z
+    .array(
+      z.tuple([
+        z.number().int().min(0).max(63),
+        z.number().int().min(1).max(63),
+        z.number().int().min(-1).max(9999),
+      ]),
+    )
+    .max(32)
+    .optional(),
+  h: z.tuple([z.number().int().min(0).max(63), z.number().int().min(0).max(63)]).optional(),
+  v: z.tuple([finite.min(-3.2).max(3.2), finite.min(-1.6).max(1.6)]).optional(),
+  /** Held item pose in body space: grip position (m, 1 cm) and quaternion (1e-3). */
+  g: z
+    .tuple([
+      finite.min(-3).max(3),
+      finite.min(-3).max(3),
+      finite.min(-3).max(3),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+      finite.min(-1.001).max(1.001),
+    ])
+    .optional(),
 })
 export type AvatarBlock = z.infer<typeof avatarBlockSchema>
 
@@ -102,6 +187,12 @@ export interface AvatarSample {
   anim: number
   /** Game-defined held-item index; 0 (or absent) is empty hands. */
   weapon?: number
+  /** Character inventory in its wire form (stored stacks, item in each hand). */
+  inventory?: { i: [number, number, number][]; h: [number, number] }
+  /** Aim [yaw, pitch] in radians while something is held. */
+  aim?: [number, number]
+  /** Held item pose in body space (see render/entity/held-pose.ts). */
+  held?: { position: Vec3Tuple; quaternion: [number, number, number, number] }
 }
 
 /** Angle wrapped to (−π, π]. */
@@ -120,7 +211,34 @@ export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
     s: fix(Math.max(0, sample.speed), 2),
     a: Math.max(0, Math.min(63, Math.round(sample.anim))),
     ...(sample.weapon ? { w: Math.max(0, Math.min(63, Math.round(sample.weapon))) } : {}),
+    ...(sample.inventory
+      ? { i: sample.inventory.i.slice(0, 32), h: sample.inventory.h }
+      : {}),
+    ...(sample.aim
+      ? {
+          v: [
+            fix(wrapAngle(sample.aim[0]), 3),
+            fix(Math.max(-1.57, Math.min(1.57, sample.aim[1])), 3),
+          ] as [number, number],
+        }
+      : {}),
+    ...(sample.held ? { g: quantizeHeld(sample.held) } : {}),
   }
+}
+
+function quantizeHeld(held: NonNullable<AvatarSample['held']>): AvatarBlock['g'] {
+  const c = (v: number, m: number) => Math.max(-m, Math.min(m, v))
+  const [x, y, z, w] = held.quaternion
+  const n = Math.hypot(x, y, z, w) || 1
+  return [
+    +c(held.position[0], 3).toFixed(2),
+    +c(held.position[1], 3).toFixed(2),
+    +c(held.position[2], 3).toFixed(2),
+    +(x / n).toFixed(3),
+    +(y / n).toFixed(3),
+    +(z / n).toFixed(3),
+    +(w / n).toFixed(3),
+  ]
 }
 
 export function decodeAvatar(block: AvatarBlock): AvatarSample {
@@ -130,6 +248,16 @@ export function decodeAvatar(block: AvatarBlock): AvatarSample {
     speed: block.s,
     anim: block.a,
     weapon: block.w ?? 0,
+    ...(block.i || block.h ? { inventory: { i: block.i ?? [], h: block.h ?? [0, 0] } } : {}),
+    ...(block.v ? { aim: [block.v[0], block.v[1]] as [number, number] } : {}),
+    ...(block.g
+      ? {
+          held: {
+            position: [block.g[0], block.g[1], block.g[2]] as Vec3Tuple,
+            quaternion: [block.g[3], block.g[4], block.g[5], block.g[6]] as [number, number, number, number],
+          },
+        }
+      : {}),
   }
 }
 
