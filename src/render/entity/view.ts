@@ -641,6 +641,8 @@ export class SceneView {
   private playerBody: PlayerBody | null = null
   private playerBodyState: AvatarAnimState = 'idle'
   private playerNetState: AvatarNetState | null = null
+  /** Point one arm of the local body along `direction` (world) over the animation; null: none. */
+  armAim: { hand: 'left' | 'right'; direction: THREE.Vector3 } | null = null
   /** Give the player a skinned body (null removes it and shows the monitor helmet alone). */
   setPlayerBody(body: PlayerBody | null): void {
     this.playerBody?.dispose()
@@ -2053,6 +2055,7 @@ export class SceneView {
           : simulationDefaults.playerHalfHeight
     body.root.position.set(0, seated ? 0 : -half, 0)
     body.animate(state, speed, elapsed)
+    if (this.armAim && !seated) body.aimArm(this.armAim.hand, this.armAim.direction)
     const head = body.headIn(this.avatar, this.scratchVectors[3])
     if (head && seated) body.root.position.sub(head)
     else if (head && body.root.visible) {

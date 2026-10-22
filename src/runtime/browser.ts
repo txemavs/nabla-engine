@@ -432,6 +432,22 @@ export interface ShotReport {
   hit: { entityId: string | null; point: Vec3Tuple; normal: Vec3Tuple; damage: number } | null
 }
 
+/**
+ * A shot or arrow the local player fired, as reported to `GameRuntime.addFireListener`: where it
+ * left the weapon (muzzle, arrow rest) and where it went, simulation world.
+ */
+export interface FireReport {
+  kind: 'firearm' | 'bow'
+  /** Numbered weapon slot fired (null when none is active). */
+  slot: number | null
+  origin: Vec3Tuple
+  /** Unit direction. */
+  direction: Vec3Tuple
+  /** Bullet trace length to the hit or the end of range (m); arrows: launch speed (m/s). */
+  range?: number
+  speed?: number
+}
+
 /** `GameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
 export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 
@@ -588,6 +604,8 @@ export interface WeaponProp {
   /** Feet origin: place and turn it like the body. */
   readonly root: THREE.Group
   readonly slot: number
+  /** Where its shots leave it (gun muzzle, bow arrow rest), simulation world; null when hidden. */
+  muzzle(): Vec3Tuple | null
   update(now?: number): void
   dispose(): void
 }
@@ -2485,6 +2503,13 @@ export class GameRuntime {
       this.heldWeapon.syncWorld(this.view.avatar, time, eyes)
     }
     this.updateBow(sim, dt)
+    this.updateRemoteArrows(sim, dt)
+    this.view.armAim = this.localArmAim
+      ? {
+          hand: this.localArmAim,
+          direction: this.camera.getWorldDirection(this.scratchArmAim),
+        }
+      : null
     if (this.sidearm) {
       this.sidearm.setTuning(this.weaponTuning)
       this.sidearm.slidePosePreview =
@@ -3823,6 +3848,59 @@ export class GameRuntime {
     const id = this.document.entities.find((e) => this.view.mirrorModel(e.id) === model)?.id
     return id ? this.view.mirrorSides(id).sort() : ['left', 'right']
   }
+  private readonly fireListeners = new Set<(fire: FireReport) => void>()
+  /** Observe every shot and arrow the local player fires, from the weapon. Returns an unsubscribe. */
+  addFireListener(listener: (fire: FireReport) => void): () => void {
+    this.fireListeners.add(listener)
+    return () => this.fireListeners.delete(listener)
+  }
+  private emitFire(fire: FireReport): void {
+    for (const listener of [...this.fireListeners]) listener(fire)
+  }
+  /** Arrows loosed elsewhere (other players): flown and drawn here, no hits applied. */
+  private remoteArrows: ArrowFlight | null = null
+  private remoteArrowMeshes: THREE.Mesh[] = []
+  private remoteArrowTemplate: THREE.Mesh | null = null
+  /**
+   * Show an arrow loosed elsewhere (for example by another player's bow): it flies from `origin`
+   * along `direction` at `speed` and stops where it meets the world. Nothing is hit or pushed.
+   */
+  showRemoteArrow(origin: Vec3Tuple, direction: Vec3Tuple, speed: number): boolean {
+    this.assertAlive()
+    const flight = (this.remoteArrows ??= new ArrowFlight({}))
+    return flight.launch(origin, direction, speed)
+  }
+  private updateRemoteArrows(sim: Simulation, dt: number): void {
+    const flight = this.remoteArrows
+    if (!flight) return
+    flight.update(dt, (from, direction, length) => sim.shoot(from, direction, length, 0))
+    const poses = flight.poses()
+    const template = this.arrowTemplate ?? this.remoteArrowTemplate
+    if (template)
+      while (this.remoteArrowMeshes.length < poses.length) {
+        const mesh = new THREE.Mesh(template.geometry, template.material)
+        mesh.name = 'remote-arrow'
+        this.remoteArrowMeshes.push(mesh)
+        this.view.root.add(mesh)
+      }
+    const back = new THREE.Vector3(0, 0, -1)
+    this.remoteArrowMeshes.forEach((mesh, i) => {
+      const pose = poses[i]
+      mesh.visible = !!pose
+      if (!pose) return
+      mesh.position.set(...pose.position)
+      mesh.quaternion.setFromUnitVectors(back, new THREE.Vector3(...pose.direction))
+    })
+  }
+  /**
+   * Point the local body's arm along the look direction (a held weapon aimed where the player
+   * looks), or null to leave the arms to the animation.
+   */
+  setLocalArmAim(hand: 'left' | 'right' | null): void {
+    this.localArmAim = hand
+  }
+  private localArmAim: 'left' | 'right' | null = null
+  private readonly scratchArmAim = new THREE.Vector3()
   private readonly shotListeners = new Set<(shot: ShotReport) => void>()
   /** Observe every shot the local player fires (after its hit is resolved). Returns an unsubscribe. */
   addShotListener(listener: (shot: ShotReport) => void): () => void {
@@ -5418,6 +5496,22 @@ export class GameRuntime {
         }
         for (const listener of [...this.shotListeners]) listener(report)
       }
+      if (shot?.fired && this.fireListeners.size) {
+        const end = this.gallery.lastHit?.point ?? (shot.end ? [...shot.end] : null)
+        const from = new THREE.Vector3(...weaponPosition)
+        const to = end
+          ? new THREE.Vector3(...end)
+          : from.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion))
+        const range = to.distanceTo(from)
+        if (range > 1e-3)
+          this.emitFire({
+            kind: 'firearm',
+            slot: this.activeWeaponSlot,
+            origin: [...weaponPosition] as Vec3Tuple,
+            direction: to.sub(from).normalize().toArray() as Vec3Tuple,
+            range,
+          })
+      }
       if (shot?.fired) {
         this.firearmSamples.shot(sidearm.preset, weaponPosition, automatic, !!shot.locked)
         if (this.gallery.lastImpact)
@@ -5594,9 +5688,15 @@ export class GameRuntime {
       entry.kind === 'firearm' ? this.createSidearm(entry.preset) : new HeldWeapon(entry.preset)
     await weapon.ready
     weapon.visible = true
+    if (weapon instanceof HeldWeapon && weapon.arrowTemplate)
+      this.remoteArrowTemplate ??= weapon.arrowTemplate
     return {
       root,
       slot,
+      muzzle: () => {
+        const at = weapon instanceof HeldWeapon ? weapon.worldOrigin() : weapon.worldMuzzle()
+        return at ? (at.sub(this.view.root.position).toArray() as Vec3Tuple) : null
+      },
       update: (now = performance.now()) => weapon.syncWorld(frame, now, false),
       dispose: () => {
         weapon.dispose()
@@ -5638,9 +5738,14 @@ export class GameRuntime {
     weapon.setDraw(0)
     if (speed <= 0) return
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion)
-    const origin = new THREE.Vector3(...sim.renderPlayerPosition)
-    origin.y += 1.4
-    origin.addScaledVector(forward, 0.4)
+    // From the bow: its third-person copy's arrow rest, else just ahead of the eye (first
+    // person, where the bow is drawn in front of the camera); aimed at what the camera looks at.
+    const rest = weapon.worldOrigin()?.sub(this.view.root.position)
+    const origin = rest ?? this.camera.position.clone().addScaledVector(forward, 0.4)
+    if (rest) {
+      const target = this.camera.position.clone().addScaledVector(forward, 60)
+      forward.copy(target.sub(origin).normalize())
+    }
     if (!this.arrowTemplate && weapon.arrowTemplate)
       this.arrowTemplate = new THREE.Mesh(
         weapon.arrowTemplate.geometry.clone(),
@@ -5651,6 +5756,13 @@ export class GameRuntime {
       )
     const flight = (this.arrowFlight ??= new ArrowFlight({ arrowMass: draw.spec.arrowMass }))
     flight.launch(origin.toArray() as Vec3Tuple, forward.toArray() as Vec3Tuple, speed)
+    this.emitFire({
+      kind: 'bow',
+      slot: this.activeWeaponSlot,
+      origin: origin.toArray() as Vec3Tuple,
+      direction: forward.toArray() as Vec3Tuple,
+      speed,
+    })
     this.options.canvas.dataset.arrowsLoosed = String(++this.arrowsLoosed)
     this.options.canvas.dataset.arrowSpeed = speed.toFixed(1)
   }
