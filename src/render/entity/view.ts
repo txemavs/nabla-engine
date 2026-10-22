@@ -1,4 +1,5 @@
 import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
+import { holdItem, type HeldPose } from './held-pose.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
   VehiclePresentationResolver,
@@ -641,6 +642,13 @@ export class SceneView {
   private playerBody: PlayerBody | null = null
   private playerBodyState: AvatarAnimState = 'idle'
   private playerNetState: AvatarNetState | null = null
+  /** Point one arm of the local body along `direction` (world) over the animation; null: none. */
+  /** Item the local body holds (body-space pose); its arm reaches it by IK after animating. */
+  heldPose: { hand: 'left' | 'right'; pose: HeldPose } | null = null
+  /** The local player's body, if any (read-only use: holding items, sockets). */
+  get localBody(): PlayerBody | null {
+    return this.playerBody
+  }
   /** Give the player a skinned body (null removes it and shows the monitor helmet alone). */
   setPlayerBody(body: PlayerBody | null): void {
     this.playerBody?.dispose()
@@ -2057,6 +2065,7 @@ export class SceneView {
           : simulationDefaults.playerHalfHeight
     body.root.position.set(0, seated ? 0 : -half, 0)
     body.animate(state, speed, elapsed)
+    if (this.heldPose && !seated) holdItem(body, this.heldPose.pose, this.heldPose.hand)
     const head = body.headIn(this.avatar, this.scratchVectors[3])
     if (head && seated) body.root.position.sub(head)
     else if (head && body.root.visible) {

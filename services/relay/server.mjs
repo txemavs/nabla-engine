@@ -92,7 +92,48 @@ function validAvatar(a) {
     Number.isInteger(a.a) &&
     a.a >= 0 &&
     a.a <= 63 &&
-    (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63))
+    (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63)) &&
+    (a.i === undefined || validStacks(a.i)) &&
+    (a.h === undefined || (Array.isArray(a.h) && a.h.length === 2 && a.h.every((n) => intIn(n, 0, 63)))) &&
+    (a.v === undefined ||
+      (finiteArray(a.v, 2) && Math.abs(a.v[0]) <= 3.2 && Math.abs(a.v[1]) <= 1.6)) &&
+    (a.g === undefined ||
+      (finiteArray(a.g, 7) &&
+        a.g.slice(0, 3).every((v) => Math.abs(v) <= 3) &&
+        a.g.slice(3).every((v) => Math.abs(v) <= 1.001)))
+  )
+}
+
+const intIn = (n, min, max) => Number.isInteger(n) && n >= min && n <= max
+const numIn = (n, min, max) => Number.isFinite(n) && n >= min && n <= max
+
+/** Fire event (weapon presentation, no authority): slot, kind, origin, unit direction, range/speed. */
+function validFire(f) {
+  return (
+    intIn(f.w, 0, 63) &&
+    intIn(f.k, 0, 15) &&
+    finiteArray(f.o, 3) &&
+    f.o.every((v) => numIn(v, -1e6, 1e6)) &&
+    finiteArray(f.d, 3) &&
+    f.d.every((v) => numIn(v, -1.001, 1.001)) &&
+    (f.r === undefined || numIn(f.r, 0, 5000)) &&
+    (f.s === undefined || numIn(f.s, 0, 500))
+  )
+}
+
+/** Character inventory stacks: at most 32 of [slot 0..63, item 1..63, count -1..9999]. */
+function validStacks(list) {
+  return (
+    Array.isArray(list) &&
+    list.length <= 32 &&
+    list.every(
+      (s) =>
+        Array.isArray(s) &&
+        s.length === 3 &&
+        intIn(s[0], 0, 63) &&
+        intIn(s[1], 1, 63) &&
+        intIn(s[2], -1, 9999),
+    )
   )
 }
 
@@ -258,6 +299,10 @@ export function startRelay({
                   s: message.avatar.s,
                   a: message.avatar.a,
                   ...(message.avatar.w !== undefined ? { w: message.avatar.w } : {}),
+                  ...(message.avatar.i !== undefined ? { i: message.avatar.i } : {}),
+                  ...(message.avatar.h !== undefined ? { h: message.avatar.h } : {}),
+                  ...(message.avatar.v !== undefined ? { v: message.avatar.v } : {}),
+                  ...(message.avatar.g !== undefined ? { g: message.avatar.g } : {}),
                 },
               }
             : {}),
@@ -267,6 +312,7 @@ export function startRelay({
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || typeof message.kind !== 'string' || !KIND.test(message.kind)) return
         if (!validEventData(message.data) || ++state.events > maxEvents) return
+        if (message.kind === 'fire' && !validFire(message.data)) return
         broadcast(state.room, socket, {
           type: 'event',
           peer: member.peer,

@@ -55,6 +55,10 @@
       "types": "./dist/net/index.d.ts",
       "import": "./dist/net/index.js"
     },
+    "./character": {
+      "types": "./dist/character/index.d.ts",
+      "import": "./dist/character/index.js"
+    },
     "./vehicles/boat": {
       "types": "./dist/simulation/vehicles/boat.d.ts",
       "import": "./dist/simulation/vehicles/boat.js"
