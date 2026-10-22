@@ -5728,6 +5728,14 @@ export class GameRuntime {
    * Number-key loadout from preset data (`weaponSlots()`). The same key again holsters.
    * Firearms reuse the sidearm path; melee and bow use `HeldWeapon`; placeholders only report.
    */
+  /**
+   * Host inventory gate for the number keys: a slot is drawn only while `gate(slot)` says the
+   * player carries its item (null: every slot is free, as on test pages). Holstering is never gated.
+   */
+  setWeaponSlotGate(gate: ((slot: number) => boolean) | null): void {
+    this.weaponSlotGate = gate
+  }
+  private weaponSlotGate: ((slot: number) => boolean) | null = null
   selectWeaponSlot(slot: number): void {
     this.assertAlive()
     const entry = weaponSlots().find((item) => item.slot === slot)
@@ -5738,6 +5746,14 @@ export class GameRuntime {
     }
     const sim = this.session.simulation
     if (!sim) return
+    const drawn =
+      entry.kind === 'firearm'
+        ? this.weaponDrawn && this.sidearm?.preset?.id === entry.id
+        : this.heldDrawn && this.heldWeapon?.preset.id === entry.id
+    if (!drawn && this.weaponSlotGate && !this.weaponSlotGate(slot)) {
+      this.options.onMessage?.(`${entry.name}: ${this.text('not carried')}`)
+      return
+    }
     this.fireRequested = false
     this.triggerDown = false
     if (entry.kind === 'firearm') {
