@@ -11,6 +11,7 @@ import {
 } from 'three'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { lensFlareMaterial } from './lens-flare-nodes.js'
+import { DITHER_GLSL } from './dither.js'
 /** Screen-space ghosts along the sun, drawn after the world. No extra render target. */
 export function createLensFlare(direction: Vector3, options: { position?: Vector3 } = {}) {
   const geometry = new BufferGeometry()
@@ -55,6 +56,7 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
       uniform vec4 tileRect;
       uniform mat4 projectionMatrix;
       varying vec2 vUv;
+      ${DITHER_GLSL}
       float blob(vec2 uv, vec2 at, float sharp) {
         vec2 d = (uv - at) * vec2(aspect, 1.0);
         return exp(-dot(d, d) * sharp);
@@ -80,7 +82,7 @@ export function createLensFlare(direction: Vector3, options: { position?: Vector
         float side = dot(rel, across);
         float streak = exp(-side * side * 900.0) * exp(-dot(rel, rel) * 22.0);
         vec3 color = vec3(1.0, 0.94, 0.8) * (blob(fullUv, sun, 18.0) * 0.42 + blob(fullUv, sun, 5.5) * 0.1 + streak * 0.08);
-        gl_FragColor = vec4(color * cover * intensity, 1.0);
+        gl_FragColor = vec4(nablaDither(color * cover * intensity), 1.0);
       }
     `,
   })

@@ -8,6 +8,7 @@ import { artisticCloudDeck, globeCloudSkin, lowCloudDome } from './cloud-nodes.j
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { createLensFlare } from './lens-flare.js'
 import { reuseFog } from './fog.js'
+import { DITHER_GLSL } from './dither.js'
 import { atmosphere, skyTime, mapFogRange, type SkyClock } from '../../planet/sky.js'
 import * as THREE from 'three'
 import {
@@ -96,6 +97,7 @@ function createAirGlow(sun: THREE.Vector3, radius: number) {
       uniform vec3 sunDirection;
       varying vec3 vNormal;
       varying vec3 vWorld;
+      ${DITHER_GLSL}
       void main() {
         vec3 N = normalize(vNormal);
         vec3 V = normalize(cameraPosition - vWorld);
@@ -106,7 +108,7 @@ function createAirGlow(sun: THREE.Vector3, radius: number) {
         vec3 col = mix(vec3(0.32, 0.52, 1.0), vec3(1.0, 0.68, 0.38), intoSun);
         float glow = graz * (0.045 + day * 0.42) * (0.38 + intoSun);
         if (glow < 0.012) discard;
-        gl_FragColor = vec4(col * glow, 1.0);
+        gl_FragColor = vec4(nablaDither(col * glow), 1.0);
       }
     `,
   })
@@ -192,7 +194,7 @@ export class GeographicView {
     this.earth = new THREE.Mesh(
       new THREE.SphereGeometry(EARTH_RADIUS * SCALE, 128, 96),
       // Plain black until earth.jpg is ready — never a pale/white or half-textured ball.
-      new THREE.MeshLambertMaterial({ color: '#000000' }),
+      new THREE.MeshLambertMaterial({ color: '#000000', dithering: true }),
     )
     this.space.add(this.earth)
     this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.7374, 48, 36), moonMaterial(this.moonSun))
