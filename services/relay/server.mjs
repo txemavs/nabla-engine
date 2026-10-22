@@ -92,7 +92,29 @@ function validAvatar(a) {
     Number.isInteger(a.a) &&
     a.a >= 0 &&
     a.a <= 63 &&
-    (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63))
+    (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63)) &&
+    (a.i === undefined || validStacks(a.i)) &&
+    (a.h === undefined || (Array.isArray(a.h) && a.h.length === 2 && a.h.every((n) => intIn(n, 0, 63)))) &&
+    (a.v === undefined ||
+      (finiteArray(a.v, 2) && Math.abs(a.v[0]) <= 3.2 && Math.abs(a.v[1]) <= 1.6))
+  )
+}
+
+const intIn = (n, min, max) => Number.isInteger(n) && n >= min && n <= max
+
+/** Character inventory stacks: at most 32 of [slot 0..63, item 1..63, count -1..9999]. */
+function validStacks(list) {
+  return (
+    Array.isArray(list) &&
+    list.length <= 32 &&
+    list.every(
+      (s) =>
+        Array.isArray(s) &&
+        s.length === 3 &&
+        intIn(s[0], 0, 63) &&
+        intIn(s[1], 1, 63) &&
+        intIn(s[2], -1, 9999),
+    )
   )
 }
 
@@ -258,6 +280,9 @@ export function startRelay({
                   s: message.avatar.s,
                   a: message.avatar.a,
                   ...(message.avatar.w !== undefined ? { w: message.avatar.w } : {}),
+                  ...(message.avatar.i !== undefined ? { i: message.avatar.i } : {}),
+                  ...(message.avatar.h !== undefined ? { h: message.avatar.h } : {}),
+                  ...(message.avatar.v !== undefined ? { v: message.avatar.v } : {}),
                 },
               }
             : {}),

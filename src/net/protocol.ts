@@ -84,6 +84,9 @@ const eventKind = z.string().regex(/^[A-Za-z0-9_.-]{1,32}$/)
  * `p` feet position in scene metres, `y` heading in radians (0 faces −Z), `s` horizontal speed
  * in m/s and `a` a game-defined animation index (the game keeps the name table). Optional `w` is
  * a game-defined held-item index (0 or absent: empty hands); older clients leave it out.
+ * Optional character state (see `@nabla/engine/character`): `i` stored stacks as [slot, item,
+ * count] (count −1 infinite), `h` item index in each hand [left, right] (0 empty) and `v` the aim
+ * [yaw, pitch] in radians while something is held (yaw as `y`, pitch up positive).
  */
 export const avatarBlockSchema = z.object({
   p: vec3,
@@ -91,6 +94,18 @@ export const avatarBlockSchema = z.object({
   s: finite.nonnegative(),
   a: z.number().int().min(0).max(63),
   w: z.number().int().min(0).max(63).optional(),
+  i: z
+    .array(
+      z.tuple([
+        z.number().int().min(0).max(63),
+        z.number().int().min(1).max(63),
+        z.number().int().min(-1).max(9999),
+      ]),
+    )
+    .max(32)
+    .optional(),
+  h: z.tuple([z.number().int().min(0).max(63), z.number().int().min(0).max(63)]).optional(),
+  v: z.tuple([finite.min(-3.2).max(3.2), finite.min(-1.6).max(1.6)]).optional(),
 })
 export type AvatarBlock = z.infer<typeof avatarBlockSchema>
 
@@ -102,6 +117,10 @@ export interface AvatarSample {
   anim: number
   /** Game-defined held-item index; 0 (or absent) is empty hands. */
   weapon?: number
+  /** Character inventory in its wire form (stored stacks, item in each hand). */
+  inventory?: { i: [number, number, number][]; h: [number, number] }
+  /** Aim [yaw, pitch] in radians while something is held. */
+  aim?: [number, number]
 }
 
 /** Angle wrapped to (−π, π]. */
@@ -120,6 +139,17 @@ export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
     s: fix(Math.max(0, sample.speed), 2),
     a: Math.max(0, Math.min(63, Math.round(sample.anim))),
     ...(sample.weapon ? { w: Math.max(0, Math.min(63, Math.round(sample.weapon))) } : {}),
+    ...(sample.inventory
+      ? { i: sample.inventory.i.slice(0, 32), h: sample.inventory.h }
+      : {}),
+    ...(sample.aim
+      ? {
+          v: [
+            fix(wrapAngle(sample.aim[0]), 3),
+            fix(Math.max(-1.57, Math.min(1.57, sample.aim[1])), 3),
+          ] as [number, number],
+        }
+      : {}),
   }
 }
 
@@ -130,6 +160,8 @@ export function decodeAvatar(block: AvatarBlock): AvatarSample {
     speed: block.s,
     anim: block.a,
     weapon: block.w ?? 0,
+    ...(block.i || block.h ? { inventory: { i: block.i ?? [], h: block.h ?? [0, 0] } } : {}),
+    ...(block.v ? { aim: [block.v[0], block.v[1]] as [number, number] } : {}),
   }
 }
 

@@ -69,5 +69,11 @@ describe('avatar samples', () => {
     expect(armed.w).toBe(2)
     expect(decodeAvatar(armed).weapon).toBe(2)
     expect(avatarSampleOps.blend({ ...a, weapon: 0 }, { ...b, weapon: 2 }, 0.5).weapon).toBe(0)
+    // Character state: inventory switches, aim blends; absent fields stay off the wire.
+    expect(q.i).toBeUndefined()
+    const kit = quantizeAvatar({ ...a, inventory: { i: [[1, 1, 1]], h: [0, 1] }, aim: [7, 3] })
+    expect(kit).toMatchObject({ i: [[1, 1, 1]], h: [0, 1], v: [+wrapAngle(7).toFixed(3), 1.57] })
+    expect(decodeAvatar(kit)).toMatchObject({ inventory: { i: [[1, 1, 1]], h: [0, 1] } })
+    expect(avatarSampleOps.blend({ ...a, aim: [0, 0] }, { ...b, aim: [1, 0.5] }, 0.5).aim).toEqual([0.5, 0.25])
   })
 })

@@ -219,6 +219,16 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
   const armed = await b.next('snapshot')
   assert.equal(armed.t, 6)
   assert.equal(armed.avatar.w, 2)
+  // Character inventory and aim: forwarded when bounded, the snapshot dropped otherwise.
+  a.json({ type: 'snapshot', t: 7, seq: 6, avatar: { ...avatar, i: [[0, 99, 1]] } })
+  a.json({ type: 'snapshot', t: 8, seq: 7, avatar: { ...avatar, v: [0, 5] } })
+  const kit = { i: [[1, 1, 1], [4, 5, -1]], h: [0, 1], v: [0.5, 0.3] }
+  a.json({ type: 'snapshot', t: 9, seq: 8, avatar: { ...avatar, ...kit } })
+  const carried = await b.next('snapshot')
+  assert.equal(carried.t, 9)
+  assert.deepEqual(carried.avatar.i, kit.i)
+  assert.deepEqual(carried.avatar.h, kit.h)
+  assert.deepEqual(carried.avatar.v, kit.v)
   a.close()
   b.close()
   await relay.close()

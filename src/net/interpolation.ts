@@ -33,6 +33,13 @@ export const avatarSampleOps: SampleOps<AvatarSample> = {
       speed: a.speed + (b.speed - a.speed) * k,
       anim: k >= 1 ? b.anim : a.anim,
       weapon: k >= 1 ? b.weapon : a.weapon,
+      inventory: k >= 1 ? b.inventory : a.inventory,
+      aim:
+        a.aim && b.aim
+          ? [lerpAngle(a.aim[0], b.aim[0], k), a.aim[1] + (b.aim[1] - a.aim[1]) * k]
+          : k >= 1
+            ? b.aim
+            : a.aim,
     }
   },
   extrapolate: (last, previous, seconds) => {
