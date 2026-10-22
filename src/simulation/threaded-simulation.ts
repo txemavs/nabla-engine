@@ -336,7 +336,12 @@ export class ThreadedSimulation {
   /** Forward and answer with the worker's previous reply for the same call (`initial` before). */
   /** Collider wireframe from the worker (Development › Show collision); polled only when shown. */
   collisionDebug(): Promise<CollisionDebugLines> {
-    return this.forward({ type: 'call', method: 'collisionDebug', args: [], quiet: true }) as Promise<CollisionDebugLines>
+    return this.forward({
+      type: 'call',
+      method: 'collisionDebug',
+      args: [],
+      quiet: true,
+    }) as Promise<CollisionDebugLines>
   }
   private laggedCall<T>(method: string, args: unknown[], initial: T): T {
     const key = method + JSON.stringify(args)
@@ -506,6 +511,9 @@ export class ThreadedSimulation {
   }
   recoverVehicle(...args: Parameters<Simulation['recoverVehicle']>): string {
     return this.message('recoverVehicle', args)
+  }
+  relocatePlayer(...args: Parameters<Simulation['relocatePlayer']>): void {
+    this.command('relocatePlayer', args)
   }
   relocateVehicle(...args: Parameters<Simulation['relocateVehicle']>): string {
     return this.message('relocateVehicle', args)

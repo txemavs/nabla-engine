@@ -184,6 +184,11 @@ function recolor(root: THREE.Object3D, colors: NonNullable<PlayerBodyAssets['col
 }
 
 const scratch = new THREE.Matrix4()
+const scratchQ = new THREE.Quaternion()
+/** Hit flinch length, s. */
+export const FLINCH_S = 0.3
+/** Death collapse length, s. */
+export const COLLAPSE_S = 0.7
 const gripInverse = new THREE.Matrix4()
 
 /** Turn `bone` (world space) so the direction to `child` points along `direction`. */
@@ -212,13 +217,24 @@ export class PlayerBody {
   private readonly mixer: THREE.AnimationMixer
   private readonly actions = new Map<AvatarAnimState, THREE.AnimationAction>()
   private current: THREE.AnimationAction | null = null
+  private readonly fall = new THREE.Group()
+  private readonly flinches: {
+    bone: THREE.Object3D
+    axis: THREE.Vector3
+    angle: number
+    t: number
+  }[] = []
+  private collapse: { axis: THREE.Vector3; t: number } | null = null
   private currentState: AvatarAnimState | null = null
 
   constructor(model: THREE.Object3D, clips: readonly THREE.AnimationClip[]) {
     this.root.name = 'player-body'
     // glTF faces +Z; game objects face −Z.
     model.rotation.y = Math.PI
-    this.root.add(model)
+    // Pivot at the feet for the death collapse; the root keeps position and yaw.
+    this.fall.name = 'player-body-fall'
+    this.fall.add(model)
+    this.root.add(this.fall)
     let head: THREE.Object3D | null = null
     model.traverse((object) => {
       if (object.userData.nabla_attach === 'createMonitorAvatar') head = object
@@ -262,7 +278,9 @@ export class PlayerBody {
     this.currentState = state
     const stride = AVATAR_STRIDE_SPEED[state as keyof typeof AVATAR_STRIDE_SPEED]
     if (next) next.timeScale = stride ? THREE.MathUtils.clamp(speed / stride, 0.5, 3) : 1
-    this.mixer.update(Math.min(Math.max(dt, 0), 0.1))
+    const step = Math.min(Math.max(dt, 0), 0.1)
+    if (!this.collapse) this.mixer.update(step)
+    this.applyReactions(step)
   }
 
   /** Remote players: place and animate from a network state. */
@@ -367,6 +385,75 @@ export class PlayerBody {
     if (!this.head) return null
     this.root.updateWorldMatrix(true, true)
     return frame.worldToLocal(this.head.getWorldPosition(target))
+  }
+
+  /**
+   * A hit reaction: `bone` turns away from the shot (`direction`, world) by up to `strength`
+   * radians, then eases back in {@link FLINCH_S}. Added on top of the animation pose.
+   */
+  flinch(bone: THREE.Object3D, direction: THREE.Vector3, strength = 0.35): void {
+    if (this.collapse) return
+    bone.parent?.updateWorldMatrix(true, false)
+    const axis = new THREE.Vector3(0, 1, 0).cross(direction)
+    if (axis.lengthSq() < 1e-6) axis.set(1, 0, 0)
+    // World axis into the bone's parent-relative rotation frame.
+    const world = bone.getWorldQuaternion(new THREE.Quaternion())
+    axis.normalize().applyQuaternion(world.invert())
+    this.flinches.push({ bone, axis, angle: strength, t: 0 })
+    if (this.flinches.length > 6) this.flinches.shift()
+  }
+
+  /** True while collapsed (dead). */
+  get collapsed(): boolean {
+    return !!this.collapse
+  }
+
+  /** Death: fall over away from `direction` (world; default backwards) and stop animating. */
+  collapseFrom(direction?: THREE.Vector3): void {
+    if (this.collapse) return
+    this.root.updateWorldMatrix(true, false)
+    const local = (
+      direction?.clone() ??
+      new THREE.Vector3(0, 0, 1).applyQuaternion(
+        this.root.getWorldQuaternion(new THREE.Quaternion()),
+      )
+    ).applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()).invert())
+    local.y = 0
+    if (local.lengthSq() < 1e-6) local.set(0, 0, 1)
+    // Rotating about up × push tips the top along the push.
+    const axis = new THREE.Vector3(0, 1, 0).cross(local.normalize()).normalize()
+    this.collapse = { axis, t: 0 }
+  }
+
+  /** Stand up again (respawn). */
+  revive(): void {
+    this.collapse = null
+    this.fall.quaternion.identity()
+    this.fall.position.set(0, 0, 0)
+    this.flinches.length = 0
+  }
+
+  private applyReactions(dt: number): void {
+    for (let i = this.flinches.length - 1; i >= 0; i--) {
+      const f = this.flinches[i]
+      f.t += dt
+      const k = f.t / FLINCH_S
+      if (k >= 1) {
+        this.flinches.splice(i, 1)
+        continue
+      }
+      // Fast in (first fifth), slow out.
+      const amount = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8
+      f.bone.quaternion.multiply(scratchQ.setFromAxisAngle(f.axis, f.angle * amount))
+    }
+    const c = this.collapse
+    if (c) {
+      c.t = Math.min(1, c.t + dt / COLLAPSE_S)
+      // Knees give first, then the fall accelerates.
+      const e = c.t * c.t
+      this.fall.quaternion.setFromAxisAngle(c.axis, (Math.PI / 2) * e)
+      this.fall.position.y = 0.12 * e
+    }
   }
 
   /** True when the body has a holstered weapon part. */

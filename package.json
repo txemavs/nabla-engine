@@ -266,6 +266,10 @@
     "./xr/ui": {
       "types": "./dist/runtime/xr/ui.d.ts",
       "import": "./dist/runtime/xr/ui.js"
+    },
+    "./combat": {
+      "types": "./dist/simulation/combat/damage.d.ts",
+      "import": "./dist/simulation/combat/damage.js"
     }
   },
   "imports": {

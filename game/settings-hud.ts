@@ -95,6 +95,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-vehicle-sound', 'objects'],
   ['settings-truck-exhaust', 'objects'],
   ['settings-weapon', 'objects'],
+  ['settings-combat', 'objects'],
   ['settings-options-sidearm', 'dev'],
   ['settings-weapon-poses', 'dev'],
   ['settings-light', 'dev'],
@@ -133,6 +134,7 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-management': t('settings.management'),
   'settings-camera-fov': t('settings.field-of-view'),
   'settings-weapon': t('settings.weapon-wheel'),
+  'settings-combat': t('settings.combat'),
   'settings-options-sidearm': t('settings.aiming'),
   'settings-muzzle-flash': t('settings.muzzle-flash'),
   'settings-config-planet': t('settings.planet'),
@@ -658,6 +660,39 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     reset.textContent = t('settings.reset-weapon-wheel')
     reset.addEventListener('click', () => runtime.resetWeaponWheel())
     section.append(note, reset)
+    place(section)
+  }
+
+  // Objetos → Arma: offline test dummies to shoot at (character damage, docs/combat.md).
+  const combatRuntime = runtime as unknown as Partial<{
+    spawnCombatDummy(): string | null
+    clearCombatDummies(): void
+    combatDummyCount: number
+  }>
+  if (typeof combatRuntime.spawnCombatDummy === 'function') {
+    const section = fieldset('settings-combat', t('settings.combat'))
+    const note = doc.createElement('p')
+    note.textContent = t('settings.combat-note')
+    const count = doc.createElement('p')
+    const refresh = () =>
+      (count.textContent = t('settings.dummies', { count: combatRuntime.combatDummyCount ?? 0 }))
+    const spawn = doc.createElement('button')
+    spawn.type = 'button'
+    spawn.id = 'settings-spawn-dummy'
+    spawn.textContent = t('settings.spawn-dummy')
+    spawn.addEventListener('click', () => {
+      combatRuntime.spawnCombatDummy?.()
+      refresh()
+    })
+    const clear = doc.createElement('button')
+    clear.type = 'button'
+    clear.textContent = t('settings.remove-dummies')
+    clear.addEventListener('click', () => {
+      combatRuntime.clearCombatDummies?.()
+      refresh()
+    })
+    refresh()
+    section.append(note, spawn, clear, count)
     place(section)
   }
 
@@ -1488,7 +1523,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       label: t('settings.current-vehicle'),
       sections: [...vehicleGroupSections],
     },
-    { tab: 'objects', id: 'weapon', label: t('settings.weapon'), sections: ['settings-weapon'] },
+    {
+      tab: 'objects',
+      id: 'weapon',
+      label: t('settings.weapon'),
+      sections: ['settings-weapon', 'settings-combat'],
+    },
     {
       tab: 'dev',
       id: 'weapons',
@@ -1903,7 +1943,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       toggle.removeEventListener('wheel', onClockWheel)
       toggle.remove()
       win.remove()
-      style.remove()
       if (legacy) legacy.hidden = false
     },
   }

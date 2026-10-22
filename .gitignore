@@ -28,3 +28,6 @@ assets/custom/**
 !assets/custom/README.md
 assets/packs/
 
+
+# scenario models are local (large binaries)
+assets/scenarios/*.glb
