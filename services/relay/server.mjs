@@ -214,10 +214,23 @@ function validEventData(data) {
   )
 }
 
+/** Player actor (`kind:color`, src/runtime/actor.ts): Polibot has one look, so its colour is white. */
+const ACTOR = /^(default|polibot):(white|black|red|blue|green|orange)$/
+function cleanActor(value) {
+  const m = typeof value === 'string' && value.length <= 32 ? ACTOR.exec(value) : null
+  if (!m) return undefined
+  return m[1] === 'polibot' ? 'polibot:white' : value
+}
+
 function cleanMeta(meta) {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return {}
   const out = {}
   for (const [key, value] of Object.entries(meta).slice(0, 16)) {
+    if (key === 'actor') {
+      const actor = cleanActor(value)
+      if (actor) out.actor = actor
+      continue
+    }
     if (typeof value === 'string') out[key.slice(0, 64)] = value.slice(0, 128)
     else if (typeof value === 'boolean' || Number.isFinite(value)) out[key.slice(0, 64)] = value
   }
