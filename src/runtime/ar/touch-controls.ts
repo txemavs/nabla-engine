@@ -1,3 +1,4 @@
+import { installEngineStyles } from '../../ui/styles.js'
 import { TouchDriving } from '../touch-driving.js'
 import { TouchFlight } from '../touch-flight.js'
 
@@ -19,38 +20,13 @@ export class ARTouchControls {
   mobile = false
   available = false
   constructor(actions: { menu: () => void; arm: () => void; engage: () => void }) {
-    this.root.style.cssText = 'position:fixed;inset:0;pointer-events:none;background:transparent'
     this.root.hidden = true
     this.root.id = 'nabla-ar-touch'
-    const style = document.createElement('style')
-    style.textContent = `
-#nabla-ar-touch[hidden],#nabla-ar-touch [hidden]{display:none!important}
-#nabla-ar-touch { --ar-size:1.8; }
-#nabla-ar-touch .touch-driving,#nabla-ar-touch .touch-flight {
- inset:auto max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
- width:auto; }
-#nabla-ar-touch .touch-driving-chrome { margin:0; }
-#nabla-ar-touch .touch-driving-stack { display:grid; grid-template-columns:56px 48px;
- grid-template-rows:78px 54px; gap:8px; align-items:center; zoom:var(--ar-size); }
-#nabla-ar-touch .touch-driving-gas { grid-column:2; grid-row:1 / 3; }
-#nabla-ar-touch .touch-driving-wheel { zoom:var(--ar-size); margin-bottom:36px; }
-#nabla-ar-touch .touch-driving-rim { box-sizing:border-box; }
-#nabla-ar-touch .touch-driving-place,#nabla-ar-touch .touch-driving-bar { display:none; }
-#nabla-ar-touch .touch-flight-col { zoom:var(--ar-size); margin-bottom:36px; }
-#nabla-ar-touch .touch-flight-bar { display:none; }
-#nabla-ar-touch .ar-object-actions { position:absolute; right:max(12px,env(safe-area-inset-right));
- bottom:max(12px,env(safe-area-inset-bottom)); display:flex; gap:8px; pointer-events:auto; }
-#nabla-ar-touch .ar-object-actions button { width:56px;height:56px;border:1px solid #555;
- border-radius:2px;background:#252525;color:white;touch-action:none; }
-#nabla-ar-touch .ar-object-actions svg { width:32px;height:32px; }
-@media (max-height:340px),(orientation:portrait) { #nabla-ar-touch { --ar-size:1.4; } }
-`
-    this.root.append(style)
+    installEngineStyles(document)
     document.body.append(this.root)
     const menu = document.createElement('button')
     menu.textContent = 'Menú'
-    menu.style.cssText =
-      'position:absolute;top:12px;left:12px;pointer-events:auto;min-width:64px;min-height:56px;font-size:20px;padding:12px;background:#252525;color:white;border:1px solid #555'
+    menu.className = 'nabla-ar-menu'
     menu.onclick = actions.menu
     this.root.append(menu)
     this.actionBar.className = 'ar-object-actions'

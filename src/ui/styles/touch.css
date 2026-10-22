@@ -1,0 +1,423 @@
+/*
+ * Touch rigs: walk sticks (touch-walk.ts), drive rig (touch-driving.ts: wheel, accelerator,
+ * handbrake lever) and flight sticks (touch-flight.ts). Shown on coarse pointers (`auto`), always
+ * or never (`data-visibility`). Joysticks sit --nabla-control-edge from the sides and
+ * --nabla-control-bottom above the bottom edge, clear of the bottom bar.
+ */
+:is(.touch-walk, .touch-driving, .touch-flight) {
+  display: none;
+  pointer-events: none;
+}
+:is(.touch-walk, .touch-driving, .touch-flight)[data-visibility='always'] {
+  display: flex;
+}
+@media (pointer: coarse), (hover: none) {
+  .touch-walk[data-visibility='auto'] {
+    display: flex;
+  }
+}
+@media (pointer: coarse) {
+  :is(.touch-driving, .touch-flight)[data-visibility='auto'] {
+    display: flex;
+  }
+}
+:is(.touch-walk, .touch-driving, .touch-flight)[data-visibility='hidden'],
+:is(.touch-walk, .touch-driving, .touch-flight)[data-visibility][hidden] {
+  display: none;
+}
+
+/* Shared stick look. */
+:is(.touch-walk-well, .touch-flight-stick) {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--nabla-stick-size);
+  height: var(--nabla-stick-size);
+  border: 2px solid var(--nabla-color-rail);
+  border-radius: 50%;
+  background: var(--nabla-color-well);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+}
+:is(.touch-walk-knob, .touch-flight-knob, .touch-driving-knob, .touch-driving-hb-dot) {
+  box-sizing: border-box;
+  border: 1px solid var(--nabla-color-line);
+  background: var(--nabla-color-button);
+  box-shadow: none;
+}
+:is(.touch-walk-well, .touch-flight-stick):active > i,
+.touch-driving-gas:active > .touch-driving-knob,
+.touch-driving-lever:active .touch-driving-hb-dot {
+  background: var(--nabla-color-pressed);
+}
+.touch-walk-knob,
+.touch-flight-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--nabla-stick-knob);
+  height: var(--nabla-stick-knob);
+  margin: calc(var(--nabla-stick-knob) / -2) 0 0 calc(var(--nabla-stick-knob) / -2);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Walk: one stick each side. */
+.touch-walk {
+  position: fixed;
+  inset: auto 0 var(--nabla-control-bottom);
+  z-index: var(--nabla-z-touch);
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 var(--nabla-control-edge);
+}
+
+/* Flight: two sticks and a centre button bar. */
+.touch-flight {
+  position: fixed;
+  inset: auto var(--nabla-control-edge) var(--nabla-control-bottom);
+  z-index: var(--nabla-z-touch);
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.touch-flight-bar {
+  position: absolute;
+  bottom: var(--nabla-space-4);
+  left: 50%;
+  display: flex;
+  justify-content: center;
+  gap: var(--nabla-space-4);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.touch-flight-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nabla-space-3);
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.touch-flight-label {
+  color: #888;
+  font:
+    var(--nabla-font-xs) / 1 system-ui,
+    sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.touch-flight button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--nabla-touch-btn);
+  height: var(--nabla-touch-btn);
+  padding: 0;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: var(--nabla-control-font) var(--nabla-font);
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.touch-flight button svg {
+  display: block;
+}
+.touch-flight button:active {
+  background: var(--nabla-color-pressed);
+}
+.touch-flight.is-idle :is(button, .touch-flight-stick) {
+  opacity: 0.55;
+}
+
+/* Drive rig: accelerator + handbrake on the left, wheel on the right. */
+.touch-driving {
+  position: absolute;
+  inset: auto var(--nabla-space-4) var(--nabla-space-4);
+  z-index: var(--nabla-z-touch);
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.touch-driving.is-idle {
+  opacity: 0.72;
+}
+.touch-driving-chrome {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+.touch-driving-bar {
+  display: flex;
+  align-self: end;
+  justify-content: flex-start;
+  gap: var(--nabla-space-4);
+  margin-bottom: var(--nabla-space-4);
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .touch-driving-bar {
+    position: absolute;
+    bottom: 132px;
+    left: 0;
+    flex-direction: column;
+    margin-bottom: 0;
+  }
+}
+:is(
+  .touch-driving-stack,
+  .touch-driving-gas,
+  .touch-driving-lever,
+  .touch-driving-wheel,
+  .touch-driving-pilot
+) {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+}
+.touch-driving-stack {
+  position: fixed;
+  bottom: var(--nabla-control-bottom);
+  left: var(--nabla-control-edge);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.touch-driving-lever {
+  position: relative;
+  width: 56px;
+  height: 72px;
+  margin-bottom: var(--nabla-space-3);
+}
+.touch-driving-hb {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 0 -20px;
+  border-radius: 50%;
+}
+.touch-driving-hb-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+.touch-driving-lever.is-on .touch-driving-hb-dot {
+  border-color: var(--nabla-color-danger);
+  background: var(--nabla-color-danger);
+}
+.touch-driving-turbo {
+  display: none;
+}
+.touch-driving-gas {
+  position: relative;
+  width: 48px;
+  height: var(--nabla-gas-height, 150px);
+}
+.touch-driving-rail {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--nabla-color-rail);
+}
+.touch-driving-knob {
+  position: absolute;
+  left: 50%;
+  width: var(--nabla-stick-knob);
+  height: var(--nabla-stick-knob);
+  margin: calc(var(--nabla-stick-knob) / -2) 0 0 calc(var(--nabla-stick-knob) / -2);
+  border-radius: var(--nabla-radius);
+  transition: top 40ms linear;
+}
+.touch-driving-wheel {
+  position: fixed;
+  right: var(--nabla-control-edge);
+  bottom: var(--nabla-control-bottom);
+  width: var(--nabla-wheel-size);
+  height: var(--nabla-wheel-size);
+}
+.touch-driving-rim {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 14px solid var(--nabla-color-button);
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent 46%,
+    var(--nabla-color-button) 46%,
+    var(--nabla-color-button) 54%,
+    transparent 54%
+  );
+  opacity: 0.72;
+  transition: transform 40ms linear;
+}
+/* Cockpit twist ring (round look, square hit target), only with showPilotTouchRing. */
+.touch-driving-pilot {
+  position: absolute;
+  top: auto;
+  bottom: 52%;
+  left: 50%;
+  display: none;
+  width: 180px;
+  height: 180px;
+  margin: 0 0 0 -90px;
+}
+.touch-driving.is-pilot .touch-driving-pilot {
+  display: block;
+}
+.touch-driving-pilot-ring {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--nabla-color-rail);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.touch-driving:not(.is-driving)
+  :is(.touch-driving-stack, .touch-driving-wheel, .touch-driving-pilot) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.touch-driving button.touch-driving-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--nabla-touch-btn);
+  height: var(--nabla-touch-btn);
+  padding: 0;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font:
+    var(--nabla-control-font) system-ui,
+    sans-serif;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+.touch-driving button.touch-driving-action svg {
+  display: block;
+}
+.touch-driving button.touch-driving-action:active {
+  background: var(--nabla-color-pressed);
+}
+
+/* AR touch layer (ar/touch-controls.ts): bigger controls, safe-area insets, no place/bars. */
+#nabla-ar-touch {
+  --nabla-stick-size: 180px;
+  --nabla-stick-knob: 56px;
+  --nabla-wheel-size: 240px;
+  --nabla-gas-height: 230px;
+  --nabla-control-edge: max(12px, env(safe-area-inset-left));
+  --nabla-control-bottom: calc(max(12px, env(safe-area-inset-bottom)) + 72px);
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+}
+@media (max-height: 340px), (orientation: portrait) {
+  #nabla-ar-touch {
+    --nabla-stick-size: 150px;
+    --nabla-stick-knob: 46px;
+    --nabla-wheel-size: 190px;
+    --nabla-gas-height: 190px;
+  }
+}
+#nabla-ar-touch[hidden],
+#nabla-ar-touch [hidden] {
+  display: none;
+}
+#nabla-ar-touch :is(.touch-driving-place, .touch-driving-bar, .touch-flight-bar) {
+  display: none;
+}
+#nabla-ar-touch .touch-driving-chrome {
+  margin: 0;
+}
+#nabla-ar-touch .touch-driving-stack {
+  display: grid;
+  grid-template-columns: 56px 48px;
+  grid-template-rows: 78px 54px;
+  align-items: center;
+  gap: var(--nabla-space-4);
+}
+#nabla-ar-touch .touch-driving-gas {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+.nabla-ar-menu {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  min-width: 64px;
+  min-height: 56px;
+  padding: var(--nabla-space-5);
+  border: 1px solid #555;
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: #fff;
+  font-size: var(--nabla-font-title);
+  pointer-events: auto;
+}
+/* AR object actions and the mobile weapon bar (ar-mobile-weapon.ts). */
+.nabla-ar-bar {
+  position: absolute;
+  display: flex;
+  gap: var(--nabla-space-4);
+  pointer-events: auto;
+}
+.nabla-ar-bar--tl {
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+}
+.nabla-ar-bar--br,
+#nabla-ar-touch .ar-object-actions {
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  justify-content: flex-end;
+}
+#nabla-ar-touch .ar-object-actions {
+  position: absolute;
+  display: flex;
+  gap: var(--nabla-space-4);
+  pointer-events: auto;
+}
+:is(.nabla-ar-bar, #nabla-ar-touch .ar-object-actions) button {
+  width: 56px;
+  height: 56px;
+  border: 1px solid #555;
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: #fff;
+  font-size: 28px;
+  touch-action: none;
+}
+#nabla-ar-touch .ar-object-actions svg {
+  width: 32px;
+  height: 32px;
+}
+.nabla-ar-sight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: #fff;
+  font-size: 32px;
+  text-shadow: 0 0 3px #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}

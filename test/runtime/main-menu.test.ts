@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
-import { MAIN_MENU_CSS, mountStartScreen } from '../../src/runtime/main-menu.js'
+import { mountStartScreen } from '../../src/runtime/main-menu.js'
+import { engineStyleSheets } from '../../src/ui/styles.js'
 
 it('mountStartScreen survives being inlined from its source (no module references)', () => {
   const source = mountStartScreen.toString()
@@ -28,6 +29,7 @@ it('mountStartScreen survives being inlined from its source (no module reference
 })
 
 it('styles the start screen with classes only', () => {
-  expect(MAIN_MENU_CSS).toContain('.nabla-start-enter')
-  expect(MAIN_MENU_CSS).not.toMatch(/#(nabla|euskadi)/)
+  const start = engineStyleSheets.menu.slice(engineStyleSheets.menu.indexOf('/* Start screen'))
+  expect(start).toContain('.nabla-start-enter')
+  expect(start.slice(0, start.indexOf('/* Mobile quality'))).not.toMatch(/#(nabla|euskadi)/)
 })

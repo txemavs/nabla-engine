@@ -1,6 +1,7 @@
 import { bindXRQuality } from '@nabla/engine/xr/ui'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { t } from '@nabla/engine/i18n'
+import { addGameMenuEntries } from '../src/runtime/main-menu.js'
 
 /** An explicit XR entry: the XR page, the demo, or any page opened with `?xr`. */
 export function isImmersiveEntry(): boolean {
@@ -40,16 +41,6 @@ function mountVR(runtime: GameRuntime): void {
   runtime.xr.enableCalibrationScreen()
   bindXRQuality(runtime, [], false)
   const screen = runtime.xr.calibrationScreen!
-  const style = document.createElement('style')
-  style.textContent = `
-    body.nabla-vr :is(#display-settings,#controls-hint,#xr-destinations,
-      #game-hud,.nabla-game-hud,.game-toolbar,.touch-driving,.touch-flight,.touch-walk) { display:none !important; }
-    #vr-toolbar { position:fixed;top:12px;right:12px;z-index:10005;display:flex;gap:8px; }
-    #vr-toolbar button { background:#252525;color:#eee;border:1px solid #444;
-      border-radius:2px;min-height:36px;padding:8px 14px;font:20px system-ui;cursor:pointer; }
-    #vr-toolbar button:disabled { opacity:.5;cursor:default; }
-  `
-  document.head.append(style)
   document.body.classList.add('nabla-vr')
   const toolbar = document.createElement('nav')
   toolbar.id = 'vr-toolbar'
@@ -128,17 +119,22 @@ function mountVR(runtime: GameRuntime): void {
   screen.navigate('main')
   const menu = document.createElement('button')
   menu.id = 'vr-monitor'
+  menu.className = 'nabla-btn'
   menu.textContent = t('vr.monitor-x')
   menu.onclick = () => runtime.xr.toggleMenu()
-  toolbar.append(menu)
   const errorStatus = document.createElement('output')
   errorStatus.setAttribute('role', 'status')
   toolbar.append(errorStatus)
   const button = document.createElement('button')
   button.id = 'enter-vr'
+  button.className = 'nabla-btn'
   button.textContent = t('vr.enter-vr')
   button.title = t('vr.left-stick-move-steer-right-snap-turn-a-enter-ex')
-  toolbar.append(button)
+  // The XR page's own entries go in the main menu (Virtual reality), not a toolbar of their own.
+  addGameMenuEntries('vr', [
+    { id: 'enter-vr', labelKey: 'vr.enter-vr', element: button },
+    { id: 'vr-monitor', labelKey: 'vr.monitor-x', element: menu },
+  ])
   button.disabled = true
   if (!isSecureContext || !navigator.xr) {
     button.textContent = 'VR requiere HTTPS y WebXR'

@@ -1,13 +1,14 @@
 /**
  * Main menu component: the start screen (title notice, ENTER button, extra entries) and the menu
  * toggle button (menu / Esc / play states). Hosts only configure it: texts are i18n keys read
- * through the `t` they pass, icons and links are data, styling is {@link MAIN_MENU_CSS} plus the
+ * through the `t` they pass, icons and links are data, styling is the engine stylesheet (src/ui/styles/menu.css) plus the
  * shared button CSS (`.nabla-btn`, `--icon`, `--danger`, `--go`).
  *
  * `mountStartScreen` is self-contained on purpose (no module references), so a host can inline
  * its source (`mountStartScreen.toString()`) in a classic first-paint script, like
  * `mountMobileQualityButton`.
  */
+import { installEngineStyles } from '../ui/styles.js'
 
 /** Translate function of the host: the engine `t`, or an inlined copy (`window.euskadiT`). */
 export type MenuTranslate = (
@@ -238,43 +239,6 @@ export function mountMenuToggle(
   return button
 }
 
-/**
- * Default start screen look (the Euskadi Online style): centered under the title, white on a soft
- * dark halo, a thin outlined ENTER. Hosts set `--nabla-start-font`, `--nabla-start-top` and
- * `--nabla-start-gap` (the one spacing between all elements).
- */
-export const MAIN_MENU_CSS = [
-  `.nabla-start { position:fixed;left:50%;top:var(--nabla-start-top,50%);z-index:1004;transform:translateX(-50%);`,
-  `width:min(92vw,640px);text-align:center;color:#fff;font-family:var(--nabla-start-font,Arial,sans-serif);`,
-  `pointer-events:auto;opacity:0;transition:opacity .6s ease;`,
-  `display:flex;flex-direction:column;align-items:center;gap:var(--nabla-start-gap,1em); }`,
-  `.nabla-start::before { content:"";position:absolute;inset:-3vh -4vw;z-index:-1;pointer-events:none;`,
-  `background:radial-gradient(closest-side,rgba(0,0,0,.45),rgba(0,0,0,0)); }`,
-  `.nabla-start.is-on { opacity:1; }`,
-  `.nabla-start,.nabla-start button { text-shadow:0 2px 14px rgba(0,0,0,.9); }`,
-  `.nabla-start-logo { display:block;max-width:60%; }`,
-  `.nabla-start-title { margin:0;font:700 clamp(20px,3vw,36px)/1.1 var(--nabla-start-font,Arial,sans-serif); }`,
-  `.nabla-start-notes { position:fixed;left:0;right:0;bottom:var(--nabla-ui-margin,12px);z-index:1004;`,
-  `display:flex;flex-direction:column;align-items:center;gap:.3em;text-align:center;color:#fff;`,
-  `font-family:var(--nabla-start-font,Arial,sans-serif);text-shadow:0 2px 14px rgba(0,0,0,.9);`,
-  `pointer-events:none;opacity:0;transition:opacity .6s ease; }`,
-  `.nabla-start-notes.is-on { opacity:1; }`,
-  `.nabla-start-notice { margin:0;font-size:clamp(10px,.85vw,12px);line-height:1.35;opacity:.78; }`,
-  `.nabla-start-locales { display:flex;justify-content:center;gap:1.2em;font-size:clamp(11px,.95vw,13px); }`,
-  `.nabla-start-locales a { color:rgba(255,255,255,.78);text-decoration:none;letter-spacing:.08em; }`,
-  `.nabla-start-locales a:hover,.nabla-start-locales a:focus-visible { color:#fff;text-decoration:underline;outline:none; }`,
-  `.nabla-start-enter { margin:0;font:400 clamp(14px,1.4vw,18px) var(--nabla-start-font,Arial,sans-serif);`,
-  `letter-spacing:.45em;padding:.8em 1.6em .8em 2.05em;color:#fff;background:rgba(0,0,0,.35);cursor:pointer;`,
-  `border:1px solid rgba(255,255,255,.75);border-radius:2px; }`,
-  `.nabla-start-enter:hover,.nabla-start-enter:focus-visible { background:rgba(255,255,255,.16);outline:none; }`,
-  `.nabla-start-entries { display:flex;align-items:center;justify-content:center;gap:16px; }`,
-  `.nabla-start-entry { display:flex;align-items:center;justify-content:center;width:36px;height:36px;`,
-  `color:rgba(255,255,255,.75);background:none;border:1px solid transparent;border-radius:50%;`,
-  `box-sizing:border-box;text-decoration:none;cursor:pointer; }`,
-  `.nabla-start-entry svg { width:24px;height:24px; }`,
-  `.nabla-start-entry:hover,.nabla-start-entry:focus-visible { color:#fff;border-color:rgba(255,255,255,.5);outline:none; }`,
-].join('')
-
 /** One item of a {@link SideMenuSection}: a link (`href`), an action (`run`) or a note line. */
 export interface SideMenuEntry {
   id?: string
@@ -287,6 +251,8 @@ export interface SideMenuEntry {
   note?: boolean
   /** Keep the menu open after the action (default: it closes). */
   keepOpen?: boolean
+  /** An element the caller owns (and keeps updating), placed as the entry; clicks close the menu. */
+  element?: HTMLElement
 }
 
 /** A titled group of entries; without `titleKey` the entries stand on their own. */
@@ -316,6 +282,8 @@ export interface SideMenu {
   toggle: () => void
   /** An entry (button, link or note) by its id. */
   entry: (id: string) => HTMLElement | null
+  /** Remove the menu and its listeners. */
+  destroy: () => void
 }
 
 /**
@@ -327,7 +295,7 @@ export const SIDE_MENU_COMPACT_QUERY =
 
 /**
  * The game's main menu, opened by the ☰ toggle. Hosts only configure sections and entries
- * (i18n keys, links, actions); look: {@link SIDE_MENU_CSS} and the shared `.nabla-btn` buttons.
+ * (i18n keys, links, actions); look: src/ui/styles/menu.css and the shared `.nabla-btn` buttons.
  */
 export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu {
   const nav = doc.createElement('nav')
@@ -359,6 +327,14 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
     box.dataset.section = section.id
     for (const entry of section.entries) {
       let item: HTMLElement
+      if (entry.element) {
+        item = entry.element
+        item.classList.add('nabla-btn')
+        if (!entry.keepOpen) item.addEventListener('click', () => setOpen(false))
+        if (entry.id) entries.set(entry.id, item)
+        box.append(item)
+        continue
+      }
       if (entry.note) {
         item = doc.createElement('p')
         item.className = 'nabla-side-menu-note'
@@ -403,20 +379,22 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
     const summary = (event.target as HTMLElement).closest('summary')
     if (summary && !nav.classList.contains('is-compact')) event.preventDefault()
   })
-  doc.addEventListener('pointerdown', (event) => {
+  const outside = (event: Event) => {
     const target = event.target as Node
     if (nav.hidden || nav.contains(target) || options.toggle?.()?.contains(target)) return
     setOpen(false)
-  })
-  if (!doc.getElementById('nabla-side-menu-css')) {
-    const style = doc.createElement('style')
-    style.id = 'nabla-side-menu-css'
-    style.textContent = SIDE_MENU_CSS
-    doc.head.append(style)
   }
+  doc.addEventListener('pointerdown', outside)
+  installEngineStyles(doc)
   doc.body.append(nav)
   return {
     nav,
+    destroy: () => {
+      doc.removeEventListener('pointerdown', outside)
+      compact?.removeEventListener('change', layout)
+      doc.body.classList.remove(bodyClass)
+      nav.remove()
+    },
     get isOpen() {
       return !nav.hidden
     },
@@ -426,24 +404,183 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
   }
 }
 
-/** Side menu look: engine theme tokens, fixed px; buttons are the shared `.nabla-btn`. */
-export const SIDE_MENU_CSS = [
-  `.nabla-side-menu { position:fixed;z-index:110;top:0;bottom:0;left:0;box-sizing:border-box;width:280px;max-width:100vw;`,
-  `overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:56px 12px 12px;`,
-  `background:var(--surface,#181818);color:var(--ink,#eee);border-right:1px solid var(--line,#333);font:14px Arial,sans-serif; }`,
-  `.nabla-side-menu[hidden] { display:none; }`,
-  `.nabla-side-menu-section { display:flex;flex-direction:column;gap:6px;margin:0;padding:0;border:0; }`,
-  `.nabla-side-menu details.nabla-side-menu-section:not([open]) { gap:0; }`,
-  `.nabla-side-menu-title { display:block;list-style:none;margin:0 0 2px;font:700 11px/16px Arial,sans-serif;`,
-  `letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#999);cursor:default; }`,
-  `.nabla-side-menu-title::-webkit-details-marker { display:none; }`,
-  `.nabla-side-menu .nabla-btn { justify-content:flex-start;align-self:stretch;box-sizing:border-box;min-width:0;text-decoration:none; }`,
-  `.nabla-side-menu-note { margin:0;font-size:12px;color:var(--muted,#999); }`,
-  // Compact: full width under the top row, the titles are tree rows (one open).
-  `.nabla-side-menu.is-compact { right:0;bottom:auto;width:auto;max-height:100dvh;padding-top:48px;border-right:0;border-bottom:1px solid var(--line,#333); }`,
-  `.nabla-side-menu.is-compact .nabla-side-menu-title { cursor:pointer;padding:6px 0;font-size:12px; }`,
-  `.nabla-side-menu.is-compact .nabla-side-menu-title::before { content:'▸';display:inline-block;width:14px; }`,
-  `.nabla-side-menu.is-compact details[open] > .nabla-side-menu-title::before { content:'▾'; }`,
-  `.nabla-side-menu.is-compact details > :not(summary) { margin-left:14px; }`,
-  `.nabla-side-menu.is-compact details > .nabla-btn { width:calc(100% - 14px); }`,
-].join('')
+/** The settings window as the game menu drives it (settings-hud.ts registers it). */
+export interface GameMenuSettings {
+  open: (tab?: string) => void
+  close: () => void
+  readonly isOpen: boolean
+}
+
+export interface GameMenuOptions {
+  /** Translate function (default: the engine catalog passed to {@link mountGameMenu}). */
+  t?: MenuTranslate
+  /** i18n key of the menu's aria-label. Default `menu.label`. */
+  labelKey?: string
+  /** Element id of the menu. Default `nabla-side-menu`. */
+  id?: string
+  /** Class set on <body> while open. Default `nabla-side-menu-open`. */
+  bodyClass?: string
+  /** The host's sections, given the engine defaults (game tabs, virtual reality). */
+  sections?: (defaults: SideMenuSection[]) => SideMenuSection[]
+}
+
+/** Id of the engine's Enter VR corner button (vr-entry.ts); the menu offers it instead. */
+export const GAME_MENU_VR_BUTTON_ID = 'nabla-vr-enter'
+/** Id of the ☰ toggle in the top-left corner. */
+export const GAME_MENU_TOGGLE_ID = 'nabla-menu-toggle'
+
+interface GameMenuState {
+  doc: Document
+  t: MenuTranslate
+  options: GameMenuOptions
+  extra: Map<string, SideMenuEntry[]>
+  settings?: GameMenuSettings
+  menu?: SideMenu
+  toggle?: HTMLButtonElement
+  observer?: MutationObserver
+}
+// One menu per page even when the source tree and the package build are both loaded
+// (game/*.ts import src, host inline modules import the package): the state lives on globalThis.
+const GAME_MENU_KEY = Symbol.for('nabla.gameMenu')
+const PENDING_KEY = Symbol.for('nabla.gameMenu.pending')
+const store = globalThis as unknown as {
+  [GAME_MENU_KEY]?: GameMenuState | null
+  // Entries added before the menu is mounted.
+  [PENDING_KEY]?: Map<string, SideMenuEntry[]>
+}
+
+const SETTINGS_TABS: ReadonlyArray<readonly [tab: string, key: string]> = [
+  ['planet', 'settings.world'],
+  ['options', 'settings.settings'],
+  ['objects', 'settings.objects'],
+  ['dev', 'settings.development'],
+]
+
+/** The engine's sections: the settings tabs, then virtual reality (enter, note, headset page). */
+export function defaultGameMenuSections(): SideMenuSection[] {
+  return [
+    {
+      id: 'game',
+      titleKey: 'menu.game',
+      entries: SETTINGS_TABS.map(([tab, key]) => ({
+        labelKey: key,
+        run: () => openGameSettings(tab),
+      })),
+    },
+    {
+      id: 'vr',
+      titleKey: 'menu.vr',
+      entries: [
+        {
+          id: 'nabla-menu-vr-enter',
+          labelKey: 'menu.vr-enter',
+          run: () => store[GAME_MENU_KEY]?.doc.getElementById(GAME_MENU_VR_BUTTON_ID)?.click(),
+        },
+        { id: 'nabla-menu-vr-note', labelKey: 'menu.vr-unavailable', note: true },
+        { labelKey: 'menu.headset', href: '/headset.html' },
+      ],
+    },
+  ]
+}
+
+/** Open the settings window, on `tab` when given (planet, options, objects, dev). */
+export function openGameSettings(tab?: string): void {
+  const state = store[GAME_MENU_KEY]
+  if (!state?.settings) return
+  state.menu?.setOpen(false)
+  state.settings.open(tab)
+}
+
+function buildGameMenu(state: GameMenuState): void {
+  const { doc, options } = state
+  state.menu?.destroy()
+  state.observer?.disconnect()
+  const t = options.t ?? state.t
+  const defaults = defaultGameMenuSections()
+  const sections = (options.sections ? options.sections(defaults) : defaults).map((section) => ({
+    ...section,
+    entries: [...section.entries, ...(state.extra.get(section.id) ?? [])],
+  }))
+  const menu = mountSideMenu(doc, {
+    t,
+    id: options.id,
+    bodyClass: options.bodyClass,
+    labelKey: options.labelKey ?? 'menu.label',
+    toggle: () => state.toggle ?? null,
+    sections,
+  })
+  state.menu = menu
+  // VR entry: shown when the engine's VR button is offered (or the page has its own entry).
+  const syncVR = () => {
+    const button = doc.getElementById(GAME_MENU_VR_BUTTON_ID)
+    const pageEntry = [...(state.extra.get('vr') ?? [])].some((entry) => entry.element)
+    const ready = !!button && !button.hidden && !pageEntry
+    const enter = menu.entry('nabla-menu-vr-enter')
+    const note = menu.entry('nabla-menu-vr-note')
+    if (enter && enter.hidden === ready) enter.hidden = !ready
+    const noted = !ready && !pageEntry
+    if (note && note.hidden === noted) note.hidden = !noted
+  }
+  syncVR()
+  state.observer = new MutationObserver(syncVR)
+  state.observer.observe(doc.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['hidden'],
+  })
+}
+
+/**
+ * The game's one main menu: the ☰ toggle in the top-left corner and the side menu it opens
+ * (engine and host pages alike). ☰ closes the settings window when it is open, otherwise it
+ * opens or closes the menu. Calling again (a host configuring its sections and texts) rebuilds
+ * the menu in place; the toggle stays.
+ */
+export function mountGameMenu(
+  doc: Document,
+  t: MenuTranslate,
+  options: GameMenuOptions = {},
+  addToCorner?: (toggle: HTMLButtonElement) => void,
+): SideMenu {
+  const existing = store[GAME_MENU_KEY]
+  if (existing && existing.doc === doc) {
+    existing.t = t
+    existing.options = { ...existing.options, ...options }
+    buildGameMenu(existing)
+    return existing.menu!
+  }
+  const state: GameMenuState = { doc, t, options, extra: store[PENDING_KEY] ?? new Map() }
+  store[PENDING_KEY] = undefined
+  store[GAME_MENU_KEY] = state
+  state.toggle = mountMenuToggle(doc, {
+    t: options.t ?? t,
+    id: GAME_MENU_TOGGLE_ID,
+    onClick: () => {
+      if (state.settings?.isOpen) state.settings.close()
+      else state.menu?.toggle()
+    },
+  })
+  addToCorner?.(state.toggle)
+  buildGameMenu(state)
+  return state.menu!
+}
+
+/** settings-hud.ts: the window the menu's game entries open. */
+export function registerGameMenuSettings(settings: GameMenuSettings): void {
+  const state = store[GAME_MENU_KEY]
+  if (state) state.settings = settings
+}
+
+/** Add entries to a section of the game menu (e.g. the XR page's own Enter VR and monitor). */
+export function addGameMenuEntries(sectionId: string, entries: readonly SideMenuEntry[]): void {
+  const state = store[GAME_MENU_KEY]
+  const extra = state?.extra ?? (store[PENDING_KEY] ??= new Map())
+  extra.set(sectionId, [...(extra.get(sectionId) ?? []), ...entries])
+  if (state) buildGameMenu(state)
+}
+
+/** The mounted game menu, if any. */
+export function currentGameMenu(): SideMenu | null {
+  return store[GAME_MENU_KEY]?.menu ?? null
+}

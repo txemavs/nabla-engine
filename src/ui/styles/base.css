@@ -1,0 +1,52 @@
+/* Page base. Full-screen game pages carry `<html class="nabla-game">`; panel pages (AR,
+   headset, demos) carry `<html class="nabla-page">` (see panels.css). */
+.nabla-game *,
+.nabla-game *::before,
+.nabla-game *::after {
+  box-sizing: border-box;
+}
+.nabla-game :is(body, h1, h2, h3, p, ul, ol, figure, fieldset, legend, pre) {
+  margin: 0;
+  padding: 0;
+}
+.nabla-game,
+.nabla-game body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--nabla-color-ink);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+.nabla-game #game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.nabla-game #game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Engine pages without a host (test.html, xr.html) keep a grey backdrop until the world draws. */
+.nabla-game.nabla-game--plain,
+.nabla-game.nabla-game--plain body {
+  background: #1a1a1a;
+}
+/* Terrain pages show speed on the in-car dashboard, not in a HUD panel. */
+.nabla-game--dashboard {
+  --nabla-speed-display: none;
+}
+/* A [hidden] element stays hidden even where a component sets `display`. */
+.nabla-game [hidden] {
+  display: none;
+}
+/* Present for the browser (focus, selection, clipboard) but never seen. */
+.nabla-offscreen {
+  position: fixed;
+  opacity: 0;
+  pointer-events: none;
+}

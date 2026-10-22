@@ -1,83 +1,20 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="nabla-page">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Nabla · Realidad mixta</title>
-    <style>
-      body {
-        margin: 0;
-        background: #182532;
-        color: #f1f7fc;
-        font: 17px system-ui;
-      }
-      canvas {
-        display: block;
-        width: 100vw;
-        height: 100dvh;
-      }
-      #panel {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        box-sizing: border-box;
-        width: min(460px, calc(100vw - 40px));
-        max-height: calc(100dvh - 40px);
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        touch-action: pan-y;
-        padding: 20px;
-        background: #182532ed;
-        border: 1px solid #8dd1de;
-        border-radius: 14px;
-      }
-      .actions {
-        position: sticky;
-        top: -20px;
-        background: #182532;
-        padding: 12px 0;
-        z-index: 1;
-      }
-      details {
-        margin: 14px 0;
-      }
-      summary {
-        cursor: pointer;
-        padding: 8px 0;
-      }
-      input,
-      select {
-        max-width: 100%;
-        box-sizing: border-box;
-        font: inherit;
-      }
-      h1 {
-        font-size: 24px;
-        margin-top: 0;
-      }
-      button,
-      a {
-        font: inherit;
-        padding: 12px;
-        display: inline-block;
-        color: inherit;
-      }
-      button {
-        background: #205b6c;
-        border: 1px solid #8dd1de;
-        border-radius: 8px;
-      }
-      button:disabled {
-        opacity: 0.5;
-      }
-      p {
-        line-height: 1.5;
-      }
+    <!-- Critical CSS: nothing unstyled (or the error overlay) shows before ui-styles.ts runs. -->
+    <style id="nabla-critical">
+      html { background: #121212; color-scheme: dark; }
+      html:not(.nabla-styles-ready) body { visibility: hidden; }
+      #error-message:not(.visible) { display: none; }
     </style>
+    <script type="module" src="./ui-styles.ts"></script>
   </head>
   <body>
     <canvas id="viewport"></canvas>
-    <section id="panel">
+    <section id="panel" class="nabla-page-card">
       <a href="/headset.html" style="color: #9bdeff">← Nabla HeadSet</a>
       <h1>Realidad mixta</h1>
       <div class="actions">
@@ -171,6 +108,5 @@
       </details>
     </section>
     <script type="module" src="./ar.ts"></script>
-    <script type="module" src="./interface-theme.ts"></script>
   </body>
 </html>

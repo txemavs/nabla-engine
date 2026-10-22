@@ -362,8 +362,7 @@ try {
         'forklift.sideRight',
         'forklift.menu',
       ]) + '. En VR: mantener agarre y tirar/empujar la palanca.'
-    help.style.cssText =
-      'position:fixed;bottom:70px;left:12px;max-width:420px;background:#102632e8;color:white;padding:10px;pointer-events:none'
+    help.className = 'nabla-help-box'
     document.body.append(help)
   }
   if (noTerrainTest && (!solo || new URLSearchParams(location.search).has('xr')))

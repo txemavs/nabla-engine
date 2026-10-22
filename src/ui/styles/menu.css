@@ -1,0 +1,237 @@
+/* Side menu (main-menu.ts mountSideMenu): a drawer on wide screens, a one-open tree on narrow
+   or touch ones. Entries are the shared .nabla-btn. */
+.nabla-side-menu {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--nabla-z-menu);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nabla-space-5);
+  box-sizing: border-box;
+  width: 260px;
+  max-width: 100vw;
+  padding: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-space-5))
+    var(--nabla-space-5) var(--nabla-space-5);
+  overflow-y: auto;
+  border-right: 1px solid var(--nabla-color-line);
+  background: var(--nabla-color-surface);
+  color: var(--nabla-color-ink);
+  font: var(--nabla-control-font) var(--nabla-font);
+}
+.nabla-side-menu[hidden] {
+  display: none;
+}
+.nabla-side-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nabla-btn-gap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.nabla-side-menu details.nabla-side-menu-section:not([open]) {
+  gap: 0;
+}
+.nabla-side-menu-title {
+  display: block;
+  margin: 0 0 var(--nabla-space-1);
+  color: var(--nabla-color-muted);
+  font: 700 var(--nabla-font-sm) / 16px var(--nabla-font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: default;
+}
+.nabla-side-menu-title::-webkit-details-marker {
+  display: none;
+}
+.nabla-side-menu .nabla-btn {
+  align-self: stretch;
+  justify-content: flex-start;
+  min-width: 0;
+}
+.nabla-side-menu-note {
+  margin: 0;
+  color: var(--nabla-color-muted);
+  font-size: 12px;
+}
+.nabla-side-menu.is-compact {
+  right: 0;
+  bottom: auto;
+  width: auto;
+  max-height: 100dvh;
+  border-right: 0;
+  border-bottom: 1px solid var(--nabla-color-line);
+}
+.nabla-side-menu.is-compact .nabla-side-menu-title {
+  padding: var(--nabla-space-3) 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.nabla-side-menu.is-compact .nabla-side-menu-title::before {
+  content: '▸';
+  display: inline-block;
+  width: 14px;
+}
+.nabla-side-menu.is-compact details[open] > .nabla-side-menu-title::before {
+  content: '▾';
+}
+.nabla-side-menu.is-compact details > :not(summary) {
+  margin-left: 14px;
+}
+.nabla-side-menu.is-compact details > .nabla-btn {
+  width: calc(100% - 14px);
+}
+
+/* Start screen (main-menu.ts mountStartScreen): centred under the title, white on a soft halo.
+   Hosts set --nabla-start-font, --nabla-start-top and --nabla-start-gap. */
+.nabla-start {
+  position: fixed;
+  top: var(--nabla-start-top, 50%);
+  left: 50%;
+  z-index: var(--nabla-z-start);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nabla-start-gap, 1em);
+  width: min(92vw, 640px);
+  color: #fff;
+  font-family: var(--nabla-start-font, var(--nabla-font));
+  text-align: center;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.6s ease;
+  pointer-events: auto;
+}
+.nabla-start::before {
+  content: '';
+  position: absolute;
+  inset: -3vh -4vw;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+.nabla-start.is-on,
+.nabla-start-notes.is-on {
+  opacity: 1;
+}
+.nabla-start,
+.nabla-start button {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+.nabla-start-logo {
+  display: block;
+  max-width: 60%;
+}
+.nabla-start-title {
+  margin: 0;
+  font: 700 clamp(20px, 3vw, 36px) / 1.1 var(--nabla-start-font, var(--nabla-font));
+}
+.nabla-start-notes {
+  position: fixed;
+  right: 0;
+  /* Above the engine version line (bottom centre). */
+  bottom: calc(var(--nabla-space-1) + var(--nabla-font-xs) + var(--nabla-space-4));
+  left: 0;
+  z-index: var(--nabla-z-start);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  color: #fff;
+  font-family: var(--nabla-start-font, var(--nabla-font));
+  text-align: center;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.nabla-start-notice {
+  margin: 0;
+  font-size: clamp(10px, 0.85vw, 12px);
+  line-height: 1.35;
+  opacity: 0.78;
+}
+.nabla-start-locales {
+  display: flex;
+  justify-content: center;
+  gap: 1.2em;
+  font-size: clamp(11px, 0.95vw, 13px);
+}
+.nabla-start-locales a {
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.nabla-start-locales a:is(:hover, :focus-visible) {
+  color: #fff;
+  text-decoration: underline;
+  outline: none;
+}
+.nabla-start-enter {
+  margin: 0;
+  padding: 0.8em 1.6em 0.8em 2.05em;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--nabla-radius);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 400 clamp(14px, 1.4vw, 18px) var(--nabla-start-font, var(--nabla-font));
+  letter-spacing: 0.45em;
+  cursor: pointer;
+}
+.nabla-start-enter:is(:hover, :focus-visible) {
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+.nabla-start-entries {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nabla-space-6);
+}
+.nabla-start-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  cursor: pointer;
+}
+.nabla-start-entry svg {
+  width: 24px;
+  height: 24px;
+}
+.nabla-start-entry:is(:hover, :focus-visible) {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+  outline: none;
+}
+/* Mobile quality switch on the start screen (quality-preset.ts). */
+#nabla-mobile-quality {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+#nabla-mobile-quality[aria-pressed='true'] {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}

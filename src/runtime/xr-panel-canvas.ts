@@ -1,4 +1,4 @@
-import { interfaceTheme as theme } from './interface-theme.js'
+import { interfaceTheme as theme } from '../ui/theme.js'
 import * as THREE from 'three'
 
 export type XRPanelPage =

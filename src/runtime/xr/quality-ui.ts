@@ -24,8 +24,7 @@ export function bindXRQuality(
   const panel = document.createElement('details')
   panel.id = 'xr-main-menu'
   panel.open = false
-  panel.style.cssText =
-    'position:fixed;left:12px;top:12px;z-index:10004;width:min(360px,calc(100vw - 100px));max-height:85vh;overflow:auto;background:#102632f5;color:#eefaff;border:1px solid #79bad4;border-radius:10px;padding:12px;font:14px system-ui;box-sizing:border-box'
+  panel.className = 'nabla-panel'
   panel.innerHTML =
     '<summary>Calidad</summary><p>Resolución del casco y detalle de la carretera. X del mando abre el menú en VR.</p>'
   const rowsRoot = document.createElement('div'),
@@ -145,8 +144,7 @@ export function bindXRQuality(
   }
   for (let i = 0; i < labels.length; i++) {
     const row = document.createElement('div')
-    row.style.cssText =
-      'display:grid;grid-template-columns:1fr 32px 90px 32px;align-items:center;gap:4px;margin:10px 0'
+    row.className = 'nabla-panel-stepper'
     const label = document.createElement('span')
     label.textContent = labels[i]
     const minus = document.createElement('button'),
@@ -175,7 +173,6 @@ export function bindXRQuality(
   development.innerHTML = '<summary>Desarrollo</summary>'
   for (const element of developmentElements) {
     if (element instanceof HTMLDetailsElement) element.open = false
-    element.style.cssText = 'position:static;width:auto;max-height:none;margin-top:10px'
     development.append(element)
   }
   panel.append(development)
