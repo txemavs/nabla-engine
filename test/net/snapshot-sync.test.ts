@@ -469,6 +469,56 @@ describe('SnapshotSync on-foot avatars', () => {
   })
 })
 
+describe('SnapshotSync remote actor change', () => {
+  it('rebuilds a standing peer\'s body at once when its actor changes', () => {
+    let now = 0
+    const net = relay()
+    const host = fakeHost(() => ({
+      position: [0, 0, 0],
+      rotation: [0, 0, 0, 1],
+      velocity: [0, 0, 0],
+      angularVelocity: [0, 0, 0],
+    })).host
+    const built: string[] = []
+    let disposed = 0
+    let walking = true
+    const make = (walker: boolean) =>
+      new SnapshotSync({
+        transport: net.connect(),
+        room: 'actor',
+        host,
+        clock: () => now,
+        localEntity: () => null,
+        spawnRemote: () => null,
+        despawnRemote: () => {},
+        meta: walker ? { actor: 'default:red' } : {},
+        localAvatar: walker
+          ? () => (walking ? { position: [0, 0, 0], yaw: 0, speed: 0, anim: 0 } : null)
+          : () => null,
+        remoteAvatar: (peer) => (
+          built.push(String(peer.meta.actor)),
+          { update: () => {}, dispose: () => disposed++ }
+        ),
+      })
+    const a = make(true)
+    const b = make(false)
+    for (let frame = 0; frame < 10; frame++) {
+      now = frame * 50
+      a.update()
+      b.update()
+    }
+    expect(built).toEqual(['default:red'])
+    // A stands still and sends no more body samples; its new actor still shows straight away.
+    walking = false
+    a.setMeta({ actor: 'polibot:white' })
+    expect(disposed).toBe(1)
+    expect(built).toEqual(['default:red', 'polibot:white'])
+    expect(b.avatars.size).toBe(1)
+    a.dispose()
+    b.dispose()
+  })
+})
+
 describe('SnapshotSync.switchRoom', () => {
   it('drops the old room (cars and avatars) and joins the new one', () => {
     let now = 0

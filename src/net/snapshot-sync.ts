@@ -124,6 +124,8 @@ export class SnapshotSync {
   readonly avatars = new Map<string, RemoteAvatar>()
   /** Last reported position of every other peer, shown or not (interest management). */
   private readonly lastPosition = new Map<string, EntityState['position']>()
+  /** Last body sample of every shown peer, so a new actor can be drawn at once. */
+  private readonly lastAvatar = new Map<string, { t: number; sample: AvatarSample }>()
   private seq = 0
   private lastSent = -Infinity
   private readonly interval: number
@@ -350,10 +352,14 @@ export class SnapshotSync {
         if (message.peer === this.peerId) break
         const known = this.peers.get(message.peer) ?? { peer: message.peer, meta: {} }
         // Respawn with the new meta, keeping the relay slot and colour; a new actor (robot or
-        // colour) rebuilds the on-foot body too.
-        if (known.meta.actor !== message.meta.actor) this.removeAvatar(message.peer)
+        // colour) rebuilds the on-foot body at once from its last sample: a peer standing still
+        // sends no new one, and would show nothing until it moved.
+        const rebuild = known.meta.actor !== message.meta.actor && this.avatars.has(message.peer)
+        const last = rebuild ? this.lastAvatar.get(message.peer) : undefined
+        if (rebuild) this.removeAvatar(message.peer)
         this.remove(message.peer)
         this.add({ ...known, meta: message.meta })
+        if (last) this.receiveAvatar(message.peer, last.t, last.sample)
         break
       }
       case 'snapshot':
@@ -400,11 +406,13 @@ export class SnapshotSync {
       }
     }
     avatar.push(t, sample, this.clock())
+    this.lastAvatar.set(peer, { t, sample })
   }
 
   private removeAvatar(peer: string): void {
     this.avatars.get(peer)?.dispose()
     this.avatars.delete(peer)
+    this.lastAvatar.delete(peer)
   }
 
   private add(peer: PeerInfo): void {
