@@ -247,6 +247,8 @@ export function startRelay({
 } = {}) {
   /** room id -> Map<entity id, { id, type, params, p, q, owner, driver }>: shared entities. */
   const entities = new Map()
+  /** room id -> ids of removed world entities (`w.` ids): they do not come back while the room lives. */
+  const removedWorld = new Map()
   const entitiesOf = (room) => {
     let map = entities.get(room)
     if (!map) entities.set(room, (map = new Map()))
@@ -315,6 +317,7 @@ export function startRelay({
       rooms.delete(room)
       ledgers.delete(room)
       entities.delete(room)
+      removedWorld.delete(room)
     }
     // What it drove stays where it is, free for anyone.
     for (const entity of entities.get(room)?.values() ?? [])
@@ -342,6 +345,8 @@ export function startRelay({
       if (!validEntitySpawn(data)) return
       // Same id as an existing entity (an object every client has): a claim, never a copy.
       if (entity) return data.d ? claim(entity) : tell(entity)
+      // World objects every client places with the same id (`w.…`): once removed, gone for good.
+      if (removedWorld.get(room)?.has(data.i)) return
       const own = [...map.values()].filter((e) => e.owner === member.peer).length
       if (map.size >= maxEntities || own >= maxOwnEntities) return
       const params = Object.fromEntries(Object.entries(data).filter(([k]) => k.startsWith('_')))
@@ -361,6 +366,10 @@ export function startRelay({
     } else if (kind === 'entity.despawn') {
       if (!entity || (entity.driver && entity.driver !== member.peer)) return
       map.delete(entity.id)
+      if (entity.id.startsWith('w.')) {
+        if (!removedWorld.has(room)) removedWorld.set(room, new Set())
+        if (removedWorld.get(room).size < 1024) removedWorld.get(room).add(entity.id)
+      }
       relayEvent(room, 'entity.gone', { i: entity.id, b: member.peer })
       log('despawn', room, entity.id, 'by', member.peer)
     }

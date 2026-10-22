@@ -357,6 +357,21 @@ test('shared entities: spawn, join list, claim by another peer, driver snapshots
   while (gone.kind !== 'entity.gone')
   assert.ok([welcomeC.peer, pa].includes(gone.data.b))
   assert.equal(gone.data.i, `${pa}.2`)
+  // A world item (same id on every client): placed once; once taken it is not placed again.
+  ev(c, 'entity.spawn', { i: 'w.pistol.0.0', y: 'item', p: [0, 0, 0], q: [0, 0, 0, 1] })
+  const until = async (s, ok) => {
+    let m
+    do m = await s.next('event')
+    while (!ok(m))
+    return m
+  }
+  await until(a, (m) => m.data.i === 'w.pistol.0.0')
+  ev(a, 'entity.spawn', { i: 'w.pistol.0.0', y: 'item', p: [1, 0, 0], q: [0, 0, 0, 1] })
+  assert.deepEqual((await until(a, (m) => m.data.i === 'w.pistol.0.0')).data.p, [0, 0, 0])
+  ev(c, 'entity.despawn', { i: 'w.pistol.0.0' })
+  ev(a, 'entity.spawn', { i: 'w.pistol.0.0', y: 'item', p: [1, 0, 0], q: [0, 0, 0, 1] })
+  do gone = await c.next('event')
+  while (gone.kind !== 'entity.gone' || gone.data.i !== 'w.pistol.0.0')
   const quiet = await Promise.race([c.next('event'), new Promise((r) => setTimeout(() => r(null), 150))])
   assert.equal(quiet, null)
   for (const s of [a, c]) s.close()
