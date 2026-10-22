@@ -193,15 +193,15 @@ touching anything visible.
 
 `txemavs/euskadi` contains **no engine code**. It contains an overlay and a pin:
 
-| File                          | Role                                                                                                                         |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `ENGINE_REF` (line 1)         | The exact `nabla-engine` commit to build against. Pin a commit that is on engine `main` and whose CI passed.                 |
-| `demo-config.ts`              | Hard-coded demo defaults: start position/heading/vehicle, parked vehicles (including trailers), clock.                       |
-| `euskadi-boot.ts`             | Intro, ENTER screen, credits, music, reveal timing; hides game chrome until gameplay starts.                                 |
-| `euskadi-hud.ts`              | Host HUD (title, clock-as-Menú, contextual button rows). Reuses engine tokens from `src/runtime/interface-theme.ts`.         |
-| `vite.euskadi.config.ts`      | Build config; hands the runtime to the HUD as `window.euskadiRuntime`.                                                       |
-| `euskadi-run/build-static.sh` | Builds the static bundle: checks out the engine at `ENGINE_REF`, **copies the overlay files to the engine root**, runs Vite. |
-| `GAME.md`                     | Game-level notes (credits text, spawn, intro sequence). Engine documentation is _this_ folder.                               |
+| File                          | Role                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `ENGINE_REF` (line 1)         | The exact `nabla-engine` commit to build against. Pin a commit that is on engine `main` and whose CI passed.                   |
+| `demo-config.ts`              | Hard-coded demo defaults: start position/heading/vehicle, parked vehicles (including trailers), clock.                         |
+| `euskadi-boot.ts`             | Intro, ENTER screen, credits, music, reveal timing; hides game chrome until gameplay starts.                                   |
+| `euskadi-hud.ts`              | Host HUD (title, clock-as-Menú, contextual button rows). Uses the engine UI tokens (`src/ui/styles`, [UI theme](ui-theme.md)). |
+| `vite.euskadi.config.ts`      | Build config; hands the runtime to the HUD as `window.euskadiRuntime`.                                                         |
+| `euskadi-run/build-static.sh` | Builds the static bundle: checks out the engine at `ENGINE_REF`, **copies the overlay files to the engine root**, runs Vite.   |
+| `GAME.md`                     | Game-level notes (credits text, spawn, intro sequence). Engine documentation is _this_ folder.                                 |
 
 Consequences you must remember:
 
@@ -217,7 +217,7 @@ Consequences you must remember:
 ## 9. What not to redo
 
 - A new menu, window system or button style: use `game/settings-hud.ts` and
-  `src/runtime/interface-theme.ts` ([UI/UX pattern](ui-ux-pattern.md)).
+  `src/ui/styles` ([UI theme](ui-theme.md), [UI/UX pattern](ui-ux-pattern.md)).
 - Hard-coded keys: add them to `src/config/input-bindings.ts`; the Teclas page is generated from it.
 - A second physics or light system for a new kind of object: check
   [generalization candidates](generalization-candidates.md) first.

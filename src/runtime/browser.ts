@@ -7,7 +7,7 @@ import {
   type VehicleLightTuning,
 } from '../render/vehicle-presentation/light-tuning.js'
 import { detectCompressedTextureSupport } from '../render/planet/tile-compression.js'
-import { installInterfaceStyles } from './interface-style.js'
+import { installEngineStyles } from '../ui/styles.js'
 import { mountEngineVersionLabel } from './engine-version.js'
 import {
   getVehicleBeamCutoff,
@@ -1168,7 +1168,7 @@ export class GameRuntime {
       }
     }
     this.monitors.rebuild(this.document)
-    installInterfaceStyles(options.canvas.ownerDocument)
+    installEngineStyles(options.canvas.ownerDocument)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
     this.versionLabel = mountEngineVersionLabel(options.canvas.parentElement!)
     this.sky = new GeographicView(this.document, () => {})

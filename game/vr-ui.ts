@@ -41,16 +41,6 @@ function mountVR(runtime: GameRuntime): void {
   runtime.xr.enableCalibrationScreen()
   bindXRQuality(runtime, [], false)
   const screen = runtime.xr.calibrationScreen!
-  const style = document.createElement('style')
-  style.textContent = `
-    body.nabla-vr :is(#display-settings,#controls-hint,#xr-destinations,
-      #game-hud,.nabla-game-hud,.game-toolbar,.touch-driving,.touch-flight,.touch-walk) { display:none !important; }
-    #vr-toolbar { position:fixed;top:12px;right:12px;z-index:10005;display:flex;gap:8px; }
-    #vr-toolbar button { background:#252525;color:#eee;border:1px solid #444;
-      border-radius:2px;min-height:36px;padding:8px 14px;font:20px system-ui;cursor:pointer; }
-    #vr-toolbar button:disabled { opacity:.5;cursor:default; }
-  `
-  document.head.append(style)
   document.body.classList.add('nabla-vr')
   const toolbar = document.createElement('nav')
   toolbar.id = 'vr-toolbar'
@@ -129,6 +119,7 @@ function mountVR(runtime: GameRuntime): void {
   screen.navigate('main')
   const menu = document.createElement('button')
   menu.id = 'vr-monitor'
+  menu.className = 'nabla-btn'
   menu.textContent = t('vr.monitor-x')
   menu.onclick = () => runtime.xr.toggleMenu()
   toolbar.append(menu)
@@ -137,6 +128,7 @@ function mountVR(runtime: GameRuntime): void {
   toolbar.append(errorStatus)
   const button = document.createElement('button')
   button.id = 'enter-vr'
+  button.className = 'nabla-btn'
   button.textContent = t('vr.enter-vr')
   button.title = t('vr.left-stick-move-steer-right-snap-turn-a-enter-ex')
   toolbar.append(button)

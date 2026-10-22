@@ -16,9 +16,6 @@ export function mountEngineVersionLabel(
   label.className = 'nabla-engine-version'
   label.textContent = `v${version}`
   label.setAttribute('aria-hidden', 'true')
-  label.style.cssText =
-    'position:fixed;right:6px;bottom:4px;z-index:5;pointer-events:none;user-select:none;' +
-    'font:10px/1 system-ui,sans-serif;color:#fff;opacity:.35;text-shadow:0 1px 2px #000'
   parent.append(label)
   return label
 }

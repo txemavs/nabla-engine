@@ -16,7 +16,7 @@ the top right and a **contextual row of buttons** at the bottom changes with whe
 ## 1. Menu: tabs → sections → controls
 
 Source: `game/settings-hud.ts` (`mountSettingsHud`), styles in
-`game/settings-navigation-styles.ts`, tokens in `src/runtime/interface-theme.ts`.
+`src/ui/styles/settings.css`, tokens in `src/ui/styles/tokens.css` ([UI theme](ui-theme.md)).
 Behaviour description: [settings menu](settings-menu.md).
 
 ```
@@ -47,8 +47,8 @@ Rules:
    after mount is picked up by the section observer. Use `menuSection` (`game/menu.ts`) to
    add a section; one `*-ui.ts` file per control family.
 4. **Save like the other settings** (localStorage under a `nabla.*` key) and apply live.
-5. **Use the shared tokens** (`interfaceVariables`, `interfaceControls`, `interfaceTheme`). No
-   private palettes.
+5. **Use the shared tokens** (`src/ui/styles/tokens.css`; `interfaceTheme` for canvas). No
+   private palettes, no inline styles, no `!important`.
 6. **Defaults are code.** A new slider ships with a default in `src/config/`; production
    behaviour must not change by adding a control. Dev-only comparison toggles belong in
    «Desarrollo» and default to the existing behaviour.

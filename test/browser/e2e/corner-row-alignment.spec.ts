@@ -5,11 +5,11 @@ import { expect, test } from '@playwright/test'
 test('corner row buttons share height, top and gap', async ({ page }) => {
   await page.goto('/')
   const boxes = await page.evaluate(async (root) => {
-    const style = await import(`/@fs${root}/src/runtime/interface-style.ts`)
+    const style = await import(`/@fs${root}/src/ui/styles.ts`)
     const corner = await import(`/@fs${root}/src/runtime/corner-buttons.ts`)
     document.body.replaceChildren()
     const tag = document.createElement('style')
-    tag.textContent = style.defaultInterfaceStyles
+    tag.textContent = style.engineStyleText
     document.head.append(tag)
     const button = (text: string, extra = '') => {
       const el = document.createElement('button')

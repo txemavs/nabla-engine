@@ -1,0 +1,618 @@
+/*
+ * Settings window (settings-hud.ts): full-screen, header · tabs · section tree + content · footer.
+ * The game stays visible behind the panes. Also the legacy #display-settings panel of the
+ * plain engine pages.
+ */
+.settings-window {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nabla-z-settings);
+  width: 100vw;
+  height: 100dvh;
+  background: transparent;
+  color: var(--nabla-color-ink);
+  font: var(--nabla-control-font) / 1.4 var(--nabla-font);
+  pointer-events: auto;
+}
+.settings-window[hidden],
+.settings-window [hidden],
+.settings-window [data-section-hidden] {
+  display: none;
+}
+.settings-window .settings-console {
+  display: grid;
+  grid-template-rows: 44px 40px minmax(0, 1fr) 40px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.settings-window :is(.settings-header, .settings-tabs, .settings-footer) {
+  background: var(--nabla-color-surface);
+}
+.settings-window .settings-panes {
+  background: var(--nabla-color-surface-glass);
+}
+
+/* Header: title left, close right. A menu toggle in the top-left corner sits over the header,
+   so the title starts after it. */
+body:has(.nabla-corner--tl) .settings-header {
+  padding-left: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-space-7));
+}
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nabla-space-6);
+  padding: 0 var(--nabla-space-7);
+  border-bottom: 1px solid var(--nabla-color-line-soft);
+}
+.settings-header strong {
+  margin: 0;
+  color: var(--nabla-color-muted);
+  font: var(--nabla-font-md) var(--nabla-font);
+  letter-spacing: 2px;
+}
+.settings-window .settings-close {
+  display: var(--nabla-settings-close-display);
+  flex: none;
+  margin: 0;
+}
+
+/* Tabs: underline-only selection. */
+.settings-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nabla-space-2);
+  min-width: 0;
+  padding: 0 var(--nabla-space-7);
+  overflow: auto hidden;
+  border-bottom: 1px solid var(--nabla-color-line);
+  scrollbar-width: none;
+}
+.settings-window .settings-tabs > .settings-tab {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--nabla-space-6);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--nabla-color-muted);
+  font-size: var(--nabla-font-lg);
+  white-space: nowrap;
+}
+.settings-window .settings-tabs > .settings-tab[aria-selected='true'] {
+  border-bottom-color: var(--nabla-color-accent);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+}
+
+/* Panes: section tree on the left, the section on the right. */
+.settings-panes,
+.settings-pane {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.settings-pane {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.settings-sections {
+  padding: var(--nabla-space-5) var(--nabla-space-4);
+  overflow: auto;
+  border-right: 1px solid var(--nabla-color-line);
+  background: transparent;
+}
+.settings-sections-toggle {
+  display: none;
+}
+.settings-window .settings-sections button[data-section] {
+  display: block;
+  width: 100%;
+  min-height: var(--nabla-control-height);
+  margin: 0 0 var(--nabla-space-1);
+  padding: var(--nabla-space-2) var(--nabla-space-5);
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: var(--nabla-radius);
+  background: transparent;
+  color: var(--nabla-color-muted);
+  font-size: var(--nabla-control-font);
+  line-height: 1.2;
+  text-align: left;
+}
+.settings-window .settings-sections button[data-section][aria-current='page'] {
+  border-color: #3b3b3b;
+  border-left-color: var(--nabla-color-accent);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+}
+.settings-sections .settings-nav-group {
+  margin: 0 0 var(--nabla-space-2);
+}
+.settings-nav-group summary {
+  padding: var(--nabla-space-2) var(--nabla-space-5);
+  font-size: var(--nabla-control-font);
+  line-height: 1.2;
+  cursor: pointer;
+}
+.settings-window .settings-sections .settings-nav-group > button {
+  width: calc(100% - 14px);
+  margin-left: 14px;
+  font-size: var(--nabla-font-md);
+}
+.settings-section-content {
+  min-width: 0;
+  padding: var(--nabla-space-7) 32px;
+  overflow: hidden auto;
+}
+.settings-section-content > .menu-section {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+}
+.settings-section-content > .menu-section::before {
+  content: attr(data-section-title);
+  display: block;
+  margin: 0 0 var(--nabla-space-6);
+  font-size: var(--nabla-font-title);
+}
+.settings-section-content details > :not(summary) {
+  margin-left: 20px;
+}
+.settings-section-content details > details {
+  padding-left: var(--nabla-space-5);
+  border-left: 1px solid var(--nabla-color-line);
+}
+
+/* Rows. */
+.settings-window label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nabla-space-5);
+  min-height: 44px;
+  margin: 0;
+  padding: var(--nabla-space-4) 0;
+  border-bottom: 1px solid var(--nabla-color-line-soft);
+  font-size: var(--nabla-control-font);
+}
+.settings-window label > *,
+.settings-row-name,
+.settings-row-value {
+  min-width: 0;
+}
+.settings-window label.settings-inline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--nabla-space-6);
+}
+.settings-row-name {
+  overflow-wrap: anywhere;
+}
+.settings-row-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nabla-space-4);
+}
+.settings-row-value output {
+  flex: none;
+}
+.settings-window .settings-row-value :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+.settings-window .settings-row-value input[type='range'] {
+  flex: 1;
+  width: 100%;
+  max-width: 380px;
+}
+.settings-window .menu-section .menu-section {
+  margin: var(--nabla-space-7) 0 0;
+  padding: var(--nabla-space-6) 0 0;
+  border: 0;
+  border-top: 1px solid var(--nabla-color-line);
+}
+.settings-window .menu-section .menu-section > legend {
+  padding: 0 var(--nabla-space-5) 0 0;
+  font-size: var(--nabla-font-xl);
+}
+.settings-window .menu-subtitle {
+  color: var(--nabla-color-ink);
+  font-size: var(--nabla-font-lg);
+}
+.settings-window :is(p, small) {
+  margin: var(--nabla-space-4) 0;
+  color: var(--nabla-color-muted);
+  font-size: var(--nabla-font-md);
+}
+
+/* Form controls. */
+.settings-window :is(button, select, input:not([type='range'], [type='checkbox'])) {
+  box-sizing: border-box;
+  min-height: var(--nabla-control-height);
+  padding: var(--nabla-space-2) var(--nabla-space-5);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: 400 var(--nabla-control-font) / 1.2 var(--nabla-font);
+  box-shadow: none;
+}
+.settings-window button {
+  margin: var(--nabla-space-2) var(--nabla-space-3) var(--nabla-space-2) 0;
+  cursor: pointer;
+}
+.settings-window button:hover {
+  background: var(--nabla-color-pressed);
+}
+.settings-window :focus-visible {
+  outline: 2px solid var(--nabla-color-accent);
+  outline-offset: 2px;
+}
+.settings-window input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--nabla-color-accent);
+}
+.settings-window input[type='range'] {
+  flex: 1;
+  min-width: 80px;
+  max-width: 380px;
+  accent-color: var(--nabla-color-accent);
+}
+.settings-window input[type='number'] {
+  max-width: 100px;
+}
+.settings-window select {
+  max-width: 420px;
+  margin: 0;
+}
+.settings-window label select {
+  margin-left: auto;
+}
+.settings-window output {
+  color: var(--nabla-color-ink);
+  font: var(--nabla-font-md) var(--nabla-font-mono);
+}
+.settings-window pre {
+  padding: var(--nabla-space-5);
+  background: var(--nabla-color-button);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.settings-window textarea {
+  font-size: var(--nabla-font-md);
+}
+/* Shared bar buttons keep their own bar size inside the window. */
+.settings-window .nabla-btn {
+  height: var(--nabla-btn-size);
+  min-height: 0;
+  margin: 0;
+  padding: 0 var(--nabla-btn-pad);
+  font: 700 var(--nabla-btn-font) / 1 var(--nabla-font);
+}
+.settings-button-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nabla-btn-gap);
+  padding: var(--nabla-space-4) 0;
+}
+
+/* Footer. */
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--nabla-space-7);
+  border-top: 1px solid var(--nabla-color-line);
+}
+.settings-footer small {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.settings-window .settings-footer button {
+  min-height: 24px;
+  margin: 0;
+  padding: var(--nabla-space-1) var(--nabla-space-4);
+  color: var(--nabla-color-muted);
+  font-size: 12px;
+}
+
+/* Key bindings and tile map tabs. */
+.settings-key-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nabla-space-5);
+  margin-bottom: var(--nabla-space-6);
+}
+.settings-key-tools input {
+  flex: 1;
+  min-width: 160px;
+}
+.settings-key-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nabla-control-font);
+}
+.settings-key-table :is(th, td) {
+  padding: var(--nabla-space-4) 0;
+  border-bottom: 1px solid var(--nabla-color-line-soft);
+  text-align: left;
+}
+.settings-key-table th {
+  color: var(--nabla-color-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.settings-key-table td:last-child {
+  text-align: right;
+}
+.settings-key-table small {
+  display: block;
+  margin: var(--nabla-space-2) 0 0;
+  font: var(--nabla-font-sm) var(--nabla-font-mono);
+}
+.settings-key-table kbd {
+  display: inline-block;
+  padding: var(--nabla-space-1) var(--nabla-space-4);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  font: var(--nabla-font-md) var(--nabla-font-mono);
+}
+.settings-tile-map {
+  position: relative;
+  width: 100%;
+  height: 55vh;
+  min-height: 250px;
+  overflow: hidden;
+  border: 1px solid var(--nabla-color-line);
+  background: #151515;
+}
+.settings-map-tile {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #444;
+  background: #242424;
+  font: var(--nabla-font-sm) var(--nabla-font-mono);
+  white-space: nowrap;
+}
+.settings-map-tile.state-visible {
+  background: #31543e;
+}
+.settings-map-tile.state-resident {
+  background: #304336;
+}
+.settings-map-tile.state-downloading {
+  background: #243e54;
+}
+.settings-map-tile.state-installing {
+  background: #493e56;
+}
+.settings-map-tile.state-retry {
+  background: #592e2e;
+}
+
+/* The menu toggle stays above the open window. */
+.settings-toggle.nabla-corner {
+  z-index: var(--nabla-z-menu);
+}
+
+@media (max-width: 850px) {
+  .settings-pane {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .settings-section-content {
+    padding: var(--nabla-space-6);
+  }
+  .settings-tabs {
+    padding: 0 var(--nabla-space-4);
+  }
+  .settings-window .settings-tabs > .settings-tab {
+    padding: 0 var(--nabla-space-5);
+  }
+}
+@media (max-width: 600px) {
+  .settings-header,
+  .settings-footer {
+    padding: 0 var(--nabla-space-6);
+  }
+  .settings-header strong {
+    font-size: 12px;
+  }
+  .settings-tabs {
+    gap: var(--nabla-space-1);
+  }
+  .settings-pane {
+    display: block;
+    overflow: auto;
+  }
+  .settings-sections {
+    padding: var(--nabla-space-3) var(--nabla-space-4);
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--nabla-color-line);
+  }
+  .settings-section-content {
+    margin: 0 0 var(--nabla-space-5);
+    padding: var(--nabla-space-5) var(--nabla-space-5) 22px;
+    overflow: visible;
+  }
+  .settings-sections .settings-section-content {
+    margin: 0 0 var(--nabla-space-3) 10px;
+    padding: var(--nabla-space-3) 0 var(--nabla-space-5) var(--nabla-space-5);
+    border-left: 1px solid var(--nabla-color-line);
+  }
+  .settings-section-content > .menu-section::before {
+    display: none;
+  }
+  .settings-window label.settings-inline-row {
+    gap: 10px;
+  }
+  .settings-row-value {
+    flex-wrap: wrap;
+    gap: var(--nabla-space-3);
+  }
+  .settings-window .settings-sections .settings-row-value button {
+    width: auto;
+    margin: 0;
+  }
+  .settings-window :is(input, select) {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .settings-key-table {
+    font-size: 12px;
+  }
+  .settings-key-table kbd {
+    font-size: var(--nabla-font-sm);
+    white-space: normal;
+  }
+  .settings-tile-map {
+    height: 45vh;
+    min-height: 200px;
+  }
+}
+
+/* Legacy settings panel of the plain engine pages (replaced by the window once it mounts). */
+#display-settings {
+  display: var(--nabla-legacy-settings-display);
+  position: fixed;
+  top: var(--nabla-under-bar);
+  right: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-settings);
+  max-width: min(310px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  padding: var(--nabla-space-5);
+  overflow: auto;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-surface-glass);
+  font-size: var(--nabla-font-md);
+}
+#display-settings[hidden] {
+  display: none;
+}
+#display-settings summary {
+  cursor: pointer;
+}
+#display-settings label {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+}
+#display-settings label.inline,
+#display-settings .menu-section label {
+  display: flex;
+  align-items: center;
+  gap: var(--nabla-space-4);
+  margin-top: var(--nabla-space-4);
+}
+#display-settings .menu-section label:has(input[type='url'], input[type='text']) {
+  display: grid;
+}
+#display-settings .menu-section label:has(select) {
+  justify-content: space-between;
+}
+#display-settings .menu-section label:has(input[type='range']) {
+  flex-wrap: wrap;
+}
+#display-settings .menu-section label[hidden] {
+  display: none;
+}
+#display-settings :is(input, select, button) {
+  padding: var(--nabla-space-3);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+}
+#display-settings input[type='range'] {
+  flex: 1 1 120px;
+  padding: 0;
+}
+#display-settings button {
+  margin-top: var(--nabla-space-4);
+  cursor: pointer;
+}
+#display-settings p {
+  margin-top: var(--nabla-space-5);
+  color: var(--nabla-color-muted);
+}
+#display-settings :is(#time-input, #sea-input) {
+  width: 70px;
+}
+#display-settings .menu-subtitle {
+  margin: var(--nabla-space-5) 0 0;
+  font-weight: 600;
+}
+#display-settings .planet-group {
+  margin-top: var(--nabla-space-2);
+}
+#display-settings .planet-group .menu-subtitle {
+  margin: 10px 0 0;
+}
+.menu-section {
+  margin: var(--nabla-space-5) 0 0;
+  padding: 0;
+  border: 0;
+}
+.menu-section legend {
+  padding: 0;
+  font-weight: 600;
+}
+#vehicle-list {
+  margin: var(--nabla-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+#vehicle-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nabla-space-4);
+}
+#terrain-missing-list {
+  max-height: 8em;
+  overflow: auto;
+  font-size: var(--nabla-font-sm);
+}
+#location-display {
+  cursor: copy;
+  pointer-events: auto;
+  user-select: all;
+}
+#position-message {
+  min-height: 1em;
+  font-size: 12px;
+}
+#terrain-cache-usage,
+#terrain-message {
+  min-height: 1em;
+}
+#location-display,
+#cells-display {
+  display: var(--nabla-place-display);
+}

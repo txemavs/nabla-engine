@@ -9,12 +9,9 @@ export function mountXRDeviceInfo(host: HTMLElement) {
     inspector?: ReturnType<typeof createInspector>
   }
   box.id = 'xr-device-info'
-  box.style.cssText =
-    'font-size:13px;text-align:left;line-height:1.5;margin-top:12px;overflow-wrap:anywhere;max-width:100%'
   const summary = document.createElement('summary')
   summary.textContent = 'Dispositivo y controles'
   const text = document.createElement('div')
-  text.style.whiteSpace = 'pre-line'
   const copy = document.createElement('button')
   copy.textContent = 'Copiar información'
   box.append(summary, text, copy)

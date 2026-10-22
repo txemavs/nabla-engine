@@ -1,0 +1,590 @@
+/*
+ * Floating panels and panel pages.
+ * - .nabla-panel: a floating card (XR quality / calibration menus, destination list, help box).
+ * - html.nabla-page: the AR, AR RC, XR demo and headset launcher pages (one theme, no canvas HUD).
+ */
+.nabla-panel {
+  position: fixed;
+  top: var(--nabla-ui-margin);
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-settings);
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 2 * var(--nabla-ui-margin)));
+  max-height: 85vh;
+  padding: var(--nabla-space-5);
+  overflow: auto;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-surface-glass);
+  color: var(--nabla-color-ink);
+  font: var(--nabla-control-font) / 1.4 var(--nabla-font);
+}
+.nabla-panel summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.nabla-panel p {
+  margin: var(--nabla-space-4) 0;
+  color: var(--nabla-color-muted);
+  font-size: var(--nabla-font-md);
+  line-height: 1.5;
+}
+.nabla-panel :is(button, select, input:not([type='checkbox'], [type='range'])) {
+  box-sizing: border-box;
+  min-height: var(--nabla-control-height);
+  padding: var(--nabla-space-2) var(--nabla-space-4);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.nabla-panel button:hover:not(:disabled) {
+  background: var(--nabla-color-pressed);
+}
+.nabla-panel select {
+  width: 100%;
+  margin-bottom: var(--nabla-space-5);
+}
+.nabla-panel output {
+  display: block;
+  margin-top: var(--nabla-space-4);
+}
+/* Panel layouts: a label/field row, a stepper row (label − value +), two link columns. */
+.nabla-panel-field {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  align-items: center;
+  gap: var(--nabla-space-4);
+  margin-bottom: var(--nabla-space-4);
+}
+.nabla-panel-field input {
+  width: 100%;
+}
+.nabla-panel-stepper {
+  display: grid;
+  grid-template-columns: 1fr 32px 90px 32px;
+  align-items: center;
+  gap: var(--nabla-space-2);
+  margin: 10px 0;
+}
+.nabla-panel-stepper output {
+  margin: 0;
+  text-align: center;
+}
+.nabla-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nabla-space-3);
+  margin-top: var(--nabla-space-5);
+}
+.nabla-panel-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--nabla-space-4);
+  margin-bottom: var(--nabla-space-4);
+}
+.nabla-panel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nabla-space-4);
+  margin-bottom: var(--nabla-space-4);
+}
+/* A panel nested in another panel (the XR Development group) flows in place. */
+.nabla-panel .nabla-panel,
+#xr-development > * {
+  position: static;
+  width: auto;
+  max-height: none;
+  margin-top: 10px;
+}
+#xr-main-menu {
+  z-index: calc(var(--nabla-z-settings) + 1);
+  width: min(360px, calc(100vw - 2 * var(--nabla-ui-margin)));
+}
+#xr-device-info {
+  max-width: 100%;
+  margin-top: var(--nabla-space-5);
+  font-size: var(--nabla-font-md);
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+#xr-device-info > div {
+  white-space: pre-line;
+}
+
+/* Destination list of xr.html, top centre. */
+#xr-destinations {
+  left: 50%;
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100dvh - 24px);
+  transform: translateX(-50%);
+}
+#xr-destinations nav {
+  display: grid;
+  gap: var(--nabla-space-4);
+  margin-top: var(--nabla-space-5);
+}
+#xr-destinations a {
+  display: block;
+  padding: var(--nabla-space-5);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+#xr-destinations a:is(:hover, :focus-visible) {
+  background: var(--nabla-color-pressed);
+}
+
+/* Help box of the drive page (forklift and test modes), above the bottom-left readout. */
+.nabla-help-box {
+  position: fixed;
+  bottom: calc(var(--nabla-control-bottom) + var(--nabla-space-7));
+  left: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-hint);
+  max-width: 420px;
+  padding: 10px;
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-surface-glass);
+  color: #fff;
+  font-size: var(--nabla-font-md);
+  pointer-events: none;
+}
+
+/* VR page: its own button row; the flat HUD hides while a headset view is mounted. */
+#vr-toolbar {
+  position: fixed;
+  top: var(--nabla-ui-margin);
+  right: var(--nabla-ui-margin);
+  z-index: var(--nabla-z-menu-toggle);
+  display: flex;
+  gap: var(--nabla-btn-gap);
+}
+body.nabla-vr
+  :is(
+    #display-settings,
+    #controls-hint,
+    #xr-destinations,
+    #game-hud,
+    .nabla-game-hud,
+    .game-toolbar,
+    .touch-driving,
+    .touch-flight,
+    .touch-walk
+  ) {
+  display: none;
+}
+
+/* USB wheel wizard and settings (usb/wizard-panel.ts, usb/settings-panel.ts). */
+.nabla-usb-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nabla-space-5);
+  margin: 10px 0;
+  padding: 14px;
+  border: 1px solid var(--nabla-color-line);
+}
+.nabla-usb-field {
+  display: block;
+  margin: var(--nabla-space-5) 0;
+}
+.nabla-usb-row {
+  padding: 10px 0;
+}
+.nabla-usb-meter {
+  width: 220px;
+  margin: 0 var(--nabla-space-5);
+}
+.nabla-usb-instruction {
+  padding: var(--nabla-space-5) 0;
+  font-size: var(--nabla-font-title);
+  line-height: 1.5;
+}
+.nabla-usb-live {
+  max-height: 180px;
+  overflow: auto;
+  font: var(--nabla-control-font) var(--nabla-font-mono);
+  white-space: pre-wrap;
+}
+.nabla-usb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nabla-space-4);
+  margin: var(--nabla-space-4) 0;
+}
+.nabla-usb-json {
+  width: 100%;
+  font: var(--nabla-control-font) var(--nabla-font-mono);
+}
+
+/* ===== Panel pages ===== */
+.nabla-page *,
+.nabla-page *::before,
+.nabla-page *::after {
+  box-sizing: border-box;
+}
+.nabla-page body {
+  margin: 0;
+  background: var(--nabla-color-bg);
+  color: var(--nabla-color-ink);
+  font: 16px / 1.4 var(--nabla-font);
+}
+.nabla-page :is(h1, h2, h3) {
+  color: var(--nabla-color-ink);
+  font-weight: 400;
+}
+.nabla-page h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+.nabla-page p {
+  line-height: 1.5;
+}
+.nabla-page :is(header p, article p, footer, .secondary) {
+  color: var(--nabla-color-muted);
+}
+.nabla-page
+  :is(button, select, input[type='text'], input[type='url'], input[type='number'], .launch) {
+  box-sizing: border-box;
+  min-height: 36px;
+  max-width: 100%;
+  padding: var(--nabla-space-3) var(--nabla-space-5);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: inherit;
+  box-shadow: none;
+}
+.nabla-page :is(button, .launch) {
+  cursor: pointer;
+}
+.nabla-page :is(button, .launch):hover:not(:disabled) {
+  background: var(--nabla-color-pressed);
+}
+.nabla-page :is(button, .launch):active:not(:disabled) {
+  background: var(--nabla-color-selected);
+}
+.nabla-page :is(button, .launch):disabled,
+.nabla-page .launch[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+.nabla-page :focus-visible {
+  outline: 2px solid var(--nabla-color-accent);
+  outline-offset: 3px;
+}
+.nabla-page :is(input[type='checkbox'], input[type='range']) {
+  accent-color: var(--nabla-color-accent);
+}
+.nabla-page details {
+  margin: 14px 0;
+}
+.nabla-page summary {
+  padding: var(--nabla-space-4) 0;
+  cursor: pointer;
+}
+.nabla-page [hidden] {
+  display: none;
+}
+/* The full-screen canvas behind a panel page. */
+.nabla-page #viewport {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+}
+/* The page's card (AR #panel, AR RC main, XR demo aside, headset modes). */
+.nabla-page-card {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: min(460px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-surface);
+  color: var(--nabla-color-ink);
+}
+.nabla-page-card .actions {
+  position: sticky;
+  top: -20px;
+  z-index: 1;
+  padding: var(--nabla-space-5) 0;
+  background: var(--nabla-color-surface);
+}
+.nabla-page-card #status {
+  min-height: 48px;
+}
+.nabla-page-card output {
+  display: block;
+  font-size: var(--nabla-font-md);
+}
+.nabla-page-card button {
+  margin: 0 var(--nabla-space-3) var(--nabla-space-4) 0;
+}
+
+/* Headset launcher (headset.html): two square mode cards. */
+#headset-launcher {
+  display: grid;
+  align-content: center;
+  gap: var(--nabla-space-7);
+  width: min(1060px, 100%);
+  min-height: 100dvh;
+  margin: auto;
+  padding: 28px;
+}
+#headset-launcher h1 {
+  margin: 0;
+  font-size: 22px;
+  text-align: center;
+}
+#headset-launcher .modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--nabla-space-7);
+}
+#headset-launcher .mode {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 28px;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-surface);
+}
+#headset-launcher .mode header {
+  text-align: center;
+}
+#headset-launcher .mode-code {
+  margin: 0;
+  color: var(--nabla-color-ink);
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+#headset-launcher h2 {
+  margin: var(--nabla-space-4) 0 0;
+  font-size: 22px;
+}
+#headset-launcher .description {
+  margin: auto 0;
+  color: #bbb;
+  font-size: var(--nabla-font-xl);
+  line-height: 1.6;
+  text-align: center;
+}
+#headset-launcher .selectors {
+  display: grid;
+  gap: 14px;
+  margin: auto 0;
+}
+#headset-launcher label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+#headset-launcher select {
+  width: 100%;
+}
+#headset-launcher .launch {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  border-color: var(--nabla-color-accent);
+  background: var(--nabla-color-selected);
+  text-align: center;
+  text-decoration: none;
+}
+#headset-launcher #status {
+  margin: var(--nabla-space-4) 0 0;
+  font-size: 14px;
+  text-align: center;
+}
+#headset-launcher #status:empty,
+#headset-launcher .ar-storage {
+  display: none;
+}
+body:has(#headset-launcher) #viewport {
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  #headset-launcher {
+    padding: 20px;
+  }
+  #headset-launcher .modes {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    width: min(480px, 100%);
+    margin: auto;
+  }
+  #headset-launcher .mode {
+    width: 100%;
+    min-height: 420px;
+    padding: var(--nabla-space-7);
+    aspect-ratio: auto;
+  }
+}
+
+/* ===== Catalog: grouped rows with a thumbnail, text and actions (scenario lists). ===== */
+.nabla-catalog-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 18px 40px;
+}
+.nabla-catalog-main h1 {
+  margin: 0 0 var(--nabla-space-2);
+  font-size: 28px;
+}
+.nabla-catalog-main .lead {
+  margin: 0 0 22px;
+  color: var(--nabla-color-muted);
+}
+.nabla-catalog-main footer {
+  margin-top: 26px;
+  font-size: 14px;
+}
+.nabla-catalog-main footer a {
+  color: #ccc;
+}
+.nabla-catalog-group {
+  margin: 0 0 26px;
+}
+.nabla-catalog-group h2,
+.nabla-list-heading {
+  color: var(--nabla-color-highlight);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.nabla-catalog-group h2 {
+  margin: 0 0 10px;
+  padding-bottom: var(--nabla-space-3);
+  border-bottom: 1px solid #333;
+  font-size: var(--nabla-font-lg);
+}
+.nabla-catalog-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 200px;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 var(--nabla-space-4);
+  padding: var(--nabla-space-5) 14px;
+  border: 1px solid #333;
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-surface);
+}
+.nabla-catalog-thumb {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--nabla-radius-panel);
+  background: #262626;
+  color: #666;
+  font-size: 22px;
+  font-weight: 700;
+}
+.nabla-catalog-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nabla-catalog-body {
+  min-width: 0;
+}
+.nabla-catalog-row h3 {
+  margin: 0;
+  font-size: var(--nabla-font-xl);
+}
+.nabla-catalog-row p {
+  margin: var(--nabla-space-1) 0 0;
+  color: #bbb;
+  font-size: 14px;
+}
+.nabla-catalog-credit,
+.nabla-list-credit {
+  display: block;
+  font-size: 12px;
+}
+.nabla-catalog-credit {
+  margin-top: var(--nabla-space-2);
+}
+.nabla-catalog-credit,
+.nabla-catalog-credit a {
+  color: #888;
+}
+.nabla-catalog-actions {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: var(--nabla-space-4);
+}
+.nabla-catalog-actions a {
+  padding: 10px var(--nabla-space-5);
+  border-radius: var(--nabla-radius-panel);
+  background: var(--nabla-color-highlight);
+  color: var(--nabla-color-on-highlight);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nabla-catalog-actions a.is-secondary {
+  border: 1px solid #555;
+  background: #2b2b2b;
+  color: var(--nabla-color-ink);
+}
+@media (max-width: 620px) {
+  .nabla-catalog-row {
+    grid-template-columns: 48px 1fr;
+  }
+  .nabla-catalog-thumb {
+    width: 48px;
+    height: 40px;
+  }
+  .nabla-catalog-actions {
+    grid-column: 1 / -1;
+  }
+}
+/* The same list inside the settings window (World tab). */
+.nabla-list-heading {
+  width: 100%;
+  color: inherit;
+  margin: 10px 0 var(--nabla-space-2);
+  font-size: var(--nabla-font-sm);
+  opacity: 0.7;
+}
+.nabla-list-credit {
+  width: 100%;
+  margin: var(--nabla-space-1) 0 var(--nabla-space-4);
+  opacity: 0.9;
+}
+.nabla-list-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* A text box shown for manual copy when the clipboard is unavailable. */
+.nabla-copy-box {
+  position: fixed;
+  inset: 15%;
+  z-index: var(--nabla-z-error);
+  background: #222;
+  color: #fff;
+}

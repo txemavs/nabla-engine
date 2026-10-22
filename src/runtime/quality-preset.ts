@@ -99,11 +99,6 @@ export function mountMobileQualityButton(parent: HTMLElement): HTMLButtonElement
   button.title = active ? 'Probando calidad móvil · volver' : 'Entrar con calidad móvil (prueba)'
   button.setAttribute('aria-label', 'Calidad móvil')
   button.setAttribute('aria-pressed', String(active))
-  button.style.cssText =
-    'display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;margin:0;border-radius:50%;cursor:pointer;box-sizing:border-box;' +
-    (active
-      ? 'color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.75)'
-      : 'color:rgba(255,255,255,.75);background:transparent;border:1px solid transparent')
   button.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M18 11v2"/></svg>'
   button.addEventListener('click', (event) => {

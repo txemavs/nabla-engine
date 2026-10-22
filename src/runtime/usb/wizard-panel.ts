@@ -88,8 +88,7 @@ export function createUsbWizardPanel(
         ['radio', 'Emisora para drones'],
       ] as const) {
         const card = doc.createElement('div')
-        card.style.cssText =
-          'padding:14px;margin:10px 0;border:1px solid #444;display:flex;gap:12px;align-items:center;flex-wrap:wrap'
+        card.className = 'nabla-usb-card'
         card.append(
           button('Configurar ' + label, () => {
             kind = type
@@ -142,7 +141,7 @@ export function createUsbWizardPanel(
             : [['camera', 'Botón para cambiar cámara']]
       for (const [id, label] of options) {
         const l = doc.createElement('label')
-        l.style.cssText = 'display:block;margin:12px 0'
+        l.className = 'nabla-usb-field'
         const c = doc.createElement('input')
         c.type = 'checkbox'
         c.checked = parts.has(id)
@@ -183,7 +182,7 @@ export function createUsbWizardPanel(
       text('Prueba de controles · mueve cada pieza y comprueba su respuesta.')
       for (const [i, b] of w.bindings.entries()) {
         const row = doc.createElement('div')
-        row.style.cssText = 'padding:10px 0'
+        row.className = 'nabla-usb-row'
         const label = doc.createElement('label')
         label.textContent = Object.hasOwn(usbAxes, b.target)
           ? usbAxes[b.target as keyof typeof usbAxes]
@@ -191,7 +190,7 @@ export function createUsbWizardPanel(
         const meter = doc.createElement('progress')
         meter.max = 1
         meter.dataset.wizardPreview = String(i)
-        meter.style.cssText = 'width:220px;margin:0 12px'
+        meter.className = 'nabla-usb-meter'
         const value = doc.createElement('span')
         value.dataset.wizardValue = String(i)
         row.append(label, meter, value)
@@ -216,7 +215,7 @@ export function createUsbWizardPanel(
     } else {
       text(`Control ${w.index + 1} de ${w.steps.length} · ${w.step.label}`)
       const instruction = text(w.instruction)
-      instruction.style.cssText = 'font-size:24px;line-height:1.5;padding:12px 0'
+      instruction.className = 'nabla-usb-instruction'
       instruction.setAttribute('aria-live', 'polite')
       const detected = text('')
       detected.dataset.wizardDevice = ''

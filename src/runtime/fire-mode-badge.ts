@@ -10,20 +10,7 @@ export class FireModeBadge {
     const element = host.ownerDocument.createElement('div')
     element.className = 'nabla-fire-mode'
     element.setAttribute('aria-live', 'polite')
-    Object.assign(element.style, {
-      position: 'absolute',
-      right: '16px',
-      bottom: '16px',
-      padding: '4px 10px',
-      borderRadius: '4px',
-      background: 'rgba(0, 0, 0, 0.55)',
-      color: '#fff',
-      font: '600 12px/1.4 system-ui, sans-serif',
-      letterSpacing: '0.08em',
-      pointerEvents: 'none',
-      zIndex: '20',
-      display: 'none',
-    })
+    element.hidden = true
     host.append(element)
     this.element = element
   }
@@ -31,10 +18,10 @@ export class FireModeBadge {
   show(text: string | null): void {
     if (text === this.text) return
     this.text = text
-    this.element.style.display = text ? 'block' : 'none'
+    this.element.hidden = !text
     if (text) {
       this.element.textContent = text
-      this.element.style.color = text === 'SEMI' ? '#fff' : '#ffcf5a'
+      this.element.classList.toggle('is-burst', text !== 'SEMI')
     }
   }
 
