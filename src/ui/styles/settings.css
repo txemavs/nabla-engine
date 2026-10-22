@@ -156,7 +156,8 @@ body:has(.nabla-corner--tl) .settings-header {
   padding: var(--nabla-space-7) 32px;
   overflow: hidden auto;
 }
-.settings-section-content > .menu-section {
+/* Only the chosen section shows: a hidden section must not regain `display` here. */
+.settings-section-content > .menu-section:not([hidden], [data-section-hidden]) {
   display: block;
   min-width: 0;
   max-width: 100%;
