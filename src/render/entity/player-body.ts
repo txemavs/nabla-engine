@@ -185,7 +185,7 @@ export class PlayerBody {
 
   /**
    * Bones of one arm (upper arm, forearm, hand), found by name: `<Left|Right>Arm`,
-   * `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig:`). Null when
+   * `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig`). Null when
    * the rig has no such bones.
    */
   armBones(hand: 'left' | 'right'): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null {
@@ -194,7 +194,8 @@ export class PlayerBody {
     const side = hand === 'left' ? 'Left' : 'Right'
     const find = (suffix: string) => {
       let found: THREE.Object3D | null = null
-      const tail = new RegExp(`(^|[:_])${side}${suffix}$`)
+      // Any prefix: glTF loading strips ':' (`mixamorig:RightArm` becomes `mixamorigRightArm`).
+      const tail = new RegExp(`${side}${suffix}$`)
       this.root.traverse((object) => {
         if (!found && tail.test(object.name)) found = object
       })
