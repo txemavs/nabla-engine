@@ -582,6 +582,16 @@ function browserStorage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
 type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
 type FrameSteps = Generator<unknown, void, unknown>
 
+
+/** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
+export interface WeaponProp {
+  /** Feet origin: place and turn it like the body. */
+  readonly root: THREE.Group
+  readonly slot: number
+  update(now?: number): void
+  dispose(): void
+}
+
 export class GameRuntime {
   private readonly versionLabel: HTMLElement | null
   /** XR system once `loadXR()` resolved; null on a page that never asked for XR. */
@@ -5557,6 +5567,35 @@ export class GameRuntime {
           ? `${entry.name} · ${this.text('hold left click to draw, release to shoot')}`
           : entry.name,
     )
+  }
+  /**
+   * Third-person copy of a numbered weapon slot for another player's body (e.g. a remote player
+   * whose snapshots name the slot they hold). `root` stands at the feet; inside it the weapon
+   * hangs from the same frame and hip pose as the local player's third-person weapon. Call
+   * `update(now)` every frame and `dispose()` when done. Null for an unknown or placeholder slot.
+   */
+  async createWeaponProp(slot: number): Promise<WeaponProp | null> {
+    const entry = weaponSlots().find((item) => item.slot === slot)
+    if (!entry || entry.kind === 'placeholder') return null
+    const root = new THREE.Group()
+    root.name = `weapon-prop-${entry.id}`
+    // The local weapon hangs from the avatar, whose origin is the standing body centre.
+    const frame = new THREE.Group()
+    frame.position.y = simulationDefaults.playerHalfHeight
+    root.add(frame)
+    const weapon =
+      entry.kind === 'firearm' ? this.createSidearm(entry.preset) : new HeldWeapon(entry.preset)
+    await weapon.ready
+    weapon.visible = true
+    return {
+      root,
+      slot,
+      update: (now = performance.now()) => weapon.syncWorld(frame, now, false),
+      dispose: () => {
+        weapon.dispose()
+        root.removeFromParent()
+      },
+    }
   }
   /** Active numbered slot, or null with empty hands. */
   get activeWeaponSlot(): number | null {

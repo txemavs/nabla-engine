@@ -77,7 +77,10 @@ function validState(s) {
   )
 }
 
-/** Optional on-foot body block: p (feet, 3 numbers), y (yaw), s (speed >= 0), a (0..63). */
+/**
+ * Optional on-foot body block: p (feet, 3 numbers), y (yaw), s (speed >= 0), a (0..63) and the
+ * optional held-item index w (0..63, absent from older clients).
+ */
 function validAvatar(a) {
   return (
     !!a &&
@@ -88,7 +91,8 @@ function validAvatar(a) {
     a.s >= 0 &&
     Number.isInteger(a.a) &&
     a.a >= 0 &&
-    a.a <= 63
+    a.a <= 63 &&
+    (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63))
   )
 }
 
@@ -253,6 +257,7 @@ export function startRelay({
                   y: message.avatar.y,
                   s: message.avatar.s,
                   a: message.avatar.a,
+                  ...(message.avatar.w !== undefined ? { w: message.avatar.w } : {}),
                 },
               }
             : {}),

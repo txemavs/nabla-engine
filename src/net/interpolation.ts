@@ -32,6 +32,7 @@ export const avatarSampleOps: SampleOps<AvatarSample> = {
       yaw: lerpAngle(a.yaw, b.yaw, k),
       speed: a.speed + (b.speed - a.speed) * k,
       anim: k >= 1 ? b.anim : a.anim,
+      weapon: k >= 1 ? b.weapon : a.weapon,
     }
   },
   extrapolate: (last, previous, seconds) => {
