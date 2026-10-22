@@ -6,7 +6,10 @@
  */
 import type { PlayerBodyAssets } from '../render/entity/player-body.js'
 
-/** Gepeto's prota with belt, holster (holstered USP) and baton; its colour slots take the choice. */
+/**
+ * Gepeto's prota v3 with belt, holster (holstered USP) and baton: the solid "low" variant, whose
+ * colour slots take the actor choice (the textured `.v3.glb` files ship alongside, not wired).
+ */
 const PROTA = '/avatar/prota/prota'
 const ANIMATIONS = '/avatar/avatar.anims.glb'
 
@@ -40,13 +43,13 @@ export function actorBodyAssets(choice: ActorChoice): PlayerBodyAssets {
     // Polibot (Gepeto, from policia.v3): white robot with HeadSocket and WeaponSocket_R, no belt kit.
     return { model: '/avatar/polibot/polibot.glb', animations: ANIMATIONS }
   return {
-    model: `${PROTA}.glb`,
+    model: `${PROTA}.v3.low.glb`,
     animations: ANIMATIONS,
     attachments: [
-      { model: `${PROTA}.belt.glb`, socket: 'BeltSocket' },
-      { model: `${PROTA}.holster.glb`, socket: 'HolsterSocket' },
+      { model: `${PROTA}.belt.v3.low.glb`, socket: 'BeltSocket' },
+      { model: `${PROTA}.holster.v4.low.glb`, socket: 'HolsterSocket' },
       { model: `${PROTA}.holster-usp.glb`, socket: 'HolsterGunSocket', role: 'holstered' },
-      { model: `${PROTA}.baton.glb`, socket: 'BatonSocket' },
+      { model: `${PROTA}.baton.v3.low.glb`, socket: 'BatonSocket' },
     ],
     ...(choice.color === 'white' ? {} : { colors: { primary: ACTOR_COLORS[choice.color] } }),
   }
