@@ -169,6 +169,31 @@ function validHit(h) {
     (h.p === undefined || vec3(h.p, 1e6))
   )
 }
+const ENTITY_ID = /^[A-Za-z0-9_.:-]{1,64}$/
+/**
+ * Shared entity request data (src/net/shared-entities.ts): `i` id, `y` type, `p` position,
+ * `q` rotation, optional `d` (spawn driving) and at most 8 `_param` keys.
+ */
+function validEntitySpawn(e) {
+  const params = Object.keys(e).filter((k) => k.startsWith('_'))
+  return (
+    typeof e.i === 'string' &&
+    ENTITY_ID.test(e.i) &&
+    typeof e.y === 'string' &&
+    e.y.length >= 1 &&
+    e.y.length <= 64 &&
+    vec3(e.p, 1e6) &&
+    finiteArray(e.q, 4) &&
+    e.q.every((n) => Math.abs(n) <= 1.001) &&
+    params.length <= 8 &&
+    params.every((k) => !Array.isArray(e[k])) &&
+    Object.keys(e).every((k) => k.startsWith('_') || ['i', 'y', 'p', 'q', 'd'].includes(k))
+  )
+}
+/** Entity record as event data (what `welcome` lists and `entity` events carry). */
+function entityData(e) {
+  return { i: e.id, y: e.type, p: e.p, q: e.q, o: e.owner, ...(e.driver ? { d: e.driver } : {}), ...e.params }
+}
 /** `peer` of the events the relay sends itself (health, death, respawn). */
 export const RELAY_PEER = 'relay'
 
@@ -217,7 +242,16 @@ export function startRelay({
   log = (...args) => console.log(new Date().toISOString(), ...args),
   respawnDelay = Number(process.env.RESPAWN_DELAY ?? 5),
   respawnTick = Number(process.env.RESPAWN_TICK_MS ?? 250),
+  maxEntities = Number(process.env.MAX_ENTITIES ?? 64),
+  maxOwnEntities = Number(process.env.MAX_OWN_ENTITIES ?? 16),
 } = {}) {
+  /** room id -> Map<entity id, { id, type, params, p, q, owner, driver }>: shared entities. */
+  const entities = new Map()
+  const entitiesOf = (room) => {
+    let map = entities.get(room)
+    if (!map) entities.set(room, (map = new Map()))
+    return map
+  }
   /** room id -> Map<socket, { peer, meta }> */
   const rooms = new Map()
   /** room id -> HealthLedger: the relay is the authority on character health. */
@@ -280,9 +314,56 @@ export function startRelay({
     if (!members.size) {
       rooms.delete(room)
       ledgers.delete(room)
+      entities.delete(room)
     }
+    // What it drove stays where it is, free for anyone.
+    for (const entity of entities.get(room)?.values() ?? [])
+      if (entity.driver === member.peer) {
+        entity.driver = null
+        relayEvent(room, 'entity', entityData(entity))
+      }
     broadcast(room, socket, { type: 'left', peer: member.peer })
     log('leave', room, member.peer, `${members.size} left`)
+  }
+
+  /** Shared entity requests: the relay keeps the list and decides (first come, first served). */
+  const entityRequest = (room, socket, member, kind, data) => {
+    const map = entitiesOf(room)
+    const entity = typeof data.i === 'string' ? map.get(data.i) : undefined
+    const tell = (e) => send(socket, { type: 'event', peer: RELAY_PEER, kind: 'entity', data: entityData(e) })
+    const claim = (e) => {
+      const present = [...rooms.get(room).values()].some((m) => m.peer === e.driver)
+      if (e.driver && e.driver !== member.peer && present) return tell(e)
+      e.driver = member.peer
+      relayEvent(room, 'entity', entityData(e))
+      log('claim', room, e.id, member.peer)
+    }
+    if (kind === 'entity.spawn') {
+      if (!validEntitySpawn(data)) return
+      // Same id as an existing entity (an object every client has): a claim, never a copy.
+      if (entity) return data.d ? claim(entity) : tell(entity)
+      const own = [...map.values()].filter((e) => e.owner === member.peer).length
+      if (map.size >= maxEntities || own >= maxOwnEntities) return
+      const params = Object.fromEntries(Object.entries(data).filter(([k]) => k.startsWith('_')))
+      const created = { id: data.i, type: data.y, params, p: data.p, q: data.q, owner: member.peer, driver: data.d ? member.peer : null }
+      map.set(created.id, created)
+      relayEvent(room, 'entity', entityData(created))
+      log('spawn', room, created.id, created.type, 'by', member.peer)
+    } else if (kind === 'entity.claim') {
+      if (entity) claim(entity)
+    } else if (kind === 'entity.release') {
+      if (!entity || entity.driver !== member.peer) return
+      if (vec3(data.p, 1e6)) entity.p = data.p
+      if (finiteArray(data.q, 4)) entity.q = data.q
+      entity.driver = null
+      relayEvent(room, 'entity', entityData(entity))
+      log('release', room, entity.id, member.peer)
+    } else if (kind === 'entity.despawn') {
+      if (!entity || (entity.driver && entity.driver !== member.peer)) return
+      map.delete(entity.id)
+      relayEvent(room, 'entity.gone', { i: entity.id, b: member.peer })
+      log('despawn', room, entity.id, 'by', member.peer)
+    }
   }
 
   wss.on('connection', (socket) => {
@@ -339,12 +420,28 @@ export function startRelay({
           slot,
           color,
           ...(Object.keys(health).length ? { health } : {}),
+          ...(entities.get(message.room)?.size
+            ? { entities: [...entities.get(message.room).values()].map(entityData) }
+            : {}),
         })
         broadcast(message.room, socket, { type: 'joined', peer, meta, slot, color })
         log('join', message.room, peer, `${members.size} in room`)
       } else if (message.type === 'snapshot') {
         const member = state.room && rooms.get(state.room)?.get(socket)
         if (!member || !validSnapshot(message)) return
+        // A shared entity's state comes only from its driver; it moves the rest pose along.
+        let entityId
+        if (message.e !== undefined) {
+          const entity = typeof message.e === 'string' && entities.get(state.room)?.get(message.e)
+          if (!entity || entity.driver !== member.peer || !message.state) {
+            if (!message.avatar) return
+            message.state = undefined
+          } else {
+            entity.p = message.state.position
+            entity.q = message.state.rotation
+            entityId = entity.id
+          }
+        }
         member.position = message.state ? message.state.position : message.avatar.p
         member.positionAt = Date.now()
         forward(state.room, socket, member.position, {
@@ -368,7 +465,8 @@ export function startRelay({
                 },
               }
             : {}),
-          ...(message.extra ? { extra: message.extra } : {}),
+          ...(message.extra && message.state ? { extra: message.extra } : {}),
+          ...(entityId ? { e: entityId } : {}),
         })
       } else if (message.type === 'event') {
         const member = state.room && rooms.get(state.room)?.get(socket)
@@ -396,6 +494,7 @@ export function startRelay({
           }
           return
         }
+        if (message.kind.startsWith('entity')) return entityRequest(state.room, socket, member, message.kind, message.data)
         if (['health', 'death', 'respawn'].includes(message.kind)) return
         broadcast(state.room, socket, {
           type: 'event',

@@ -293,3 +293,72 @@ test('combat: relay applies hits, broadcasts health/death/respawn, health in the
   for (const s of [a, b, c, d]) s.close()
   await relay.close()
 })
+
+test('shared entities: spawn, join list, claim by another peer, driver snapshots, release on leave, despawn race', async () => {
+  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {} })
+  const a = await connect(relay.port)
+  const b = await connect(relay.port)
+  a.json({ type: 'join', version: 1, room: 'e', meta: {} })
+  const pa = (await a.next('welcome')).peer
+  b.json({ type: 'join', version: 1, room: 'e', meta: {} })
+  const pb = (await b.next('welcome')).peer
+  const ev = (s, kind, data) => s.json({ type: 'event', kind, data })
+  // Malformed spawns are dropped.
+  ev(a, 'entity.spawn', { i: 'bad id!', y: 'truck', p: [0, 0, 0], q: [0, 0, 0, 1] })
+  ev(a, 'entity.spawn', { i: `${pa}.1`, y: 'truck', p: [0, 0, 0], q: [0, 0, 0, 1], x: [1, 2] })
+  const truck = `${pa}.1`
+  ev(a, 'entity.spawn', { i: truck, y: 'truck', p: [1, 0, 2], q: [0, 0, 0, 1], d: 1, _color: '#ff0000' })
+  for (const s of [a, b]) {
+    const e = await s.next('event')
+    assert.equal(e.peer, 'relay')
+    assert.equal(e.kind, 'entity')
+    assert.deepEqual(e.data, { i: truck, y: 'truck', p: [1, 0, 2], q: [0, 0, 0, 1], o: pa, d: pa, _color: '#ff0000' })
+  }
+  // A re-spawn of the same id is a claim attempt, never a second entity: denied while A drives.
+  ev(b, 'entity.spawn', { i: truck, y: 'truck', p: [9, 0, 9], q: [0, 0, 0, 1], d: 1 })
+  assert.equal((await b.next('event')).data.d, pa)
+  ev(b, 'entity.claim', { i: truck })
+  assert.equal((await b.next('event')).data.d, pa)
+  // Only the driver's snapshots move it; others' tagged states are dropped.
+  b.json({ type: 'snapshot', t: 1, seq: 0, state, e: truck })
+  a.json({ type: 'snapshot', t: 1, seq: 0, state: { ...state, position: [5, 0, 5] }, e: truck })
+  const snap = await b.next('snapshot')
+  assert.equal(snap.e, truck)
+  assert.deepEqual(snap.state.position, [5, 0, 5])
+  // A releases (exit): rests where it was left; B claims it and now drives.
+  ev(a, 'entity.release', { i: truck, p: [6, 0, 6], q: [0, 0, 0, 1] })
+  assert.equal((await b.next('event')).data.d, undefined)
+  ev(b, 'entity.claim', { i: truck })
+  assert.equal((await b.next('event')).data.d, pb)
+  b.json({ type: 'snapshot', t: 2, seq: 1, state: { ...state, position: [20, 0, 1] }, e: truck })
+  assert.deepEqual((await a.next('snapshot')).state.position, [20, 0, 1])
+  // Late joiner: the list with the last pose and driver.
+  const c = await connect(relay.port)
+  c.json({ type: 'join', version: 1, room: 'e', meta: {} })
+  const welcomeC = await c.next('welcome')
+  const [listed] = welcomeC.entities
+  assert.equal(listed.i, truck)
+  assert.equal(listed.d, pb)
+  assert.deepEqual(listed.p, [20, 0, 1])
+  // B disconnects: released, stays where it is.
+  b.close()
+  let freed
+  do freed = await a.next('event')
+  while (freed.kind !== 'entity' || freed.data.d !== undefined || freed.data.p[0] !== 20)
+  assert.deepEqual(freed.data.p, [20, 0, 1])
+  // Ground item: two pick-ups race, the first wins; clients cannot forge relay entity events.
+  ev(a, 'entity.spawn', { i: `${pa}.2`, y: 'item', p: [0, 0, 0], q: [0, 0, 0, 1], _item: 'pistol' })
+  await c.next('event')
+  ev(c, 'entity.despawn', { i: `${pa}.2` })
+  ev(a, 'entity.despawn', { i: `${pa}.2` })
+  ev(a, 'entity.gone', { i: truck })
+  let gone
+  do gone = await c.next('event')
+  while (gone.kind !== 'entity.gone')
+  assert.ok([welcomeC.peer, pa].includes(gone.data.b))
+  assert.equal(gone.data.i, `${pa}.2`)
+  const quiet = await Promise.race([c.next('event'), new Promise((r) => setTimeout(() => r(null), 150))])
+  assert.equal(quiet, null)
+  for (const s of [a, c]) s.close()
+  await relay.close()
+})
