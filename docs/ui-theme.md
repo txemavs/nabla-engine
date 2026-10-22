@@ -86,6 +86,15 @@ Parts a host may switch off by setting the token to `none`: `--nabla-place-displ
 - Joysticks and the wheel sit above the bottom bars (`--nabla-control-bottom`).
 - `html.nabla-ui-hidden` hides all gameplay chrome (intros, cinematics).
 
+## Main menu
+
+There is one main menu on every page: the ☰ button top-left opens the side menu
+(`mountGameMenu`, `src/runtime/main-menu.ts`). Its sections are the settings tabs (World,
+Settings, Objects, Development) and Virtual reality (enter, headset page). ☰ closes the
+settings window when it is open. Hosts only configure it: call `mountGameMenu(document, t,
+{ sections: (defaults) => [...] })` to relabel or add sections (Euskadi adds augmented reality
+and scenarios). Pages add their own entries with `addGameMenuEntries('vr', [...])`.
+
 ## Changing the theme as a host
 
 Put a `:root` block in `<head>` (anywhere: the engine sheet is inserted first), tokens only:

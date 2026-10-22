@@ -251,6 +251,8 @@ export interface SideMenuEntry {
   note?: boolean
   /** Keep the menu open after the action (default: it closes). */
   keepOpen?: boolean
+  /** An element the caller owns (and keeps updating), placed as the entry; clicks close the menu. */
+  element?: HTMLElement
 }
 
 /** A titled group of entries; without `titleKey` the entries stand on their own. */
@@ -280,6 +282,8 @@ export interface SideMenu {
   toggle: () => void
   /** An entry (button, link or note) by its id. */
   entry: (id: string) => HTMLElement | null
+  /** Remove the menu and its listeners. */
+  destroy: () => void
 }
 
 /**
@@ -323,6 +327,14 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
     box.dataset.section = section.id
     for (const entry of section.entries) {
       let item: HTMLElement
+      if (entry.element) {
+        item = entry.element
+        item.classList.add('nabla-btn')
+        if (!entry.keepOpen) item.addEventListener('click', () => setOpen(false))
+        if (entry.id) entries.set(entry.id, item)
+        box.append(item)
+        continue
+      }
       if (entry.note) {
         item = doc.createElement('p')
         item.className = 'nabla-side-menu-note'
@@ -367,15 +379,22 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
     const summary = (event.target as HTMLElement).closest('summary')
     if (summary && !nav.classList.contains('is-compact')) event.preventDefault()
   })
-  doc.addEventListener('pointerdown', (event) => {
+  const outside = (event: Event) => {
     const target = event.target as Node
     if (nav.hidden || nav.contains(target) || options.toggle?.()?.contains(target)) return
     setOpen(false)
-  })
+  }
+  doc.addEventListener('pointerdown', outside)
   installEngineStyles(doc)
   doc.body.append(nav)
   return {
     nav,
+    destroy: () => {
+      doc.removeEventListener('pointerdown', outside)
+      compact?.removeEventListener('change', layout)
+      doc.body.classList.remove(bodyClass)
+      nav.remove()
+    },
     get isOpen() {
       return !nav.hidden
     },
@@ -385,3 +404,183 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
   }
 }
 
+/** The settings window as the game menu drives it (settings-hud.ts registers it). */
+export interface GameMenuSettings {
+  open: (tab?: string) => void
+  close: () => void
+  readonly isOpen: boolean
+}
+
+export interface GameMenuOptions {
+  /** Translate function (default: the engine catalog passed to {@link mountGameMenu}). */
+  t?: MenuTranslate
+  /** i18n key of the menu's aria-label. Default `menu.label`. */
+  labelKey?: string
+  /** Element id of the menu. Default `nabla-side-menu`. */
+  id?: string
+  /** Class set on <body> while open. Default `nabla-side-menu-open`. */
+  bodyClass?: string
+  /** The host's sections, given the engine defaults (game tabs, virtual reality). */
+  sections?: (defaults: SideMenuSection[]) => SideMenuSection[]
+}
+
+/** Id of the engine's Enter VR corner button (vr-entry.ts); the menu offers it instead. */
+export const GAME_MENU_VR_BUTTON_ID = 'nabla-vr-enter'
+/** Id of the ☰ toggle in the top-left corner. */
+export const GAME_MENU_TOGGLE_ID = 'nabla-menu-toggle'
+
+interface GameMenuState {
+  doc: Document
+  t: MenuTranslate
+  options: GameMenuOptions
+  extra: Map<string, SideMenuEntry[]>
+  settings?: GameMenuSettings
+  menu?: SideMenu
+  toggle?: HTMLButtonElement
+  observer?: MutationObserver
+}
+// One menu per page even when the source tree and the package build are both loaded
+// (game/*.ts import src, host inline modules import the package): the state lives on globalThis.
+const GAME_MENU_KEY = Symbol.for('nabla.gameMenu')
+const PENDING_KEY = Symbol.for('nabla.gameMenu.pending')
+const store = globalThis as unknown as {
+  [GAME_MENU_KEY]?: GameMenuState | null
+  // Entries added before the menu is mounted.
+  [PENDING_KEY]?: Map<string, SideMenuEntry[]>
+}
+
+const SETTINGS_TABS: ReadonlyArray<readonly [tab: string, key: string]> = [
+  ['planet', 'settings.world'],
+  ['options', 'settings.settings'],
+  ['objects', 'settings.objects'],
+  ['dev', 'settings.development'],
+]
+
+/** The engine's sections: the settings tabs, then virtual reality (enter, note, headset page). */
+export function defaultGameMenuSections(): SideMenuSection[] {
+  return [
+    {
+      id: 'game',
+      titleKey: 'menu.game',
+      entries: SETTINGS_TABS.map(([tab, key]) => ({
+        labelKey: key,
+        run: () => openGameSettings(tab),
+      })),
+    },
+    {
+      id: 'vr',
+      titleKey: 'menu.vr',
+      entries: [
+        {
+          id: 'nabla-menu-vr-enter',
+          labelKey: 'menu.vr-enter',
+          run: () => store[GAME_MENU_KEY]?.doc.getElementById(GAME_MENU_VR_BUTTON_ID)?.click(),
+        },
+        { id: 'nabla-menu-vr-note', labelKey: 'menu.vr-unavailable', note: true },
+        { labelKey: 'menu.headset', href: '/headset.html' },
+      ],
+    },
+  ]
+}
+
+/** Open the settings window, on `tab` when given (planet, options, objects, dev). */
+export function openGameSettings(tab?: string): void {
+  const state = store[GAME_MENU_KEY]
+  if (!state?.settings) return
+  state.menu?.setOpen(false)
+  state.settings.open(tab)
+}
+
+function buildGameMenu(state: GameMenuState): void {
+  const { doc, options } = state
+  state.menu?.destroy()
+  state.observer?.disconnect()
+  const t = options.t ?? state.t
+  const defaults = defaultGameMenuSections()
+  const sections = (options.sections ? options.sections(defaults) : defaults).map((section) => ({
+    ...section,
+    entries: [...section.entries, ...(state.extra.get(section.id) ?? [])],
+  }))
+  const menu = mountSideMenu(doc, {
+    t,
+    id: options.id,
+    bodyClass: options.bodyClass,
+    labelKey: options.labelKey ?? 'menu.label',
+    toggle: () => state.toggle ?? null,
+    sections,
+  })
+  state.menu = menu
+  // VR entry: shown when the engine's VR button is offered (or the page has its own entry).
+  const syncVR = () => {
+    const button = doc.getElementById(GAME_MENU_VR_BUTTON_ID)
+    const pageEntry = [...(state.extra.get('vr') ?? [])].some((entry) => entry.element)
+    const ready = !!button && !button.hidden && !pageEntry
+    const enter = menu.entry('nabla-menu-vr-enter')
+    const note = menu.entry('nabla-menu-vr-note')
+    if (enter && enter.hidden === ready) enter.hidden = !ready
+    const noted = !ready && !pageEntry
+    if (note && note.hidden === noted) note.hidden = !noted
+  }
+  syncVR()
+  state.observer = new MutationObserver(syncVR)
+  state.observer.observe(doc.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['hidden'],
+  })
+}
+
+/**
+ * The game's one main menu: the ☰ toggle in the top-left corner and the side menu it opens
+ * (engine and host pages alike). ☰ closes the settings window when it is open, otherwise it
+ * opens or closes the menu. Calling again (a host configuring its sections and texts) rebuilds
+ * the menu in place; the toggle stays.
+ */
+export function mountGameMenu(
+  doc: Document,
+  t: MenuTranslate,
+  options: GameMenuOptions = {},
+  addToCorner?: (toggle: HTMLButtonElement) => void,
+): SideMenu {
+  const existing = store[GAME_MENU_KEY]
+  if (existing && existing.doc === doc) {
+    existing.t = t
+    existing.options = { ...existing.options, ...options }
+    buildGameMenu(existing)
+    return existing.menu!
+  }
+  const state: GameMenuState = { doc, t, options, extra: store[PENDING_KEY] ?? new Map() }
+  store[PENDING_KEY] = undefined
+  store[GAME_MENU_KEY] = state
+  state.toggle = mountMenuToggle(doc, {
+    t: options.t ?? t,
+    id: GAME_MENU_TOGGLE_ID,
+    onClick: () => {
+      if (state.settings?.isOpen) state.settings.close()
+      else state.menu?.toggle()
+    },
+  })
+  addToCorner?.(state.toggle)
+  buildGameMenu(state)
+  return state.menu!
+}
+
+/** settings-hud.ts: the window the menu's game entries open. */
+export function registerGameMenuSettings(settings: GameMenuSettings): void {
+  const state = store[GAME_MENU_KEY]
+  if (state) state.settings = settings
+}
+
+/** Add entries to a section of the game menu (e.g. the XR page's own Enter VR and monitor). */
+export function addGameMenuEntries(sectionId: string, entries: readonly SideMenuEntry[]): void {
+  const state = store[GAME_MENU_KEY]
+  const extra = state?.extra ?? (store[PENDING_KEY] ??= new Map())
+  extra.set(sectionId, [...(extra.get(sectionId) ?? []), ...entries])
+  if (state) buildGameMenu(state)
+}
+
+/** The mounted game menu, if any. */
+export function currentGameMenu(): SideMenu | null {
+  return store[GAME_MENU_KEY]?.menu ?? null
+}
