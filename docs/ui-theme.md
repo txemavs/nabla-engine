@@ -129,6 +129,17 @@ plus the `--splash-*` tokens in `euskadi-boot.ts`. Its own elements use the engi
 (`nabla-place`, `nabla-help`, `nabla-status`, `nabla-readout`, `nabla-cta`, `nabla-catalog-*`).
 The film credits are an Euskadi component of their own.
 
+The standard loading (the engine `#loading-screen`, via `--splash-*-display: none`, and the
+credits' own loading card and step readout) is hidden on the Euskadi home by one switch in
+`euskadi-boot.ts`:
+
+```ts
+export const EUSKADI_INTRO = { showStandardLoading: false }
+```
+
+Set it to `true` to bring the loading card (Nabla mark, message, progress bar) and the step
+readout back. The intro ends with the Nabla mark (∇) beat right before DIRECTED BY.
+
 ## First paint
 
 Every game page carries a small inline `<style id="nabla-critical">` before `ui-styles.ts`: dark

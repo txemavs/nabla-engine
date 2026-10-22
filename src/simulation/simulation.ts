@@ -110,6 +110,8 @@ export interface RecoverVehicleOptions {
   maxRoadDistance?: number
 }
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
+/** Recover (Y) ignores surfaces more than this far above the vehicle (roofs, bridges). */
+const RECOVER_CEILING = 2
 /** Spawn guard probe: from this far above the actor (lifts a buried spawn) ... */
 const SPAWN_PROBE_UP = 5
 /** ... down to this far below it. */
@@ -2507,7 +2509,7 @@ export class Simulation {
         ],
         options.maxRoadDistance ?? ROAD_SNAP_MAX_DISTANCE,
         (candidate) => {
-          const y = this.groundUnder(candidate.x, candidate.z, v.body.position.y, true)
+          const y = this.restGround(candidate.x, candidate.z, v.body.position.y)
           if (y === null || !dry(candidate.x, y, candidate.z)) return false
           // Check a footprint, not just a centre point at the edge of a loaded tile.
           for (const along of [-2, 2])
@@ -2517,13 +2519,14 @@ export class Simulation {
                 candidate.z + candidate.dz * along + candidate.dx * across,
                 y,
                 true,
+                y + 1.5,
               )
               if (support === null || Math.abs(support - y) > 1.5) return false
             }
           return true
         },
       )
-      const ground = road ? this.groundUnder(road.x, road.z, v.body.position.y, true) : null
+      const ground = road ? this.restGround(road.x, road.z, v.body.position.y) : null
       if (road && ground !== null) {
         // Face along the road, keeping whichever direction is closer to the old heading.
         const sign = road.dx * forward.x + road.dz * forward.z < 0 ? -1 : 1
@@ -2532,7 +2535,7 @@ export class Simulation {
       } else roadMissing = true
     }
     const localGround = roadMissing
-      ? this.groundUnder(v.body.position.x, v.body.position.z, v.body.position.y, true)
+      ? this.restGround(v.body.position.x, v.body.position.z, v.body.position.y)
       : null
     if (
       roadMissing &&
@@ -2557,10 +2560,26 @@ export class Simulation {
     return roadMissing ? 'Sin vía cerca · coche enderezado' : 'Coche enderezado'
   }
   /**
-   * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY`, ignoring
-   * vehicles; null where no collision is loaded.
+   * Ground a recovered vehicle rests on at (x, z): the highest surface at most
+   * `RECOVER_CEILING` m above it (never the roof, bridge or canopy over it), else, for a car
+   * fallen through the map, the highest loaded surface.
    */
-  private groundUnder(x: number, z: number, nearY: number, allLoaded = false): number | null {
+  private restGround(x: number, z: number, y: number): number | null {
+    return (
+      this.groundUnder(x, z, y, true, y + RECOVER_CEILING) ?? this.groundUnder(x, z, y, true)
+    )
+  }
+  /**
+   * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY` (and not above
+   * `ceiling`), ignoring vehicles; null where no collision is loaded.
+   */
+  private groundUnder(
+    x: number,
+    z: number,
+    nearY: number,
+    allLoaded = false,
+    ceiling = Infinity,
+  ): number | null {
     const vehicleBodies = new Set<Body>([...this.vehicles.values()].map((v) => v.body))
     let best: number | null = null
     let top = nearY + 600,
@@ -2584,7 +2603,7 @@ export class Simulation {
       (hit) => {
         if (!hit.body || hit.body.mass !== 0 || vehicleBodies.has(hit.body)) return
         if (allLoaded && this.fallbackFloor.owns(hit.body)) return
-        if (hit.hitNormalWorld.y < 0.5) return
+        if (hit.hitNormalWorld.y < 0.5 || hit.hitPointWorld.y > ceiling) return
         if (best === null || hit.hitPointWorld.y > best) best = hit.hitPointWorld.y
       },
     )

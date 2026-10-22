@@ -79,6 +79,23 @@ describe('R reset on the nearest road', () => {
     sim.dispose()
   })
 
+  it('stays under a roof or bridge instead of landing on top of it', () => {
+    const doc = scene()
+    const roof = createEntity('roof', 'box', [0, 30, 10])
+    roof.size = [200, 1, 60]
+    doc.entities.push(roof)
+    const sim = new Simulation(doc, { playerMode: 'hover' })
+    sim.startInVehicle('car')
+    body(sim).position.set(0, 1, 0)
+    const roads = [{ points: [{ x: -60, z: 25 }, { x: 60, z: 25 }], width: 6 }]
+    expect(sim.recoverVehicle({ snapToRoad: true, roads })).toBe('En la vía más cercana')
+    expect(body(sim).position.y).toBeCloseTo(3)
+    body(sim).position.set(0, 1, 0)
+    expect(sim.recoverVehicle()).toBe('Coche enderezado')
+    expect(body(sim).position.y).toBeLessThan(5)
+    sim.dispose()
+  })
+
   it('recovers from far below the map using loaded collision height', () => {
     const sim = new Simulation(scene(), { playerMode: 'hover' })
     sim.startInVehicle('car')
