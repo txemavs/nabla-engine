@@ -67,14 +67,14 @@ function rig() {
 describe('actor hands', () => {
   it('maps each actor to its hands, with the body colour slot', () => {
     expect(actorHandAssets({ kind: 'default', color: 'red' })).toEqual({
-      model: '/avatar/prota/prota.hands.v3.low.glb',
+      model: '/avatar/prota/prota.hands.v4.low.glb',
       colors: { primary: '#c62828' },
     })
     expect(actorHandAssets({ kind: 'default', color: 'white' })).toEqual({
-      model: '/avatar/prota/prota.hands.v3.low.glb',
+      model: '/avatar/prota/prota.hands.v3.glb',
     })
     expect(actorHandAssets({ kind: 'polibot', color: 'red' })).toEqual({
-      model: '/avatar/polibot/polibot.glb',
+      model: '/avatar/polibot/polibot.v5.glb',
     })
   })
 

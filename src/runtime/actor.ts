@@ -7,8 +7,9 @@
 import type { PlayerBodyAssets } from '../render/entity/player-body.js'
 
 /**
- * Gepeto's prota v3 with belt, holster (holstered USP) and baton: the solid "low" variant, whose
- * colour slots take the actor choice (the textured `.v3.glb` files ship alongside, not wired).
+ * Gepeto's prota with belt, holster (holstered USP) and baton. White keeps the authored look and
+ * wears the textured v3 set (`prota.v3.glb`, 1 draw call); a colour choice wears the solid v4 low
+ * body (soft colour edges) with the v3/v4 low parts, whose colour slots take the actor colour.
  */
 const PROTA = '/avatar/prota/prota'
 const ANIMATIONS = '/avatar/avatar.anims.glb'
@@ -37,19 +38,39 @@ export interface ActorChoice {
 export const DEFAULT_ACTOR: ActorChoice = { kind: 'default', color: 'white' }
 export const ACTOR_STORAGE_KEY = 'nabla.actor'
 
+/** Prota files: textured for the authored (white) look, solid low with colour slots otherwise. */
+function protaSet(choice: ActorChoice) {
+  return choice.color === 'white'
+    ? {
+        body: `${PROTA}.v3.glb`,
+        hands: `${PROTA}.hands.v3.glb`,
+        belt: `${PROTA}.belt.v3.glb`,
+        holster: `${PROTA}.holster.v4.glb`,
+        baton: `${PROTA}.baton.v3.glb`,
+      }
+    : {
+        body: `${PROTA}.v4.low.glb`,
+        hands: `${PROTA}.hands.v4.low.glb`,
+        belt: `${PROTA}.belt.v3.low.glb`,
+        holster: `${PROTA}.holster.v4.low.glb`,
+        baton: `${PROTA}.baton.v3.low.glb`,
+      }
+}
+
 /** Body assets of each actor (same mixamorig skeleton and clips, 1.70 m). */
 export function actorBodyAssets(choice: ActorChoice): PlayerBodyAssets {
   if (choice.kind === 'polibot')
-    // Polibot (Gepeto, from policia.v3): white robot with HeadSocket and WeaponSocket_R, no belt kit.
-    return { model: '/avatar/polibot/polibot.glb', animations: ANIMATIONS }
+    // Polibot (Gepeto, policia.v5): white robot with HeadSocket and WeaponSocket_R, no belt kit.
+    return { model: '/avatar/polibot/polibot.v5.glb', animations: ANIMATIONS }
+  const set = protaSet(choice)
   return {
-    model: `${PROTA}.v3.low.glb`,
+    model: set.body,
     animations: ANIMATIONS,
     attachments: [
-      { model: `${PROTA}.belt.v3.low.glb`, socket: 'BeltSocket' },
-      { model: `${PROTA}.holster.v4.low.glb`, socket: 'HolsterSocket' },
+      { model: set.belt, socket: 'BeltSocket' },
+      { model: set.holster, socket: 'HolsterSocket' },
       { model: `${PROTA}.holster-usp.glb`, socket: 'HolsterGunSocket', role: 'holstered' },
-      { model: `${PROTA}.baton.v3.low.glb`, socket: 'BatonSocket' },
+      { model: set.baton, socket: 'BatonSocket' },
     ],
     ...(choice.color === 'white' ? {} : { colors: { primary: ACTOR_COLORS[choice.color] } }),
   }
@@ -68,7 +89,7 @@ export interface ActorHandAssets {
  */
 export function actorHandAssets(choice: ActorChoice): ActorHandAssets {
   const body = actorBodyAssets(choice)
-  const model = choice.kind === 'polibot' ? body.model : `${PROTA}.hands.v3.low.glb`
+  const model = choice.kind === 'polibot' ? body.model : protaSet(choice).hands
   return body.colors ? { model, colors: body.colors } : { model }
 }
 
