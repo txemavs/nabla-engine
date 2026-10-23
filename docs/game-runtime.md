@@ -252,3 +252,20 @@ Warmup temporarily restarts an authored live clock and restores it afterward; re
 it again. Fixed clocks, default live time, water cloning/reset and disposal guards are unchanged.
 No public signatures, storage keys or host migrations change. Focused tests cover invalid
 inputs, before/after play, session restart and independent runtimes, including the browser facade.
+
+### Topic 7 completion: frame coordination
+
+`RuntimeFrameCoordinator` owns desktop generator continuation, the shared gameplay timestamp
+and XR pending-step/carry state. It has only lifecycle/error callbacks and no renderer, scene,
+simulation or scheduler ownership. Desktop physics can suspend a frame; later submissions are
+skipped until it settles. XR physics never suspends rendering and carries elapsed time into the
+next available step with the existing cap. Error and paused/disposed continuation policies are
+preserved, as are the timestamp reset points on play/pause/resume/stop, visibility and XR changes.
+`advanceAttractFrame` retains the separate orbit clock, damping and stall cap.
+
+The ordered desktop/XR stage bodies, warmup and render resource ownership remain in their
+existing locations. This extraction deliberately does not merge the two pipelines or add an
+animation loop. Tests cover synchronous/asynchronous order, late completion, failures, XR carry,
+clock transitions, independent coordinators and attract timing. Browser checks cover the real
+physics-to-render sequence, worker parity, preparation, attract stability and warmup. Public
+API and preference storage are unchanged; private test probes now read the coordinator's busy flag.

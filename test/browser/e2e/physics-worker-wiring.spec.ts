@@ -61,7 +61,7 @@ test('the physics worker gives the inline simulation at matching physics ticks',
       await runtime.play({ playerMode: 'walk', physicsWorker })
       const internal = runtime as unknown as {
         hasInput(): boolean
-        frameBusy: boolean
+        frames: { frameBusy: boolean }
         keys: { press(code: string, repeat: boolean, now: number): void }
         camera: import('three').PerspectiveCamera
         cameraState: { mode: string; firstPerson: boolean }
@@ -96,7 +96,7 @@ test('the physics worker gives the inline simulation at matching physics ticks',
         if (i < 120) internal.keys.press('KeyW', i > 0, now)
         runtime.tick(now)
         // A frame that awaits a lagged worker answer finishes later (the step itself never waits).
-        while (internal.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
+        while (internal.frames.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
         const raw = threaded ? (sim() as unknown as Pipelined).worker : null
         const tick = raw ? raw.newest.stats.ticks : sim().stats.ticks
         frames.push({

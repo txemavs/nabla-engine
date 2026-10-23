@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { Euler, Quaternion, Vector3 } from 'three'
+import { RuntimeFrameCoordinator } from '../../src/runtime/frame-coordinator.js'
 import { MapInspector } from '../../src/runtime/map-inspector.js'
 import { GameRuntime } from '../../src/runtime/browser.js'
 
@@ -36,7 +37,12 @@ it('inspection frames bypass gameplay and physics without changing vehicle state
     options: {},
     xr: {},
     renderer: { info: { programs: [] } },
-    lastTime: 0,
+    frames: new RuntimeFrameCoordinator({
+      disposed: () => false,
+      playing: () => true,
+      pause: vi.fn(),
+      onError: vi.fn(),
+    }),
     inspector: {},
     inspectionFrame,
     game: { step },

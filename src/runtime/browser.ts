@@ -299,6 +299,11 @@ import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
+import {
+  RuntimeFrameCoordinator,
+  advanceAttractFrame,
+  type FrameSteps,
+} from './frame-coordinator.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
 import { workerAtlasPackageLoader } from '../render/planet/atlas-package-loader.js'
 import { loadingWorkersEnabled, workerLoading } from '../render/planet/loading-workers.js'
@@ -570,9 +575,7 @@ export interface GameRuntimeOptions {
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
 
-/** A frame that yields the game step result (a promise when physics runs in a worker). */
 type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
-type FrameSteps = Generator<unknown, void, unknown>
 
 /** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
 export type { WeaponProp } from './player-presentation.js'
@@ -802,7 +805,12 @@ export class GameRuntime {
   private inspector: MapInspector | null = null
   private readonly inspectorState = createGameCameraState()
   private stallLog: string[] = []
-  private lastTime: number | null = null
+  private readonly frames = new RuntimeFrameCoordinator({
+    disposed: () => this.disposed,
+    playing: () => this.session.state === 'playing',
+    pause: () => this.pause(),
+    onError: (error) => this.options.onError?.(error),
+  })
   private fpsElapsed = 0
   private fpsFrames = 0
   readonly usbControllers: UsbControllers
@@ -1525,7 +1533,7 @@ export class GameRuntime {
         visibility: (hidden) => {
           this.effects.audio.setSuspended(hidden || this.session.state !== 'playing')
           this.effects.audio.setPageHidden(hidden)
-          this.lastTime = null
+          this.frames.lastTime = null
         },
         release: {
           beam: () => this.releaseBeamFlash(),
@@ -1594,7 +1602,7 @@ export class GameRuntime {
         this.xrLoadout?.suspend(performance.now())
         if (this.sidearm) this.sidearm.tracked = active
         if (active) this.effects.audio.unlock()
-        this.lastTime = null
+        this.frames.lastTime = null
         this.options.canvas.dataset.xr = String(active)
         if (active) {
           const { mode, firstPerson, bodycam, pitch, headPitch } = this.cameraState
@@ -1813,7 +1821,7 @@ export class GameRuntime {
       this.view.setPlaying(true)
       this.effects.audio.setSuspended(globalThis.document.hidden)
       this.world?.renderUpdate(this.origin, !!this.quality.buildings, this.session.simulation)
-      this.lastTime = null
+      this.frames.lastTime = null
       if (this.options.clock !== 'manual' && !this.xrActive) this.loop.start()
       revealDone()
     } catch (error) {
@@ -1838,14 +1846,14 @@ export class GameRuntime {
     this.loop.stop()
     this.releaseInput()
     this.effects.audio.setSuspended(true)
-    this.lastTime = null
+    this.frames.lastTime = null
   }
   /** Resume paused gameplay and automatic scheduling; manual-clock hosts still supply ticks. */
   resume(): void {
     this.assertAlive()
     this.game.resume()
     this.effects.audio.setSuspended(document.hidden)
-    this.lastTime = null
+    this.frames.lastTime = null
     if (this.session.state === 'playing' && this.options.clock !== 'manual' && !this.xrActive)
       this.loop.start()
   }
@@ -1895,7 +1903,7 @@ export class GameRuntime {
     this.view.setPlaying(false)
     this.effects.updateAudio(null, this.document, this.camera.position)
     this.effects.updateTires(null, 0, this.origin)
-    this.lastTime = null
+    this.frames.lastTime = null
   }
   /** Host-owned scheduling is exclusive with the automatic loop. Time is in milliseconds. */
   tick(time: number): void {
@@ -1971,46 +1979,8 @@ export class GameRuntime {
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
   private xrDebug: XRDebugPanel | null = null
-  private xrStepPending: Promise<void> | null = null
-  private xrStepCarry = 0
   private frameXR(time: number): void {
-    GameRuntime.prototype.driveFrame.call(this, GameRuntime.prototype.frameXRSteps.call(this, time))
-  }
-  /**
-   * Advance a frame generator. Inline physics returns plain values and the whole frame runs
-   * synchronously, exactly as before. A worker step yields a promise: the frame resumes (and
-   * renders) when it resolves, and frames requested meanwhile are skipped.
-   */
-  private frameBusy = false
-  private driveFrame(steps: FrameSteps, resumed = false, sent?: unknown): void {
-    if (this.frameBusy && !resumed) return
-    for (let next = steps.next(sent); !next.done; next = steps.next(sent)) {
-      const value = next.value
-      if (value instanceof Promise) {
-        this.frameBusy = true
-        value.then(
-          (result: unknown) => {
-            this.frameBusy = false
-            // Stopped or paused while the worker stepped: drop the rest of this frame.
-            if (this.disposed || this.session.state !== 'playing') return
-            try {
-              GameRuntime.prototype.driveFrame.call(this, steps, true, result)
-            } catch (error) {
-              this.pause()
-              this.options.onError?.(error)
-            }
-          },
-          (error: unknown) => {
-            this.frameBusy = false
-            if (this.disposed || this.session.state !== 'playing') return
-            this.pause()
-            this.options.onError?.(error)
-          },
-        )
-        return
-      }
-      sent = value
-    }
+    this.frames.drive(GameRuntime.prototype.frameXRSteps.call(this, time))
   }
   private *frameXRSteps(time: number): FrameSteps {
     const xr = this.xrSystem!
@@ -2021,11 +1991,7 @@ export class GameRuntime {
     const sim = this.session.simulation
     if (!sim || this.session.state !== 'playing') return
     const enabled = xr.visible
-    const dt =
-      enabled && this.lastTime !== null
-        ? Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
-        : 0
-    this.lastTime = enabled ? time : null
+    const dt = this.frames.xrTiming(time, enabled)
     if (!enabled) this.releaseInput()
     const vehicle = sim.player.vehicleId
     const info = vehicle ? sim.vehicleInfo(vehicle) : null
@@ -2161,28 +2127,9 @@ export class GameRuntime {
     // WebXR only shows what renders inside this XR frame callback, so an XR frame never waits for
     // a worker step: it renders the latest state while the step runs, and the time of frames that
     // could not start a step joins the next one (capped). Inline physics is unchanged.
-    if (!this.xrStepPending) {
-      const stepped = this.game.step(
-        dt + this.xrStepCarry,
-        this.combat.isDead() ? idleInput() : input,
-        water.level,
-        time,
-      )
-      this.xrStepCarry = 0
-      if (stepped instanceof Promise) {
-        this.xrStepPending = stepped.then(
-          () => {
-            this.xrStepPending = null
-          },
-          (error: unknown) => {
-            this.xrStepPending = null
-            if (this.disposed) return
-            this.pause()
-            this.options.onError?.(error)
-          },
-        )
-      }
-    } else this.xrStepCarry = Math.min(this.xrStepCarry + dt, simulationDefaults.maxFrameSeconds)
+    this.frames.stepXR(dt, (seconds) =>
+      this.game.step(seconds, this.combat.isDead() ? idleInput() : input, water.level, time),
+    )
     const physicsMs = performance.now() - physicsStarted
     if (this.world) this.game.streaming.update(this.world, sim, this.document, time)
     this.view.sync(sim, dt, true, 0, 0)
@@ -2412,7 +2359,7 @@ export class GameRuntime {
   /** Run one desktop frame; with the physics worker it pauses at the step until the state arrives. */
   private frame(time: number): void {
     // Called through the prototype so hosts and tests may invoke it on a partial runtime.
-    GameRuntime.prototype.driveFrame.call(this, GameRuntime.prototype.frameSteps.call(this, time))
+    this.frames.drive(GameRuntime.prototype.frameSteps.call(this, time))
   }
   private *frameSteps(time: number): FrameSteps {
     const sim = this.session.simulation
@@ -2424,13 +2371,8 @@ export class GameRuntime {
     const programIdBefore = this.options.performanceLog
       ? latestProgramId(this.renderer.info.programs ?? [])
       : -1
-    const frameMs = this.lastTime === null ? 0 : Math.max(0, time - this.lastTime)
+    const { frameMs, dt } = this.frames.desktopTiming(time)
     if (measuring) this.renderer.info.reset()
-    const dt =
-      this.lastTime === null
-        ? 0
-        : Math.min(simulationDefaults.maxFrameSeconds, Math.max(0, (time - this.lastTime) / 1000))
-    this.lastTime = time
     const playing = this.session.state === 'playing' && !document.hidden
     if (this.inspector) {
       if (playing) this.inspectionFrame(time, dt, frameMs)
@@ -3111,7 +3053,7 @@ export class GameRuntime {
       this.usbFeedback.stop()
       this.options.onMessage?.(t('game.god-mode-wasd-arrows-mouse-shift-fast-q-e-height'))
     }
-    this.lastTime = null
+    this.frames.lastTime = null
     this.options.canvas.dataset.inspection = this.inspector.returning ? 'returning' : 'active'
   }
   private inspectionFrame(time: number, dt: number, frameMs: number): void {
@@ -3139,7 +3081,7 @@ export class GameRuntime {
       sim.terrainSupportPaused = false
       this.game.streaming.reset()
       this.inspector = null
-      this.lastTime = null
+      this.frames.lastTime = null
       this.effects.audio.setSuspended(false)
       this.options.canvas.dataset.inspection = 'off'
       this.options.onMessage?.(t('game.driving-resumed'))
@@ -5174,13 +5116,7 @@ export class GameRuntime {
       try {
         const attract = this.attract
         if (!attract || this.disposed) return
-        const frameMs = attract.last === null ? 0 : time - attract.last
-        attract.last = time
-        // Loading, tab suspension or a busy GPU must not fast-forward the orbit on resume.
-        const dt = Math.min(50, Math.max(0, frameMs))
-        attract.orbitSpeed += (attract.orbitTarget - attract.orbitSpeed) * (1 - Math.exp(-dt / 450))
-        if (attract.orbitSpeed < 0.001) attract.orbitSpeed = 0
-        attract.elapsed += dt * attract.orbitSpeed
+        const frameMs = advanceAttractFrame(attract, time)
         this.renderAttractFrame()
         this.observeResolution(frameMs, time)
       } catch (error) {

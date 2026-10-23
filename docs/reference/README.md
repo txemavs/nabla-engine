@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **643 modules; 8272 executable function definitions**.
+Coverage: **644 modules; 8284 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -453,6 +453,7 @@ Coverage: **643 modules; 8272 executable function definitions**.
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
+| [src/runtime/frame-coordinator.ts](src/runtime/frame-coordinator.ts.md) | 12 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 25 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 13 |

@@ -97,7 +97,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
     await runtime.play()
     const internal = runtime as unknown as {
       action(code: string): void
-      frameBusy: boolean
+      frames: { frameBusy: boolean }
       weaponDrawn: boolean
       session: {
         simulation: { player: { vehicleId: string | null }; startInVehicle(id: string): void }
@@ -126,7 +126,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
     let now = performance.now()
     for (let i = 0; i < 120 && internal.session.simulation.player.vehicleId !== 'car'; i++) {
       runtime.tick((now += 1000 / 60))
-      while (internal.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
+      while (internal.frames.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 1000 / 60))
     }
     const aboard = internal.session.simulation.player.vehicleId

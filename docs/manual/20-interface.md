@@ -314,3 +314,26 @@ the simulation when play begins. Warmup restores its temporary clock override in
 reveal starts an authored live clock again so loading time does not advance the intended hour.
 Tests: `test/runtime/world-controls.test.ts`, recovery/sky/gravity tests and
 `test/browser/e2e/world-controls.spec.ts`.
+
+### Frame coordination
+
+[RuntimeFrameCoordinator](../../src/runtime/frame-coordinator.ts) coordinates continuation
+and timing for the desktop and XR frame generators. It owns the gameplay timestamp, desktop
+busy flag, pending XR step and carried XR time. It receives only lifecycle/error callbacks;
+`FrameLoop` and WebXR still own scheduling. Stage bodies and their resources remain in the
+browser composition root. There is no extra loop, renderer or simulation owner.
+
+| Path              | Physics and continuation                                                                                                                                                             | Presentation ordering                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop           | Inline results continue synchronously. A promised step suspends the generator and skips new submissions until settlement. Paused/stopped/disposed runtimes discard its continuation. | Input/install, physics, streaming, presentation/camera, environment/effects/lights, render, diagnostics and host callback retain their original positions.                               |
+| XR                | A pending step never suspends the frame callback. Missed step time accumulates with the existing cap, then joins the next step.                                                      | Latest simulation state, streaming, presentation/tracked camera, environment/effects/shadows, direct renderer submission, audio/stats and host callback retain their original positions. |
+| Warmup/inspection | Warmup retains its render-only path; inspection bypasses gameplay physics.                                                                                                           | Existing camera/clock restoration and shadow/render work remain with their owners.                                                                                                       |
+| Attract           | Separate orbit timestamp; `advanceAttractFrame` caps orbit advancement at 50 ms and retains damping.                                                                                 | Render first, then resolution observation, with the same independent camera.                                                                                                             |
+
+Gameplay timestamp resets remain at the original lifecycle and visibility/XR transition sites.
+Desktop asynchronous failures pause/report only while playing; XR rejection retains its existing
+policy of reporting unless disposed. Synchronous errors still propagate to the caller's existing
+handler. This refactor does not introduce session-generation cancellation or change stop/restart
+semantics for pending physics. Such a behavioral change requires a separate review.
+Tests: `test/runtime/frame-coordinator.test.ts`, frame-loop/map-inspector tests and browser
+frame-coordination, physics-worker-wiring, preparation, attract-stability and vehicle-warmup tests.
