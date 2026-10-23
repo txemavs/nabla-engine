@@ -101,6 +101,7 @@ import {
   type ResolutionScaleState,
 } from './resolution-scale.js'
 import { RuntimePerformanceSettings } from './performance-settings.js'
+import { RuntimeInputEvents } from './input-events.js'
 import { RuntimePointerCapture } from './pointer-capture.js'
 import { RuntimeWeaponPreferences } from './weapon-preferences.js'
 import { RuntimeDisplayController } from './display-controller.js'
@@ -801,6 +802,7 @@ export class GameRuntime {
   private magazineMotion: CasingMotion | null = null
   private magazineMeshes: DroppedMagazines | null = null
   private droppedMagazines = new Map<string, MagazineEntity>()
+  private readonly inputEvents: RuntimeInputEvents
   /**
    * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
    * Escape, a menu taking focus, or a click on an in-world monitor release it, and it stays
@@ -1336,7 +1338,57 @@ export class GameRuntime {
       document,
       () => this.session.state === 'playing',
     )
-    this.bindInput()
+    this.inputEvents = new RuntimeInputEvents(
+      options.canvas,
+      window,
+      document,
+      this.pointer,
+      {
+        playing: () => this.session.state === 'playing',
+        hasInput: () => this.hasInput(),
+        activity: () => this.cameraActivity(),
+        syncShift: (held) => this.keys.syncShift(held, performance.now()),
+        unlockAudio: () => this.effects.audio.unlock(),
+        monitorAtCenter: () => !!this.monitors.panelAt(innerWidth / 2, innerHeight / 2),
+        button: (button, down) => this.applySidearmButton(button, down),
+        cancelPointer: () => {
+          this.triggerReleased = true
+          this.triggerDown = false
+          this.sidearm?.setAiming(false)
+        },
+        wheel: (event) => this.handleInputWheel(event),
+        keyDown: (event) => this.handleInputKeyDown(event),
+        keyUp: (event) => this.handleInputKeyUp(event),
+        move: (event) => this.handleInputMove(event),
+        visibility: (hidden) => {
+          this.effects.audio.setSuspended(hidden || this.session.state !== 'playing')
+          this.effects.audio.setPageHidden(hidden)
+          this.lastTime = null
+        },
+        release: {
+          beam: () => this.releaseBeamFlash(),
+          controllers: () => {
+            this.usbControllers.reset()
+            this.usbFrame = idleUsbFrame()
+            this.usbFeedback.stop()
+          },
+          weapons: () => this.releaseWeaponInput(),
+          touch: () => {
+            this.touchDriving?.clear()
+            this.touchFlight?.clear()
+            this.touchWalk?.clear()
+          },
+          monitors: () => this.monitors.releaseInput(),
+          game: () => this.game.releaseInput(),
+          gamepad: () => {
+            this.previousButtons = []
+            this.previousPad = null
+          },
+        },
+      },
+      this.lifetime.signal,
+    )
+    this.inputEvents.bind()
     this.observer = new ResizeObserver(() => this.resize())
     this.observer.observe(options.canvas)
     this.resize()
@@ -5435,24 +5487,15 @@ export class GameRuntime {
     this.beamFlash = undefined
   }
   releaseInput(): void {
-    this.releaseBeamFlash()
-    this.usbControllers.reset()
-    this.usbFrame = idleUsbFrame()
-    this.usbFeedback.stop()
+    this.inputEvents.release()
+  }
+  private releaseWeaponInput(): void {
     if (this.sidearm) this.sidearm.state.manualRackHeld = false
     this.safetyClickHeld = false
     if (!this.sidearmAimPreview) this.sidearm?.stopInspect(performance.now())
     this.fireRequested = false
     this.triggerReleased = true
     this.triggerDown = false
-    this.touchDriving?.clear()
-    this.touchFlight?.clear()
-    this.touchWalk?.clear()
-    this.monitors.releaseInput()
-    this.game.releaseInput()
-    this.previousButtons = []
-    this.previousPad = null
-    this.pointer.release()
   }
   /**
    * Sidearm frame: trigger press / reset, reload, slide, the muzzle rise added to the aim (the
@@ -6732,351 +6775,205 @@ export class GameRuntime {
     }
     if (message) this.options.onMessage?.(message)
   }
-  private bindInput(): void {
-    const options = { signal: this.lifetime.signal }
+  private handleInputWheel(event: WheelEvent): void {
     const canvas = this.options.canvas
-    for (const event of ['keydown', 'keyup', 'pointerdown', 'pointerup', 'pointermove', 'wheel'])
-      window.addEventListener(event, () => this.cameraActivity(), { ...options, capture: true })
-    // Mouse look, aim and fire carry the live Shift state: resync sprint from them so a Shift
-    // that was held through an input release (pointer re-capture, blur) runs again at once.
-    for (const event of [
-      'pointerdown',
-      'pointerup',
-      'pointermove',
-      'mousedown',
-      'mouseup',
-    ] as const)
-      canvas.addEventListener(
-        event,
-        (e) => {
-          if (this.hasInput() && this.session.state === 'playing')
-            this.keys.syncShift(e.shiftKey, performance.now())
-        },
-        options,
+    // Wheel zoom for the detached views, seated or on foot: overhead height and
+    // cinematic orbit distance. Other views leave the wheel to the page.
+    const state = this.cameraState
+    if (!this.hasInput() || !this.session.simulation) return
+    const sim = this.session.simulation
+    if (
+      !sim.player.vehicleId &&
+      this.weaponDrawn &&
+      this.sidearm?.visible &&
+      !this.sidearmAimPreview &&
+      isFirstPersonView(state, false)
+    ) {
+      this.weaponPreferences.stepWheel(this.sidearm.isAiming, event.deltaY, (wheel) => {
+        this.sidearm!.playerWheel = wheel
+      })
+      canvas.dataset.weaponHandStep = String(this.weaponPreferences.wheel.hand + 1)
+      canvas.dataset.weaponAimDistance = this.weaponPreferences.wheel.distance.toFixed(2)
+      event.preventDefault()
+      return
+    }
+    const scale = Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity)
+    if (state.mode === 'map') {
+      state.mapZoom = THREE.MathUtils.clamp(
+        state.mapZoom * scale,
+        controlDefaults.mapZoomMin,
+        controlDefaults.mapZoomMax,
       )
-    canvas.addEventListener(
-      'wheel',
-      (event) => {
-        // Wheel zoom for the detached views, seated or on foot: overhead height and
-        // cinematic orbit distance. Other views leave the wheel to the page.
-        const state = this.cameraState
-        if (!this.hasInput() || !this.session.simulation) return
-        const sim = this.session.simulation
-        if (
-          !sim.player.vehicleId &&
-          this.weaponDrawn &&
-          this.sidearm?.visible &&
-          !this.sidearmAimPreview &&
-          isFirstPersonView(state, false)
-        ) {
-          this.weaponPreferences.stepWheel(this.sidearm.isAiming, event.deltaY, (wheel) => {
-            this.sidearm!.playerWheel = wheel
-          })
-          canvas.dataset.weaponHandStep = String(this.weaponPreferences.wheel.hand + 1)
-          canvas.dataset.weaponAimDistance = this.weaponPreferences.wheel.distance.toFixed(2)
-          event.preventDefault()
-          return
-        }
-        const scale = Math.exp(event.deltaY * controlDefaults.mapZoomSensitivity)
-        if (state.mode === 'map') {
-          state.mapZoom = THREE.MathUtils.clamp(
-            state.mapZoom * scale,
-            controlDefaults.mapZoomMin,
-            controlDefaults.mapZoomMax,
-          )
-        } else if (state.mode === 'cinematic') {
-          state.cinematicZoom = THREE.MathUtils.clamp(
-            state.cinematicZoom * scale,
-            controlDefaults.cinematicZoomMin,
-            controlDefaults.cinematicZoomMax,
-          )
-        } else if (
-          state.mode === 'chase' &&
-          !isFirstPersonView(state, !!this.session.simulation.player.vehicleId)
-        ) {
-          state.chaseZoom = THREE.MathUtils.clamp(
-            (state.chaseZoom ?? 1) * scale,
-            controlDefaults.chaseZoomMin,
-            controlDefaults.chaseZoomMax,
-          )
-        } else return
-        event.preventDefault()
-      },
-      { ...options, passive: false },
-    )
-    canvas.parentElement!.addEventListener(
-      'pointerdown',
-      (event) => {
-        if (
-          event.target instanceof Element &&
-          event.target.closest('.portal-tablet-layer button')
-        ) {
-          event.preventDefault()
-          canvas.focus()
-          this.effects.audio.unlock()
-        }
-        if (event.target === canvas.parentElement) {
-          event.preventDefault()
-          canvas.focus()
-          this.effects.audio.unlock()
-          // Free mouse over interactive monitors: the canvas lets clicks through, so a click
-          // outside every monitor lands here and hands the mouse back to the game.
-          if (event.pointerType === 'mouse') this.pointer.capture()
-        }
-      },
-      options,
-    )
-    canvas.addEventListener(
-      'pointerdown',
-      (event) => {
-        canvas.focus()
-        this.effects.audio.unlock()
-        const mouse = event.pointerType === 'mouse'
-        if (mouse && this.session.state === 'playing') {
-          if (this.pointer.locked) {
-            // Clicking an in-world monitor under the crosshair frees the mouse for that UI.
-            if (event.button === 0 && this.monitors.panelAt(innerWidth / 2, innerHeight / 2)) {
-              event.preventDefault()
-              this.pointer.release()
-              return
-            }
-          } else if (!this.pointer.unsupported) {
-            // Free-mouse mode: this click only recaptures the pointer; it does not shoot.
-            event.preventDefault()
-            this.pointer.capture()
-            return
-          }
-        }
-        this.applySidearmButton(event.button, true)
-      },
-      options,
-    )
-    canvas.addEventListener(
-      'pointerup',
-      (event) => {
-        this.applySidearmButton(event.button, false)
-      },
-      options,
-    )
-    // Pointer lock does not emit pointerdown/pointerup for a second button. Aim is right click;
-    // left click while it is held must still arrive, so the mouse events are listened to as well.
-    canvas.addEventListener(
-      'mousedown',
-      (event) => this.applySidearmButton(event.button, true),
-      options,
-    )
-    canvas.addEventListener(
-      'mouseup',
-      (event) => this.applySidearmButton(event.button, false),
-      options,
-    )
-    canvas.addEventListener(
-      'pointercancel',
-      () => {
-        this.triggerReleased = true
-        this.triggerDown = false
-        this.sidearm?.setAiming(false)
-      },
-      options,
-    )
-    canvas.addEventListener(
-      'contextmenu',
-      (event) => {
-        if (this.session.state === 'playing') event.preventDefault()
-      },
-      options,
-    )
-    canvas.addEventListener(
-      'keydown',
-      (event) => {
-        if (!this.hasInput() || this.session.state !== 'playing') return
-        // A Shift keydown is a modifier change, not a repeat of the newest key.
-        if (!inputBindings.sprint.keys.includes(event.code))
-          this.keys.syncShift(event.shiftKey, performance.now())
-        if (event.ctrlKey || event.metaKey || event.altKey) return
-        if (event.code === 'Home') {
-          event.preventDefault()
-          if (!event.repeat) this.toggleInspection()
-          return
-        }
-        if (this.inspector) {
-          event.preventDefault()
-          if (inputBindings['pointer.release'].keys.includes(event.code)) this.pointer.release()
-          else {
-            this.keys.press(event.code, event.repeat, performance.now())
-            if (!this.pointer.free) this.pointer.capture()
-          }
-          return
-        }
-        // Escape while unlocked asks for the free mouse; any other key while the game should
-        // own the pointer (first keypress after loading, or a refused lock) captures it.
-        if (bindingForKey(event.code, this.controlContext) === 'pointer.release')
-          this.pointer.free = true
-        else if (!this.pointer.free && !event.repeat) this.pointer.capture()
-        if (bindingForKey(event.code, this.controlContext) !== undefined) event.preventDefault()
-        const id = this.session.simulation?.player.vehicleId
-        if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          const result = vehicleMenuKey(
-            this.view,
-            this.document,
-            id,
-            event.code,
-            event.repeat,
-            (message) => this.options.onMessage?.(message),
-            (entityId, patch) => {
-              const entity = this.document.entities.find((e) => e.id === entityId)
-              if (entity) Object.assign(entity, patch)
-            },
-            this.text,
-            (entityId, mode) =>
-              this.session.simulation?.setEngineMode(entityId, mode) ??
-              t('game.this-vehicle-has-a-single-engine-mode'),
-            (step) => {
-              this.cameraPreferences.setFovOffset(
-                nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
-                this.settings,
-              )
-              const { firstPersonFov, chaseFov } = this.cameraState.settings
-              return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
-            },
-            (action) => {
-              const track = this.effects.audio.musicTrack
-              if (!track) return t('game.no-music')
-              if (action === 'stop') {
-                this.effects.audio.fadeOutMusic(0.8)
-                return t('game.music-stopped')
-              }
-              return this.effects.audio.playMusic()
-                ? t('game.music-track', { title: track.title ?? t('game.track') })
-                : t('game.music-muted-in-settings-to-audio')
-            },
-            (action) => {
-              const sim = this.session.simulation!
-              if (action === 'cargo') {
-                void this.loadTrailerCars(id).catch((error) =>
-                  this.options.onMessage?.(String(error)),
-                )
-                return 'Preparando carga del portacoches'
-              }
-              if (['extend', 'retract', 'angle-up', 'angle-down'].includes(action))
-                return sim.adjustTrailerRamp(id, action)
-              return sim.setTrailerPlatform(id, action === 'flat')
-            },
-          )
-          if (result.handled) {
-            event.preventDefault()
-            this.game.releaseInput()
-            if (result.opened) this.cameraState.mode = 'cockpit'
-            return
-          }
-        }
-        this.keys.press(event.code, event.repeat, performance.now())
-        this.effects.audio.unlock()
-        if (!event.repeat) {
-          const action = bindingForKey(event.code, this.controlContext)
-          if (action === 'weapon.slide' && this.weaponDrawn && this.sidearm)
-            this.sidearm.state.manualRackHeld =
-              this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
-          if (action === 'highBeam' && id && this.view.beginVehicleBeamFlash(id)) {
-            this.releaseBeamFlash()
-            this.view.beginVehicleBeamFlash(id)
-            this.beamFlash = { vehicle: id, key: event.code }
-          } else if (action) this.action(action)
-        }
-      },
-      options,
-    )
-    window.addEventListener(
-      'keyup',
-      (event) => {
-        this.keys.release(event.code)
-        if (this.beamFlash?.key === event.code) this.releaseBeamFlash()
-        if (inputBindings['weapon.slide'].keys.includes(event.code) && this.sidearm)
-          this.sidearm.state.manualRackHeld = false
-        if (
-          inputBindings['weapon.inspect'].keys.includes(event.code) ||
-          inputBindings['weapon.chamber'].keys.includes(event.code)
-        ) {
-          this.sidearm?.stopInspect(performance.now())
-          if (inputBindings['weapon.chamber'].keys.includes(event.code) && this.weaponDrawn)
-            this.effects.audio.weaponSound('slide-forward', this.camera.position.toArray())
-        }
-      },
-      {
-        ...options,
-        capture: true,
-      },
-    )
-    window.addEventListener('pagehide', () => this.releaseInput(), options)
-    // Losing pointer lock (Escape, menus, monitors, browser UI) enters free-mouse mode until the
-    // next click, and can swallow the keyups of held controls.
-    document.addEventListener(
-      'pointerlockchange',
-      () => this.pointer.changed(() => this.releaseInput()),
-      options,
-    )
-    canvas.addEventListener('blur', () => this.releaseInput(), options)
-    window.addEventListener('blur', () => this.releaseInput(), options)
-    document.addEventListener(
-      'visibilitychange',
-      () => {
-        this.releaseInput()
-        this.effects.audio.setSuspended(document.hidden || this.session.state !== 'playing')
-        this.effects.audio.setPageHidden(document.hidden)
-        this.lastTime = null
-      },
-      options,
-    )
-    // Mouse look runs only while the game owns the pointer. In free-mouse mode the cursor is for
-    // UI; touch, pen and browsers without pointer lock look by dragging instead.
-    canvas.addEventListener(
-      'pointermove',
-      (event) => {
-        if (!this.hasInput()) return
-        if (this.inspector) {
-          if (this.pointer.locked || event.buttons & 1)
-            this.inspector.look(event.movementX, event.movementY)
-          return
-        }
-        const state = this.cameraState
-        const seated = !!this.session.simulation?.player.vehicleId
-        if (!mouseLooksWithoutButton(state, seated)) return
-        if (!this.pointer.locked) {
-          const dragging = !!(event.buttons & 1)
-          if (!dragging || (event.pointerType === 'mouse' && !this.pointer.unsupported)) return
-        }
-        state.lastLookTime = performance.now()
-        if (state.mode === 'cockpit' && seated) {
-          state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
-          state.headPitch = THREE.MathUtils.clamp(
-            state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
-            -controlDefaults.pitchLimit,
-            controlDefaults.pitchLimit,
-          )
-        } else {
-          let yaw = -event.movementX * controlDefaults.mouseSensitivity,
-            pitch = event.movementY * controlDefaults.mouseSensitivity
-          if (
-            !!this.cameraState.bodycam &&
-            this.weaponDrawn &&
-            !seated &&
-            isFirstPersonView(state, false)
-          ) {
-            const motion = this.bodycam.move(yaw, pitch)
-            yaw = motion.yaw
-            pitch = motion.pitch
-          }
-          state.yaw += yaw
-          state.pitch = THREE.MathUtils.clamp(
-            state.pitch + pitch,
-            -controlDefaults.pitchLimit,
-            controlDefaults.pitchLimit,
-          )
-        }
-      },
-      options,
-    )
+    } else if (state.mode === 'cinematic') {
+      state.cinematicZoom = THREE.MathUtils.clamp(
+        state.cinematicZoom * scale,
+        controlDefaults.cinematicZoomMin,
+        controlDefaults.cinematicZoomMax,
+      )
+    } else if (
+      state.mode === 'chase' &&
+      !isFirstPersonView(state, !!this.session.simulation.player.vehicleId)
+    ) {
+      state.chaseZoom = THREE.MathUtils.clamp(
+        (state.chaseZoom ?? 1) * scale,
+        controlDefaults.chaseZoomMin,
+        controlDefaults.chaseZoomMax,
+      )
+    } else return
+    event.preventDefault()
   }
+  private handleInputKeyDown(event: KeyboardEvent): void {
+    if (!this.hasInput() || this.session.state !== 'playing') return
+    // A Shift keydown is a modifier change, not a repeat of the newest key.
+    if (!inputBindings.sprint.keys.includes(event.code))
+      this.keys.syncShift(event.shiftKey, performance.now())
+    if (event.ctrlKey || event.metaKey || event.altKey) return
+    if (event.code === 'Home') {
+      event.preventDefault()
+      if (!event.repeat) this.toggleInspection()
+      return
+    }
+    if (this.inspector) {
+      event.preventDefault()
+      if (inputBindings['pointer.release'].keys.includes(event.code)) this.pointer.release()
+      else {
+        this.keys.press(event.code, event.repeat, performance.now())
+        if (!this.pointer.free) this.pointer.capture()
+      }
+      return
+    }
+    // Escape while unlocked asks for the free mouse; any other key while the game should
+    // own the pointer (first keypress after loading, or a refused lock) captures it.
+    if (bindingForKey(event.code, this.controlContext) === 'pointer.release')
+      this.pointer.free = true
+    else if (!this.pointer.free && !event.repeat) this.pointer.capture()
+    if (bindingForKey(event.code, this.controlContext) !== undefined) event.preventDefault()
+    const id = this.session.simulation?.player.vehicleId
+    if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const result = vehicleMenuKey(
+        this.view,
+        this.document,
+        id,
+        event.code,
+        event.repeat,
+        (message) => this.options.onMessage?.(message),
+        (entityId, patch) => {
+          const entity = this.document.entities.find((e) => e.id === entityId)
+          if (entity) Object.assign(entity, patch)
+        },
+        this.text,
+        (entityId, mode) =>
+          this.session.simulation?.setEngineMode(entityId, mode) ??
+          t('game.this-vehicle-has-a-single-engine-mode'),
+        (step) => {
+          this.cameraPreferences.setFovOffset(
+            nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
+            this.settings,
+          )
+          const { firstPersonFov, chaseFov } = this.cameraState.settings
+          return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+        },
+        (action) => {
+          const track = this.effects.audio.musicTrack
+          if (!track) return t('game.no-music')
+          if (action === 'stop') {
+            this.effects.audio.fadeOutMusic(0.8)
+            return t('game.music-stopped')
+          }
+          return this.effects.audio.playMusic()
+            ? t('game.music-track', { title: track.title ?? t('game.track') })
+            : t('game.music-muted-in-settings-to-audio')
+        },
+        (action) => {
+          const sim = this.session.simulation!
+          if (action === 'cargo') {
+            void this.loadTrailerCars(id).catch((error) => this.options.onMessage?.(String(error)))
+            return 'Preparando carga del portacoches'
+          }
+          if (['extend', 'retract', 'angle-up', 'angle-down'].includes(action))
+            return sim.adjustTrailerRamp(id, action)
+          return sim.setTrailerPlatform(id, action === 'flat')
+        },
+      )
+      if (result.handled) {
+        event.preventDefault()
+        this.game.releaseInput()
+        if (result.opened) this.cameraState.mode = 'cockpit'
+        return
+      }
+    }
+    this.keys.press(event.code, event.repeat, performance.now())
+    this.effects.audio.unlock()
+    if (!event.repeat) {
+      const action = bindingForKey(event.code, this.controlContext)
+      if (action === 'weapon.slide' && this.weaponDrawn && this.sidearm)
+        this.sidearm.state.manualRackHeld =
+          this.sidearm.state.reload === 'none' && !this.sidearm.state.slideLocked
+      if (action === 'highBeam' && id && this.view.beginVehicleBeamFlash(id)) {
+        this.releaseBeamFlash()
+        this.view.beginVehicleBeamFlash(id)
+        this.beamFlash = { vehicle: id, key: event.code }
+      } else if (action) this.action(action)
+    }
+  }
+  private handleInputKeyUp(event: KeyboardEvent): void {
+    this.keys.release(event.code)
+    if (this.beamFlash?.key === event.code) this.releaseBeamFlash()
+    if (inputBindings['weapon.slide'].keys.includes(event.code) && this.sidearm)
+      this.sidearm.state.manualRackHeld = false
+    if (
+      inputBindings['weapon.inspect'].keys.includes(event.code) ||
+      inputBindings['weapon.chamber'].keys.includes(event.code)
+    ) {
+      this.sidearm?.stopInspect(performance.now())
+      if (inputBindings['weapon.chamber'].keys.includes(event.code) && this.weaponDrawn)
+        this.effects.audio.weaponSound('slide-forward', this.camera.position.toArray())
+    }
+  }
+  private handleInputMove(event: PointerEvent): void {
+    if (!this.hasInput()) return
+    if (this.inspector) {
+      if (this.pointer.locked || event.buttons & 1)
+        this.inspector.look(event.movementX, event.movementY)
+      return
+    }
+    const state = this.cameraState
+    const seated = !!this.session.simulation?.player.vehicleId
+    if (!mouseLooksWithoutButton(state, seated)) return
+    if (!this.pointer.locked) {
+      const dragging = !!(event.buttons & 1)
+      if (!dragging || (event.pointerType === 'mouse' && !this.pointer.unsupported)) return
+    }
+    state.lastLookTime = performance.now()
+    if (state.mode === 'cockpit' && seated) {
+      state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
+      state.headPitch = THREE.MathUtils.clamp(
+        state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
+        -controlDefaults.pitchLimit,
+        controlDefaults.pitchLimit,
+      )
+    } else {
+      let yaw = -event.movementX * controlDefaults.mouseSensitivity,
+        pitch = event.movementY * controlDefaults.mouseSensitivity
+      if (
+        !!this.cameraState.bodycam &&
+        this.weaponDrawn &&
+        !seated &&
+        isFirstPersonView(state, false)
+      ) {
+        const motion = this.bodycam.move(yaw, pitch)
+        yaw = motion.yaw
+        pitch = motion.pitch
+      }
+      state.yaw += yaw
+      state.pitch = THREE.MathUtils.clamp(
+        state.pitch + pitch,
+        -controlDefaults.pitchLimit,
+        controlDefaults.pitchLimit,
+      )
+    }
+  }
+
   private assertAlive(): void {
     if (this.disposed) throw new Error('Game runtime disposed')
   }

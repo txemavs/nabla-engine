@@ -122,6 +122,16 @@ Coverage for the completed settings cleanup includes `test/runtime/visual-settin
 and the real two-runtime browser test. The previously reproduced traffic-sign settings HUD
 failure remains a separate regression task; it is not covered by a passing runtime check.
 
+[RuntimeInputEvents](../../src/runtime/input-events.ts) owns DOM listener registration,
+focus handling and ordered release of held controls. Binding is idempotent and every
+listener uses the runtime's lifetime abort signal. Gesture capture, secondary mouse-button
+events, Shift resynchronization and non-passive wheel handling preserve their existing
+order. Game-specific wheel, keyboard and look handlers remain in `GameRuntime` for the
+separate action-dispatch extraction; the input owner receives explicit callbacks, never
+the whole runtime. Release order remains beams, USB, weapons, touch, monitors, gameplay,
+gamepad edges, then pointer ownership. No storage keys or public methods change.
+Coverage: `test/browser/e2e/input-events.spec.ts` and `input-contexts.spec.ts`.
+
 [RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
 free-mouse state and pointer-lock policy. Capture remains restricted to playing and
 is requested only by existing gesture handlers; rejected requests can be retried.

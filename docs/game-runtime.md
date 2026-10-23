@@ -184,3 +184,13 @@ Track the previously reproduced traffic-sign settings HUD failure separately; do
 it behind a passing runtime check or mix an unrelated fix into a structural extraction.
 Publication and Euskadi `ENGINE_REF` updates are a separate integration step after the
 selected commits are validated. Preserve Relay's integrated history and local host changes.
+
+### Topic 1 completion: input event lifecycle
+
+`RuntimeInputEvents` now owns DOM events, focus/visibility handling and ordered control
+release. Listeners retain the existing runtime abort lifetime and registration order.
+`GameRuntime` provides narrow callbacks for game-specific wheel, key and look behavior;
+vehicle menus and action execution deliberately remain for topic 2. The public facade
+and preference keys are unchanged. Browser coverage exercises two owners, repeated bind,
+abort cleanup, secondary mouse buttons, pointer recapture, Shift synchronization,
+non-passive wheel handling and release order, alongside the real runtime keyboard test.

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **637 modules; 8106 executable function definitions**.
+Coverage: **638 modules; 8133 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -440,7 +440,7 @@ Coverage: **637 modules; 8106 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 566 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -465,6 +465,7 @@ Coverage: **637 modules; 8106 executable function definitions**.
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
+| [src/runtime/input-events.ts](src/runtime/input-events.ts.md) | 22 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/lighting-preferences.ts](src/runtime/lighting-preferences.ts.md) | 6 |
