@@ -322,7 +322,7 @@
 #nabla-ar-touch {
   --nabla-stick-size: 180px;
   --nabla-stick-knob: 56px;
-  --nabla-wheel-size: 240px;
+  --nabla-wheel-size: 266px; /* 148px wheel at the AR scale 1.8 */
   --nabla-gas-height: 230px;
   --nabla-control-edge: max(12px, env(safe-area-inset-left));
   --nabla-control-bottom: calc(max(12px, env(safe-area-inset-bottom)) + 72px);
@@ -335,7 +335,7 @@
   #nabla-ar-touch {
     --nabla-stick-size: 150px;
     --nabla-stick-knob: 46px;
-    --nabla-wheel-size: 190px;
+    --nabla-wheel-size: 207px; /* 148px at the compact AR scale 1.4 */
     --nabla-gas-height: 190px;
   }
 }
