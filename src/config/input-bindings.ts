@@ -144,7 +144,8 @@ function scopes(context: InputContext): Scope[] {
   return [
     ...(context.aiming && context.weapon && context.mode === 'walk' ? ['aim' as const] : []),
     ...(context.weapon && context.mode === 'walk' ? ['weapon.walk' as const] : []),
-    ...(context.weapon ? ['weapon' as const] : []),
+    // Weapon controls exist only on foot: while driving they must never shadow vehicle keys.
+    ...(context.weapon && context.mode === 'walk' ? ['weapon' as const] : []),
     context.mode,
     ...(gameModes.includes(context.mode) && context.mode !== 'walk' ? ['vehicle' as const] : []),
     ...(gameModes.includes(context.mode) ? ['game' as const] : []),
@@ -202,15 +203,15 @@ export function actionAxis(
 }
 /** Translate standard device buttons through the same context overrides without inventing keyboard events. */
 export function contextualAction(action: InputAction, context: InputContext): InputAction {
-  if (!context.weapon) return action
+  // Weapon overrides apply on foot only; recover (Y) always stays recover.
+  if (!context.weapon || context.mode !== 'walk') return action
   const overrides: Partial<Record<InputAction, InputAction>> = {
-    recover: 'weapon.magazine',
     hitch: 'weapon.slide',
     'signal.left': 'weapon.inspect',
     'signal.right': 'weapon.chamber',
     gps: 'weapon.laser',
     lights: 'weapon.light',
-    ...(context.mode === 'walk' ? { helm: 'weapon.auto' as const } : {}),
+    helm: 'weapon.auto',
   }
   return overrides[action] ?? action
 }
