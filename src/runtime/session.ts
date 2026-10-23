@@ -1,3 +1,4 @@
+import { startBootPhase } from './boot-trace.js'
 /**
  * Own the simulation lifetime without owning a renderer or animation clock.
  * Hosts pass elapsed seconds; cancellation generations prevent late initialization
@@ -51,12 +52,27 @@ export class PlaySession {
     const { physicsWorker = physicsWorkerEnabled(), ...settings } = options
     this.phase = 'loading'
     try {
+      const rapierDone = startBootPhase(
+        'Inicializar Rapier en hilo principal (consultas)',
+        undefined,
+        '04 Física',
+      )
       await initPhysics()
+      rapierDone()
       if (generation !== this.generation) throw new Error('Play session cancelled')
       let simulation: Simulation
       if (physicsWorker) {
         try {
-          simulation = await ThreadedSimulation.start(scene, settings)
+          const workerDone = startBootPhase(
+            'Inicializar worker de física: Rapier, escena y cuerpos',
+            undefined,
+            '04 Física',
+          )
+          try {
+            simulation = await ThreadedSimulation.start(scene, settings)
+          } finally {
+            workerDone()
+          }
         } catch (error) {
           if (generation !== this.generation) throw error
           console.warn('[nabla] physics worker unavailable, running physics inline:', error)
@@ -72,7 +88,13 @@ export class PlaySession {
           simulation.setCollisionDistance(settings.collisionDistance)
         if (settings.vehicleId) simulation.startInVehicle(settings.vehicleId)
         // Worker commands are asynchronous: wait for their state before handing the sim out.
+        const syncDone = startBootPhase(
+          'Sincronizar snapshot inicial del worker',
+          undefined,
+          '04 Física',
+        )
         await threadedSimulation(simulation)?.refresh()
+        syncDone()
       } catch (error) {
         simulation.dispose()
         throw error

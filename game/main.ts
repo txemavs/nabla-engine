@@ -1,5 +1,6 @@
+import { startBootPhase, summarizeBootTrace } from '../src/runtime/boot-trace.js'
 import { pageAddress, pageSearch } from './page-query.js'
-/** Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder). */
+/** Entry point: the terrain chosen by the URL or the menu (plane, GLB, streamed terrain). */
 // Must stay first: VR modes keep their own saved settings (settings-scope.ts).
 import './settings-scope-boot.js'
 import { applySplashSkin, splashMessageAt } from '@nabla/engine/runtime/splash'
@@ -22,7 +23,15 @@ const bootSay = (text: string) => {
 applyDocumentLocale()
 bootSay(t('boot.loading-engine'))
 
+startBootPhase('Navegación y descarga/evaluación de módulos iniciales', 0, '01 Entrada')()
+const sourceDone = startBootPhase('Seleccionar fuente del mundo', undefined, '01 Entrada')
 const entry = await resolveEntry()
+sourceDone()
+const hostDone = startBootPhase(
+  `Importar y ejecutar página de juego: ${entry.mode}`,
+  undefined,
+  'Contenedores',
+)
 bootSay(entry.mode === 'terrain' ? t('boot.loading-terrain') : t('boot.preparing-the-session'))
 console.info(
   `[nabla-boot] entry ${entry.mode} after ${(performance.now() - bootMark).toFixed(0)}ms`,
@@ -33,4 +42,6 @@ if (entry.search !== pageSearch())
 // Literal import() paths so Vite can pre-transform both graphs (ternary was opaque).
 if (entry.mode === 'terrain') await import('./terrain-main.js')
 else await import('./drive.js')
+hostDone()
+summarizeBootTrace()
 console.info(`[nabla-boot] host module ready after ${(performance.now() - bootMark).toFixed(0)}ms`)

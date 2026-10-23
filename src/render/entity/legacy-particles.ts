@@ -3,7 +3,7 @@ import type { Vec3Tuple } from '../../entity/schema.js'
 import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { laserSmokePools } from './laser-smoke.js'
 import { exhaustSmokeSprites, muzzleSmokeSprites, tireSmokeSprites } from './particle-nodes.js'
-import { smokeDensity } from './smoke-density.js'
+import { smokeDensity, smokeDensityFor } from './smoke-density.js'
 import {
   SOFT_FRAGMENT_PARS,
   SOFT_VERTEX_PARS,
@@ -76,7 +76,7 @@ export class LegacyExhaustSmoke {
         transparent: true,
         depthWrite: false,
         uniforms: {
-          smokeDensity,
+          smokeDensity: smokeDensityFor(space),
           lifetime: { value: options.lifetime ?? 1.4 },
           size: { value: options.size ?? 550 },
           ...softSmokeUniforms(),

@@ -6,10 +6,11 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 
 ## restoreStartupLightSettings
 
-[Implementation, line 4](../../../game/startup-light-settings.ts#L4)
+[Implementation, line 5](../../../game/startup-light-settings.ts#L5)
 
 Restore shader-affecting preferences before play() warms the scene and mirrors.
 
@@ -19,5 +20,6 @@ restoreStartupLightSettings(runtime: { setHeadlampShadows(enabled: boolean): voi
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(storage ?? globalThis.localStorage)?.getItem`
+- `(storage ?? pageSettingsStorage())?.getItem`
+- `pageSettingsStorage`
 - `runtime.setHeadlampShadows`

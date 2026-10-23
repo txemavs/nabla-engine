@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { t } from '@nabla/engine/i18n'
 /**
  * «Sombras: activadas / desactivadas» (live on/off, saved as `nabla.shadowsEnabled`) and
@@ -19,7 +20,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -73,7 +74,7 @@ const percent = (value: number) => `${Math.round(value * 100)} %`
 export function bindShadowBiasControl(
   runtime: GameRuntime,
   bootValue: number | undefined,
-  storage = browserStorage(),
+  storage = runtime.settings,
 ): void {
   const group = menuSection('quality-shadows', t('settings.sun-shadows'))
   // Migrate the old preference once; the runtime persists the canonical light tuning.

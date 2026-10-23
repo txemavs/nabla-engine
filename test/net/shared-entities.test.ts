@@ -50,6 +50,51 @@ const truck = (driver: string | null): NetEventData =>
   })
 
 describe('shared entities', () => {
+  it('AOI hides despawn the view without firing a removal and can reappear', () => {
+    const { shared, removed, despawned, spawned } = setup()
+    shared.receive(ENTITY_EVENT, truck('other'))
+    shared.receive('entity.hidden', { i: 'other.1' })
+    expect(removed).toEqual([])
+    expect(despawned).toEqual(['local-1'])
+    shared.receive(ENTITY_EVENT, truck('other'))
+    expect(spawned).toHaveLength(2)
+    expect(shared.list()[0].driver).toBe('other')
+  })
+
+  it('continuous claims wait for authority and publication suffixes survive recreated identities', () => {
+    const { host } = setup()
+    let suffix = 0
+    const sent: [string, NetEventData][] = []
+    const make = () => {
+      const shared = new SharedEntities(
+        { spawn: () => 'local', despawn: () => {} },
+        host,
+        (kind, data) => (sent.push([kind, data]), true),
+        undefined,
+        () => String(++suffix),
+        false,
+      )
+      shared.self = 'stable-peer'
+      return shared
+    }
+    const a = make()
+    a.receive(ENTITY_EVENT, truck(null))
+    expect(a.claim('other.1')).toBe(true)
+    expect(a.drives('other.1')).toBe(false)
+    a.receive(ENTITY_EVENT, { ...truck(null), d: 'stable-peer' })
+    expect(a.drives('other.1')).toBe(true)
+    a.release('other.1')
+    expect(a.drives('other.1')).toBe(true)
+    a.receive(ENTITY_EVENT, truck(null))
+    expect(a.drives('other.1')).toBe(false)
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    const first = a.publish('car', {}, pose, null)
+    expect(make().publish('car', {}, pose, null)).not.toBe(first)
+  })
+
   it('encodes and decodes records with params', () => {
     const record = decodeEntity(truck('other'))
     expect(record).toEqual({

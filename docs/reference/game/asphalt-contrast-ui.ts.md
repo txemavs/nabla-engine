@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `./page-query.js`
 - `@nabla/engine/render`
 - `@nabla/engine/runtime/browser`
@@ -14,15 +15,19 @@
 
 ## browserStorage
 
-[Implementation, line 16](../../../game/asphalt-contrast-ui.ts#L16)
+[Implementation, line 17](../../../game/asphalt-contrast-ui.ts#L17)
 
 ```ts
 browserStorage(): StorageLike | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## validContrast
 
-[Implementation, line 25](../../../game/asphalt-contrast-ui.ts#L25)
+[Implementation, line 26](../../../game/asphalt-contrast-ui.ts#L26)
 
 A finite number clamped to the engine range, or undefined for missing / invalid input.
 
@@ -39,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveAsphaltContrast
 
-[Implementation, line 36](../../../game/asphalt-contrast-ui.ts#L36)
+[Implementation, line 37](../../../game/asphalt-contrast-ui.ts#L37)
 
 Start value: URL `?asphaltContrast=` (one visit) > the player's stored slider value > the host
 default (`NABLA_BOOT.asphaltContrast`) > 1 (unchanged).
@@ -59,19 +64,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindAsphaltContrastSlider
 
-[Implementation, line 56](../../../game/asphalt-contrast-ui.ts#L56)
+[Implementation, line 57](../../../game/asphalt-contrast-ui.ts#L57)
 
 Slider «Contraste del asfalto» (×0.5–×2.5) plus «Por defecto», which returns to the host
 default and forgets the stored value. Changes apply live; the released value is stored.
 
 ```ts
-bindAsphaltContrastSlider(runtime: GameRuntime, hostDefault?: number, storage: StorageLike | undefined = browserStorage()): HTMLFieldSetElement
+bindAsphaltContrastSlider(runtime: GameRuntime, hostDefault?: number, storage: StorageLike | undefined = runtime.settings): HTMLFieldSetElement
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `label.append`
@@ -85,7 +89,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindAsphaltContrastSlider.show
 
-[Implementation, line 72](../../../game/asphalt-contrast-ui.ts#L72)
+[Implementation, line 73](../../../game/asphalt-contrast-ui.ts#L73)
 
 ```ts
 show(): inferred by TypeScript; see implementation
@@ -96,12 +100,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `runtime.asphaltContrast.toFixed`
 
-## bindAsphaltContrastSlider.callback@76
+## bindAsphaltContrastSlider.callback@77
 
-[Implementation, line 76](../../../game/asphalt-contrast-ui.ts#L76)
+[Implementation, line 77](../../../game/asphalt-contrast-ui.ts#L77)
 
 ```ts
-callback@76(): inferred by TypeScript; see implementation
+callback@77(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -110,12 +114,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.asphaltContrast.toFixed`
 - `runtime.setAsphaltContrast`
 
-## bindAsphaltContrastSlider.callback@80
+## bindAsphaltContrastSlider.callback@81
 
-[Implementation, line 80](../../../game/asphalt-contrast-ui.ts#L80)
+[Implementation, line 81](../../../game/asphalt-contrast-ui.ts#L81)
 
 ```ts
-callback@80(): inferred by TypeScript; see implementation
+callback@81(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -123,12 +127,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `storage?.setItem`
 
-## bindAsphaltContrastSlider.callback@90
+## bindAsphaltContrastSlider.callback@91
 
-[Implementation, line 90](../../../game/asphalt-contrast-ui.ts#L90)
+[Implementation, line 91](../../../game/asphalt-contrast-ui.ts#L91)
 
 ```ts
-callback@90(): inferred by TypeScript; see implementation
+callback@91(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

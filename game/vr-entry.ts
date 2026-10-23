@@ -52,10 +52,13 @@ function afterGameLoaded(): Promise<void> {
  * `enter()` calls `navigator.xr.requestSession` before its first await and the XR code is
  * already loaded by the support probe, so no promise hop or settings work comes first.
  */
-export function startVREntry(runtime: Pick<GameRuntime, 'loadedXR' | 'loadXR'>): Promise<void> {
+export function startVREntry(
+  runtime: Pick<GameRuntime, 'loadedXR' | 'loadXR'> & Partial<Pick<GameRuntime, 'settings'>>,
+): Promise<void> {
   const loaded = runtime.loadedXR
   const entering = loaded ? loaded.enter() : runtime.loadXR().then((xr) => xr.enter())
-  if (activePlayMode() === 'pc') {
+  if ((runtime.settings?.mode ?? activePlayMode()) === 'pc') {
+    runtime.settings?.switchMode('headset-pc')
     installSettingsScope('headset-pc')
     const url = new URL(location.href)
     url.searchParams.set('vr', vrModeQuery['headset-pc'])

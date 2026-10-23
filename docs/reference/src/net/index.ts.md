@@ -15,6 +15,7 @@ Multiplayer building blocks: wire protocol, transports, snapshot sync and interp
 - `./remote-vehicle.js`
 - `./remote-avatar.js`
 - `./snapshot-sync.js`
+- `./world-space.js`
 - `./shared-entities.js`
 - `./net-worker.js`
 - `./net-worker-host.js`

@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /** Menu toggle «Simulated fire»: lingering fire and trees catching fire (default on). */
 import { t } from '@nabla/engine/i18n'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -9,7 +10,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -41,7 +42,7 @@ export function saveSimulatedFireEnabled(
 }
 
 /** Settings → Effects → «Simulated fire». Applies immediately. */
-export function bindSimulatedFireToggle(runtime: GameRuntime, storage = browserStorage()): void {
+export function bindSimulatedFireToggle(runtime: GameRuntime, storage = runtime.settings): void {
   const group = menuSection('settings-simulated-fire', t('settings.simulated-fire'))
   const label = document.createElement('label')
   label.className = 'inline'

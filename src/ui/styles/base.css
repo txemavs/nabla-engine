@@ -38,7 +38,7 @@
 }
 /* Terrain pages show speed on the in-car dashboard, not in a HUD panel. */
 .nabla-game--dashboard {
-  --nabla-speed-display: none;
+  --nabla-speed-display: contents;
 }
 /* A [hidden] element stays hidden even where a component sets `display`. */
 .nabla-game [hidden] {

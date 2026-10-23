@@ -24,6 +24,8 @@ export class LoadingScreen {
   private centerTile: MapTile | null = null
   private grid3x3: MapTile[] = []
   private loadedTiles = new Set<string>()
+  private runtimePhase: number | null = null
+  private unbindRuntime?: () => void
   private phase = 0
   private skin: EngineSplashSkin
 
@@ -33,6 +35,32 @@ export class LoadingScreen {
     this.status = document.getElementById('loading-status')!
     this.progressBar = document.getElementById('loading-progress-bar')!
     this.skin = applySplashSkin(this.screen, skin)
+  }
+
+  /** Follow the runtime's reveal milestones and current work, including worker/GPU preparation. */
+  bindRuntime(canvas: HTMLCanvasElement, events: EventTarget = window): void {
+    this.unbindRuntime?.()
+    const update = () => {
+      const detail = canvas.dataset.loadingDetail
+      if (detail) {
+        this.setStatus(detail)
+        this.setDetail('')
+      }
+      const raw = canvas.dataset.revealProgress
+      const progress = raw === undefined ? NaN : Number(raw)
+      if (Number.isFinite(progress)) {
+        this.runtimePhase = Math.max(this.runtimePhase ?? 0, Math.min(1, Math.max(0, progress)))
+        this.updateIndicators()
+      }
+    }
+    const dispose = () => {
+      events.removeEventListener('nabla-load-step', update)
+      events.removeEventListener('pagehide', dispose)
+      this.unbindRuntime = undefined
+    }
+    events.addEventListener('nabla-load-step', update)
+    events.addEventListener('pagehide', dispose, { once: true })
+    this.unbindRuntime = dispose
   }
 
   /** Swap skin at runtime (e.g. switch to the bottom-left attract layout). */
@@ -107,7 +135,8 @@ export class LoadingScreen {
 
   private updateIndicators(): void {
     const progress = this.getProgress()
-    const fraction = progress.total > 0 ? progress.loaded / progress.total : this.phase
+    const fraction =
+      this.runtimePhase ?? (progress.total > 0 ? progress.loaded / progress.total : this.phase)
     this.progressBar.style.width = `${Math.round(fraction * 100)}%`
   }
 
@@ -130,6 +159,7 @@ export class LoadingScreen {
   }
 
   hide(): void {
+    this.unbindRuntime?.()
     this.screen.classList.add('hidden')
     setTimeout(() => {
       this.screen.style.display = 'none'

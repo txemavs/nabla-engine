@@ -31,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 71](../../../../../src/render/entity/exhaust-smoke.ts#L71)
 
 ```ts
-constructor(): instance
+constructor(smokeDensity: { readonly value: number }): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -257,6 +257,7 @@ addBatch(): SmokeBatch
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `SmokeBatch`
+- `smokeDensityFor`
 - `this.batches.push`
 - `this.space.add`
 

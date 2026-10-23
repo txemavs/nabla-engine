@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `./page-query.js`
 - `../src/render/effects/fsr1.js`
 - `@nabla/engine/runtime/browser`
@@ -13,7 +14,7 @@
 
 ## readFsrSettings
 
-[Implementation, line 8](../../../game/fsr-settings.ts#L8)
+[Implementation, line 9](../../../game/fsr-settings.ts#L9)
 
 Apply before preload, so startup prepares the actual chosen render path.
 
@@ -26,15 +27,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `JSON.parse`
 - `Number`
 - `URLSearchParams`
-- `localStorage.getItem`
 - `pageSearch`
+- `pageSettingsStorage`
+- `pageSettingsStorage().getItem`
 - `params.get`
 - `params.has`
 - `resolveFsr`
 
 ## appendFsrControls
 
-[Implementation, line 29](../../../game/fsr-settings.ts#L29)
+[Implementation, line 30](../../../game/fsr-settings.ts#L30)
 
 ```ts
 appendFsrControls(parent: HTMLElement, runtime: GameRuntime): void
@@ -54,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## appendFsrControls.sync
 
-[Implementation, line 61](../../../game/fsr-settings.ts#L61)
+[Implementation, line 62](../../../game/fsr-settings.ts#L62)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -67,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## appendFsrControls.apply
 
-[Implementation, line 68](../../../game/fsr-settings.ts#L68)
+[Implementation, line 69](../../../game/fsr-settings.ts#L69)
 
 ```ts
 apply(): inferred by TypeScript; see implementation
@@ -79,7 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `URL`
 - `history.replaceState`
-- `localStorage.setItem`
 - `runtime.setFsr`
+- `runtime.settings.setItem`
 - `sync`
 - `url.searchParams.set`

@@ -23,8 +23,8 @@ describe('startup flashlight shadow layout', () => {
       const source = readFileSync(new URL(`../../game/${file}`, import.meta.url), 'utf8')
       const restore = source.indexOf('restoreStartupLightSettings(runtime)')
       expect(restore).toBeGreaterThan(0)
-      expect(restore).toBeLessThan(source.indexOf('await runtime.play('))
-      expect(source.indexOf('await runtime.play(')).toBeLessThan(
+      expect(restore).toBeLessThan(source.indexOf('await startGame('))
+      expect(source.indexOf('await startGame(')).toBeLessThan(
         source.indexOf('mountSettingsHud(runtime)'),
       )
     },

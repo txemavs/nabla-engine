@@ -2,6 +2,17 @@
 import fs from 'node:fs'
 import { readGlbDocument } from './lib/vehicle-rig.mjs'
 
+// Write the current material-name contract; the runtime still reads old extras.
+const roles = {
+  LowBeam: 'low',
+  HighBeam: 'high',
+  Fog: 'fog',
+  Tail_Stop: 'tail',
+  Reverse: 'reverse',
+  Indicator: 'indicator',
+  Marker: 'marker',
+}
+
 for (const name of ['tractor.modern', 'trailer.anchored']) {
   const file = `assets/library/trucks/white-truck/assets/${name}.glb`
   const bytes = fs.readFileSync(file)
@@ -41,24 +52,38 @@ for (const name of ['tractor.modern', 'trailer.anchored']) {
     }
   }
   for (const material of doc.materials) {
-    const side = /_(L|R)$/.exec(material.name)?.[1]
-    const beam = /^(LowBeam|HighBeam|Fog)_/.exec(material.name)?.[1]
-    if (beam) material.extras = { ...material.extras, vehicleLightChannel: beam }
-    const channel = /^Tail_stop/i.test(material.name)
-      ? 'Tail_Stop'
-      : /^Reverse|^Headlamp/.test(material.name)
-        ? 'Reverse'
-        : /^Indicator/.test(material.name)
-          ? side
-            ? 'Indicator'
-            : 'Marker'
-          : undefined
-    if (!channel) continue
-    material.extras = {
-      ...material.extras,
-      vehicleLightChannel: channel,
-      ...(side ? { vehicleLightSide: side } : {}),
+    const named = /^nabla\.light\.([a-z]+)(?:\.(l|r))?(?:\.|$)/.exec(material.name)
+    const side =
+      named?.[2]?.toUpperCase() ??
+      (material.extras?.vehicleLightChannel
+        ? material.extras.vehicleLightSide
+        : /_(L|R)$/.exec(material.name)?.[1])
+    const existing = named
+      ? Object.keys(roles).find((key) => roles[key] === named[1])
+      : material.extras?.vehicleLightChannel
+    const channel =
+      existing ??
+      /^(LowBeam|HighBeam|Fog)_/.exec(material.name)?.[1] ??
+      (/^Tail_stop/i.test(material.name)
+        ? 'Tail_Stop'
+        : /^Reverse|^Headlamp/.test(material.name)
+          ? 'Reverse'
+          : /^Indicator/.test(material.name)
+            ? side
+              ? 'Indicator'
+              : 'Marker'
+            : undefined)
+    if (!channel || !roles[channel]) continue
+    if (!named) {
+      const suffix = material.name.replace(/[^A-Za-z0-9_-]/g, '_')
+      material.name = `nabla.light.${roles[channel]}${side ? `.${side.toLowerCase()}` : ''}.${suffix}`
     }
+    // Preserve unrelated metadata. The name now carries both channel and side.
+    if (material.extras) {
+      delete material.extras.vehicleLightChannel
+      delete material.extras.vehicleLightSide
+    }
+    if (['LowBeam', 'HighBeam', 'Fog'].includes(channel)) continue
     material.emissiveFactor =
       channel === 'Tail_Stop'
         ? [1, 0.003, 0.002]

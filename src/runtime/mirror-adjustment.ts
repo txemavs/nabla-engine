@@ -15,7 +15,7 @@ export type MirrorStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export interface MirrorSettings {
   /** Host defaults by mirror model, degrees per side. Clamped to `mirrorAngleRange`. */
   defaults?: Readonly<Record<string, Readonly<Record<string, Partial<MirrorAngle>>>>>
-  /** Persistence for the player's choice (e.g. `localStorage`). Omit or null to keep it in memory. */
+  /** Persistence for the player's choice (e.g. `localStorage`). In GameRuntime, omit to use runtime.settings; null keeps it in memory. */
   storage?: MirrorStorage | null
 }
 

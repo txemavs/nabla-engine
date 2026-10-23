@@ -7,7 +7,7 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test server.test.mjs"
+    "test": "node --test server.test.mjs connection.test.mjs continuous-world.test.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -129,6 +129,9 @@ class AnalyticMuzzleSmoke {
 export class MuzzleSmoke {
   private readonly impl = analyticParticles() ? new AnalyticMuzzleSmoke() : new LegacyMuzzleSmoke()
   readonly root: THREE.Points = this.impl.root
+  constructor(density = smokeDensity) {
+    ;(this.root.material as THREE.ShaderMaterial).uniforms.smokeDensity = density
+  }
   burst(now: number, muzzle: readonly number[]): void {
     this.impl.burst(now, muzzle)
   }

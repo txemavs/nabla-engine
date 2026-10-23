@@ -17,13 +17,12 @@ Choices are remembered per quality profile under `nabla.visibility`.
 - `@nabla/engine/config/performance`
 - `@nabla/engine/runtime/browser`
 - `../src/runtime/visibility-settings.js`
-- `./entry.js`
 - `./menu.js`
 - `@nabla/engine/i18n`
 
 ## km
 
-[Implementation, line 23](../../../game/distances-ui.ts#L23)
+[Implementation, line 22](../../../game/distances-ui.ts#L22)
 
 ```ts
 km(metres: number): string
@@ -31,7 +30,7 @@ km(metres: number): string
 
 ## format
 
-[Implementation, line 38](../../../game/distances-ui.ts#L38)
+[Implementation, line 37](../../../game/distances-ui.ts#L37)
 
 ```ts
 format(value): inferred by TypeScript; see implementation
@@ -44,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## format
 
-[Implementation, line 44](../../../game/distances-ui.ts#L44)
+[Implementation, line 43](../../../game/distances-ui.ts#L43)
 
 ```ts
 format(value): inferred by TypeScript; see implementation
@@ -56,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## format
 
-[Implementation, line 51](../../../game/distances-ui.ts#L51)
+[Implementation, line 50](../../../game/distances-ui.ts#L50)
 
 ```ts
 format(value): inferred by TypeScript; see implementation
@@ -68,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## adopt
 
-[Implementation, line 56](../../../game/distances-ui.ts#L56)
+[Implementation, line 55](../../../game/distances-ui.ts#L55)
 
 Move an existing control's label into the section, keeping its listeners and storage.
 
@@ -83,12 +82,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `document.getElementById(controlId)?.closest`
 - `section.append`
 
-## adopt.callback@61
+## adopt.callback@60
 
-[Implementation, line 61](../../../game/distances-ui.ts#L61)
+[Implementation, line 60](../../../game/distances-ui.ts#L60)
 
 ```ts
-callback@61(child): inferred by TypeScript; see implementation
+callback@60(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -97,10 +96,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindDistances
 
-[Implementation, line 68](../../../game/distances-ui.ts#L68)
+[Implementation, line 67](../../../game/distances-ui.ts#L67)
 
 ```ts
-bindDistances(runtime: GameRuntime, storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = browserStorage()): HTMLElement
+bindDistances(runtime: GameRuntime, storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = runtime.settings): HTMLElement
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -109,7 +108,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Option`
 - `String`
 - `adopt`
-- `browserStorage`
 - `document.createElement`
 - `label.append`
 - `menuSection`
@@ -122,12 +120,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `storage?.getItem`
 - `t`
 
-## bindDistances.callback@91
+## bindDistances.callback@90
 
-[Implementation, line 91](../../../game/distances-ui.ts#L91)
+[Implementation, line 90](../../../game/distances-ui.ts#L90)
 
 ```ts
-callback@91(): inferred by TypeScript; see implementation
+callback@90(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

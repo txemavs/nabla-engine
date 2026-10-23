@@ -199,6 +199,29 @@ body:has(.touch-driving[data-visibility='always']) #controls-hint {
   font: var(--nabla-hint-font) / var(--nabla-hint-line) var(--nabla-font);
 }
 
+/* Reference games use the compact host layout; vehicle instruments own speed and gear. */
+.nabla-game--dashboard .nabla-game-hud {
+  position: fixed;
+  top: var(--nabla-under-bar);
+  bottom: auto;
+  max-width: calc(50vw - var(--nabla-ui-margin));
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.nabla-game--dashboard :is(#speed-display, #gear-display, #location-display),
+.nabla-game--dashboard .nabla-game-hud-telemetry {
+  display: none;
+}
+@media (max-width: 600px) {
+  .nabla-game--dashboard .nabla-game-hud {
+    top: calc(var(--nabla-under-bar) + var(--nabla-bar-height) + var(--nabla-space-3));
+    right: var(--nabla-ui-margin);
+    max-width: none;
+    white-space: normal;
+  }
+}
+
 /* Speed panel of the terrain page (#game-hud). */
 #game-hud {
   position: fixed;
@@ -300,6 +323,7 @@ body.settings-is-open
     .nabla-corner--br,
     .nabla-place,
     .nabla-help,
+    .nabla-game-hud,
     .nabla-status,
     .nabla-readout,
     .nabla-fire-mode,
@@ -318,6 +342,7 @@ html.nabla-ui-hidden
     .nabla-corner,
     .nabla-place,
     .nabla-help,
+    .nabla-game-hud,
     .nabla-status,
     .nabla-fire-mode,
     #display-settings,

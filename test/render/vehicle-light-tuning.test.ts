@@ -1,3 +1,4 @@
+import { createSettingsStore } from '../../src/runtime/settings-scope.js'
 import { readFileSync } from 'node:fs'
 import { expect, it, vi } from 'vitest'
 import { vehicleLightsField } from '../../src/entity/vehicle/field.js'
@@ -94,4 +95,33 @@ it('nudges one rear value in small steps within its range and writes the JSON fr
   // What the panel copies is valid vehicle data.
   const parsed = JSON.parse(rearLightJson({ rearY: -0.2 }))
   expect(vehicleLightsField.parse(parsed.vehicle.lights).tuning).toMatchObject({ rearY: -0.2 })
+})
+
+it('restores PC/VR calibration independently and scopes writes and resets to the owner', () => {
+  const saved = new Map([
+    ['nabla.vehicle-lights.car', '{"rearY":0.2}'],
+    ['nabla.settings.headset.vehicle-lights.car', '{"rearY":0.4}'],
+  ])
+  const storage = {
+    getItem: (k: string) => saved.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      saved.set(k, v)
+    },
+    removeItem: (k: string) => {
+      saved.delete(k)
+    },
+  }
+  const pc = createSettingsStore({ mode: 'pc', storage })
+  const vr = createSettingsStore({ mode: 'headset', storage })
+  expect(readVehicleLights('car', {}, pc).rearY).toBe(0.2)
+  expect(readVehicleLights('car', {}, vr).rearY).toBe(0.4)
+  writeVehicleLights('car', { rearY: 0.6 }, {}, vr)
+  expect(readVehicleLights('car', {}, pc).rearY).toBe(0.2)
+  expect(readVehicleLights('car', {}, vr).rearY).toBe(0.6)
+  expect(JSON.parse(saved.get('nabla.settings.headset.vehicle-lights.car')!).rearY).toBe(0.6)
+  writeVehicleLights('car', undefined, {}, vr)
+  expect(readVehicleLights('car', {}, vr).rearY).toBe(0)
+  expect(saved.get('nabla.vehicle-lights.car')).toBe('{"rearY":0.2}')
+  vr.switchMode('pc')
+  expect(readVehicleLights('car', {}, vr).rearY).toBe(0.2)
 })

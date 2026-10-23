@@ -4,26 +4,16 @@
 
 [Source](../../../game/host-mirrors.ts)
 
-Host defaults for the driver's mirror glass adjustment («Espejos» in the Vehículos menu).
-
-`?mirrors=` (or `VITE_NABLA_MIRRORS` at build time) is a JSON object keyed by vehicle preset id
-(`car` is the S3, `a3`, `white-truck`, …) or by mirror model (`mirrorModelKey`). Values are
-degrees per side: `yaw` (+ outward, − inward) and `tilt` (+ up, − down):
-
-  ?mirrors={"car":{"left":{"yaw":-2},"right":{"yaw":-1.5,"tilt":0.5}}}
-
-A player's saved choice (localStorage) wins over the host default; «Restablecer espejos» returns
-to it. `?mirrors=` wins over the build value; a present empty `mirrors=` means no host defaults.
-
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `@nabla/engine/vehicles`
 - `@nabla/engine/vehicle-presentation`
 - `@nabla/engine/runtime/core`
 
 ## parseHostMirrors
 
-[Implementation, line 24](../../../game/host-mirrors.ts#L24)
+[Implementation, line 25](../../../game/host-mirrors.ts#L25)
 
 Parse the JSON object and resolve preset ids to their mirror model.
 
@@ -49,7 +39,7 @@ Explicit throws in this body:
 
 ## parseHostMirrors.isObject
 
-[Implementation, line 31](../../../game/host-mirrors.ts#L31)
+[Implementation, line 32](../../../game/host-mirrors.ts#L32)
 
 ```ts
 isObject(value: unknown): value is Record<string, unknown>
@@ -61,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseHostMirrors.read
 
-[Implementation, line 41](../../../game/host-mirrors.ts#L41)
+[Implementation, line 42](../../../game/host-mirrors.ts#L42)
 
 ```ts
 read(axis: 'yaw' | 'tilt'): inferred by TypeScript; see implementation
@@ -80,7 +70,7 @@ Explicit throws in this body:
 
 ## mirrorModelOf
 
-[Implementation, line 61](../../../game/host-mirrors.ts#L61)
+[Implementation, line 62](../../../game/host-mirrors.ts#L62)
 
 ```ts
 mirrorModelOf(preset: string): string
@@ -99,7 +89,7 @@ Explicit throws in this body:
 
 ## builtinHostMirrors
 
-[Implementation, line 78](../../../game/host-mirrors.ts#L78)
+[Implementation, line 79](../../../game/host-mirrors.ts#L79)
 
 ```ts
 builtinHostMirrors(): HostMirrors
@@ -112,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## viteHostMirrors
 
-[Implementation, line 83](../../../game/host-mirrors.ts#L83)
+[Implementation, line 84](../../../game/host-mirrors.ts#L84)
 
 Built-in defaults, overridden per model by `VITE_NABLA_MIRRORS` at build time.
 
@@ -128,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostMirrorsFromSearch
 
-[Implementation, line 90](../../../game/host-mirrors.ts#L90)
+[Implementation, line 91](../../../game/host-mirrors.ts#L91)
 
 ```ts
 hostMirrorsFromSearch(search: string, fallback: HostMirrors = {}): HostMirrors
@@ -143,10 +133,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorStorage
 
-[Implementation, line 98](../../../game/host-mirrors.ts#L98)
+[Implementation, line 99](../../../game/host-mirrors.ts#L99)
 
 Where the player's choice is kept: `localStorage`, or nothing when the browser refuses it.
 
 ```ts
 mirrorStorage(): MirrorStorage | null
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`

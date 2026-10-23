@@ -59,9 +59,9 @@ display.update(
 ```
 
 The example assumes your host supplies `mount`, telemetry and the clock; it does
-not create a second animation loop. [Executable standalone example](../studio/examples/modular-monitor.ts)
-uses the public API; open `/examples/modular-monitor.html`. The S3 recipe is also
-shown independently at `/examples/s3-monitor.html`.
+not create a second animation loop. The historical `studio/examples/modular-monitor.ts`
+and its HTML routes belong to the separate Studio host and are not shipped in this
+checkout. Use the example above with your host's mount and frame loop.
 
 ## Layers and update cost
 

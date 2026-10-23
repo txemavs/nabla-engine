@@ -4,25 +4,28 @@
 
 [Source](../../../game/simulated-fire-ui.ts)
 
-Menu toggle «Simulated fire»: lingering fire and trees catching fire (default on).
-
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `@nabla/engine/i18n`
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
 
 ## browserStorage
 
-[Implementation, line 10](../../../game/simulated-fire-ui.ts#L10)
+[Implementation, line 11](../../../game/simulated-fire-ui.ts#L11)
 
 ```ts
 browserStorage(): StorageLike | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## flag
 
-[Implementation, line 18](../../../game/simulated-fire-ui.ts#L18)
+[Implementation, line 19](../../../game/simulated-fire-ui.ts#L19)
 
 ```ts
 flag(value: string | null | undefined): boolean | undefined
@@ -30,7 +33,7 @@ flag(value: string | null | undefined): boolean | undefined
 
 ## resolveSimulatedFireEnabled
 
-[Implementation, line 25](../../../game/simulated-fire-ui.ts#L25)
+[Implementation, line 26](../../../game/simulated-fire-ui.ts#L26)
 
 Initial preference: localStorage > host boot config > on. Config lives in code, not in the URL.
 
@@ -46,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveSimulatedFireEnabled
 
-[Implementation, line 32](../../../game/simulated-fire-ui.ts#L32)
+[Implementation, line 33](../../../game/simulated-fire-ui.ts#L33)
 
 ```ts
 saveSimulatedFireEnabled(enabled: boolean, storage: StorageLike | undefined = browserStorage()): void
@@ -59,30 +62,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSimulatedFireToggle
 
-[Implementation, line 44](../../../game/simulated-fire-ui.ts#L44)
+[Implementation, line 45](../../../game/simulated-fire-ui.ts#L45)
 
 Settings → Effects → «Simulated fire». Applies immediately.
 
 ```ts
-bindSimulatedFireToggle(runtime: GameRuntime, storage = browserStorage()): void
+bindSimulatedFireToggle(runtime: GameRuntime, storage = runtime.settings): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `box.addEventListener`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `label.append`
 - `menuSection`
 - `t`
 
-## bindSimulatedFireToggle.callback@51
+## bindSimulatedFireToggle.callback@52
 
-[Implementation, line 51](../../../game/simulated-fire-ui.ts#L51)
+[Implementation, line 52](../../../game/simulated-fire-ui.ts#L52)
 
 ```ts
-callback@51(): inferred by TypeScript; see implementation
+callback@52(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

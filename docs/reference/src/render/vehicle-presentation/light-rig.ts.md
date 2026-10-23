@@ -18,20 +18,21 @@
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
 ```ts
-constructor(): instance
+constructor(beams?: BeamSettings): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `PointLight`
 - `SpotLight`
+- `lowBeamMask`
 - `this.points.push`
 - `this.root.add`
 - `this.spots.push`
 
 ## VehicleLightRig.pedestrianLight
 
-[Implementation, line 41](../../../../../src/render/vehicle-presentation/light-rig.ts#L41)
+[Implementation, line 42](../../../../../src/render/vehicle-presentation/light-rig.ts#L42)
 
 Unmapped headlight slot, reusable by the pedestrian while no vehicle owns the rig.
 
@@ -41,7 +42,7 @@ pedestrianLight(): SpotLight
 
 ## VehicleLightRig.lights
 
-[Implementation, line 45](../../../../../src/render/vehicle-presentation/light-rig.ts#L45)
+[Implementation, line 46](../../../../../src/render/vehicle-presentation/light-rig.ts#L46)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
@@ -51,7 +52,7 @@ lights(): Light[]
 
 ## VehicleLightRig.capture
 
-[Implementation, line 54](../../../../../src/render/vehicle-presentation/light-rig.ts#L54)
+[Implementation, line 55](../../../../../src/render/vehicle-presentation/light-rig.ts#L55)
 
 Copy occupied-vehicle lamps into the fixed slots. Count and maps stay constant. `offset` moves
 the light of the head lamps, `rear.offset` the light of the lamps in `rear.lights`; both are
@@ -71,14 +72,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.spots[i].position.add`
 - `this.spots[i].target.position.add`
 
-## VehicleLightRig.capture.callback@62
-
-[Implementation, line 62](../../../../../src/render/vehicle-presentation/light-rig.ts#L62)
-
-```ts
-callback@62(light): inferred by TypeScript; see implementation
-```
-
 ## VehicleLightRig.capture.callback@63
 
 [Implementation, line 63](../../../../../src/render/vehicle-presentation/light-rig.ts#L63)
@@ -87,9 +80,17 @@ callback@62(light): inferred by TypeScript; see implementation
 callback@63(light): inferred by TypeScript; see implementation
 ```
 
+## VehicleLightRig.capture.callback@64
+
+[Implementation, line 64](../../../../../src/render/vehicle-presentation/light-rig.ts#L64)
+
+```ts
+callback@64(light): inferred by TypeScript; see implementation
+```
+
 ## VehicleLightRig.groundGlow
 
-[Implementation, line 85](../../../../../src/render/vehicle-presentation/light-rig.ts#L85)
+[Implementation, line 86](../../../../../src/render/vehicle-presentation/light-rig.ts#L86)
 
 Subtle downward road wash, using a spare unmapped slot rather than another light.
 
@@ -109,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.rearGroundGlow
 
-[Implementation, line 114](../../../../../src/render/vehicle-presentation/light-rig.ts#L114)
+[Implementation, line 115](../../../../../src/render/vehicle-presentation/light-rig.ts#L115)
 
 Rear road fill for bikes and articulated vehicles, reusing spare fixed point slots.
 
@@ -130,7 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.dispose
 
-[Implementation, line 153](../../../../../src/render/vehicle-presentation/light-rig.ts#L153)
+[Implementation, line 154](../../../../../src/render/vehicle-presentation/light-rig.ts#L154)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 
@@ -147,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightRig.copy
 
-[Implementation, line 164](../../../../../src/render/vehicle-presentation/light-rig.ts#L164)
+[Implementation, line 165](../../../../../src/render/vehicle-presentation/light-rig.ts#L165)
 
 One unchanging set of vehicle lights. Capture copies the occupied car; unused slots stay at intensity 0.
 

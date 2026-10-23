@@ -14,7 +14,7 @@ export type SteeringWheelStorage = Pick<Storage, 'getItem' | 'setItem' | 'remove
 export interface SteeringWheelSettings {
   /** Host defaults by steering model, metres. Clamped to `steeringWheelOffsetRange`. */
   defaults?: Readonly<Record<string, Partial<SteeringWheelOffset>>>
-  /** Persistence for the player's choice (e.g. `localStorage`). Omit or null to keep it in memory. */
+  /** Persistence for the player's choice (e.g. `localStorage`). In GameRuntime, omit to use runtime.settings; null keeps it in memory. */
   storage?: SteeringWheelStorage | null
 }
 

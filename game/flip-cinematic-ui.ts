@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /** Menu toggle for the post-flip cinematic camera (default on). */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
@@ -9,7 +10,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -38,7 +39,7 @@ export function saveFlipCinematicEnabled(
 }
 
 /** Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip). */
-export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void {
+export function bindFlipCinematicToggle(runtime: GameRuntime, storage = runtime.settings): void {
   const group = menuSection('camera-extras', t('settings.camera'))
   const label = document.createElement('label')
   const box = document.createElement('input')

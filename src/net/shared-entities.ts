@@ -89,6 +89,8 @@ export interface SharedEntityHooks {
   changed?(record: SharedEntityRecord, localId: string | null): void
   /** The entity was removed by `by` (e.g. an item picked up); called before `despawn`. */
   removed?(record: SharedEntityRecord, by: string | null): void
+  /** AOI exit only: remove the local view without treating the entity as picked up/deleted. */
+  hidden?(record: SharedEntityRecord): void
 }
 
 interface Local {
@@ -117,6 +119,8 @@ export class SharedEntities {
     private readonly host: KinematicHost,
     private readonly send: (kind: string, data: NetEventData) => boolean,
     private readonly interpolation: InterpolationOptions = defaultInterpolation,
+    private readonly idSuffix?: () => string,
+    private readonly optimisticClaims = true,
   ) {}
 
   /** All known records. */
@@ -154,7 +158,7 @@ export class SharedEntities {
     options: { drive?: boolean; id?: string } = {},
   ): string | null {
     if (!this.self) return null
-    const id = options.id ?? `${this.self}.${++this.sequence}`
+    const id = options.id ?? `${this.self}.${this.idSuffix?.() ?? ++this.sequence}`
     if (!ID.test(id)) throw new Error(`Invalid shared entity id ${id}`)
     const data = encodeEntity({ id, type, params, ...pose })
     if (options.drive) data.d = 1
@@ -167,6 +171,7 @@ export class SharedEntities {
     const e = this.entities.get(id)
     if (!e || !this.self) return false
     if (e.record.driver && e.record.driver !== this.self) return false
+    if (!this.optimisticClaims) return this.send(ENTITY_CLAIM, { i: id })
     e.record = { ...e.record, driver: this.self }
     this.unhold(e)
     // Our own physics now; the rest pose is held again after the next release.
@@ -179,7 +184,7 @@ export class SharedEntities {
   release(id: string, pose?: { position: Vec3Tuple; rotation: QuatTuple }): boolean {
     const e = this.entities.get(id)
     if (!e || !this.drives(id)) return false
-    e.record = { ...e.record, driver: null, ...(pose ?? {}) }
+    if (this.optimisticClaims) e.record = { ...e.record, driver: null, ...(pose ?? {}) }
     return this.send(ENTITY_RELEASE, {
       i: id,
       ...(pose ? { p: fix(pose.position, 3), q: fix(pose.rotation, 4) } : {}),
@@ -198,6 +203,10 @@ export class SharedEntities {
   }
   /** Relay event (ENTITY_EVENT or ENTITY_GONE_EVENT); false when it is not one. */
   receive(kind: string, data: NetEventData): boolean {
+    if (kind === 'entity.hidden') {
+      if (typeof data.i === 'string') this.drop(data.i, null, true)
+      return true
+    }
     if (kind === ENTITY_GONE_EVENT) {
       if (typeof data.i === 'string') this.drop(data.i, typeof data.b === 'string' ? data.b : null)
       return true
@@ -320,14 +329,15 @@ export class SharedEntities {
     }
   }
 
-  private drop(id: string, by: string | null): void {
+  private drop(id: string, by: string | null, hidden = false): void {
     const e = this.entities.get(id)
     this.published.delete(id)
     if (!e) return
     e.gone = true
     this.entities.delete(id)
     e.remote.release()
-    this.hooks.removed?.(e.record, by)
+    if (hidden) this.hooks.hidden?.(e.record)
+    else this.hooks.removed?.(e.record, by)
     if (e.localId) this.hooks.despawn(e.record, e.localId)
   }
 }

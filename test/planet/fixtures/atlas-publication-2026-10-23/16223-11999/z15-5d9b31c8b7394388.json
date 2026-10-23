@@ -1,0 +1,659 @@
+{
+ "attribution": [
+  {
+   "appliesTo": [
+    "ground.lots",
+    "ground.composite",
+    "source.ortho",
+    "roof",
+    "far"
+   ],
+   "license": "CC BY",
+   "text": "Obra derivada de Ortofoto 2025 \u00a9 Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY"
+  },
+  {
+   "appliesTo": [
+    "terrain.lidar"
+   ],
+   "license": "CC BY",
+   "text": "Obra derivada de MDT LiDAR \u00a9 Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY"
+  },
+  {
+   "appliesTo": [
+    "classes",
+    "mask.*",
+    "instances",
+    "osm.snapshot",
+    "roofs.placement",
+    "roof.ids"
+   ],
+   "license": "ODbL-1.0",
+   "text": "\u00a9 OpenStreetMap contributors, ODbL 1.0"
+  },
+  {
+   "appliesTo": [
+    "engine.terrain"
+   ],
+   "license": "see engine manifest",
+   "text": "elevation: Esri (engine terrain, see engine manifest)"
+  }
+ ],
+ "cell": {
+  "id": "WebMercatorQuad/15/16223/11999",
+  "x": 16223,
+  "y": 11999,
+  "z": 15
+ },
+ "cellVersion": 4,
+ "classes": {
+  "file": "classes-91ed3cd056f46e2a.png",
+  "softMasks": {
+   "acted": "mask-acted-cad3c2a0366356d6.png",
+   "forest": "mask-forest-be3627222acf13ad.png",
+   "path": "mask-path-f97039d4612d4c8a.png",
+   "road": "mask-road-b16ec6227b8516fd.png",
+   "road_marking": "mask-road-marking-aa568f5e3c6b0dd2.png",
+   "roofs": "mask-roofs-29ab662c4b7753b5.png",
+   "uncovered": "mask-uncovered-13f7afa61f3e0cd7.png",
+   "water": "mask-water-8736b91b02625210.png",
+   "x-zones": "mask-x-zones-158393122aefd193.png"
+  },
+  "table": [
+   {
+    "color": "#000000",
+    "id": 0,
+    "name": "nodata"
+   },
+   {
+    "color": "#8a8a8a",
+    "id": 1,
+    "name": "uncovered",
+    "softMask": "uncovered",
+    "stage": "osm_paint"
+   },
+   {
+    "color": "#3b6fb6",
+    "id": 2,
+    "name": "water",
+    "softMask": "water",
+    "stage": "osm_paint"
+   },
+   {
+    "color": "#5f6163",
+    "id": 3,
+    "name": "road",
+    "softMask": "road",
+    "stage": "road_finish"
+   },
+   {
+    "color": "#e8e8e8",
+    "id": 4,
+    "name": "road_marking",
+    "softMask": "road_marking",
+    "stage": "road_finish"
+   },
+   {
+    "color": "#b2b0a0",
+    "id": 6,
+    "name": "path",
+    "softMask": "path",
+    "stage": "osm_paint"
+   },
+   {
+    "color": "#c9a27e",
+    "id": 7,
+    "name": "building",
+    "stage": "roofs"
+   },
+   {
+    "color": "#325729",
+    "id": 16,
+    "name": "zone:forest",
+    "softMask": "forest",
+    "stage": "osm_paint"
+   },
+   {
+    "color": "#b0a28e",
+    "description": "all OSM land-use zones other than forest, combined (osm_paint writes one mask; per-class output is spec M2)",
+    "id": 128,
+    "name": "x-zones",
+    "softMask": "x-zones",
+    "stage": "osm_paint"
+   },
+   {
+    "color": "#444444",
+    "id": 255,
+    "name": "other"
+   }
+  ]
+ },
+ "createdAt": "2026-10-03T02:53:02+00:00",
+ "derivedFrom": null,
+ "engineCell": {
+  "generator": "native-xyz-v2",
+  "geometryRevision": "native-surfaces-v5",
+  "manifestSha256": "da0fa824fd705fa7b562ce7d457257f510af44fb728cc405d154aa2626979e46",
+  "retrievedAt": "2026-10-03T00:48:53.393229+00:00",
+  "sourceFileIncluded": true
+ },
+ "files": [
+  {
+   "bytes": 862260,
+   "mime": "model/gltf-binary",
+   "path": "buildings-osm-f7cc72da9833babd.glb",
+   "role": "engine.buildings",
+   "sha256": "f7cc72da9833babd06a31df5c09bb8b78bc24241ac36ce5295f2b8c5f5fd3640"
+  },
+  {
+   "bytes": 119831,
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "classes-91ed3cd056f46e2a.png",
+   "role": "classes",
+   "sha256": "91ed3cd056f46e2a8bcaa468ceccaf532a92aac3e461bc549e9e7751a32b160b",
+   "sizePx": 4096
+  },
+  {
+   "bytes": 21877,
+   "frame": "cell",
+   "level": "lo",
+   "mime": "image/png",
+   "path": "classes-lo-8c4d6d68472ce783.png",
+   "role": "classes.lo",
+   "sha256": "8c4d6d68472ce7830a90b09cce0520243287c73aff78c1921632cd86d0be12a7",
+   "sizePx": 1024
+  },
+  {
+   "bytes": 6258,
+   "frame": "cell",
+   "level": "far",
+   "mime": "image/webp",
+   "path": "far-038642fa66977c42.webp",
+   "role": "far",
+   "sha256": "038642fa66977c42a45b42eb22e96c92b95cb774868abbf205a6eec529455b08",
+   "sizePx": 256
+  },
+  {
+   "bytes": 4444,
+   "frame": "cell",
+   "level": "far",
+   "mime": "image/png",
+   "path": "far-classes-15f4955aaaabbe21.png",
+   "role": "far.classes",
+   "sha256": "15f4955aaaabbe21f219d33977b9386950e2c44fd2b673c963940b332cbd0db8",
+   "sizePx": 256
+  },
+  {
+   "bytes": 266382,
+   "description": "compatibility composite, ground with roofs (groundImagery, ADR-002)",
+   "frame": "cell",
+   "level": "full",
+   "lowLevel": "ground-lo-6add773ced3e27b2.webp",
+   "mime": "image/webp",
+   "path": "ground-78f9b997d82bc260.webp",
+   "role": "ground.composite",
+   "sha256": "78f9b997d82bc2605a7a8a271c906eee69c3064e3e19ef2137f7ff188ce3f14a",
+   "sizePx": 4096
+  },
+  {
+   "bytes": 37428,
+   "frame": "cell",
+   "level": "lo",
+   "mime": "image/webp",
+   "path": "ground-lo-6add773ced3e27b2.webp",
+   "role": "ground.composite.lo",
+   "sha256": "6add773ced3e27b2d327a0b0969004169c01b55779c745dc84b6f43b1b8b3d57",
+   "sizePx": 1024
+  },
+  {
+   "bytes": 236690,
+   "description": "primary ground: empty lot under each OSM building (roof_keep ground_keep)",
+   "frame": "cell",
+   "level": "full",
+   "lowLevel": "ground-lots-lo-286830c9c301812e.webp",
+   "mime": "image/webp",
+   "path": "ground-lots-2121cf8d3889e9b7.webp",
+   "role": "ground.lots",
+   "sha256": "2121cf8d3889e9b74becaec549329729ee82ed76f1490316e3e026528027a52f",
+   "sizePx": 4096
+  },
+  {
+   "bytes": 34218,
+   "frame": "cell",
+   "level": "lo",
+   "mime": "image/webp",
+   "path": "ground-lots-lo-286830c9c301812e.webp",
+   "role": "ground.lots.lo",
+   "sha256": "286830c9c301812ed71b3c81f971de05c00811aa8b5d1dc6ccf17c01e015eed4",
+   "sizePx": 1024
+  },
+  {
+   "bytes": 278,
+   "mime": "application/json",
+   "path": "instances-903b897a44ebd07e.json",
+   "role": "instances",
+   "sha256": "903b897a44ebd07e9d37b2f828d69c348a02b97920cae9ecb3bbf51da99166c6"
+  },
+  {
+   "bytes": 1109,
+   "mime": "text/markdown",
+   "path": "licenses-dfa050b486a242c1.md",
+   "role": "licenses",
+   "sha256": "dfa050b486a242c1141efdb3e123382fce1450abea8e6f1dc8e0da5e458e65b9"
+  },
+  {
+   "bytes": 43362,
+   "description": "every pixel road_finish changed",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-acted-cad3c2a0366356d6.png",
+   "role": "mask.acted",
+   "sha256": "cad3c2a0366356d6eb9c62bc5d09b5bfac8e8abfe279f20a37b197497e462527",
+   "sizePx": 4096,
+   "stage": "road_finish/mask_acted.png"
+  },
+  {
+   "bytes": 228520,
+   "description": "OSM forest painted by osm_paint (feathered)",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-forest-be3627222acf13ad.png",
+   "role": "mask.forest",
+   "sha256": "be3627222acf13ad98d4f10f8a97360c987d128aceb38d756b8cdcef7b5065fd",
+   "sizePx": 4096,
+   "stage": "osm_paint/mask_forest_osm.png"
+  },
+  {
+   "bytes": 279461,
+   "description": "OSM paths painted by osm_paint (coverage 0-255)",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-path-f97039d4612d4c8a.png",
+   "role": "mask.path",
+   "sha256": "f97039d4612d4c8a00f614617bfe2e5f3a2b2fb67d5f8bac9bf93c952e164173",
+   "sizePx": 4096,
+   "stage": "osm_paint/mask_paths_osm.png"
+  },
+  {
+   "bytes": 45180,
+   "description": "road at fitted full width (road_finish), as written by the stage",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-road-b16ec6227b8516fd.png",
+   "role": "mask.road",
+   "sha256": "b16ec6227b8516fd6e7691eaf3df6c7058954e9efb9d802631e786064a7a10c0",
+   "sizePx": 4096,
+   "stage": "road_finish/mask_road_fit.png"
+  },
+  {
+   "bytes": 21262,
+   "description": "road markings (road_finish)",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-road-marking-aa568f5e3c6b0dd2.png",
+   "role": "mask.road_marking",
+   "sha256": "aa568f5e3c6b0dd29af5941014f8e437dd313c6ea8609a4436e02f4e1c3098c2",
+   "sizePx": 4096,
+   "stage": "road_finish/mask_markings.png"
+  },
+  {
+   "bytes": 32053,
+   "description": "OSM roofs composited in 2D by roof_keep (cell frame)",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-roofs-29ab662c4b7753b5.png",
+   "role": "mask.roofs",
+   "sha256": "29ab662c4b7753b5482a6cf15c549ee3df7e169bbdd4c719adf0dd6e6189be53",
+   "sizePx": 4096,
+   "stage": "roof_keep/mask_roofs_2d.png"
+  },
+  {
+   "bytes": 282203,
+   "description": "ground not covered by any OSM zone",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-uncovered-13f7afa61f3e0cd7.png",
+   "role": "mask.uncovered",
+   "sha256": "13f7afa61f3e0cd71bcd893801189594dacdc1596c7b9c159423468b72a79d07",
+   "sizePx": 4096,
+   "stage": "osm_paint/mask_uncovered.png"
+  },
+  {
+   "bytes": 18444,
+   "description": "OSM water and pools painted flat by osm_paint",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-water-8736b91b02625210.png",
+   "role": "mask.water",
+   "sha256": "8736b91b02625210b803d37b1940e446ca359b2c3c120eea2010b03d98859dbd",
+   "sizePx": 4096,
+   "stage": "osm_paint/mask_water.png"
+  },
+  {
+   "bytes": 272209,
+   "description": "all OSM land-use zones combined (custom: per-class output is spec M2)",
+   "frame": "cell",
+   "mime": "image/png",
+   "path": "mask-x-zones-158393122aefd193.png",
+   "role": "mask.x-zones",
+   "sha256": "158393122aefd193e7929973930db826719b5c41f430456f75b60b45478aa33e",
+   "sizePx": 4096,
+   "stage": "osm_paint/mask_zones_osm.png"
+  },
+  {
+   "bytes": 2777614,
+   "description": "untouched ORTO_2025 mosaic of the cell (before any edit)",
+   "frame": "cell",
+   "level": "full",
+   "lowLevel": "ortho-lo-0c976ba96d2526e9.webp",
+   "mime": "image/webp",
+   "path": "ortho-703df268208e1666.webp",
+   "role": "source.ortho",
+   "sha256": "703df268208e1666e01ba9118497fef765612db563122d9886e375ec0ec4a22c",
+   "sizePx": 4096
+  },
+  {
+   "bytes": 197898,
+   "frame": "cell",
+   "level": "lo",
+   "mime": "image/webp",
+   "path": "ortho-lo-0c976ba96d2526e9.webp",
+   "role": "source.ortho.lo",
+   "sha256": "0c976ba96d2526e9697130e4dbd6a14a305ea182b637a83e9367ed042431c0de",
+   "sizePx": 1024
+  },
+  {
+   "bytes": 17182,
+   "description": "\u00a9 OpenStreetMap contributors, ODbL 1.0; snapshot of the cell's Overpass answers (features, buildings, roads)",
+   "mime": "application/gzip",
+   "path": "osm-ed37f8744695665f.json.gz",
+   "role": "osm.snapshot",
+   "sha256": "ed37f8744695665f866c315f316c7ee2c4cb1ea65371b52aff682924191bd1a0"
+  },
+  {
+   "bytes": 49449,
+   "mime": "application/json",
+   "path": "provenance-62f56ffa320282dd.json",
+   "role": "provenance",
+   "sha256": "62f56ffa320282dd685a4ca567f3505c0908ca9079ee8f5248761fec2876d356"
+  },
+  {
+   "bytes": 113448,
+   "description": "Opt-in unvalidated candidate collision; not runtime driving collision",
+   "mime": "model/gltf-binary",
+   "path": "road-collision-candidate-a441fccc351cc217.glb",
+   "role": "road.collision.candidate",
+   "sha256": "a441fccc351cc2176f38296b4384f4f27828a102726d79e681df1f9d92a0d754"
+  },
+  {
+   "bytes": 82004,
+   "frame": "cell+margin:0.125",
+   "level": "full",
+   "lowLevel": "roof-lo-453f6f6ee20cb60d.webp",
+   "mime": "image/webp",
+   "path": "roof-cedd354c3bc62381.webp",
+   "role": "roof",
+   "sha256": "cedd354c3bc62381a6342f3d5de72a55f385e87653d5032b4c61c436dda486a9",
+   "sizePx": 5120
+  },
+  {
+   "bytes": 67191,
+   "description": "16-bit building index per roof pixel, 0 = no roof; index = roofs json buildings[].index",
+   "frame": "cell+margin:0.125",
+   "mime": "image/png",
+   "path": "roof-ids-eb2ed73febd3f1f2.png",
+   "role": "roof.ids",
+   "sha256": "eb2ed73febd3f1f2002a0f6ffb80da63f44a66c22934333a09bcb8b1274e09d8",
+   "sizePx": 5120
+  },
+  {
+   "bytes": 12856,
+   "frame": "cell+margin:0.125",
+   "level": "lo",
+   "mime": "image/webp",
+   "path": "roof-lo-453f6f6ee20cb60d.webp",
+   "role": "roof.lo",
+   "sha256": "453f6f6ee20cb60dff2807b95aa2b6dc83e999ee923b3354436df16703ff6954",
+   "sizePx": 1280
+  },
+  {
+   "bytes": 29577,
+   "mime": "application/json",
+   "path": "roofs-4de485348f851588.json",
+   "role": "roofs.placement",
+   "sha256": "4de485348f8515880f8e4db07108104510e2ac869c8c5586390fc0cc02df7320"
+  },
+  {
+   "bytes": 486156,
+   "mime": "application/json",
+   "path": "source-be540a11f42b4222.json",
+   "role": "engine.source",
+   "sha256": "be540a11f42b4222e6b88e4c441b8d0f99551debc91f0f4c902d99283757b562"
+  },
+  {
+   "bytes": 9594024,
+   "mime": "model/gltf-binary",
+   "path": "terrain-0524b03e9fdef0f2.glb",
+   "role": "engine.terrain",
+   "sha256": "0524b03e9fdef0f243d2f22eedbf06075d992019201fe3fee545f333e6674592"
+  },
+  {
+   "bytes": 18325736,
+   "description": "LiDAR MDT 1 m terrain at 2.001 m grid, UV for the cell textures, no embedded textures",
+   "mime": "model/gltf-binary",
+   "path": "terrain-lidar-57c1dfe6d77550ed.glb",
+   "role": "terrain.lidar",
+   "sha256": "57c1dfe6d77550ed2c22ef1367ce4c64fb68a9dc1f01fccee96af71810f28a86"
+  },
+  {
+   "bytes": 2019836,
+   "description": "Unreviewed road candidate; Engine loads immediately; drivable is provenance",
+   "mime": "model/gltf-binary",
+   "path": "asphalt-candidate-818a8f2f9061511f.glb",
+   "role": "road.asphalt.candidate",
+   "sha256": "818a8f2f9061511f912b7b5a22008696f377db13a0786b04b61096640a19c7e5"
+  },
+  {
+   "bytes": 304,
+   "path": "supports-candidate-8665170d81eaff56.glb",
+   "role": "road.supports.candidate",
+   "sha256": "8665170d81eaff56ec54655c7947a504fff149dd13a043fe0854fd389cde459e"
+  }
+ ],
+ "grid": {
+  "boundsM": {
+   "maxX": -195678.79241005235,
+   "maxY": 5362821.904487966,
+   "minX": -196901.78486261517,
+   "minY": 5361598.912035403
+  },
+  "crs": "EPSG:3857",
+  "nativePx": 5931,
+  "origin": "north-west, pixel-is-area",
+  "sizePx": 4096
+ },
+ "instanceCounts": {},
+ "instances": {
+  "count": 0,
+  "file": "instances-903b897a44ebd07e.json",
+  "types": []
+ },
+ "layers": {
+  "road-asphalt-candidate": {
+   "drivable": false,
+   "drivingCollision": false,
+   "engineLoad": "immediate",
+   "evidenceId": "197e27da-1b47-4c40-9992-db1580fb4ac7",
+   "files": [
+    "asphalt-candidate-a5e509be83dcff34.glb"
+   ],
+   "optIn": false,
+   "recipe": "asphalt-stable-ground-frames-experiment-11",
+   "review": "unreviewed",
+   "role": "road.asphalt.candidate",
+   "sha256": "a5e509be83dcff343be96c76da6c0021bd77e1d512582673b2eb1c8ec95897a7"
+  },
+  "road-collision-candidate": {
+   "drivable": false,
+   "drivingCollision": false,
+   "engineLoad": "opt-in",
+   "evidenceId": "197e27da-1b47-4c40-9992-db1580fb4ac7",
+   "files": [
+    "road-collision-candidate-a441fccc351cc217.glb"
+   ],
+   "optIn": true,
+   "recipe": "asphalt-stable-ground-frames-experiment-11",
+   "review": "unreviewed",
+   "role": "road.collision.candidate",
+   "sha256": "a441fccc351cc2176f38296b4384f4f27828a102726d79e681df1f9d92a0d754"
+  }
+ },
+ "packageVersion": 1,
+ "provenance": "provenance-62f56ffa320282dd.json",
+ "regeneration": {
+  "buildingClearance": {
+   "cut": 4,
+   "dropped": 0,
+   "fullCorridorM2": 55700.4,
+   "parts": [
+    {
+     "action": "cut",
+     "footprintM2": 423.5,
+     "osm": "way/180850364",
+     "removedM2": 2.6
+    },
+    {
+     "action": "cut",
+     "footprintM2": 241.5,
+     "osm": "way/180850374",
+     "removedM2": 12.1
+    },
+    {
+     "action": "cut",
+     "footprintM2": 213.5,
+     "osm": "way/180853990",
+     "removedM2": 3.5
+    },
+    {
+     "action": "cut",
+     "footprintM2": 44.0,
+     "osm": "way/327128946",
+     "removedM2": 2.4
+    }
+   ],
+   "passageCorridorM2": 0.0,
+   "passages": 0,
+   "path": "buildings-osm-f7cc72da9833babd.glb",
+   "removedM2": 20.6,
+   "roads": 20,
+   "schema": "nabla-building-road-clearance/1",
+   "source": "buildings-osm-bcdd8546e9ee0d35.glb"
+  },
+  "code": "ccfca2f",
+  "derivedFrom": "15e9d1ae1c4aee9443ad677e50563704cd62ec57a9fa7a46d524b0a52f354658",
+  "drivable": false,
+  "evidence": "c443b74b-76b2-458d-8f30-ebf051fc5397",
+  "generated": "2026-10-09T13:25:37+00:00",
+  "image": "nabla-atlas-roads:main-ccfca2f",
+  "pipeline": "pipeline-unica-1",
+  "recipe": "terrain-unified-adaptive-29",
+  "review": "unreviewed",
+  "roadConform": {
+   "asphalt": {
+    "redraped_vertices": 2954
+   },
+   "cell": "16223/11999",
+   "cellVersion": 4,
+   "deck_pins": [],
+   "height_change_m": {
+    "max_down": 4.472,
+    "max_up": 3.449,
+    "p95_abs_moved": 0.609
+   },
+   "parameters": {
+    "border_taper_m": 10.0,
+    "crown": 0.015,
+    "deck_pin_run_m": 40.0,
+    "refine_road_m": 1.0,
+    "shoulder_m": 4.0
+   },
+   "profile_vs_lidar_m": {
+    "p50": 0.027,
+    "p95": 0.182
+   },
+   "protected_area_m2": 0.0,
+   "schema": "nabla-road-conform/1",
+   "vertices": {
+    "after": 293733,
+    "before": 165312,
+    "moved": 140181,
+    "split_edges": 128421
+   },
+   "ways": {
+    "bridges_skipped": 0,
+    "conformed": 14,
+    "tunnels_excluded": 0
+   }
+  },
+  "run": "16223-11999",
+  "supportsBundle": [],
+  "surfaceCleanup": {
+   "asphalt": {
+    "bridge_deck_triangles": 0,
+    "components": 91,
+    "dropped": 1,
+    "dropped_area_m2": 0.0,
+    "kept_components": 90,
+    "roles": {
+     "already_tagged": 1,
+     "split_primitives": 0,
+     "tagged_deck": 0,
+     "tagged_ground": 0
+    },
+    "triangles_after": 3027,
+    "triangles_before": 3028
+   },
+   "asphalt_out": "/work/runs/16223-11999/asphalt-candidate.glb",
+   "bridge_junction": null,
+   "bridges_protected": true,
+   "cellVersion": 3,
+   "preserved": {
+    "asphalt": {
+     "attributes": [
+      "POSITION",
+      "TEXCOORD_0"
+     ],
+     "images": 1,
+     "material_count": 2,
+     "primitive_count": 1
+    },
+    "terrain": {
+     "attributes": [
+      "NORMAL",
+      "POSITION",
+      "TEXCOORD_0"
+     ],
+     "images": 1,
+     "material_count": 1,
+     "primitive_count": 1
+    }
+   },
+   "schema": "nabla-cell-surface-cleanup/2",
+   "terrain_fuse": {
+    "adjusted_vertices": 4766,
+    "ground_road_tris": 1304,
+    "terrain_median_y": 181.86077880859375,
+    "under_road_fraction": 0.0217
+   },
+   "terrain_out": "/work/runs/16223-11999/terrain-final-candidate.glb"
+  }
+ },
+ "schema": "nabla-z15-package/1",
+ "supersedes": "4fa4baca8502419e4913abdf60c200a7dd163d890fb4efea73309d988d8b52ce",
+ "terrain": {
+  "engine": "terrain-0524b03e9fdef0f2.glb",
+  "lidar": "terrain-lidar-57c1dfe6d77550ed.glb",
+  "note": "terrain.lidar: UV (u east, v south, row 0 of the cell textures = north) for ground-lots / ground / ortho; engine terrain has no UVs"
+ },
+ "variant": "x1"
+}

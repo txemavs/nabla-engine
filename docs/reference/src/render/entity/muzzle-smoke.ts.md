@@ -144,9 +144,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Number.isFinite`
 
-## MuzzleSmoke.burst
+## MuzzleSmoke.constructor
 
 [Implementation, line 132](../../../../../src/render/entity/muzzle-smoke.ts#L132)
+
+Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
+under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+constructor(density = smokeDensity): instance
+```
+
+## MuzzleSmoke.burst
+
+[Implementation, line 135](../../../../../src/render/entity/muzzle-smoke.ts#L135)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -161,7 +172,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.update
 
-[Implementation, line 135](../../../../../src/render/entity/muzzle-smoke.ts#L135)
+[Implementation, line 138](../../../../../src/render/entity/muzzle-smoke.ts#L138)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -176,7 +187,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.particles
 
-[Implementation, line 139](../../../../../src/render/entity/muzzle-smoke.ts#L139)
+[Implementation, line 142](../../../../../src/render/entity/muzzle-smoke.ts#L142)
 
 Positions and ages (−1 when dead) at `now`.
 
@@ -192,7 +203,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.dispose
 
-[Implementation, line 147](../../../../../src/render/entity/muzzle-smoke.ts#L147)
+[Implementation, line 150](../../../../../src/render/entity/muzzle-smoke.ts#L150)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).
@@ -207,7 +218,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## MuzzleSmoke.clear
 
-[Implementation, line 150](../../../../../src/render/entity/muzzle-smoke.ts#L150)
+[Implementation, line 153](../../../../../src/render/entity/muzzle-smoke.ts#L153)
 
 Powder smoke of the pistol. Under WebGL the drift is analytic on the GPU (gpu-particles.ts);
 under WebGPU the former CPU update feeds its sprite substitute (legacy-particles.ts).

@@ -1,3 +1,4 @@
+import { smokeDensity } from '../render/entity/smoke-density.js'
 import { Vector3, type Scene } from 'three'
 import { VehicleAudio } from '../audio/vehicle.js'
 import { resolveVehicleSound, type ResolvedVehicleSound } from '../audio/vehicle-sound.js'
@@ -16,7 +17,7 @@ export const gearShiftLevel = 0.5
 
 /** Shared audio/effects orchestration. Supplied audio remains owned by the host. */
 export class VehicleEffects {
-  readonly smoke = new TireSmoke()
+  readonly smoke: TireSmoke
   readonly marks = new TireMarks()
   readonly audio: VehicleAudio
   private readonly ownsAudio: boolean
@@ -28,7 +29,8 @@ export class VehicleEffects {
   private shiftCount = 0
   private gearChangeCount = 0
 
-  constructor(scene: Scene, audio?: VehicleAudio) {
+  constructor(scene: Scene, audio?: VehicleAudio, density = smokeDensity) {
+    this.smoke = new TireSmoke(density)
     this.ownsAudio = !audio
     this.audio = audio ?? new VehicleAudio()
     scene.add(this.smoke.root, this.marks.root)

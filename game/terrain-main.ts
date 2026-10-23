@@ -1,3 +1,4 @@
+import { startBootPhase } from '../src/runtime/boot-trace.js'
 import { pageSearch } from './page-query.js'
 import { terrainHost } from './terrain-host.js'
 import { mountVREntry, pcVRRequested } from './vr-entry.js'
@@ -29,7 +30,7 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { bindLayerSelector, initialHiddenLayers } from './layers-ui.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
-import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
+import { bootHiddenLayers, readBootConfig, startGame } from './boot.js'
 import { mountSettingsHud } from './settings-hud.js'
 import { bindSoundControls } from './sound-ui.js'
 import { bindLightControls } from './light-ui.js'
@@ -38,13 +39,9 @@ import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cin
 import { bindSimulatedFireToggle, resolveSimulatedFireEnabled } from './simulated-fire-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
-import {
-  hostSteeringWheelsFromSearch,
-  steeringWheelStorage,
-  viteHostSteeringWheels,
-} from './host-steering-wheel.js'
+import { hostSteeringWheelsFromSearch, viteHostSteeringWheels } from './host-steering-wheel.js'
 import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
-import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
+import { hostMirrorsFromSearch, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { bindAnisotropySelect, bindGroundDetailSelect } from './anisotropy-ui.js'
 import { bindDistances } from './distances-ui.js'
@@ -62,6 +59,7 @@ const bootLog = (label: string) =>
 bindTerrainSelector()
 bindPosition()
 const attachSceneControls = bindSceneControls()
+const sceneDone = startBootPhase('Configurar escena y contenido', undefined, '02 Escena y runtime')
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
 /** The tile host of this page, known even when the configuration fails to load. */
@@ -121,6 +119,7 @@ try {
     scene.water = { mode: 'manual', level: config.seaLevel, amplitude: 0 }
   const boot = readBootConfig()
   const loading = new LoadingScreen(boot.splash)
+  loading.bindRuntime(document.getElementById('game-canvas') as HTMLCanvasElement)
   loading.setTiles(config.tile ? [config.tile] : [])
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   const layerDefaults = bootHiddenLayers(boot)
@@ -139,6 +138,12 @@ try {
           alpha: true,
           logarithmicDepthBuffer: true,
         })
+  sceneDone()
+  const runtimeDone = startBootPhase(
+    'Construir GameRuntime: render, controles y mundo',
+    undefined,
+    '02 Escena y runtime',
+  )
   runtime = new GameRuntime({
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
@@ -156,13 +161,11 @@ try {
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
       defaults: hostSteeringWheelsFromSearch(pageSearch(), viteHostSteeringWheels()),
-      storage: steeringWheelStorage(),
     },
     shadowBias: resolveShadowBias(boot.shadowBias),
     // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
     mirrors: {
       defaults: hostMirrorsFromSearch(pageSearch(), viteHostMirrors()),
-      storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
@@ -179,7 +182,7 @@ try {
         .getElementById('game-canvas')!
         .dispatchEvent(new CustomEvent('nabla:resolution-scale', { detail: state })),
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
-    weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
+    weaponPickupLocation: terrainHost().weaponPickupLocation,
     scene,
     // VR modes: boarding must never load on demand in the headset, so the bike and car join.
     preloadVehicles: solo
@@ -236,11 +239,11 @@ try {
               .dispatchEvent(new CustomEvent('nabla:frame', { detail: sample }))
         : undefined,
     ),
-    onProgress(_status, tiles) {
-      // Always a Spanish loading state with what is in flight and the last error, never silent.
+    onProgress(status, tiles) {
+      // Terrain counters describe streaming only; physics and reveal report their own phase.
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
-      loading.setStatus(text.status)
-      loading.setDetail(text.detail)
+      loading.setStatus(tiles !== undefined ? text.status : status)
+      loading.setDetail(tiles !== undefined ? text.detail : '')
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
@@ -255,6 +258,7 @@ try {
       document.getElementById('game-message')!.textContent = message
     },
   })
+  runtimeDone()
   bootLog('GameRuntime construct done')
   terrainHost().afterRuntime?.(runtime)
   bindTerrainCache(runtime)
@@ -269,7 +273,6 @@ try {
       ? t('boot.loading-terrain-tile', { tile: mapTileId(config.tile) })
       : t('boot.loading-terrain'),
   )
-  void runBootPhase(runtime, loading, boot)
   // Host vehicles are placed inside play(), before the reveal: their models, lights and
   // programs load behind the intro instead of during the start descent.
   const geography = scene.geography
@@ -281,10 +284,13 @@ try {
     })
   bootLog('play() start')
   restoreStartupLightSettings(runtime)
-  await runtime.play({ vehicleId: 'player-vehicle', playerMode: config.playerMode })
+  await startGame(runtime, loading, boot, {
+    vehicleId: 'player-vehicle',
+    playerMode: config.playerMode,
+  })
   if (params.has('xr')) runtime.equipTestSidearm()
   bindVR(runtime)
-  bootLog('play() done (ground + physics)')
+  bootLog('play() done (ground + physics + GPU + reveal gates)')
   terrainHost().afterPlay?.(runtime, scene)
   if (scene.geography && config.portals?.length) {
     bootLog(`installHostPortals start (${config.portals?.length})`)
@@ -292,6 +298,11 @@ try {
     bootLog('installHostPortals done')
   }
   bootLog('loading screen hide')
+  const hudDone = startBootPhase(
+    'Montar interfaz y mostrar juego',
+    undefined,
+    '07 Entrada al juego',
+  )
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
@@ -311,6 +322,7 @@ try {
   bindLayerSelector(runtime, undefined, layerDefaults)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
+  hudDone()
 } catch (error) {
   runtime?.dispose()
   // A start over a hole offers the nearest available cell. Nothing is remembered: the position is the URL's.

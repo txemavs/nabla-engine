@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `./page-query.js`
 - `@nabla/engine/render`
 - `@nabla/engine/runtime/browser`
@@ -13,15 +14,19 @@
 
 ## browserStorage
 
-[Implementation, line 17](../../../game/layers-ui.ts#L17)
+[Implementation, line 18](../../../game/layers-ui.ts#L18)
 
 ```ts
 browserStorage(): LayerStorage | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## initialHiddenLayers
 
-[Implementation, line 29](../../../game/layers-ui.ts#L29)
+[Implementation, line 30](../../../game/layers-ui.ts#L30)
 
 The layers to start with: an explicit `&layers=` wins over the stored choice. Both apply over
 `defaults`, the host's default hidden layers (e.g. `['places']` from `NABLA_BOOT.cityLabels: false`).
@@ -41,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## osmRoadsRequested
 
-[Implementation, line 45](../../../game/layers-ui.ts#L45)
+[Implementation, line 46](../../../game/layers-ui.ts#L46)
 
 `osmRoads=1` (also `true`/`on`/bare `osmRoads`) opts in to drawing the separate OSM road asphalt of
 version 2+ cells for inspection. It never collides; default (absent, `0`, `false`, `off`) hides it.
@@ -62,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## roadHiddenHint
 
-[Implementation, line 51](../../../game/layers-ui.ts#L51)
+[Implementation, line 52](../../../game/layers-ui.ts#L52)
 
 HUD text while the road layer ('Carretera') is hidden; undefined when roads are drawn.
 
@@ -76,7 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountRoadHiddenHint
 
-[Implementation, line 59](../../../game/layers-ui.ts#L59)
+[Implementation, line 60](../../../game/layers-ui.ts#L60)
 
 Small HUD chip shown while 'Carretera' is hidden (a stored `-road` survives reloads, and
 roads and bridges then vanish without any other sign). «Mostrar» turns the layer back on.
@@ -93,12 +98,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hint.setAttribute`
 - `show.addEventListener`
 
-## mountRoadHiddenHint.callback@70
+## mountRoadHiddenHint.callback@71
 
-[Implementation, line 70](../../../game/layers-ui.ts#L70)
+[Implementation, line 71](../../../game/layers-ui.ts#L71)
 
 ```ts
-callback@70(hidden): inferred by TypeScript; see implementation
+callback@71(hidden): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,14 +113,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector
 
-[Implementation, line 82](../../../game/layers-ui.ts#L82)
+[Implementation, line 83](../../../game/layers-ui.ts#L83)
 
 Add one checkbox per layer (road first) to the Capas menu section; changes apply live and persist
 as differences from `defaults` (the same host defaults given to `initialHiddenLayers`).
 A HUD chip says when 'Carretera' is hidden.
 
 ```ts
-bindLayerSelector(runtime: GameRuntime, storage = browserStorage(), defaults: readonly string[] = []): void
+bindLayerSelector(runtime: GameRuntime, storage = runtime.settings, defaults: readonly string[] = []): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +129,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `box.addEventListener`
 - `boxes.set`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `hidden.has`
@@ -135,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector.showRoad
 
-[Implementation, line 89](../../../game/layers-ui.ts#L89)
+[Implementation, line 90](../../../game/layers-ui.ts#L90)
 
 ```ts
 showRoad(): inferred by TypeScript; see implementation
@@ -148,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLayerSelector.sync
 
-[Implementation, line 96](../../../game/layers-ui.ts#L96)
+[Implementation, line 97](../../../game/layers-ui.ts#L97)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -167,22 +171,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `url.searchParams.delete`
 - `url.searchParams.set`
 
-## bindLayerSelector.sync.callback@97
+## bindLayerSelector.sync.callback@98
 
-[Implementation, line 97](../../../game/layers-ui.ts#L97)
+[Implementation, line 98](../../../game/layers-ui.ts#L98)
 
 ```ts
-callback@97(layer): inferred by TypeScript; see implementation
+callback@98(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `boxes.get`
 
-## bindLayerSelector.sync.callback@97
+## bindLayerSelector.sync.callback@98
 
-[Implementation, line 97](../../../game/layers-ui.ts#L97)
+[Implementation, line 98](../../../game/layers-ui.ts#L98)
 
 ```ts
-callback@97(l): inferred by TypeScript; see implementation
+callback@98(l): inferred by TypeScript; see implementation
 ```

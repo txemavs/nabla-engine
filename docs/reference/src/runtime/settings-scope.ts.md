@@ -12,7 +12,7 @@ overwrites the PC settings (quality profile, layers, HUD, spawn…) nor the othe
     browser), `?vr=headset`;
   - `headset-pc`: a PC browser driving a headset over Link / SteamVR, `?vr=pc`.
 
-Install the scope before any module reads storage (first import of the entry). Hosts can seed
+The page entry selects its default scope; runtimes own independent stores. Hosts can seed
 per-mode defaults with `window.NABLA_SETTINGS_DEFAULTS = { headset: { 'nabla.quality': … } }`.
 
 ## Module dependencies
@@ -56,9 +56,268 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `key.slice`
 - `key.startsWith`
 
+## browserStorage
+
+[Implementation, line 82](../../../../src/runtime/settings-scope.ts#L82)
+
+```ts
+browserStorage(): SettingsStorage | undefined
+```
+
+## hostDefaults
+
+[Implementation, line 89](../../../../src/runtime/settings-scope.ts#L89)
+
+```ts
+hostDefaults(): SettingsDefaults | undefined
+```
+
+## SettingsStore.mode
+
+[Implementation, line 97](../../../../src/runtime/settings-scope.ts#L97)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+mode(): PlayMode
+```
+
+## SettingsStore.constructor
+
+[Implementation, line 106](../../../../src/runtime/settings-scope.ts#L106)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+constructor(options: SettingsStoreOptions = {}): instance
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `activePlayMode`
+- `browserStorage`
+- `hostDefaults`
+- `this.capture`
+
+## SettingsStore.switchMode
+
+[Implementation, line 115](../../../../src/runtime/settings-scope.ts#L115)
+
+Explicitly change only this owner's profile (for PC → headset entry).
+
+```ts
+switchMode(mode: PlayMode): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.capture`
+- `this.captured.clear`
+- `this.values.clear`
+
+## SettingsStore.capture
+
+[Implementation, line 123](../../../../src/runtime/settings-scope.ts#L123)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+capture(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.entries`
+- `this.backend.getItem`
+- `this.backend.key`
+- `this.captured.set`
+- `this.getItem`
+- `this.setItem`
+
+## SettingsStore.physical
+
+[Implementation, line 147](../../../../src/runtime/settings-scope.ts#L147)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+physical(key: string): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `encodeURIComponent`
+- `scopedKey`
+
+## SettingsStore.readPhysical
+
+[Implementation, line 153](../../../../src/runtime/settings-scope.ts#L153)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+readPhysical(key: string): string | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.backend?.getItem`
+- `this.captured.get`
+
+## SettingsStore.getItem
+
+[Implementation, line 161](../../../../src/runtime/settings-scope.ts#L161)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+getItem(key: string): string | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `scopedKey`
+- `this.physical`
+- `this.readPhysical`
+- `this.values.get`
+- `this.values.has`
+- `this.values.set`
+
+## SettingsStore.setItem
+
+[Implementation, line 172](../../../../src/runtime/settings-scope.ts#L172)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+setItem(key: string, value: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `this.backend?.setItem`
+- `this.captured.set`
+- `this.physical`
+- `this.values.delete`
+- `this.values.set`
+
+## SettingsStore.removeItem
+
+[Implementation, line 184](../../../../src/runtime/settings-scope.ts#L184)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+removeItem(key: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `this.backend?.removeItem`
+- `this.captured.delete`
+- `this.physical`
+- `this.values.delete`
+- `this.values.set`
+
+## SettingsStore.keys
+
+[Implementation, line 195](../../../../src/runtime/settings-scope.ts#L195)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+keys(): string[]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Set`
+- `[...logical].filter`
+- `encodeURIComponent`
+- `key.slice`
+- `key.startsWith`
+- `logical.add`
+- `physical.add`
+- `this.backend.key`
+- `this.captured.keys`
+- `this.values.keys`
+
+## SettingsStore.keys.callback@223
+
+[Implementation, line 223](../../../../src/runtime/settings-scope.ts#L223)
+
+```ts
+callback@223(key): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.getItem`
+
+## SettingsStore.length
+
+[Implementation, line 225](../../../../src/runtime/settings-scope.ts#L225)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+length(): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.keys`
+
+## SettingsStore.key
+
+[Implementation, line 228](../../../../src/runtime/settings-scope.ts#L228)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+key(index: number): string | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.keys`
+
+## SettingsStore.clear
+
+[Implementation, line 231](../../../../src/runtime/settings-scope.ts#L231)
+
+A runtime-owned view: never patches Storage, and keeps working when persistence fails.
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `key.startsWith`
+- `this.keys`
+- `this.removeItem`
+
+## createSettingsStore
+
+[Implementation, line 236](../../../../src/runtime/settings-scope.ts#L236)
+
+```ts
+createSettingsStore(options: SettingsStoreOptions = {}): SettingsStore
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `SettingsStore`
+
 ## activePlayMode
 
-[Implementation, line 71](../../../../src/runtime/settings-scope.ts#L71)
+[Implementation, line 245](../../../../src/runtime/settings-scope.ts#L245)
+
+Mode of the single-page compatibility host; existing runtime stores never follow it.
 
 ```ts
 activePlayMode(): PlayMode
@@ -68,75 +327,35 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `playModeFromSearch`
 
+## pageSettingsStorage
+
+[Implementation, line 249](../../../../src/runtime/settings-scope.ts#L249)
+
+Compatibility default for host helpers. Prefer runtime.settings when a runtime is available.
+
+```ts
+pageSettingsStorage(): SettingsStore
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `activePlayMode`
+- `browserStorage`
+- `createSettingsStore`
+
 ## installSettingsScope
 
-[Implementation, line 79](../../../../src/runtime/settings-scope.ts#L79)
+[Implementation, line 258](../../../../src/runtime/settings-scope.ts#L258)
 
-Route `storage`'s `nabla.*` keys to `mode`'s namespace and seed that mode's defaults (engine,
-then host) for keys it has never saved. PC mode leaves storage untouched. Idempotent.
+Select the page's default profile without patching Storage methods. Existing stores stay fixed.
 
 ```ts
-installSettingsScope(mode: PlayMode = playModeFromSearch(), storage: ScopableStorage | undefined = (() => { try { return globalThis.localStorage } catch { return undefined } })(), hostDefaults: Partial<Record<VRPlayMode, Record<string, string>>> | undefined = ( globalThis as { NABLA_SETTINGS_DEFAULTS?: Partial<Record<VRPlayMode, Record<string, string>>> } ).NABLA_SETTINGS_DEFAULTS): PlayMode
+installSettingsScope(mode: PlayMode = playModeFromSearch(), storage: SettingsStorage | undefined = browserStorage(), defaults: SettingsDefaults | undefined = hostDefaults()): PlayMode
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Object.defineProperties`
-- `Object.entries`
-- `get`
+- `browserStorage`
+- `createSettingsStore`
+- `hostDefaults`
 - `playModeFromSearch`
-- `scopedKey`
-- `set`
-- `storage.getItem.bind`
-- `storage.removeItem.bind`
-- `storage.setItem.bind`
-
-## installSettingsScope.callback@81
-
-[Implementation, line 81](../../../../src/runtime/settings-scope.ts#L81)
-
-```ts
-callback@81(): inferred by TypeScript; see implementation
-```
-
-## installSettingsScope.value
-
-[Implementation, line 101](../../../../src/runtime/settings-scope.ts#L101)
-
-```ts
-value(key: string): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `String`
-- `get`
-- `scopedKey`
-
-## installSettingsScope.value
-
-[Implementation, line 104](../../../../src/runtime/settings-scope.ts#L104)
-
-```ts
-value(key: string, value: string): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `String`
-- `scopedKey`
-- `set`
-
-## installSettingsScope.value
-
-[Implementation, line 108](../../../../src/runtime/settings-scope.ts#L108)
-
-```ts
-value(key: string): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `String`
-- `remove`
-- `scopedKey`

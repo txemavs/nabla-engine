@@ -1,3 +1,4 @@
+import { createSettingsStore, type SettingsStorage } from './settings-scope.js'
 import { XRScreenInput } from './xr-screen-input.js'
 import { XRTrackedHand } from './xr-tracked-hands.js'
 import type { ActorHandAssets } from './actor.js'
@@ -16,7 +17,7 @@ export class GameXR {
   /** Opt-in screen interaction can be disabled for dedicated headset experiences. */
   screenTouchEnabled = true
   domOverlayRoot?: HTMLElement
-  readonly calibration = new XRCalibration()
+  readonly calibration: XRCalibration
   calibrationScreen: XRCalibrationScreen | null = null
   enableCalibrationScreen(): void {
     if (this.calibrationScreen) return
@@ -48,10 +49,10 @@ export class GameXR {
     return !!source && !!this.calibrationScreen?.captured.has(source)
   }
   /** Hands currently operating a physical vehicle control cannot click floating UI. */
-  quality = readXRQuality()
+  quality: XRQualitySettings
   setQuality(patch: Partial<XRQualitySettings>): void {
     Object.assign(this.quality, patch)
-    saveXRQuality(this.quality)
+    saveXRQuality(this.quality, this.storage)
     this.renderer.xr.setFoveation(this.quality.foveation)
     if (!this.active) this.renderer.xr.setFramebufferScaleFactor(this.quality.scale)
   }
@@ -165,7 +166,10 @@ export class GameXR {
     private readonly scene: THREE.Scene,
     changed: (active: boolean) => void,
     report: (error: unknown) => void,
+    private readonly storage: SettingsStorage = createSettingsStore(),
   ) {
+    this.calibration = new XRCalibration(storage)
+    this.quality = readXRQuality(storage)
     scene.add(this.rig)
     this.naturalHands.push(
       new XRTrackedHand('left', this.rig),
@@ -221,6 +225,7 @@ export class GameXR {
         changed(active)
       },
       report,
+      storage,
     )
     this.rig.visible = false
     for (let i = 0; i < 2; i++) {

@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from './settings-scope.js'
 /**
  * The player's quality profile (`performancePresets` key, or `custom`).
  *
@@ -31,7 +32,7 @@ function safeGet(storage: ReadStorage | undefined | null, key: string): string |
 
 function defaultStorage(): WriteStorage | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }

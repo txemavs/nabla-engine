@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../src/runtime/boot-trace.js`
 - `./page-query.js`
 - `./settings-scope-boot.js`
 - `@nabla/engine/runtime/splash`
@@ -15,7 +16,7 @@
 
 ## bootSay
 
-[Implementation, line 17](../../../game/main.ts#L17)
+[Implementation, line 18](../../../game/main.ts#L18)
 
 ```ts
 bootSay(text: string): inferred by TypeScript; see implementation

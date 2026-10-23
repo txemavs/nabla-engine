@@ -43,3 +43,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `position.dot`
 - `position.lengthSq`
 - `result.fill`
+- `sceneRoot`
+- `smokeDensityFor`
+
+## sampleLaserSmoke.sceneRoot
+
+[Implementation, line 34](../../../../../src/render/entity/laser-smoke.ts#L34)
+
+```ts
+sceneRoot(node: THREE.Object3D): THREE.Object3D
+```

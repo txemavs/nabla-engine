@@ -4,25 +4,15 @@
 
 [Source](../../../game/host-steering-wheel.ts)
 
-Host defaults for the driver's steering-wheel adjustment («Volante» in the Vehículos menu).
-
-`?wheel=` (or `VITE_NABLA_STEERING_WHEEL` at build time) is a JSON object keyed by vehicle
-preset id (`car` is the S3, `a3`, `white-truck`, …) or by steering GLB URL. Values are metres
-along the column (`distance`, + toward the instrument cluster) and vertically (`height`, + up):
-
-  ?wheel={"car":{"distance":0.015,"height":-0.005}}
-
-A player's saved choice (localStorage) wins over the host default; «Restablecer volante» returns
-to it. `?wheel=` wins over the build value; a present empty `wheel=` means no host defaults.
-
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `@nabla/engine/vehicles`
 - `@nabla/engine/runtime/core`
 
 ## parseHostSteeringWheels
 
-[Implementation, line 23](../../../game/host-steering-wheel.ts#L23)
+[Implementation, line 24](../../../game/host-steering-wheel.ts#L24)
 
 Parse the JSON object and resolve preset ids to their steering GLB URL.
 
@@ -47,7 +37,7 @@ Explicit throws in this body:
 
 ## parseHostSteeringWheels.read
 
-[Implementation, line 37](../../../game/host-steering-wheel.ts#L37)
+[Implementation, line 38](../../../game/host-steering-wheel.ts#L38)
 
 ```ts
 read(axis: 'distance' | 'height'): inferred by TypeScript; see implementation
@@ -66,7 +56,7 @@ Explicit throws in this body:
 
 ## steeringOf
 
-[Implementation, line 49](../../../game/host-steering-wheel.ts#L49)
+[Implementation, line 50](../../../game/host-steering-wheel.ts#L50)
 
 ```ts
 steeringOf(preset: string): string
@@ -85,7 +75,7 @@ Explicit throws in this body:
 
 ## viteHostSteeringWheels
 
-[Implementation, line 57](../../../game/host-steering-wheel.ts#L57)
+[Implementation, line 58](../../../game/host-steering-wheel.ts#L58)
 
 `VITE_NABLA_STEERING_WHEEL` at build time, or none.
 
@@ -100,7 +90,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostSteeringWheelsFromSearch
 
-[Implementation, line 65](../../../game/host-steering-wheel.ts#L65)
+[Implementation, line 66](../../../game/host-steering-wheel.ts#L66)
 
 ```ts
 hostSteeringWheelsFromSearch(search: string, fallback: HostSteeringWheels = {}): HostSteeringWheels
@@ -115,10 +105,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelStorage
 
-[Implementation, line 76](../../../game/host-steering-wheel.ts#L76)
+[Implementation, line 77](../../../game/host-steering-wheel.ts#L77)
 
 Where the player's choice is kept: `localStorage`, or nothing when the browser refuses it.
 
 ```ts
 steeringWheelStorage(): SteeringWheelStorage | null
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`

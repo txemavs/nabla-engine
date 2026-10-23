@@ -14,7 +14,6 @@ import {
   parseStoredVisibility,
   serializeVisibility,
 } from '../src/runtime/visibility-settings.js'
-import { browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
 import { t } from '@nabla/engine/i18n'
 
@@ -67,7 +66,7 @@ function adopt(section: HTMLElement, controlId: string, text?: string): void {
 
 export function bindDistances(
   runtime: GameRuntime,
-  storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = browserStorage(),
+  storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = runtime.settings,
 ): HTMLElement {
   const section = menuSection('settings-distances', t('settings.distances'))
   const live = runtime.visibility

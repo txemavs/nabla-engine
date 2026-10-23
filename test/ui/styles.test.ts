@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { engineStyleSheets, engineStyleText, monitorStyleText } from '../../src/ui/styles.js'
 import { interfaceTheme } from '../../src/ui/theme.js'
@@ -13,7 +14,7 @@ describe('engine UI stylesheet', () => {
     const file = new URL('../../src/ui/styles.generated.ts', import.meta.url)
     const before = fs.readFileSync(file, 'utf8')
     execFileSync(process.execPath, [
-      new URL('../../scripts/gen-ui-styles.mjs', import.meta.url).pathname,
+      fileURLToPath(new URL('../../scripts/gen-ui-styles.mjs', import.meta.url)),
     ])
     expect(fs.readFileSync(file, 'utf8')).toBe(before)
   })

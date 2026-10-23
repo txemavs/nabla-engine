@@ -83,14 +83,13 @@ callback@66(a, b): inferred by TypeScript; see implementation
 Build the «Caché» section (only with a «Terreno» section), apply the remembered settings, keep the usage line fresh.
 
 ```ts
-bindTerrainCache(runtime: GameRuntime, search: string = pageSearch(), storage: SourceStorage | undefined = browserStorage()): void
+bindTerrainCache(runtime: GameRuntime, search: string = pageSearch(), storage: SourceStorage | undefined = runtime.settings): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `applyCacheSettings`
 - `applyCacheSettings(runtime, settings).catch`
-- `browserStorage`
 - `choice`
 - `clear.addEventListener`
 - `currentCacheSettings`

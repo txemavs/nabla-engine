@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '../settings-scope.js'
 import { t } from '../../i18n/index.js'
 import { z } from 'zod'
 import {
@@ -96,7 +97,7 @@ export function usbDeviceKey(pad: UsbPad): string {
 }
 export function browserUsbStorage(): UsbStorage | null {
   try {
-    return typeof localStorage === 'undefined' ? null : localStorage
+    return pageSettingsStorage()
   } catch {
     return null
   }

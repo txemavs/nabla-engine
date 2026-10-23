@@ -75,7 +75,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   sync()
   // Auto mode moves the scale live; keep the slider and label honest.
   document.getElementById('game-canvas')?.addEventListener('nabla:resolution-scale', () => sync())
-  quality.value = readQualityPreset()
+  quality.value = readQualityPreset(pageSearch(), runtime.settings)
   if (!quality.value) quality.value = 'custom'
   // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
   const releaseFocus = () => document.getElementById('game-canvas')?.blur()
@@ -132,7 +132,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
   })
   document.getElementById('display-apply-quality')!.addEventListener('click', () => {
     // Saved, not only put in the URL: hosts that strip the query (Euskadi) would lose it.
-    saveQualityPreset(quality.value)
+    saveQualityPreset(quality.value, runtime.settings)
     const url = new URL(location.href)
     url.searchParams.set('quality', quality.value)
     location.assign(url.href)

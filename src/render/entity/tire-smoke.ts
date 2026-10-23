@@ -175,6 +175,9 @@ class AnalyticTireSmoke {
 export class TireSmoke {
   private readonly impl = analyticParticles() ? new AnalyticTireSmoke() : new LegacyTireSmoke()
   readonly root: Points = this.impl.root
+  constructor(density = smokeDensity) {
+    ;(this.root.material as ShaderMaterial).uniforms.smokeDensity = density
+  }
   update(dt: number, contacts: Vec3Tuple[], slip: number, origin: Vector3): void {
     this.impl.update(dt, contacts, slip, origin)
   }

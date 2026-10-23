@@ -6,25 +6,27 @@
 
 ## Module dependencies
 
+- `./settings-scope.js`
 
 ## readXRQuality
 
-[Implementation, line 18](../../../../src/runtime/xr-quality.ts#L18)
+[Implementation, line 19](../../../../src/runtime/xr-quality.ts#L19)
 
 ```ts
-readXRQuality(): XRQualitySettings
+readXRQuality(storage: SettingsStorage = createSettingsStore()): XRQualitySettings
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `JSON.parse`
 - `Math.floor`
-- `localStorage.getItem`
+- `createSettingsStore`
 - `number`
+- `storage.getItem`
 
 ## readXRQuality.number
 
-[Implementation, line 23](../../../../src/runtime/xr-quality.ts#L23)
+[Implementation, line 24](../../../../src/runtime/xr-quality.ts#L24)
 
 ```ts
 number(n: unknown, fallback: number, min: number, max: number): inferred by TypeScript; see implementation
@@ -38,13 +40,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveXRQuality
 
-[Implementation, line 41](../../../../src/runtime/xr-quality.ts#L41)
+[Implementation, line 42](../../../../src/runtime/xr-quality.ts#L42)
 
 ```ts
-saveXRQuality(value: XRQualitySettings): void
+saveXRQuality(value: XRQualitySettings, storage: SettingsStorage = createSettingsStore()): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `JSON.stringify`
-- `localStorage.setItem`
+- `createSettingsStore`
+- `storage.setItem`

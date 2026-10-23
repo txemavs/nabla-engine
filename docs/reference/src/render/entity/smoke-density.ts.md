@@ -6,14 +6,15 @@
 
 ## Module dependencies
 
+- `three`
 - `../../config/gameplay-tuning.js`
 
 ## setSmokeDensity
 
-[Implementation, line 4](../../../../../src/render/entity/smoke-density.ts#L4)
+[Implementation, line 6](../../../../../src/render/entity/smoke-density.ts#L6)
 
 ```ts
-setSmokeDensity(percent: number): number
+setSmokeDensity(percent: number, smokeDensity = defaultDensity): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -21,3 +22,35 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number.isFinite`
+
+## bindSmokeDensity
+
+[Implementation, line 20](../../../../../src/render/entity/smoke-density.ts#L20)
+
+```ts
+bindSmokeDensity(root: Object3D, density: { value: number }): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `owners.set`
+
+## smokeDensityFor
+
+[Implementation, line 23](../../../../../src/render/entity/smoke-density.ts#L23)
+
+```ts
+smokeDensityFor(root: Object3D): { readonly value: number }
+```
+
+## smokeDensityFor.value
+
+[Implementation, line 25](../../../../../src/render/entity/smoke-density.ts#L25)
+
+```ts
+value(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `owners.get`

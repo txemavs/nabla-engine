@@ -150,9 +150,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.clock.rebase`
 - `this.clock.relS`
 
-## TireSmoke.update
+## TireSmoke.constructor
 
 [Implementation, line 178](../../../../../src/render/entity/tire-smoke.ts#L178)
+
+Bounded particle pool, one draw call. World positions stay independent of the floating origin.
+Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
+simulation feeds its sprite substitute (legacy-particles.ts).
+
+```ts
+constructor(density = smokeDensity): instance
+```
+
+## TireSmoke.update
+
+[Implementation, line 181](../../../../../src/render/entity/tire-smoke.ts#L181)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
@@ -168,7 +180,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.life
 
-[Implementation, line 182](../../../../../src/render/entity/tire-smoke.ts#L182)
+[Implementation, line 185](../../../../../src/render/entity/tire-smoke.ts#L185)
 
 Current life of each particle (0 when dead).
 
@@ -183,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.clear
 
-[Implementation, line 187](../../../../../src/render/entity/tire-smoke.ts#L187)
+[Implementation, line 190](../../../../../src/render/entity/tire-smoke.ts#L190)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU
@@ -199,7 +211,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TireSmoke.dispose
 
-[Implementation, line 190](../../../../../src/render/entity/tire-smoke.ts#L190)
+[Implementation, line 193](../../../../../src/render/entity/tire-smoke.ts#L193)
 
 Bounded particle pool, one draw call. World positions stay independent of the floating origin.
 Under WebGL the motion is analytic on the GPU (gpu-particles.ts); under WebGPU the former CPU

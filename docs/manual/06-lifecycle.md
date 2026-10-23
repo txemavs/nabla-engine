@@ -1,0 +1,55 @@
+# 6. Lifecycle and execution
+
+[Manual contents](README.md)
+
+`PlaySession` exposes `stopped`, `loading`, `playing`, `paused`, and `disposed`
+states. `play(document, options)` stops the previous session, clones the authored
+document, initializes physics, and constructs a simulation. A generation counter
+prevents a late asynchronous initialization from reviving a cancelled session.
+
+When worker physics is requested, initialization attempts `ThreadedSimulation`.
+Failure falls back to inline simulation unless initialization has been cancelled.
+`vehicleId` requests an initial vehicle; initialization refreshes worker state
+before returning the owned simulation. A host should inspect actual mode rather
+than equating a requested option with successful worker use.
+
+## Stepping and stopping
+
+`step(elapsed, input, waterLevel)` accepts elapsed **seconds**, rejects negative or
+non-finite durations, installs input, and advances only while playing. It caps the
+submitted duration using `simulationDefaults.maxFrameSeconds`. Worker execution
+uses its own advance path; the browser renders pipelined snapshots rather than
+waiting synchronously for each physics tick.
+
+`pause()` clears held movement and suspends stepping. Paused time is not accumulated
+for a later catch-up burst. `resume()` resumes a paused session. `stop()` cancels
+initialization and disposes physics but permits another play. `dispose()` is terminal
+and repeatable. Treat `play()` rejection as a real failure, and dispose resources
+created by the host when abandoning a mount.
+
+The [session example](../../examples/manual/session.mjs) demonstrates these transitions
+without browser scheduling. It deliberately selects inline physics for reproducible
+Node execution; that is not a recommendation to disable workers in the game.
+
+## Browser startup
+
+The reference host resolves a source, creates the document and browser runtime,
+waits for usable ground where applicable, starts physics, prepares presentation,
+and reveals gameplay. Preparation can include vehicle assets, audio resources,
+terrain presentation, shaders, textures, and starting camera views. Host credits
+or an ENTER gate may intentionally delay reveal.
+
+`onProgress(status, loadedTiles)` reports different kinds of work. A status without
+a tile list must not be replaced with a stale tile count. The loading milestones
+are progress through known phases, not a universal download percentage or ETA.
+
+`clock: 'automatic'` gives the browser runtime scheduling ownership. A host using
+manual clock integration must inspect the current stepping contract and keep one
+owner for advancement. Never step both `PlaySession` and its simulation separately.
+
+## Source of truth
+
+- [Session implementation](../../src/runtime/session.ts).
+- [Threaded simulation](../../src/simulation/threaded-simulation.ts).
+- [Browser lifecycle](../../src/runtime/browser.ts).
+- [Reference loading UI](../../game/loading.ts) and [startup guide](../game-runtime.md).

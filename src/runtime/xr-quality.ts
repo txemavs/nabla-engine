@@ -1,3 +1,4 @@
+import { createSettingsStore, type SettingsStorage } from './settings-scope.js'
 export interface XRQualitySettings {
   handTracking: boolean
   showVest: boolean
@@ -15,10 +16,10 @@ export interface XRQualitySettings {
   horizonLock: boolean
 }
 const key = 'nabla.xr.quality.v1'
-export function readXRQuality(): XRQualitySettings {
+export function readXRQuality(storage: SettingsStorage = createSettingsStore()): XRQualitySettings {
   let value: Partial<XRQualitySettings> = {}
   try {
-    value = JSON.parse(localStorage.getItem(key) ?? '{}') ?? {}
+    value = JSON.parse(storage.getItem(key) ?? '{}') ?? {}
   } catch {}
   const number = (n: unknown, fallback: number, min: number, max: number) =>
     typeof n === 'number' && Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback
@@ -38,9 +39,12 @@ export function readXRQuality(): XRQualitySettings {
     horizonLock: value.horizonLock !== false,
   }
 }
-export function saveXRQuality(value: XRQualitySettings): void {
+export function saveXRQuality(
+  value: XRQualitySettings,
+  storage: SettingsStorage = createSettingsStore(),
+): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value))
+    storage.setItem(key, JSON.stringify(value))
   } catch {}
 }
 export interface XRQualityMenu {

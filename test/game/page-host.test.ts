@@ -23,6 +23,15 @@ describe('page hosts', () => {
     setTerrainHost(host)
     expect(terrainHost()).toBe(host)
   })
+  it('selects local plane and model sources without a terrain stream', () => {
+    expect(defaultWorldSource('/', '?example=flat')).toEqual({ kind: 'flat' })
+    expect(defaultWorldSource('/', '?model=/examples/flat-world.glb')).toEqual({
+      kind: 'model',
+      url: '/examples/flat-world.glb',
+    })
+    expect(hasTerrain(defaultWorldSource('/', '?example=flat'))).toBe(false)
+    expect(hasTerrain(defaultWorldSource('/', '?model=/world.glb'))).toBe(false)
+  })
   it('defaults the world by page', () => {
     expect(defaultWorldSource('/test.html')).toEqual({ kind: 'flat' })
     expect(defaultWorldSource('/xr.html')).toEqual({ kind: 'flat' })

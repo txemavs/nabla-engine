@@ -1,3 +1,4 @@
+import { mountGameToolbar } from './hud-layout.js'
 import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { appendFsrControls } from './fsr-settings.js'
@@ -196,18 +197,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     paneEls.set(tab.id, pane)
   }
 
-  // Keep the shared action rail centred below the menu/time button, even when its label grows.
-  const alignToolbar = () => {
-    const rect = toggle.getBoundingClientRect()
-    const toolbar = doc.querySelector<HTMLElement>('.game-toolbar')
-    if (!toolbar || !rect.width) return
-    toolbar.style.right = `${window.innerWidth - rect.right}px`
-    toolbar.style.width = `${rect.width}px`
-    toolbar.style.top = `${rect.bottom + 8}px`
-  }
-  const toolbarResize = new ResizeObserver(alignToolbar)
-  toolbarResize.observe(toggle)
-  window.addEventListener('resize', alignToolbar)
   const header = doc.createElement('header')
   header.className = 'settings-header'
   const closeButton = doc.createElement('button')
@@ -445,10 +434,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   if (quality) quality.append(...[...quality.children].filter((el) => el.matches('button, p')))
 
   if (quality && runtime.fieldLightLimit !== undefined) {
-    const lightProfile = readQualityPreset()
+    const lightProfile = readQualityPreset(undefined, runtime.settings)
     const storageKey = `nabla.field-light-limit-v2:${lightProfile}`
     try {
-      const saved = localStorage.getItem(storageKey)
+      const saved = runtime.settings.getItem(storageKey)
       if (saved !== null && saved.trim() !== '') runtime.setFieldLightLimit(Number(saved))
     } catch {
       /* Storage is optional. */
@@ -486,7 +475,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         runtime.setFieldLightLimit(requested)
         value.textContent = input.value = String(runtime.fieldLightLimit)
         try {
-          localStorage.setItem(storageKey, value.textContent)
+          runtime.settings.setItem(storageKey, value.textContent)
         } catch {
           /* Optional storage. */
         }
@@ -503,7 +492,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     // Experimental opt-in for this session only; never restore an expensive saved setting.
     runtime.setFieldLightShadows(false)
     try {
-      localStorage.removeItem('nabla.field-light-shadows')
+      runtime.settings.removeItem('nabla.field-light-shadows')
     } catch {
       /* optional storage */
     }
@@ -926,7 +915,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const key = 'euskadi.irun-signs'
     let saved: Record<string, unknown> = {}
     try {
-      saved = JSON.parse(localStorage.getItem(key) ?? '{}') ?? {}
+      saved = JSON.parse(runtime.settings.getItem(key) ?? '{}') ?? {}
     } catch {
       /* Optional storage. */
     }
@@ -1007,7 +996,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       }
       runtime.sceneryPhysics.setRadius(Number(physicsRadius.value))
       try {
-        localStorage.setItem(key, JSON.stringify(settings))
+        runtime.settings.setItem(key, JSON.stringify(settings))
       } catch {
         /* Optional storage. */
       }
@@ -1030,7 +1019,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.addEventListener('change', () => {
       runtime.setHeadlampShadows(input.checked)
       try {
-        localStorage.setItem(key, String(input.checked))
+        runtime.settings.setItem(key, String(input.checked))
       } catch {
         /* optional storage */
       }
@@ -1443,7 +1432,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   const management = createSettingsManagement(doc, {
-    local: () => localStorage,
+    local: () => runtime.settings,
     session: () => sessionStorage,
     search: () => pageSearch(),
     reload: (search) => {
@@ -1460,7 +1449,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const usbPanel = createUsbSettingsPanel(runtime.usbControllers, runtime.usbFeedback, doc)
   place(usbPanel.root)
   const mapSection = createMapSection(doc, runtime)
-  place(mapSection.root)
+  if (runtime.cellStats !== null) place(mapSection.root)
   const actionCam = byId('camera-action-cam-settings')
   if (actionCam) {
     const section = fieldset('settings-action-cam', t('settings.action-cam'))
@@ -1762,6 +1751,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   installEngineStyles(doc)
   doc.body.append(toggle, win)
+  const restoreToolbar = mountGameToolbar(toggle, doc)
 
   planetPanel.bind(runtime)
 
@@ -1987,8 +1977,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       window.clearInterval(clockTimer)
       doc.body.classList.remove('settings-is-open')
       mobileLayout.removeEventListener('change', onMenuResize)
-      toolbarResize.disconnect()
-      window.removeEventListener('resize', alignToolbar)
+      restoreToolbar()
       runtime.setSidearmAimPreview?.(false)
       observer?.disconnect()
       planetPanel?.destroy()

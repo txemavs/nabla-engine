@@ -9,7 +9,13 @@ export type WorldSource =
   | { kind: 'model'; url?: string }
 
 /** test.html and xr.html play on the flat ground; every other page on terrain. */
-export function defaultWorldSource(pathname = globalThis.location?.pathname ?? '/'): WorldSource {
+export function defaultWorldSource(
+  pathname = globalThis.location?.pathname ?? '/',
+  search = globalThis.location?.search ?? '',
+): WorldSource {
+  const params = new URLSearchParams(search)
+  if (params.get('model')) return { kind: 'model', url: params.get('model')! }
+  if (params.get('example') === 'flat') return { kind: 'flat' }
   return pathname === '/test.html' || pathname === '/xr.html'
     ? { kind: 'flat' }
     : { kind: 'terrain' }

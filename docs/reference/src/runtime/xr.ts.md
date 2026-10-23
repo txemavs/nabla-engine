@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `./settings-scope.js`
 - `./xr-screen-input.js`
 - `./xr-tracked-hands.js`
 - `./actor.js`
@@ -20,7 +21,7 @@
 
 ## GameXR.enableCalibrationScreen
 
-[Implementation, line 21](../../../../src/runtime/xr.ts#L21)
+[Implementation, line 22](../../../../src/runtime/xr.ts#L22)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -32,29 +33,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `XRCalibrationScreen`
 
-## GameXR.enableCalibrationScreen.callback@24
+## GameXR.enableCalibrationScreen.callback@25
 
-[Implementation, line 24](../../../../src/runtime/xr.ts#L24)
-
-```ts
-callback@24(): inferred by TypeScript; see implementation
-```
-
-## GameXR.enableCalibrationScreen.callback@24.run
-
-[Implementation, line 27](../../../../src/runtime/xr.ts#L27)
+[Implementation, line 25](../../../../src/runtime/xr.ts#L25)
 
 ```ts
-run(): inferred by TypeScript; see implementation
+callback@25(): inferred by TypeScript; see implementation
 ```
 
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
+## GameXR.enableCalibrationScreen.callback@25.run
 
-- `this.setQuality`
-
-## GameXR.enableCalibrationScreen.callback@24.run
-
-[Implementation, line 31](../../../../src/runtime/xr.ts#L31)
+[Implementation, line 28](../../../../src/runtime/xr.ts#L28)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -64,9 +53,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.setQuality`
 
-## GameXR.enableCalibrationScreen.callback@24.run
+## GameXR.enableCalibrationScreen.callback@25.run
 
-[Implementation, line 35](../../../../src/runtime/xr.ts#L35)
+[Implementation, line 32](../../../../src/runtime/xr.ts#L32)
+
+```ts
+run(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.setQuality`
+
+## GameXR.enableCalibrationScreen.callback@25.run
+
+[Implementation, line 36](../../../../src/runtime/xr.ts#L36)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -78,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.showCalibrationScreen
 
-[Implementation, line 40](../../../../src/runtime/xr.ts#L40)
+[Implementation, line 41](../../../../src/runtime/xr.ts#L41)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -93,7 +94,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.gameplaySources
 
-[Implementation, line 44](../../../../src/runtime/xr.ts#L44)
+[Implementation, line 45](../../../../src/runtime/xr.ts#L45)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -105,12 +106,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.sources.filter`
 
-## GameXR.gameplaySources.callback@45
+## GameXR.gameplaySources.callback@46
 
-[Implementation, line 45](../../../../src/runtime/xr.ts#L45)
+[Implementation, line 46](../../../../src/runtime/xr.ts#L46)
 
 ```ts
-callback@45(source): inferred by TypeScript; see implementation
+callback@46(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -119,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.calibrationOwns
 
-[Implementation, line 47](../../../../src/runtime/xr.ts#L47)
+[Implementation, line 48](../../../../src/runtime/xr.ts#L48)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -133,7 +134,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.setQuality
 
-[Implementation, line 52](../../../../src/runtime/xr.ts#L52)
+[Implementation, line 53](../../../../src/runtime/xr.ts#L53)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -150,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.toggleMenu
 
-[Implementation, line 58](../../../../src/runtime/xr.ts#L58)
+[Implementation, line 59](../../../../src/runtime/xr.ts#L59)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -166,7 +167,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.reservedInput
 
-[Implementation, line 67](../../../../src/runtime/xr.ts#L67)
+[Implementation, line 68](../../../../src/runtime/xr.ts#L68)
 
 ```ts
 reservedInput(): inferred by TypeScript; see implementation
@@ -174,7 +175,7 @@ reservedInput(): inferred by TypeScript; see implementation
 
 ## GameXR.interactCalibration
 
-[Implementation, line 68](../../../../src/runtime/xr.ts#L68)
+[Implementation, line 69](../../../../src/runtime/xr.ts#L69)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -186,18 +187,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.calibrationScreen?.interact`
 
-## GameXR.interactCalibration.callback@73
-
-[Implementation, line 73](../../../../src/runtime/xr.ts#L73)
-
-```ts
-callback@73(hand): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.reservedInput`
-
 ## GameXR.interactCalibration.callback@74
 
 [Implementation, line 74](../../../../src/runtime/xr.ts#L74)
@@ -208,13 +197,25 @@ callback@74(hand): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.reservedInput`
+
+## GameXR.interactCalibration.callback@75
+
+[Implementation, line 75](../../../../src/runtime/xr.ts#L75)
+
+```ts
+callback@75(hand): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `THREE.Vector3`
 - `hand.visual.indexTip.getWorldPosition`
 - `weaponTip`
 
 ## GameXR.enableStats
 
-[Implementation, line 92](../../../../src/runtime/xr.ts#L92)
+[Implementation, line 93](../../../../src/runtime/xr.ts#L93)
 
 Retained host hook; statistics are delivered through onStats.
 
@@ -224,7 +225,7 @@ enableStats(): void
 
 ## GameXR.recordStats
 
-[Implementation, line 96](../../../../src/runtime/xr.ts#L96)
+[Implementation, line 97](../../../../src/runtime/xr.ts#L97)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -240,7 +241,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.enableTerrainButton
 
-[Implementation, line 105](../../../../src/runtime/xr.ts#L105)
+[Implementation, line 106](../../../../src/runtime/xr.ts#L106)
 
 Legacy host hooks: all visible actions now live on the monitor.
 
@@ -250,7 +251,7 @@ enableTerrainButton(_action: () => Promise<void>): void
 
 ## GameXR.setTerrainStatus
 
-[Implementation, line 106](../../../../src/runtime/xr.ts#L106)
+[Implementation, line 107](../../../../src/runtime/xr.ts#L107)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -260,7 +261,7 @@ setTerrainStatus(_text: string): void
 
 ## GameXR.enableExitButton
 
-[Implementation, line 109](../../../../src/runtime/xr.ts#L109)
+[Implementation, line 110](../../../../src/runtime/xr.ts#L110)
 
 Retained host hook; exit is on the monitor.
 
@@ -270,7 +271,7 @@ enableExitButton(): void
 
 ## GameXR.sources
 
-[Implementation, line 135](../../../../src/runtime/xr.ts#L135)
+[Implementation, line 136](../../../../src/runtime/xr.ts#L136)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -280,7 +281,7 @@ sources(): readonly XRInputSource[]
 
 ## GameXR.grabHands
 
-[Implementation, line 138](../../../../src/runtime/xr.ts#L138)
+[Implementation, line 139](../../../../src/runtime/xr.ts#L139)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -292,12 +293,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[...this.hands, ...this.naturalHands].filter`
 
-## GameXR.grabHands.callback@140
+## GameXR.grabHands.callback@141
 
-[Implementation, line 140](../../../../src/runtime/xr.ts#L140)
+[Implementation, line 141](../../../../src/runtime/xr.ts#L141)
 
 ```ts
-callback@140(hand): inferred by TypeScript; see implementation
+callback@141(hand): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -306,7 +307,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.rightHand
 
-[Implementation, line 143](../../../../src/runtime/xr.ts#L143)
+[Implementation, line 144](../../../../src/runtime/xr.ts#L144)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -318,12 +319,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[...this.hands, ...this.naturalHands].find`
 
-## GameXR.rightHand.callback@145
+## GameXR.rightHand.callback@146
 
-[Implementation, line 145](../../../../src/runtime/xr.ts#L145)
+[Implementation, line 146](../../../../src/runtime/xr.ts#L146)
 
 ```ts
-callback@145(hand): inferred by TypeScript; see implementation
+callback@146(hand): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -332,7 +333,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.setHandModel
 
-[Implementation, line 150](../../../../src/runtime/xr.ts#L150)
+[Implementation, line 151](../../../../src/runtime/xr.ts#L151)
 
 Load application-owned articulated gloves, retaining procedural hands on failure.
 
@@ -345,12 +346,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `this.hands.map`
 
-## GameXR.setHandModel.callback@151
+## GameXR.setHandModel.callback@152
 
-[Implementation, line 151](../../../../src/runtime/xr.ts#L151)
+[Implementation, line 152](../../../../src/runtime/xr.ts#L152)
 
 ```ts
-callback@151(hand): inferred by TypeScript; see implementation
+callback@152(hand): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -359,7 +360,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.setActorHands
 
-[Implementation, line 157](../../../../src/runtime/xr.ts#L157)
+[Implementation, line 158](../../../../src/runtime/xr.ts#L158)
 
 Wear the actor's hands on both controllers (live: call again when the actor changes).
 
@@ -372,12 +373,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `this.hands.map`
 
-## GameXR.setActorHands.callback@159
+## GameXR.setActorHands.callback@160
 
-[Implementation, line 159](../../../../src/runtime/xr.ts#L159)
+[Implementation, line 160](../../../../src/runtime/xr.ts#L160)
 
 ```ts
-callback@159(hand): inferred by TypeScript; see implementation
+callback@160(hand): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -386,23 +387,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.constructor
 
-[Implementation, line 162](../../../../src/runtime/xr.ts#L162)
+[Implementation, line 163](../../../../src/runtime/xr.ts#L163)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
 ```ts
-constructor(private readonly renderer: THREE.WebGLRenderer, private readonly camera: THREE.PerspectiveCamera, private readonly scene: THREE.Scene, changed: (active: boolean) => void, report: (error: unknown) => void): instance
+constructor(private readonly renderer: THREE.WebGLRenderer, private readonly camera: THREE.PerspectiveCamera, private readonly scene: THREE.Scene, changed: (active: boolean) => void, report: (error: unknown) => void, private readonly storage: SettingsStorage = createSettingsStore()): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `THREE.Group`
+- `XRCalibration`
 - `XRControllerHand`
 - `XRScreenInput`
 - `XRSessionController`
 - `XRTrackedHand`
 - `aim.addEventListener`
+- `createSettingsStore`
 - `grip.add`
+- `readXRQuality`
 - `renderer.xr.getController`
 - `renderer.xr.getControllerGrip`
 - `renderer.xr.setFoveation`
@@ -415,7 +419,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.constructor.referenceSpace
 
-[Implementation, line 179](../../../../src/runtime/xr.ts#L179)
+[Implementation, line 183](../../../../src/runtime/xr.ts#L183)
 
 ```ts
 referenceSpace(): inferred by TypeScript; see implementation
@@ -423,7 +427,7 @@ referenceSpace(): inferred by TypeScript; see implementation
 
 ## GameXR.constructor.worldMatrix
 
-[Implementation, line 180](../../../../src/runtime/xr.ts#L180)
+[Implementation, line 184](../../../../src/runtime/xr.ts#L184)
 
 ```ts
 worldMatrix(): inferred by TypeScript; see implementation
@@ -435,7 +439,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.constructor.enabled
 
-[Implementation, line 184](../../../../src/runtime/xr.ts#L184)
+[Implementation, line 188](../../../../src/runtime/xr.ts#L188)
 
 ```ts
 enabled(): inferred by TypeScript; see implementation
@@ -443,7 +447,7 @@ enabled(): inferred by TypeScript; see implementation
 
 ## GameXR.constructor.select
 
-[Implementation, line 185](../../../../src/runtime/xr.ts#L185)
+[Implementation, line 189](../../../../src/runtime/xr.ts#L189)
 
 ```ts
 select(origin, direction): inferred by TypeScript; see implementation
@@ -454,12 +458,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `screen.selectRay`
 - `screen.show`
 
-## GameXR.constructor.callback@194
+## GameXR.constructor.callback@198
 
-[Implementation, line 194](../../../../src/runtime/xr.ts#L194)
+[Implementation, line 198](../../../../src/runtime/xr.ts#L198)
 
 ```ts
-callback@194(active): inferred by TypeScript; see implementation
+callback@198(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -485,25 +489,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.screenInput.bind`
 - `this.stats.reset`
 
-## GameXR.constructor.callback@236
+## GameXR.constructor.callback@241
 
-[Implementation, line 236](../../../../src/runtime/xr.ts#L236)
+[Implementation, line 241](../../../../src/runtime/xr.ts#L241)
 
 ```ts
-callback@236(event): inferred by TypeScript; see implementation
+callback@241(event): inferred by TypeScript; see implementation
 ```
 
-## GameXR.constructor.callback@239
+## GameXR.constructor.callback@244
 
-[Implementation, line 239](../../../../src/runtime/xr.ts#L239)
+[Implementation, line 244](../../../../src/runtime/xr.ts#L244)
 
 ```ts
-callback@239(): inferred by TypeScript; see implementation
+callback@244(): inferred by TypeScript; see implementation
 ```
 
 ## GameXR.active
 
-[Implementation, line 246](../../../../src/runtime/xr.ts#L246)
+[Implementation, line 251](../../../../src/runtime/xr.ts#L251)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -513,7 +517,7 @@ active(): boolean
 
 ## GameXR.visible
 
-[Implementation, line 249](../../../../src/runtime/xr.ts#L249)
+[Implementation, line 254](../../../../src/runtime/xr.ts#L254)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -527,7 +531,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.enter
 
-[Implementation, line 253](../../../../src/runtime/xr.ts#L253)
+[Implementation, line 258](../../../../src/runtime/xr.ts#L258)
 
 Call from the host's button gesture, after play() has completed.
 
@@ -544,7 +548,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.exit
 
-[Implementation, line 266](../../../../src/runtime/xr.ts#L266)
+[Implementation, line 271](../../../../src/runtime/xr.ts#L271)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -558,7 +562,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.recenter
 
-[Implementation, line 269](../../../../src/runtime/xr.ts#L269)
+[Implementation, line 274](../../../../src/runtime/xr.ts#L274)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -572,7 +576,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.referenceSpace
 
-[Implementation, line 276](../../../../src/runtime/xr.ts#L276)
+[Implementation, line 281](../../../../src/runtime/xr.ts#L281)
 
 The space Three used for its cameras/controllers at the start of this XR frame.
 
@@ -586,7 +590,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.update
 
-[Implementation, line 280](../../../../src/runtime/xr.ts#L280)
+[Implementation, line 285](../../../../src/runtime/xr.ts#L285)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 
@@ -615,29 +619,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.tracked.includes`
 - `this.tracked.push`
 
-## GameXR.update.callback@290
+## GameXR.update.callback@295
 
-[Implementation, line 290](../../../../src/runtime/xr.ts#L290)
+[Implementation, line 295](../../../../src/runtime/xr.ts#L295)
 
 ```ts
-callback@290(source): inferred by TypeScript; see implementation
+callback@295(source): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `frame.getPose`
 
-## GameXR.update.callback@311
+## GameXR.update.callback@316
 
-[Implementation, line 311](../../../../src/runtime/xr.ts#L311)
+[Implementation, line 316](../../../../src/runtime/xr.ts#L316)
 
 ```ts
-callback@311(s): inferred by TypeScript; see implementation
+callback@316(s): inferred by TypeScript; see implementation
 ```
 
 ## GameXR.anchor
 
-[Implementation, line 332](../../../../src/runtime/xr.ts#L332)
+[Implementation, line 337](../../../../src/runtime/xr.ts#L337)
 
 Authored eye pose is the seat/standing anchor; tracked head movement stays relative to it.
 
@@ -656,7 +660,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameXR.dispose
 
-[Implementation, line 343](../../../../src/runtime/xr.ts#L343)
+[Implementation, line 348](../../../../src/runtime/xr.ts#L348)
 
 Engine-owned immersive view. The browser runtime retains physics and terrain ownership.
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { smokeDensity } from './smoke-density.js'
+import { smokeDensityFor } from './smoke-density.js'
 
 export interface LaserSmokePool {
   root: THREE.Object3D
@@ -22,6 +22,7 @@ export function sampleLaserSmoke(
   result: Float32Array,
 ): void {
   result.fill(0)
+  const smokeDensity = smokeDensityFor(frame)
   if (smokeDensity.value <= 0) return
   const delta = end.clone().sub(start)
   const length = delta.length()
@@ -30,7 +31,13 @@ export function sampleLaserSmoke(
   frame.updateWorldMatrix(true, false)
   const inverse = frame.matrixWorld.clone().invert()
   const position = new THREE.Vector3()
+  const sceneRoot = (node: THREE.Object3D): THREE.Object3D => {
+    while (node.parent) node = node.parent
+    return node
+  }
+  const owner = sceneRoot(frame)
   for (const pool of laserSmokePools) {
+    if (sceneRoot(pool.root) !== owner) continue
     if (!pool.root.visible || !pool.root.parent) continue
     pool.sync?.()
     pool.root.updateWorldMatrix(true, false)

@@ -4,18 +4,14 @@
 
 [Source](../../../../src/runtime/actor.ts)
 
-Player actor: which robot body the local player wears and, for the default body, its colour.
-Chosen in Settings → Options → Actor, kept in localStorage and applied live with
-{@link GameRuntime.setActor} (no reload). Config lives here, in code; hosts that are head-only
-(the Euskadi home) hide the section with `data-settings-hidden="settings-actor"`.
-
 ## Module dependencies
 
+- `./settings-scope.js`
 - `../render/entity/player-body.js`
 
 ## protaSet
 
-[Implementation, line 42](../../../../src/runtime/actor.ts#L42)
+[Implementation, line 43](../../../../src/runtime/actor.ts#L43)
 
 Prota files: textured for the authored (white) look, solid low with colour slots otherwise.
 
@@ -25,7 +21,7 @@ protaSet(choice: ActorChoice): inferred by TypeScript; see implementation
 
 ## actorBodyAssets
 
-[Implementation, line 61](../../../../src/runtime/actor.ts#L61)
+[Implementation, line 62](../../../../src/runtime/actor.ts#L62)
 
 Body assets of each actor (same mixamorig skeleton and clips, 1.70 m).
 
@@ -39,7 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## actorHandAssets
 
-[Implementation, line 90](../../../../src/runtime/actor.ts#L90)
+[Implementation, line 91](../../../../src/runtime/actor.ts#L91)
 
 Hands each actor wears in VR/AR, tinted with the same colour slot as its body. Prota has
 Gepeto's hands-only file; Polibot has none, so its hands are cut from the body mesh (triangles
@@ -56,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseActor
 
-[Implementation, line 97](../../../../src/runtime/actor.ts#L97)
+[Implementation, line 98](../../../../src/runtime/actor.ts#L98)
 
 A choice from anything (stored JSON, a peer's profile string); unknown parts fall back.
 
@@ -72,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## actorProfile
 
-[Implementation, line 114](../../../../src/runtime/actor.ts#L114)
+[Implementation, line 115](../../../../src/runtime/actor.ts#L115)
 
 The profile string other players get (`kind:color`, e.g. `default:red`, `polibot:white`).
 
@@ -82,7 +78,7 @@ actorProfile(choice: ActorChoice): string
 
 ## loadActor
 
-[Implementation, line 118](../../../../src/runtime/actor.ts#L118)
+[Implementation, line 119](../../../../src/runtime/actor.ts#L119)
 
 ```ts
 loadActor(storage: Pick<Storage, 'getItem'> | null = safeStorage()): ActorChoice
@@ -96,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveActor
 
-[Implementation, line 127](../../../../src/runtime/actor.ts#L127)
+[Implementation, line 128](../../../../src/runtime/actor.ts#L128)
 
 ```ts
 saveActor(choice: ActorChoice, storage: Pick<Storage, 'setItem'> | null = safeStorage()): void
@@ -110,8 +106,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## safeStorage
 
-[Implementation, line 138](../../../../src/runtime/actor.ts#L138)
+[Implementation, line 139](../../../../src/runtime/actor.ts#L139)
 
 ```ts
 safeStorage(): Storage | null
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`

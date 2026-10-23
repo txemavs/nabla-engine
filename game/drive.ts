@@ -1,3 +1,4 @@
+import { startBootPhase } from '../src/runtime/boot-trace.js'
 import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { mountVREntry } from './vr-entry.js'
@@ -9,12 +10,7 @@ import { bindVR, preloadVR } from './vr-ui.js'
 import { createGallery, portalRegistry, type WorldContent } from '@nabla/engine/runtime/core'
 import { GameRuntime } from '@nabla/engine/runtime/browser'
 import { createRenderBackend, parseRendererPreference } from '@nabla/engine/render'
-import {
-  createFlatTestScene,
-  createFlatTestGround,
-  FLAT_TEST_BASE,
-  FLAT_TEST_TILES,
-} from '@nabla/engine/examples/flat-tile'
+import { createFlatTestScene, createFlatTestGround } from '@nabla/engine/examples/flat-tile'
 import { createEntity, mapTileAt, type SceneDocument } from '@nabla/engine/scene'
 import { presetVehicle, presetEntities, hasVehiclePreset } from '@nabla/engine/vehicles'
 import { parseGameConfig, requireGeographicTileBase } from './config.js'
@@ -32,7 +28,7 @@ import { bindTerrainSelector } from './terrain-selector.js'
 import { bindSceneControls, menuPreloadVehicles } from './scene-controls.js'
 import { bindTerrainCache } from './terrain-cache.js'
 import { readDisplaySettings, bindDisplaySettings } from './display-settings.js'
-import { bootHiddenLayers, readBootConfig, runBootPhase } from './boot.js'
+import { bootHiddenLayers, readBootConfig, startGame } from './boot.js'
 import {
   parseLayerSpec,
   setHiddenTileLayers,
@@ -47,27 +43,31 @@ import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cin
 import { bindSimulatedFireToggle, resolveSimulatedFireEnabled } from './simulated-fire-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
-import {
-  hostSteeringWheelsFromSearch,
-  steeringWheelStorage,
-  viteHostSteeringWheels,
-} from './host-steering-wheel.js'
+import { hostSteeringWheelsFromSearch, viteHostSteeringWheels } from './host-steering-wheel.js'
 import { bindShadowBiasControl, resolveShadowBias } from './shadow-bias-ui.js'
-import { hostMirrorsFromSearch, mirrorStorage, viteHostMirrors } from './host-mirrors.js'
+import { hostMirrorsFromSearch, viteHostMirrors } from './host-mirrors.js'
 import { bindAsphaltContrastSlider, resolveAsphaltContrast } from './asphalt-contrast-ui.js'
 import { bindAnisotropySelect, bindGroundDetailSelect } from './anisotropy-ui.js'
 import { bindDistances } from './distances-ui.js'
+import { bindSoundControls } from './sound-ui.js'
+import { bindLightControls } from './light-ui.js'
+import { bindExhaustControls } from './exhaust-ui.js'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 bindTerrainSelector()
 // This page does not read &time= / &sea=, so the menu keeps the URL as it is.
 const attachSceneControls = bindSceneControls({ rememberInUrl: false })
+const sceneDone = startBootPhase('Configurar escena y contenido', undefined, '02 Escena y runtime')
 let runtime: GameRuntime | undefined
 try {
   const solo = new URLSearchParams(pageSearch()).get('solo') === '1'
   const config = parseGameConfig()
   const flat = new URLSearchParams(pageSearch()).get('example') === 'flat'
-  const tilesBase = flat ? FLAT_TEST_BASE : requireGeographicTileBase(config)
+  const host = driveHost()
+  const worldSource = host.world ?? defaultWorldSource(location.pathname, pageSearch())
+  const noTerrainTest = !hasTerrain(worldSource)
+  const minimalGame = noTerrainTest && Object.keys(host).length === 0
+  const tilesBase = noTerrainTest ? '' : requireGeographicTileBase(config)
   if (!hasVehiclePreset(config.vehicle))
     throw new Error(`Unknown vehicle preset: ${config.vehicle}`)
   const vehicle = presetVehicle(config.vehicle, 'player-vehicle', [0, 2, 0])
@@ -88,7 +88,7 @@ try {
         },
         entities: [createEntity('spawn', 'spawn', [-4, 2, 0]), vehicle],
       }
-  if (flat && !solo) {
+  if (flat && !solo && !minimalGame) {
     const fleet = ['car', 'white-truck', 'carrier']
     scene.entities = [
       createFlatTestGround(),
@@ -196,12 +196,9 @@ try {
       scene.entities.push(pallet)
     }
   }
-  const host = driveHost()
-  const worldSource = host.world ?? defaultWorldSource()
-  const noTerrainTest = !hasTerrain(worldSource)
 
   if (noTerrainTest) {
-    if (!solo && !sceneHasPresetModel(scene.entities, 'vfr800'))
+    if (!minimalGame && !flat && !solo && !sceneHasPresetModel(scene.entities, 'vfr800'))
       scene.entities.push(...presetEntities('vfr800', 'demo-vfr800', [-4, 2, 0]))
     // Space the test fleet explicitly; attached parts retain local transforms.
     const testPositions: Record<string, [number, number, number]> = {
@@ -220,7 +217,14 @@ try {
     const ground = createEntity('test-ground', 'box', [0, -0.25, 0])
     ground.size = [1000, 0.5, 1000]
     ground.color = '#73787a'
-    scene.entities.push(ground)
+    if (worldSource.kind !== 'model' || !worldSource.url) scene.entities.push(ground)
+  }
+  if (minimalGame) {
+    scene.entities = scene.entities.filter(
+      (entity) => entity.kind === 'spawn' || entity.id === 'test-ground',
+    )
+    const spawn = scene.entities.find((entity) => entity.kind === 'spawn')
+    if (spawn) spawn.transform.position = [0, 2, 0]
   }
   const player = scene.entities.find((entity) => entity.id === vehicle.id)
   if (player) player.transform.rotation = headingRotation(config.spawn.heading)
@@ -234,8 +238,9 @@ try {
   // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
   setTileClusterCulling(parseClusterCulling(pageSearch()))
   const loading = new LoadingScreen(boot.splash)
+  loading.bindRuntime(document.getElementById('game-canvas') as HTMLCanvasElement)
   loading.setTiles(
-    flat ? [...FLAT_TEST_TILES] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
+    noTerrainTest ? [] : [mapTileAt(config.spawn.latitude, config.spawn.longitude, 15)],
   )
   // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
   const rendererPreference = parseRendererPreference(pageSearch())
@@ -249,6 +254,12 @@ try {
           logarithmicDepthBuffer: true,
         })
   host.prepareScene?.(scene)
+  sceneDone()
+  const runtimeDone = startBootPhase(
+    'Construir GameRuntime: render, controles y mundo',
+    undefined,
+    '02 Escena y runtime',
+  )
   runtime = new GameRuntime({
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
@@ -261,17 +272,16 @@ try {
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
       defaults: hostSteeringWheelsFromSearch(pageSearch(), viteHostSteeringWheels()),
-      storage: steeringWheelStorage(),
     },
     shadowBias: resolveShadowBias(boot.shadowBias),
     // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
     mirrors: {
       defaults: hostMirrorsFromSearch(pageSearch(), viteHostMirrors()),
-      storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
     healthDisplay: boot.healthDisplay,
+    music: boot.music,
     hud: true,
     touchControls:
       new URLSearchParams(pageSearch()).has('xr') || location.pathname === '/xr.html'
@@ -286,7 +296,7 @@ try {
     scene,
     preloadVehicles: solo ? [] : menuPreloadVehicles(boot.preloadVehicles),
     world,
-    sea: !flat,
+    sea: !noTerrainTest && !flat,
     fieldLights: lights
       ? {
           look: { level: 20 },
@@ -304,24 +314,22 @@ try {
     performance: { preset: readQualityPreset() },
     tiles: noTerrainTest
       ? undefined
-      : flat
-        ? { baseUrl: FLAT_TEST_BASE, mode: 'static', tiles: FLAT_TEST_TILES, horizon: false }
-        : {
-            baseUrl: tilesBase,
-            apiUrl: '/prepare',
-            mode: config.staticTiles ? 'static' : 'dynamic',
-            // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
-            osmRoads: osmRoadsRequested(pageSearch()),
-            // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
-            ...(config.staticTiles && {
-              atlas: { relief: 'engine' as const, photo: 'full' as const },
-              imagery: 'package' as const,
-              missing: new MissingTiles({
-                key: `nabla.terrain.missing:${tilesBase}`,
-                storage: browserStorage(),
-              }),
+      : {
+          baseUrl: tilesBase,
+          apiUrl: '/prepare',
+          mode: config.staticTiles ? 'static' : 'dynamic',
+          // Opt-in inspection of the v2+ OSM road asphalt (drawn, never collides). Default hidden.
+          osmRoads: osmRoadsRequested(pageSearch()),
+          // Atlas packages (terrain, photo) are read when a manifest names one; plain tiles ignore this.
+          ...(config.staticTiles && {
+            atlas: { relief: 'engine' as const, photo: 'full' as const },
+            imagery: 'package' as const,
+            missing: new MissingTiles({
+              key: `nabla.terrain.missing:${tilesBase}`,
+              storage: browserStorage(),
             }),
-          },
+          }),
+        },
     // The bottom line shows renderer, fps and frame times; `?diagnostics` also forwards each sample.
     onDiagnostics: fpsReadout(
       () => document.getElementById('controls-hint'),
@@ -334,8 +342,8 @@ try {
     ),
     onProgress(status, tiles) {
       const text = describeLoading(runtime?.cellStats ?? null, runtime?.loadDiagnostics ?? null)
-      loading.setStatus(runtime?.cellStats ? text.status : status)
-      loading.setDetail(text.detail)
+      loading.setStatus(tiles !== undefined && runtime?.cellStats ? text.status : status)
+      loading.setDetail(tiles !== undefined ? text.detail : '')
       for (const tile of tiles ?? []) loading.markTileLoaded(tile)
     },
     onFrame(frame) {
@@ -349,16 +357,40 @@ try {
       document.getElementById('game-message')!.textContent = message
     },
   })
+  runtimeDone()
   mountVREntry(runtime)
   preloadVR(runtime)
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
-  bindTerrainCache(runtime)
+  if (!noTerrainTest) bindTerrainCache(runtime)
   if (new URLSearchParams(pageSearch()).has('diagnostics'))
     Object.assign(window, { nablaRuntime: runtime })
-  void runBootPhase(runtime, loading, boot)
   restoreStartupLightSettings(runtime)
-  await runtime.play(
-    host.onFoot || (!solo && noTerrainTest) ? { playerMode: 'walk' } : { vehicleId: vehicle.id },
+  await startGame(
+    runtime,
+    loading,
+    boot,
+    minimalGame || host.onFoot || (!solo && noTerrainTest && !flat)
+      ? { playerMode: 'walk' }
+      : { vehicleId: vehicle.id },
+    async () => {
+      if (!host.world && worldSource.kind === 'model' && worldSource.url) {
+        const url = worldSource.url
+        const { prepareModelWorld } = await import('./model-world.js')
+        const modelDone = startBootPhase(
+          'Descargar y decodificar mundo GLB',
+          undefined,
+          '03 Mundo y recursos',
+        )
+        const install = await prepareModelWorld(url)
+        modelDone()
+        runtime!.beforeReveal(() => install(runtime!))
+      }
+    },
+  )
+  const hostContentDone = startBootPhase(
+    'Contenido del host: afterPlay, vehículos y portales',
+    undefined,
+    '03 Mundo y recursos',
   )
   const hostReady = host.afterPlay?.(runtime)
   bindVR(runtime)
@@ -377,13 +409,19 @@ try {
     help.className = 'nabla-help-box'
     document.body.append(help)
   }
-  if (noTerrainTest && (!solo || new URLSearchParams(pageSearch()).has('xr')))
+  if (noTerrainTest && ((!minimalGame && !solo) || new URLSearchParams(pageSearch()).has('xr')))
     runtime.equipTestSidearm()
   if (!solo && scene.geography && config.vehicles.length)
     await installHostVehicles(runtime, scene.geography, config.vehicles)
   if (scene.geography && config.portals?.length)
     await installHostPortals(runtime, scene.geography, config.portals)
   await Promise.resolve(hostReady).catch(console.error)
+  hostContentDone()
+  const hudDone = startBootPhase(
+    'Montar interfaz y mostrar juego',
+    undefined,
+    '07 Entrada al juego',
+  )
   loading.hide()
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
@@ -396,9 +434,13 @@ try {
   bindAnisotropySelect(runtime, roadStyle)
   bindGroundDetailSelect(runtime, roadStyle)
   bindDistances(runtime)
+  bindSoundControls(runtime)
+  bindLightControls(runtime)
+  bindExhaustControls(runtime)
   mountSettingsHud(runtime)
   document.getElementById('game-hud')!.classList.remove('hidden')
   document.getElementById('game-canvas')!.focus()
+  hudDone()
 } catch (error) {
   runtime?.dispose()
   showError(error instanceof Error ? error.message : String(error))
