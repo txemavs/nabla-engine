@@ -94,7 +94,9 @@ test('HK begins on the ground, can only be collected on foot, and survives board
         ],
       },
     })
-    await runtime.play()
+    // Inline physics: the test boards and zooms in one synchronous frame; with the default
+    // pipelined worker, startInVehicle only reaches player.vehicleId on the next worker state.
+    await runtime.play({ physicsWorker: false })
     const internal = runtime as unknown as {
       action(code: string): void
       weaponDrawn: boolean

@@ -35,7 +35,9 @@ test('real keyboard routes forklift hydraulics, weapon priority and browser shor
         },
       })
       try {
-        await runtime.play({ vehicleId: 'toro' })
+        // Inline physics: this test ticks synchronously and reads the forklift pose on the same frame,
+        // while the default pipelined worker only answers between event-loop turns.
+        await runtime.play({ vehicleId: 'toro', physicsWorker: false })
         const internal = runtime as any
         internal.hasInput = () => true
         // This test exercises DOM keyboard routing, not browser pointer-lock permissions.
