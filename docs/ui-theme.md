@@ -138,11 +138,13 @@ export const EUSKADI_INTRO = { showStandardLoading: false }
 ```
 
 Set it to `true` to bring the loading card (Nabla mark, message, progress bar) and the step
-readout back. The intro ends with the Nabla mark (∇) beat right before DIRECTED BY.
+readout back. The intro credits carry no Nabla mark (∇) beat; DIRECTED BY closes them.
 
 ## First paint
 
 Every game page carries a small inline `<style id="nabla-critical">` before `ui-styles.ts`: dark
 `html` background, `<body>` hidden until `installEngineStyles` adds `nabla-styles-ready` to
-`<html>`, and `#error-message` hidden unless `.visible`. So nothing unstyled (no white page, no
+`<html>`, `#error-message` hidden unless `.visible`, and on full-screen pages
+(`html.nabla-game`) the page box base.css sets later (`margin: 0; height: 100%; overflow: hidden`
+on `html` and `body`), so the black first paint never shows a scrollbar. So nothing unstyled (no white page, no
 "Error" overlay) flashes before the stylesheet is in. New pages copy that block.
