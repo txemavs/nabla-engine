@@ -1,4 +1,4 @@
-import { waterWaves } from './water-material.js'
+import { waterThickness, waterWaves } from './water-material.js'
 import * as THREE from 'three'
 import type { Entity } from '../../entity/schema.js'
 import type { SurfaceType } from '../../planet/land/surface.js'
@@ -43,6 +43,7 @@ export class LandcoverBatches {
     })
 
     waterWaves(this.waterMaterial, this.waterTexture, this.time)
+    waterThickness(this.waterMaterial)
   }
 
   private getMaterial(surfaceType: SurfaceType): THREE.MeshStandardMaterial {

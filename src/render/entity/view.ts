@@ -1,3 +1,4 @@
+import { softDepth } from './soft-smoke.js'
 import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
 import { holdItem, type HeldPose } from './held-pose.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
@@ -1657,6 +1658,8 @@ export class SceneView {
     )
     this.roads.update(this.mapRenderEntities!, this.objects, enabled, position, roadDistance)
     this.landcover.update(this.mapRenderEntities!, this.objects, enabled, position, distance, now)
+    // The river's depth copy (shared with soft smoke, which may hold it in its own group).
+    if (!softDepth.grabber.parent) this.root.add(softDepth.grabber)
     for (const e of this.document.entities) {
       if (this.mapOmissions.has(e.id)) {
         const object = this.objects.get(e.id)

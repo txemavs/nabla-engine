@@ -217,13 +217,24 @@ vec3 nablaBlackbody(float t){
 export class SoftDepth {
   readonly grabber: THREE.Mesh
   private targets: THREE.WebGLRenderTarget[] = []
-  /** Formats tried in order; the first the driver blits into wins. */
-  private formats: [THREE.TextureDataType, THREE.DepthTexturePixelFormat][] = [
-    [THREE.UnsignedInt248Type, THREE.DepthStencilFormat],
-    [THREE.UnsignedIntType, THREE.DepthFormat],
-    [THREE.FloatType, THREE.DepthFormat],
-  ]
-  private failed = false
+  /**
+   * Formats still to try per kind of source (canvas, or a target's depth layout), in order; the
+   * first the driver blits into wins. Kept apart so a pass with another depth format (a mirror,
+   * a portal) cannot use up the main pass's list. Empty: no copy for that source.
+   */
+  private formats = new Map<string, [THREE.TextureDataType, THREE.DepthTexturePixelFormat][]>()
+  private formatsFor(source: string) {
+    let list = this.formats.get(source)
+    if (!list) {
+      list = [
+        [THREE.UnsignedInt248Type, THREE.DepthStencilFormat],
+        [THREE.UnsignedIntType, THREE.DepthFormat],
+        [THREE.FloatType, THREE.DepthFormat],
+      ]
+      this.formats.set(source, list)
+    }
+    return list
+  }
   private lastUse = -Infinity
   /** Blits done (diagnostics and benchmarks). */
   blits = 0
@@ -249,7 +260,7 @@ export class SoftDepth {
   private grab(renderer: THREE.WebGLRenderer, camera: THREE.Camera): void {
     const state = softUniforms.softState.value
     state.x = 0
-    if (this.failed || (camera as THREE.ArrayCamera).isArrayCamera) return
+    if ((camera as THREE.ArrayCamera).isArrayCamera) return
     if (performance.now() - this.lastUse > 500) return
     const gl = renderer.getContext() as WebGL2RenderingContext
     if (!(gl instanceof WebGL2RenderingContext)) return
@@ -273,14 +284,22 @@ export class SoftDepth {
       width = gl.drawingBufferWidth
       height = gl.drawingBufferHeight
     }
-    let rt = this.targets.find((t) => t.width === width && t.height === height)
+    const kind = target
+      ? `target:${target.stencilBuffer ? 's' : ''}${target.depthTexture?.type ?? 'rb'}:${target.samples}`
+      : 'canvas'
+    const formats = this.formatsFor(kind)
+    if (!formats.length) return
+    let rt = this.targets.find(
+      (t) => t.width === width && t.height === height && t.depthTexture?.userData.kind === kind,
+    )
     if (!rt) {
-      const [type, format] = this.formats[0]
+      const [type, format] = formats[0]
       rt = new THREE.WebGLRenderTarget(width, height, {
         depthBuffer: true,
         stencilBuffer: format === THREE.DepthStencilFormat,
         depthTexture: new THREE.DepthTexture(width, height, type),
       })
+      rt.depthTexture!.userData.kind = kind
       rt.depthTexture!.format = format
       rt.depthTexture!.minFilter = rt.depthTexture!.magFilter = THREE.NearestFilter
       renderer.initRenderTarget(rt)
@@ -305,8 +324,7 @@ export class SoftDepth {
       // Try the next depth format; give up (hard particles, as before) when none works.
       this.targets.splice(this.targets.indexOf(rt), 1)
       rt.dispose()
-      this.formats.shift()
-      if (!this.formats.length) this.failed = true
+      formats.shift()
       return
     }
     this.blits++
