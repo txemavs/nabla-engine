@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **623 modules; 7900 executable function definitions**.
+Coverage: **622 modules; 7898 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -54,7 +54,6 @@ Coverage: **623 modules; 7900 executable function definitions**.
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
-| [game/scenario-menu.ts](game/scenario-menu.ts.md) | 2 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
 | [game/settings-hud.ts](game/settings-hud.ts.md) | 149 |
