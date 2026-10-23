@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.constructor
 
-[Implementation, line 242](../../../../../src/render/entity/vehicle-destruction.ts#L242)
+[Implementation, line 247](../../../../../src/render/entity/vehicle-destruction.ts#L247)
 
 ```ts
 constructor(private readonly space: THREE.Group): instance
@@ -78,7 +78,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.constructor.box
 
-[Implementation, line 251](../../../../../src/render/entity/vehicle-destruction.ts#L251)
+[Implementation, line 256](../../../../../src/render/entity/vehicle-destruction.ts#L256)
 
 ```ts
 box(target): inferred by TypeScript; see implementation
@@ -88,12 +88,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `target.copy`
 
-## VehicleDestruction.constructor.callback@264
+## VehicleDestruction.constructor.callback@269
 
-[Implementation, line 264](../../../../../src/render/entity/vehicle-destruction.ts#L264)
+[Implementation, line 269](../../../../../src/render/entity/vehicle-destruction.ts#L269)
 
 ```ts
-callback@264(): inferred by TypeScript; see implementation
+callback@269(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -101,9 +101,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.random`
 - `this.createFlames`
 
-## VehicleDestruction.constructor.callback@264.dispose
+## VehicleDestruction.constructor.callback@269.dispose
 
-[Implementation, line 270](../../../../../src/render/entity/vehicle-destruction.ts#L270)
+[Implementation, line 275](../../../../../src/render/entity/vehicle-destruction.ts#L275)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -113,9 +113,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `kit.material.dispose`
 
-## VehicleDestruction.constructor.callback@264.update
+## VehicleDestruction.constructor.callback@269.update
 
-[Implementation, line 271](../../../../../src/render/entity/vehicle-destruction.ts#L271)
+[Implementation, line 276](../../../../../src/render/entity/vehicle-destruction.ts#L276)
 
 ```ts
 update(dt, strength): inferred by TypeScript; see implementation
@@ -126,12 +126,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `kit.tongues?.updateBounds`
 
-## VehicleDestruction.constructor.callback@278
+## VehicleDestruction.constructor.callback@283
 
-[Implementation, line 278](../../../../../src/render/entity/vehicle-destruction.ts#L278)
+[Implementation, line 283](../../../../../src/render/entity/vehicle-destruction.ts#L283)
 
 ```ts
-callback@278(parent): inferred by TypeScript; see implementation
+callback@283(parent): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -141,9 +141,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parent.add`
 - `this.root.add`
 
-## VehicleDestruction.constructor.callback@278.update
+## VehicleDestruction.constructor.callback@283.update
 
-[Implementation, line 293](../../../../../src/render/entity/vehicle-destruction.ts#L293)
+[Implementation, line 298](../../../../../src/render/entity/vehicle-destruction.ts#L298)
 
 ```ts
 update(dt, emitting, amount): inferred by TypeScript; see implementation
@@ -155,9 +155,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `smoke.setEnabled`
 - `smoke.update`
 
-## VehicleDestruction.constructor.callback@278.dispose
+## VehicleDestruction.constructor.callback@283.dispose
 
-[Implementation, line 298](../../../../../src/render/entity/vehicle-destruction.ts#L298)
+[Implementation, line 303](../../../../../src/render/entity/vehicle-destruction.ts#L303)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -170,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.simulatedFire
 
-[Implementation, line 312](../../../../../src/render/entity/vehicle-destruction.ts#L312)
+[Implementation, line 317](../../../../../src/render/entity/vehicle-destruction.ts#L317)
 
 Simulated fire (default on): fuel-driven lingering fire plus tree ignition, char and removal.
 Off restores the #287 behaviour exactly and skips every tree grid lookup.
@@ -181,7 +181,7 @@ simulatedFire(): boolean
 
 ## VehicleDestruction.simulatedFire
 
-[Implementation, line 315](../../../../../src/render/entity/vehicle-destruction.ts#L315)
+[Implementation, line 320](../../../../../src/render/entity/vehicle-destruction.ts#L320)
 
 ```ts
 simulatedFire(on: boolean): inferred by TypeScript; see implementation
@@ -196,7 +196,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.breakWeapon
 
-[Implementation, line 328](../../../../../src/render/entity/vehicle-destruction.ts#L328)
+[Implementation, line 333](../../../../../src/render/entity/vehicle-destruction.ts#L333)
 
 Small weapon rupture: existing bounded debris pool and swept ground collision.
 
@@ -210,17 +210,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.removeFromParent`
 - `this.debris.explode`
 
-## VehicleDestruction.breakWeapon.callback@332
+## VehicleDestruction.breakWeapon.callback@337
 
-[Implementation, line 332](../../../../../src/render/entity/vehicle-destruction.ts#L332)
+[Implementation, line 337](../../../../../src/render/entity/vehicle-destruction.ts#L337)
 
 ```ts
-callback@332(node): inferred by TypeScript; see implementation
+callback@337(node): inferred by TypeScript; see implementation
 ```
 
 ## VehicleDestruction.explode
 
-[Implementation, line 336](../../../../../src/render/entity/vehicle-destruction.ts#L336)
+[Implementation, line 341](../../../../../src/render/entity/vehicle-destruction.ts#L341)
 
 ```ts
 explode(id: string, object: THREE.Object3D, extra: THREE.Object3D[] = []): void
@@ -256,12 +256,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.add`
 - `this.space.worldToLocal`
 
-## VehicleDestruction.explode.callback@341
+## VehicleDestruction.explode.callback@346
 
-[Implementation, line 341](../../../../../src/render/entity/vehicle-destruction.ts#L341)
+[Implementation, line 346](../../../../../src/render/entity/vehicle-destruction.ts#L346)
 
 ```ts
-callback@341(node): inferred by TypeScript; see implementation
+callback@346(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -269,12 +269,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.hiddenWreckParts.has`
 - `this.hiddenWreckParts.set`
 
-## VehicleDestruction.explode.callback@368
+## VehicleDestruction.explode.callback@373
 
-[Implementation, line 368](../../../../../src/render/entity/vehicle-destruction.ts#L368)
+[Implementation, line 373](../../../../../src/render/entity/vehicle-destruction.ts#L373)
 
 ```ts
-callback@368(node): inferred by TypeScript; see implementation
+callback@373(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -289,7 +289,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.burst
 
-[Implementation, line 430](../../../../../src/render/entity/vehicle-destruction.ts#L430)
+[Implementation, line 435](../../../../../src/render/entity/vehicle-destruction.ts#L435)
 
 The vehicle explosion's fireball, light and lens flash at `position` (scene space), `scale`
 times its size (1 = a vehicle). No wreck, flames or smoke follow: it is the flash only, for
@@ -315,7 +315,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.removeBurst
 
-[Implementation, line 446](../../../../../src/render/entity/vehicle-destruction.ts#L446)
+[Implementation, line 451](../../../../../src/render/entity/vehicle-destruction.ts#L451)
 
 ```ts
 removeBurst(index: number): void
@@ -329,7 +329,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.createFire
 
-[Implementation, line 451](../../../../../src/render/entity/vehicle-destruction.ts#L451)
+[Implementation, line 456](../../../../../src/render/entity/vehicle-destruction.ts#L456)
 
 ```ts
 createFire(): inferred by TypeScript; see implementation
@@ -341,25 +341,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshBasicMaterial`
 - `fireNodes`
 
-## VehicleDestruction.createFire.callback@463
+## VehicleDestruction.createFire.callback@468
 
-[Implementation, line 463](../../../../../src/render/entity/vehicle-destruction.ts#L463)
+[Implementation, line 468](../../../../../src/render/entity/vehicle-destruction.ts#L468)
 
 ```ts
-callback@463(shader): inferred by TypeScript; see implementation
+callback@468(shader): inferred by TypeScript; see implementation
 ```
 
-## VehicleDestruction.createFire.callback@482
+## VehicleDestruction.createFire.callback@487
 
-[Implementation, line 482](../../../../../src/render/entity/vehicle-destruction.ts#L482)
+[Implementation, line 487](../../../../../src/render/entity/vehicle-destruction.ts#L487)
 
 ```ts
-callback@482(): inferred by TypeScript; see implementation
+callback@487(): inferred by TypeScript; see implementation
 ```
 
 ## VehicleDestruction.createFlames
 
-[Implementation, line 491](../../../../../src/render/entity/vehicle-destruction.ts#L491)
+[Implementation, line 496](../../../../../src/render/entity/vehicle-destruction.ts#L496)
 
 ```ts
 createFlames(clock: { value: number }, animated = false): inferred by TypeScript; see implementation
@@ -367,6 +367,7 @@ createFlames(clock: { value: number }, animated = false): inferred by TypeScript
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Array.from`
 - `Math.floor`
 - `THREE.Group`
 - `THREE.Mesh`
@@ -380,12 +381,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tongue.position.set`
 - `tongue.scale.set`
 
-## VehicleDestruction.createFlames.callback@501
+## VehicleDestruction.createFlames.callback@506
 
-[Implementation, line 501](../../../../../src/render/entity/vehicle-destruction.ts#L501)
+[Implementation, line 506](../../../../../src/render/entity/vehicle-destruction.ts#L506)
 
 ```ts
-callback@501(shader): inferred by TypeScript; see implementation
+callback@506(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -394,17 +395,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `softSmokeUniforms`
 - `softVertex`
 
-## VehicleDestruction.createFlames.callback@555
+## VehicleDestruction.createFlames.callback@560
 
-[Implementation, line 555](../../../../../src/render/entity/vehicle-destruction.ts#L555)
+[Implementation, line 560](../../../../../src/render/entity/vehicle-destruction.ts#L560)
 
 ```ts
-callback@555(): inferred by TypeScript; see implementation
+callback@560(): inferred by TypeScript; see implementation
 ```
+
+## VehicleDestruction.createFlames.callback@574
+
+[Implementation, line 574](../../../../../src/render/entity/vehicle-destruction.ts#L574)
+
+```ts
+callback@574(_, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float32Array`
+- `Object.entries`
+- `THREE.BufferAttribute`
+- `THREE.BufferGeometry`
+- `geometry.setAttribute`
+- `geometry.setIndex`
+- `new Float32Array(count).fill`
+- `this.flameGeometry.getAttribute`
+- `this.flameGeometry.getIndex`
 
 ## VehicleDestruction.warm
 
-[Implementation, line 579](../../../../../src/render/entity/vehicle-destruction.ts#L579)
+[Implementation, line 596](../../../../../src/render/entity/vehicle-destruction.ts#L596)
 
 Compile effect programs during loading and keep them alive across session resets.
 
@@ -440,37 +461,37 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.warmSmoke.root.removeFromParent`
 - `this.warmSmoke.warmUp`
 
-## VehicleDestruction.warm.callback@599
+## VehicleDestruction.warm.callback@616
 
-[Implementation, line 599](../../../../../src/render/entity/vehicle-destruction.ts#L599)
+[Implementation, line 616](../../../../../src/render/entity/vehicle-destruction.ts#L616)
 
 ```ts
-callback@599(o): inferred by TypeScript; see implementation
+callback@616(o): inferred by TypeScript; see implementation
 ```
 
-## VehicleDestruction.warm.callback@615
+## VehicleDestruction.warm.callback@632
 
-[Implementation, line 615](../../../../../src/render/entity/vehicle-destruction.ts#L615)
+[Implementation, line 632](../../../../../src/render/entity/vehicle-destruction.ts#L632)
 
 ```ts
-callback@615(node): inferred by TypeScript; see implementation
+callback@632(node): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `culled.set`
 
-## VehicleDestruction.warm.callback@635
+## VehicleDestruction.warm.callback@652
 
-[Implementation, line 635](../../../../../src/render/entity/vehicle-destruction.ts#L635)
+[Implementation, line 652](../../../../../src/render/entity/vehicle-destruction.ts#L652)
 
 ```ts
-callback@635(o, i): inferred by TypeScript; see implementation
+callback@652(o, i): inferred by TypeScript; see implementation
 ```
 
 ## VehicleDestruction.glass
 
-[Implementation, line 638](../../../../../src/render/entity/vehicle-destruction.ts#L638)
+[Implementation, line 655](../../../../../src/render/entity/vehicle-destruction.ts#L655)
 
 ```ts
 glass(point: THREE.Vector3, direction: THREE.Vector3): void
@@ -483,7 +504,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.shardsAlive
 
-[Implementation, line 660](../../../../../src/render/entity/vehicle-destruction.ts#L660)
+[Implementation, line 677](../../../../../src/render/entity/vehicle-destruction.ts#L677)
 
 Live glass fragments (tests and tools).
 
@@ -493,7 +514,7 @@ shardsAlive(): number
 
 ## VehicleDestruction.update
 
-[Implementation, line 663](../../../../../src/render/entity/vehicle-destruction.ts#L663)
+[Implementation, line 680](../../../../../src/render/entity/vehicle-destruction.ts#L680)
 
 ```ts
 update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void
@@ -547,12 +568,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.updateShards`
 - `wreckFire`
 
-## VehicleDestruction.update.callback@753
+## VehicleDestruction.update.callback@770
 
-[Implementation, line 753](../../../../../src/render/entity/vehicle-destruction.ts#L753)
+[Implementation, line 770](../../../../../src/render/entity/vehicle-destruction.ts#L770)
 
 ```ts
-callback@753(tongue, i): inferred by TypeScript; see implementation
+callback@770(tongue, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -561,7 +582,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.updateFlashes
 
-[Implementation, line 815](../../../../../src/render/entity/vehicle-destruction.ts#L815)
+[Implementation, line 832](../../../../../src/render/entity/vehicle-destruction.ts#L832)
 
 Blast light: a 30 ms rise to a white-yellow peak, an exponential fall through orange (the
 fireball cooling), plus the lens flash. One shared lamp; the brightest blast owns it.
@@ -582,7 +603,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.updateShards
 
-[Implementation, line 856](../../../../../src/render/entity/vehicle-destruction.ts#L856)
+[Implementation, line 873](../../../../../src/render/entity/vehicle-destruction.ts#L873)
 
 Same motion and matrices as the former per-object fragments (age, then `p += v·dt` and
 `v.y -= 9.8·dt`; rotation `(age·8, index, age·5)`), without allocation. Fragments age in
@@ -605,7 +626,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.remove
 
-[Implementation, line 899](../../../../../src/render/entity/vehicle-destruction.ts#L899)
+[Implementation, line 916](../../../../../src/render/entity/vehicle-destruction.ts#L916)
 
 ```ts
 remove(id: string): void
@@ -623,7 +644,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.clear
 
-[Implementation, line 909](../../../../../src/render/entity/vehicle-destruction.ts#L909)
+[Implementation, line 926](../../../../../src/render/entity/vehicle-destruction.ts#L926)
 
 ```ts
 clear(): void
@@ -653,7 +674,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleDestruction.dispose
 
-[Implementation, line 949](../../../../../src/render/entity/vehicle-destruction.ts#L949)
+[Implementation, line 966](../../../../../src/render/entity/vehicle-destruction.ts#L966)
 
 ```ts
 dispose(): void
@@ -663,6 +684,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `(this.fragments.material as THREE.Material).dispose`
 - `fire.material.dispose`
+- `geometry.dispose`
 - `softDepth.grabber.removeFromParent`
 - `this.balloons.dispose`
 - `this.clear`

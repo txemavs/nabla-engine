@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **622 modules; 7898 executable function definitions**.
+Coverage: **622 modules; 7900 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -290,7 +290,7 @@ Coverage: **622 modules; 7898 executable function definitions**.
 | [src/render/entity/driving-camera.ts](src/render/entity/driving-camera.ts.md) | 16 |
 | [src/render/entity/effect-culling.ts](src/render/entity/effect-culling.ts.md) | 11 |
 | [src/render/entity/ejection-port.ts](src/render/entity/ejection-port.ts.md) | 2 |
-| [src/render/entity/entity-nodes.ts](src/render/entity/entity-nodes.ts.md) | 26 |
+| [src/render/entity/entity-nodes.ts](src/render/entity/entity-nodes.ts.md) | 27 |
 | [src/render/entity/exhaust-smoke.ts](src/render/entity/exhaust-smoke.ts.md) | 42 |
 | [src/render/entity/explosion-fx.ts](src/render/entity/explosion-fx.ts.md) | 27 |
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 47 |
@@ -329,7 +329,7 @@ Coverage: **622 modules; 7898 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/tree-fire.ts](src/render/entity/tree-fire.ts.md) | 20 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
-| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 38 |
+| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 39 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 166 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
