@@ -123,8 +123,9 @@
 .nabla-readout-alert {
   color: var(--nabla-color-error);
 }
-/* One bottom-left line: the engine readout wins when it has text. */
-body:has(#controls-hint:not(:empty)) .nabla-readout:not(.nabla-readout--step) {
+/* One bottom-left line: the engine readout wins when it has text and is shown. */
+body:has(#controls-hint:not(:empty)):not(:has(.touch-driving[data-visibility='always']))
+  .nabla-readout:not(.nabla-readout--step) {
   display: none;
 }
 /* Touch screens (or a shown touch rig) have no room for the readout. */
