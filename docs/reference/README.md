@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **622 modules; 7875 executable function definitions**.
+Coverage: **623 modules; 7896 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -36,7 +36,7 @@ Coverage: **622 modules; 7875 executable function definitions**.
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/fps-readout.ts](game/fps-readout.ts.md) | 2 |
 | [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
-| [game/gravity-ui.ts](game/gravity-ui.ts.md) | 7 |
+| [game/gravity-ui.ts](game/gravity-ui.ts.md) | 9 |
 | [game/headset.ts](game/headset.ts.md) | 9 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
@@ -47,6 +47,7 @@ Coverage: **622 modules; 7875 executable function definitions**.
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
 | [game/loading.ts](game/loading.ts.md) | 20 |
 | [game/main.ts](game/main.ts.md) | 1 |
+| [game/menu-layout.ts](game/menu-layout.ts.md) | 6 |
 | [game/menu.ts](game/menu.ts.md) | 4 |
 | [game/mirror-controls.ts](game/mirror-controls.ts.md) | 16 |
 | [game/page-query.ts](game/page-query.ts.md) | 3 |
@@ -56,7 +57,7 @@ Coverage: **622 modules; 7875 executable function definitions**.
 | [game/scenario-menu.ts](game/scenario-menu.ts.md) | 2 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 139 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 149 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
 | [game/settings-nav.ts](game/settings-nav.ts.md) | 2 |
@@ -434,7 +435,7 @@ Coverage: **622 modules; 7875 executable function definitions**.
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 567 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 568 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
@@ -460,7 +461,7 @@ Coverage: **622 modules; 7875 executable function definitions**.
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
-| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 45 |
+| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 47 |
 | [src/runtime/map-inspector.ts](src/runtime/map-inspector.ts.md) | 5 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.eu.ts](src/runtime/messages.eu.ts.md) | 0 |

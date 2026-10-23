@@ -416,7 +416,8 @@ export function mountSideMenu(doc: Document, options: SideMenuOptions): SideMenu
 
 /** The settings window as the game menu drives it (settings-hud.ts registers it). */
 export interface GameMenuSettings {
-  open: (tab?: string) => void
+  /** Open on `tab` and, when given, on that section of it (a section id). */
+  open: (tab?: string, section?: string) => void
   close: () => void
   readonly isOpen: boolean
   /**
@@ -470,18 +471,21 @@ const MENU_TAB_ENTRY = 'nabla-menu-tab-'
 const SETTINGS_TABS: ReadonlyArray<readonly [tab: string, key: string]> = [
   ['planet', 'settings.world'],
   ['options', 'settings.settings'],
-  ['objects', 'settings.objects'],
   ['dev', 'settings.development'],
 ]
 
 /**
- * The engine's sections: Application first (info: version and install; virtual reality: enter,
- * note, headset page), then the game's settings tabs. In the settings window the Application
- * sections fill its first tab, before World.
+ * The engine's sections: Main first (info: version, engine status, current scenario and install;
+ * virtual reality: enter, note, headset page), then the game's settings tabs. In the settings
+ * window the Main sections fill its first tab, before World.
  */
-/** Ids of the Application > Info entries (version line, install button). */
+/** Ids of the Main > Info entries (version line, status lines, install button). */
 export const GAME_MENU_VERSION_ID = 'nabla-menu-version'
 export const GAME_MENU_INSTALL_ID = 'nabla-menu-install'
+/** Engine status line (renderer and physics thread), set by the settings window. */
+export const GAME_MENU_ENGINE_ID = 'nabla-menu-engine'
+/** Current scenario line, set by the host when it loads one (hidden until then). */
+export const GAME_MENU_SCENARIO_ID = 'nabla-menu-scenario'
 
 export function defaultGameMenuSections(): SideMenuSection[] {
   return [
@@ -490,6 +494,8 @@ export function defaultGameMenuSections(): SideMenuSection[] {
       titleKey: 'menu.info',
       entries: [
         { id: GAME_MENU_VERSION_ID, labelKey: 'menu.version', note: true },
+        { id: GAME_MENU_ENGINE_ID, labelKey: 'menu.engine', note: true },
+        { id: GAME_MENU_SCENARIO_ID, labelKey: 'menu.scenario', note: true },
         { id: GAME_MENU_INSTALL_ID, labelKey: 'pwa.install' },
       ],
     },
@@ -518,12 +524,15 @@ export function defaultGameMenuSections(): SideMenuSection[] {
   ]
 }
 
-/** Open the settings window, on `tab` when given (planet, options, objects, dev). */
-export function openGameSettings(tab?: string): void {
+/**
+ * Open the settings window, on `tab` when given (app, planet, options, dev) and on its `section`
+ * (e.g. `nabla-menu-section-scenarios`).
+ */
+export function openGameSettings(tab?: string, section?: string): void {
   const state = store[GAME_MENU_KEY]
   if (!state?.settings) return
   state.menu?.setOpen(false)
-  state.settings.open(tab)
+  state.settings.open(tab, section)
 }
 
 /** Info entries: the version line with the number, the install action as a live button. */
@@ -534,6 +543,15 @@ function infoEntry(doc: Document, t: MenuTranslate, entry: SideMenuEntry): SideM
     line.id = GAME_MENU_VERSION_ID
     line.className = 'nabla-side-menu-note'
     line.textContent = `${t(entry.labelKey)} ${engineVersion ? `v${engineVersion}` : t('menu.version-dev')}`
+    return { ...entry, element: line }
+  }
+  if (entry.id === GAME_MENU_ENGINE_ID || entry.id === GAME_MENU_SCENARIO_ID) {
+    const line = doc.createElement('p')
+    line.id = entry.id
+    line.className = 'nabla-side-menu-note'
+    const text = notes()[entry.id]
+    line.textContent = text ?? ''
+    line.hidden = !text
     return { ...entry, element: line }
   }
   if (entry.id === GAME_MENU_INSTALL_ID) {
@@ -596,7 +614,9 @@ function showInSettings(state: GameMenuState, t: MenuTranslate): void {
   const menu = state.menu
   if (!pane || !menu) return
   const { doc } = state
-  for (const box of [...menu.nav.querySelectorAll<HTMLElement>(':scope > .nabla-side-menu-section')]) {
+  for (const box of [
+    ...menu.nav.querySelectorAll<HTMLElement>(':scope > .nabla-side-menu-section'),
+  ]) {
     const id = `nabla-menu-section-${box.dataset.section}`
     doc.getElementById(id)?.remove()
     const items = [...box.children].filter(
@@ -664,6 +684,23 @@ export function addGameMenuEntries(sectionId: string, entries: readonly SideMenu
   const extra = state?.extra ?? (store[PENDING_KEY] ??= new Map())
   extra.set(sectionId, [...(extra.get(sectionId) ?? []), ...entries])
   if (state) buildGameMenu(state)
+}
+
+const NOTES_KEY = Symbol.for('nabla.gameMenu.notes')
+const notes = (): Record<string, string> =>
+  ((globalThis as unknown as { [NOTES_KEY]?: Record<string, string> })[NOTES_KEY] ??= {})
+
+/**
+ * Set a status line of Main > Info ({@link GAME_MENU_ENGINE_ID}, {@link GAME_MENU_SCENARIO_ID}):
+ * plain text, an empty string hides it. Kept across menu rebuilds; may be called before mounting.
+ */
+export function setGameMenuNote(id: string, text: string): void {
+  notes()[id] = text
+  const line = store[GAME_MENU_KEY]?.doc.getElementById(id)
+  if (line) {
+    line.textContent = text
+    line.hidden = !text
+  }
 }
 
 /** The mounted game menu, if any. */

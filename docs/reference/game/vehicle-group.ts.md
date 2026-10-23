@@ -4,9 +4,9 @@
 
 [Source](../../../game/vehicle-group.ts)
 
-Which options of the occupied vehicle the Objetos tab lists. The group is titled with the
-vehicle's name and shows only what applies to it; on foot every section stays listed (empty and
-disabled) so the tab does not jump around.
+Which options of the occupied vehicle the Principal tab lists. The group is titled with the
+vehicle's name and shows only what applies to it; on foot the settings window hides the whole
+group (this still reports every section as usable).
 
 ## Module dependencies
 
@@ -14,7 +14,7 @@ disabled) so the tab does not jump around.
 
 ## vehicleGroupVisibility
 
-[Implementation, line 34](../../../game/vehicle-group.ts#L34)
+[Implementation, line 35](../../../game/vehicle-group.ts#L35)
 
 ```ts
 vehicleGroupVisibility(occupied: OccupiedVehicleView | null | undefined): VehicleGroupVisibility

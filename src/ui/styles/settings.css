@@ -235,6 +235,15 @@ body:has(.nabla-corner--tl) .settings-header {
   padding: 0 var(--nabla-space-5) 0 0;
   font-size: var(--nabla-font-xl);
 }
+/* A flat section (Mundo › Ver › Opciones): its member sections read as one list, untitled. */
+.settings-window .settings-flat-section > .settings-flat-member {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.settings-window .settings-flat-section > .settings-flat-member > legend {
+  display: none;
+}
 .settings-window .menu-subtitle {
   color: var(--nabla-color-ink);
   font-size: var(--nabla-font-lg);

@@ -5,9 +5,11 @@ import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
 import { installEngineStyles } from '../src/ui/styles.js'
 import {
+  GAME_MENU_ENGINE_ID,
   GAME_MENU_TOGGLE_ID,
   mountGameMenu,
   registerGameMenuSettings,
+  setGameMenuNote,
 } from '../src/runtime/main-menu.js'
 import { addCornerButton } from '../src/runtime/corner-buttons.js'
 import { createControlsSection } from './settings-controls.js'
@@ -43,6 +45,14 @@ import {
 } from '../src/runtime/planet-settings-panel.js'
 import { t } from '@nabla/engine/i18n'
 import { sectionMerges } from './settings-nav.js'
+import {
+  CURRENT_VEHICLE_GROUP,
+  MENU_FLAT_SECTIONS,
+  MENU_TABS,
+  layoutGroups,
+  layoutSectionTabs,
+  type MenuTabId,
+} from './menu-layout.js'
 
 export type SettingsHud = {
   open: () => void
@@ -51,68 +61,16 @@ export type SettingsHud = {
   destroy: () => void
 }
 
-const TABS = [
-  // Application (info, virtual reality, host links): the main menu's sections, main-menu.ts menuPane.
-  { id: 'app', label: t('settings.application') },
-  { id: 'planet', label: t('settings.world') },
-  { id: 'options', label: t('settings.settings') },
-  { id: 'objects', label: t('settings.objects') },
-  { id: 'dev', label: t('settings.development') },
-] as const
+// Tabs, groups and section placement: the generic layout in menu-layout.ts.
+const TABS = MENU_TABS.map((tab) => ({ id: tab.id, label: t(tab.labelKey) }))
 
-type TabId = (typeof TABS)[number]['id']
+type TabId = MenuTabId
 
 /** Sections retain their DOM, listeners and persistence; only their location changes. */
-export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
-  ['settings-planet-time', 'planet'],
-  ['settings-map', 'planet'],
-  ['terrain-position', 'planet'],
-  ['terrain-layers', 'planet'],
-  ['settings-layer-air', 'planet'],
-  ['road-style', 'planet'],
-  ['settings-planet-air', 'planet'],
-  ['settings-planet-sea', 'planet'],
-  ['settings-streetlights', 'planet'],
-  ['settings-headlamp', 'planet'],
-  ['settings-traffic-signs', 'planet'],
-  ['settings-options-labels', 'planet'],
-  ['settings-actor', 'options'],
-  ['display-quality-section', 'options'],
-  ['settings-sharpness', 'options'],
-  ['quality-shadows', 'options'],
-  ['settings-distances', 'options'],
-  ['settings-effects', 'options'],
-  ['settings-simulated-fire', 'options'],
-  ['settings-muzzle-flash', 'options'],
-  ['camera-extras', 'options'],
-  ['settings-camera-fov', 'options'],
-  ['settings-action-cam', 'options'],
-  ['driving-extras', 'options'],
-  ['settings-controls', 'options'],
-  ['settings-usb', 'options'],
-  ['settings-sound', 'options'],
-  ['settings-management', 'options'],
-  ['scene-vehicles', 'objects'],
-  ['settings-placed-objects', 'objects'],
-  ['settings-object-layout', 'objects'],
-  ['settings-options-driver', 'objects'],
-  ['settings-car-beams', 'objects'],
-  ['settings-vehicle-sound', 'objects'],
-  ['settings-truck-exhaust', 'objects'],
-  ['settings-weapon', 'objects'],
-  ['settings-combat', 'objects'],
-  ['settings-options-sidearm', 'dev'],
-  ['settings-weapon-poses', 'dev'],
-  ['settings-light', 'dev'],
-  ['settings-rear-light-nudge', 'dev'],
-  ['settings-sign-shadows', 'dev'],
-  ['settings-experimental-light-shadows', 'dev'],
-  ['settings-config-planet', 'dev'],
-  ['settings-collision-debug', 'dev'],
-  ['terrain-source', 'dev'],
-  ['terrain-cache', 'dev'],
-  ['settings-diagnostics', 'dev'],
-]
+export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = layoutSectionTabs()
+
+/** The first tab the window shows. */
+const DEFAULT_TAB: TabId = 'app'
 
 /** Tab for a section id. */
 export function sectionTab(id: string): TabId | undefined {
@@ -121,7 +79,13 @@ export function sectionTab(id: string): TabId | undefined {
 
 /** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
 const SECTION_TITLES: Readonly<Record<string, string>> = {
-  'terrain-layers': t('settings.ground'),
+  'terrain-layers': t('settings.land'),
+  'settings-layer-air': t('settings.atmosphere'),
+  'settings-planet-time': t('settings.date'),
+  'terrain-position': t('settings.location'),
+  'settings-simulation-time': t('settings.time'),
+  'settings-collision-debug': t('settings.collisions'),
+  'settings-config-planet': t('settings.export'),
   'road-style': t('settings.asphalt-contrast'),
   'scene-vehicles': t('settings.add'),
   'settings-car-beams': t('settings.lights'),
@@ -137,14 +101,13 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'camera-extras': t('settings.general'),
   'settings-effects': t('settings.smoke'),
   'driving-extras': t('settings.recovery-and-physics'),
-  'settings-management': t('settings.management'),
+  'settings-management': t('settings.settings-management'),
   'settings-camera-fov': t('settings.field-of-view'),
   'settings-weapon': t('settings.weapon-wheel'),
   'settings-combat': t('settings.combat'),
   'settings-actor': t('settings.actor'),
   'settings-options-sidearm': t('settings.aiming'),
   'settings-muzzle-flash': t('settings.muzzle-flash'),
-  'settings-config-planet': t('settings.planet'),
   'terrain-source': t('settings.terrain'),
   'settings-light': t('settings.light-fine-tuning'),
   'settings-weapon-poses': t('settings.poses-and-animations'),
@@ -219,7 +182,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     btn.id = `settings-tab-${tab.id}`
     btn.dataset.tab = tab.id
     btn.setAttribute('role', 'tab')
-    btn.setAttribute('aria-selected', tab.id === 'planet' ? 'true' : 'false')
+    btn.setAttribute('aria-selected', tab.id === DEFAULT_TAB ? 'true' : 'false')
     btn.textContent = tab.label
     tabBar.append(btn)
 
@@ -228,7 +191,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     pane.id = `settings-pane-${tab.id}`
     pane.dataset.pane = tab.id
     pane.setAttribute('role', 'tabpanel')
-    pane.hidden = tab.id !== 'planet'
+    pane.hidden = tab.id !== DEFAULT_TAB
     panes.append(pane)
     paneEls.set(tab.id, pane)
   }
@@ -292,7 +255,26 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const index = order(section.id)
     return index < 0 ? 999 : index
   }
+  // Flat sections (Mundo › Ver › Opciones): their member sections are blocks inside them, untitled.
+  const flatBoxes = new Map<string, HTMLElement>()
+  const flatOf = (id: string) => MENU_FLAT_SECTIONS.find((flat) => flat.members.includes(id))
+  const placeInFlat = (el: HTMLElement): boolean => {
+    const flat = flatOf(el.id)
+    const box = flat && flatBoxes.get(flat.id)
+    if (!flat || !box) return false
+    el.classList.add('settings-flat-member')
+    const rank = flat.members.indexOf(el.id)
+    if (el.parentElement !== box) {
+      const next = [...box.children].find((child) => flat.members.indexOf(child.id) > rank)
+      box.insertBefore(el, next ?? null)
+    }
+    const title = SECTION_TITLES[el.id]
+    const legend = el.querySelector(':scope > legend')
+    if (title && legend) legend.textContent = title
+    return true
+  }
   const place = (el: HTMLElement) => {
+    if (placeInFlat(el)) return
     const tab = sectionTab(el.id)
     if (!tab) return
     const pane = paneEls.get(tab)!
@@ -315,6 +297,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       moveOptionLayers(el)
       if (seaRow && !el.contains(seaRow)) el.append(seaRow)
     }
+  }
+
+  for (const flat of MENU_FLAT_SECTIONS) {
+    const box = fieldset(flat.id, t(flat.labelKey))
+    box.classList.add('settings-flat-section')
+    flatBoxes.set(flat.id, box)
+    place(box)
   }
 
   // «Nombres de poblaciones» keeps its checkbox (and the layer selector's listener and storage);
@@ -380,14 +369,35 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   relabel(rowOf('ps-cloud-pressure-mode'), t('settings.pressure'))
   relabel(rowOf('ps-cloud-pressure'), t('settings.pressure-value'))
   relabel(rowOf('ps-lens-flare'), t('settings.lens-flare'))
+  {
+    // Lens flare is a world option of its own (Ver › Opciones), not part of Atmósfera.
+    const flare = rowOf('ps-lens-flare')
+    if (flare) {
+      const section = fieldset('settings-lens-flare', t('settings.lens-flare'))
+      section.append(flare)
+      place(section)
+    }
+  }
 
   if (timeGroup) {
     const time = fieldset('settings-planet-time', t('settings.date-and-time'))
     hideSubtitle(timeGroup)
     relabel(rowOf('time-range'), t('settings.set'))
-    relabel(rowOf('time-speed'), t('settings.speed'))
     time.append(timeGroup)
     place(time)
+  }
+  {
+    // Ajustes › Simulación › Tiempo: the day/night cycle speed and the gravity (gravity-ui.ts adds
+    // its row to the same section, before or after this mount).
+    const speed = rowOf('time-speed')
+    if (speed) {
+      relabel(speed, t('settings.day-night-cycle'))
+      const simTime =
+        (doc.getElementById('settings-simulation-time') as HTMLElement | null) ??
+        fieldset('settings-simulation-time', t('settings.time'))
+      simTime.prepend(...rows(simTime.querySelector<HTMLElement>(':scope > legend'), speed))
+      place(simTime)
+    }
   }
   const seaGroup = byId('scene-sea')
   const sea = fieldset('settings-planet-sea', t('settings.sea-level'))
@@ -416,8 +426,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   )
   place(air)
 
-  const sky = fieldset('settings-layer-air', t('settings.air'))
-  sky.append(...rows(sunRow, skyRow, cloudsRow, rowOf('ps-lens-flare')))
+  const sky = fieldset('settings-layer-air', t('settings.atmosphere'))
+  sky.append(...rows(sunRow, skyRow, cloudsRow))
   place(sky)
 
   const menu = doc.getElementById('menu-sections')
@@ -1495,88 +1505,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
   }
   // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
-  const navigationGroups = [
-    {
-      tab: 'planet',
-      id: 'map',
-      label: t('settings.map'),
-      sections: ['settings-map', 'terrain-position'],
-    },
-    {
-      tab: 'planet',
-      id: 'layers',
-      label: t('settings.layers'),
-      sections: ['terrain-layers', 'settings-layer-air'],
-    },
-    {
-      tab: 'planet',
-      id: 'world-options',
-      label: t('settings.options'),
-      sections: [
-        'road-style',
-        'settings-planet-air',
-        'settings-planet-sea',
-        'settings-streetlights',
-        'settings-headlamp',
-        'settings-traffic-signs',
-        'settings-options-labels',
-      ],
-    },
-    {
-      tab: 'options',
-      id: 'display',
-      label: t('settings.display'),
-      sections: [
-        'display-quality-section',
-        'settings-sharpness',
-        'quality-shadows',
-        'settings-distances',
-      ],
-    },
-    {
-      tab: 'options',
-      id: 'effects',
-      label: t('settings.effects'),
-      sections: ['settings-effects', 'settings-muzzle-flash', 'settings-simulated-fire'],
-    },
-    {
-      tab: 'options',
-      id: 'cameras',
-      label: t('settings.camera'),
-      sections: ['camera-extras', 'settings-camera-fov', 'settings-action-cam'],
-    },
-    { tab: 'options', id: 'driving', label: t('settings.driving'), sections: ['driving-extras'] },
-    {
-      tab: 'options',
-      id: 'controls',
-      label: t('settings.controls'),
-      sections: ['settings-controls', 'settings-usb'],
-    },
-    {
-      tab: 'objects',
-      id: 'vehicles',
-      label: t('settings.vehicles'),
-      sections: ['scene-vehicles', 'settings-placed-objects', 'settings-object-layout'],
-    },
-    {
-      tab: 'objects',
-      id: 'current-vehicle',
-      label: t('settings.current-vehicle'),
-      sections: [...vehicleGroupSections],
-    },
-    {
-      tab: 'objects',
-      id: 'weapon',
-      label: t('settings.weapon'),
-      sections: ['settings-weapon', 'settings-combat'],
-    },
-    {
-      tab: 'dev',
-      id: 'weapons',
-      label: t('settings.weapons'),
-      sections: ['settings-options-sidearm', 'settings-weapon-poses'],
-    },
-  ]
+  const navigationGroups = layoutGroups().map((group) => ({ ...group, label: t(group.labelKey) }))
   const sections = new Map<
     TabId,
     {
@@ -1628,7 +1557,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       label.classList.add('settings-inline-row')
     }
   }
-  let activeTab: TabId = 'planet'
+  let activeTab: TabId = DEFAULT_TAB
   const chooseSection = (tab: TabId, id: string) => {
     const layout = sections.get(tab)
     if (!layout) return
@@ -1653,7 +1582,29 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     layout.body.scrollTop = 0
     if (tab === 'planet' && id === 'settings-map' && !win.hidden) mapSection.refresh()
   }
+  // The anisotropy row (bound by the game after or before the HUD) belongs in Vídeo › Calidad.
+  const moveAnisotropy = () => {
+    const quality = byId('display-quality-section')
+    const row = rowOf('anisotropy')
+    if (!quality || !row || quality.contains(row)) return
+    quality.insertBefore(row, [...quality.children].find((el) => el.matches('button, p')) ?? null)
+  }
   const foldSections = () => {
+    moveAnisotropy()
+    const hiddenIds = hostHidden()
+    for (const [id, box] of flatBoxes) {
+      // Host sections added straight to a pane join their flat section first.
+      for (const pane of paneEls.values())
+        for (const el of pane.querySelectorAll<HTMLElement>('.menu-section'))
+          if (el.parentElement !== box && flatOf(el.id)?.id === id) placeInFlat(el)
+      const members = [...box.querySelectorAll<HTMLElement>(':scope > .settings-flat-member')]
+      for (const member of members)
+        member.toggleAttribute('data-section-hidden', hiddenIds.has(member.id))
+      box.toggleAttribute(
+        'data-flat-empty',
+        !members.some((member) => !member.hidden && !hiddenIds.has(member.id)),
+      )
+    }
     for (const [tab, pane] of paneEls) {
       let layout = sections.get(tab)
       if (!layout) {
@@ -1706,8 +1657,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       )
       const hidden = hostHidden()
       for (const section of ordered)
-        section.toggleAttribute('data-section-hidden', hidden.has(section.id))
-      const shown = ordered.filter((section) => !hidden.has(section.id))
+        section.toggleAttribute(
+          'data-section-hidden',
+          hidden.has(section.id) || section.hasAttribute('data-flat-empty'),
+        )
+      const shown = ordered.filter((section) => !section.hasAttribute('data-section-hidden'))
       const items: HTMLElement[] = []
       const previousGroups = new Map(
         [...layout.nav.querySelectorAll<HTMLDetailsElement>('details[data-nav-group]')].map(
@@ -1875,13 +1829,22 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
   })
   /**
-   * Every per-vehicle option lives in one group of the Objetos tab, titled with the occupied
-   * vehicle's name; options the vehicle cannot use (exhaust smoke on a bike) are not listed.
+   * Every per-vehicle option lives in one group of the Principal tab, titled with the occupied
+   * vehicle's name and listed only while mounted; options the vehicle cannot use (exhaust smoke
+   * on a bike) are not listed.
    */
   const refreshVehicleGroup = () => {
     const occupied = runtime.occupiedVehicle ?? null
-    const group = doc.querySelector<HTMLDetailsElement>('details[data-nav-group="current-vehicle"]')
+    const group = doc.querySelector<HTMLDetailsElement>(
+      `details[data-nav-group="${CURRENT_VEHICLE_GROUP}"]`,
+    )
     if (!group) return
+    group.hidden = !occupied
+    const app = sections.get('app')
+    if (!occupied && (vehicleGroupSections as readonly string[]).includes(app?.active ?? '')) {
+      const first = app?.nav.querySelector<HTMLButtonElement>('button[data-section]')
+      if (first?.dataset.section) chooseSection('app', first.dataset.section)
+    }
     const summary = group.querySelector('summary')
     const label = occupied?.name ?? t('settings.current-vehicle')
     if (summary && summary.textContent !== label) summary.textContent = label
@@ -1893,9 +1856,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       const visible = show.sections[id]
       button.hidden = !visible
       button.style.display = visible ? '' : 'none'
-      if (!visible && sections.get('objects')?.active === id) {
+      if (!visible && sections.get('app')?.active === id) {
         const next = vehicleGroupSections.find((candidate) => show.sections[candidate])
-        if (next) chooseSection('objects', next)
+        if (next) chooseSection('app', next)
       }
     }
     const mirrorsGroup = doc.getElementById('scene-mirrors')
@@ -1905,7 +1868,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         ? show.exhaustAmount
         : show.exhaustPosition)
   }
+  const engineStatus = () => {
+    // GameRuntime.physicsThread (src/runtime/browser.ts); read loosely while the package types lag.
+    const physics = (runtime as { physicsThread?: 'worker' | 'inline' | null }).physicsThread
+    return t('menu.engine-status', {
+      renderer: runtime.backend === 'webgpu' ? 'WebGPU' : 'WebGL',
+      physics:
+        physics === 'worker'
+          ? t('menu.physics-worker')
+          : physics === 'inline'
+            ? t('menu.physics-inline')
+            : '–',
+    })
+  }
   const updateClock = () => {
+    setGameMenuNote(GAME_MENU_ENGINE_ID, engineStatus())
     refreshVehicleGroup()
     refreshVehicleLights()
     refreshRearNudge()
@@ -1981,10 +1958,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // its sections with mountGameMenu() too; the engine defaults apply until they do.
   mountGameMenu(doc, t, {}, (button) => addCornerButton('tl', button, 10))
   registerGameMenuSettings({
-    open: (tab) => {
+    open: (tab, section) => {
       open()
       const id = TABS.find((item) => item.id === tab)?.id
       if (id) selectTab(id)
+      if (id && section && sections.get(id)?.body.querySelector(`#${CSS.escape(section)}`)) {
+        sections.get(id)!.picked = true
+        chooseSection(id, section)
+      }
     },
     close,
     get isOpen() {

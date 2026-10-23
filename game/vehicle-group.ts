@@ -1,7 +1,7 @@
 /**
- * Which options of the occupied vehicle the Objetos tab lists. The group is titled with the
- * vehicle's name and shows only what applies to it; on foot every section stays listed (empty and
- * disabled) so the tab does not jump around.
+ * Which options of the occupied vehicle the Principal tab lists. The group is titled with the
+ * vehicle's name and shows only what applies to it; on foot the settings window hides the whole
+ * group (this still reports every section as usable).
  */
 import type { VehicleOptions } from '../src/runtime/vehicle-options.js'
 
@@ -11,6 +11,7 @@ export const vehicleGroupSections = [
   'settings-car-beams',
   'settings-vehicle-sound',
   'settings-truck-exhaust',
+  'settings-rear-light-nudge',
 ] as const
 export type VehicleGroupSection = (typeof vehicleGroupSections)[number]
 
@@ -41,6 +42,7 @@ export function vehicleGroupVisibility(
         'settings-car-beams': true,
         'settings-vehicle-sound': true,
         'settings-truck-exhaust': true,
+        'settings-rear-light-nudge': true,
       },
       mirrors: true,
       reverseAlarm: true,
@@ -59,6 +61,7 @@ export function vehicleGroupVisibility(
       'settings-car-beams': lamps.front || lamps.rear,
       'settings-vehicle-sound': sound.engine || sound.reverseAlarm,
       'settings-truck-exhaust': !!exhaust && (exhaust.position || exhaust.amount),
+      'settings-rear-light-nudge': lamps.rear,
     },
     mirrors: occupied.options?.mirrors ?? occupied.mirrors ?? true,
     reverseAlarm: sound.reverseAlarm,

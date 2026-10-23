@@ -403,7 +403,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultGameMenuSections
 
-[Implementation, line 486](../../../../src/runtime/main-menu.ts#L486)
+[Implementation, line 490](../../../../src/runtime/main-menu.ts#L490)
 
 ```ts
 defaultGameMenuSections(): SideMenuSection[]
@@ -415,7 +415,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultGameMenuSections.run
 
-[Implementation, line 503](../../../../src/runtime/main-menu.ts#L503)
+[Implementation, line 509](../../../../src/runtime/main-menu.ts#L509)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -426,17 +426,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `store[GAME_MENU_KEY]?.doc.getElementById`
 - `store[GAME_MENU_KEY]?.doc.getElementById(GAME_MENU_VR_BUTTON_ID)?.click`
 
-## defaultGameMenuSections.callback@512
+## defaultGameMenuSections.callback@518
 
-[Implementation, line 512](../../../../src/runtime/main-menu.ts#L512)
+[Implementation, line 518](../../../../src/runtime/main-menu.ts#L518)
 
 ```ts
-callback@512([tab, key]): inferred by TypeScript; see implementation
+callback@518([tab, key]): inferred by TypeScript; see implementation
 ```
 
-## defaultGameMenuSections.callback@512.run
+## defaultGameMenuSections.callback@518.run
 
-[Implementation, line 515](../../../../src/runtime/main-menu.ts#L515)
+[Implementation, line 521](../../../../src/runtime/main-menu.ts#L521)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -448,12 +448,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## openGameSettings
 
-[Implementation, line 522](../../../../src/runtime/main-menu.ts#L522)
+[Implementation, line 531](../../../../src/runtime/main-menu.ts#L531)
 
-Open the settings window, on `tab` when given (planet, options, objects, dev).
+Open the settings window, on `tab` when given (app, planet, options, dev) and on its `section`
+(e.g. `nabla-menu-section-scenarios`).
 
 ```ts
-openGameSettings(tab?: string): void
+openGameSettings(tab?: string, section?: string): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -463,7 +464,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## infoEntry
 
-[Implementation, line 530](../../../../src/runtime/main-menu.ts#L530)
+[Implementation, line 539](../../../../src/runtime/main-menu.ts#L539)
 
 Info entries: the version line with the number, the install action as a live button.
 
@@ -475,11 +476,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `createInstallEntry`
 - `doc.createElement`
+- `notes`
 - `t`
 
 ## buildGameMenu
 
-[Implementation, line 547](../../../../src/runtime/main-menu.ts#L547)
+[Implementation, line 565](../../../../src/runtime/main-menu.ts#L565)
 
 ```ts
 buildGameMenu(state: GameMenuState): void
@@ -498,12 +500,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `state.observer?.disconnect`
 - `syncVR`
 
-## buildGameMenu.callback@553
+## buildGameMenu.callback@571
 
-[Implementation, line 553](../../../../src/runtime/main-menu.ts#L553)
+[Implementation, line 571](../../../../src/runtime/main-menu.ts#L571)
 
 ```ts
-callback@553(section): inferred by TypeScript; see implementation
+callback@571(section): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -511,12 +513,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...section.entries, ...(state.extra.get(section.id) ?? [])].map`
 - `state.extra.get`
 
-## buildGameMenu.callback@553.callback@555
+## buildGameMenu.callback@571.callback@573
 
-[Implementation, line 555](../../../../src/runtime/main-menu.ts#L555)
+[Implementation, line 573](../../../../src/runtime/main-menu.ts#L573)
 
 ```ts
-callback@555(entry): inferred by TypeScript; see implementation
+callback@573(entry): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -525,7 +527,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## buildGameMenu.toggle
 
-[Implementation, line 564](../../../../src/runtime/main-menu.ts#L564)
+[Implementation, line 582](../../../../src/runtime/main-menu.ts#L582)
 
 ```ts
 toggle(): inferred by TypeScript; see implementation
@@ -533,7 +535,7 @@ toggle(): inferred by TypeScript; see implementation
 
 ## buildGameMenu.syncVR
 
-[Implementation, line 569](../../../../src/runtime/main-menu.ts#L569)
+[Implementation, line 587](../../../../src/runtime/main-menu.ts#L587)
 
 ```ts
 syncVR(): inferred by TypeScript; see implementation
@@ -546,17 +548,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `menu.entry`
 - `state.extra.get`
 
-## buildGameMenu.syncVR.callback@571
+## buildGameMenu.syncVR.callback@589
 
-[Implementation, line 571](../../../../src/runtime/main-menu.ts#L571)
+[Implementation, line 589](../../../../src/runtime/main-menu.ts#L589)
 
 ```ts
-callback@571(entry): inferred by TypeScript; see implementation
+callback@589(entry): inferred by TypeScript; see implementation
 ```
 
 ## showInSettings
 
-[Implementation, line 594](../../../../src/runtime/main-menu.ts#L594)
+[Implementation, line 612](../../../../src/runtime/main-menu.ts#L612)
 
 The settings window is the full-screen menu: the side menu's sections (but the tab entries)
 move into its menu pane, one titled fieldset each, keeping their entries and listeners.
@@ -577,12 +579,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pane.append`
 - `t`
 
-## showInSettings.callback@603
+## showInSettings.callback@623
 
-[Implementation, line 603](../../../../src/runtime/main-menu.ts#L603)
+[Implementation, line 623](../../../../src/runtime/main-menu.ts#L623)
 
 ```ts
-callback@603(child): inferred by TypeScript; see implementation
+callback@623(child): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -591,7 +593,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountGameMenu
 
-[Implementation, line 623](../../../../src/runtime/main-menu.ts#L623)
+[Implementation, line 643](../../../../src/runtime/main-menu.ts#L643)
 
 The game's one main menu: the ☰ toggle in the top-left corner and the side menu it opens
 (engine and host pages alike). ☰ closes the settings window when it is open, otherwise it
@@ -611,7 +613,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountGameMenu.onClick
 
-[Implementation, line 642](../../../../src/runtime/main-menu.ts#L642)
+[Implementation, line 662](../../../../src/runtime/main-menu.ts#L662)
 
 ```ts
 onClick(): inferred by TypeScript; see implementation
@@ -625,7 +627,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## registerGameMenuSettings
 
-[Implementation, line 654](../../../../src/runtime/main-menu.ts#L654)
+[Implementation, line 674](../../../../src/runtime/main-menu.ts#L674)
 
 settings-hud.ts: the window the menu's game entries open.
 
@@ -639,7 +641,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## addGameMenuEntries
 
-[Implementation, line 662](../../../../src/runtime/main-menu.ts#L662)
+[Implementation, line 682](../../../../src/runtime/main-menu.ts#L682)
 
 Add entries to a section of the game menu (e.g. the XR page's own Enter VR and monitor).
 
@@ -654,9 +656,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `extra.get`
 - `extra.set`
 
+## notes
+
+[Implementation, line 690](../../../../src/runtime/main-menu.ts#L690)
+
+```ts
+notes(): Record<string, string>
+```
+
+## setGameMenuNote
+
+[Implementation, line 697](../../../../src/runtime/main-menu.ts#L697)
+
+```ts
+setGameMenuNote(id: string, text: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `notes`
+- `store[GAME_MENU_KEY]?.doc.getElementById`
+
 ## currentGameMenu
 
-[Implementation, line 670](../../../../src/runtime/main-menu.ts#L670)
+[Implementation, line 707](../../../../src/runtime/main-menu.ts#L707)
 
 The mounted game menu, if any.
 
