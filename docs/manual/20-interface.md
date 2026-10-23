@@ -91,6 +91,45 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+The remaining settings state is grouped by owner:
+
+| Settings                                                          | Owner and compatibility boundary                                                                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Smoke enable/density and tunnel effect                            | `RuntimeVisualSettings`; unchanged keys and lazy quality fallback                                                     |
+| Vehicle model preferences and provisional exhaust                 | `RuntimeVehiclePreferences`; versioned model keys retain legacy global fallback; provisional exhaust does not persist |
+| Quality profile, visibility, streaming distance and ground detail | `RuntimePerformanceSettings`; unchanged validation, host options and world update order; no new storage keys          |
+| Audio mix and mute                                                | Existing audio mixer/audio owner; runtime only wires persistence and the active graph                                 |
+| Mirrors, steering wheel, driver pose and vehicle lights           | Existing calibration modules and scene-view owners; runtime resolves the occupied vehicle                             |
+| XR quality/calibration and USB controls                           | Existing XR and controller owners, using the runtime settings store                                                   |
+
+Further decomposition should follow behavior and lifecycle boundaries, rather than
+wrapping these small public delegates. The remaining substantial blocks are:
+
+1. Input routing and action dispatch: keyboard, mouse, touch, USB and gamepad ordering.
+   Preserve gesture-only pointer capture, focus handling and release of held controls.
+2. Preparation/reveal and cancellation: model/terrain readiness, host gates and loading
+   callbacks. Preserve abort behavior and cleanup after partial initialization.
+3. Player/vehicle presentation: bodies, held models, effects and late asynchronous loads.
+   Preserve resource ownership and stale-load cancellation.
+4. Frame coordination: simulation, environment, cameras, shadows and rendering in the
+   current order, including warm-up and XR paths.
+5. World/simulation controls: gravity, recovery, water and sky clock are live world state,
+   not independent saved preferences. Extract with the corresponding simulation or world
+   coordinator, preserving authored scene data and network authority.
+
+Coverage for the completed settings cleanup includes `test/runtime/visual-settings.test.ts`,
+`test/runtime/vehicle-preferences-owner.test.ts`, `test/runtime/performance-settings.test.ts`
+and the real two-runtime browser test. The previously reproduced traffic-sign settings HUD
+failure remains a separate regression task; it is not covered by a passing runtime check.
+
+[RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
+free-mouse state and pointer-lock policy. Capture remains restricted to playing and
+is requested only by existing gesture handlers; rejected requests can be retried.
+Losing ownership releases held input, while releasing one runtime never unlocks another
+canvas. Browsers without pointer lock retain drag-to-look. Listener registration and
+abort-based cleanup remain in the runtime, and this policy adds no saved preferences.
+Coverage: `test/runtime/pointer-capture.test.ts` and the browser input-context tests.
+
 [RuntimeStartCameraController](../../src/runtime/start-camera-controller.ts) coordinates
 the initial vehicle camera sequence over the existing pure `StartCameraSequencer`.
 It owns sequence progress and the host hold promise, preserving descent settling,

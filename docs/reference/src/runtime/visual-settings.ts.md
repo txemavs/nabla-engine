@@ -14,9 +14,67 @@
 - `../render/planet/ground-material.js`
 - `../render/vehicle-presentation/authored-lights.js`
 
+## RuntimeVisualSettings.restoreSmokeEnabled
+
+[Implementation, line 26](../../../../src/runtime/visual-settings.ts#L26)
+
+Caller retains the existing startup read/error ordering with camera preferences.
+
+```ts
+restoreSmokeEnabled(storage?: Pick<Storage, 'getItem'>): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `storage?.getItem`
+
+## RuntimeVisualSettings.setSmokeEnabled
+
+[Implementation, line 30](../../../../src/runtime/visual-settings.ts#L30)
+
+Per-runtime live state shared with current and future views; no browser-global storage.
+
+```ts
+setSmokeEnabled(enabled: boolean, storage: Pick<Storage, 'setItem'> | undefined, apply: () => void): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `apply`
+- `storage?.setItem`
+
+## RuntimeVisualSettings.tunnelEnabled
+
+[Implementation, line 44](../../../../src/runtime/visual-settings.ts#L44)
+
+Per-runtime live state shared with current and future views; no browser-global storage.
+
+```ts
+tunnelEnabled(preset: string, storage?: Pick<Storage, 'getItem'>): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `storage?.getItem`
+
+## RuntimeVisualSettings.setTunnelEnabled
+
+[Implementation, line 57](../../../../src/runtime/visual-settings.ts#L57)
+
+Per-runtime live state shared with current and future views; no browser-global storage.
+
+```ts
+setTunnelEnabled(enabled: boolean, storage?: Pick<Storage, 'setItem'>): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `storage?.setItem`
+
 ## RuntimeVisualSettings.bindScene
 
-[Implementation, line 23](../../../../src/runtime/visual-settings.ts#L23)
+[Implementation, line 66](../../../../src/runtime/visual-settings.ts#L66)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -30,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.hiddenLayers
 
-[Implementation, line 27](../../../../src/runtime/visual-settings.ts#L27)
+[Implementation, line 70](../../../../src/runtime/visual-settings.ts#L70)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -44,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.setHiddenLayers
 
-[Implementation, line 31](../../../../src/runtime/visual-settings.ts#L31)
+[Implementation, line 74](../../../../src/runtime/visual-settings.ts#L74)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -58,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.anisotropy
 
-[Implementation, line 35](../../../../src/runtime/visual-settings.ts#L35)
+[Implementation, line 78](../../../../src/runtime/visual-settings.ts#L78)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -72,7 +130,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.setAnisotropy
 
-[Implementation, line 39](../../../../src/runtime/visual-settings.ts#L39)
+[Implementation, line 82](../../../../src/runtime/visual-settings.ts#L82)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -88,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.asphaltContrast
 
-[Implementation, line 43](../../../../src/runtime/visual-settings.ts#L43)
+[Implementation, line 86](../../../../src/runtime/visual-settings.ts#L86)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -102,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.setAsphaltContrast
 
-[Implementation, line 47](../../../../src/runtime/visual-settings.ts#L47)
+[Implementation, line 90](../../../../src/runtime/visual-settings.ts#L90)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -116,7 +174,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.smokePercent
 
-[Implementation, line 51](../../../../src/runtime/visual-settings.ts#L51)
+[Implementation, line 94](../../../../src/runtime/visual-settings.ts#L94)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -126,7 +184,7 @@ smokePercent(): number
 
 ## RuntimeVisualSettings.setSmokePercent
 
-[Implementation, line 56](../../../../src/runtime/visual-settings.ts#L56)
+[Implementation, line 99](../../../../src/runtime/visual-settings.ts#L99)
 
 Omitting storage applies boot/quality defaults without overwriting saved preferences.
 
@@ -142,7 +200,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.getVehicleBeamCutoff
 
-[Implementation, line 65](../../../../src/runtime/visual-settings.ts#L65)
+[Implementation, line 108](../../../../src/runtime/visual-settings.ts#L108)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 
@@ -156,7 +214,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeVisualSettings.setVehicleBeamCutoff
 
-[Implementation, line 69](../../../../src/runtime/visual-settings.ts#L69)
+[Implementation, line 112](../../../../src/runtime/visual-settings.ts#L112)
 
 Per-runtime live state shared with current and future views; no browser-global storage.
 

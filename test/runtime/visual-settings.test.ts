@@ -81,3 +81,37 @@ it('preserves clamping and live changes when storage rejects writes', () => {
   settings.setAsphaltContrast(100)
   expect(settings.asphaltContrast).toBe(2.5)
 })
+
+it('keeps smoke and lazy tunnel overrides independent, including quality fallback', () => {
+  const a = new RuntimeVisualSettings(),
+    b = new RuntimeVisualSettings()
+  const values = new Map([
+    ['nabla.smoke', '0'],
+    ['nabla.tunnel', 'false'],
+  ])
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    },
+  }
+  a.restoreSmokeEnabled(storage)
+  expect(a.smokeEnabled).toBe(false)
+  expect(b.smokeEnabled).toBe(true)
+  expect(a.tunnelEnabled('ultra', storage)).toBe(false)
+  expect(b.tunnelEnabled('low')).toBe(false)
+  expect(b.tunnelEnabled('ultra')).toBe(true)
+  a.setTunnelEnabled(true, storage)
+  a.setSmokeEnabled(true, storage, () => expect(a.smokeEnabled).toBe(true))
+  expect(values.get('nabla.smoke')).toBe('1')
+  expect(values.get('nabla.tunnel')).toBe('true')
+  expect(b.tunnelEnabled('low')).toBe(false)
+  const denied = {
+    setItem: () => {
+      throw Error('quota')
+    },
+  }
+  expect(() => a.setTunnelEnabled(false, denied)).not.toThrow()
+  expect(() => a.setSmokeEnabled(false, denied, () => {})).not.toThrow()
+  expect(a.smokeEnabled).toBe(false)
+})

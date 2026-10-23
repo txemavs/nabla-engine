@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **635 modules; 8083 executable function definitions**.
+Coverage: **637 modules; 8106 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -440,7 +440,7 @@ Coverage: **635 modules; 8083 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 567 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 566 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -478,11 +478,13 @@ Coverage: **635 modules; 8083 executable function definitions**.
 | [src/runtime/nearest-z15.ts](src/runtime/nearest-z15.ts.md) | 2 |
 | [src/runtime/next-paint.ts](src/runtime/next-paint.ts.md) | 4 |
 | [src/runtime/perf-meter.ts](src/runtime/perf-meter.ts.md) | 4 |
+| [src/runtime/performance-settings.ts](src/runtime/performance-settings.ts.md) | 5 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
 | [src/runtime/planet-preferences.ts](src/runtime/planet-preferences.ts.md) | 10 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
+| [src/runtime/pointer-capture.ts](src/runtime/pointer-capture.ts.md) | 7 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/pwa-install.ts](src/runtime/pwa-install.ts.md) | 9 |
 | [src/runtime/quality-preset.ts](src/runtime/quality-preset.ts.md) | 9 |
@@ -518,11 +520,11 @@ Coverage: **635 modules; 8083 executable function definitions**.
 | [src/runtime/vehicle-monitor-styles.ts](src/runtime/vehicle-monitor-styles.ts.md) | 2 |
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/vehicle-options.ts](src/runtime/vehicle-options.ts.md) | 1 |
-| [src/runtime/vehicle-preferences.ts](src/runtime/vehicle-preferences.ts.md) | 8 |
+| [src/runtime/vehicle-preferences.ts](src/runtime/vehicle-preferences.ts.md) | 16 |
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 13 |
 | [src/runtime/viewmodel-lighting.ts](src/runtime/viewmodel-lighting.ts.md) | 2 |
 | [src/runtime/visibility-settings.ts](src/runtime/visibility-settings.ts.md) | 3 |
-| [src/runtime/visual-settings.ts](src/runtime/visual-settings.ts.md) | 11 |
+| [src/runtime/visual-settings.ts](src/runtime/visual-settings.ts.md) | 15 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/weapon-controls.ts](src/runtime/weapon-controls.ts.md) | 8 |
 | [src/runtime/weapon-pose-tuning.ts](src/runtime/weapon-pose-tuning.ts.md) | 2 |

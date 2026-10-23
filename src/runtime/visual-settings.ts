@@ -19,6 +19,49 @@ export class RuntimeVisualSettings {
   readonly world = createWorldVisualSettings()
   readonly beams = createBeamSettings()
   readonly smokeDensity = { value: smokeTuning.defaultPercent / 100 }
+  smokeEnabled = true
+  private tunnelOverride: boolean | null | undefined
+
+  /** Caller retains the existing startup read/error ordering with camera preferences. */
+  restoreSmokeEnabled(storage?: Pick<Storage, 'getItem'>): void {
+    this.smokeEnabled = storage?.getItem('nabla.smoke') !== '0'
+  }
+
+  setSmokeEnabled(
+    enabled: boolean,
+    storage: Pick<Storage, 'setItem'> | undefined,
+    apply: () => void,
+  ): void {
+    this.smokeEnabled = enabled
+    apply()
+    try {
+      storage?.setItem('nabla.smoke', enabled ? '1' : '0')
+    } catch {
+      /* Live changes survive unavailable storage. */
+    }
+  }
+
+  tunnelEnabled(preset: string, storage?: Pick<Storage, 'getItem'>): boolean {
+    if (this.tunnelOverride === undefined) {
+      this.tunnelOverride = null
+      try {
+        const saved = storage?.getItem('nabla.tunnel')
+        if (saved === 'true' || saved === 'false') this.tunnelOverride = saved === 'true'
+      } catch {
+        /* Use the quality default. */
+      }
+    }
+    return this.tunnelOverride ?? (preset === 'high' || preset === 'ultra')
+  }
+
+  setTunnelEnabled(enabled: boolean, storage?: Pick<Storage, 'setItem'>): void {
+    this.tunnelOverride = enabled
+    try {
+      storage?.setItem('nabla.tunnel', String(enabled))
+    } catch {
+      /* Keep the session override. */
+    }
+  }
 
   bindScene(scene: Object3D): void {
     bindSmokeDensity(scene, this.smokeDensity)

@@ -149,3 +149,38 @@ right. It moves the controls without recreating their listeners or popovers. Run
 help sits at the top left and game messages at the top right. The dashboard page hides the large
 vehicle/camera/speed readout; instruments remain available in the vehicle. Engine defaults to
 English; branded hosts retain their locale catalogs and presentation hooks.
+
+## Runtime decomposition plan (2026-10-24)
+
+The settings extraction is complete for independent runtime-owned preference state.
+Small public delegates to existing audio, calibration, XR and world owners should remain
+small delegates. `GameRuntime` remains the public facade and composition root.
+See [interface ownership](manual/20-interface.md) for current settings owners.
+
+Each row below is one implementation topic and one independently validated commit, in
+this order. Include its regression tests and documentation in the same commit. Do not
+mix a new extraction into the previous topic or publish intermediate failing states.
+If a topic cannot be reviewed and validated independently, revise this plan before
+expanding its scope. These are planned boundaries, not promises to create one class per row.
+
+| Order | Topic / proposed commit                               | Scope                                                                                                                                                   | Required focused evidence                                                                                                                             |
+| ----- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `Extract runtime input routing`                       | Bind/unbind keyboard, pointer, touch and controller events; focus and held-input release. Reuse pointer capture. Leave action execution in the runtime. | Real keyboard routing; lost focus/visibility and disposal; no duplicate listeners; two runtimes; pointer-capture unit tests.                          |
+| 2     | `Extract runtime action dispatch`                     | Map normalized actions to existing game, camera, vehicle and weapon operations; retain asynchronous action guards.                                      | Vehicle/on-foot contexts; weapon/UI priority; repeated actions during pending vehicle entry; unchanged host messages and Relay confirmation behavior. |
+| 3     | `Extract runtime preparation and reveal coordination` | Preparation queues, host gates, progress and reveal ordering. Keep terrain/model services and GPU work with their owners.                               | Abort during preparation, rejected gates, missing terrain, restart after failure, no late reveal after disposal; existing startup-camera tests.       |
+| 4     | `Extract runtime player presentation lifecycle`       | Player body, held models and asynchronous asset replacement. Keep combat and inventory authority unchanged.                                             | Rapid model swaps, late loads after disposal, on-foot/vehicle transitions, rig readiness and resource cleanup.                                        |
+| 5     | `Extract runtime vehicle presentation coordination`   | Vehicle visual preparation and effects coordination using existing view/audio/light owners. Keep simulation and network ownership unchanged.            | Enter/exit and replacement; late vehicle readiness; lights/smoke/audio; shared-vehicle confirmation and reconnect regressions.                        |
+| 6     | `Extract runtime world controls`                      | Coordinate gravity, recovery, sky clock and water with scene/simulation state. Preserve authored scene values and existing clamps.                      | Before/after play changes, fixed/live clock, water state, gravity propagation and invalid inputs; no new persistence keys.                            |
+| 7     | `Extract runtime frame coordination`                  | Make frame stages and their inputs explicit after the above boundaries stabilize. Keep ordering and ownership visible.                                  | Order-sensitive simulation/camera/environment/shadow/render checks; warm-up, attract and XR paths; no extra loops or duplicated resource updates.     |
+| 8     | `Consolidate runtime teardown ownership`              | Audit and consolidate final cleanup across extracted owners, pending work and event subscriptions. Each earlier topic must already clean up correctly.  | Repeated create/play/dispose; cancellation at each loading stage; no surviving callbacks/listeners; one runtime survives another's disposal.          |
+
+For every topic: compare the public API, retain existing saved keys and migration precedence,
+run focused regression tests followed by `npm run check`, run the affected browser tests,
+regenerate source references, and restart the local development server with its existing
+configuration. Record the resulting commit and validation in the completion report.
+Use narrow dependencies rather than handing the entire runtime to an extracted component.
+
+Track the previously reproduced traffic-sign settings HUD failure separately; do not hide
+it behind a passing runtime check or mix an unrelated fix into a structural extraction.
+Publication and Euskadi `ENGINE_REF` updates are a separate integration step after the
+selected commits are validated. Preserve Relay's integrated history and local host changes.

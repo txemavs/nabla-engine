@@ -32,6 +32,8 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         'nabla.lightTuning',
         JSON.stringify({ exposure: 1.2, shadowIntensity: 0.4 }),
       )
+      localStorage.setItem('nabla.smoke', '1')
+      localStorage.setItem('nabla.tunnel', 'true')
       localStorage.setItem('nabla.cameraFov', '12')
       localStorage.setItem('nabla.smokePercent', '65')
       localStorage.setItem('nabla.actionCam', 'true')
@@ -88,6 +90,8 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         a.setLensFlareAmount(0.3)
         a.setCameraFovOffset(25)
         a.setSmokePercent(20)
+        a.setSmokeEnabled(false)
+        a.setTunnelEnabled(false)
         a.setHiddenLayers(['road'])
         a.setAsphaltContrast(2)
         a.setAnisotropy(1)
@@ -140,6 +144,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         c = make('left')
         return {
           initial,
+          effects: [b.smokeEnabled, b.tunnelEnabled, c.smokeEnabled, c.tunnelEnabled],
           lighting: [b.lightTuning, c.lightTuning],
           liveExposure,
           initialFlash,
@@ -230,6 +235,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
   expect(result.lighting[0]).toMatchObject({ exposure: 1.2, shadows: true })
   expect(result.lighting[1]).toMatchObject({ exposure: 2, shadows: false, paint: 0.8 })
   expect(result.liveExposure).toEqual([2, 1.2])
+  expect(result.effects).toEqual([true, true, false, false])
   expect(result.initialCamera).toEqual([true, true, true, true, 2, 2])
   expect(result.cameraPreferences).toEqual([true, true, 2, false, false, 3])
   expect(result.entryModes).toEqual(['pc', 'headset-pc', 'pc'])
