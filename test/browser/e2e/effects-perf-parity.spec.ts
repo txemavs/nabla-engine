@@ -8,7 +8,10 @@ import { resolve } from 'node:path'
 // effects at the base commit (BASE, imported from a git worktree) and once with the current
 // tree. The frames must match. Draws are counted at the GL call (a draw with no primitives does
 // not count as effective), bytes at bufferData/bufferSubData.
-const BASE = process.env.NABLA_PARITY_BASE ?? '83ed9e6e'
+// The base is the last commit that changed the look on purpose: after 83ed9e6e the GPU explosions
+// (7c70f728), soft particles and procedural fire (2679074b) and lingering fire (afb5e13d) redrew
+// the burning car and the glass; every scene matches afb5e13d at the same limit.
+const BASE = process.env.NABLA_PARITY_BASE ?? 'afb5e13d'
 const root = process.cwd()
 const before = resolve(root, 'node_modules/.cache/nabla-parity-base')
 const scenes = [
