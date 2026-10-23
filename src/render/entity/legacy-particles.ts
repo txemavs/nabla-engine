@@ -4,7 +4,12 @@ import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { laserSmokePools } from './laser-smoke.js'
 import { exhaustSmokeSprites, muzzleSmokeSprites, tireSmokeSprites } from './particle-nodes.js'
 import { smokeDensity } from './smoke-density.js'
-import { SOFT_FRAGMENT_PARS, SOFT_VERTEX_PARS, softSmokeUniforms, softVertex } from './soft-smoke.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
 import type { ExhaustSmokeOptions } from './exhaust-smoke.js'
 import type { SparkBurstOptions } from './shot-sparks.js'
 
