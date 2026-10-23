@@ -196,7 +196,8 @@ body:has(.nabla-corner--tl) .settings-header {
 .settings-row-value {
   min-width: 0;
 }
-.settings-window label.settings-inline-row {
+/* :not([hidden]): this rule outranks `.settings-window [hidden]`, so a hidden row must not match. */
+.settings-window label.settings-inline-row:not([hidden]) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   flex-wrap: nowrap;
