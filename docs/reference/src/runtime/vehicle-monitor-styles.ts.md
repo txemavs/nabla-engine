@@ -6,13 +6,13 @@
 
 ## Module dependencies
 
-- `./interface-theme.js`
+- `../ui/styles.js`
 
 ## vehicleMonitorStyleText
 
-[Implementation, line 292](../../../../src/runtime/vehicle-monitor-styles.ts#L292)
+[Implementation, line 4](../../../../src/runtime/vehicle-monitor-styles.ts#L4)
 
-Combined CSS shared by ship interior monitors and the game settings HUD.
+Engine-owned CSS3D instrument styles (src/ui/styles/monitors.css), installed per monitor layer.
 
 ```ts
 vehicleMonitorStyleText(): string
@@ -20,7 +20,7 @@ vehicleMonitorStyleText(): string
 
 ## installVehicleMonitorStyles
 
-[Implementation, line 304](../../../../src/runtime/vehicle-monitor-styles.ts#L304)
+[Implementation, line 16](../../../../src/runtime/vehicle-monitor-styles.ts#L16)
 
 Install (or refresh) the shared monitor stylesheet under `parent`.
 VehicleMonitors and the game settings window both call this so a style change

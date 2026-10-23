@@ -39,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRCalibration.refresh
 
-[Implementation, line 35](../../../../../src/runtime/xr/calibration-ui.ts#L35)
+[Implementation, line 31](../../../../../src/runtime/xr/calibration-ui.ts#L31)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -52,12 +52,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `calibration.get`
 - `labels.get`
 
-## bindXRCalibration.callback@65
+## bindXRCalibration.callback@59
 
-[Implementation, line 65](../../../../../src/runtime/xr/calibration-ui.ts#L65)
+[Implementation, line 59](../../../../../src/runtime/xr/calibration-ui.ts#L59)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@59(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -66,12 +66,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `calibration.set`
 - `refresh`
 
-## bindXRCalibration.callback@75
+## bindXRCalibration.callback@69
 
-[Implementation, line 75](../../../../../src/runtime/xr/calibration-ui.ts#L75)
+[Implementation, line 69](../../../../../src/runtime/xr/calibration-ui.ts#L69)
 
 ```ts
-callback@75(): inferred by TypeScript; see implementation
+callback@69(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -80,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRCalibration.button
 
-[Implementation, line 81](../../../../../src/runtime/xr/calibration-ui.ts#L81)
+[Implementation, line 75](../../../../../src/runtime/xr/calibration-ui.ts#L75)
 
 ```ts
 button(label: string, action: () => void): inferred by TypeScript; see implementation
@@ -93,7 +93,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindXRCalibration.message
 
-[Implementation, line 90](../../../../../src/runtime/xr/calibration-ui.ts#L90)
+[Implementation, line 83](../../../../../src/runtime/xr/calibration-ui.ts#L83)
 
 ```ts
 message(): inferred by TypeScript; see implementation
@@ -103,24 +103,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `calibration.export`
 
-## bindXRCalibration.callback@92
+## bindXRCalibration.callback@85
 
-[Implementation, line 92](../../../../../src/runtime/xr/calibration-ui.ts#L92)
+[Implementation, line 85](../../../../../src/runtime/xr/calibration-ui.ts#L85)
 
 ```ts
-callback@92(): inferred by TypeScript; see implementation
+callback@85(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.xr.showCalibrationScreen`
 
-## bindXRCalibration.callback@97
+## bindXRCalibration.callback@90
 
-[Implementation, line 97](../../../../../src/runtime/xr/calibration-ui.ts#L97)
+[Implementation, line 90](../../../../../src/runtime/xr/calibration-ui.ts#L90)
 
 ```ts
-callback@97(): inferred by TypeScript; see implementation
+callback@90(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,40 +128,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `calibration.reset`
 - `refresh`
 
-## bindXRCalibration.callback@102
+## bindXRCalibration.callback@95
 
-[Implementation, line 102](../../../../../src/runtime/xr/calibration-ui.ts#L102)
+[Implementation, line 95](../../../../../src/runtime/xr/calibration-ui.ts#L95)
 
 ```ts
-callback@102(): inferred by TypeScript; see implementation
+callback@95(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `message`
 
-## bindXRCalibration.callback@102.callback@105
+## bindXRCalibration.callback@95.callback@98
+
+[Implementation, line 98](../../../../../src/runtime/xr/calibration-ui.ts#L98)
+
+```ts
+callback@98(): inferred by TypeScript; see implementation
+```
+
+## bindXRCalibration.callback@95.callback@101
+
+[Implementation, line 101](../../../../../src/runtime/xr/calibration-ui.ts#L101)
+
+```ts
+callback@101(): inferred by TypeScript; see implementation
+```
+
+## bindXRCalibration.callback@105
 
 [Implementation, line 105](../../../../../src/runtime/xr/calibration-ui.ts#L105)
 
 ```ts
 callback@105(): inferred by TypeScript; see implementation
-```
-
-## bindXRCalibration.callback@102.callback@108
-
-[Implementation, line 108](../../../../../src/runtime/xr/calibration-ui.ts#L108)
-
-```ts
-callback@108(): inferred by TypeScript; see implementation
-```
-
-## bindXRCalibration.callback@112
-
-[Implementation, line 112](../../../../../src/runtime/xr/calibration-ui.ts#L112)
-
-```ts
-callback@112(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -172,13 +172,27 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `navigator.share({ title: 'Ajustes VR · Nabla', text }).catch`
 - `window.open`
 
-## bindXRCalibration.callback@112.callback@115
+## bindXRCalibration.callback@105.callback@108
 
-[Implementation, line 115](../../../../../src/runtime/xr/calibration-ui.ts#L115)
+[Implementation, line 108](../../../../../src/runtime/xr/calibration-ui.ts#L108)
 
 ```ts
-callback@115(error: unknown): inferred by TypeScript; see implementation
+callback@108(error: unknown): inferred by TypeScript; see implementation
 ```
+
+## bindXRCalibration.callback@119
+
+[Implementation, line 119](../../../../../src/runtime/xr/calibration-ui.ts#L119)
+
+```ts
+callback@119(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `encodeURIComponent`
+- `message`
+- `window.open`
 
 ## bindXRCalibration.callback@126
 
@@ -190,20 +204,6 @@ callback@126(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `encodeURIComponent`
-- `message`
-- `window.open`
-
-## bindXRCalibration.callback@133
-
-[Implementation, line 133](../../../../../src/runtime/xr/calibration-ui.ts#L133)
-
-```ts
-callback@133(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
 - `Blob`
 - `URL.createObjectURL`
 - `calibration.export`
@@ -211,24 +211,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `link.click`
 - `setTimeout`
 
-## bindXRCalibration.callback@133.callback@139
+## bindXRCalibration.callback@126.callback@132
 
-[Implementation, line 139](../../../../../src/runtime/xr/calibration-ui.ts#L139)
+[Implementation, line 132](../../../../../src/runtime/xr/calibration-ui.ts#L132)
 
 ```ts
-callback@139(): inferred by TypeScript; see implementation
+callback@132(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URL.revokeObjectURL`
 
-## bindXRCalibration.callback@143
+## bindXRCalibration.callback@136
 
-[Implementation, line 143](../../../../../src/runtime/xr/calibration-ui.ts#L143)
+[Implementation, line 136](../../../../../src/runtime/xr/calibration-ui.ts#L136)
 
 ```ts
-callback@143(e): inferred by TypeScript; see implementation
+callback@136(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

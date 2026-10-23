@@ -15,7 +15,9 @@ Multiplayer building blocks: wire protocol, transports, snapshot sync and interp
 - `./remote-vehicle.js`
 - `./remote-avatar.js`
 - `./snapshot-sync.js`
+- `./shared-entities.js`
 - `./net-worker.js`
 - `./net-worker-host.js`
+- `./authority.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

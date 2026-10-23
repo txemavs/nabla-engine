@@ -23,12 +23,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Color`
 
-## addSunDisc.callback@6
+## addSunDisc.callback@9
 
-[Implementation, line 6](../../../../../src/render/planet/sun-disc.ts#L6)
+[Implementation, line 9](../../../../../src/render/planet/sun-disc.ts#L9)
 
 ```ts
-callback@6(shader): inferred by TypeScript; see implementation
+callback@9(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

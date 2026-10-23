@@ -20,17 +20,17 @@
 callback@36(r): inferred by TypeScript; see implementation
 ```
 
-## callback@146
+## callback@148
 
-[Implementation, line 146](../../../../../src/catalog/weapons/library.ts#L146)
+[Implementation, line 148](../../../../../src/catalog/weapons/library.ts#L148)
 
 ```ts
-callback@146(preset): inferred by TypeScript; see implementation
+callback@148(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPresets
 
-[Implementation, line 155](../../../../../src/catalog/weapons/library.ts#L155)
+[Implementation, line 157](../../../../../src/catalog/weapons/library.ts#L157)
 
 ```ts
 weaponPresets(): WeaponPreset[]
@@ -55,12 +55,12 @@ Explicit throws in this body:
 - `new Error(\`Weapon preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate weapon preset id ${preset.id}\`)`
 
-## weaponPresets.callback@169
+## weaponPresets.callback@171
 
-[Implementation, line 169](../../../../../src/catalog/weapons/library.ts#L169)
+[Implementation, line 171](../../../../../src/catalog/weapons/library.ts#L171)
 
 ```ts
-callback@169(a, b): inferred by TypeScript; see implementation
+callback@171(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -69,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## weaponPresetBucket
 
-[Implementation, line 179](../../../../../src/catalog/weapons/library.ts#L179)
+[Implementation, line 181](../../../../../src/catalog/weapons/library.ts#L181)
 
 `library` (ships with the engine) or `custom` (this machine only); undefined for unknown ids.
 
@@ -84,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hasWeaponPreset
 
-[Implementation, line 184](../../../../../src/catalog/weapons/library.ts#L184)
+[Implementation, line 186](../../../../../src/catalog/weapons/library.ts#L186)
 
 ```ts
 hasWeaponPreset(id: string): boolean
@@ -95,17 +95,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `weaponPresets`
 - `weaponPresets().some`
 
-## hasWeaponPreset.callback@185
+## hasWeaponPreset.callback@187
 
-[Implementation, line 185](../../../../../src/catalog/weapons/library.ts#L185)
+[Implementation, line 187](../../../../../src/catalog/weapons/library.ts#L187)
 
 ```ts
-callback@185(preset): inferred by TypeScript; see implementation
+callback@187(preset): inferred by TypeScript; see implementation
 ```
 
 ## weaponPreset
 
-[Implementation, line 188](../../../../../src/catalog/weapons/library.ts#L188)
+[Implementation, line 190](../../../../../src/catalog/weapons/library.ts#L190)
 
 ```ts
 weaponPreset(id: string): WeaponPreset
@@ -121,10 +121,10 @@ Explicit throws in this body:
 
 - `new Error(\`No weapon preset "${id}"\`)`
 
-## weaponPreset.callback@189
+## weaponPreset.callback@191
 
-[Implementation, line 189](../../../../../src/catalog/weapons/library.ts#L189)
+[Implementation, line 191](../../../../../src/catalog/weapons/library.ts#L191)
 
 ```ts
-callback@189(entry): inferred by TypeScript; see implementation
+callback@191(entry): inferred by TypeScript; see implementation
 ```

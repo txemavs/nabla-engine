@@ -44,12 +44,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
+- `blendHeld`
 - `lerp3`
 - `lerpAngle`
 
 ## extrapolate
 
-[Implementation, line 37](../../../../src/net/interpolation.ts#L37)
+[Implementation, line 46](../../../../src/net/interpolation.ts#L46)
 
 ```ts
 extrapolate(last, previous, seconds): inferred by TypeScript; see implementation
@@ -57,7 +58,7 @@ extrapolate(last, previous, seconds): inferred by TypeScript; see implementation
 
 ## lerpAngle
 
-[Implementation, line 51](../../../../src/net/interpolation.ts#L51)
+[Implementation, line 60](../../../../src/net/interpolation.ts#L60)
 
 Shortest-arc interpolation between two angles (radians); the result is wrapped.
 
@@ -71,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SnapshotBuffer.constructor
 
-[Implementation, line 78](../../../../src/net/interpolation.ts#L78)
+[Implementation, line 87](../../../../src/net/interpolation.ts#L87)
 
 Jitter buffer for one remote entity. It maps the sender clock onto the local clock with the
 smallest observed offset (the least-delayed packet), then samples `delayMs` in the past.
@@ -82,7 +83,7 @@ constructor(readonly options: InterpolationOptions = defaultInterpolation, ops?:
 
 ## SnapshotBuffer.newest
 
-[Implementation, line 86](../../../../src/net/interpolation.ts#L86)
+[Implementation, line 95](../../../../src/net/interpolation.ts#L95)
 
 Sender time (ms) of the newest sample, or null when empty.
 
@@ -92,7 +93,7 @@ newest(): number | null
 
 ## SnapshotBuffer.size
 
-[Implementation, line 90](../../../../src/net/interpolation.ts#L90)
+[Implementation, line 99](../../../../src/net/interpolation.ts#L99)
 
 Jitter buffer for one remote entity. It maps the sender clock onto the local clock with the
 smallest observed offset (the least-delayed packet), then samples `delayMs` in the past.
@@ -103,7 +104,7 @@ size(): number
 
 ## SnapshotBuffer.push
 
-[Implementation, line 95](../../../../src/net/interpolation.ts#L95)
+[Implementation, line 104](../../../../src/net/interpolation.ts#L104)
 
 Insert a sample received at local time `receivedAt` (ms). Late duplicates are ignored.
 
@@ -119,17 +120,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.samples.shift`
 - `this.samples.splice`
 
-## SnapshotBuffer.push.callback@99
+## SnapshotBuffer.push.callback@108
 
-[Implementation, line 99](../../../../src/net/interpolation.ts#L99)
+[Implementation, line 108](../../../../src/net/interpolation.ts#L108)
 
 ```ts
-callback@99(s): inferred by TypeScript; see implementation
+callback@108(s): inferred by TypeScript; see implementation
 ```
 
 ## SnapshotBuffer.sample
 
-[Implementation, line 107](../../../../src/net/interpolation.ts#L107)
+[Implementation, line 116](../../../../src/net/interpolation.ts#L116)
 
 Interpolated state at local time `now` (ms), or null before the first sample.
 
@@ -147,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## blendStates
 
-[Implementation, line 127](../../../../src/net/interpolation.ts#L127)
+[Implementation, line 136](../../../../src/net/interpolation.ts#L136)
 
 ```ts
 blendStates(a: EntityState, b: EntityState, alpha: number): EntityState
@@ -163,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## blendWheels
 
-[Implementation, line 139](../../../../src/net/interpolation.ts#L139)
+[Implementation, line 148](../../../../src/net/interpolation.ts#L148)
 
 Per-wheel linear blend; when the wheel counts differ (vehicle changed) the newer one wins.
 
@@ -177,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## blendWheels.mix
 
-[Implementation, line 145](../../../../src/net/interpolation.ts#L145)
+[Implementation, line 154](../../../../src/net/interpolation.ts#L154)
 
 ```ts
 mix(x: number[], y: number[]): inferred by TypeScript; see implementation
@@ -187,17 +188,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `x.map`
 
-## blendWheels.mix.callback@145
+## blendWheels.mix.callback@154
 
-[Implementation, line 145](../../../../src/net/interpolation.ts#L145)
+[Implementation, line 154](../../../../src/net/interpolation.ts#L154)
 
 ```ts
-callback@145(v, i): inferred by TypeScript; see implementation
+callback@154(v, i): inferred by TypeScript; see implementation
 ```
 
 ## extrapolate
 
-[Implementation, line 153](../../../../src/net/interpolation.ts#L153)
+[Implementation, line 162](../../../../src/net/interpolation.ts#L162)
 
 ```ts
 extrapolate(state: EntityState, seconds: number): EntityState
@@ -205,7 +206,7 @@ extrapolate(state: EntityState, seconds: number): EntityState
 
 ## lerp3
 
-[Implementation, line 160](../../../../src/net/interpolation.ts#L160)
+[Implementation, line 169](../../../../src/net/interpolation.ts#L169)
 
 ```ts
 lerp3(a: readonly [number, number, number], b: readonly [number, number, number], k: number): [number, number, number]
@@ -213,7 +214,7 @@ lerp3(a: readonly [number, number, number], b: readonly [number, number, number]
 
 ## slerp
 
-[Implementation, line 169](../../../../src/net/interpolation.ts#L169)
+[Implementation, line 178](../../../../src/net/interpolation.ts#L178)
 
 Shortest-arc quaternion slerp of [x, y, z, w] tuples; the result is normalised.
 
@@ -226,3 +227,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.acos`
 - `Math.hypot`
 - `Math.sin`
+
+## blendHeld
+
+[Implementation, line 210](../../../../src/net/interpolation.ts#L210)
+
+```ts
+blendHeld(a: NonNullable<AvatarSample['held']>, b: NonNullable<AvatarSample['held']>, k: number): NonNullable<AvatarSample['held']>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.hypot`
+- `lerp3`

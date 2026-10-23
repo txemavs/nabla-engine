@@ -6,7 +6,7 @@
 
 ## Module dependencies
 
-- `./interface-theme.js`
+- `../ui/styles.js`
 - `./xr-disposal-portal.js`
 - `./xr-object-grab.js`
 - `./xr-ui-click.js`

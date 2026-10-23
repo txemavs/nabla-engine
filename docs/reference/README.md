@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **604 modules; 7428 executable function definitions**.
+Coverage: **619 modules; 7817 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -20,7 +20,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [game/ar-rc-demo.ts](game/ar-rc-demo.ts.md) | 12 |
 | [game/ar-rc.ts](game/ar-rc.ts.md) | 0 |
 | [game/ar-room.ts](game/ar-room.ts.md) | 0 |
-| [game/ar.ts](game/ar.ts.md) | 131 |
+| [game/ar.ts](game/ar.ts.md) | 132 |
 | [game/asphalt-contrast-ui.ts](game/asphalt-contrast-ui.ts.md) | 8 |
 | [game/boot.ts](game/boot.ts.md) | 6 |
 | [game/clock-wheel.ts](game/clock-wheel.ts.md) | 2 |
@@ -42,7 +42,6 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
 | [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
-| [game/interface-theme.ts](game/interface-theme.ts.md) | 0 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 11 |
 | [game/light-ui.ts](game/light-ui.ts.md) | 9 |
 | [game/loading-text.ts](game/loading-text.ts.md) | 3 |
@@ -54,12 +53,12 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [game/position.ts](game/position.ts.md) | 11 |
 | [game/recover-road-ui.ts](game/recover-road-ui.ts.md) | 5 |
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 1 |
+| [game/scenario-menu.ts](game/scenario-menu.ts.md) | 2 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 122 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 135 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
-| [game/settings-navigation-styles.ts](game/settings-navigation-styles.ts.md) | 0 |
 | [game/settings-scope-boot.ts](game/settings-scope-boot.ts.md) | 0 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 13 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
@@ -72,11 +71,12 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [game/terrain-main.ts](game/terrain-main.ts.md) | 16 |
 | [game/terrain-selector.ts](game/terrain-selector.ts.md) | 8 |
 | [game/terrain.ts](game/terrain.ts.md) | 15 |
+| [game/ui-styles.ts](game/ui-styles.ts.md) | 0 |
 | [game/vehicle-colors.ts](game/vehicle-colors.ts.md) | 3 |
 | [game/vehicle-group.ts](game/vehicle-group.ts.md) | 1 |
 | [game/vehicle-preview.ts](game/vehicle-preview.ts.md) | 3 |
 | [game/vr-entry.ts](game/vr-entry.ts.md) | 21 |
-| [game/vr-ui.ts](game/vr-ui.ts.md) | 26 |
+| [game/vr-ui.ts](game/vr-ui.ts.md) | 27 |
 | [game/world-source.ts](game/world-source.ts.md) | 2 |
 | [game/xr-calibration-ui.ts](game/xr-calibration-ui.ts.md) | 0 |
 | [game/xr-device-info.ts](game/xr-device-info.ts.md) | 15 |
@@ -138,6 +138,10 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/catalog/weapons/slots.ts](src/catalog/weapons/slots.ts.md) | 6 |
 | [src/catalog/weapons/weapon-source.browser.ts](src/catalog/weapons/weapon-source.browser.ts.md) | 2 |
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
+| [src/character/body-slots.ts](src/character/body-slots.ts.md) | 12 |
+| [src/character/index.ts](src/character/index.ts.md) | 0 |
+| [src/character/inventory.ts](src/character/inventory.ts.md) | 26 |
+| [src/character/weapon-loadout.ts](src/character/weapon-loadout.ts.md) | 40 |
 | [src/config/audio.ts](src/config/audio.ts.md) | 0 |
 | [src/config/camera.ts](src/config/camera.ts.md) | 2 |
 | [src/config/controls.ts](src/config/controls.ts.md) | 0 |
@@ -198,15 +202,18 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/math/planar/polygon.ts](src/math/planar/polygon.ts.md) | 4 |
 | [src/math/solid/mesh.ts](src/math/solid/mesh.ts.md) | 26 |
 | [src/math/terrain/heightfield.ts](src/math/terrain/heightfield.ts.md) | 5 |
+| [src/net/authority-schema.ts](src/net/authority-schema.ts.md) | 1 |
+| [src/net/authority.ts](src/net/authority.ts.md) | 39 |
 | [src/net/index.ts](src/net/index.ts.md) | 0 |
-| [src/net/interpolation.ts](src/net/interpolation.ts.md) | 18 |
+| [src/net/interpolation.ts](src/net/interpolation.ts.md) | 19 |
 | [src/net/net-worker-host.ts](src/net/net-worker-host.ts.md) | 14 |
 | [src/net/net-worker.ts](src/net/net-worker.ts.md) | 19 |
 | [src/net/net.worker.ts](src/net/net.worker.ts.md) | 0 |
-| [src/net/protocol.ts](src/net/protocol.ts.md) | 13 |
+| [src/net/protocol.ts](src/net/protocol.ts.md) | 28 |
 | [src/net/remote-avatar.ts](src/net/remote-avatar.ts.md) | 5 |
 | [src/net/remote-vehicle.ts](src/net/remote-vehicle.ts.md) | 4 |
-| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 27 |
+| [src/net/shared-entities.ts](src/net/shared-entities.ts.md) | 29 |
+| [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 31 |
 | [src/net/transport.ts](src/net/transport.ts.md) | 10 |
 | [src/net/websocket-transport.ts](src/net/websocket-transport.ts.md) | 13 |
 | [src/planet/assemble/aeroway.ts](src/planet/assemble/aeroway.ts.md) | 5 |
@@ -287,7 +294,9 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/render/entity/field-lights.ts](src/render/entity/field-lights.ts.md) | 47 |
 | [src/render/entity/gpu-particles.ts](src/render/entity/gpu-particles.ts.md) | 10 |
 | [src/render/entity/headlamp.ts](src/render/entity/headlamp.ts.md) | 5 |
+| [src/render/entity/held-pose.ts](src/render/entity/held-pose.ts.md) | 3 |
 | [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
+| [src/render/entity/hit-volumes.ts](src/render/entity/hit-volumes.ts.md) | 16 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 24 |
 | [src/render/entity/laser-smoke.ts](src/render/entity/laser-smoke.ts.md) | 1 |
 | [src/render/entity/legacy-particles.ts](src/render/entity/legacy-particles.ts.md) | 30 |
@@ -300,7 +309,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 14 |
 | [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
-| [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 12 |
+| [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 31 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
@@ -318,7 +327,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
 | [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 29 |
-| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 164 |
+| [src/render/entity/view.ts](src/render/entity/view.ts.md) | 166 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
 | [src/render/index.ts](src/render/index.ts.md) | 0 |
@@ -341,6 +350,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/render/planet/cluster-culling.ts](src/render/planet/cluster-culling.ts.md) | 31 |
 | [src/render/planet/convert-mesh.ts](src/render/planet/convert-mesh.ts.md) | 2 |
 | [src/render/planet/debug.ts](src/render/planet/debug.ts.md) | 14 |
+| [src/render/planet/dither.ts](src/render/planet/dither.ts.md) | 0 |
 | [src/render/planet/drape.ts](src/render/planet/drape.ts.md) | 10 |
 | [src/render/planet/fog.ts](src/render/planet/fog.ts.md) | 1 |
 | [src/render/planet/geometry.ts](src/render/planet/geometry.ts.md) | 11 |
@@ -411,6 +421,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/action-cam-settings.ts](src/runtime/action-cam-settings.ts.md) | 1 |
 | [src/runtime/action-cam.ts](src/runtime/action-cam.ts.md) | 6 |
+| [src/runtime/actor.ts](src/runtime/actor.ts.md) | 7 |
 | [src/runtime/ar/index.ts](src/runtime/ar/index.ts.md) | 0 |
 | [src/runtime/ar/map-quarters.ts](src/runtime/ar/map-quarters.ts.md) | 18 |
 | [src/runtime/ar/model.ts](src/runtime/ar/model.ts.md) | 41 |
@@ -420,8 +431,9 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 510 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 565 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
+| [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
 | [src/runtime/corner-buttons.ts](src/runtime/corner-buttons.ts.md) | 4 |
@@ -437,17 +449,15 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/ground-audit.ts](src/runtime/ground-audit.ts.md) | 8 |
 | [src/runtime/ground.ts](src/runtime/ground.ts.md) | 8 |
 | [src/runtime/held-keys.ts](src/runtime/held-keys.ts.md) | 7 |
-| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 15 |
+| [src/runtime/held-weapon.ts](src/runtime/held-weapon.ts.md) | 17 |
 | [src/runtime/helm-touch.ts](src/runtime/helm-touch.ts.md) | 1 |
 | [src/runtime/hk-presentation.ts](src/runtime/hk-presentation.ts.md) | 1 |
 | [src/runtime/hud.ts](src/runtime/hud.ts.md) | 4 |
 | [src/runtime/index.ts](src/runtime/index.ts.md) | 0 |
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
-| [src/runtime/interface-style.ts](src/runtime/interface-style.ts.md) | 1 |
-| [src/runtime/interface-theme.ts](src/runtime/interface-theme.ts.md) | 0 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
-| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 23 |
+| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 43 |
 | [src/runtime/map-inspector.ts](src/runtime/map-inspector.ts.md) | 5 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.eu.ts](src/runtime/messages.eu.ts.md) | 0 |
@@ -474,7 +484,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/shader-diagnostics.ts](src/runtime/shader-diagnostics.ts.md) | 4 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 6 |
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
-| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 95 |
+| [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 96 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
@@ -504,6 +514,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/weapon-wheel.ts](src/runtime/weapon-wheel.ts.md) | 5 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
+| [src/runtime/xr-actor-hand.ts](src/runtime/xr-actor-hand.ts.md) | 25 |
 | [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 37 |
 | [src/runtime/xr-body-anchor.ts](src/runtime/xr-body-anchor.ts.md) | 3 |
 | [src/runtime/xr-bow.ts](src/runtime/xr-bow.ts.md) | 23 |
@@ -514,7 +525,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/xr-disposal-portal.ts](src/runtime/xr-disposal-portal.ts.md) | 3 |
 | [src/runtime/xr-forklift.ts](src/runtime/xr-forklift.ts.md) | 7 |
 | [src/runtime/xr-grab.ts](src/runtime/xr-grab.ts.md) | 17 |
-| [src/runtime/xr-hand.ts](src/runtime/xr-hand.ts.md) | 31 |
+| [src/runtime/xr-hand.ts](src/runtime/xr-hand.ts.md) | 34 |
 | [src/runtime/xr-hoop.ts](src/runtime/xr-hoop.ts.md) | 14 |
 | [src/runtime/xr-hud.ts](src/runtime/xr-hud.ts.md) | 3 |
 | [src/runtime/xr-input.ts](src/runtime/xr-input.ts.md) | 6 |
@@ -537,7 +548,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/runtime/xr-stats.ts](src/runtime/xr-stats.ts.md) | 5 |
 | [src/runtime/xr-tracked-hands.ts](src/runtime/xr-tracked-hands.ts.md) | 8 |
 | [src/runtime/xr-ui-click.ts](src/runtime/xr-ui-click.ts.md) | 5 |
-| [src/runtime/xr.ts](src/runtime/xr.ts.md) | 46 |
+| [src/runtime/xr.ts](src/runtime/xr.ts.md) | 48 |
 | [src/runtime/xr/calibration-ui.ts](src/runtime/xr/calibration-ui.ts.md) | 17 |
 | [src/runtime/xr/index.ts](src/runtime/xr/index.ts.md) | 0 |
 | [src/runtime/xr/quality-ui.ts](src/runtime/xr/quality-ui.ts.md) | 18 |
@@ -555,6 +566,7 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/scene/sample.ts](src/scene/sample.ts.md) | 5 |
 | [src/scene/tiles.ts](src/scene/tiles.ts.md) | 3 |
 | [src/simulation/catch-floor.ts](src/simulation/catch-floor.ts.md) | 9 |
+| [src/simulation/combat/damage.ts](src/simulation/combat/damage.ts.md) | 19 |
 | [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
 | [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
 | [src/simulation/forklift.ts](src/simulation/forklift.ts.md) | 7 |
@@ -571,12 +583,12 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
 | [src/simulation/scene-queries.ts](src/simulation/scene-queries.ts.md) | 5 |
 | [src/simulation/simulation-worker-host.ts](src/simulation/simulation-worker-host.ts.md) | 39 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 294 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 295 |
 | [src/simulation/simulation.worker.ts](src/simulation/simulation.worker.ts.md) | 0 |
 | [src/simulation/snapshot-clock.ts](src/simulation/snapshot-clock.ts.md) | 12 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
-| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 147 |
+| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 148 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
 | [src/simulation/vehicle-damage.ts](src/simulation/vehicle-damage.ts.md) | 6 |
@@ -609,6 +621,10 @@ Coverage: **604 modules; 7428 executable function definitions**.
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
 | [src/simulation/weapons/weapon-thermal.ts](src/simulation/weapons/weapon-thermal.ts.md) | 6 |
 | [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 4 |
+| [src/ui/combat-hud.ts](src/ui/combat-hud.ts.md) | 7 |
+| [src/ui/styles.generated.ts](src/ui/styles.generated.ts.md) | 0 |
+| [src/ui/styles.ts](src/ui/styles.ts.md) | 1 |
+| [src/ui/theme.ts](src/ui/theme.ts.md) | 0 |
 | [src/util/gzip.ts](src/util/gzip.ts.md) | 1 |
 | [src/util/sha256.ts](src/util/sha256.ts.md) | 5 |
 | [src/util/uuid.ts](src/util/uuid.ts.md) | 4 |

@@ -41,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteAvatar.attach
 
-[Implementation, line 52](../../../../src/net/remote-avatar.ts#L52)
+[Implementation, line 55](../../../../src/net/remote-avatar.ts#L55)
 
 One remote peer's on-foot body: the same jitter buffer as vehicles (default 100 ms behind,
 at most 250 ms extrapolation), with yaw on the shortest arc.
@@ -52,11 +52,12 @@ attach(view: RemoteAvatarView | null): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.view.dispose`
 - `view?.dispose`
 
 ## RemoteAvatar.update
 
-[Implementation, line 58](../../../../src/net/remote-avatar.ts#L58)
+[Implementation, line 66](../../../../src/net/remote-avatar.ts#L66)
 
 Call once per frame; returns the sample shown, or null when hidden or not ready.
 
@@ -73,7 +74,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RemoteAvatar.dispose
 
-[Implementation, line 75](../../../../src/net/remote-avatar.ts#L75)
+[Implementation, line 83](../../../../src/net/remote-avatar.ts#L83)
 
 One remote peer's on-foot body: the same jitter buffer as vehicles (default 100 ms behind,
 at most 250 ms extrapolation), with yaw on the shortest arc.

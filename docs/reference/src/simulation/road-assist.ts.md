@@ -69,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 58](../../../../src/simulation/road-assist.ts#L58)
 
 Drivable scene-road centrelines in world X/Z (terrain-level, no footways/paths), for the
-R reset snap. Shares the assist's per-revision cache.
+recover (Y) reset snap. Shares the assist's per-revision cache.
 
 ```ts
 centerlines(entities: readonly Entity[], graph: SceneGraph, entitiesById: ReadonlyMap<string, Entity>): RoadCenterline[]

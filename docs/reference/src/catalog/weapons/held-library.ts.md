@@ -10,33 +10,33 @@
 - `../../entity/coords.js`
 - `./weapon-source.js`
 
-## callback@56
+## callback@58
 
-[Implementation, line 56](../../../../../src/catalog/weapons/held-library.ts#L56)
+[Implementation, line 58](../../../../../src/catalog/weapons/held-library.ts#L58)
 
 ```ts
-callback@56(preset): inferred by TypeScript; see implementation
+callback@58(preset): inferred by TypeScript; see implementation
 ```
 
-## callback@61
+## callback@63
 
-[Implementation, line 61](../../../../../src/catalog/weapons/held-library.ts#L61)
+[Implementation, line 63](../../../../../src/catalog/weapons/held-library.ts#L63)
 
 ```ts
-callback@61(preset): inferred by TypeScript; see implementation
+callback@63(preset): inferred by TypeScript; see implementation
 ```
 
-## callback@64
+## callback@66
 
-[Implementation, line 64](../../../../../src/catalog/weapons/held-library.ts#L64)
+[Implementation, line 66](../../../../../src/catalog/weapons/held-library.ts#L66)
 
 ```ts
-callback@64(preset): inferred by TypeScript; see implementation
+callback@66(preset): inferred by TypeScript; see implementation
 ```
 
 ## isHeldWeaponSource
 
-[Implementation, line 70](../../../../../src/catalog/weapons/held-library.ts#L70)
+[Implementation, line 72](../../../../../src/catalog/weapons/held-library.ts#L72)
 
 ```ts
 isHeldWeaponSource(data: unknown): boolean
@@ -44,7 +44,7 @@ isHeldWeaponSource(data: unknown): boolean
 
 ## heldWeaponPresets
 
-[Implementation, line 77](../../../../../src/catalog/weapons/held-library.ts#L77)
+[Implementation, line 79](../../../../../src/catalog/weapons/held-library.ts#L79)
 
 Melee, bow and placeholder presets found at startup.
 
@@ -65,12 +65,12 @@ Explicit throws in this body:
 
 - `new Error(\`Weapon preset ${source.file} is invalid\`, { cause: error })`
 
-## heldWeaponPresets.callback@88
+## heldWeaponPresets.callback@90
 
-[Implementation, line 88](../../../../../src/catalog/weapons/held-library.ts#L88)
+[Implementation, line 90](../../../../../src/catalog/weapons/held-library.ts#L90)
 
 ```ts
-callback@88(a, b): inferred by TypeScript; see implementation
+callback@90(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -79,7 +79,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseHeldWeaponPreset
 
-[Implementation, line 93](../../../../../src/catalog/weapons/held-library.ts#L93)
+[Implementation, line 95](../../../../../src/catalog/weapons/held-library.ts#L95)
 
 Parse one held preset; for tests and hosts that build presets in code.
 

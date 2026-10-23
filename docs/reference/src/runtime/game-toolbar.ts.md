@@ -14,7 +14,7 @@
 
 [Implementation, line 10](../../../../src/runtime/game-toolbar.ts#L10)
 
-Shared engine button look (`.nabla-btn` in interface-style.ts).
+Shared engine button look (`.nabla-btn` in src/ui/styles/buttons.css).
 
 ```ts
 styleButton(button: HTMLButtonElement): void

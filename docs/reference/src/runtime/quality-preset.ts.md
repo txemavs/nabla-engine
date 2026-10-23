@@ -104,12 +104,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parent.append`
 - `sessionStorage.getItem`
 
-## mountMobileQualityButton.callback@109
+## mountMobileQualityButton.callback@104
 
-[Implementation, line 109](../../../../src/runtime/quality-preset.ts#L109)
+[Implementation, line 104](../../../../src/runtime/quality-preset.ts#L104)
 
 ```ts
-callback@109(event): inferred by TypeScript; see implementation
+callback@104(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## takeAutoEnter
 
-[Implementation, line 132](../../../../src/runtime/quality-preset.ts#L132)
+[Implementation, line 127](../../../../src/runtime/quality-preset.ts#L127)
 
 Read and clear the one-shot auto-enter flag.
 
@@ -140,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultStorageSession
 
-[Implementation, line 144](../../../../src/runtime/quality-preset.ts#L144)
+[Implementation, line 139](../../../../src/runtime/quality-preset.ts#L139)
 
 ```ts
 defaultStorageSession(): WriteStorage | undefined

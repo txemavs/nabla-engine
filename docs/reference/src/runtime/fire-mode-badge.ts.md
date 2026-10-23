@@ -23,14 +23,13 @@ constructor(host: HTMLElement): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Object.assign`
 - `element.setAttribute`
 - `host.append`
 - `host.ownerDocument.createElement`
 
 ## FireModeBadge.show
 
-[Implementation, line 31](../../../../src/runtime/fire-mode-badge.ts#L31)
+[Implementation, line 18](../../../../src/runtime/fire-mode-badge.ts#L18)
 
 Small fire-mode label (SEMI / EXPERIMENTAL · RÁFAGA 30) at the bottom right while the pistol is
 drawn on foot. One element; `show(null)` hides it.
@@ -39,9 +38,13 @@ drawn on foot. One element; `show(null)` hides it.
 show(text: string | null): void
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.element.classList.toggle`
+
 ## FireModeBadge.dispose
 
-[Implementation, line 41](../../../../src/runtime/fire-mode-badge.ts#L41)
+[Implementation, line 28](../../../../src/runtime/fire-mode-badge.ts#L28)
 
 Small fire-mode label (SEMI / EXPERIMENTAL · RÁFAGA 30) at the bottom right while the pistol is
 drawn on foot. One element; `show(null)` hides it.

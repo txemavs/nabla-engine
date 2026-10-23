@@ -4,7 +4,7 @@
 
 [Source](../../../../src/simulation/road-snap.ts)
 
-Nearest drivable road centreline for the R reset ("recover") action.
+Nearest drivable road centreline for the recover (Y) reset ("recover") action.
 Positions are metres in the simulation's local frame; only X/Z are compared.
 
 ## Module dependencies

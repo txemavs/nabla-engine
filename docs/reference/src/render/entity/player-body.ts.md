@@ -12,7 +12,11 @@ simulation ({@link localAvatarState}); a remote one gets it from the network.
 
 Asset contract: glTF, metres, Y-up, facing +Z, feet at y = 0, clips named as the states,
 no root motion (the game moves the object). An `Object3D` with
-`userData.nabla_attach === 'createMonitorAvatar'` is the head socket.
+`userData.nabla_attach === 'createMonitorAvatar'` is the head socket. Optional named sockets:
+`WeaponSocket_R` (held weapon: −Z barrel, +Y top; the weapon's `GripSocket` lands on it) and
+any socket an {@link PlayerBodyAttachment} names (belt, holster, baton…). Materials may carry
+`extras.nabla_color_slot` (`primary` / `secondary` / `tertiary` / `light`) for
+{@link PlayerBodyAssets.colors}.
 
 ## Module dependencies
 
@@ -24,7 +28,7 @@ no root motion (the game moves the object). An `Object3D` with
 
 ## localAvatarState
 
-[Implementation, line 87](../../../../../src/render/entity/player-body.ts#L87)
+[Implementation, line 114](../../../../../src/render/entity/player-body.ts#L114)
 
 Next animation state from the player's movement. Pure, so the same rules hold wherever the
 state is computed. `previous` keeps the jump phases in order (start → loop → land).
@@ -35,7 +39,7 @@ localAvatarState(previous: AvatarAnimState, input: AvatarInput): AvatarAnimState
 
 ## PlayerBodyRig.constructor
 
-[Implementation, line 100](../../../../../src/render/entity/player-body.ts#L100)
+[Implementation, line 127](../../../../../src/render/entity/player-body.ts#L127)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -45,7 +49,7 @@ constructor(private readonly source: THREE.Object3D, readonly clips: readonly TH
 
 ## PlayerBodyRig.load
 
-[Implementation, line 104](../../../../../src/render/entity/player-body.ts#L104)
+[Implementation, line 131](../../../../../src/render/entity/player-body.ts#L131)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -60,10 +64,39 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `loader.loadAsync`
 - `new GLTFLoader().setMeshoptDecoder`
+- `parts.forEach`
+- `parts.map`
+- `recolor`
+
+## PlayerBodyRig.load.callback@138
+
+[Implementation, line 138](../../../../../src/render/entity/player-body.ts#L138)
+
+```ts
+callback@138(part): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `loader.loadAsync`
+
+## PlayerBodyRig.load.callback@141
+
+[Implementation, line 141](../../../../../src/render/entity/player-body.ts#L141)
+
+```ts
+callback@141(part, index): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `console.warn`
+- `socket.add`
+- `source.getObjectByName`
 
 ## PlayerBodyRig.create
 
-[Implementation, line 114](../../../../../src/render/entity/player-body.ts#L114)
+[Implementation, line 160](../../../../../src/render/entity/player-body.ts#L160)
 
 A new body sharing this rig's geometry, materials and clips.
 
@@ -76,9 +109,80 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `PlayerBody`
 - `cloneSkinned`
 
+## recolor
+
+[Implementation, line 166](../../../../../src/render/entity/player-body.ts#L166)
+
+Swap materials tagged `nabla_color_slot` for tinted copies (bodies and XR hands share it).
+
+```ts
+recolor(root: THREE.Object3D, colors: NonNullable<PlayerBodyAssets['colors']>): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `root.traverse`
+
+## recolor.callback@171
+
+[Implementation, line 171](../../../../../src/render/entity/player-body.ts#L171)
+
+```ts
+callback@171(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Array.isArray`
+- `mesh.material.map`
+- `swap`
+
+## recolor.callback@171.swap
+
+[Implementation, line 174](../../../../../src/render/entity/player-body.ts#L174)
+
+```ts
+swap(material: THREE.Material): THREE.Material
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(copy as THREE.MeshStandardMaterial).color.set`
+- `done.get`
+- `done.set`
+- `material.clone`
+
+## alignBone
+
+[Implementation, line 199](../../../../../src/render/entity/player-body.ts#L199)
+
+Turn `bone` (world space) so the direction to `child` points along `direction`.
+
+```ts
+alignBone(bone: THREE.Object3D, child: THREE.Object3D, direction: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `bone.getWorldPosition`
+- `bone.getWorldQuaternion`
+- `bone.getWorldQuaternion(new THREE.Quaternion()).premultiply`
+- `bone.parent.getWorldQuaternion`
+- `bone.quaternion.copy`
+- `bone.updateWorldMatrix`
+- `direction.clone`
+- `direction.clone().normalize`
+- `direction.lengthSq`
+- `new THREE.Quaternion().setFromUnitVectors`
+- `parent.invert`
+- `parent.invert().multiply`
+
 ## PlayerBody.constructor
 
-[Implementation, line 130](../../../../../src/render/entity/player-body.ts#L130)
+[Implementation, line 236](../../../../../src/render/entity/player-body.ts#L236)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -92,22 +196,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.AnimationClip.findByName`
 - `THREE.AnimationMixer`
 - `action.setLoop`
+- `model.getObjectByName`
 - `model.traverse`
 - `this.actions.set`
+- `this.fall.add`
 - `this.mixer.clipAction`
 - `this.root.add`
 
-## PlayerBody.constructor.callback@136
+## PlayerBody.constructor.callback@245
 
-[Implementation, line 136](../../../../../src/render/entity/player-body.ts#L136)
+[Implementation, line 245](../../../../../src/render/entity/player-body.ts#L245)
 
 ```ts
-callback@136(object): inferred by TypeScript; see implementation
+callback@245(object): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.holstered.push`
 
 ## PlayerBody.state
 
-[Implementation, line 155](../../../../../src/render/entity/player-body.ts#L155)
+[Implementation, line 266](../../../../../src/render/entity/player-body.ts#L266)
 
 The state being shown (after a one-shot ends this is what follows it).
 
@@ -117,7 +227,7 @@ state(): AvatarAnimState | null
 
 ## PlayerBody.finished
 
-[Implementation, line 160](../../../../../src/render/entity/player-body.ts#L160)
+[Implementation, line 271](../../../../../src/render/entity/player-body.ts#L271)
 
 True when the one-shot clip of the current state has finished.
 
@@ -131,7 +241,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.animate
 
-[Implementation, line 166](../../../../../src/render/entity/player-body.ts#L166)
+[Implementation, line 277](../../../../../src/render/entity/player-body.ts#L277)
 
 Show `state` at `speed` (m/s, sets the stride rate) and advance the clips by `dt`.
 
@@ -148,11 +258,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `next.reset`
 - `next.reset().play`
 - `this.actions.get`
+- `this.applyReactions`
 - `this.mixer.update`
 
 ## PlayerBody.apply
 
-[Implementation, line 180](../../../../../src/render/entity/player-body.ts#L180)
+[Implementation, line 293](../../../../../src/render/entity/player-body.ts#L293)
 
 Remote players: place and animate from a network state.
 
@@ -166,9 +277,129 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.fromArray`
 - `this.root.rotation.set`
 
+## PlayerBody.armBones
+
+[Implementation, line 304](../../../../../src/render/entity/player-body.ts#L304)
+
+Bones of one arm (upper arm, forearm, hand), found by name: `<Left|Right>Arm`,
+`<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig`). Null when
+the rig has no such bones.
+
+```ts
+armBones(hand: 'left' | 'right'): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `find`
+- `this.arms.get`
+- `this.arms.set`
+
+## PlayerBody.armBones.find
+
+[Implementation, line 310](../../../../../src/render/entity/player-body.ts#L310)
+
+```ts
+find(suffix: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `RegExp`
+- `this.root.traverse`
+
+## PlayerBody.armBones.find.callback@314
+
+[Implementation, line 314](../../../../../src/render/entity/player-body.ts#L314)
+
+```ts
+callback@314(object): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `tail.test`
+
+## PlayerBody.aimArm
+
+[Implementation, line 335](../../../../../src/render/entity/player-body.ts#L335)
+
+One player's body: its own skeleton and mixer over the shared rig.
+
+```ts
+aimArm(hand: 'left' | 'right', direction: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `bone.getWorldPosition`
+- `bone.getWorldQuaternion`
+- `bone.getWorldQuaternion(world).premultiply`
+- `bone.parent.getWorldQuaternion`
+- `bone.quaternion.copy`
+- `bone.updateWorldMatrix`
+- `child.getWorldPosition`
+- `child.getWorldPosition(a).sub`
+- `child.getWorldPosition(a).sub(bone.getWorldPosition(b)).normalize`
+- `direction.clone`
+- `direction.clone().normalize`
+- `direction.lengthSq`
+- `parent.identity`
+- `parent.invert`
+- `parent.invert().multiply`
+- `this.armBones`
+- `this.root.updateWorldMatrix`
+- `turn.setFromUnitVectors`
+
+## PlayerBody.reachHand
+
+[Implementation, line 363](../../../../../src/render/entity/player-body.ts#L363)
+
+One player's body: its own skeleton and mixer over the shared rig.
+
+```ts
+reachHand(hand: 'left' | 'right', target: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sqrt`
+- `THREE.MathUtils.clamp`
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `a.clone`
+- `a.clone().addScaledVector`
+- `a.distanceTo`
+- `alignBone`
+- `b.distanceTo`
+- `chain.arm.getWorldPosition`
+- `chain.forearm.getWorldPosition`
+- `chain.hand.getWorldPosition`
+- `elbow.clone`
+- `elbow.clone().sub`
+- `n.lengthSq`
+- `n.normalize`
+- `n.set`
+- `new THREE.Vector3(0, -1, 0).addScaledVector`
+- `new THREE.Vector3(0, 0, 1).applyQuaternion`
+- `pole.dot`
+- `pole.sub`
+- `reach.sub`
+- `target.clone`
+- `target.clone().sub`
+- `this.armBones`
+- `this.root.getWorldQuaternion`
+- `this.root.updateWorldMatrix`
+- `toTarget.length`
+- `toTarget.normalize`
+- `u.clone`
+- `u.clone().multiplyScalar`
+
 ## PlayerBody.headIn
 
-[Implementation, line 187](../../../../../src/render/entity/player-body.ts#L187)
+[Implementation, line 402](../../../../../src/render/entity/player-body.ts#L402)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -183,9 +414,152 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.head.getWorldPosition`
 - `this.root.updateWorldMatrix`
 
+## PlayerBody.flinch
+
+[Implementation, line 412](../../../../../src/render/entity/player-body.ts#L412)
+
+One player's body: its own skeleton and mixer over the shared rig.
+
+```ts
+flinch(bone: THREE.Object3D, direction: THREE.Vector3, strength = 0.35): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `axis.lengthSq`
+- `axis.normalize`
+- `axis.normalize().applyQuaternion`
+- `axis.set`
+- `bone.getWorldQuaternion`
+- `bone.parent?.updateWorldMatrix`
+- `new THREE.Vector3(0, 1, 0).cross`
+- `this.flinches.push`
+- `this.flinches.shift`
+- `world.invert`
+
+## PlayerBody.collapsed
+
+[Implementation, line 425](../../../../../src/render/entity/player-body.ts#L425)
+
+True while collapsed (dead).
+
+```ts
+collapsed(): boolean
+```
+
+## PlayerBody.collapseFrom
+
+[Implementation, line 430](../../../../../src/render/entity/player-body.ts#L430)
+
+Death: fall over away from `direction` (world; default backwards) and stop animating.
+
+```ts
+collapseFrom(direction?: THREE.Vector3): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Quaternion`
+- `THREE.Vector3`
+- `direction?.clone`
+- `local.lengthSq`
+- `local.normalize`
+- `local.set`
+- `new THREE.Vector3(0, 0, 1).applyQuaternion`
+- `new THREE.Vector3(0, 1, 0).cross`
+- `new THREE.Vector3(0, 1, 0).cross(local.normalize()).normalize`
+- `this.root.getWorldQuaternion`
+- `this.root.getWorldQuaternion(new THREE.Quaternion()).invert`
+- `this.root.updateWorldMatrix`
+
+## PlayerBody.revive
+
+[Implementation, line 447](../../../../../src/render/entity/player-body.ts#L447)
+
+Stand up again (respawn).
+
+```ts
+revive(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.fall.position.set`
+- `this.fall.quaternion.identity`
+
+## PlayerBody.applyReactions
+
+[Implementation, line 454](../../../../../src/render/entity/player-body.ts#L454)
+
+One player's body: its own skeleton and mixer over the shared rig.
+
+```ts
+applyReactions(dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.min`
+- `f.bone.quaternion.multiply`
+- `scratchQ.setFromAxisAngle`
+- `this.fall.quaternion.setFromAxisAngle`
+- `this.flinches.splice`
+
+## PlayerBody.hasHolster
+
+[Implementation, line 478](../../../../../src/render/entity/player-body.ts#L478)
+
+True when the body has a holstered weapon part.
+
+```ts
+hasHolster(): boolean
+```
+
+## PlayerBody.setHolstered
+
+[Implementation, line 483](../../../../../src/render/entity/player-body.ts#L483)
+
+Show or hide the holstered weapon (hide it while the player holds a weapon).
+
+```ts
+setHolstered(visible: boolean): void
+```
+
+## PlayerBody.holdAtHand
+
+[Implementation, line 492](../../../../../src/render/entity/player-body.ts#L492)
+
+One player's body: its own skeleton and mixer over the shared rig.
+
+```ts
+holdAtHand(weapon: THREE.Object3D, keepOrientation = false): boolean
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `THREE.Vector3`
+- `grip.getWorldPosition`
+- `gripInverse.copy`
+- `gripInverse.copy(weapon.matrixWorld).invert`
+- `gripInverse.copy(weapon.matrixWorld).invert().multiply`
+- `gripInverse.copy(weapon.matrixWorld).invert().multiply(grip.matrixWorld).invert`
+- `gripInverse.identity`
+- `parent.worldToLocal`
+- `parent.worldToLocal(target.clone()).sub`
+- `socket.getWorldPosition`
+- `target.clone`
+- `this.root.updateWorldMatrix`
+- `weapon.getObjectByName`
+- `weapon.getWorldPosition`
+- `weapon.position.add`
+- `weapon.updateMatrixWorld`
+- `weapon.updateWorldMatrix`
+
 ## PlayerBody.dispose
 
-[Implementation, line 193](../../../../../src/render/entity/player-body.ts#L193)
+[Implementation, line 521](../../../../../src/render/entity/player-body.ts#L521)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
