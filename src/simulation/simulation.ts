@@ -431,6 +431,16 @@ export class Simulation {
       waited: 0,
     }
   }
+  /** Authority was lost: detach even while moving, without modifying the vehicle's physics. */
+  leaveVehicleAt(position: Vec3Tuple): void {
+    if (!position.every(Number.isFinite)) throw new Error('Invalid player relocation')
+    if (this.vehicleId) {
+      this.vehicleId = null
+      this.setInterior(null)
+      this.placeOnFoot(new Vec3(...position))
+    }
+    this.relocatePlayer(position)
+  }
   /**
    * Move the on-foot player to `position` (body centre, metres) and, when given, face `yaw`
    * (radians, the input yaw). Velocity and ground contact are reset, a queued jump is dropped and

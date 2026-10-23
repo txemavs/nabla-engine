@@ -143,6 +143,46 @@ protocol-2 worlds even when names match.
 
 ## Deployment limits and validation
 
+### Authored vehicles and confirmed entry
+
+`Entity.networkId` is an optional stable ID (`[A-Za-z0-9_.:-]{1,64}`) scoped by the
+instance and content revision. Use the same ID for the same authored vehicle on every
+client. `placeVehicle` preserves it while generating a separate local physics ID.
+The geographic host fleet accepts `networkId`; old lists default to `map.host.<index>`.
+Explicit IDs survive list reordering; changing an index-based list requires a new content
+revision. Player-created vehicles retain random IDs. IDs are not asset/preset IDs: two
+authored cars of the same model need different IDs.
+
+Publishing an existing ID never overwrites its driver, pose or parameters. The first
+accepted publication supplies the record. An in-range record binds the local copy;
+`entity.unavailable {i, reason}` removes a provisional copy if the real vehicle moved
+outside that client's interest, was deleted, or admission limits reject publication.
+Reasons are `outside-interest` and `removed-or-capacity`. A client must not republish a
+hidden vehicle with a fresh ID. Pending asynchronous view creation is reconciled so it
+cannot leave both an authored body and a remote body. These are cooperative authored
+IDs, not an authenticated server-side map manifest.
+
+For entry send `entity.claim {i, r}` where `r` is a per-connection request ID with the same
+ID syntax. The relay validates visibility, 15 m reach, occupancy and the one-driver rule.
+It publishes the authoritative entity record before replying only to the requester with
+`entity.claim.result {i, r, ok, reason}`. Denial reasons are `unknown`, `out-of-reach`,
+`occupied`, and `already-driving`; success has an empty reason. Uncorrelated legacy
+claims retain their record-based behaviour. Protocol 1 is unchanged.
+
+`SharedEntities.claimConfirmed()` waits for both the matching success and a matching
+driver record. It permits one pending request and times out after 4 seconds, sending an
+ordered release to undo a delayed grant. Disconnect cancels pending promises; stale
+acknowledgements cannot seat the player. A host uses `GameRuntime.vehicleEntryAllowed`
+to gate interaction and performs entry only after confirmation, rechecking proximity.
+`Simulation.leaveVehicleAt()` detaches even from a moving vehicle without changing its
+pose or velocity. The threaded simulation forwards the same operation.
+
+Euskadi detaches on disconnect and keeps the local/shared association. After welcome it
+retries only a surviving, unoccupied vehicle. If another player took it or it is no
+longer nearby, the returning player stays on foot, with the resumed identity and no
+duplicate car. A disconnected driver's seat is not reserved. No disk persistence was added;
+all records still follow the relay's in-memory world/session lifetime.
+
 | Environment variable   | Default | Meaning                                                          |
 | ---------------------- | ------- | ---------------------------------------------------------------- |
 | `WORLD_RADIUS`         | 250     | Observer radius in metres, positive integer.                     |
@@ -166,7 +206,11 @@ npx vitest run test/net
 npx tsc -p tsconfig.build.json --noEmit
 ```
 
-Tests exercise 70 simultaneous clients with a per-client cap of 64, traversal without
+Tests exercise 160 simultaneous clients moving between two dense neighbourhoods over four
+rounds with a per-client cap of 64; diagnostics report received bytes and snapshot counts.
+They also cover simultaneous claims (exactly one succeeds), contested resume, a late
+publication of a moved/deleted authored vehicle, timeout and stale acknowledgements,
+asynchronous duplicate-view loading, and runtime entry/detachment. They cover traversal without
 rejoining/control loss, resume and expiry, content/instance isolation, planetary date-line
 neighbours, real relay-to-client conversion between geographic origins, and local GLB space.
 This is functional integration coverage, not a load benchmark.

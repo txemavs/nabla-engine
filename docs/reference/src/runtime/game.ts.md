@@ -354,7 +354,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispatch
 
-[Implementation, line 260](../../../../src/runtime/game.ts#L260)
+[Implementation, line 262](../../../../src/runtime/game.ts#L262)
 
 Preferred entry for keyboard, XR and other hosts: no physical key codes.
 
@@ -374,6 +374,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.entityTransform`
 - `sim.interact`
 - `sim.liftNearbyBike`
+- `sim.nearestVehicle`
 - `sim.recoverVehicle`
 - `sim.setStance`
 - `sim.shiftVehicle`
@@ -383,3 +384,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sim.transferControls`
 - `this.recover.roads`
 - `this.text`
+- `this.vehicleEntryAllowed`

@@ -31,6 +31,19 @@ Environment: `PORT` (10003), `HOST` (0.0.0.0), `MAX_ROOM` (64), `MAX_FRAME` byte
 
 ## Connection liveness and slow clients
 
+Protocol 2 now supports correlated vehicle entry: `entity.claim {i,r}` receives
+`entity.claim.result {i,r,ok,reason}` after the authoritative record on success. Clients
+must remain on foot until confirmed. Stable authored entity IDs prevent duplicate vehicles;
+late publications of moved/deleted objects receive `entity.unavailable` rather than creating
+another object. See [the complete contract](../../docs/continuous-world.md#authored-vehicles-and-confirmed-entry).
+Disconnect releases the seat immediately; resuming an identity does not reclaim an occupied
+vehicle. State remains in memory, with no persistence across relay restarts.
+
+Tests include 160 moving WebSocket clients, the 64-neighbour cap, simultaneous entry,
+contested resume and late map publications. Population diagnostics are functional regression
+results, not a supported production capacity measurement. CI installs this service's own
+lockfile before running these tests and the engine integration tests.
+
 The relay uses native WebSocket ping/pong control frames. Browsers answer automatically;
 no JSON heartbeat message, client change or protocol-version bump is needed. Every
 `HEARTBEAT_INTERVAL_MS` it pings each open connection. If the previous ping still has no

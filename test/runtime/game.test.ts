@@ -17,6 +17,48 @@ const scene = (): SceneDocument => ({
     presetVehicle('car', 'car', [0, 0.7, 0]),
   ],
 })
+it('keeps interaction on foot until the authority gate grants entry; exit stays available', async () => {
+  const game = new GameRuntime()
+  try {
+    await game.play(scene())
+    for (let i = 0; i < 120; i++) game.step(1 / 60, idleInput(), 0, (i * 1000) / 60)
+    game.vehicleEntryAllowed = () => false
+    expect(game.dispatch('interact')).toContain('Esperando')
+    expect(game.simulation!.player.vehicleId).toBeNull()
+    game.vehicleEntryAllowed = () => true
+    expect(game.dispatch('interact')).toContain('Conduciendo')
+    game.vehicleEntryAllowed = () => false
+    game.dispatch('interact')
+    expect(game.simulation!.player.vehicleId).toBeNull()
+  } finally {
+    game.dispose()
+  }
+})
+it('authority loss detaches from a moving vehicle without relocating or stopping it', async () => {
+  const game = new GameRuntime()
+  try {
+    await game.play(scene(), { vehicleId: 'car' })
+    const sim = game.simulation!
+    sim.setEntityKinematic('car', true)
+    sim.moveKinematicEntity(
+      'car',
+      { position: [10, 2, 0], rotation: [0, 0, 0, 1] },
+      [15, 0, 0],
+      [0, 0, 0],
+    )
+    const pose = sim.entityTransform('car')
+    const velocity = sim.entityVelocity('car')
+    sim.leaveVehicleAt([13, 2, 0])
+    expect(sim.player.vehicleId).toBeNull()
+    expect(sim.player.position).toEqual([13, 2, 0])
+    expect(sim.entityTransform('car')).toEqual(pose)
+    expect(sim.entityVelocity('car')).toEqual(velocity)
+    sim.leaveVehicleAt([14, 2, 0])
+    expect(sim.player.position).toEqual([14, 2, 0])
+  } finally {
+    game.dispose()
+  }
+})
 it('climbs with the same shared flight action and input used by browser hosts', async () => {
   const game = new GameRuntime(),
     doc = scene()

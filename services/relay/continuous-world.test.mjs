@@ -12,6 +12,11 @@ const pose = (p) => ({
   angularVelocity: [0, 0, 0],
 })
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const event = (s, kind, data) => s.json({ type: 'event', kind, data })
+const claim = async (s, id, r) => {
+  event(s, 'entity.claim', { i: id, r })
+  return (await s.next('event', (m) => m.kind === 'entity.claim.result' && m.data.r === r)).data
+}
 async function until(predicate) {
   for (let i = 0; i < 200; i++) {
     if (predicate()) return
@@ -85,6 +90,113 @@ test('spatial grid finds neighbours across negative boundaries and updates/delet
   assert.deepEqual(grid.near([0, 0, 0], 5), [])
   assert.equal(grid.entries.size, 2)
 })
+
+test('one authored vehicle, simultaneous confirmed entry, and a contested resume', async (t) => {
+  const relay = await setup(t)
+  const a = await join(relay),
+    b = await join(relay, [2, 0, 0])
+  const car = { i: 'map.car.1', y: 'vehicle', p: [1, 0, 0], q: [0, 0, 0, 1] }
+  event(a, 'entity.spawn', car)
+  event(b, 'entity.spawn', car)
+  await until(() => a.objects.has(car.i) && b.objects.has(car.i))
+  assert.equal(a.objects.size, 1)
+  assert.equal(b.objects.size, 1)
+  const results = await Promise.all([claim(a, car.i, 'a'), claim(b, car.i, 'b')])
+  assert.equal(results.filter((r) => r.ok).length, 1)
+  assert.equal(results.find((r) => !r.ok).reason, 'occupied')
+  const winner = results[0].ok ? a : b,
+    other = winner === a ? b : a
+  const { peer, resume } = winner.welcome
+  winner.close()
+  await once(winner, 'close')
+  await until(() => !other.objects.get(car.i).d)
+  assert.equal((await claim(other, car.i, 'takeover')).ok, true)
+  const returned = await join(relay, [1, 0, 0], { resume })
+  assert.equal(returned.welcome.peer, peer)
+  assert.equal(returned.objects.get(car.i).d, other.welcome.peer)
+  assert.equal((await claim(returned, car.i, 'resume')).reason, 'occupied')
+  assert.equal(returned.objects.size, 1)
+})
+
+test('late authored publication cannot recreate a moved or removed vehicle', async (t) => {
+  const relay = await setup(t)
+  const a = await join(relay)
+  const car = { i: 'map.car', y: 'vehicle', p: [0, 0, 0], q: [0, 0, 0, 1] }
+  event(a, 'entity.spawn', car)
+  await until(() => a.objects.has(car.i))
+  assert.equal((await claim(a, car.i, 'drive')).ok, true)
+  a.json({ type: 'snapshot', seq: 0, t: 0, e: car.i, state: pose([1000, 0, 0]) })
+  const late = await join(relay)
+  event(late, 'entity.spawn', car)
+  assert.equal(
+    (await late.next('event', (m) => m.kind === 'entity.unavailable')).data.reason,
+    'outside-interest',
+  )
+  assert.equal(late.objects.size, 0)
+  const nearby = await join(relay, [1000, 0, 0])
+  assert.deepEqual(nearby.objects.get(car.i).p, [1000, 0, 0])
+  event(a, 'entity.release', { i: car.i })
+  event(a, 'entity.despawn', { i: car.i })
+  await until(() => !nearby.objects.has(car.i))
+  event(late, 'entity.spawn', car)
+  assert.equal(
+    (await late.next('event', (m) => m.kind === 'entity.unavailable')).data.reason,
+    'removed-or-capacity',
+  )
+})
+
+test(
+  'population moves between dense neighbourhoods without exceeding 64 neighbours',
+  { timeout: 20000 },
+  async (t) => {
+    const relay = await setup(t)
+    const peers = []
+    for (let i = 0; i < 160; i++) peers.push(await join(relay, [i < 80 ? i : 1000 + i, 0, 0]))
+    await until(() => peers.every((p) => p.visible.size === 64))
+    const ids = peers.map((p) => p.welcome.peer)
+    let bytes = 0,
+      snapshots = 0,
+      peakNeighbours = 0
+    for (const p of peers)
+      p.on('message', (raw) => {
+        bytes += raw.length
+        if (JSON.parse(String(raw)).type === 'snapshot') snapshots++
+        peakNeighbours = Math.max(peakNeighbours, p.visible.size)
+      })
+    for (let round = 0; round < 4; round++) {
+      for (let i = 0; i < peers.length; i++) {
+        const group = (i + round * 40) % 160 < 80 ? 0 : 1000
+        peers[i].json({
+          type: 'snapshot',
+          seq: round,
+          t: round * 100,
+          avatar: { p: [group + (i % 80), 0, 0], y: 0, s: 0, a: 0 },
+        })
+      }
+      await until(() =>
+        peers.every(
+          (p, i) =>
+            p.visible.size === 64 &&
+            [...p.visible].every(
+              (id) => (ids.indexOf(id) + round * 40) % 160 < 80 === (i + round * 40) % 160 < 80,
+            ),
+        ),
+      )
+    }
+    assert.ok(peakNeighbours <= 64)
+    assert.ok(snapshots > 0)
+    assert.ok(peers.every((p) => p.readyState === WebSocket.OPEN))
+    t.diagnostic(
+      JSON.stringify({
+        clients: peers.length,
+        rounds: 4,
+        peakNeighbours,
+        snapshots,
+        receivedBytes: bytes,
+      }),
+    )
+  },
+)
 
 test(
   'on-foot planetary snapshots carry orientation and stale sequences cannot move the observer backwards',
