@@ -94,11 +94,10 @@ test('HK begins on the ground, can only be collected on foot, and survives board
         ],
       },
     })
-    // Inline physics: the test boards and zooms in one synchronous frame; with the default
-    // pipelined worker, startInVehicle only reaches player.vehicleId on the next worker state.
-    await runtime.play({ physicsWorker: false })
+    await runtime.play()
     const internal = runtime as unknown as {
       action(code: string): void
+      frameBusy: boolean
       weaponDrawn: boolean
       session: {
         simulation: { player: { vehicleId: string | null }; startInVehicle(id: string): void }
@@ -122,6 +121,15 @@ test('HK begins on the ground, can only be collected on foot, and survives board
       vehicle: internal.session.simulation.player.vehicleId,
     }
     internal.session.simulation.startInVehicle('car')
+    // The default pipelined physics worker publishes the boarding with a later step: run
+    // animation frames until it does (inline physics has it at once).
+    let now = performance.now()
+    for (let i = 0; i < 120 && internal.session.simulation.player.vehicleId !== 'car'; i++) {
+      runtime.tick((now += 1000 / 60))
+      while (internal.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 1000 / 60))
+    }
+    const aboard = internal.session.simulation.player.vehicleId
     const boarded = { owned: runtime.weaponOwned, drawn: internal.weaponDrawn }
     document.querySelector('canvas')!.focus()
     internal.cameraState.mode = 'cinematic'
@@ -138,7 +146,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
     runtime.stop()
     const reset = !runtime.weaponOwned && runtime.worldPickups.length === 0
     runtime.dispose()
-    return { initial, blocked, picked, boarded, zoom, chaseZoom, reset }
+    return { initial, blocked, picked, boarded, aboard, zoom, chaseZoom, reset }
   }, process.cwd())
   expect(result.initial).toMatchObject({ owned: false, pickups: 1 })
   expect(result.initial.model).toBeGreaterThan(0)
@@ -146,6 +154,7 @@ test('HK begins on the ground, can only be collected on foot, and survives board
   expect(result.blocked).toBe(true)
   expect(result.picked).toEqual({ owned: true, drawn: true, pickups: 0, vehicle: null })
   expect(result.boarded).toEqual({ owned: true, drawn: true })
+  expect(result.aboard).toBe('car')
   expect(result.zoom).toBeLessThan(0.5)
   expect(result.chaseZoom).toBeLessThan(1)
   expect(result.reset).toBe(true)
