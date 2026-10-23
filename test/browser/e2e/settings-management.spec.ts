@@ -27,7 +27,7 @@ test('settings files are previewed before import, export excludes unrelated data
     process.cwd().replaceAll('\\', '/'),
   )
   const downloaded = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }).click()
+  await page.getByRole('button', { name: 'Save all settings as JSON', exact: true }).click()
   const file = await downloaded,
     backup = JSON.parse(await readFile((await file.path())!, 'utf8'))
   expect(backup.local['nabla.cameraFov']).toBe('20')
@@ -35,44 +35,40 @@ test('settings files are previewed before import, export excludes unrelated data
   expect(backup.local['nabla.terrain.cache']).toBeUndefined()
   expect(backup.query).toEqual({ quality: 'mobile' })
   const invalid = { ...backup, local: { token: 'bad' } }
-  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+  await page.getByLabel('Settings JSON file').setInputFiles({
     name: 'invalid.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(invalid)),
   })
-  await expect(page.getByRole('status')).toContainText('No se ha importado nada')
+  await expect(page.getByRole('status')).toContainText('Nothing was imported')
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
   const imported = { ...backup, local: { 'nabla.cameraFov': '30' } }
-  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+  await page.getByLabel('Settings JSON file').setInputFiles({
     name: 'settings.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(imported)),
   })
   await expect(
-    page.getByRole('button', { name: 'Aplicar ajustes y recargar', exact: true }),
+    page.getByRole('button', { name: 'Apply settings and reload', exact: true }),
   ).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
-  await page.getByRole('button', { name: 'Cancelar importación', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancel import', exact: true }).click()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('20')
-  await page.getByLabel('Archivo JSON de ajustes').setInputFiles({
+  await page.getByLabel('Settings JSON file').setInputFiles({
     name: 'settings.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(imported)),
   })
-  await page.getByRole('button', { name: 'Aplicar ajustes y recargar', exact: true }).click()
+  await page.getByRole('button', { name: 'Apply settings and reload', exact: true }).click()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('30')
   expect(await page.evaluate(() => localStorage.getItem('nabla.usb.controllers.v1'))).toBeTruthy()
-  await page
-    .getByRole('button', { name: 'Restablecer valores predeterminados…', exact: true })
-    .click()
+  await page.getByRole('button', { name: 'Reset to defaults…', exact: true }).click()
   await expect(
-    page.getByRole('button', { name: 'Confirmar restablecimiento y recargar', exact: true }),
+    page.getByRole('button', { name: 'Confirm reset and reload', exact: true }),
   ).toBeDisabled()
   expect(await page.evaluate(() => localStorage.getItem('nabla.cameraFov'))).toBe('30')
-  await page.getByLabel('Entiendo qué ajustes se van a restablecer').check()
-  await page
-    .getByRole('button', { name: 'Confirmar restablecimiento y recargar', exact: true })
-    .click()
+  await page.getByLabel('I understand which settings will be reset').check()
+  await page.getByRole('button', { name: 'Confirm reset and reload', exact: true }).click()
   const result = await page.evaluate(() => ({
     camera: localStorage.getItem('nabla.cameraFov'),
     usb: localStorage.getItem('nabla.usb.controllers.v1'),
