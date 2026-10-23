@@ -40,6 +40,7 @@ format(value): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `km`
+- `t`
 
 ## format
 
@@ -49,6 +50,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 format(value): inferred by TypeScript; see implementation
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
+
 ## format
 
 [Implementation, line 51](../../../game/distances-ui.ts#L51)
@@ -56,6 +61,10 @@ format(value): inferred by TypeScript; see implementation
 ```ts
 format(value): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
 
 ## adopt
 

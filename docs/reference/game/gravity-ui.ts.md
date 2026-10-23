@@ -69,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 49](../../../game/gravity-ui.ts#L49)
 
-«Gravedad» slider in the «Conducción» section (Ajustes → Opciones).
+Gravity slider in Settings → Options → Driving.
 
 ```ts
 bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void

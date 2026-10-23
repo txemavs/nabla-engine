@@ -12,7 +12,7 @@ Once the game starts, the settings HUD (`settings-hud.ts`, `SECTION_TABS`) moves
 
 ## menuSections
 
-[Implementation, line 18](../../../game/menu.ts#L18)
+[Implementation, line 19](../../../game/menu.ts#L19)
 
 ```ts
 menuSections(): HTMLElement
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSection
 
-[Implementation, line 29](../../../game/menu.ts#L29)
+[Implementation, line 30](../../../game/menu.ts#L30)
 
 ```ts
 menuSection(id: string, title: string): HTMLFieldSetElement
@@ -37,17 +37,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(MENU_SECTION_ORDER as readonly string[]).indexOf`
 - `[...sections.children].find`
 - `document.createElement`
+- `document.getElementById`
+- `existing.classList.contains`
 - `group.append`
 - `menuSections`
 - `sections.append`
 - `sections.insertBefore`
 
-## menuSection.callback@38
+## menuSection.callback@43
 
-[Implementation, line 38](../../../game/menu.ts#L38)
+[Implementation, line 43](../../../game/menu.ts#L43)
 
 ```ts
-callback@38(el): inferred by TypeScript; see implementation
+callback@43(el): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -56,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSubtitle
 
-[Implementation, line 48](../../../game/menu.ts#L48)
+[Implementation, line 53](../../../game/menu.ts#L53)
 
 Nested heading inside a menu section (Cielo, Sol, Mar, …).
 

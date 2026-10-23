@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `../../i18n/index.js`
 - `../../config/input-bindings.js`
 - `./controllers.js`
 - `./wizard.js`
@@ -13,7 +14,7 @@
 
 ## createUsbWizardPanel
 
-[Implementation, line 12](../../../../../src/runtime/usb/wizard-panel.ts#L12)
+[Implementation, line 13](../../../../../src/runtime/usb/wizard-panel.ts#L13)
 
 ```ts
 createUsbWizardPanel(hub: UsbControllers, feedback: UsbFeedback | undefined, doc: Document, onSave: () => void): {
@@ -30,18 +31,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `error.setAttribute`
 - `render`
 - `root.setAttribute`
+- `t`
 
 ## createUsbWizardPanel.title
 
-[Implementation, line 30](../../../../../src/runtime/usb/wizard-panel.ts#L30)
+[Implementation, line 31](../../../../../src/runtime/usb/wizard-panel.ts#L31)
 
 ```ts
 title(): inferred by TypeScript; see implementation
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
+
 ## createUsbWizardPanel.button
 
-[Implementation, line 36](../../../../../src/runtime/usb/wizard-panel.ts#L36)
+[Implementation, line 37](../../../../../src/runtime/usb/wizard-panel.ts#L37)
 
 ```ts
 button(label: string, run: () => void): inferred by TypeScript; see implementation
@@ -51,12 +57,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `doc.createElement`
 
-## createUsbWizardPanel.button.callback@40
+## createUsbWizardPanel.button.callback@41
 
-[Implementation, line 40](../../../../../src/runtime/usb/wizard-panel.ts#L40)
+[Implementation, line 41](../../../../../src/runtime/usb/wizard-panel.ts#L41)
 
 ```ts
-callback@40(): inferred by TypeScript; see implementation
+callback@41(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -67,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createUsbWizardPanel.text
 
-[Implementation, line 51](../../../../../src/runtime/usb/wizard-panel.ts#L51)
+[Implementation, line 52](../../../../../src/runtime/usb/wizard-panel.ts#L52)
 
 ```ts
 text(value: string): inferred by TypeScript; see implementation
@@ -80,7 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createUsbWizardPanel.stop
 
-[Implementation, line 62](../../../../../src/runtime/usb/wizard-panel.ts#L62)
+[Implementation, line 63](../../../../../src/runtime/usb/wizard-panel.ts#L63)
 
 ```ts
 stop(): inferred by TypeScript; see implementation
@@ -93,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createUsbWizardPanel.render
 
-[Implementation, line 68](../../../../../src/runtime/usb/wizard-panel.ts#L68)
+[Implementation, line 69](../../../../../src/runtime/usb/wizard-panel.ts#L69)
 
 ```ts
 render(): void
@@ -114,40 +120,41 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parts.has`
 - `root.replaceChildren`
 - `row.append`
+- `t`
 - `text`
 - `title`
 - `w.bindings.entries`
 
-## createUsbWizardPanel.render.callback@93
+## createUsbWizardPanel.render.callback@94
 
-[Implementation, line 93](../../../../../src/runtime/usb/wizard-panel.ts#L93)
+[Implementation, line 94](../../../../../src/runtime/usb/wizard-panel.ts#L94)
 
 ```ts
-callback@93(): inferred by TypeScript; see implementation
+callback@94(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
 
-## createUsbWizardPanel.render.callback@112
+## createUsbWizardPanel.render.callback@113
 
-[Implementation, line 112](../../../../../src/runtime/usb/wizard-panel.ts#L112)
+[Implementation, line 113](../../../../../src/runtime/usb/wizard-panel.ts#L113)
 
 ```ts
-callback@112(): inferred by TypeScript; see implementation
+callback@113(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `hub.configure`
 
-## createUsbWizardPanel.render.callback@148
+## createUsbWizardPanel.render.callback@149
 
-[Implementation, line 148](../../../../../src/runtime/usb/wizard-panel.ts#L148)
+[Implementation, line 149](../../../../../src/runtime/usb/wizard-panel.ts#L149)
 
 ```ts
-callback@148(): inferred by TypeScript; see implementation
+callback@149(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -155,12 +162,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parts.add`
 - `parts.delete`
 
-## createUsbWizardPanel.render.callback@163
+## createUsbWizardPanel.render.callback@164
 
-[Implementation, line 163](../../../../../src/runtime/usb/wizard-panel.ts#L163)
+[Implementation, line 164](../../../../../src/runtime/usb/wizard-panel.ts#L164)
 
 ```ts
-callback@163(): inferred by TypeScript; see implementation
+callback@164(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -170,20 +177,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hub.reset`
 - `wizard.sample`
 
-## createUsbWizardPanel.render.callback@174
+## createUsbWizardPanel.render.callback@175
 
-[Implementation, line 174](../../../../../src/runtime/usb/wizard-panel.ts#L174)
+[Implementation, line 175](../../../../../src/runtime/usb/wizard-panel.ts#L175)
 
 ```ts
-callback@174(): inferred by TypeScript; see implementation
+callback@175(): inferred by TypeScript; see implementation
 ```
 
-## createUsbWizardPanel.render.callback@200
+## createUsbWizardPanel.render.callback@201
 
-[Implementation, line 200](../../../../../src/runtime/usb/wizard-panel.ts#L200)
+[Implementation, line 201](../../../../../src/runtime/usb/wizard-panel.ts#L201)
 
 ```ts
-callback@200(): inferred by TypeScript; see implementation
+callback@201(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -192,12 +199,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `stop`
 - `w.commit`
 
-## createUsbWizardPanel.render.callback@206
+## createUsbWizardPanel.render.callback@207
 
-[Implementation, line 206](../../../../../src/runtime/usb/wizard-panel.ts#L206)
+[Implementation, line 207](../../../../../src/runtime/usb/wizard-panel.ts#L207)
 
 ```ts
-callback@206(): inferred by TypeScript; see implementation
+callback@207(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -205,41 +212,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `UsbWizard`
 - `wizard.sample`
 
-## createUsbWizardPanel.render.callback@210
+## createUsbWizardPanel.render.callback@211
 
-[Implementation, line 210](../../../../../src/runtime/usb/wizard-panel.ts#L210)
+[Implementation, line 211](../../../../../src/runtime/usb/wizard-panel.ts#L211)
 
 ```ts
-callback@210(): inferred by TypeScript; see implementation
+callback@211(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `stop`
 
-## createUsbWizardPanel.render.callback@229
+## createUsbWizardPanel.render.callback@230
 
-[Implementation, line 229](../../../../../src/runtime/usb/wizard-panel.ts#L229)
+[Implementation, line 230](../../../../../src/runtime/usb/wizard-panel.ts#L230)
 
 ```ts
-callback@229(): inferred by TypeScript; see implementation
+callback@230(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `w.next`
-
-## createUsbWizardPanel.render.callback@233
-
-[Implementation, line 233](../../../../../src/runtime/usb/wizard-panel.ts#L233)
-
-```ts
-callback@233(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `w.repeat`
 
 ## createUsbWizardPanel.render.callback@234
 
@@ -251,7 +246,7 @@ callback@234(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `w.skip`
+- `w.repeat`
 
 ## createUsbWizardPanel.render.callback@235
 
@@ -263,11 +258,23 @@ callback@235(): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `w.skip`
+
+## createUsbWizardPanel.render.callback@236
+
+[Implementation, line 236](../../../../../src/runtime/usb/wizard-panel.ts#L236)
+
+```ts
+callback@236(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `stop`
 
 ## createUsbWizardPanel.refresh
 
-[Implementation, line 245](../../../../../src/runtime/usb/wizard-panel.ts#L245)
+[Implementation, line 246](../../../../../src/runtime/usb/wizard-panel.ts#L246)
 
 ```ts
 refresh(current): inferred by TypeScript; see implementation
@@ -282,15 +289,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `readUsbBinding`
 - `render`
 - `root.querySelector`
+- `t`
 - `wizard.bindings.entries`
 - `wizard?.sample`
 
-## createUsbWizardPanel.refresh.callback@264
+## createUsbWizardPanel.refresh.callback@265
 
-[Implementation, line 264](../../../../../src/runtime/usb/wizard-panel.ts#L264)
+[Implementation, line 265](../../../../../src/runtime/usb/wizard-panel.ts#L265)
 
 ```ts
-callback@264(p): inferred by TypeScript; see implementation
+callback@265(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -299,7 +307,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createUsbWizardPanel.dispose
 
-[Implementation, line 276](../../../../../src/runtime/usb/wizard-panel.ts#L276)
+[Implementation, line 277](../../../../../src/runtime/usb/wizard-panel.ts#L277)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation

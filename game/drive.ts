@@ -44,6 +44,7 @@ import { driveHost } from './drive-host.js'
 import { defaultWorldSource, hasTerrain } from './world-source.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
+import { bindSimulatedFireToggle, resolveSimulatedFireEnabled } from './simulated-fire-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
 import {
@@ -252,6 +253,7 @@ try {
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
+    simulatedFire: resolveSimulatedFireEnabled(boot.simulatedFire),
     performanceLog: new URLSearchParams(pageSearch()).get('perfLog') === '1',
     flipCinematic: host.flipCinematic ?? resolveFlipCinematicEnabled(boot.flipCinematic),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
@@ -385,6 +387,7 @@ try {
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
+  bindSimulatedFireToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindGravityScaleSlider(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)

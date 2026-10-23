@@ -1812,12 +1812,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 Scenery poles: the body lives in the worker, the handle here refers to it by number.
 
 ```ts
-createSceneryPole(position: Vec3Tuple, height: number, movable: boolean): ReturnType<Simulation['createSceneryPole']>
+createSceneryPole(position: Vec3Tuple, height: number, movable: boolean, shape?: Parameters<Simulation['createSceneryPole']>[3]): ReturnType<Simulation['createSceneryPole']>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Error`
+- `Math.cos`
+- `Math.sin`
 - `Number.isFinite`
 - `position.every`
 - `this.forward`
@@ -1828,7 +1830,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.createSceneryPole.impact
 
-[Implementation, line 833](../../../../src/simulation/threaded-simulation.ts#L833)
+[Implementation, line 842](../../../../src/simulation/threaded-simulation.ts#L842)
 
 ```ts
 impact(point, direction, impulse): inferred by TypeScript; see implementation
@@ -1840,7 +1842,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.createSceneryPole.pose
 
-[Implementation, line 835](../../../../src/simulation/threaded-simulation.ts#L835)
+[Implementation, line 844](../../../../src/simulation/threaded-simulation.ts#L844)
 
 ```ts
 pose(): inferred by TypeScript; see implementation
@@ -1848,7 +1850,7 @@ pose(): inferred by TypeScript; see implementation
 
 ## ThreadedSimulation.createSceneryPole.restore
 
-[Implementation, line 836](../../../../src/simulation/threaded-simulation.ts#L836)
+[Implementation, line 845](../../../../src/simulation/threaded-simulation.ts#L845)
 
 ```ts
 restore(position, rotation): inferred by TypeScript; see implementation
@@ -1860,7 +1862,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.createSceneryPole.dispose
 
-[Implementation, line 840](../../../../src/simulation/threaded-simulation.ts#L840)
+[Implementation, line 849](../../../../src/simulation/threaded-simulation.ts#L849)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -1872,7 +1874,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.dispose
 
-[Implementation, line 844](../../../../src/simulation/threaded-simulation.ts#L844)
+[Implementation, line 853](../../../../src/simulation/threaded-simulation.ts#L853)
 
 ```ts
 dispose(): void
@@ -1886,24 +1888,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worker.dispose().then`
 - `waiter.resolve`
 
-## ThreadedSimulation.dispose.callback@849
+## ThreadedSimulation.dispose.callback@858
 
-[Implementation, line 849](../../../../src/simulation/threaded-simulation.ts#L849)
+[Implementation, line 858](../../../../src/simulation/threaded-simulation.ts#L858)
 
 ```ts
-callback@849(): inferred by TypeScript; see implementation
+callback@858(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.terminate`
 
-## ThreadedSimulation.dispose.callback@850
+## ThreadedSimulation.dispose.callback@859
 
-[Implementation, line 850](../../../../src/simulation/threaded-simulation.ts#L850)
+[Implementation, line 859](../../../../src/simulation/threaded-simulation.ts#L859)
 
 ```ts
-callback@850(): inferred by TypeScript; see implementation
+callback@859(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

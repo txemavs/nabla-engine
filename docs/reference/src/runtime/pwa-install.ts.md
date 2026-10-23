@@ -39,9 +39,53 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `win.matchMedia`
 
+## createInstallEntry
+
+[Implementation, line 46](../../../../src/runtime/pwa-install.ts#L46)
+
+The install action as a menu entry (main-menu.ts Application > Info): a `.nabla-btn` that is
+hidden while the browser offers no installation, and inside the installed app.
+
+```ts
+createInstallEntry(doc: Document, t: (key: string) => string): HTMLButtonElement
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `button.addEventListener`
+- `doc.createElement`
+- `sync`
+- `t`
+- `win?.addEventListener`
+
+## createInstallEntry.sync
+
+[Implementation, line 53](../../../../src/runtime/pwa-install.ts#L53)
+
+```ts
+sync(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `isInstalledApp`
+
+## createInstallEntry.callback@56
+
+[Implementation, line 56](../../../../src/runtime/pwa-install.ts#L56)
+
+```ts
+callback@56(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `prompt.prompt`
+- `sync`
+
 ## mountInstallButton
 
-[Implementation, line 43](../../../../src/runtime/pwa-install.ts#L43)
+[Implementation, line 71](../../../../src/runtime/pwa-install.ts#L71)
 
 Watch for the install offer and show the button while it is available.
 
@@ -58,7 +102,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountInstallButton.hide
 
-[Implementation, line 48](../../../../src/runtime/pwa-install.ts#L48)
+[Implementation, line 76](../../../../src/runtime/pwa-install.ts#L76)
 
 ```ts
 hide(): inferred by TypeScript; see implementation
@@ -70,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountInstallButton.show
 
-[Implementation, line 52](../../../../src/runtime/pwa-install.ts#L52)
+[Implementation, line 80](../../../../src/runtime/pwa-install.ts#L80)
 
 ```ts
 show(): inferred by TypeScript; see implementation
@@ -83,12 +127,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `button.setAttribute`
 - `doc.createElement`
 
-## mountInstallButton.show.callback@61
+## mountInstallButton.show.callback@89
 
-[Implementation, line 61](../../../../src/runtime/pwa-install.ts#L61)
+[Implementation, line 89](../../../../src/runtime/pwa-install.ts#L89)
 
 ```ts
-callback@61(): inferred by TypeScript; see implementation
+callback@89(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

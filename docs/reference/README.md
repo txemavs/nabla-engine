@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **619 modules; 7817 executable function definitions**.
+Coverage: **622 modules; 7852 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -29,7 +29,7 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
 | [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
 | [game/drive-host.ts](game/drive-host.ts.md) | 2 |
-| [game/drive.ts](game/drive.ts.md) | 17 |
+| [game/drive.ts](game/drive.ts.md) | 7 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 4 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 7 |
@@ -56,11 +56,13 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [game/scenario-menu.ts](game/scenario-menu.ts.md) | 2 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 135 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 140 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
+| [game/settings-nav.ts](game/settings-nav.ts.md) | 2 |
 | [game/settings-scope-boot.ts](game/settings-scope-boot.ts.md) | 0 |
 | [game/shadow-bias-ui.ts](game/shadow-bias-ui.ts.md) | 13 |
+| [game/simulated-fire-ui.ts](game/simulated-fire-ui.ts.md) | 6 |
 | [game/sound-ui.ts](game/sound-ui.ts.md) | 4 |
 | [game/start-error.ts](game/start-error.ts.md) | 6 |
 | [game/startup-light-settings.ts](game/startup-light-settings.ts.md) | 1 |
@@ -193,7 +195,7 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [src/i18n/catalog.es.ts](src/i18n/catalog.es.ts.md) | 0 |
 | [src/i18n/catalog.eu.ts](src/i18n/catalog.eu.ts.md) | 0 |
 | [src/i18n/engine-catalog.ts](src/i18n/engine-catalog.ts.md) | 1 |
-| [src/i18n/i18n.ts](src/i18n/i18n.ts.md) | 13 |
+| [src/i18n/i18n.ts](src/i18n/i18n.ts.md) | 15 |
 | [src/i18n/index.ts](src/i18n/index.ts.md) | 0 |
 | [src/index.ts](src/index.ts.md) | 0 |
 | [src/math/frame/vectors.ts](src/math/frame/vectors.ts.md) | 3 |
@@ -325,8 +327,9 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 11 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
+| [src/render/entity/tree-fire.ts](src/render/entity/tree-fire.ts.md) | 20 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
-| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 29 |
+| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 32 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 166 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
@@ -431,7 +434,7 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 565 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 567 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
@@ -457,7 +460,7 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
-| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 43 |
+| [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 45 |
 | [src/runtime/map-inspector.ts](src/runtime/map-inspector.ts.md) | 5 |
 | [src/runtime/messages.es.ts](src/runtime/messages.es.ts.md) | 0 |
 | [src/runtime/messages.eu.ts](src/runtime/messages.eu.ts.md) | 0 |
@@ -471,7 +474,7 @@ Coverage: **619 modules; 7817 executable function definitions**.
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
-| [src/runtime/pwa-install.ts](src/runtime/pwa-install.ts.md) | 6 |
+| [src/runtime/pwa-install.ts](src/runtime/pwa-install.ts.md) | 9 |
 | [src/runtime/quality-preset.ts](src/runtime/quality-preset.ts.md) | 9 |
 | [src/runtime/random-vehicle.ts](src/runtime/random-vehicle.ts.md) | 4 |
 | [src/runtime/reload-presentation.ts](src/runtime/reload-presentation.ts.md) | 3 |

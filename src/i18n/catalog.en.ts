@@ -854,4 +854,7 @@ export const engineEn: Readonly<Record<string, string>> = {
   "settings.scale-auto": "Auto scale (50–100%)",
   "settings.performance-note": "FPS and scale apply during play.",
   "usb.profile.road": "Driving",
+  "settings.simulated-fire": "Simulated fire",
+  "settings.simulated-fire-enable": "Simulated fire (on/off)",
+  "settings.simulated-fire-hint": "Fire that burns down slowly and sets trees alight",
 }

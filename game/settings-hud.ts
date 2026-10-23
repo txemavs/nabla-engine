@@ -83,6 +83,7 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-distances', 'options'],
   ['display-performance', 'options'],
   ['settings-effects', 'options'],
+  ['settings-simulated-fire', 'options'],
   ['settings-muzzle-flash', 'options'],
   ['camera-extras', 'options'],
   ['settings-camera-fov', 'options'],
@@ -1549,7 +1550,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       tab: 'options',
       id: 'effects',
       label: t('settings.effects'),
-      sections: ['settings-effects', 'settings-muzzle-flash'],
+      sections: ['settings-effects', 'settings-muzzle-flash', 'settings-simulated-fire'],
     },
     {
       tab: 'options',

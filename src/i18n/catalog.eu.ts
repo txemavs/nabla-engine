@@ -862,4 +862,7 @@ export const engineEu: Readonly<Record<string, string>> = {
   "settings.scale-auto": "Eskala automatikoa (%50–100)",
   "settings.performance-note": "FPSa eta eskala jokoan zehar aplikatzen dira.",
   "usb.profile.road": "Gidatzea",
+  "settings.simulated-fire": "Su simulatua",
+  "settings.simulated-fire-enable": "Su simulatua (bai/ez)",
+  "settings.simulated-fire-hint": "Pixkanaka erretzen den eta zuhaitzak pizten dituen sua",
 }

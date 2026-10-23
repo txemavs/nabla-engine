@@ -48,6 +48,8 @@ export interface HostBootConfig {
    * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes → Opciones → Cámara.
    */
   flipCinematic?: boolean
+  /** Simulated fire (Settings → Effects «Simulated fire»). Default on; host config only, no URL param. */
+  simulatedFire?: boolean
   /**
    * recover (Y) reset puts the vehicle on the nearest road/vía. Default on when omitted.
    * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Opciones.

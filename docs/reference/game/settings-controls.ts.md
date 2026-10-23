@@ -69,6 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rows.push`
 - `search.value.trim`
 - `search.value.trim().toLocaleLowerCase`
+- `t`
 
 ## createControlsSection.refresh.callback@67
 
@@ -125,7 +126,7 @@ callback@85(row): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase`
-- `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase('es').includes`
+- `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase().includes`
 
 ## createControlsSection.refresh.callback@89
 

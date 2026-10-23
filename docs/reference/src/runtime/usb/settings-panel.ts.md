@@ -183,10 +183,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pad.buttons.map`
 - `performance.now`
 - `selected`
+- `t`
 
 Explicit throws in this body:
 
-- `new Error('Selecciona un dispositivo conectado')`
+- `new Error(t('usb.select-device'))`
 
 ## createUsbSettingsPanel.callback@107.callback@113
 
@@ -209,6 +210,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `hub.snapshot.profiles[selectedMode()].bindings.filter`
 - `save`
 - `selectedMode`
+- `t`
 
 ## createUsbSettingsPanel.install.callback@143
 
@@ -233,10 +235,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `install`
 - `newUsbBinding`
 - `selected`
+- `t`
 
 Explicit throws in this body:
 
-- `new Error('Selecciona un dispositivo conectado')`
+- `new Error(t('usb.select-device'))`
 
 ## createUsbSettingsPanel.finishCalibration
 
@@ -254,10 +257,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `hub.configure`
 - `renderBindings`
+- `t`
 
 Explicit throws in this body:
 
-- `new Error('No se ha recorrido el eje. Repite la calibración.')`
+- `new Error(t('usb.axis-not-moved'))`
 
 ## createUsbSettingsPanel.callback@186
 
@@ -266,6 +270,10 @@ Explicit throws in this body:
 ```ts
 callback@186(): inferred by TypeScript; see implementation
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
 
 ## createUsbSettingsPanel.callback@207
 
@@ -282,11 +290,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `save`
 - `selected`
 - `selectedMode`
+- `t`
 - `usbTemplate`
 
 Explicit throws in this body:
 
-- `new Error('Selecciona un dispositivo conectado')`
+- `new Error(t('usb.select-device'))`
 
 ## createUsbSettingsPanel.callback@207.callback@212
 
@@ -347,6 +356,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `label.append`
 - `range.append`
 - `range.setAttribute`
+- `t`
 
 ## createUsbSettingsPanel.renderBindings.callback@246.update
 
@@ -413,10 +423,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `pads`
 - `pads().find`
 - `selectedMode`
+- `t`
 
 Explicit throws in this body:
 
-- `new Error('Calibración disponible para ejes conectados')`
+- `new Error(t('usb.calibrate-axes-only'))`
 
 ## createUsbSettingsPanel.renderBindings.callback@246.callback@317.callback@318
 
@@ -477,6 +488,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `JSON.parse`
 - `hub.configure`
 - `renderBindings`
+- `t`
 
 ## createUsbSettingsPanel.callback@354
 
@@ -568,6 +580,7 @@ callback@426(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `feedback.connect`
+- `t`
 
 ## createUsbSettingsPanel.callback@431
 
@@ -617,6 +630,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.querySelectorAll`
 - `root.querySelectorAll<HTMLOutputElement>('[data-usb-binding]').forEach`
 - `selected`
+- `t`
 - `usbDeviceKey`
 
 ## createUsbSettingsPanel.refresh.callback@449
@@ -639,80 +653,80 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@460(o): inferred by TypeScript; see implementation
 ```
 
-## createUsbSettingsPanel.refresh.callback@470
+## createUsbSettingsPanel.refresh.callback@471
 
-[Implementation, line 470](../../../../../src/runtime/usb/settings-panel.ts#L470)
+[Implementation, line 471](../../../../../src/runtime/usb/settings-panel.ts#L471)
 
 ```ts
-callback@470(v, i): inferred by TypeScript; see implementation
+callback@471(v, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `v.toFixed`
 
-## createUsbSettingsPanel.refresh.callback@472
+## createUsbSettingsPanel.refresh.callback@474
 
-[Implementation, line 472](../../../../../src/runtime/usb/settings-panel.ts#L472)
+[Implementation, line 474](../../../../../src/runtime/usb/settings-panel.ts#L474)
 
 ```ts
-callback@472(b, i): inferred by TypeScript; see implementation
+callback@474(b, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `b.value.toFixed`
 
-## createUsbSettingsPanel.refresh.callback@479
+## createUsbSettingsPanel.refresh.callback@481
 
-[Implementation, line 479](../../../../../src/runtime/usb/settings-panel.ts#L479)
+[Implementation, line 481](../../../../../src/runtime/usb/settings-panel.ts#L481)
 
 ```ts
-callback@479(p): inferred by TypeScript; see implementation
+callback@481(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `usbDeviceKey`
 
-## createUsbSettingsPanel.refresh.callback@484
+## createUsbSettingsPanel.refresh.callback@486
 
-[Implementation, line 484](../../../../../src/runtime/usb/settings-panel.ts#L484)
+[Implementation, line 486](../../../../../src/runtime/usb/settings-panel.ts#L486)
 
 ```ts
-callback@484(v, i): inferred by TypeScript; see implementation
+callback@486(v, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## createUsbSettingsPanel.refresh.callback@485
+## createUsbSettingsPanel.refresh.callback@487
 
-[Implementation, line 485](../../../../../src/runtime/usb/settings-panel.ts#L485)
+[Implementation, line 487](../../../../../src/runtime/usb/settings-panel.ts#L487)
 
 ```ts
-callback@485(v, i): inferred by TypeScript; see implementation
+callback@487(v, i): inferred by TypeScript; see implementation
 ```
 
-## createUsbSettingsPanel.refresh.callback@508
+## createUsbSettingsPanel.refresh.callback@510
 
-[Implementation, line 508](../../../../../src/runtime/usb/settings-panel.ts#L508)
+[Implementation, line 510](../../../../../src/runtime/usb/settings-panel.ts#L510)
 
 ```ts
-callback@508(p): inferred by TypeScript; see implementation
+callback@510(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `usbDeviceKey`
 
-## createUsbSettingsPanel.refresh.callback@516
+## createUsbSettingsPanel.refresh.callback@518
 
-[Implementation, line 516](../../../../../src/runtime/usb/settings-panel.ts#L516)
+[Implementation, line 518](../../../../../src/runtime/usb/settings-panel.ts#L518)
 
 ```ts
-callback@516(o): inferred by TypeScript; see implementation
+callback@518(o): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -722,50 +736,51 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `normalizeUsbAxis`
 - `normalizeUsbAxis(p.axes[b.index] ?? NaN, b).toFixed`
 - `selectedMode`
+- `t`
 
-## createUsbSettingsPanel.refresh.callback@516.callback@518
+## createUsbSettingsPanel.refresh.callback@518.callback@520
 
-[Implementation, line 518](../../../../../src/runtime/usb/settings-panel.ts#L518)
+[Implementation, line 520](../../../../../src/runtime/usb/settings-panel.ts#L520)
 
 ```ts
-callback@518(p): inferred by TypeScript; see implementation
+callback@520(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `usbDeviceKey`
 
-## createUsbSettingsPanel.callback@530
+## createUsbSettingsPanel.callback@532
 
-[Implementation, line 530](../../../../../src/runtime/usb/settings-panel.ts#L530)
+[Implementation, line 532](../../../../../src/runtime/usb/settings-panel.ts#L532)
 
 ```ts
-callback@530(): inferred by TypeScript; see implementation
+callback@532(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `renderBindings`
 
-## createUsbSettingsPanel.callback@535
+## createUsbSettingsPanel.callback@537
 
-[Implementation, line 535](../../../../../src/runtime/usb/settings-panel.ts#L535)
+[Implementation, line 537](../../../../../src/runtime/usb/settings-panel.ts#L537)
 
 ```ts
-callback@535(): inferred by TypeScript; see implementation
+callback@537(): inferred by TypeScript; see implementation
 ```
 
-## createUsbSettingsPanel.callback@543
+## createUsbSettingsPanel.callback@545
 
-[Implementation, line 543](../../../../../src/runtime/usb/settings-panel.ts#L543)
+[Implementation, line 545](../../../../../src/runtime/usb/settings-panel.ts#L545)
 
 ```ts
-callback@543(node): inferred by TypeScript; see implementation
+callback@545(node): inferred by TypeScript; see implementation
 ```
 
 ## createUsbSettingsPanel.dispose
 
-[Implementation, line 550](../../../../../src/runtime/usb/settings-panel.ts#L550)
+[Implementation, line 552](../../../../../src/runtime/usb/settings-panel.ts#L552)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation

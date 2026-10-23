@@ -8,6 +8,7 @@ export const preferenceKeys = new Set([
   'nabla.terrain.source',
   'nabla.terrain.layers',
   'nabla.flipCinematic',
+  'nabla.simFire',
   'nabla.recoverToRoad',
   'nabla.shadowBias',
   'nabla.shadowsEnabled',

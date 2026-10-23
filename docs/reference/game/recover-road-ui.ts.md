@@ -53,7 +53,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 [Implementation, line 42](../../../game/recover-road-ui.ts#L42)
 
-Checkbox in its own «Conducción» section (shown under Ajustes → Opciones).
+Checkbox in Settings → Options → Driving (shares the section with gravity).
 
 ```ts
 bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void

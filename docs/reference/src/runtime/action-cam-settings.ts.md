@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `../config/gameplay-tuning.js`
+- `../i18n/index.js`
 
 ## normalizeActionCamSettings
 
-[Implementation, line 137](../../../../src/runtime/action-cam-settings.ts#L137)
+[Implementation, line 138](../../../../src/runtime/action-cam-settings.ts#L138)
 
 ```ts
 normalizeActionCamSettings(value: unknown): ActionCamSettings

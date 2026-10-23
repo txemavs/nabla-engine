@@ -16,6 +16,7 @@ const SETTINGS_SOURCES = [
   'game/shadow-bias-ui.ts',
   'game/distances-ui.ts',
   'game/anisotropy-ui.ts',
+  'game/simulated-fire-ui.ts',
   'src/runtime/action-cam-settings.ts',
   'src/config/input-bindings.ts',
   'src/runtime/usb/wizard-panel.ts',

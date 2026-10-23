@@ -10,10 +10,11 @@ Menu toggle for the post-flip cinematic camera (default on).
 
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 9](../../../game/flip-cinematic-ui.ts#L9)
+[Implementation, line 10](../../../game/flip-cinematic-ui.ts#L10)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -21,7 +22,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveFlipCinematicEnabled
 
-[Implementation, line 18](../../../game/flip-cinematic-ui.ts#L18)
+[Implementation, line 19](../../../game/flip-cinematic-ui.ts#L19)
 
 Resolve initial preference: URL (via boot) > localStorage > NABLA_BOOT > on.
 
@@ -36,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveFlipCinematicEnabled
 
-[Implementation, line 28](../../../game/flip-cinematic-ui.ts#L28)
+[Implementation, line 29](../../../game/flip-cinematic-ui.ts#L29)
 
 ```ts
 saveFlipCinematicEnabled(enabled: boolean, storage: StorageLike | undefined = browserStorage()): void
@@ -49,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindFlipCinematicToggle
 
-[Implementation, line 40](../../../game/flip-cinematic-ui.ts#L40)
+[Implementation, line 41](../../../game/flip-cinematic-ui.ts#L41)
 
 Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip).
 
@@ -65,13 +66,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `group.append`
 - `label.append`
 - `menuSection`
+- `t`
 
-## bindFlipCinematicToggle.callback@46
+## bindFlipCinematicToggle.callback@47
 
-[Implementation, line 46](../../../game/flip-cinematic-ui.ts#L46)
+[Implementation, line 47](../../../game/flip-cinematic-ui.ts#L47)
 
 ```ts
-callback@46(): inferred by TypeScript; see implementation
+callback@47(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -4,15 +4,14 @@
 
 [Source](../../../game/anisotropy-ui.ts)
 
-Configuración → Pantalla: «Filtrado anisotrópico» for the asphalt and road markings.
-
 ## Module dependencies
 
+- `@nabla/engine/i18n`
 - `@nabla/engine/runtime/browser`
 
 ## browserStorage
 
-[Implementation, line 10](../../../game/anisotropy-ui.ts#L10)
+[Implementation, line 11](../../../game/anisotropy-ui.ts#L11)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -20,7 +19,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveAnisotropy
 
-[Implementation, line 19](../../../game/anisotropy-ui.ts#L19)
+[Implementation, line 20](../../../game/anisotropy-ui.ts#L20)
 
 Stored choice when it is one of the options, else the default (8).
 
@@ -37,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindAnisotropySelect
 
-[Implementation, line 30](../../../game/anisotropy-ui.ts#L30)
+[Implementation, line 31](../../../game/anisotropy-ui.ts#L31)
 
 Select ×1/×2/×4/×8/×16 (above the GPU maximum disabled), applied live and stored.
 
@@ -56,10 +55,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `resolveAnisotropy`
 - `select.addEventListener`
 - `select.append`
+- `t`
 
 ## bindAnisotropySelect.apply
 
-[Implementation, line 45](../../../game/anisotropy-ui.ts#L45)
+[Implementation, line 46](../../../game/anisotropy-ui.ts#L46)
 
 ```ts
 apply(value: number): inferred by TypeScript; see implementation
@@ -72,20 +72,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...ANISOTROPY_OPTIONS].reverse().find`
 - `runtime.setAnisotropy`
 
-## bindAnisotropySelect.apply.callback@47
+## bindAnisotropySelect.apply.callback@48
 
-[Implementation, line 47](../../../game/anisotropy-ui.ts#L47)
+[Implementation, line 48](../../../game/anisotropy-ui.ts#L48)
 
 ```ts
-callback@47(option): inferred by TypeScript; see implementation
+callback@48(option): inferred by TypeScript; see implementation
 ```
 
-## bindAnisotropySelect.callback@49
+## bindAnisotropySelect.callback@50
 
-[Implementation, line 49](../../../game/anisotropy-ui.ts#L49)
+[Implementation, line 50](../../../game/anisotropy-ui.ts#L50)
 
 ```ts
-callback@49(): inferred by TypeScript; see implementation
+callback@50(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -96,7 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveGroundDetail
 
-[Implementation, line 72](../../../game/anisotropy-ui.ts#L72)
+[Implementation, line 73](../../../game/anisotropy-ui.ts#L73)
 
 Stored ground detail distance (1–3 cells), else 1.
 
@@ -113,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindGroundDetailSelect
 
-[Implementation, line 86](../../../game/anisotropy-ui.ts#L86)
+[Implementation, line 87](../../../game/anisotropy-ui.ts#L87)
 
 «Distancia de detalle del suelo»: cells around the player that get the full-resolution ground
 photo (asphalt and road markings). Applied live and stored. More cells cost GPU memory (~85 MB each).
@@ -133,13 +133,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setGroundDetailCells`
 - `select.addEventListener`
 - `select.append`
+- `t`
 
-## bindGroundDetailSelect.callback@99
+## bindGroundDetailSelect.callback@100
 
-[Implementation, line 99](../../../game/anisotropy-ui.ts#L99)
+[Implementation, line 100](../../../game/anisotropy-ui.ts#L100)
 
 ```ts
-callback@99(): inferred by TypeScript; see implementation
+callback@100(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
