@@ -8,6 +8,9 @@
     <!-- Critical CSS: nothing unstyled (or the error overlay) shows before ui-styles.ts runs. -->
     <style id="nabla-critical">
       html { background: #121212; color-scheme: dark; }
+      /* The page box before ui-styles.ts (base.css) lands: no body margin, no overflow, so the
+         black first paint never shows a scrollbar. */
+      html.nabla-game, html.nabla-game body { margin: 0; height: 100%; overflow: hidden; }
       html:not(.nabla-styles-ready) body { visibility: hidden; }
       #error-message:not(.visible) { display: none; }
     </style>
