@@ -174,6 +174,22 @@ owned; failed loads and props finishing after runtime disposal are cleaned up.
 Tests: `test/runtime/player-presentation.test.ts`, actor/socket/XR tests and
 `test/browser/e2e/player-presentation.spec.ts`.
 
+[RuntimeVehiclePresentation](../../src/runtime/vehicle-presentation.ts) coordinates parked
+vehicle placement/removal, mounted-view warmup, shared light overrides, paint and damage
+presentation. The browser facade retains the same methods. Placement keeps physics first,
+then worker entity acknowledgement, visual registration, shared-game registration and monitor
+rebuilds; it waits for parked models without eagerly warming every vehicle. Template and
+hosted-entity cloning, ground clearance and stale-session checks are unchanged.
+
+The coordinator owns spawned ids, prepared-entry ids, concurrent preparation accounting and
+accident replacement scheduling. Warmup still uses `VehicleWarmup` and the existing live
+quality/settings/material setup. It pauses only outside the intro and resumes only the same
+paused session after the last preparation finishes. Damage updates remain at their original
+frame position; SceneView owns destruction resources and VehicleEffects owns audio, smoke
+and tire effects. Light overrides can still return control to simulation with `null`.
+Tests: `test/runtime/vehicle-presentation.test.ts`, warmup/action/replacement tests and
+`test/browser/e2e/vehicle-presentation.spec.ts`.
+
 [RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
 free-mouse state and pointer-lock policy. Capture remains restricted to playing and
 is requested only by existing gesture handlers; rejected requests can be retried.

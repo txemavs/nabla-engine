@@ -169,7 +169,6 @@ import { RuntimePreparation } from './preparation.js'
 import { activePlayMode, isVRMode } from './settings-scope.js'
 import { XRDebugPanel } from './xr-debug.js'
 import { createEntity } from '../entity/schema.js'
-import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
 import { cameraFovRange, nextCameraFovOffset } from './camera-fov.js'
@@ -312,7 +311,7 @@ import {
   warmGamePresentation,
   warmEffectPresentation,
 } from './presentation-warmup.js'
-import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
+import { RuntimeVehiclePresentation } from './vehicle-presentation.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
 import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigation-places.js'
@@ -693,10 +692,7 @@ export class GameRuntime {
       this.pickupModels.get(item.id)?.position.fromArray(position)
     }
   }
-  private spawned: string[] = []
-  private spawnSequence = 0
   private worldGravityScale = 1
-  private accidentReplacement?: AccidentReplacement
   private readonly vehicleSettings: RuntimeVehiclePreferences
   private readonly idleCinematic = new IdleCinematic()
   private cameraActivity(): void {
@@ -724,10 +720,6 @@ export class GameRuntime {
       this.view.setTruckExhaustOffset(value),
     )
   }
-  private vehicleWarmup: VehicleWarmup | null = null
-  private readonly drivingPrepared = new Set<string>()
-  private vehiclePreparationCount = 0
-  private finishVehiclePreparation: (() => void) | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
   private placeSequence = 0
   private aimLean = 0
@@ -799,6 +791,7 @@ export class GameRuntime {
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private terrainLoad: AbortController | null = null
+  private readonly vehiclePresentation: RuntimeVehiclePresentation
   private readonly playerPresentation: RuntimePlayerPresentation
   private readonly preparation: RuntimePreparation<Simulation | null>
   private loading: AbortController | null = null
@@ -1332,6 +1325,36 @@ export class GameRuntime {
       document,
       () => this.session.state === 'playing',
     )
+    const vehicleRuntime = this
+    this.vehiclePresentation = new RuntimeVehiclePresentation({
+      canvas: options.canvas,
+      session: this.session,
+      document: this.document,
+      game: this.game,
+      view: this.view,
+      get disposed() {
+        return vehicleRuntime.disposed
+      },
+      get smokeEnabled() {
+        return vehicleRuntime.visuals.smokeEnabled
+      },
+      get cameraYaw() {
+        return vehicleRuntime.cameraState.yaw
+      },
+      get replacementVehicles() {
+        return vehicleRuntime.options.accidentReplacementVehicles
+      },
+      text: this.text,
+      assertAlive: () => this.assertAlive(),
+      hasWorld: () => !!this.world,
+      waitForGround: (x, z, timeoutMs) => waitForGround(this.world!, [x, 0, z], { timeoutMs }),
+      sceneGroundHeight: (player, x, z) => this.sceneGroundHeight(player, x, z),
+      rebuildMonitors: () => this.monitors.rebuild(this.document),
+      createWarmup: () => this.createVehicleWarmup(),
+      pause: () => this.pause(),
+      resume: () => this.resume(),
+      destructionSound: (position) => this.effects.audio.destruction(position),
+    })
     const actionRuntime = this
     this.actions = new RuntimeActionDispatch({
       get inspector() {
@@ -1383,7 +1406,7 @@ export class GameRuntime {
         return actionRuntime.gallery
       },
       get drivingPrepared() {
-        return actionRuntime.drivingPrepared
+        return actionRuntime.vehiclePresentation.drivingPrepared
       },
       get xrActive() {
         return actionRuntime.xrActive
@@ -1762,7 +1785,7 @@ export class GameRuntime {
         this.options.canvas.dataset.spawnGap =
           below === undefined ? 'none' : (at[1] - below).toFixed(2)
       }
-      if (options.vehicleId) this.drivingPrepared.add(options.vehicleId)
+      if (options.vehicleId) this.vehiclePresentation.drivingPrepared.add(options.vehicleId)
       controller.signal.throwIfAborted()
       const revealDone = startBootPhase(
         'Activar render y bucle de juego',
@@ -1843,8 +1866,7 @@ export class GameRuntime {
     this.clearArrows()
     this.playerPresentation.heldDrawn = false
     this.clearPickups()
-    this.accidentReplacement?.clear()
-    this.drivingPrepared.clear()
+    this.vehiclePresentation.reset()
     this.sidearmAimPreview = false
     if (this.sidearm) {
       this.sidearm.visible = false
@@ -1923,7 +1945,7 @@ export class GameRuntime {
     this.sceneryPhysics.dispose()
     this.monitors.dispose()
     this.view.dispose()
-    this.vehicleWarmup?.dispose()
+    this.vehiclePresentation.dispose()
     this.sky.dispose()
     this.environment.dispose()
     this.fieldLighting?.dispose()
@@ -2653,65 +2675,7 @@ export class GameRuntime {
     this.casingMotion?.setLimit(this.xrQuality.casingLimit)
     this.view.sparks.enabled = this.xrQuality.sparks
     this.view.sparks.update(time)
-    const replacement = playing ? this.accidentReplacement?.step(dt) : null
-    if (replacement && this.world) {
-      const occupied = sim.vehicleList().map(({ id, entity }) => ({
-        position: sim.entityTransform(id).position,
-        size: entity.size,
-      }))
-      const spot = replacementRoadSpot(
-        sim.player.position,
-        sim.player.vehicleId ? sim.player.yaw : this.cameraState.yaw,
-        replacement[0],
-        navigationRoads().filter((road) => road.carriageway),
-        occupied,
-      )
-      if (spot)
-        void this.placeVehicle(replacement, spot.position, spot.yaw, 8000).catch((error) =>
-          console.warn('Accident replacement unavailable', error),
-        )
-    }
-    for (const explosion of sim.consumeExplosions()) {
-      const object = this.view.objects.get(explosion.entityId)
-      if (object)
-        this.view.destruction.explode(
-          explosion.entityId,
-          object,
-          this.view.wreckParts(explosion.entityId).filter((part) => part.parent === this.view.root),
-        )
-      this.effects.audio.destruction(explosion.position)
-      if (
-        (explosion.occupied || sim.playerEjection?.vehicleId === explosion.entityId) &&
-        explosion.cause === 'impact'
-      ) {
-        this.accidentReplacement ??= new AccidentReplacement(
-          this.options.accidentReplacementVehicles ?? [],
-        )
-        this.accidentReplacement.schedule()
-      }
-    }
-    for (const entity of this.document.entities) {
-      if (entity.kind !== 'vehicle') continue
-      const object = this.view.objects.get(entity.id)
-      if (object)
-        this.view.destruction.setDamage(entity.id, object, sim.vehicleDamage(entity.id).health)
-    }
-    this.view.destruction.update(
-      dt,
-      this.visuals.smokeEnabled,
-      (from, direction, length, excludeEntityId) => {
-        const hit = sim.shoot(
-          from.toArray() as Vec3Tuple,
-          direction.toArray() as Vec3Tuple,
-          length,
-          0,
-          excludeEntityId,
-        )
-        return hit
-          ? { point: new THREE.Vector3(...hit.point), normal: new THREE.Vector3(...hit.normal) }
-          : null
-      },
-    )
+    this.vehiclePresentation.updateDamage(sim, dt, playing)
     if (this.playerPresentation.heldWeapon) {
       this.playerPresentation.heldWeapon.visible =
         this.playerPresentation.heldDrawn && !sim.player.vehicleId
@@ -3534,10 +3498,7 @@ export class GameRuntime {
   }
   /** Ids of vehicles added with `spawnVehicle`, oldest first. */
   get spawnedVehicles(): { id: string; name: string }[] {
-    return this.spawned.map((id) => ({
-      id,
-      name: this.document.entities.find((e) => e.id === id)?.name ?? id,
-    }))
+    return this.vehiclePresentation.spawnedVehicles
   }
   /**
    * Add a vehicle on the real ground in front of the player, facing the same way, and
@@ -3601,67 +3562,7 @@ export class GameRuntime {
     yaw = 0,
     timeoutMs?: number,
   ): Promise<string> {
-    this.assertAlive()
-    const [vehicle, ...hostedTemplates] = Array.isArray(template) ? template : [template as Entity]
-    if (!vehicle) throw new Error('A vehicle template is required')
-    for (const child of hostedTemplates)
-      if (child.parentId !== vehicle.id)
-        throw new Error(`Entity ${child.id} must be hosted by ${vehicle.id}`)
-    const sim = this.session.simulation
-    if (!sim) throw new Error('A running game is required')
-    const [x, , z] = position
-    // Place the parked model now. Full driving preparation is deferred until first entry.
-    // Behind an intro (`beforeReveal`) the host's cards cover loading; no badge over them.
-    let ground: number
-    if (this.world) {
-      const hide =
-        this.options.canvas.dataset.reveal === 'preparing'
-          ? () => {}
-          : showLoadingBadge(this.options.canvas.parentElement, this.text('Waiting for terrain…'))
-      try {
-        ground = await waitForGround(this.world, [x, 0, z], { timeoutMs: timeoutMs ?? 120_000 })
-      } finally {
-        hide()
-      }
-    } else ground = this.sceneGroundHeight(sim.player.position, x, z)
-    this.assertAlive()
-    if (this.session.simulation !== sim) throw new Error('Vehicle placement session ended')
-    const id = `spawned-${++this.spawnSequence}`
-    const entity: Entity = {
-      ...structuredClone(vehicle),
-      id,
-      parentId: null,
-      transform: {
-        position: [x, 0, z],
-        rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
-      },
-    }
-    entity.transform.position[1] = ground + playGroundClearance(entity)
-    // `carrier-stern` becomes `spawned-N-stern`; local transforms stay relative to the host.
-    const hosted = hostedTemplates.map((child): Entity => ({
-      ...structuredClone(child),
-      id:
-        id + (child.id.startsWith(vehicle.id) ? child.id.slice(vehicle.id.length) : `-${child.id}`),
-      parentId: id,
-    }))
-    const added = [entity, ...hosted]
-    // Physics first: with the worker (the default) the ids exist there only after its next
-    // step, and the vehicle view reads vehicle state as soon as it is registered.
-    sim.addVehicles(added)
-    await threadedSimulation(sim)?.whenEntities(added.map((e) => e.id))
-    this.assertAlive()
-    if (this.session.simulation !== sim) throw new Error('Vehicle placement session ended')
-    const modelsReady = this.view.addVehicles(added)
-    this.game.addVehicles(added)
-    // Ships with an interior (carrier) get their helm/telemetry/map/systems/portal monitor
-    // panels from the document; a carrier placed after start needs them rebuilt or its screens
-    // stay dark.
-    if (entity.vehicle?.interior || hosted.some((e) => e.portal))
-      this.monitors.rebuild(this.document)
-    this.spawned.push(id)
-    // Parked geometry must be visible even before its driving presentation is prepared.
-    await modelsReady
-    return id
+    return this.vehiclePresentation.placeVehicle(template, position, yaw, timeoutMs)
   }
   /**
    * Ground height under local (x, z) when the game runs without terrain tiles: the first
@@ -3702,9 +3603,10 @@ export class GameRuntime {
     template: Entity | readonly Entity[],
     progress?: (phase: string) => Promise<void>,
   ): Promise<void> {
-    this.assertAlive()
-    const entities = Array.isArray(template) ? template : [template as Entity]
-    this.vehicleWarmup ??= new VehicleWarmup({
+    return this.vehiclePresentation.prewarmVehicle(template, progress)
+  }
+  private createVehicleWarmup(): VehicleWarmup {
+    return new VehicleWarmup({
       renderer: this.renderer,
       camera: this.camera,
       scene: this.scene,
@@ -3736,43 +3638,6 @@ export class GameRuntime {
         return view
       },
     })
-    let started = false
-    let badge: ReturnType<typeof showLoadingBadge> | undefined
-    try {
-      await this.vehicleWarmup.warm(entities, async (phase) => {
-        if (!started && this.options.canvas.dataset.reveal !== 'preparing') {
-          started = true
-          if (this.vehiclePreparationCount++ === 0 && this.session.state === 'playing') {
-            const simulation = this.session.simulation
-            this.pause()
-            this.finishVehiclePreparation = () => {
-              if (
-                !this.disposed &&
-                this.session.simulation === simulation &&
-                this.session.state === 'paused'
-              )
-                this.resume()
-            }
-          }
-          badge = showLoadingBadge(this.options.canvas.parentElement, '')
-        }
-        const vehicle = entities[0]?.vehicle
-        const module = vehicle?.twoWheeled
-          ? 'motos'
-          : vehicle?.hitch && !vehicle.passive
-            ? 'camión articulado'
-            : (entities[0]?.name ?? 'vehículo')
-        badge?.update(`PLEASE WAIT · Cargando módulo de simulación de ${module} · ${phase}`)
-        await progress?.(phase)
-      })
-    } finally {
-      badge?.()
-      if (started && --this.vehiclePreparationCount === 0) {
-        const finish = this.finishVehiclePreparation
-        this.finishVehiclePreparation = null
-        finish?.()
-      }
-    }
   }
   /**
    * Couple a free trailer to a tractor. Omit `trailerId` to use the nearest hitchable trailer.
@@ -4180,50 +4045,29 @@ export class GameRuntime {
   }
   /** Repaint a vehicle with the same paint path as the vehicle menu's colour option. */
   setVehiclePaint(id: string, color: string, finish: 'paint' | 'chrome' = 'paint'): void {
-    this.assertAlive()
-    this.view.setVehiclePaint(id, color, finish)
+    this.vehiclePresentation.setVehiclePaint(id, color, finish)
   }
   /**
    * Light switches plus live lamp inputs of a vehicle (brake and reverse come from the
    * simulation), or null while its model loads or when it has no lights.
    */
   vehicleLightState(id: string): VehicleLightState | null {
-    const switches = this.view.vehicleLightState(id)
-    const sim = this.session.simulation
-    if (!switches || !sim) return null
-    const info = sim.vehicleInfo(id)
-    return {
-      ...switches,
-      powered: sim.player.vehicleId === id || info.ignition === 'running',
-      braking: info.braking,
-      reversing: info.reversing,
-    }
+    return this.vehiclePresentation.vehicleLightState(id)
   }
   /**
    * Show `state` on a vehicle nobody drives here (for example another player's car): sets its
    * existing light switches and lamp inputs. `null` gives the lamps back to the simulation.
    */
   setVehicleLightState(id: string, state: VehicleLightState | null): boolean {
-    this.assertAlive()
-    if (!state) return this.view.setVehicleLightState(id, null, null)
-    const { powered, braking, reversing, ...switches } = state
-    return this.view.setVehicleLightState(id, switches, { powered, braking, reversing })
+    return this.vehiclePresentation.setVehicleLightState(id, state)
   }
   /** Remove a vehicle added with `spawnVehicle`. The player must be outside it. */
   removeSpawnedVehicle(id: string): void {
-    this.assertAlive()
-    if (!this.spawned.includes(id)) throw new Error(`Not a spawned vehicle: ${id}`)
-    this.removeWorldVehicle(id)
+    this.vehiclePresentation.removeSpawnedVehicle(id)
   }
   /** Remove a shared-world view, including an authored vehicle, after leaving its seat. */
   removeWorldVehicle(id: string): void {
-    this.assertAlive()
-    const sim = this.session.simulation
-    if (sim) sim.removeVehicle(id)
-    this.view.removeVehicle(id)
-    this.game.removeVehicle(id)
-    this.spawned = this.spawned.filter((other) => other !== id)
-    this.monitors.rebuild(this.document)
+    this.vehiclePresentation.removeWorldVehicle(id)
   }
 
   /**

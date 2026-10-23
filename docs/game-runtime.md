@@ -229,3 +229,14 @@ failed prop loads release their resources. Already returned props remain caller-
 Coverage checks rapid/out-of-order loads, default versus host selection, saved preferences,
 independent owners, failed-load retry, model replacement, socket/grip transforms and disposal,
 including the public facade with real actor assets in the browser.
+
+### Topic 5 completion: vehicle presentation coordination
+
+`RuntimeVehiclePresentation` owns placement/removal coordination, spawned/prepared ids,
+concurrent mounted-view warmups, vehicle light/paint delegation and damage/replacement
+presentation. SceneView, VehicleWarmup and VehicleEffects retain their resource ownership.
+The original frame location, worker acknowledgement order, simulation/game registration and
+late-session checks are preserved. Shared-vehicle command confirmation remains in the shared
+game/action path. No settings keys or public signatures change. Tests cover worker waits,
+late completion, concurrent/failing preparation, pause/resume policy, lights, damage and
+independent owners, plus real vehicle placement/warmup/removal through the public facade.

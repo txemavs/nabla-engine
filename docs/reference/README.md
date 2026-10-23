@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **641 modules; 8231 executable function definitions**.
+Coverage: **642 modules; 8257 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -525,6 +525,7 @@ Coverage: **641 modules; 8231 executable function definitions**.
 | [src/runtime/vehicle-monitors.ts](src/runtime/vehicle-monitors.ts.md) | 35 |
 | [src/runtime/vehicle-options.ts](src/runtime/vehicle-options.ts.md) | 1 |
 | [src/runtime/vehicle-preferences.ts](src/runtime/vehicle-preferences.ts.md) | 16 |
+| [src/runtime/vehicle-presentation.ts](src/runtime/vehicle-presentation.ts.md) | 26 |
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 13 |
 | [src/runtime/viewmodel-lighting.ts](src/runtime/viewmodel-lighting.ts.md) | 2 |
 | [src/runtime/visibility-settings.ts](src/runtime/visibility-settings.ts.md) | 3 |
