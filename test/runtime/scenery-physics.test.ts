@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as THREE from 'three'
 import { SceneryPhysics } from '../../src/runtime/scenery-physics.js'
 import { sceneryPhysicsDefaults } from '../../src/config/scenery-physics.js'
@@ -217,6 +217,14 @@ describe('SceneryPhysics with the real simulation', () => {
 })
 
 describe('world layer (lamp posts and tree trunks)', () => {
+  // The world layers spend a 3 ms creation budget measured with performance.now(). A frozen
+  // clock keeps a stall of the test process from deferring bodies; the budget test drives it.
+  beforeEach(() => {
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   const handle = () => ({
     impact: vi.fn(),
     pose: () => ({

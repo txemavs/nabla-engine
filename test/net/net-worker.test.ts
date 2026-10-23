@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { MessageChannel, type MessagePort } from 'node:worker_threads'
 import {
   LoopbackTransport,
@@ -81,19 +81,22 @@ describe('serveNetWorker', () => {
     await tick()
     socket.open()
     send({ type: 'send', data: 'hello' })
-    await tick()
-    expect(socket.sent).toEqual(['hello'])
+    await vi.waitFor(() => {
+      expect(socket.sent).toEqual(['hello'])
+    })
     for (const n of [1, 2, 3]) socket.emit('message', { data: `f${n}` })
     socket.emit('message', { data: new ArrayBuffer(2) }) // binary frames are not part of the protocol
-    await tick(30)
-    expect(events).toEqual([{ type: 'open' }, { type: 'frames', data: ['f1', 'f2', 'f3'] }])
+    await vi.waitFor(() => {
+      expect(events).toEqual([{ type: 'open' }, { type: 'frames', data: ['f1', 'f2', 'f3'] }])
+    })
     socket.emit('message', { data: 'late' })
     socket.emit('close', { reason: 'bye' })
-    await tick(20)
-    expect(events.slice(2)).toEqual([
-      { type: 'frames', data: ['late'] },
-      { type: 'close', reason: 'bye' },
-    ])
+    await vi.waitFor(() =>
+      expect(events.slice(2)).toEqual([
+        { type: 'frames', data: ['late'] },
+        { type: 'close', reason: 'bye' },
+      ]),
+    )
     port1.close()
   })
 })
@@ -112,16 +115,19 @@ describe('NetWorker', () => {
     net.onMessage((d) => got.push(d))
     await tick()
     socket.open()
-    await tick()
-    expect(opened).toBe(1)
+    await vi.waitFor(() => {
+      expect(opened).toBe(1)
+    })
     expect(net.status).toBe('open')
     net.send('{"type":"join"}')
-    await tick()
-    expect(socket.sent).toEqual(['{"type":"join"}'])
+    await vi.waitFor(() => {
+      expect(socket.sent).toEqual(['{"type":"join"}'])
+    })
     socket.emit('message', { data: 'a' })
     socket.emit('message', { data: 'b' })
-    await tick()
-    expect(got).toEqual(['a', 'b'])
+    await vi.waitFor(() => {
+      expect(got).toEqual(['a', 'b'])
+    })
     const reasons: string[] = []
     net.onClose((r) => reasons.push(r))
     net.close()
