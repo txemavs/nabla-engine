@@ -181,6 +181,11 @@ export class VehicleDestruction {
   private readonly flameGeometry = new THREE.PlaneGeometry(1, 1, 1, 16).translate(0, 0.5, 0)
   /** The six tongues merged (WebGL), built on first use and shared by every wreck. */
   private mergedFlames?: THREE.BufferGeometry
+  /**
+   * WebGPU's six tongue planes: the shared plane plus each tongue's `flameTongue` index, so its
+   * flame twin gets the same per-tongue seed and flicker as the merged WebGL tongues.
+   */
+  private tongueGeometries?: THREE.BufferGeometry[]
   // Keep the light count constant: adding the first explosion lamp otherwise recompiles
   // every lit material in the scene on the gameplay frame.
   private readonly light = new THREE.PointLight('#ff9b22', 0, 8, 2)
@@ -566,8 +571,20 @@ export class VehicleDestruction {
       flames.add(tongues.mesh)
       return { flames, material, tongues }
     }
+    this.tongueGeometries ??= Array.from({ length: 6 }, (_, i) => {
+      const geometry = new THREE.BufferGeometry()
+      for (const [name, attribute] of Object.entries(this.flameGeometry.attributes))
+        geometry.setAttribute(name, attribute)
+      geometry.setIndex(this.flameGeometry.getIndex())
+      const count = this.flameGeometry.getAttribute('position').count
+      geometry.setAttribute(
+        'flameTongue',
+        new THREE.BufferAttribute(new Float32Array(count).fill(i), 1),
+      )
+      return geometry
+    })
     for (let i = 0; i < 6; i++) {
-      const tongue = new THREE.Mesh(this.flameGeometry, material)
+      const tongue = new THREE.Mesh(this.tongueGeometries[i], material)
       tongue.rotation.y = ((i % 2) * Math.PI) / 2
       tongue.position.set((Math.floor(i / 2) - 1) * 0.24, 0, ((i % 3) - 1) * 0.1)
       tongue.scale.set(0.7, 1.0 + (i % 3) * 0.2, 1)
@@ -965,6 +982,7 @@ export class VehicleDestruction {
     this.geometry.dispose()
     this.flameGeometry.dispose()
     this.mergedFlames?.dispose()
+    for (const geometry of this.tongueGeometries ?? []) geometry.dispose()
     this.fragments.geometry.dispose()
     ;(this.fragments.material as THREE.Material).dispose()
   }
