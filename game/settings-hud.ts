@@ -81,7 +81,6 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-sharpness', 'options'],
   ['quality-shadows', 'options'],
   ['settings-distances', 'options'],
-  ['display-performance', 'options'],
   ['settings-effects', 'options'],
   ['settings-simulated-fire', 'options'],
   ['settings-muzzle-flash', 'options'],
@@ -425,25 +424,16 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const menu = doc.getElementById('menu-sections')
   const legacySections = () =>
     [...(menu?.children ?? [])].filter((el): el is HTMLElement => el instanceof HTMLElement)
-  for (const id of ['display-quality-section', 'display-performance']) {
-    const el = doc.getElementById(id)
-    if (el) place(el)
-  }
+  const qualitySection = doc.getElementById('display-quality-section')
+  if (qualitySection) place(qualitySection)
   for (const el of legacySections()) place(el)
 
-  // Rendimiento → Calidad: profile, FPS limit and resolution scale in one section, with the
+  // Calidad: profile, FPS limit and resolution scale in one section, with the
   // «Aplicar calidad y reiniciar» button and its note last. The controls keep their ids and binds.
   const quality = byId('display-quality-section')
   if (quality && typeof runtime.setFsr === 'function') appendFsrControls(quality, runtime)
-  const performanceGroup = byId('display-performance')
-  if (quality && performanceGroup) {
-    const tail = [...quality.children].filter((el) => el.matches('button, p'))
-    quality.append(
-      ...[...performanceGroup.children].filter((el) => el.tagName !== 'LEGEND'),
-      ...tail,
-    )
-    performanceGroup.hidden = true
-  }
+  // FPS limit and resolution scale sit in Calidad (HTML); the apply button and its note stay last.
+  if (quality) quality.append(...[...quality.children].filter((el) => el.matches('button, p')))
 
   if (quality && runtime.fieldLightLimit !== undefined) {
     const lightProfile = readQualityPreset()
@@ -1552,7 +1542,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         'settings-sharpness',
         'quality-shadows',
         'settings-distances',
-        'display-performance',
       ],
     },
     {

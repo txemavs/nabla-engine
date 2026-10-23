@@ -11,7 +11,6 @@ test('distances section gathers existing and new controls and applies them live'
         '<!doctype html><body><canvas id="game-canvas"></canvas>' +
         '<details id="display-settings"><summary>Menú</summary>' +
         '<fieldset class="menu-section" id="display-quality-section"><legend>Calidad</legend></fieldset>' +
-        '<fieldset class="menu-section" id="display-performance"><legend>Rendimiento</legend></fieldset>' +
         '<div id="menu-sections"></div></details></body>',
     }),
   )

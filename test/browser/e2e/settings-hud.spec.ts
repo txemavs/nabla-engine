@@ -11,7 +11,6 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
         '<!doctype html><body><canvas id="game-canvas"></canvas>' +
         '<details id="display-settings"><summary>Menú</summary>' +
         '<fieldset class="menu-section" id="display-quality-section"><legend>Calidad</legend></fieldset>' +
-        '<fieldset class="menu-section" id="display-performance"><legend>Rendimiento</legend></fieldset>' +
         '<div id="menu-sections"></div></details></body>',
     }),
   )
