@@ -556,9 +556,16 @@ export function blendSnapshot(
         yaw: lerpAngle(pa.yaw, pb.yaw, t),
       }
     : latest.player
-  const renderPlayerPosition = sameBody
-    ? lerpVec(a.snapshot.renderPlayerPosition, b.snapshot.renderPlayerPosition, t)
-    : latest.renderPlayerPosition
+  // The worker's `renderPlayerPosition` is its own interpolated pose at reply time (a fraction of
+  // a tick that varies per reply), not the pose at the snapshot's fixed time. Blending it on the
+  // fixed timeline made the driven car jump against the camera. In a vehicle the player is the
+  // body, so use the body's pose blended from the fixed snapshots, exactly what its mesh shows.
+  const driven = sameBody && pb.vehicleId ? entities[pb.vehicleId]?.[0] : undefined
+  const renderPlayerPosition: Vec3Tuple = driven
+    ? [driven.position[0], driven.position[1], driven.position[2]]
+    : sameBody
+      ? lerpVec(a.snapshot.renderPlayerPosition, b.snapshot.renderPlayerPosition, t)
+      : latest.renderPlayerPosition
   const fa = a.snapshot.playerFrame,
     fb = b.snapshot.playerFrame
   const playerFrame = sameBody && fa && fb ? lerpTransform(fa, fb, t, span) : latest.playerFrame
