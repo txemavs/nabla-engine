@@ -119,7 +119,7 @@ import type {
 } from '../render/vehicle-presentation/light-controller.js'
 import { worldWater } from './water.js'
 import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
-import { HeldWeapon } from './held-weapon.js'
+import { RuntimePlayerPresentation, type WeaponProp } from './player-presentation.js'
 import { weaponSlots } from '../catalog/weapons/slots.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
 import { type SidearmTuning } from './sidearm-tuning.js'
@@ -241,16 +241,7 @@ export {
  * baton (assets/avatar/prota, credits in its LICENSES.md), animated by assets/avatar's clips.
  * The player's saved actor (./actor.ts) replaces it at play.
  */
-import {
-  DEFAULT_ACTOR,
-  actorBodyAssets,
-  actorHandAssets,
-  actorProfile,
-  loadActor,
-  parseActor,
-  saveActor,
-  type ActorChoice,
-} from './actor.js'
+import { DEFAULT_ACTOR, actorBodyAssets, actorHandAssets, type ActorChoice } from './actor.js'
 export {
   ACTOR_COLORS,
   ACTOR_COLOR_NAMES,
@@ -585,15 +576,7 @@ type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown
 type FrameSteps = Generator<unknown, void, unknown>
 
 /** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
-export interface WeaponProp {
-  /** Feet origin: place and turn it like the body. */
-  readonly root: THREE.Group
-  readonly slot: number
-  /** Where its shots leave it (gun muzzle, bow arrow rest), simulation world; null when hidden. */
-  muzzle(): Vec3Tuple | null
-  update(now?: number): void
-  dispose(): void
-}
+export type { WeaponProp } from './player-presentation.js'
 
 /** Host side of the body-slot keys ({@link GameRuntime.setBodySlotHost}). */
 export interface BodySlotHost {
@@ -676,8 +659,6 @@ export class GameRuntime {
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
   /** Melee or bow from a numbered weapon slot; exclusive with the drawn sidearm. */
-  private heldWeapon: HeldWeapon | null = null
-  private heldDrawn = false
   private bowDraw: BowDraw | null = null
   private bowDrawStart = 0
   private arrowFlight: ArrowFlight | null = null
@@ -818,6 +799,7 @@ export class GameRuntime {
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private terrainLoad: AbortController | null = null
+  private readonly playerPresentation: RuntimePlayerPresentation
   private readonly preparation: RuntimePreparation<Simulation | null>
   private loading: AbortController | null = null
   /** `?performanceLog=1` per-second summary (frame, main CPU, physics main/worker, main idle). */
@@ -889,7 +871,23 @@ export class GameRuntime {
     }
     this.lighting = new RuntimeLightingPreferences(this.settings)
     this.weaponPreferences = new RuntimeWeaponPreferences(this.settings)
-    this.actorChoice = loadActor(this.settings)
+    this.playerPresentation = new RuntimePlayerPresentation(this.settings, {
+      applyBody: (body) => {
+        this.view.setPlayerBody(body)
+        this.combat.setLocalBody(this.view.localPlayerBody)
+      },
+      currentBody: () => this.view.localPlayerBody,
+      actorHands: (choice) => {
+        if (this.xrLoaded && this.xr.wearsActorHands)
+          void this.xr.setActorHands(actorHandAssets(choice)).catch((error) => console.warn(error))
+      },
+      createSidearm: (preset) => this.createSidearm(preset),
+      rememberArrow: (template) => {
+        this.remoteArrowTemplate ??= template
+      },
+      sceneOrigin: () => this.view.root.position,
+      onError: (error) => this.options.onError?.(error),
+    })
     this.sceneryPhysics = new SceneryPhysics(() => this.session.simulation, this.settings)
     this.pipeline.diagnostics = !!options.performanceLog
     this.pipeline.fsr.setSettings(options.fsr ?? {})
@@ -1178,7 +1176,7 @@ export class GameRuntime {
       respawnLocal: (position) => this.respawnLocalPlayer(position),
       localDied: () => {
         this.weaponDrawn = false
-        this.heldDrawn = false
+        this.playerPresentation.heldDrawn = false
         this.sidearm?.setAiming(false)
       },
       hud: this.combatHud,
@@ -1415,10 +1413,10 @@ export class GameRuntime {
         actionRuntime.weaponDrawn = value
       },
       get heldDrawn() {
-        return actionRuntime.heldDrawn
+        return actionRuntime.playerPresentation.heldDrawn
       },
       set heldDrawn(value) {
-        actionRuntime.heldDrawn = value
+        actionRuntime.playerPresentation.heldDrawn = value
       },
       get ownedWeaponId() {
         return actionRuntime.ownedWeaponId
@@ -1623,10 +1621,7 @@ export class GameRuntime {
   async play(options: PlayOptions = {}): Promise<void> {
     // Engine default avatar (assets/avatar): the mannequin under the monitor head, unless the
     // host called setPlayerBody (null keeps the head only).
-    if (!this.playerBodyChosen)
-      void this.loadPlayerBody(actorBodyAssets(this.actorChoice), true).catch((error) =>
-        console.warn('player body', error),
-      )
+    this.playerPresentation.ensureDefault()
     this.assertAlive()
     this.stop()
     const controller = new AbortController()
@@ -1844,10 +1839,9 @@ export class GameRuntime {
     this.remoteViews.dispose()
     this.fieldLighting?.lights.reset()
     this.weaponDrawn = false
-    this.heldWeapon?.dispose()
-    this.heldWeapon = null
+    this.playerPresentation.clearHeld()
     this.clearArrows()
-    this.heldDrawn = false
+    this.playerPresentation.heldDrawn = false
     this.clearPickups()
     this.accidentReplacement?.clear()
     this.drivingPrepared.clear()
@@ -1912,7 +1906,7 @@ export class GameRuntime {
     this.xrLoadout?.pistols[1]?.weapon.dispose()
     this.xrLoadout?.dispose()
     this.sidearm?.dispose()
-    this.heldWeapon?.dispose()
+    this.playerPresentation.dispose()
     this.clearPickups()
     this.casingMeshes?.dispose()
     this.magazineMeshes?.dispose()
@@ -2718,9 +2712,10 @@ export class GameRuntime {
           : null
       },
     )
-    if (this.heldWeapon) {
-      this.heldWeapon.visible = this.heldDrawn && !sim.player.vehicleId
-      this.heldWeapon.syncWorld(this.view.avatar, time, eyes || !!this.localHeld)
+    if (this.playerPresentation.heldWeapon) {
+      this.playerPresentation.heldWeapon.visible =
+        this.playerPresentation.heldDrawn && !sim.player.vehicleId
+      this.playerPresentation.heldWeapon.syncWorld(this.view.avatar, time, eyes || !!this.localHeld)
     }
     this.weaponsToHand()
     this.updateCombat(sim, dt)
@@ -3016,7 +3011,7 @@ export class GameRuntime {
         this.scene,
         this.camera,
       )
-      this.heldWeapon?.render(
+      this.playerPresentation.heldWeapon?.render(
         this.renderer,
         time,
         this.camera.aspect,
@@ -5813,7 +5808,8 @@ export class GameRuntime {
     const drawn =
       entry.kind === 'firearm'
         ? this.weaponDrawn && this.sidearm?.preset?.id === entry.id
-        : this.heldDrawn && this.heldWeapon?.preset.id === entry.id
+        : this.playerPresentation.heldDrawn &&
+          this.playerPresentation.heldWeapon?.preset.id === entry.id
     if (!drawn && !this.loadout && this.weaponSlotGate && !this.weaponSlotGate(slot)) {
       this.options.onMessage?.(`${entry.name}: ${this.text('not carried')}`)
       return
@@ -5821,7 +5817,7 @@ export class GameRuntime {
     this.fireRequested = false
     this.triggerDown = false
     if (entry.kind === 'firearm') {
-      this.heldDrawn = false
+      this.playerPresentation.heldDrawn = false
       if (this.weaponDrawn && this.sidearm?.preset?.id === entry.id) {
         this.weaponDrawn = false
         this.sidearm.setAiming(false)
@@ -5845,8 +5841,11 @@ export class GameRuntime {
       this.options.onMessage?.(entry.name)
       return
     }
-    if (this.heldDrawn && this.heldWeapon?.preset.id === entry.id) {
-      this.heldDrawn = false
+    if (
+      this.playerPresentation.heldDrawn &&
+      this.playerPresentation.heldWeapon?.preset.id === entry.id
+    ) {
+      this.playerPresentation.heldDrawn = false
       this.options.onMessage?.(this.text('Weapon holstered'))
       return
     }
@@ -5856,12 +5855,8 @@ export class GameRuntime {
       this.view.laser.enabled = false
       if (this.weaponLight) this.weaponLight.intensity = 0
     }
-    if (this.heldWeapon?.preset.id !== entry.id) {
-      this.heldWeapon?.dispose()
-      this.heldWeapon = new HeldWeapon(entry.preset)
-      void this.heldWeapon.ready.catch((error) => this.options.onError?.(error))
-    }
-    this.heldDrawn = true
+    this.playerPresentation.selectHeld(entry.preset)
+    this.playerPresentation.heldDrawn = true
     this.options.onMessage?.(
       entry.kind === 'melee'
         ? `${entry.name} · ${this.text('left click: strike')}`
@@ -5875,11 +5870,11 @@ export class GameRuntime {
    * the holstered pistol shown only with empty hands. No-op without a body or sockets.
    */
   private weaponsToHand(): void {
-    const body = this.view.localPlayerBody
-    if (!body) return
-    body.setHolstered(this.holsterShown ?? !(this.weaponDrawn || this.heldDrawn))
-    for (const object of [this.heldWeapon?.worldObject, this.sidearm?.worldObject])
-      if (object?.visible) body.holdAtHand(object, true)
+    this.playerPresentation.weaponsToHand(
+      this.weaponDrawn,
+      this.sidearm?.worldObject,
+      this.holsterShown,
+    )
   }
   /**
    * Third-person copy of a numbered weapon slot for another player's body (e.g. a remote player
@@ -5896,49 +5891,7 @@ export class GameRuntime {
     body?: PlayerBody | null,
     options: { grip?: boolean } = {},
   ): Promise<WeaponProp | null> {
-    const entry = weaponSlots().find((item) => item.slot === slot)
-    if (!entry || entry.kind === 'placeholder') return null
-    const root = new THREE.Group()
-    root.name = `weapon-prop-${entry.id}`
-    // The local weapon hangs from the avatar, whose origin is the standing body centre.
-    const frame = new THREE.Group()
-    frame.position.y = simulationDefaults.playerHalfHeight
-    root.add(frame)
-    if (options.grip) {
-      // Undo the third-person hip offset so the weapon sits at the root.
-      const hip =
-        entry.kind === 'firearm'
-          ? [0.24, -0.16, -0.32]
-          : (entry.preset.world?.position ?? [0, 0, 0])
-      frame.position.set(-hip[0], -hip[1], -hip[2])
-    }
-    const weapon =
-      entry.kind === 'firearm' ? this.createSidearm(entry.preset) : new HeldWeapon(entry.preset)
-    await weapon.ready
-    weapon.visible = true
-    if (weapon instanceof HeldWeapon && weapon.arrowTemplate)
-      this.remoteArrowTemplate ??= weapon.arrowTemplate
-    const socket = options.grip ? null : (body ?? null)
-    return {
-      root,
-      slot,
-      muzzle: () => {
-        const at = weapon instanceof HeldWeapon ? weapon.worldOrigin() : weapon.worldMuzzle()
-        return at ? (at.sub(this.view.root.position).toArray() as Vec3Tuple) : null
-      },
-      update: (now = performance.now()) => {
-        weapon.syncWorld(frame, now, false)
-        const object = weapon.worldObject
-        if (!socket || !object) return
-        socket.setHolstered(!root.visible)
-        if (root.visible) socket.holdAtHand(object)
-      },
-      dispose: () => {
-        socket?.setHolstered(true)
-        weapon.dispose()
-        root.removeFromParent()
-      },
-    }
+    return this.playerPresentation.createWeaponProp(slot, body, options)
   }
   /**
    * Where the player looks, as [yaw, pitch] in radians (yaw 0 faces −Z like the avatar, pitch up
@@ -5950,8 +5903,8 @@ export class GameRuntime {
   }
   /** Active numbered slot, or null with empty hands. */
   get activeWeaponSlot(): number | null {
-    const id = this.heldDrawn
-      ? this.heldWeapon?.preset.id
+    const id = this.playerPresentation.heldDrawn
+      ? this.playerPresentation.heldWeapon?.preset.id
       : this.weaponDrawn
         ? this.sidearm?.preset?.id
         : undefined
@@ -5960,7 +5913,7 @@ export class GameRuntime {
   /** Hold-to-draw bow on foot: the headset bow's draw rules, arrows flown by the simulation. */
   private bowButton(down: boolean): void {
     const sim = this.session.simulation
-    const weapon = this.heldWeapon
+    const weapon = this.playerPresentation.heldWeapon
     if (!sim || !weapon || weapon.preset.kind !== 'bow' || sim.player.vehicleId) return
     const draw = (this.bowDraw ??= new BowDraw())
     if (down) {
@@ -6006,8 +5959,13 @@ export class GameRuntime {
   private updateBow(sim: Simulation, dt: number): void {
     const draw = this.bowDraw
     if (draw?.drawing) {
-      const weapon = this.heldWeapon
-      if (!weapon || !this.heldDrawn || weapon.preset.kind !== 'bow' || sim.player.vehicleId) {
+      const weapon = this.playerPresentation.heldWeapon
+      if (
+        !weapon ||
+        !this.playerPresentation.heldDrawn ||
+        weapon.preset.kind !== 'bow' ||
+        sim.player.vehicleId
+      ) {
         draw.cancel()
         weapon?.setDraw(0)
       } else {
@@ -6017,7 +5975,7 @@ export class GameRuntime {
     }
     const flight = this.arrowFlight
     if (!flight) return
-    const bow = this.heldWeapon?.preset
+    const bow = this.playerPresentation.heldWeapon?.preset
     const impacts = flight.update(
       dt,
       this.combat.shotQuery(
@@ -6064,7 +6022,7 @@ export class GameRuntime {
   }
   private swingHeldWeapon(): void {
     const sim = this.session.simulation
-    const weapon = this.heldWeapon
+    const weapon = this.playerPresentation.heldWeapon
     const melee = weapon?.preset.melee
     if (!sim || !weapon || !melee || sim.player.vehicleId) return
     if (this.combat.isDead() || !weapon.swing(performance.now())) return
@@ -6240,8 +6198,9 @@ export class GameRuntime {
     if (this.inspector) return
     if (this.session.state !== 'playing') return
     if (down && !this.pointer.locked && !this.pointer.unsupported) return
-    if (this.heldDrawn && !this.weaponDrawn) {
-      if (button === 0 && this.heldWeapon?.preset.kind === 'bow') this.bowButton(down)
+    if (this.playerPresentation.heldDrawn && !this.weaponDrawn) {
+      if (button === 0 && this.playerPresentation.heldWeapon?.preset.kind === 'bow')
+        this.bowButton(down)
       else if (down && button === 0) this.swingHeldWeapon()
       return
     }
@@ -6344,7 +6303,6 @@ export class GameRuntime {
   get headlampEnabled(): boolean {
     return this.headlamp.enabled
   }
-  private bodyRig: PlayerBodyRig | null = null
   /**
    * Character combat: health, hit zones, death and respawn for the local player, remote
    * players (hosts add them with `combat.addTarget`) and test dummies. Contract: docs/combat.md.
@@ -6359,7 +6317,7 @@ export class GameRuntime {
    */
   spawnCombatDummy(): string | null {
     const sim = this.session.simulation
-    const rig = this.bodyRig
+    const rig = this.playerPresentation.bodyRig
     if (!sim || !rig) return null
     const body = rig.create()
     const yaw = this.cameraState.yaw
@@ -6418,32 +6376,23 @@ export class GameRuntime {
    * removes it. Resolves with the rig so remote players can share it ({@link PlayerBodyRig.create}).
    */
   async setPlayerBody(assets: PlayerBodyAssets | null): Promise<PlayerBodyRig | null> {
-    this.playerBodyChosen = true
-    this.headOnly = assets === null
-    return this.loadPlayerBody(assets)
+    return this.playerPresentation.setPlayerBody(assets)
   }
   /** The local player's actor (Settings → Options → Actor), saved in localStorage. */
   get actor(): ActorChoice {
-    return this.actorChoice
+    return this.playerPresentation.actor
   }
   /** Actor for the local player profile sent to peers: `kind:color` (e.g. `default:red`). */
   get actorProfile(): string {
-    return actorProfile(this.actorChoice)
+    return this.playerPresentation.profile
   }
   /** False on head-only pages (the host chose `setPlayerBody(null)`): no actor to pick. */
   get actorSelectable(): boolean {
-    return !this.headOnly
+    return this.playerPresentation.selectable
   }
   /** Save the actor and wear it now (no reload); head-only pages only save it. */
   async setActor(choice: ActorChoice): Promise<PlayerBodyRig | null> {
-    this.actorChoice = choice
-    saveActor(choice, this.settings)
-    if (this.headOnly) return null
-    this.playerBodyChosen = true
-    // In XR the controller hands follow the actor (only once XR code is loaded and hands worn).
-    if (this.xrLoaded && this.xr.wearsActorHands)
-      void this.xr.setActorHands(actorHandAssets(choice)).catch((error) => console.warn(error))
-    return this.loadPlayerBody(actorBodyAssets(choice))
+    return this.playerPresentation.setActor(choice)
   }
   /**
    * The body rig of another player's actor (their `actorProfile`, e.g. `polibot:white`; unknown
@@ -6451,31 +6400,9 @@ export class GameRuntime {
    * own actor, not ours.
    */
   actorRig(profile: unknown): Promise<PlayerBodyRig> {
-    const key = actorProfile(parseActor(profile))
-    let rig = this.actorRigs.get(key)
-    if (!rig) {
-      rig = PlayerBodyRig.load(actorBodyAssets(parseActor(key)))
-      rig.catch(() => this.actorRigs.delete(key))
-      this.actorRigs.set(key, rig)
-    }
-    return rig
+    return this.playerPresentation.actorRig(profile)
   }
-  private readonly actorRigs = new Map<string, Promise<PlayerBodyRig>>()
-  private actorChoice: ActorChoice
-  private headOnly = false
-  private bodyLoad = 0
-  /** Host chose a body (or none, `null`): the engine default is then never loaded. */
-  private playerBodyChosen = false
-  private async loadPlayerBody(assets: PlayerBodyAssets | null, fallback = false) {
-    const load = ++this.bodyLoad
-    const rig = assets ? await PlayerBodyRig.load(assets) : null
-    // The default arrives late; a host choice made meanwhile wins, and so does a later choice.
-    if ((fallback && this.playerBodyChosen) || load !== this.bodyLoad) return null
-    this.bodyRig = rig
-    this.view.setPlayerBody(this.bodyRig?.create() ?? null)
-    this.combat.setLocalBody(this.view.localPlayerBody)
-    return this.bodyRig
-  }
+
   /** The local player's avatar state to send to other clients (with or without a body; null before the first frame). */
   get avatarState(): AvatarNetState | null {
     return this.view.avatarNetState
@@ -6485,7 +6412,7 @@ export class GameRuntime {
    * `rig.create()`, added with {@link attachSceneryLayer} so they share `avatarState` positions.
    */
   get playerBodyRig(): PlayerBodyRig | null {
-    return this.bodyRig
+    return this.playerPresentation.bodyRig
   }
   /**
    * A new floating helmet-monitor avatar (the head without a body, faces −Z), for hosts that

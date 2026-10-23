@@ -217,3 +217,15 @@ Tests cover rejected gates, cancellation, missing-terrain failure and retry, tas
 consumption, two independent owners and a real runtime stopped/retried/disposed before reveal.
 The final host gate still settles before cancellation is observed by `play()`; this extraction
 does not change that existing contract.
+
+### Topic 4 completion: player presentation lifecycle
+
+`RuntimePlayerPresentation` owns actor preferences, head-only selection, body load generations,
+remote rig caching, held-model replacement, socket attachment and remote weapon prop creation.
+The browser facade and exported `WeaponProp` contract remain available; combat, inventory and
+frame decisions stay with their existing owners. SceneView still disposes installed bodies.
+Lifecycle guards now discard body loads and unpublished props that finish after disposal;
+failed prop loads release their resources. Already returned props remain caller-owned.
+Coverage checks rapid/out-of-order loads, default versus host selection, saved preferences,
+independent owners, failed-load retry, model replacement, socket/grip transforms and disposal,
+including the public facade with real actor assets in the browser.

@@ -158,6 +158,22 @@ order. Loading detail events and the five-stage progress contract are unchanged.
 `test/runtime/preparation.test.ts`, terrain/start-camera tests and
 `test/browser/e2e/preparation.spec.ts`.
 
+[RuntimePlayerPresentation](../../src/runtime/player-presentation.ts) owns local actor choice,
+head-only mode, body-load generations, the remote rig cache and the held non-firearm model.
+The public actor/body APIs and `WeaponProp` type remain available through the browser runtime.
+Actor settings still use `loadActor`/`saveActor` with the runtime settings store, and XR hand
+changes retain the existing loaded-XR check. Combat and inventory authority remain outside.
+
+A newer body request or explicit head-only choice supersedes older loads. Disposal also
+invalidates pending body loads so they cannot install into a disposed view. SceneView still
+owns disposal of the installed body; shared rigs are not disposed by this coordinator.
+Held models are reused by preset id and disposed on replacement/stop. The frame loop keeps
+its existing on-foot/vehicle visibility and rendering decisions. Weapon socket attachment
+and remote prop creation delegate to the owner. Successfully returned props remain caller
+owned; failed loads and props finishing after runtime disposal are cleaned up.
+Tests: `test/runtime/player-presentation.test.ts`, actor/socket/XR tests and
+`test/browser/e2e/player-presentation.spec.ts`.
+
 [RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
 free-mouse state and pointer-lock policy. Capture remains restricted to playing and
 is requested only by existing gesture handlers; rejected requests can be retried.
