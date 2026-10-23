@@ -242,7 +242,7 @@ const touchControls = new ARTouchControls({
 })
 xr.domOverlayRoot = mobileAR ? touchControls.root : undefined
 xr.screenTouchEnabled = false
-// Slotted firearms after the default pistol (for example Euskadi's MP5) ride in the same loadout.
+// Firearm slots a game registers after the default pistol ride in the same loadout.
 const extraFirearms = weaponSlots()
   .filter((slot) => slot.kind === 'firearm' && slot.id !== weaponPresets()[0]?.id)
   .map((slot) => slot.preset as WeaponPreset)
