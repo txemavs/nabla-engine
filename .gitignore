@@ -31,3 +31,5 @@ assets/packs/
 
 # scenario models are local (large binaries)
 assets/scenarios/*.glb
+!assets/scenarios/backrooms.glb
+!assets/scenarios/army-desert.glb
