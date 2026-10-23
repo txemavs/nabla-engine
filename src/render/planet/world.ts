@@ -9,6 +9,7 @@ import {
 import { compressedTextureBytes, type CompressedTextureSupport } from './tile-compression.js'
 import type { PlanetCompressedTexture } from '../../planet/contract.js'
 import { Z16Updates } from './z16-updates.js'
+import { TileAvailability } from './tile-availability.js'
 import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
 import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
@@ -43,6 +44,8 @@ const GPU_WAIT = Symbol('gpu-wait')
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Optional index.json discovery for static sources. Enabled by default. */
+  availabilityIndex?: boolean
   /** Manifest file names tried per static cell (see `fetchTileManifest`). Default `manifest.json`. */
   manifestFiles?: readonly string[]
   /**
@@ -502,6 +505,8 @@ export class PlanetWorld {
   status = 'Preparando baldosas del planeta…'
   private readonly pinned = new Map<string, MapTile>()
   private readonly tileBases = new Map<string, string>()
+  private readonly availability = new Map<string, TileAvailability>()
+  private checkingAvailability = false
   /** Retain an explicitly requested cell alongside the normal streaming cover. */
   pinTile(tile: MapTile, baseUrl?: string): void {
     const key = mapTileId(tile)
@@ -518,6 +523,12 @@ export class PlanetWorld {
   }
   private tileBase(tile: MapTile): string {
     return this.tileBases.get(mapTileId(tile)) ?? this.base
+  }
+  private knownMissing(tile: MapTile): boolean {
+    return (
+      this.missing.has(tile) ||
+      (!this.updates?.get(tile) && this.availability.get(this.tileBase(tile))?.has(tile) === false)
+    )
   }
   /** Fill caller-owned tile storage without allocating intermediate active-tile lists. */
   collectActiveMapTiles(output: MapTile[]): MapTile[] {
@@ -794,11 +805,11 @@ export class PlanetWorld {
   missingTileAt(position: Vec3Tuple): MapTile | undefined {
     const gps = localToGeo(this.origin, position)
     const tile = mapTileAt(gps.latitude, gps.longitude, this.sourceOptions.meshMaxZoom ?? 15)
-    if (!this.missing.has(tile)) return undefined
+    if (!this.knownMissing(tile)) return undefined
     // A missing fine child is not a ground hole while its Z15 fallback can still arrive.
     if (tile.z === 16) {
       const parent = mapTileParent(tile)!
-      if (this.resident.has(mapTileId(parent)) || !this.missing.has(parent)) return undefined
+      if (this.resident.has(mapTileId(parent)) || !this.knownMissing(parent)) return undefined
     }
     return tile
   }
@@ -1009,7 +1020,7 @@ export class PlanetWorld {
             : [center]
     const advertisedZoom =
       this.sourceOptions.meshMinZoom ?? (this.discoveryMode === 'static' ? 15 : 13)
-    const minZoom = this.missing.has(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
+    const minZoom = this.knownMissing(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
       ? 15
       : advertisedZoom
     const flight = this.streamMode === 'flight'
@@ -1136,6 +1147,32 @@ export class PlanetWorld {
     return !!publication && manifest.atlasZ16?.revision !== publication.revision
   }
   private async discover() {
+    if (this.checkingAvailability || this.busy || Date.now() < this.next || this.disposed) return
+    this.checkingAvailability = true
+    try {
+      if (this.discoveryMode === 'static' && this.sourceOptions.availabilityIndex !== false) {
+        const bases = new Set([this.base, ...this.wanted.map((t) => this.tileBase(t))])
+        await Promise.all(
+          [...bases].map((base) => {
+            let index = this.availability.get(base)
+            if (!index) {
+              index = new TileAvailability(base, this.controller.signal, (tile) => {
+                if (this.tileBase(tile) !== base) return
+                this.missing.resolve(tile)
+                this.failedManifests.delete(mapTileId(tile))
+              })
+              this.availability.set(base, index)
+            }
+            return index.poll()
+          }),
+        )
+      }
+      await this.discoverAvailable()
+    } finally {
+      this.checkingAvailability = false
+    }
+  }
+  private async discoverAvailable() {
     void this.updates?.poll()
     if (this.busy || Date.now() < this.next || this.disposed) return
     const isStatic = this.discoveryMode === 'static'
@@ -1160,6 +1197,8 @@ export class PlanetWorld {
         // A cell the player has come close to is read again for the full-quality photo.
         const upgrade = this.ready.get(id)?.photo?.level === 'lo' && this.photoQuality(t) === 'full'
         const publication = this.updates?.get(t)
+        // A live publication is newer evidence than the optional coverage snapshot.
+        if (!publication && this.availability.get(this.tileBase(t))?.has(t) === false) return false
         const refresh =
           publication && this.ready.get(id)?.atlasZ16?.revision !== publication.revision
         return (
@@ -1321,7 +1360,7 @@ export class PlanetWorld {
         fineFirst &&
         deferZ15Parent(tile, wantedIds, (child) => {
           const id = mapTileId(child)
-          return this.missing.has(child) || this.failedManifests.has(id) || this.retry.has(id)
+          return this.knownMissing(child) || this.failedManifests.has(id) || this.retry.has(id)
         })
       )
         continue
