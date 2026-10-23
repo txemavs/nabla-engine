@@ -27,7 +27,7 @@ describe('shared action contexts', () => {
     expect(keyboardAction('KeyY', { mode: 'walk' })).toBe('recover')
     expect(keyboardAction('KeyR', { mode: 'road' })).toBe('horn')
     expect(keyboardAction('KeyR', { mode: 'walk' })).toBe('weapon.slotR')
-    expect(keyboardAction('KeyR', { mode: 'walk', weapon: true })).toBe('weapon.magazine')
+    expect(keyboardAction('KeyR', { mode: 'walk', weapon: true })).toBe('weapon.slotR')
     expect(keyboardAction('KeyY', { mode: 'walk', weapon: true })).toBe('recover')
     expect(contextualAction('recover', { mode: 'walk', weapon: true })).toBe('recover')
     expect(keyboardAction('KeyM', { mode: 'flight', weapon: true })).toBe('helm')

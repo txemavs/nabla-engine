@@ -22,6 +22,6 @@ describe('vehicle input routing with a weapon owned', () => {
   it('on foot Y recovers and R handles the magazine', () => {
     expect(keyboardAction('KeyY', { mode: 'walk', weapon: true })).toBe('recover')
     expect(contextualAction('recover', { mode: 'walk', weapon: true })).toBe('recover')
-    expect(keyboardAction('KeyR', { mode: 'walk', weapon: true })).toBe('weapon.magazine')
+    expect(keyboardAction('KeyR', { mode: 'walk', weapon: true })).toBe('weapon.slotR')
   })
 })

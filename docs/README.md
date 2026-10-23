@@ -31,8 +31,9 @@ labels where needed to locate a control.
 | [Weapons](weapons.md)                                   | Understand the single owner of what a character carries (`WeaponLoadout`)     |
 | [Net: game authority](net.md)                           | See who decides pickups, hits, claims and respawns (local vs relay)           |
 
-Key contexts in short: on foot R is the magazine (`weapon.magazine`, weapon drawn) and the right
-chest slot (`weapon.slotR`); in a vehicle R is the horn and weapon keys are off; Y (`recover`)
+Key contexts in short: on foot R is the right chest pocket, which holds the magazine
+(`weapon.slotR`: with the pistol drawn it drops / inserts the magazine; VR/AR grabs from that
+pocket are the same action); in a vehicle R is the horn and weapon keys are off; Y (`recover`)
 always recovers the vehicle.
 
 ## Other guides

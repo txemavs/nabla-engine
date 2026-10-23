@@ -29,7 +29,7 @@ Everything else reads its state or calls its actions.
    announced (presentation); the loadout's own checks decide whether a shot leaves.
 4. **Pickup draws.** A weapon claimed while nothing is drawn goes straight to its hand.
 5. **Keys are input only.** Number keys call `toggleSlot`, the holster key `toggleHolster`, the
-   drop key the host's `drop`, R on foot (`weapon.magazine`) `reload`, the trigger `fire`. In a
+   drop key the host's `drop`, R on foot (`weapon.slotR`, the right chest pocket that holds the magazine) `reload` with the pistol drawn; a VR/AR hand taking the magazine from that pocket is the same action (`MAGAZINE_ACTION`, `XRLoadout.onSlotTake`), the trigger `fire`. In a
    vehicle R is the horn and weapon keys are off (`contextualAction` overrides apply in walk mode only). A key for a weapon not carried is
    refused with a reason; no key grants a weapon.
 6. **Every refusal has a reason.** `fire` logs `[weapon] fire refused: <reason>` once per new

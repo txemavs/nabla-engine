@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **622 modules; 7873 executable function definitions**.
+Coverage: **622 modules; 7875 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -140,7 +140,7 @@ Coverage: **622 modules; 7873 executable function definitions**.
 | [src/catalog/weapons/slots.ts](src/catalog/weapons/slots.ts.md) | 6 |
 | [src/catalog/weapons/weapon-source.browser.ts](src/catalog/weapons/weapon-source.browser.ts.md) | 2 |
 | [src/catalog/weapons/weapon-source.ts](src/catalog/weapons/weapon-source.ts.md) | 4 |
-| [src/character/body-slots.ts](src/character/body-slots.ts.md) | 12 |
+| [src/character/body-slots.ts](src/character/body-slots.ts.md) | 14 |
 | [src/character/index.ts](src/character/index.ts.md) | 0 |
 | [src/character/inventory.ts](src/character/inventory.ts.md) | 26 |
 | [src/character/weapon-loadout.ts](src/character/weapon-loadout.ts.md) | 40 |

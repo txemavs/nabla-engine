@@ -43,20 +43,60 @@ const slot = (
 export const SMALL_ITEMS = ['magazine', 'flashlight', 'handcuffs', 'knife'] as const
 
 export const BODY_SLOTS: readonly BodySlot[] = [
-  slot('1', 'holster.right', 'holster', 'right', ['pistol'], 'right', 'HolsterGunSocket', [0.25, -0.57, -0.08]),
-  slot('2', 'holster.left', 'holster', 'left', ['baton', 'pistol'], 'right', 'BatonSocket', [-0.25, -0.57, -0.08]),
+  slot(
+    '1',
+    'holster.right',
+    'holster',
+    'right',
+    ['pistol'],
+    'right',
+    'HolsterGunSocket',
+    [0.25, -0.57, -0.08],
+  ),
+  slot(
+    '2',
+    'holster.left',
+    'holster',
+    'left',
+    ['baton', 'pistol'],
+    'right',
+    'BatonSocket',
+    [-0.25, -0.57, -0.08],
+  ),
   slot('3', 'back.right', 'back', 'right', ['arrows'], 'right', null, [0.15, -0.15, 0.15]),
   slot('4', 'back.left', 'back', 'left', ['bow'], 'left', null, [-0.15, -0.15, 0.15]),
   slot('R', 'chest.right', 'chest', 'right', [...SMALL_ITEMS], 'left', null, [0.14, -0.3, -0.24]),
   slot('M', 'chest.left', 'chest', 'left', [...SMALL_ITEMS], 'left', null, [-0.14, -0.3, -0.24]),
   ...(['5', '6', '7', '8', '9'] as const).map((key, i) =>
-    slot(key, `belt.${i + 1}`, 'belt', 'center', [...SMALL_ITEMS], 'left', i === 2 ? 'BeltSocket' : null, [
-      (i - 2) * 0.1,
-      -0.55,
-      i === 2 ? -0.14 : -0.1,
-    ]),
+    slot(
+      key,
+      `belt.${i + 1}`,
+      'belt',
+      'center',
+      [...SMALL_ITEMS],
+      'left',
+      i === 2 ? 'BeltSocket' : null,
+      [(i - 2) * 0.1, -0.55, i === 2 ? -0.14 : -0.1],
+    ),
   ),
 ]
+
+/**
+ * The right chest pocket holds the magazine. R on foot and the VR/AR grab from that pocket are
+ * one action ({@link MAGAZINE_ACTION}): with the pistol drawn it drops or inserts the magazine,
+ * otherwise the game takes what the pocket holds.
+ */
+export const MAGAZINE_SLOT: BodySlot = BODY_SLOTS.find((s) => s.id === 'chest.right')!
+export const MAGAZINE_ACTION = MAGAZINE_SLOT.action
+
+/** What the magazine action does for the current pistol state. */
+export function magazineActionFor(state: {
+  drawn: boolean
+  seated: boolean
+}): 'drop' | 'insert' | 'take' {
+  if (!state.drawn) return 'take'
+  return state.seated ? 'drop' : 'insert'
+}
 
 /** Action that drops what is in hand to the ground (key 0). */
 export const DROP_ACTION = 'item.drop'

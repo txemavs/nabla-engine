@@ -34,7 +34,6 @@ export const inputBindings = {
   'menu.back': press(t('input.action.menu.back'), ['Escape'], ['menu']),
   'lean.left': hold(t('input.action.lean.left'), ['KeyU'], ['aim']),
   'lean.right': hold(t('input.action.lean.right'), ['KeyE'], ['aim']),
-  'weapon.magazine': press(t('input.action.weapon.magazine'), ['KeyR'], ['weapon']),
   'weapon.slide': press(t('input.action.weapon.slide'), ['KeyF'], ['weapon']),
   'weapon.inspect': hold(t('input.action.weapon.inspect'), ['KeyZ'], ['weapon']),
   'weapon.chamber': hold(t('input.action.weapon.chamber'), ['KeyX'], ['weapon']),
@@ -57,8 +56,16 @@ export const inputBindings = {
     ['KeyS', 'ArrowDown'],
     ['walk', 'road', 'bike', 'forklift'],
   ),
-  'move.right': hold(t('input.action.move.right'), ['KeyD', 'ArrowRight'], ['walk', 'road', 'bike', 'forklift']),
-  'move.left': hold(t('input.action.move.left'), ['KeyA', 'ArrowLeft'], ['walk', 'road', 'bike', 'forklift']),
+  'move.right': hold(
+    t('input.action.move.right'),
+    ['KeyD', 'ArrowRight'],
+    ['walk', 'road', 'bike', 'forklift'],
+  ),
+  'move.left': hold(
+    t('input.action.move.left'),
+    ['KeyA', 'ArrowLeft'],
+    ['walk', 'road', 'bike', 'forklift'],
+  ),
   'flight.forward': hold(t('input.action.flight.forward'), ['ArrowUp'], ['flight']),
   'flight.back': hold(t('input.action.flight.back'), ['ArrowDown'], ['flight']),
   'flight.right': hold(t('input.action.flight.right'), ['ArrowRight'], ['flight']),
@@ -67,11 +74,7 @@ export const inputBindings = {
   'flight.liftDown': hold(t('input.action.flight.liftDown'), ['KeyS'], ['flight']),
   'flight.turnRight': hold(t('input.action.flight.turnRight'), ['KeyD'], ['flight']),
   'flight.turnLeft': hold(t('input.action.flight.turnLeft'), ['KeyA'], ['flight']),
-  sprint: hold(
-    t('input.action.sprint'),
-    ['ShiftLeft', 'ShiftRight'],
-    ['game', 'viewer'],
-  ),
+  sprint: hold(t('input.action.sprint'), ['ShiftLeft', 'ShiftRight'], ['game', 'viewer']),
   brake: hold(t('input.action.brake'), ['Space'], ['vehicle']),
   'rider.left': hold(t('input.action.rider.left'), ['KeyU'], ['bike']),
   'rider.right': hold(t('input.action.rider.right'), ['KeyO'], ['bike']),
@@ -105,7 +108,8 @@ export const inputBindings = {
   'weapon.slot3': press(t('input.action.weapon.slot3'), ['Digit3'], ['walk']),
   'weapon.slot4': press(t('input.action.weapon.slot4'), ['Digit4'], ['walk']),
   // Body slots (src/character/body-slots.ts): 1–2 holsters, 3–4 back, 5–9 belt pockets,
-  // R / M chest pockets; 0 drops what is in hand. On foot only: a drawn weapon keeps R / M.
+  // R / M chest pockets; 0 drops what is in hand. On foot only. R is the magazine pocket: with
+  // the pistol drawn it drops / inserts the magazine (`MAGAZINE_ACTION` in body-slots).
   'weapon.slot5': press(t('input.action.weapon.slot5'), ['Digit5'], ['walk']),
   'weapon.slot6': press(t('input.action.weapon.slot6'), ['Digit6'], ['walk']),
   'weapon.slot7': press(t('input.action.weapon.slot7'), ['Digit7'], ['walk']),

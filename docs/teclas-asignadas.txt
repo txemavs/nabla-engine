@@ -35,7 +35,7 @@ Claxon                                   [horn]                 R
 A pie
 
 Saltar / levantar moto cercana           [jump]                 Espacio
-Pecho derecho (ranura de arma)           [weapon.slotR]         R
+Pecho derecho: cargador                  [weapon.slotR]         R
 
 Moto
 
@@ -67,7 +67,6 @@ Girar rumbo a la izquierda               [flight.turnLeft]      A
 
 Arma desenfundada
 
-Extraer / insertar cargador              [weapon.magazine]      R
 Accionar corredera                       [weapon.slide]         F
 Inspeccionar; clic izquierdo cambia      [weapon.inspect]       Z
 seguro

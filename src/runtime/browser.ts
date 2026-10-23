@@ -1,5 +1,12 @@
 import { createMonitorAvatar } from '../render/entity/avatar.js'
-import { bodySlotForAction, DROP_ACTION, type BodySlot } from '../character/body-slots.js'
+import {
+  bodySlotForAction,
+  DROP_ACTION,
+  MAGAZINE_ACTION,
+  MAGAZINE_SLOT,
+  magazineActionFor,
+  type BodySlot,
+} from '../character/body-slots.js'
 import type { HeldPose } from '../render/entity/held-pose.js'
 export {
   defaultHeldPose,
@@ -5811,7 +5818,9 @@ export class GameRuntime {
   /** One shot may leave the drawn firearm now; asks the loadout (which asks its authority). */
   private mayFire(origin: readonly number[]): boolean {
     if (this.loadout) {
-      const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).toArray()
+      const direction = new THREE.Vector3(0, 0, -1)
+        .applyQuaternion(this.camera.quaternion)
+        .toArray()
       const verdict = this.loadout.fire(
         [origin[0], origin[1], origin[2]],
         [direction[0], direction[1], direction[2]],
@@ -6746,7 +6755,8 @@ export class GameRuntime {
       return
     }
     const bodySlot = bodySlotForAction(action)
-    if (bodySlot) {
+    // The magazine pocket with the pistol drawn is the reload, handled below with the weapon keys.
+    if (bodySlot && !(bodySlot === MAGAZINE_SLOT && this.weaponDrawn)) {
       if (sim.player.vehicleId || this.bodySlotHost?.select(bodySlot)) return
       if (/^\d$/.test(bodySlot.key)) this.selectWeaponSlot(Number(bodySlot.key))
       return
@@ -6779,23 +6789,20 @@ export class GameRuntime {
     if (
       this.xrActive &&
       this.weaponDrawn &&
-      [
-        'weapon.magazine',
-        'weapon.slide',
-        'weapon.auto',
-        'weapon.chamber',
-        'weapon.inspect',
-      ].includes(action)
+      [MAGAZINE_ACTION, 'weapon.slide', 'weapon.auto', 'weapon.chamber', 'weapon.inspect'].includes(
+        action,
+      )
     )
       return
-    if ((action === 'weapon.magazine' || action === 'weapon.slide') && this.weaponDrawn) {
+    if ((action === MAGAZINE_ACTION || action === 'weapon.slide') && this.weaponDrawn) {
       if (this.sidearm?.state.reload !== 'none') return
       this.magazineAction =
         action === 'weapon.slide'
           ? 'release'
-          : this.sidearm?.state.magazineSeated
-            ? 'drop'
-            : 'insert'
+          : (magazineActionFor({
+              drawn: true,
+              seated: !!this.sidearm?.state.magazineSeated,
+            }) as 'drop' | 'insert')
       return
     }
     if (

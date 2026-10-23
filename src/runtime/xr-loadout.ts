@@ -1,5 +1,5 @@
 import { ShotLaser } from '../render/entity/shot-laser.js'
-import { bodySlotsAt, bodySlotsFor } from '../character/body-slots.js'
+import { bodySlotsAt, bodySlotsFor, type BodySlot } from '../character/body-slots.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import { XRBodyAnchor } from './xr-body-anchor.js'
 import { XRCalibration } from './xr-calibration.js'
@@ -100,6 +100,13 @@ export class XRLoadout {
     if (!this.pistols.length) this.body.visible = false
   }
   readonly pockets: THREE.Group[] = []
+  /** Body slot of each pocket, same order as {@link pockets}. */
+  readonly pocketSlots: BodySlot[] = []
+  /**
+   * Called when a hand takes a magazine out of a pocket. For the right chest pocket this is
+   * `weapon.slotR` (`MAGAZINE_ACTION`), the same action as R on the keyboard.
+   */
+  onSlotTake: ((slot: BodySlot) => void) | null = null
   readonly magazines: MagazineItem[] = []
   readonly cartridges: CartridgeItem[] = []
   private readonly bodyAnchor = new XRBodyAnchor()
@@ -153,7 +160,9 @@ export class XRLoadout {
       scene.add(laser.root)
     }
     // Magazine pockets: the chest slots of the body-slot table (R right, M left).
-    for (const { xr } of bodySlotsAt('chest')) {
+    for (const slot of bodySlotsAt('chest')) {
+      const { xr } = slot
+      this.pocketSlots.push(slot)
       const pocket = new THREE.Group()
       pocket.position.set(...xr)
       this.body.add(pocket)
@@ -599,6 +608,8 @@ export class XRLoadout {
             this.loose.attach(m.root)
             m.grab.update(m.root, [...m.grab.hands, h.grip], 0)
             m.holder = hands.find((hand) => hand.grip === m.grab.hands[0]) ?? h
+            const from = m.pocket ? this.pockets.indexOf(m.pocket) : -1
+            if (from >= 0) this.onSlotTake?.(this.pocketSlots[from])
             m.pocket = null
             m.previous.copy(position(m.root.children[0]))
             m.velocity.set(0, 0, 0)

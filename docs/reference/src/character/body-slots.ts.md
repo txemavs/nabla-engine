@@ -23,21 +23,39 @@ take any of the {@link SMALL_ITEMS}.
 slot(key: BodySlotKey, id: string, place: BodySlot['place'], side: BodySlot['side'], accepts: string[], hand: Hand, socket: string | null, xr: [number, number, number]): BodySlot
 ```
 
-## callback@52
+## callback@70
 
-[Implementation, line 52](../../../../src/character/body-slots.ts#L52)
+[Implementation, line 70](../../../../src/character/body-slots.ts#L70)
 
 ```ts
-callback@52(key, i): inferred by TypeScript; see implementation
+callback@70(key, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `slot`
 
+## callback@89
+
+[Implementation, line 89](../../../../src/character/body-slots.ts#L89)
+
+```ts
+callback@89(s): inferred by TypeScript; see implementation
+```
+
+## magazineActionFor
+
+[Implementation, line 93](../../../../src/character/body-slots.ts#L93)
+
+What the magazine action does for the current pistol state.
+
+```ts
+magazineActionFor(state: { drawn: boolean seated: boolean }): 'drop' | 'insert' | 'take'
+```
+
 ## bodySlot
 
-[Implementation, line 64](../../../../src/character/body-slots.ts#L64)
+[Implementation, line 104](../../../../src/character/body-slots.ts#L104)
 
 ```ts
 bodySlot(id: string): BodySlot | undefined
@@ -47,17 +65,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `BODY_SLOTS.find`
 
-## bodySlot.callback@65
+## bodySlot.callback@105
 
-[Implementation, line 65](../../../../src/character/body-slots.ts#L65)
+[Implementation, line 105](../../../../src/character/body-slots.ts#L105)
 
 ```ts
-callback@65(s): inferred by TypeScript; see implementation
+callback@105(s): inferred by TypeScript; see implementation
 ```
 
 ## bodySlotForAction
 
-[Implementation, line 67](../../../../src/character/body-slots.ts#L67)
+[Implementation, line 107](../../../../src/character/body-slots.ts#L107)
 
 ```ts
 bodySlotForAction(action: string): BodySlot | undefined
@@ -67,17 +85,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `BODY_SLOTS.find`
 
-## bodySlotForAction.callback@68
+## bodySlotForAction.callback@108
 
-[Implementation, line 68](../../../../src/character/body-slots.ts#L68)
+[Implementation, line 108](../../../../src/character/body-slots.ts#L108)
 
 ```ts
-callback@68(s): inferred by TypeScript; see implementation
+callback@108(s): inferred by TypeScript; see implementation
 ```
 
 ## bodySlotsFor
 
-[Implementation, line 71](../../../../src/character/body-slots.ts#L71)
+[Implementation, line 111](../../../../src/character/body-slots.ts#L111)
 
 Slots that take `type`, in table order (the first is its home).
 
@@ -89,12 +107,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `BODY_SLOTS.filter`
 
-## bodySlotsFor.callback@72
+## bodySlotsFor.callback@112
 
-[Implementation, line 72](../../../../src/character/body-slots.ts#L72)
+[Implementation, line 112](../../../../src/character/body-slots.ts#L112)
 
 ```ts
-callback@72(s): inferred by TypeScript; see implementation
+callback@112(s): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -103,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bodySlotsAt
 
-[Implementation, line 75](../../../../src/character/body-slots.ts#L75)
+[Implementation, line 115](../../../../src/character/body-slots.ts#L115)
 
 Slots of one place (e.g. the holsters) for VR/AR anchors, in table order.
 
@@ -115,17 +133,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `BODY_SLOTS.filter`
 
-## bodySlotsAt.callback@76
+## bodySlotsAt.callback@116
 
-[Implementation, line 76](../../../../src/character/body-slots.ts#L76)
+[Implementation, line 116](../../../../src/character/body-slots.ts#L116)
 
 ```ts
-callback@76(s): inferred by TypeScript; see implementation
+callback@116(s): inferred by TypeScript; see implementation
 ```
 
 ## bodySlotDefs
 
-[Implementation, line 79](../../../../src/character/body-slots.ts#L79)
+[Implementation, line 119](../../../../src/character/body-slots.ts#L119)
 
 The table as inventory slot definitions.
 
@@ -137,10 +155,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `BODY_SLOTS.map`
 
-## bodySlotDefs.callback@80
+## bodySlotDefs.callback@120
 
-[Implementation, line 80](../../../../src/character/body-slots.ts#L80)
+[Implementation, line 120](../../../../src/character/body-slots.ts#L120)
 
 ```ts
-callback@80(s): inferred by TypeScript; see implementation
+callback@120(s): inferred by TypeScript; see implementation
 ```
