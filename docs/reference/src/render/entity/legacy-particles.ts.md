@@ -12,12 +12,13 @@
 - `./laser-smoke.js`
 - `./particle-nodes.js`
 - `./smoke-density.js`
+- `./soft-smoke.js`
 - `./exhaust-smoke.js`
 - `./shot-sparks.js`
 
 ## LegacyExhaustSmoke.constructor
 
-[Implementation, line 47](../../../../../src/render/entity/legacy-particles.ts#L47)
+[Implementation, line 50](../../../../../src/render/entity/legacy-particles.ts#L50)
 
 ```ts
 constructor(private readonly outlet: THREE.Object3D, private readonly space: THREE.Object3D, private readonly options: ExhaustSmokeOptions = {}): instance
@@ -34,11 +35,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `exhaustSmokeSprites`
 - `laserSmokePools.add`
 - `setWebGPUSubstitute`
+- `softSmokeUniforms`
+- `softVertex`
 - `this.geometry.setAttribute`
 
 ## LegacyExhaustSmoke.setEnabled
 
-[Implementation, line 108](../../../../../src/render/entity/legacy-particles.ts#L108)
+[Implementation, line 121](../../../../../src/render/entity/legacy-particles.ts#L121)
 
 ```ts
 setEnabled(enabled: boolean): void
@@ -51,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyExhaustSmoke.setAmount
 
-[Implementation, line 118](../../../../../src/render/entity/legacy-particles.ts#L118)
+[Implementation, line 131](../../../../../src/render/entity/legacy-particles.ts#L131)
 
 Scale particle emission without changing the size or lifetime of each puff.
 
@@ -65,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyExhaustSmoke.update
 
-[Implementation, line 122](../../../../../src/render/entity/legacy-particles.ts#L122)
+[Implementation, line 135](../../../../../src/render/entity/legacy-particles.ts#L135)
 
 ```ts
 update(dt: number, running: boolean, load: number, speedKmh = 0): void
@@ -101,17 +104,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.space.matrixWorld.clone().invert`
 - `this.space.worldToLocal`
 
-## LegacyExhaustSmoke.update.callback@172
+## LegacyExhaustSmoke.update.callback@186
 
-[Implementation, line 172](../../../../../src/render/entity/legacy-particles.ts#L172)
+[Implementation, line 186](../../../../../src/render/entity/legacy-particles.ts#L186)
 
 ```ts
-callback@172(v): inferred by TypeScript; see implementation
+callback@186(v): inferred by TypeScript; see implementation
 ```
 
 ## LegacyExhaustSmoke.dispose
 
-[Implementation, line 178](../../../../../src/render/entity/legacy-particles.ts#L178)
+[Implementation, line 193](../../../../../src/render/entity/legacy-particles.ts#L193)
 
 ```ts
 dispose(): void
@@ -126,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyTireSmoke.constructor
 
-[Implementation, line 193](../../../../../src/render/entity/legacy-particles.ts#L193)
+[Implementation, line 208](../../../../../src/render/entity/legacy-particles.ts#L208)
 
 ```ts
 constructor(): instance
@@ -143,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyTireSmoke.update
 
-[Implementation, line 223](../../../../../src/render/entity/legacy-particles.ts#L223)
+[Implementation, line 238](../../../../../src/render/entity/legacy-particles.ts#L238)
 
 ```ts
 update(dt: number, contacts: Vec3Tuple[], slip: number, origin: THREE.Vector3): void
@@ -158,17 +161,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.position.copy`
 - `this.root.position.copy(origin).negate`
 
-## LegacyTireSmoke.update.callback@238
+## LegacyTireSmoke.update.callback@253
 
-[Implementation, line 238](../../../../../src/render/entity/legacy-particles.ts#L238)
+[Implementation, line 253](../../../../../src/render/entity/legacy-particles.ts#L253)
 
 ```ts
-callback@238(v): inferred by TypeScript; see implementation
+callback@253(v): inferred by TypeScript; see implementation
 ```
 
 ## LegacyTireSmoke.clear
 
-[Implementation, line 242](../../../../../src/render/entity/legacy-particles.ts#L242)
+[Implementation, line 257](../../../../../src/render/entity/legacy-particles.ts#L257)
 
 ```ts
 clear(): void
@@ -180,7 +183,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyTireSmoke.dispose
 
-[Implementation, line 247](../../../../../src/render/entity/legacy-particles.ts#L247)
+[Implementation, line 262](../../../../../src/render/entity/legacy-particles.ts#L262)
 
 ```ts
 dispose(): void
@@ -193,7 +196,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyMuzzleSmoke.constructor
 
-[Implementation, line 261](../../../../../src/render/entity/legacy-particles.ts#L261)
+[Implementation, line 276](../../../../../src/render/entity/legacy-particles.ts#L276)
 
 ```ts
 constructor(): instance
@@ -210,7 +213,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyMuzzleSmoke.burst
 
-[Implementation, line 295](../../../../../src/render/entity/legacy-particles.ts#L295)
+[Implementation, line 310](../../../../../src/render/entity/legacy-particles.ts#L310)
 
 ```ts
 burst(now: number, muzzle: readonly number[]): void
@@ -223,7 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyMuzzleSmoke.update
 
-[Implementation, line 303](../../../../../src/render/entity/legacy-particles.ts#L303)
+[Implementation, line 318](../../../../../src/render/entity/legacy-particles.ts#L318)
 
 ```ts
 update(now: number, height = 750): void
@@ -234,17 +237,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.sin`
 - `this.ages.some`
 
-## LegacyMuzzleSmoke.update.callback@312
+## LegacyMuzzleSmoke.update.callback@327
 
-[Implementation, line 312](../../../../../src/render/entity/legacy-particles.ts#L312)
+[Implementation, line 327](../../../../../src/render/entity/legacy-particles.ts#L327)
 
 ```ts
-callback@312(age): inferred by TypeScript; see implementation
+callback@327(age): inferred by TypeScript; see implementation
 ```
 
 ## LegacyMuzzleSmoke.dispose
 
-[Implementation, line 317](../../../../../src/render/entity/legacy-particles.ts#L317)
+[Implementation, line 332](../../../../../src/render/entity/legacy-particles.ts#L332)
 
 ```ts
 dispose(): void
@@ -258,7 +261,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyMuzzleSmoke.clear
 
-[Implementation, line 322](../../../../../src/render/entity/legacy-particles.ts#L322)
+[Implementation, line 337](../../../../../src/render/entity/legacy-particles.ts#L337)
 
 ```ts
 clear(): void
@@ -271,7 +274,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotSparks.constructor
 
-[Implementation, line 346](../../../../../src/render/entity/legacy-particles.ts#L346)
+[Implementation, line 361](../../../../../src/render/entity/legacy-particles.ts#L361)
 
 ```ts
 constructor(): instance
@@ -285,17 +288,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.setDrawRange`
 - `this.root.add`
 
-## LegacyShotSparks.constructor.callback@354
+## LegacyShotSparks.constructor.callback@369
 
-[Implementation, line 354](../../../../../src/render/entity/legacy-particles.ts#L354)
+[Implementation, line 369](../../../../../src/render/entity/legacy-particles.ts#L369)
 
 ```ts
-callback@354(): inferred by TypeScript; see implementation
+callback@369(): inferred by TypeScript; see implementation
 ```
 
 ## LegacyShotSparks.add
 
-[Implementation, line 357](../../../../../src/render/entity/legacy-particles.ts#L357)
+[Implementation, line 372](../../../../../src/render/entity/legacy-particles.ts#L372)
 
 ```ts
 add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
@@ -321,7 +324,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotSparks.update
 
-[Implementation, line 386](../../../../../src/render/entity/legacy-particles.ts#L386)
+[Implementation, line 401](../../../../../src/render/entity/legacy-particles.ts#L401)
 
 ```ts
 update(now: number): void
@@ -336,17 +339,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.computeBoundingSphere`
 - `this.geometry.setDrawRange`
 
-## LegacyShotSparks.update.callback@392
+## LegacyShotSparks.update.callback@407
 
-[Implementation, line 392](../../../../../src/render/entity/legacy-particles.ts#L392)
+[Implementation, line 407](../../../../../src/render/entity/legacy-particles.ts#L407)
 
 ```ts
-callback@392(b): inferred by TypeScript; see implementation
+callback@407(b): inferred by TypeScript; see implementation
 ```
 
 ## LegacyShotSparks.clear
 
-[Implementation, line 414](../../../../../src/render/entity/legacy-particles.ts#L414)
+[Implementation, line 429](../../../../../src/render/entity/legacy-particles.ts#L429)
 
 ```ts
 clear(): void
@@ -358,7 +361,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotSparks.dispose
 
-[Implementation, line 420](../../../../../src/render/entity/legacy-particles.ts#L420)
+[Implementation, line 435](../../../../../src/render/entity/legacy-particles.ts#L435)
 
 ```ts
 dispose(): void
@@ -373,7 +376,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotTracers.constructor
 
-[Implementation, line 452](../../../../../src/render/entity/legacy-particles.ts#L452)
+[Implementation, line 467](../../../../../src/render/entity/legacy-particles.ts#L467)
 
 CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
 
@@ -389,17 +392,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometry.setDrawRange`
 - `this.root.add`
 
-## LegacyShotTracers.constructor.callback@460
+## LegacyShotTracers.constructor.callback@475
 
-[Implementation, line 460](../../../../../src/render/entity/legacy-particles.ts#L460)
+[Implementation, line 475](../../../../../src/render/entity/legacy-particles.ts#L475)
 
 ```ts
-callback@460(): inferred by TypeScript; see implementation
+callback@475(): inferred by TypeScript; see implementation
 ```
 
 ## LegacyShotTracers.add
 
-[Implementation, line 463](../../../../../src/render/entity/legacy-particles.ts#L463)
+[Implementation, line 478](../../../../../src/render/entity/legacy-particles.ts#L478)
 
 CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
 
@@ -417,7 +420,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotTracers.update
 
-[Implementation, line 484](../../../../../src/render/entity/legacy-particles.ts#L484)
+[Implementation, line 499](../../../../../src/render/entity/legacy-particles.ts#L499)
 
 CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
 
@@ -433,7 +436,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotTracers.clear
 
-[Implementation, line 507](../../../../../src/render/entity/legacy-particles.ts#L507)
+[Implementation, line 522](../../../../../src/render/entity/legacy-particles.ts#L522)
 
 CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
 
@@ -447,7 +450,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LegacyShotTracers.dispose
 
-[Implementation, line 513](../../../../../src/render/entity/legacy-particles.ts#L513)
+[Implementation, line 528](../../../../../src/render/entity/legacy-particles.ts#L528)
 
 CPU air threads (a faint grey 1 px line, fading opacity), kept for WebGPU where ShaderMaterial does not apply.
 
