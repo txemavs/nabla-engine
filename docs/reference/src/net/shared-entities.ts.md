@@ -83,7 +83,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.constructor
 
-[Implementation, line 117](../../../../src/net/shared-entities.ts#L117)
+[Implementation, line 121](../../../../src/net/shared-entities.ts#L121)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 
@@ -93,7 +93,7 @@ constructor(private readonly hooks: SharedEntityHooks, private readonly host: Ki
 
 ## SharedEntities.list
 
-[Implementation, line 127](../../../../src/net/shared-entities.ts#L127)
+[Implementation, line 131](../../../../src/net/shared-entities.ts#L131)
 
 All known records.
 
@@ -107,25 +107,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...this.entities.values()].filter((e) => !e.gone).map`
 - `this.entities.values`
 
-## SharedEntities.list.callback@128
+## SharedEntities.list.callback@132
 
-[Implementation, line 128](../../../../src/net/shared-entities.ts#L128)
+[Implementation, line 132](../../../../src/net/shared-entities.ts#L132)
 
 ```ts
-callback@128(e): inferred by TypeScript; see implementation
+callback@132(e): inferred by TypeScript; see implementation
 ```
 
-## SharedEntities.list.callback@128
+## SharedEntities.list.callback@132
 
-[Implementation, line 128](../../../../src/net/shared-entities.ts#L128)
+[Implementation, line 132](../../../../src/net/shared-entities.ts#L132)
 
 ```ts
-callback@128(e): inferred by TypeScript; see implementation
+callback@132(e): inferred by TypeScript; see implementation
 ```
 
 ## SharedEntities.get
 
-[Implementation, line 130](../../../../src/net/shared-entities.ts#L130)
+[Implementation, line 134](../../../../src/net/shared-entities.ts#L134)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 
@@ -139,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.localIdOf
 
-[Implementation, line 134](../../../../src/net/shared-entities.ts#L134)
+[Implementation, line 138](../../../../src/net/shared-entities.ts#L138)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 
@@ -154,7 +154,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.idOfLocal
 
-[Implementation, line 138](../../../../src/net/shared-entities.ts#L138)
+[Implementation, line 142](../../../../src/net/shared-entities.ts#L142)
 
 Shared entity whose local object is `localId`, or null.
 
@@ -164,7 +164,7 @@ idOfLocal(localId: string): string | null
 
 ## SharedEntities.drives
 
-[Implementation, line 144](../../../../src/net/shared-entities.ts#L144)
+[Implementation, line 148](../../../../src/net/shared-entities.ts#L148)
 
 True when this client is the driver (physics authority) of `id`.
 
@@ -178,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.publish
 
-[Implementation, line 153](../../../../src/net/shared-entities.ts#L153)
+[Implementation, line 157](../../../../src/net/shared-entities.ts#L157)
 
 Publish a local object as a new shared entity (`drive`: we hold it and stream it). `id` may
 be given for objects every client already has (same id = the second publish is a claim);
@@ -193,6 +193,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Error`
 - `ID.test`
 - `encodeEntity`
+- `this.claim`
+- `this.entities.get`
+- `this.hooks.changed`
+- `this.hooks.unavailable`
 - `this.idSuffix`
 - `this.published.set`
 - `this.send`
@@ -203,7 +207,7 @@ Explicit throws in this body:
 
 ## SharedEntities.claim
 
-[Implementation, line 170](../../../../src/net/shared-entities.ts#L170)
+[Implementation, line 184](../../../../src/net/shared-entities.ts#L184)
 
 Ask to drive `id` (granted when nobody else does). Local physics is ours at once.
 
@@ -219,9 +223,84 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.send`
 - `this.unhold`
 
+## SharedEntities.claimConfirmed
+
+[Implementation, line 198](../../../../src/net/shared-entities.ts#L198)
+
+Seat the player only after this resolves true. A lost connection cancels every request.
+
+```ts
+claimConfirmed(id: string, timeoutMs = 4000): Promise<boolean>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise`
+- `Promise.resolve`
+- `this.get`
+
+## SharedEntities.claimConfirmed.callback@203
+
+[Implementation, line 203](../../../../src/net/shared-entities.ts#L203)
+
+```ts
+callback@203(resolve): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `setTimeout`
+- `this.claims.get`
+- `this.claims.get(r)?.finish`
+- `this.claims.set`
+- `this.send`
+
+## SharedEntities.claimConfirmed.callback@203.callback@204
+
+[Implementation, line 204](../../../../src/net/shared-entities.ts#L204)
+
+```ts
+callback@204(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.claims.get`
+- `this.claims.get(r)?.finish`
+- `this.send`
+
+## SharedEntities.claimConfirmed.callback@203.finish
+
+[Implementation, line 211](../../../../src/net/shared-entities.ts#L211)
+
+```ts
+finish(ok): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `clearTimeout`
+- `resolve`
+- `this.claims.delete`
+
+## SharedEntities.cancelClaims
+
+[Implementation, line 220](../../../../src/net/shared-entities.ts#L220)
+
+Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
+
+```ts
+cancelClaims(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `claim.finish`
+- `this.claims.values`
+
 ## SharedEntities.release
 
-[Implementation, line 184](../../../../src/net/shared-entities.ts#L184)
+[Implementation, line 224](../../../../src/net/shared-entities.ts#L224)
 
 Stop driving `id`; it rests at `pose` for everyone.
 
@@ -238,7 +317,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.remove
 
-[Implementation, line 194](../../../../src/net/shared-entities.ts#L194)
+[Implementation, line 234](../../../../src/net/shared-entities.ts#L234)
 
 Ask the relay to remove `id` (first request wins; `removed` names who).
 
@@ -253,7 +332,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.reset
 
-[Implementation, line 199](../../../../src/net/shared-entities.ts#L199)
+[Implementation, line 239](../../../../src/net/shared-entities.ts#L239)
 
 Full list from `welcome`: entities not in it are removed.
 
@@ -270,17 +349,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.drop`
 - `this.entities.keys`
 
-## SharedEntities.reset.callback@200
+## SharedEntities.reset.callback@240
 
-[Implementation, line 200](../../../../src/net/shared-entities.ts#L200)
+[Implementation, line 240](../../../../src/net/shared-entities.ts#L240)
 
 ```ts
-callback@200(r): inferred by TypeScript; see implementation
+callback@240(r): inferred by TypeScript; see implementation
 ```
 
 ## SharedEntities.receive
 
-[Implementation, line 205](../../../../src/net/shared-entities.ts#L205)
+[Implementation, line 245](../../../../src/net/shared-entities.ts#L245)
 
 Relay event (ENTITY_EVENT or ENTITY_GONE_EVENT); false when it is not one.
 
@@ -290,13 +369,19 @@ receive(kind: string, data: NetEventData): boolean
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `claim.finish`
 - `decodeEntity`
 - `this.apply`
+- `this.claims.get`
+- `this.drives`
 - `this.drop`
+- `this.hooks.unavailable`
+- `this.published.delete`
+- `this.published.get`
 
 ## SharedEntities.push
 
-[Implementation, line 220](../../../../src/net/shared-entities.ts#L220)
+[Implementation, line 273](../../../../src/net/shared-entities.ts#L273)
 
 Driver snapshot for entity `id`.
 
@@ -312,7 +397,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.update
 
-[Implementation, line 226](../../../../src/net/shared-entities.ts#L226)
+[Implementation, line 279](../../../../src/net/shared-entities.ts#L279)
 
 Per frame: interpolate entities driven by others; hold undriven ones at rest.
 
@@ -329,7 +414,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.unhold
 
-[Implementation, line 251](../../../../src/net/shared-entities.ts#L251)
+[Implementation, line 304](../../../../src/net/shared-entities.ts#L304)
 
 Give a held rest pose back to physics (a claimed vehicle must drive, not stay kinematic).
 
@@ -343,7 +428,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.extras
 
-[Implementation, line 262](../../../../src/net/shared-entities.ts#L262)
+[Implementation, line 315](../../../../src/net/shared-entities.ts#L315)
 
 Extras (lights…) last received for entities driven by others, by local id.
 
@@ -358,7 +443,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.clear
 
-[Implementation, line 269](../../../../src/net/shared-entities.ts#L269)
+[Implementation, line 322](../../../../src/net/shared-entities.ts#L322)
 
 Leave the room: every local object goes.
 
@@ -368,13 +453,14 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.cancelClaims`
 - `this.drop`
 - `this.entities.keys`
 - `this.published.clear`
 
 ## SharedEntities.apply
 
-[Implementation, line 274](../../../../src/net/shared-entities.ts#L274)
+[Implementation, line 328](../../../../src/net/shared-entities.ts#L328)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 
@@ -396,7 +482,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.place
 
-[Implementation, line 307](../../../../src/net/shared-entities.ts#L307)
+[Implementation, line 361](../../../../src/net/shared-entities.ts#L361)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 
@@ -413,7 +499,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.place.done
 
-[Implementation, line 308](../../../../src/net/shared-entities.ts#L308)
+[Implementation, line 362](../../../../src/net/shared-entities.ts#L362)
 
 ```ts
 done(localId: string | null): inferred by TypeScript; see implementation
@@ -425,12 +511,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.hooks.changed`
 - `this.hooks.despawn`
 
-## SharedEntities.place.callback@321
+## SharedEntities.place.callback@380
 
-[Implementation, line 321](../../../../src/net/shared-entities.ts#L321)
+[Implementation, line 380](../../../../src/net/shared-entities.ts#L380)
 
 ```ts
-callback@321(error): inferred by TypeScript; see implementation
+callback@380(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -440,7 +526,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SharedEntities.drop
 
-[Implementation, line 332](../../../../src/net/shared-entities.ts#L332)
+[Implementation, line 391](../../../../src/net/shared-entities.ts#L391)
 
 Client side of the shared entity list; SnapshotSync owns one when given `shared` hooks.
 

@@ -31,6 +31,11 @@ export {
 export const entitySchema = z
   .object({
     id: z.string().min(1).max(128),
+    /** Stable authored identity within a multiplayer world/content revision. */
+    networkId: z
+      .string()
+      .regex(/^[A-Za-z0-9_.:-]{1,64}$/)
+      .optional(),
     name: z.string().min(1).max(100),
     parentId: z.string().nullable(),
     mapBaseline: z

@@ -166,7 +166,10 @@ export class SnapshotSync {
         this.join()
       }),
       transport.onMessage((data) => this.receive(data)),
-      transport.onClose(() => this.dropAll(!!this.space)),
+      transport.onClose(() => {
+        this.shared?.cancelClaims()
+        this.dropAll(!!this.space)
+      }),
     )
     if (transport.status === 'open') this.join()
   }

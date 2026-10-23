@@ -256,12 +256,17 @@ export class GameRuntime {
     const action = legacyInputAction(value)
     return action ? this.dispatch(action) : undefined
   }
+  /** Optional multiplayer gate. False keeps the player on foot while authority is requested. */
+  vehicleEntryAllowed?: (id: string) => boolean
   /** Preferred entry for keyboard, XR and other hosts: no physical key codes. */
   dispatch(action: InputAction): string | undefined {
     const sim = this.simulation
     if (!sim || this.state !== 'playing') return
     if (action === 'interact') {
       const previous = sim.player.vehicleId
+      const candidate = !previous ? sim.nearestVehicle() : null
+      if (candidate && this.vehicleEntryAllowed && !this.vehicleEntryAllowed(candidate))
+        return 'Esperando permiso para entrar'
       const message = sim.interact({
         snapToRoad: this.recover.snapToRoad,
         roads: this.recover.snapToRoad ? this.recover.roads?.() : undefined,

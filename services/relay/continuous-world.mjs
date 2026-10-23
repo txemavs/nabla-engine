@@ -409,7 +409,8 @@ export class ContinuousWorlds {
         return
       if (e) {
         if (data.d) return this.entityRequest(s, 'entity.claim', { i: e.id })
-        if (nearby) this.event(s.socket, 'entity', entityData(e))
+        if (s.objects.has(e.id)) this.event(s.socket, 'entity', entityData(e))
+        else this.event(s.socket, 'entity.unavailable', { i: e.id, reason: 'outside-interest' })
         return
       }
       if (
@@ -417,7 +418,10 @@ export class ContinuousWorlds {
         world.entities.size >= this.maxEntities ||
         [...world.entities.values()].filter((e) => e.owner === s.peer).length >= this.maxOwnEntities
       )
-        return
+        return this.event(s.socket, 'entity.unavailable', {
+          i: data.i,
+          reason: 'removed-or-capacity',
+        })
       if (data.d && world.drivers.has(s.peer)) return
       const created = {
         id: data.i,
@@ -432,12 +436,26 @@ export class ContinuousWorlds {
       if (created.driver) world.drivers.set(s.peer, created.id)
       world.objects.set(created.id, created.p)
       this.refresh(world)
-    } else if (kind === 'entity.claim' && nearby && (!e.driver || e.driver === s.peer)) {
-      if (world.drivers.has(s.peer) && world.drivers.get(s.peer) !== e.id) return
+    } else if (kind === 'entity.claim') {
+      const reason = !e
+        ? 'unknown'
+        : !nearby
+          ? 'out-of-reach'
+          : e.driver && e.driver !== s.peer
+            ? 'occupied'
+            : world.drivers.has(s.peer) && world.drivers.get(s.peer) !== e.id
+              ? 'already-driving'
+              : ''
+      const reply = (ok) => {
+        if (typeof data.r === 'string' && ID.test(data.r))
+          this.event(s.socket, 'entity.claim.result', { i: data.i, r: data.r, ok, reason })
+      }
+      if (reason) return reply(false)
       e.driver = s.peer
       world.drivers.set(s.peer, e.id)
       this.entityOutcome(world, e)
       this.refresh(world)
+      reply(true)
     } else if (kind === 'entity.release' && e?.driver === s.peer) {
       if (
         data.p !== undefined &&

@@ -20,6 +20,14 @@ const vehicleOf = (template: Entity | Entity[]): Entity =>
 const irun = { latitude: 43.3372, longitude: -1.7523, altitude: 50 }
 
 describe('parseHostVehicles', () => {
+  it('preserves stable authored IDs and rejects duplicates and invalid IDs', () => {
+    const car = { lat: 43.3, lon: -1.8, vehicle: 'car', networkId: 'map.parking.1' }
+    expect(parseHostVehicles(JSON.stringify([car]))[0].networkId).toBe(car.networkId)
+    expect(() => parseHostVehicles(JSON.stringify([car, car]))).toThrow('Duplicate')
+    expect(() => parseHostVehicles(JSON.stringify([{ ...car, networkId: 'bad id' }]))).toThrow(
+      'invalid',
+    )
+  })
   it('reads a JSON list with lat, lon, heading, vehicle and optional alt', () => {
     expect(
       parseHostVehicles(

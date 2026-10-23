@@ -4258,6 +4258,11 @@ export class GameRuntime {
   removeSpawnedVehicle(id: string): void {
     this.assertAlive()
     if (!this.spawned.includes(id)) throw new Error(`Not a spawned vehicle: ${id}`)
+    this.removeWorldVehicle(id)
+  }
+  /** Remove a shared-world view, including an authored vehicle, after leaving its seat. */
+  removeWorldVehicle(id: string): void {
+    this.assertAlive()
     const sim = this.session.simulation
     if (sim) sim.removeVehicle(id)
     this.view.removeVehicle(id)

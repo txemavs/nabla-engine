@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **628 modules; 8012 executable function definitions**.
+Coverage: **628 modules; 8021 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -41,7 +41,7 @@ Coverage: **628 modules; 8012 executable function definitions**.
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |
 | [game/host-portals.ts](game/host-portals.ts.md) | 8 |
 | [game/host-steering-wheel.ts](game/host-steering-wheel.ts.md) | 6 |
-| [game/host-vehicles.ts](game/host-vehicles.ts.md) | 16 |
+| [game/host-vehicles.ts](game/host-vehicles.ts.md) | 17 |
 | [game/hud-layout.ts](game/hud-layout.ts.md) | 5 |
 | [game/layers-ui.ts](game/layers-ui.ts.md) | 11 |
 | [game/light-ui.ts](game/light-ui.ts.md) | 9 |
@@ -216,7 +216,7 @@ Coverage: **628 modules; 8012 executable function definitions**.
 | [src/net/protocol.ts](src/net/protocol.ts.md) | 28 |
 | [src/net/remote-avatar.ts](src/net/remote-avatar.ts.md) | 5 |
 | [src/net/remote-vehicle.ts](src/net/remote-vehicle.ts.md) | 4 |
-| [src/net/shared-entities.ts](src/net/shared-entities.ts.md) | 29 |
+| [src/net/shared-entities.ts](src/net/shared-entities.ts.md) | 34 |
 | [src/net/snapshot-sync.ts](src/net/snapshot-sync.ts.md) | 34 |
 | [src/net/transport.ts](src/net/transport.ts.md) | 10 |
 | [src/net/websocket-transport.ts](src/net/websocket-transport.ts.md) | 13 |
@@ -440,7 +440,7 @@ Coverage: **628 modules; 8012 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 572 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
@@ -592,12 +592,12 @@ Coverage: **628 modules; 8012 executable function definitions**.
 | [src/simulation/road-snap.ts](src/simulation/road-snap.ts.md) | 3 |
 | [src/simulation/scene-queries.ts](src/simulation/scene-queries.ts.md) | 5 |
 | [src/simulation/simulation-worker-host.ts](src/simulation/simulation-worker-host.ts.md) | 39 |
-| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 295 |
+| [src/simulation/simulation.ts](src/simulation/simulation.ts.md) | 296 |
 | [src/simulation/simulation.worker.ts](src/simulation/simulation.worker.ts.md) | 0 |
 | [src/simulation/snapshot-clock.ts](src/simulation/snapshot-clock.ts.md) | 12 |
 | [src/simulation/sports/hoop.ts](src/simulation/sports/hoop.ts.md) | 5 |
 | [src/simulation/terrain-boundary.ts](src/simulation/terrain-boundary.ts.md) | 4 |
-| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 148 |
+| [src/simulation/threaded-simulation.ts](src/simulation/threaded-simulation.ts.md) | 149 |
 | [src/simulation/tow-overload.ts](src/simulation/tow-overload.ts.md) | 3 |
 | [src/simulation/trailer-hitch.ts](src/simulation/trailer-hitch.ts.md) | 11 |
 | [src/simulation/vehicle-damage.ts](src/simulation/vehicle-damage.ts.md) | 6 |

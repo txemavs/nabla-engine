@@ -28,6 +28,8 @@ import { assignVehicleColor } from './vehicle-colors.js'
 
 /** One extra vehicle, authored in geographic coordinates. */
 export interface HostVehicle {
+  /** Stable ID within the content revision. Keep it when reordering the authored list. */
+  networkId?: string
   /** WGS84 latitude in degrees. */
   lat: number
   /** WGS84 longitude in degrees. */
@@ -102,6 +104,11 @@ function parseHostVehicle(value: unknown, index: number): HostVehicle {
     throw new Error(`Host vehicle ${index} lat/lon is out of range (lat ±85.05°, lon ±180°)`)
   const heading = raw.heading === undefined ? 0 : finiteNumber(raw.heading, `${index}.heading`)
   const vehicle: HostVehicle = { lat, lon, heading, vehicle: raw.vehicle.trim() }
+  if (raw.networkId !== undefined) {
+    if (typeof raw.networkId !== 'string' || !/^[A-Za-z0-9_.:-]{1,64}$/.test(raw.networkId))
+      throw new Error(`Host vehicle ${index}.networkId is invalid`)
+    vehicle.networkId = raw.networkId
+  }
   if (raw.alt !== undefined) vehicle.alt = finiteNumber(raw.alt, `${index}.alt`)
   if (raw.color !== undefined) {
     if (typeof raw.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(raw.color))
@@ -134,7 +141,10 @@ export function parseHostVehicles(raw: string): HostVehicle[] {
   }
   if (!Array.isArray(parsed))
     throw new Error('Host vehicles must be a JSON array of {lat, lon, heading, vehicle}')
-  return parsed.map(parseHostVehicle)
+  const vehicles = parsed.map(parseHostVehicle)
+  const ids = vehicles.map((v, i) => v.networkId ?? `map.host.${i}`)
+  if (new Set(ids).size !== ids.length) throw new Error('Duplicate host vehicle networkId')
+  return vehicles
 }
 
 /** Build-time default from `VITE_NABLA_VEHICLES` (same JSON as `?vehicles=`). */
@@ -257,6 +267,7 @@ export async function installHostVehicles(
       undefined,
       spec.box !== undefined ? { box: spec.box } : undefined,
     )
+    template.networkId = spec.networkId ?? `map.host.${index}`
     if (spec.color) template.color = spec.color
     else assignVehicleColor(template)
     const isTractor = Boolean(template.vehicle?.hitch && !template.vehicle.passive)
