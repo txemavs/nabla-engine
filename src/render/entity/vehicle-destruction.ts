@@ -45,19 +45,19 @@ const FLAME_REALISTIC_GLSL = /* glsl */ `#include <color_fragment>
           float h = flameUv.y;
           float seed = vFlameSeed + float(gl_FrontFacing) * 0.37;
           // Coarse warp layer, rising slowly.
-          vec2 warp = texture2D(fireNoise, vec2(flameUv.x * 0.55 + seed, h * 0.4 - flameTime * 0.5)).rg - 0.5;
+          vec2 warp = texture2D(fireNoise, vec2(flameUv.x * 0.45 + seed, h * 0.5 - flameTime * 0.5)).rg - 0.5;
           // Fine layer, rising faster, looked up through the warp (stronger higher up).
           vec2 fine = texture2D(fireNoise, vec2(
-            flameUv.x * 1.15 + warp.x * 0.7 * h + seed * 1.7,
-            h * 0.95 - flameTime * 1.3 + warp.y * 0.55)).rg;
+            flameUv.x * 0.6 + warp.x * 0.5 * h + seed * 1.7,
+            h * 1.4 - flameTime * 1.3 + warp.y * 0.45)).rg;
           float sway = warp.x * 0.32 * h + sin(h * 7.0 - flameTime * 6.0 + seed * 6.2831) * 0.05 * h;
           float x = abs(flameUv.x - 0.5 - sway);
-          // Teardrop: wide root, thin tip.
-          float width = max(0.001, 0.42 * pow(1.0 - h, 1.35) * (0.8 + 0.4 * fine.g));
+          // Teardrop: rounded root, widest low, thin tip.
+          float width = max(0.001, 0.42 * pow(1.0 - h, 1.35) * (0.8 + 0.4 * fine.g) * sqrt(smoothstep(-0.02, 0.22, h)));
           float core = 1.0 - smoothstep(0.0, width, x);
           // Noise takes over with height: tongues and detached tips at the top.
-          float density = core * (1.15 - h) + (fine.r - 0.5) * 1.25 * h;
-          float alpha = smoothstep(0.06, 0.28, density) * smoothstep(0.0, 0.07, h);
+          float density = core * (1.15 - h) + (fine.r - 0.5) * 1.1 * h;
+          float alpha = smoothstep(0.06, 0.28, density) * smoothstep(0.0, 0.12, h);
           // Hot white-yellow root, orange body, thin dull-red tip.
           float temp = density * 1.35 * (1.05 - 0.55 * h) + (1.0 - smoothstep(0.0, 0.35, h)) * core * 0.35;
           temp = clamp(temp * (0.92 + 0.16 * vFlameFlicker), 0.0, 1.0);
