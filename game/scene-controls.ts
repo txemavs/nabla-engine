@@ -280,7 +280,11 @@ export function bindSceneControls(
   }) => {
     if (options.rememberInUrl !== false) rememberInUrl(state)
   }
-  const planet = menuSection('scene-planet', t('settings.planet'))
+  // Staging holder: the settings HUD moves these rows into Mundo; leftovers stay hidden.
+  const planet = document.createElement('div')
+  planet.id = 'scene-controls-staging'
+  planet.hidden = true
+  document.body.append(planet)
 
   const timeNow = document.createElement('p')
   timeNow.id = 'time-now'

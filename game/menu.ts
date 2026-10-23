@@ -12,7 +12,6 @@ const MENU_SECTION_ORDER = [
   'camera-extras',
   'driving-extras',
   'effects',
-  'scene-planet',
   'scene-vehicles',
 ] as const
 

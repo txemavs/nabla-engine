@@ -114,9 +114,8 @@ export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
   ['settings-diagnostics', 'dev'],
 ]
 
-/** Tab for a section id, or undefined when the HUD does not place it (the legacy Planeta). */
+/** Tab for a section id. */
 export function sectionTab(id: string): TabId | undefined {
-  if (id === 'scene-planet') return undefined
   return SECTION_TABS.find(([section]) => section === id)?.[1] ?? 'options'
 }
 
@@ -1473,16 +1472,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     if (control) diagnostics.append(control)
   }
   if (diagnostics.children.length > 1) place(diagnostics)
-
-  const legacyPlanet = byId('scene-planet')
-  if (legacyPlanet) {
-    for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
-      const el = byId(id)
-      if (el) el.hidden = true
-    }
-    legacyPlanet.hidden = true
-    paneEls.get('planet')!.append(legacyPlanet)
-  }
 
   const sharpness = fieldset('settings-sharpness', t('settings.sharpness'))
   for (const id of ['display-scale', 'display-scale-auto']) {
