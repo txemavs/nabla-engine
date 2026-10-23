@@ -48,7 +48,7 @@ type TreeFire = TreeRef & {
   base: THREE.Vector3
   height: number
   width: number
-  anchors: { kit: FlameKit; at: number; delay: number }[]
+  anchors: { kit: FlameKit; at: number; delay: number; dx: number; dz: number }[]
   smoke: SmokeKit
   matrix: THREE.Matrix4
 }
@@ -218,12 +218,27 @@ export class TreeFires {
     matrix: THREE.Matrix4,
   ): void {
     this.exposure.delete(key)
-    // Three anchors: trunk foot, mid trunk, crown; each lights later (the fire climbs).
-    const anchors = [0.08, 0.4, 0.68].map((at, k) => {
+    // Four anchors: the trunk foot, then three spread over the crown volume (low, mid, high, a
+    // third of a turn apart, off the axis towards the branches), each lighting later as the fire
+    // climbs. The crown flames are smaller than the former single crown flame, so the three
+    // cover about the same screen area (fill cost) for one extra draw.
+    const turn = Math.random() * Math.PI * 2
+    const anchors = [0.08, 0.45, 0.62, 0.78].map((at, k) => {
       const kit = this.makeFlames()
       kit.flames.visible = false
       ref.mesh.add(kit.flames)
-      return { kit, at, delay: (k * TREE_FIRE.climbSeconds) / 2 + Math.random() * 0.6 }
+      const r = k === 0 ? 0 : width * (0.18 + 0.1 * (k % 2))
+      const a = turn + k * 2.09
+      return {
+        kit,
+        at,
+        dx: Math.cos(a) * r,
+        dz: Math.sin(a) * r,
+        delay:
+          (Math.min(k, 2) * TREE_FIRE.climbSeconds) / 2 +
+          (k > 1 ? (k - 2) * 0.8 : 0) +
+          Math.random() * 0.6,
+      }
     })
     const smoke = this.makeSmoke(ref.mesh)
     this.burning.set(key, { ...ref, age: 0, base, height, width, anchors, smoke, matrix })
@@ -242,10 +257,10 @@ export class TreeFires {
       if (!flames.visible) continue
       // Crown flames are wider; flicker on top of the fuel curve.
       const size =
-        (a.at > 0.5 ? width * 0.75 : Math.min(1.2, width * 0.35)) * (0.55 + 0.6 * strength)
+        (a.at > 0.4 ? width * 0.46 : Math.min(1.2, width * 0.35)) * (0.55 + 0.6 * strength)
       const flicker =
         1 + 0.08 * Math.sin(local * 13.7 + a.delay * 7) + 0.05 * Math.sin(local * 23.1)
-      flames.position.set(base.x, base.y + height * a.at - size * 0.15, base.z)
+      flames.position.set(base.x + a.dx, base.y + height * a.at - size * 0.15, base.z + a.dz)
       flames.scale.set(size, size * (1.3 + 0.5 * strength) * flicker, size)
       a.kit.update(dt, strength)
     }
