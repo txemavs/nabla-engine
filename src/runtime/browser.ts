@@ -684,6 +684,12 @@ export class GameRuntime {
     if (!this.xrSystem) throw new Error('XR is not loaded: await runtime.loadXR() first')
     return this.xrSystem
   }
+  /** Where the physics steps: `worker` (threaded simulation) or `inline` (main thread); null before play. */
+  get physicsThread(): 'worker' | 'inline' | null {
+    const sim = this.session.simulation
+    if (!sim) return null
+    return threadedSimulation(sim) ? 'worker' : 'inline'
+  }
   /** True once the XR code is loaded. */
   get xrLoaded(): boolean {
     return !!this.xrSystem
