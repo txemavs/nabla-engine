@@ -205,3 +205,15 @@ in their existing components. Explicit live dependencies preserve replacement of
 sidearm, loadout, simulation and other mutable state without copying preferences.
 Coverage includes action priorities, pickup versus entry, vehicle messages, XR camera
 ownership, menu FOV forwarding, concurrent owners, repeated entry and failed/stale warmups.
+
+### Topic 3 completion: preparation and reveal coordination
+
+`RuntimePreparation` owns preparation gates, pre-reveal task snapshots, reveal-gate draining,
+loading detail publication and the existing five-stage sequence. Resource work is supplied
+through explicit callbacks and remains in the terrain, weapon and GPU owners. The captured
+simulation is passed through preparation stages. Public methods continue to assert runtime
+lifetime; `play()` retains cancellation, ground settling and final reveal activation.
+Tests cover rejected gates, cancellation, missing-terrain failure and retry, task queue
+consumption, two independent owners and a real runtime stopped/retried/disposed before reveal.
+The final host gate still settles before cancellation is observed by `play()`; this extraction
+does not change that existing contract.

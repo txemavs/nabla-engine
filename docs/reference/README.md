@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **639 modules; 8187 executable function definitions**.
+Coverage: **640 modules; 8209 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -441,7 +441,7 @@ Coverage: **639 modules; 8187 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 606 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 613 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -487,6 +487,7 @@ Coverage: **639 modules; 8187 executable function definitions**.
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/pointer-capture.ts](src/runtime/pointer-capture.ts.md) | 7 |
+| [src/runtime/preparation.ts](src/runtime/preparation.ts.md) | 15 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/pwa-install.ts](src/runtime/pwa-install.ts.md) | 9 |
 | [src/runtime/quality-preset.ts](src/runtime/quality-preset.ts.md) | 9 |

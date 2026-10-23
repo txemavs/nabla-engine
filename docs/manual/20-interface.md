@@ -143,6 +143,21 @@ That dispatch retains host/Relay confirmations; the extraction does not bypass i
 direct simulation interaction. Menu FOV continues through the existing preference owner.
 Tests: `test/runtime/action-dispatch.test.ts` and the real keyboard browser test.
 
+[RuntimePreparation](../../src/runtime/preparation.ts) owns host preparation/reveal gates,
+queued pre-reveal tasks, loading details and stage ordering. It receives explicit resource
+callbacks; terrain, weapon pools and GPU work remain with their existing owners. The
+terrain callback returns the captured simulation context used by pickup and presentation
+work, so later stages do not silently switch to another session.
+
+Rejected gates count as settled. Pre-reveal task promise rejections are logged and loading
+continues; tasks are consumed as a snapshot. Reveal gates are drained until no gates remain.
+Preparation gates are abortable; the final host reveal wait retains its settlement behavior
+on cancellation. `play()` still checks cancellation before publishing `data-reveal=play`,
+settles ground collisions and activates the scene clock, toolbar and loop in their original
+order. Loading detail events and the five-stage progress contract are unchanged. Tests:
+`test/runtime/preparation.test.ts`, terrain/start-camera tests and
+`test/browser/e2e/preparation.spec.ts`.
+
 [RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
 free-mouse state and pointer-lock policy. Capture remains restricted to playing and
 is requested only by existing gesture handlers; rejected requests can be retried.

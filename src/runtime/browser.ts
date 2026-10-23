@@ -165,7 +165,7 @@ import { TouchFlight } from './touch-flight.js'
 import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
 import { SceneryPhysics, type SceneryLayer } from './scenery-physics.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
-import { nextPaint } from './next-paint.js'
+import { RuntimePreparation } from './preparation.js'
 import { activePlayMode, isVRMode } from './settings-scope.js'
 import { XRDebugPanel } from './xr-debug.js'
 import { createEntity } from '../entity/schema.js'
@@ -342,8 +342,6 @@ export interface GameFrame {
    */
   controls: ControlSurfaces
 }
-/** Loading stages `prepareReveal` reports, including mounted menu vehicle preparation. */
-const REVEAL_STAGES = 5
 
 /** Pre-play attract/boot view: sky and planet only, camera outside the planet (TV-style). */
 export interface AttractOptions {
@@ -820,14 +818,12 @@ export class GameRuntime {
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
   private terrainLoad: AbortController | null = null
+  private readonly preparation: RuntimePreparation<Simulation | null>
   private loading: AbortController | null = null
-  private readonly revealGates: Promise<unknown>[] = []
   /** `?performanceLog=1` per-second summary (frame, main CPU, physics main/worker, main idle). */
   private readonly perfMeter = new PerfMeter((summary) => {
     this.options.canvas.dataset.perf = JSON.stringify(summary)
   })
-  private readonly preparationGates: Promise<unknown>[] = []
-  private readonly revealTasks: (() => Promise<unknown>)[] = []
   private inspector: MapInspector | null = null
   private readonly inspectorState = createGameCameraState()
   private stallLog: string[] = []
@@ -855,6 +851,24 @@ export class GameRuntime {
   private readonly planet = this.planetPreferences.state
 
   constructor(private readonly options: GameRuntimeOptions) {
+    this.preparation = new RuntimePreparation(options.canvas, {
+      prepareAudio: () => this.effects.audio.prepare(),
+      vehiclesReady: () => this.view.ready,
+      loadWeaponAssets: () => this.loadRevealWeaponAssets(),
+      ensureSidearm: () => {
+        this.sidearm ??= this.createSidearm()
+      },
+      warmSidearm: () => this.sidearm!.warm(this.renderer),
+      prepareWeaponPools: () => this.prepareRevealWeaponPools(),
+      prepareTerrain: (signal) => this.prepareRevealTerrain(signal),
+      placeInitialPickup: async (sim) => {
+        if (sim) await this.placeInitialWeaponPickup(sim)
+      },
+      freezeAttract: () => {
+        if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
+      },
+      warmPresentation: (sim, signal) => this.warmRevealPresentation(sim, signal),
+    })
     this.visuals.bindScene(this.scene)
     this.settings = createSettingsStore(options.settings)
     this.vehicleSettings = new RuntimeVehiclePreferences(this.settings)
@@ -1738,8 +1752,7 @@ export class GameRuntime {
       this.options.onProgress?.('Preparing…')
       await this.prepareReveal(controller.signal)
       // Never reveal an actor that is still waiting for its ground collision.
-      this.bootDetailDone?.()
-      this.bootDetailDone = undefined
+      this.preparation.finishDetail()
       const settleDone = startBootPhase('Esperar colisiones bajo el actor', undefined, '04 Física')
       const holdStarted = performance.now()
       while (!simulation.settleGround(performance.now() - holdStarted > 30_000)) {
@@ -1783,8 +1796,7 @@ export class GameRuntime {
       if (this.loading === controller) this.stop()
       throw error
     } finally {
-      this.bootDetailDone?.()
-      this.bootDetailDone = undefined
+      this.preparation.finishDetail()
       if (this.loading === controller) {
         this.world?.setStartupMode(false)
         this.loading = null
@@ -5057,7 +5069,7 @@ export class GameRuntime {
   /** Delay costly GPU preparation until host input, while the attract planet keeps running. */
   holdPreparation(gate: Promise<unknown>): void {
     this.assertAlive()
-    this.preparationGates.push(gate.catch(() => undefined))
+    this.preparation.holdPreparation(gate)
   }
   /**
    * Hold the reveal of gameplay (the end of the attract view) until `gate` settles, e.g. an intro
@@ -5066,7 +5078,7 @@ export class GameRuntime {
    */
   holdReveal(gate: Promise<unknown>): void {
     this.assertAlive()
-    this.revealGates.push(gate.catch(() => undefined))
+    this.preparation.holdReveal(gate)
   }
   /**
    * Run `task` inside `play()` once the simulation exists and before the start area is
@@ -5077,7 +5089,7 @@ export class GameRuntime {
    */
   beforeReveal(task: () => Promise<unknown>): void {
     this.assertAlive()
-    this.revealTasks.push(task)
+    this.preparation.beforeReveal(task)
   }
   /**
    * Start the background music now if the browser allows it; otherwise the next gesture does.
@@ -5107,80 +5119,17 @@ export class GameRuntime {
     this.effects.audio.fadeOutMusic(0.8)
   }
   /** Publish before synchronous GPU work, then give the host one paint opportunity. */
-  private bootDetailDone?: () => void
   private async reportLoadStep(
     detail: string,
     description = detail,
     group?: import('./boot-trace.js').BootGroup,
   ): Promise<void> {
-    this.bootDetailDone?.()
-    this.bootDetailDone = startBootPhase(
-      description,
-      undefined,
-      group ??
-        (['shaders', 'preload', 'ready'].includes(this.options.canvas.dataset.loadingStage ?? '')
-          ? '05 GPU y presentación'
-          : '03 Mundo y recursos'),
-    )
-    const now = performance.now()
-    const canvas = this.options.canvas
-    const previous = canvas.dataset.loadingDetail
-    const since = Number(canvas.dataset.loadingDetailSince)
-    if (previous && Number.isFinite(since)) {
-      const timings = JSON.parse(canvas.dataset.bootTimings ?? '[]') as {
-        phase: string
-        ms: number
-      }[]
-      timings.push({ phase: previous, ms: Math.round(now - since) })
-      canvas.dataset.bootTimings = JSON.stringify(timings.slice(-100))
-    }
-    this.options.canvas.dataset.loadingDetail = detail
-    this.options.canvas.dataset.loadingDetailSince = String(performance.now())
-    window.dispatchEvent(new CustomEvent('nabla-load-step'))
-    await nextPaint()
+    await this.preparation.reportLoadStep(detail, description, group)
   }
   private async prepareReveal(signal: AbortSignal): Promise<void> {
-    const canvas = this.options.canvas
-    // Stages for hosts that pace an intro on loading (`data-reveal-stage`, `data-reveal-progress`).
-    const stage = (name: string, done: number) => {
-      canvas.dataset.revealStage = name
-      canvas.dataset.loadingStage = name
-      canvas.dataset.revealProgress = (done / REVEAL_STAGES).toFixed(2)
-    }
-    canvas.dataset.reveal = 'preparing'
-    if (this.preparationGates.length) {
-      const gateDone = startBootPhase(
-        'Esperar autorización de la presentación del juego para preparar recursos y GPU',
-        undefined,
-        '06 Esperas del host',
-      )
-      await new Promise<void>((resolve, reject) => {
-        const abort = () => reject(signal.reason)
-        signal.addEventListener('abort', abort, { once: true })
-        Promise.all(this.preparationGates.splice(0)).then(() => {
-          signal.removeEventListener('abort', abort)
-          resolve()
-        })
-        if (signal.aborted) abort()
-      })
-      gateDone()
-    }
-    signal.throwIfAborted()
-    await this.reportLoadStep(t('load.loading-audio'), 'Preparar contexto de audio y sonidos')
-    this.effects.audio.prepare()
-    // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
-    stage('vehicles', 0)
-    await this.reportLoadStep(
-      t('load.loading-vehicles'),
-      'Esperar modelos y recursos visuales de los vehículos iniciales',
-    )
-    await this.view.ready
-    signal.throwIfAborted()
-    stage('weapons', 1)
-    await this.reportLoadStep(
-      t('load.loading-weapons'),
-      'Descargar y decodificar modelos del arma inicial',
-    )
+    await this.preparation.prepare(signal)
+  }
+  private async loadRevealWeaponAssets(): Promise<void> {
     const preset = weaponPresets()[0]
     const weaponUrls = [preset?.model, preset?.body, preset?.slide].filter(
       (url): url is string => typeof url === 'string',
@@ -5188,57 +5137,28 @@ export class GameRuntime {
     await Promise.all(
       weaponUrls.map((url) => assets.instantiate(url).then((model) => disposeObject(model))),
     )
-    signal.throwIfAborted()
-    // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
-    // first draw shows the pistol instead of the placeholder block while it loads.
-    this.sidearm ??= this.createSidearm()
-    await this.reportLoadStep(
-      t('load.preparing-magazines'),
-      'Preparar arma en primera persona, cargadores y shaders',
-      '05 GPU y presentación',
-    )
-    await this.sidearm.warm(this.renderer)
-    signal.throwIfAborted()
-    // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
+  }
+  private prepareRevealWeaponPools(): void {
     this.ensureCasingMeshes()
     // Allocate the other ejection pools before their first use, without ejecting anything.
     if (!this.cartridgeMeshes) {
-      const clone = this.sidearm.cartridgeClone()
+      const clone = this.sidearm!.cartridgeClone()
       if (clone) {
         this.cartridgeMeshes = new DroppedMagazines(clone, 24, false)
         this.view.root.add(this.cartridgeMeshes.root)
       }
     }
     if (!this.magazineMeshes) {
-      const clone = this.sidearm.magazineClone()
+      const clone = this.sidearm!.magazineClone()
       if (clone) {
         this.magazineMeshes = new DroppedMagazines(clone, 8)
         this.view.root.add(this.magazineMeshes.root)
       }
     }
-    this.sidearm.syncMuzzleLight(performance.now(), this.scene, this.camera, true)
-    // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
-    // from high above shows, at the LODs the stream plans there.
-    stage('terrain', 2)
-    await this.reportLoadStep(
-      t('load.preparing-scene'),
-      'Preparar escena y contenido previo a la presentación',
-    )
-    this.bootDetailDone?.()
-    for (const [index, task] of this.revealTasks.splice(0).entries()) {
-      signal.throwIfAborted()
-      const taskDone = startBootPhase(
-        `Contenido del host antes de revelar: tarea ${index + 1}`,
-        undefined,
-        '03 Mundo y recursos',
-      )
-      try {
-        await task().catch((error) => console.warn('beforeReveal task failed', error))
-      } finally {
-        taskDone()
-      }
-    }
-    signal.throwIfAborted()
+    this.sidearm!.syncMuzzleLight(performance.now(), this.scene, this.camera, true)
+  }
+  private async prepareRevealTerrain(signal: AbortSignal): Promise<Simulation | null> {
+    const canvas = this.options.canvas
     const sim = this.session.simulation
     if (this.world && sim) {
       const spawn = [...sim.player.position] as Vec3Tuple
@@ -5284,18 +5204,10 @@ export class GameRuntime {
       }
       this.world.renderUpdate(this.origin, !!this.quality.buildings, sim)
     }
-    signal.throwIfAborted()
-    // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
-    if (sim) await this.placeInitialWeaponPickup(sim)
-    signal.throwIfAborted()
-    // of the camera so the attract frames keep their own projection.
-    // Heavy GPU preparation keeps the already-visible planet still, without delaying startup.
-    if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
-    stage('shaders', 3)
-    await this.reportLoadStep(
-      t('load.preparing-poses-lights-and-materials'),
-      'Sincronizar poses, visibilidad y luces para el primer fotograma',
-    )
+    return sim
+  }
+  private async warmRevealPresentation(sim: Simulation | null, signal: AbortSignal): Promise<void> {
+    const canvas = this.options.canvas
     // Gameplay visibility (avatar shown, spawn markers hidden) and one pose sync first, so the
     // lights compileAsync sees are the ones gameplay draws with (the light count is part of
     // every lit program; a mismatch means slow synchronous compiles later).
@@ -5359,7 +5271,7 @@ export class GameRuntime {
         'Preparar geometría y shaders de destrucción',
       )
       await this.view.destruction.warm(this.renderer, this.scene, this.camera, [this.view.root])
-      stage('preload', 4)
+      this.preparation.stage('preload', 4)
       // Replacement candidates are availability metadata, not an instruction to preload
       // every vehicle. placeVehicle prepares a replacement when it is actually needed.
       const preloadVehicles = this.options.preloadVehicles ?? []
@@ -5401,25 +5313,6 @@ export class GameRuntime {
         }),
       )
       canvas.dataset.stallLog = this.stallLog.join('\n')
-    }
-    stage('ready', REVEAL_STAGES)
-    canvas.dataset.reveal = 'holding'
-    await this.reportLoadStep(
-      t('load.simulation-ready'),
-      'Presentación preparada; publicar estado listo',
-    )
-    this.bootDetailDone?.()
-    if (this.revealGates.length) {
-      const introDone = startBootPhase(
-        'Esperar intro/créditos del host antes de revelar',
-        undefined,
-        '06 Esperas del host',
-      )
-      try {
-        while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
-      } finally {
-        introDone()
-      }
     }
   }
   /**
