@@ -1,6 +1,7 @@
 import type * as THREE from 'three'
 import { addWebGPUMaterialNodes } from '../webgpu-substitutes.js'
 import { displayBlend } from './particle-nodes.js'
+import { fireNoise } from './soft-smoke.js'
 
 /**
  * TSL twins of the `onBeforeCompile` patches on entity materials (billboard foliage, the avatar
@@ -159,15 +160,45 @@ export function fireNodes(material: THREE.Material, clock: Live): void {
   })
 }
 
-/** Wreck flame sheets (vehicle-destruction.ts `createFlames`): sway in the vertex, tongues. */
+/**
+ * `nablaSoft` (soft-smoke.ts): 0 where the fragment meets the opaque scene behind it, 1 once
+ * `softness` metres in front; 1 over the sky and where the scene is nearer (multisampled edges).
+ */
+function softFade(t: N, softness: number, logarithmic: boolean): N {
+  const depth = t.viewportDepthTexture(t.screenUV).x
+  const viewZ = logarithmic
+    ? t.logarithmicDepthToViewZ(depth, t.cameraNear, t.cameraFar)
+    : t.perspectiveDepthToViewZ(depth, t.cameraNear, t.cameraFar)
+  const gap = viewZ.negate().sub(t.positionView.z.negate())
+  const fade = t.clamp(gap.div(softness), 0, 1)
+  return t.select(depth.greaterThanEqual(1).or(gap.lessThan(0)), 1, fade)
+}
+
+/**
+ * Wreck flame sheets (vehicle-destruction.ts `createFlames`), the twin of `FLAME_REALISTIC_GLSL`
+ * and `FLAME_FLICKER_GLSL`: domain-warped noise tongues, hot root to thin red tip through the
+ * black-body ramp, per-tongue flicker from the `flameTongue` index, soft against the scene depth
+ * (`nablaSoft(0.12)`).
+ */
 export function flameNodes(material: THREE.Material, clock: Live): void {
-  addWebGPUMaterialNodes(material, ({ tsl }, target) => {
+  addWebGPUMaterialNodes(material, ({ tsl, logarithmicDepth }, target) => {
     const t = tsl as N
     const twin = target as Twin
     const time = live(t, clock)
     const base = diffuse(t, twin)
+    const noise = fireNoise()
     const uv = t.uv()
     const p = t.positionGeometry
+    const tongue = t.attribute('flameTongue', 'float')
+    const ph = time.mul(tongue.mul(0.83).add(6.3)).add(tongue.mul(1.9))
+    const flicker = t.varying(
+      t
+        .sin(ph)
+        .mul(0.32)
+        .add(0.5)
+        .add(t.sin(ph.mul(2.31).add(1.3)).mul(0.18)),
+    )
+    const seed = t.varying(t.fract(tongue.mul(0.618).add(0.13)))
     const h2 = uv.y.mul(uv.y)
     twin.positionNode = t.vec3(
       p.x.add(
@@ -176,7 +207,7 @@ export function flameNodes(material: THREE.Material, clock: Live): void {
           .mul(h2)
           .mul(0.09),
       ),
-      p.y,
+      p.y.mul(flicker.mul(0.07).add(0.95)),
       p.z.add(
         t
           .sin(uv.y.mul(5).sub(time.mul(3.7)))
@@ -186,30 +217,67 @@ export function flameNodes(material: THREE.Material, clock: Live): void {
     )
     twin.colorNode = t.Fn(() => {
       const h = uv.y
-      const sway = t
-        .sin(h.mul(9).sub(time.mul(8)))
-        .mul(0.08)
+      const s = seed.add(t.select(t.frontFacing, 0.37, 0))
+      const warp = t
+        .texture(noise, t.vec2(uv.x.mul(0.45).add(s), h.mul(0.5).sub(time.mul(0.5))))
+        .rg.sub(0.5)
+      const fine = t.texture(
+        noise,
+        t.vec2(
+          uv.x.mul(0.6).add(warp.x.mul(0.5).mul(h)).add(s.mul(1.7)),
+          h.mul(1.4).sub(time.mul(1.3)).add(warp.y.mul(0.45)),
+        ),
+      ).rg
+      const sway = warp.x
+        .mul(0.32)
         .mul(h)
+        .add(
+          t
+            .sin(h.mul(7).sub(time.mul(6)).add(s.mul(6.2831)))
+            .mul(0.05)
+            .mul(h),
+        )
       const x = t.abs(uv.x.sub(0.5).sub(sway))
-      const width = t.max(0.001, t.float(1).sub(h).mul(0.38))
-      const tongues = t
-        .sin(uv.x.mul(25).add(time.mul(11)))
-        .mul(0.07)
-        .add(t.sin(uv.x.mul(43).sub(time.mul(7))).mul(0.04))
-      const edge = t.float(1).sub(t.smoothstep(width.mul(0.55), width, x))
-      const tip = t.float(1).sub(t.smoothstep(tongues.add(0.72), tongues.add(0.95), h))
-      const turbulence = t
-        .sin(h.mul(22).sub(time.mul(10)).add(uv.x.mul(13)))
-        .mul(0.14)
-        .add(0.78)
-        .add(t.sin(h.mul(37).sub(time.mul(16))).mul(0.08))
-      const alpha = edge
-        .mul(tip)
-        .mul(t.smoothstep(0, 0.08, h))
-        .mul(turbulence)
+      const width = t.max(
+        0.001,
+        t
+          .pow(t.float(1).sub(h), 1.35)
+          .mul(0.42)
+          .mul(fine.y.mul(0.4).add(0.8))
+          .mul(t.sqrt(t.smoothstep(-0.02, 0.22, h))),
+      )
+      const core = t.float(1).sub(t.smoothstep(0, width, x))
+      const density = core.mul(t.float(1.15).sub(h)).add(fine.x.sub(0.5).mul(1.1).mul(h))
+      const rawTemp = density
+        .mul(1.35)
+        .mul(t.float(1.05).sub(h.mul(0.55)))
+        .add(
+          t
+            .float(1)
+            .sub(t.smoothstep(0, 0.35, h))
+            .mul(core)
+            .mul(0.35),
+        )
+      const temp = t.clamp(rawTemp.mul(flicker.mul(0.16).add(0.92)), 0, 1)
+      const alpha = t
+        .smoothstep(0.06, 0.28, density)
+        .mul(t.smoothstep(0, 0.12, h))
+        .mul(t.smoothstep(0.05, 0.22, temp))
+        .mul(softFade(t, 0.12, !!logarithmicDepth))
       t.If(alpha.lessThan(0.02), () => t.Discard())
-      const rgb = t.mix(t.vec3(1, 0.82, 0.18), t.vec3(1, 0.13, 0.015), h)
-      return blendDisplay(t, twin, rgb, base.a.mul(alpha).mul(0.8))
+      // nablaBlackbody (soft-smoke.ts).
+      const body = t
+        .vec3(
+          1,
+          t.smoothstep(0.15, 0.85, temp).mul(0.88).add(0.04),
+          t.smoothstep(0.55, 1, temp).mul(0.75).add(0.01),
+        )
+        .mul(temp.mul(temp).mul(4.5))
+      // WebGL clips the HDR ramp at the display write; ACES cannot reach that clipped yellow-white,
+      // and the inverse of a near-white channel blows the core out, so cap it a little lower
+      // (0.85: closest to WebGL in webgpu-entity-parity, flames alone and over the fire).
+      const rgb = t.min(body.mul(flicker.mul(0.18).add(0.72)).add(t.vec3(0.1, 0.018, 0)), 0.85)
+      return blendDisplay(t, twin, rgb, base.a.mul(alpha).mul(0.88))
     })()
   })
 }
