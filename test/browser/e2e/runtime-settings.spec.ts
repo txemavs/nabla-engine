@@ -28,6 +28,10 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       }
       localStorage.setItem('nabla.planetVisual', JSON.stringify(planet))
       localStorage.setItem('nabla.muzzleFlash', JSON.stringify({ x: 12, intensity: 220 }))
+      localStorage.setItem(
+        'nabla.lightTuning',
+        JSON.stringify({ exposure: 1.2, shadowIntensity: 0.4 }),
+      )
       localStorage.setItem('nabla.cameraFov', '12')
       localStorage.setItem('nabla.smokePercent', '65')
       localStorage.setItem('nabla.actionCam', 'true')
@@ -75,6 +79,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         const initialFlash = [a.muzzleFlashTuning, b.muzzleFlashTuning]
         a.setMuzzleFlashTuning({ intensity: 40 })
         a.setSidearmTuning({ angle: 3 })
+        a.setLightTuning({ exposure: 2, shadows: false, paint: 0.8 })
         a.setDisplay({ resolutionScale: 0.75, maxFps: 60 })
         const displayBeforePlay = [a.displaySettings, b.displaySettings]
         a.setPlanetLayers({ sky: false, sun: false, clouds: false })
@@ -125,12 +130,18 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
           },
         })
         const entryModes = [gestureMode, a.settings.mode, b.settings.mode]
+        const liveExposure = [
+          (a as any).renderer.toneMappingExposure,
+          (b as any).renderer.toneMappingExposure,
+        ]
         a.dispose()
         b.setCameraFovOffset(7)
         b.tick(performance.now() + 32)
         c = make('left')
         return {
           initial,
+          lighting: [b.lightTuning, c.lightTuning],
+          liveExposure,
           initialFlash,
           restoredFlash: c.muzzleFlashTuning,
           survivorFlash: b.muzzleFlashTuning,
@@ -216,6 +227,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
   ])
   expect(result.restoredFlash).toEqual({ x: 12, y: 0, z: -72, intensity: 40 })
   expect(result.survivorFlash).toEqual({ x: 12, y: 0, z: -72, intensity: 220 })
+  expect(result.lighting[0]).toMatchObject({ exposure: 1.2, shadows: true })
+  expect(result.lighting[1]).toMatchObject({ exposure: 2, shadows: false, paint: 0.8 })
+  expect(result.liveExposure).toEqual([2, 1.2])
   expect(result.initialCamera).toEqual([true, true, true, true, 2, 2])
   expect(result.cameraPreferences).toEqual([true, true, 2, false, false, 3])
   expect(result.entryModes).toEqual(['pc', 'headset-pc', 'pc'])

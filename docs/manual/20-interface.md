@@ -91,6 +91,15 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+[RuntimeLightingPreferences](../../src/runtime/lighting-preferences.ts) owns the saved
+lighting values under the unchanged `nabla.lightTuning` key. It applies sun and ambient
+multipliers immediately after the environment refreshes their base intensities, then
+applies exposure, shadow intensity, reflections and paint at the existing frame stage.
+Lights and scene views remain runtime-owned; newly created lights use the current values
+on the next application. Public snapshots are copies, and quality-based shadow capability
+remains separate from the saved shadow preference. Coverage lives in
+`test/runtime/lighting-preferences.test.ts` and the two-runtime browser test.
+
 [RuntimeWeaponPreferences](../../src/runtime/weapon-preferences.ts) owns sidearm tuning,
 weapon-wheel comfort settings, muzzle-flash calibration and the per-weapon pose cache.
 Existing `nabla.sidearmTuning`, `nabla.weaponWheel`, `nabla.muzzleFlash`,

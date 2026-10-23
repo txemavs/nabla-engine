@@ -229,12 +229,8 @@ import {
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
-import {
-  normalizeLightTuning,
-  readLightTuning,
-  writeLightTuning,
-  type LightTuning,
-} from './light-tuning.js'
+import type { LightTuning } from './light-tuning.js'
+import { RuntimeLightingPreferences } from './lighting-preferences.js'
 export {
   Combat,
   CHARACTER_HIT_PREFIX,
@@ -855,7 +851,7 @@ export class GameRuntime {
   )
   private readonly catchFloor = new CatchFloor()
   /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
-  private lighting: LightTuning
+  private readonly lighting: RuntimeLightingPreferences
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
   private readonly keys = this.game.keys
@@ -917,7 +913,7 @@ export class GameRuntime {
         storage: options.mirrors.storage === undefined ? this.settings : options.mirrors.storage,
       },
     }
-    this.lighting = readLightTuning(this.settings)
+    this.lighting = new RuntimeLightingPreferences(this.settings)
     this.weaponPreferences = new RuntimeWeaponPreferences(this.settings)
     this.actorChoice = loadActor(this.settings)
     this.sceneryPhysics = new SceneryPhysics(() => this.session.simulation, this.settings)
@@ -2748,8 +2744,7 @@ export class GameRuntime {
     const previousFar = this.camera.far
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky, this.planet.sun)
-      this.sun.intensity *= this.lighting.sun
-      this.ambient.intensity *= this.lighting.ambient
+      this.lighting.applyEnvironment(this.sun, this.ambient)
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
@@ -3070,8 +3065,7 @@ export class GameRuntime {
     )
     if (this.sky.enabled) {
       const direction = this.environment.applyLighting(this.sky, this.planet.sun)
-      this.sun.intensity *= this.lighting.sun
-      this.ambient.intensity *= this.lighting.ambient
+      this.lighting.applyEnvironment(this.sun, this.ambient)
       this.shadows.setLightDirection(direction.clone().negate())
       this.shadows.setLightIntensity(this.sun.intensity)
       this.shadows.setLightColor(this.sun.color)
@@ -4573,7 +4567,7 @@ export class GameRuntime {
   }
   /** Live lighting knobs (exposure, sun, ambient, reflections, paint, shadows). */
   get lightTuning(): LightTuning {
-    return { ...this.lighting }
+    return this.lighting.tuning
   }
   /** Saved eye-level pistol height (metres) and muzzle-up angle (degrees). */
   get sidearmTuning(): SidearmTuning {
@@ -4863,18 +4857,11 @@ export class GameRuntime {
   /** Change and save the lighting knobs (`nabla.lightTuning`); returns the clamped values. */
   setLightTuning(patch: Partial<LightTuning>): LightTuning {
     this.assertAlive()
-    this.lighting = normalizeLightTuning(patch, this.lighting)
-    writeLightTuning(this.settings, this.lighting)
-    return { ...this.lighting }
+    return this.lighting.update(patch)
   }
   /** Per frame: exposure, shadow darkness, vehicle reflections and paint from `lighting`. */
   private applyLightTuning(): void {
-    const t = this.lighting
-    this.renderer.toneMappingExposure = t.exposure
-    const shadow = t.shadows ? t.shadowIntensity : 0
-    for (const light of [this.sun, ...this.shadows.lights]) light.shadow.intensity = shadow
-    this.view.reflectionScale = t.reflections
-    this.view.applyPaintBrightness(t.paint)
+    this.lighting.applyPresentation(this.renderer, [this.sun, ...this.shadows.lights], this.view)
   }
   /** True while the background track plays (it waits for the first gesture). */
   get musicPlaying(): boolean {
