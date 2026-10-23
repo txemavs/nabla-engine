@@ -29,28 +29,55 @@ const SHARD_LIFE = 1.5
 const SHARD_RADIUS = 0.035
 
 /**
- * Flame tongue colour (WebGL): the former tongue shape, broken up by scrolling fbm noise (licks,
- * detached tips), coloured by temperature through a black-body ramp (white-yellow root, orange
- * body, dull red tips) and faded softly where it meets the car or the ground.
+ * Flame tongue colour (WebGL). Two fetches of the flame noise per fragment, as before:
+ *
+ * - **Domain warp.** A coarse noise layer scrolling upward displaces the lookup of a finer one,
+ *   so the flame undulates and its upper half breaks into licks and detached tips instead of a
+ *   smooth blob.
+ * - **Temperature.** A teardrop core (wide root, thin tip) is hottest at the root (white-yellow
+ *   through the black-body ramp) and cools to orange and a thin dull-red tip.
+ * - **Flicker.** Each tongue has its own phase (`vFlameFlicker`) that scales its height in the
+ *   vertex shader and its brightness here.
+ *
+ * Faded softly where it meets the car or the ground (soft particles).
  */
 const FLAME_REALISTIC_GLSL = /* glsl */ `#include <color_fragment>
           float h = flameUv.y;
-          vec2 nuv = vec2(flameUv.x * 0.8 + float(gl_FrontFacing) * 0.37, h * 0.55 - flameTime * 0.85);
-          float n = texture2D(fireNoise, nuv).r;
-          float n2 = texture2D(fireNoise, nuv * 2.1 + vec2(0.13, -flameTime * 0.6)).g;
-          float sway = sin(h * 9.0 - flameTime * 8.0) * 0.08 * h + (n - 0.5) * 0.22 * h;
+          float seed = vFlameSeed + float(gl_FrontFacing) * 0.37;
+          // Coarse warp layer, rising slowly.
+          vec2 warp = texture2D(fireNoise, vec2(flameUv.x * 0.45 + seed, h * 0.5 - flameTime * 0.5)).rg - 0.5;
+          // Fine layer, rising faster, looked up through the warp (stronger higher up).
+          vec2 fine = texture2D(fireNoise, vec2(
+            flameUv.x * 0.6 + warp.x * 0.5 * h + seed * 1.7,
+            h * 1.4 - flameTime * 1.3 + warp.y * 0.45)).rg;
+          float sway = warp.x * 0.32 * h + sin(h * 7.0 - flameTime * 6.0 + seed * 6.2831) * 0.05 * h;
           float x = abs(flameUv.x - 0.5 - sway);
-          float width = max(0.001, (1.0 - h) * 0.4 * (0.8 + 0.4 * n2));
-          float edge = 1.0 - smoothstep(width * 0.45, width, x);
-          float lick = h + (n2 - 0.5) * 0.45 * h;
-          float tip = 1.0 - smoothstep(0.55, 0.92, lick);
-          float alpha = edge * tip * smoothstep(0.0, 0.08, h);
-          // Temperature: hottest low in the core, cooling with height and towards the edges.
-          float temp = clamp((1.05 - h * 0.95) * (0.55 + 0.6 * n) * (0.45 + 0.55 * edge), 0.0, 1.0);
-          alpha *= smoothstep(0.06, 0.25, temp) * nablaSoft(0.12);
+          // Teardrop: rounded root, widest low, thin tip.
+          float width = max(0.001, 0.42 * pow(1.0 - h, 1.35) * (0.8 + 0.4 * fine.g) * sqrt(smoothstep(-0.02, 0.22, h)));
+          float core = 1.0 - smoothstep(0.0, width, x);
+          // Noise takes over with height: tongues and detached tips at the top.
+          float density = core * (1.15 - h) + (fine.r - 0.5) * 1.1 * h;
+          float alpha = smoothstep(0.06, 0.28, density) * smoothstep(0.0, 0.12, h);
+          // Hot white-yellow root, orange body, thin dull-red tip.
+          float temp = density * 1.35 * (1.05 - 0.55 * h) + (1.0 - smoothstep(0.0, 0.35, h)) * core * 0.35;
+          temp = clamp(temp * (0.92 + 0.16 * vFlameFlicker), 0.0, 1.0);
+          alpha *= smoothstep(0.05, 0.22, temp) * nablaSoft(0.12);
           if (alpha < 0.02) discard;
-          diffuseColor.rgb = nablaBlackbody(temp) * 0.8 + vec3(0.12, 0.02, 0.0);
-          diffuseColor.a *= alpha * 0.85;`
+          diffuseColor.rgb = nablaBlackbody(temp) * (0.72 + 0.18 * vFlameFlicker) + vec3(0.1, 0.018, 0.0);
+          diffuseColor.a *= alpha * 0.88;`
+
+/**
+ * Per-tongue phase and flicker (merged tongues only): height ±7 %, passed on to the brightness.
+ * Runs before {@link TONGUE_GLSL} (it scales the tongue's own plane).
+ */
+const FLAME_FLICKER_GLSL = /* glsl */ `
+          {
+            vFlameSeed = fract(flameTongue * 0.618 + 0.13);
+            float ph = flameTime * (6.3 + flameTongue * 0.83) + flameTongue * 1.9;
+            vFlameFlicker = 0.5 + 0.32 * sin(ph) + 0.18 * sin(ph * 2.31 + 1.3);
+            transformed.y *= 0.95 + 0.07 * vFlameFlicker;
+          }
+`
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
 /**
@@ -480,7 +507,8 @@ export class VehicleDestruction {
           '#include <common>',
           '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
             (merged
-              ? '\nattribute float flameTongue; uniform float flameAnimate;\n' + SOFT_VERTEX_PARS
+              ? '\nattribute float flameTongue; uniform float flameAnimate;\nvarying float vFlameSeed; varying float vFlameFlicker;\n' +
+                SOFT_VERTEX_PARS
               : ''),
         )
         .replace(
@@ -493,13 +521,15 @@ export class VehicleDestruction {
           flameUv = uv;
           transformed.x += sin(uv.y * 7.0 - flameTime * 5.0) * uv.y * uv.y * 0.09;
           transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;` +
-            (merged ? TONGUE_GLSL : ''),
+            (merged ? FLAME_FLICKER_GLSL + TONGUE_GLSL : ''),
         )
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
           '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
-            (merged ? SOFT_FRAGMENT_PARS : ''),
+            (merged
+              ? '\nvarying float vFlameSeed; varying float vFlameFlicker;\n' + SOFT_FRAGMENT_PARS
+              : ''),
         )
         .replace(
           '#include <color_fragment>',
@@ -523,7 +553,7 @@ export class VehicleDestruction {
         )
     }
     material.customProgramCacheKey = () =>
-      merged ? 'vehicle-flames-merged-v2' : 'vehicle-flames-v2'
+      merged ? 'vehicle-flames-merged-v3' : 'vehicle-flames-v2'
     if (merged) softConsumer(material)
     flameNodes(material, clock)
     const flames = new THREE.Group()
