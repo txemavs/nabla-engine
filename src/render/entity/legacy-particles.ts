@@ -4,6 +4,7 @@ import { setWebGPUSubstitute } from '../webgpu-substitutes.js'
 import { laserSmokePools } from './laser-smoke.js'
 import { exhaustSmokeSprites, muzzleSmokeSprites, tireSmokeSprites } from './particle-nodes.js'
 import { smokeDensity } from './smoke-density.js'
+import { SOFT_FRAGMENT_PARS, SOFT_VERTEX_PARS, softSmokeUniforms, softVertex } from './soft-smoke.js'
 import type { ExhaustSmokeOptions } from './exhaust-smoke.js'
 import type { SparkBurstOptions } from './shot-sparks.js'
 
@@ -30,6 +31,8 @@ export class LegacyExhaustSmoke {
   private readonly velocities: Float32Array
   private readonly life: Float32Array
   private readonly tints: Float32Array
+  /** Spawn point of each puff: seeds its atlas tile and spin as the analytic `position` does. */
+  private readonly origins: Float32Array
   private readonly geometry = new THREE.BufferGeometry()
   private readonly source = new THREE.Vector3()
   private readonly previous = new THREE.Vector3()
@@ -54,12 +57,14 @@ export class LegacyExhaustSmoke {
     this.velocities = new Float32Array(capacity * 3)
     this.life = new Float32Array(capacity)
     this.tints = new Float32Array(capacity * 3)
+    this.origins = new Float32Array(capacity * 3)
     this.carry = -THREE.MathUtils.clamp(options.emissionPhase ?? 0, 0, 1)
     this.color = new THREE.Color(options.color ?? '#fafbfc')
     this.clearColor = new THREE.Color(options.clearColor ?? options.color ?? '#fafbfc')
     this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
     this.geometry.setAttribute('life', new THREE.BufferAttribute(this.life, 1))
     this.geometry.setAttribute('tint', new THREE.BufferAttribute(this.tints, 3))
+    this.geometry.setAttribute('origin', new THREE.BufferAttribute(this.origins, 3))
     this.root = new THREE.Points(
       this.geometry,
       new THREE.ShaderMaterial({
@@ -69,25 +74,33 @@ export class LegacyExhaustSmoke {
           smokeDensity,
           lifetime: { value: options.lifetime ?? 1.4 },
           size: { value: options.size ?? 550 },
+          ...softSmokeUniforms(),
         },
+        // Same procedural puff as the analytic ExhaustSmoke (2679074b), seeded by the spawn point.
         vertexShader: `
         #include <common>
         #include <logdepthbuf_pars_vertex>
-        attribute float life; attribute vec3 tint; varying vec3 smokeTint; varying float age; uniform float size; uniform float lifetime;
+        attribute float life; attribute vec3 tint; attribute vec3 origin; varying vec3 smokeTint; varying float age; varying float smokeSeed; uniform float size; uniform float lifetime;
+        ${SOFT_VERTEX_PARS}
         void main(){age=life; smokeTint=tint; vec4 p=modelViewMatrix*vec4(position,1.0);
+          smokeSeed=fract(sin(dot(origin,vec3(12.9898,78.233,37.719)))*43758.5453);
           gl_Position=projectionMatrix*p;
+          ${softVertex('p')}
           gl_PointSize=life>0.0?clamp((1.0-life/lifetime)*1.4*size/max(1.0,-p.z),1.0,240.0):0.0;
           #include <logdepthbuf_vertex>
         }`,
         fragmentShader: `
         uniform float smokeDensity; uniform float lifetime;
         #include <logdepthbuf_pars_fragment>
-        varying float age; varying vec3 smokeTint;
+        varying float age; varying vec3 smokeTint; varying float smokeSeed;
+        ${SOFT_FRAGMENT_PARS}
         void main(){
           #include <logdepthbuf_fragment>
-          float d=length(gl_PointCoord-0.5)*2.0;
-          if(d>1.0||age<=0.0)discard;
-          gl_FragColor=vec4(smokeTint,pow(1.0-d,2.0)*(age/lifetime)*0.4*smokeDensity);
+          if(age<=0.0)discard;
+          float k=1.0-age/lifetime;
+          vec4 c=nablaSmoke(smokeTint,(age/lifetime)*0.4*smokeDensity,k,smokeSeed,k*(smokeSeed-0.5)*1.5,0.35);
+          if(c.a<0.002)discard;
+          gl_FragColor=c;
         }`,
       }),
     )
@@ -160,6 +173,7 @@ export class LegacyExhaustSmoke {
         )
         .toArray(this.tints, i * 3)
       this.source.toArray(this.positions, i * 3)
+      this.source.toArray(this.origins, i * 3)
       const jet = this.options.riseSpeed ?? 0.4 + 0.3 * THREE.MathUtils.clamp(load, 0, 1)
       this.direction
         .clone()
@@ -173,6 +187,7 @@ export class LegacyExhaustSmoke {
     this.geometry.attributes.position.needsUpdate = true
     this.geometry.attributes.life.needsUpdate = true
     this.geometry.attributes.tint.needsUpdate = true
+    this.geometry.attributes.origin.needsUpdate = true
   }
 
   dispose(): void {
