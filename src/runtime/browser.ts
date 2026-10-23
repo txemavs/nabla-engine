@@ -117,8 +117,8 @@ import type {
   VehicleLightMode,
   VehicleLightSwitches,
 } from '../render/vehicle-presentation/light-controller.js'
-import { worldWater } from './water.js'
-import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
+import { RuntimeWorldControls } from './world-controls.js'
+import type { SkyClock } from '../planet/sky.js'
 import { RuntimePlayerPresentation, type WeaponProp } from './player-presentation.js'
 import { weaponSlots } from '../catalog/weapons/slots.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
@@ -692,7 +692,7 @@ export class GameRuntime {
       this.pickupModels.get(item.id)?.position.fromArray(position)
     }
   }
-  private worldGravityScale = 1
+  private readonly worldControls: RuntimeWorldControls
   private readonly vehicleSettings: RuntimeVehiclePreferences
   private readonly idleCinematic = new IdleCinematic()
   private cameraActivity(): void {
@@ -910,10 +910,17 @@ export class GameRuntime {
     if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
     this.text = createRuntimeText(options.locale, options.messages)
     this.game.text = this.text
-    this.game.recover.snapToRoad = options.recoverToRoad !== false
-    this.worldGravityScale = options.gravityScale ?? simulationDefaults.gravityScaleRange.default
-    this.game.recover.roads = () => navigationRoads().filter((road) => road.carriageway)
-    this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
+    this.worldControls = new RuntimeWorldControls(
+      {
+        document: () => this.document,
+        simulation: () => this.session.simulation,
+        recover: this.game.recover,
+        roads: () => navigationRoads().filter((road) => road.carriageway),
+        pavedAreas: () => this.world?.pavedAreas ?? [],
+        assertAlive: () => this.assertAlive(),
+      },
+      options,
+    )
     this.toolbar = new GameToolbar(
       options.canvas.parentElement!,
       () => this.cameraPreferences.fovOffset,
@@ -1758,7 +1765,7 @@ export class GameRuntime {
       // Worker mode: command HUD messages arrive with the worker's reply, not as return values.
       const threaded = threadedSimulation(simulation)
       if (threaded) threaded.onMessage = (message) => this.options.onMessage?.(message)
-      this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
+      this.worldControls.applyGravity(simulation)
       // Frames step the simulation from here on, while the reveal still prepares. Hold the
       // actor until its ground collision is active, then settle it on that surface.
       if (spawnGround !== undefined) simulation.holdForGround(spawnGround)
@@ -1798,8 +1805,7 @@ export class GameRuntime {
         this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
       }
       // The scene clock starts at its authored time (e.g. 10:00) at reveal, not at construction.
-      const clock = this.document.sky
-      if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+      this.worldControls.restartAuthoredClock()
       this.world?.setStartupMode(false)
       this.options.canvas.dataset.reveal = 'play'
       this.toolbar.setVisible(true)
@@ -2150,7 +2156,7 @@ export class GameRuntime {
       input.rearBrake = motorcycleInput.rearBrake
       input.brake = false
     }
-    const water = worldWater(this.document.water, this.document.sky)
+    const water = this.worldControls.sea
     const physicsStarted = performance.now()
     // WebXR only shows what renders inside this XR frame callback, so an XR frame never waits for
     // a worker step: it renders the latest state while the step runs, and the time of frames that
@@ -2551,7 +2557,7 @@ export class GameRuntime {
     this.touchDriving?.setDriving(rigs.driving.seatedRoad)
     this.touchDriving?.setPilot(!!vehicleId && this.cameraState.mode === 'cockpit')
     this.touchDriving?.reflect(input)
-    const water = worldWater(this.document.water, this.document.sky)
+    const water = this.worldControls.sea
     this.environment.ocean.setLevel(water.level)
     const physicsStart = performance.now()
     const crossing = (yield this.game.step(
@@ -3315,7 +3321,7 @@ export class GameRuntime {
     // Light the views as the reveal will: a live clock starts at its authored time then (e.g.
     // 10:00), and day or night changes lights and therefore shader programs.
     const clock = this.document.sky
-    if (clock?.mode === 'live' && clock.origin) this.setSkyClock({ ...clock, since: Date.now() })
+    this.worldControls.restartAuthoredClock()
     const warmedLighting = new Set<string>()
     // Complete every requested view before play. A time cutoff shifts compilation
     // onto the first steering/camera frames and leaves the preparation incomplete.
@@ -3423,19 +3429,11 @@ export class GameRuntime {
   }
   /** The sky clock in use: `live` follows the real clock (optionally faster), `fixed` holds one instant. */
   get skyClock(): SkyClock {
-    return this.document.sky ?? { mode: 'live' }
+    return this.worldControls.skyClock
   }
   /** Change the time of day live; sun, sky, fog and lighting follow on the next frame. */
   setSkyClock(clock: SkyClock): void {
-    this.assertAlive()
-    this.document.sky =
-      clock.mode === 'fixed'
-        ? { mode: 'fixed', at: clock.at }
-        : liveSkyClock(
-            skyRate(clock),
-            clock.since ?? Date.now(),
-            clock.origin ? Date.parse(clock.origin) : Date.now(),
-          )
+    this.worldControls.setSkyClock(clock)
   }
   /** Visible planetary layers (sky, sun, clouds, sea). */
   get planetLayers(): { sky: boolean; sun: boolean; clouds: boolean; sea: boolean } {
@@ -3484,17 +3482,15 @@ export class GameRuntime {
   }
   /** Sea settings in use; undefined means the simplified tide. */
   get waterSettings(): SceneDocument['water'] {
-    return this.document.water
+    return this.worldControls.waterSettings
   }
   /** Current sea level in metres and its state label, as drawn and used by physics. */
   get sea(): { level: number; state: string } {
-    return worldWater(this.document.water, this.document.sky)
+    return this.worldControls.sea
   }
   /** Change the sea live: a manual level in metres, or undefined for the simplified tide. */
   setWater(water: SceneDocument['water']): void {
-    this.assertAlive()
-    if (water === undefined) delete this.document.water
-    else this.document.water = structuredClone(water)
+    this.worldControls.setWater(water)
   }
   /** Ids of vehicles added with `spawnVehicle`, oldest first. */
   get spawnedVehicles(): { id: string; name: string }[] {
@@ -4434,25 +4430,19 @@ export class GameRuntime {
   }
   /** World gravity multiplier (1 = 9.81 m/s²). */
   get gravityScale(): number {
-    return this.worldGravityScale
+    return this.worldControls.gravityScale
   }
   /** Scale world gravity live (clamped to `simulationDefaults.gravityScaleRange`). Returns the value used. */
   setGravityScale(scale: number): number {
-    this.assertAlive()
-    const { min, max, default: fallback } = simulationDefaults.gravityScaleRange
-    this.worldGravityScale = Number.isFinite(scale) ? Math.min(max, Math.max(min, scale)) : fallback
-    const simulation = this.session.simulation
-    if (simulation) this.worldGravityScale = simulation.setGravityScale(this.worldGravityScale)
-    return this.worldGravityScale
+    return this.worldControls.setGravityScale(scale)
   }
   /** Whether recover (Y) reset snaps to the nearest road/vía (default on). */
   get recoverToRoadEnabled(): boolean {
-    return this.game.recover.snapToRoad
+    return this.worldControls.recoverToRoadEnabled
   }
   /** Choose between recover (Y) reset on the nearest road/vía (true) or upright in place (false). */
   setRecoverToRoadEnabled(enabled: boolean): void {
-    this.assertAlive()
-    this.game.recover.snapToRoad = enabled
+    this.worldControls.setRecoverToRoadEnabled(enabled)
   }
   /** Factor on the quality tier's shadow bias (1 = tuned default; see `shadowBiasRange`). */
   get shadowBias(): number {

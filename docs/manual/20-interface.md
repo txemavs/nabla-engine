@@ -295,3 +295,22 @@ the explicit CAM/FOV arrangement in `AGENTS.md` for Euskadi-related UI work.
 - [UI conventions](../ui-ux-pattern.md).
 
 See the [host compatibility audit](../host-settings-compatibility.md) for the Euskadi migration, validation and release-pin requirements.
+
+### World controls
+
+[RuntimeWorldControls](../../src/runtime/world-controls.ts) owns the per-instance pending
+gravity value and coordinates recovery policy, sky time and water through narrow scene,
+simulation and recovery dependencies. `GameRuntime` retains `gravityScale`, `setGravityScale`,
+`recoverToRoadEnabled`, `setRecoverToRoadEnabled`, `skyClock`, `setSkyClock`, `waterSettings`,
+`sea` and `setWater`. Hosts need no migration and saved preferences retain their existing keys.
+
+Sky and water remain authored scene state. `setWater` clones inputs; `undefined` removes the
+scene override and returns to the simplified tide. Both frame paths use the same `worldWater`
+calculation, including the current sky clock, without caching sea state. Recovery execution
+remains in shared gameplay; navigation roads and paved areas are queried dynamically.
+Gravity changes apply to the current simulation or wait for the next play session, preserving
+the existing range and nonfinite fallback. The constructor's initial value is normalized by
+the simulation when play begins. Warmup restores its temporary clock override in `finally`;
+reveal starts an authored live clock again so loading time does not advance the intended hour.
+Tests: `test/runtime/world-controls.test.ts`, recovery/sky/gravity tests and
+`test/browser/e2e/world-controls.spec.ts`.

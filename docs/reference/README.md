@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **642 modules; 8257 executable function definitions**.
+Coverage: **643 modules; 8272 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -441,7 +441,7 @@ Coverage: **642 modules; 8257 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 612 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 615 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -536,6 +536,7 @@ Coverage: **642 modules; 8257 executable function definitions**.
 | [src/runtime/weapon-preferences.ts](src/runtime/weapon-preferences.ts.md) | 10 |
 | [src/runtime/weapon-wheel.ts](src/runtime/weapon-wheel.ts.md) | 5 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
+| [src/runtime/world-controls.ts](src/runtime/world-controls.ts.md) | 12 |
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |
 | [src/runtime/xr-actor-hand.ts](src/runtime/xr-actor-hand.ts.md) | 25 |
 | [src/runtime/xr-ar-weapons.ts](src/runtime/xr-ar-weapons.ts.md) | 37 |

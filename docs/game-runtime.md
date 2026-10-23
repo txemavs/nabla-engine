@@ -240,3 +240,15 @@ late-session checks are preserved. Shared-vehicle command confirmation remains i
 game/action path. No settings keys or public signatures change. Tests cover worker waits,
 late completion, concurrent/failing preparation, pause/resume policy, lights, damage and
 independent owners, plus real vehicle placement/warmup/removal through the public facade.
+
+### Topic 6 completion: world controls
+
+`RuntimeWorldControls` coordinates per-instance gravity, recovery policy, sky clock and water.
+The scene remains authoritative for sky/water, and gameplay retains the recovery object and
+execution. Road and paved-area providers stay live. Gravity keeps the constructor value until
+simulation creation, preserves setter clamps and records the simulation's accepted value on
+play and live changes. Desktop and XR still sample water at their original frame positions.
+Warmup temporarily restarts an authored live clock and restores it afterward; reveal restarts
+it again. Fixed clocks, default live time, water cloning/reset and disposal guards are unchanged.
+No public signatures, storage keys or host migrations change. Focused tests cover invalid
+inputs, before/after play, session restart and independent runtimes, including the browser facade.
