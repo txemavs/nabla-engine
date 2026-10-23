@@ -56,9 +56,9 @@ export function createControlsSection(doc: Document): HTMLElement {
   const info = doc.createElement('p')
   info.className = 'settings-note'
   info.textContent =
-    'Las acciones dependen del vehículo y del contexto. Armas, apuntado y menús tienen prioridad. Ratón: clic izquierdo dispara; clic derecho apunta.'
+    t('settings.keys.note')
   const empty = doc.createElement('p')
-  empty.textContent = 'No hay coincidencias.'
+  empty.textContent = t('settings.keys.no-matches')
   empty.hidden = true
   const refresh = () => {
     const selected = contexts[Number(context.value)]?.[1]
@@ -76,14 +76,14 @@ export function createControlsSection(doc: Document): HTMLElement {
       for (const [id, actions] of Object.entries(inputChords))
         rows.push({
           action: id,
-          label: id === 'prone' ? 'Cuerpo a tierra' : 'Salida fuerte / gas completo',
+          label: t(id === 'prone' ? 'input.chord.prone' : 'input.chord.burst'),
           keys: actions
             .map((action) => [...new Set(inputBindings[action].keys.map(keyLabel))].join(' / '))
             .join(' + '),
         })
-    const query = search.value.trim().toLocaleLowerCase('es')
+    const query = search.value.trim().toLocaleLowerCase()
     const matches = rows.filter((row) =>
-      `${row.label} ${row.action} ${row.keys}`.toLocaleLowerCase('es').includes(query),
+      `${row.label} ${row.action} ${row.keys}`.toLocaleLowerCase().includes(query),
     )
     body.replaceChildren(
       ...matches.map((row) => {

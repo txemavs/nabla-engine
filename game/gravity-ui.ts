@@ -45,12 +45,12 @@ function describe(scale: number): string {
   return `×${scale.toFixed(1)} (${(simulationDefaults.gravity * scale).toFixed(1)} m/s²)`
 }
 
-/** «Gravedad» slider in the «Conducción» section (Ajustes → Opciones). */
+/** Gravity slider in Settings → Options → Driving. */
 export function bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void {
   const { min, max } = simulationDefaults.gravityScaleRange
-  const group = menuSection('driving-extras', t('settings.driving'))
+  const group = menuSection('driving-extras', t('settings.recovery-and-physics'))
   const label = document.createElement('label')
-  label.title = 'Multiplica la gravedad del mundo. ×1.0 es la gravedad real (9.81 m/s²).'
+  label.title = t('settings.gravity-hint')
   const input = document.createElement('input')
   input.type = 'range'
   input.id = 'gravity-scale'
@@ -68,7 +68,7 @@ export function bindGravityScaleSlider(runtime: GameRuntime, storage = browserSt
     saveGravityScale(used, storage)
     sync(used)
   })
-  label.append('Gravedad ', input, ' ', output)
+  label.append(t('settings.gravity') + ' ', input, ' ', output)
   group.append(label)
   sync(runtime.gravityScale)
 }

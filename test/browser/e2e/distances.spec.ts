@@ -121,7 +121,7 @@ test('distances section gathers existing and new controls and applies them live'
   expect(result.navGroup).toBe('Pantalla')
   expect(result.adopted).toBe(true)
   expect(result.labels[0]).toContain('Distancia de dibujo del terreno')
-  expect(result.labels.some((label) => label?.startsWith('Niebla'))).toBe(true)
+  expect(result.labels.some((label) => label?.startsWith('Fog'))).toBe(true)
   expect(result.labels.at(-1)).toContain('Distancia de detalle del suelo')
   expect(result.fogOptions).toEqual(['500 m', '1 km', '2 km', '4 km', '8 km', '16 km'])
   expect(result.roadOptions[0]).toBe('Ocultas')

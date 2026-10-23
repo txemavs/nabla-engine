@@ -1,3 +1,4 @@
+import { t } from '@nabla/engine/i18n'
 /** Configuración → Pantalla: «Filtrado anisotrópico» for the asphalt and road markings. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 
@@ -55,7 +56,7 @@ export function bindAnisotropySelect(
     }
   })
   const label = document.createElement('label')
-  label.append('Filtrado anisotrópico ', select)
+  label.append(t('settings.anisotropy') + ' ', select)
   group.append(label)
   apply(resolveAnisotropy(storage))
   return select
@@ -105,7 +106,7 @@ export function bindGroundDetailSelect(
     }
   })
   const label = document.createElement('label')
-  label.append('Distancia de detalle del suelo ', select)
+  label.append(t('settings.ground-detail-distance') + ' ', select)
   group.append(label)
   select.value = String(runtime.setGroundDetailCells(resolveGroundDetail(storage)))
   return select

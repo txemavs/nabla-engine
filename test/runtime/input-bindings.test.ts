@@ -45,8 +45,8 @@ describe('shared action contexts', () => {
         (b) => b.action === 'interact',
       ),
     ).toBe(false)
-    expect(controlsHint({ mode: 'road' }, ['camera', 'stance'])).toContain('V Cambiar cámara')
-    expect(controlsHint({ mode: 'road' }, ['highBeam'])).toContain('C/K Largas')
+    expect(controlsHint({ mode: 'road' }, ['camera', 'stance'])).toContain('V Change camera')
+    expect(controlsHint({ mode: 'road' }, ['highBeam'])).toContain('C/K High / low beam')
     expect(keyboardAction('KeyC', { mode: 'road' })).toBe('highBeam')
     expect(keyboardAction('KeyC', { mode: 'bike' })).toBe('highBeam')
     expect(keyboardAction('KeyC', { mode: 'flight' })).toBe('stance')
@@ -103,7 +103,7 @@ it('routes the actual forklift menu through P without intercepting its J/K hydra
   expect(bindingForKey('KeyK', { mode: 'forklift' })).toBe('forklift.liftDown')
   expect(press('KeyP')).toMatchObject({ handled: true, opened: true })
   expect(open).toHaveBeenCalledOnce()
-  expect(controlsHint({ mode: 'forklift' })).toContain('P Menú del toro')
+  expect(controlsHint({ mode: 'forklift' })).toContain('P Forklift menu')
   expect(controlsFor({ mode: 'forklift' }).some((b) => b.action === 'highBeam')).toBe(false)
   expect(keyboardAction('KeyJ', { mode: 'road' })).toBe('vehicle.menu')
 })

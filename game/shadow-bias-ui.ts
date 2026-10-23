@@ -1,3 +1,4 @@
+import { t } from '@nabla/engine/i18n'
 /**
  * «Sombras: activadas / desactivadas» (live on/off, saved as `nabla.shadowsEnabled`) and
  * «Sombras: corrección de rayas» in Ajustes → Calidad: a live slider on the engine's shadow bias
@@ -74,7 +75,7 @@ export function bindShadowBiasControl(
   bootValue: number | undefined,
   storage = browserStorage(),
 ): void {
-  const group = menuSection('quality-shadows', 'Sombras del sol')
+  const group = menuSection('quality-shadows', t('settings.sun-shadows'))
   // Migrate the old preference once; the runtime persists the canonical light tuning.
   const toggleLabel = document.createElement('label')
   const toggle = document.createElement('input')
@@ -88,12 +89,12 @@ export function bindShadowBiasControl(
     toggle.checked = available && runtime.shadowsEnabled
     toggleText.textContent =
       resolution === undefined
-        ? 'Sombras del sol: recarga la página para actualizar el motor'
+        ? t('settings.shadows.reload')
         : !available
-          ? 'Sombras del sol: desactivadas por el perfil de calidad'
+          ? t('settings.shadows.off-by-profile')
           : runtime.shadowsEnabled
-            ? `Sombras del sol: activadas · ${runtime.sunShadowResolution} px`
-            : 'Sombras del sol: desactivadas'
+            ? t('settings.shadows.on', { px: runtime.sunShadowResolution })
+            : t('settings.shadows.off')
   }
   runtime.setShadowsEnabled(resolveShadowsEnabled(storage))
   try {
@@ -114,9 +115,7 @@ export function bindShadowBiasControl(
   group.append(toggleLabel)
   showToggle()
   const label = document.createElement('label')
-  label.title =
-    'Elimina las rayas finas de las sombras sobre el terreno y los edificios. Más alto: menos rayas, ' +
-    'pero las sombras pueden separarse un poco de su objeto. 100 % es el valor recomendado.'
+  label.title = t('settings.shadow-bias-hint')
   const output = document.createElement('output')
   output.id = 'shadow-bias-label'
   const slider = document.createElement('input')
@@ -128,7 +127,7 @@ export function bindShadowBiasControl(
   const reset = document.createElement('button')
   reset.type = 'button'
   reset.id = 'shadow-bias-reset'
-  reset.textContent = 'Restablecer'
+  reset.textContent = t('settings.reset')
   const sync = () => {
     slider.value = String(Math.round(runtime.shadowBias * 100))
     output.textContent = percent(runtime.shadowBias)
@@ -143,10 +142,9 @@ export function bindShadowBiasControl(
     runtime.setShadowBias(hostShadowBias(bootValue))
     sync()
   })
-  label.append('Sombras: corrección de rayas ', output, slider)
+  label.append(t('settings.shadow-bias') + ' ', output, slider)
   const note = document.createElement('p')
-  note.textContent =
-    'Se aplica al momento. Sube el valor si ves rayas; bájalo si las sombras flotan.'
+  note.textContent = t('settings.shadow-bias-note')
   group.append(label, reset, note)
   sync()
   // If the tabbed settings HUD already exists, keep this section under Calidad.

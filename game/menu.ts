@@ -28,6 +28,10 @@ function menuSections(): HTMLElement {
 
 export function menuSection(id: string, title: string): HTMLFieldSetElement {
   const sections = menuSections()
+  // Several modules may contribute to one section: reuse it instead of creating a twin.
+  const existing = document.getElementById(id)
+  if (existing instanceof HTMLFieldSetElement && existing.classList.contains('menu-section'))
+    return existing
   const group = document.createElement('fieldset')
   group.id = id
   group.className = 'menu-section'

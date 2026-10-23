@@ -50,7 +50,7 @@ test('calibrates a nonstandard wheel in the reusable panel and restores its prof
     s.pad.buttons[4].value = 1
     s.pad.buttons[4].pressed = true
   })
-  await expect(page.locator('legend').filter({ hasText: 'Cambiar cámara · button 4' })).toHaveCount(
+  await expect(page.locator('legend').filter({ hasText: 'Change camera · button 4' })).toHaveCount(
     1,
   )
   const result = await page.evaluate(async (root) => {
@@ -198,7 +198,7 @@ test('the wheel wizard detects direction, tests the result and saves only after 
     process.cwd().replaceAll('\\', '/'),
   )
   await expect(page.getByLabel('Dispositivo USB')).not.toBeVisible()
-  await page.getByRole('button', { name: 'Configurar Volante y pedales', exact: true }).click()
+  await page.getByRole('button', { name: 'Set up Wheel and pedals', exact: true }).click()
   await page.getByLabel('Acelerador y freno', { exact: true }).uncheck()
   await page.getByRole('button', { name: 'Empezar asistente', exact: true }).click()
   await page.getByRole('button', { name: 'Está en reposo', exact: true }).click()
@@ -247,7 +247,7 @@ test('the wheel wizard detects direction, tests the result and saves only after 
   expect(result).toHaveLength(1)
   expect(result[0].target).toBe('steering')
   expect(result[0].invert).toBe(true)
-  await page.getByRole('button', { name: 'Configurar Volante y pedales', exact: true }).click()
+  await page.getByRole('button', { name: 'Set up Wheel and pedals', exact: true }).click()
   await page.getByRole('button', { name: 'Empezar asistente', exact: true }).click()
   await page.getByRole('button', { name: 'Cancelar sin guardar', exact: true }).click()
   const cancelled = await page.evaluate(() => {

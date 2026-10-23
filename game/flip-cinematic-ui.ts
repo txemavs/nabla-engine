@@ -1,6 +1,7 @@
 /** Menu toggle for the post-flip cinematic camera (default on). */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const FLIP_CINEMATIC_STORAGE_KEY = 'nabla.flipCinematic'
 
@@ -38,7 +39,7 @@ export function saveFlipCinematicEnabled(
 
 /** Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip). */
 export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void {
-  const group = menuSection('camera-extras', 'Cámara')
+  const group = menuSection('camera-extras', t('settings.camera'))
   const label = document.createElement('label')
   const box = document.createElement('input')
   box.type = 'checkbox'
@@ -47,7 +48,7 @@ export function bindFlipCinematicToggle(runtime: GameRuntime, storage = browserS
     runtime.setFlipCinematicEnabled(box.checked)
     saveFlipCinematicEnabled(box.checked, storage)
   })
-  label.append(box, ' Accidentes modo cine')
-  label.title = 'Cámara cinematográfica al volcar'
+  label.append(box, ' ' + t('settings.flip-cinematic'))
+  label.title = t('settings.flip-cinematic-hint')
   group.append(label)
 }

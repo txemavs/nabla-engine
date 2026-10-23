@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js'
 import { z } from 'zod'
 import {
   inputActionAvailable,
@@ -7,20 +8,20 @@ import {
 } from '../../config/input-bindings.js'
 
 export const usbAxes = {
-  steering: 'Dirección',
-  throttle: 'Acelerador',
-  reverse: 'Marcha atrás',
-  brake: 'Freno',
-  clutch: 'Embrague',
-  handbrake: 'Freno de mano',
-  pitch: 'Cabeceo',
-  roll: 'Alabeo',
-  yaw: 'Timón',
-  flightThrottle: 'Gases absolutos',
-  lift: 'Ascenso / descenso',
-  hydraulicLift: 'Horquillas',
-  hydraulicTilt: 'Mástil',
-  hydraulicSide: 'Desplazamiento lateral',
+  steering: t('usb.axis.steering'),
+  throttle: t('usb.axis.throttle'),
+  reverse: t('usb.axis.reverse'),
+  brake: t('usb.axis.brake'),
+  clutch: t('usb.axis.clutch'),
+  handbrake: t('usb.axis.handbrake'),
+  pitch: t('usb.axis.pitch'),
+  roll: t('usb.axis.roll'),
+  yaw: t('usb.axis.yaw'),
+  flightThrottle: t('usb.axis.flight-throttle'),
+  lift: t('usb.axis.lift'),
+  hydraulicLift: t('usb.axis.hydraulic-lift'),
+  hydraulicTilt: t('usb.axis.hydraulic-tilt'),
+  hydraulicSide: t('usb.axis.hydraulic-side'),
 } as const
 export type UsbAxis = keyof typeof usbAxes
 export type UsbMode = 'road' | 'flight' | 'drone'
@@ -53,7 +54,7 @@ const bindingSchema = z
       b.center <= b.max &&
       (b.mode !== 'signed' || (b.center > b.min && b.center < b.max)) &&
       (b.kind !== 'hat' || b.hatValue !== undefined),
-    'Recorrido o centro inválido',
+    t('usb.err.range'),
   )
 export type UsbBinding = z.infer<typeof bindingSchema>
 const profileSchema = z
@@ -106,7 +107,7 @@ export function defaultUsbSettings(): UsbSettings {
     activeFlightProfile: 'flight',
     profiles: {
       drone: { name: 'Emisora', bindings: [] },
-      road: { name: 'Conducción', bindings: [] },
+      road: { name: t('usb.profile.road'), bindings: [] },
       flight: { name: 'Vuelo', bindings: [] },
     },
   }
@@ -185,7 +186,7 @@ export class UsbControllers {
       if (raw) this.settings = parseUsbSettings(JSON.parse(raw))
     } catch {
       this.error =
-        'Perfil USB inválido. Se mantiene el original almacenado; importa o guarda uno nuevo.'
+        t('usb.err.profile')
     }
   }
   get snapshot(): UsbSettings {

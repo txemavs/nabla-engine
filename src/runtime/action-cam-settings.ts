@@ -1,4 +1,5 @@
 import { actionCamTuning } from '../config/gameplay-tuning.js'
+import { t } from '../i18n/index.js'
 
 export type ActionCamSettings = Omit<typeof actionCamTuning, 'enabled'>
 export type ActionCamKey = keyof ActionCamSettings
@@ -15,8 +16,8 @@ export const actionCamControls: Array<{
 }> = [
   {
     key: 'strideMetres',
-    label: 'Longitud del ciclo · mayor = más lento',
-    group: 'Ritmo y movimiento',
+    label: t('settings.action-cam.stride'),
+    group: t('settings.action-cam.group.rhythm'),
     min: 0.8,
     max: 6,
     step: 0.05,
@@ -25,8 +26,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'referenceSpeed',
-    label: 'Velocidad para intensidad 100 %',
-    group: 'Ritmo y movimiento',
+    label: t('settings.action-cam.reference-speed'),
+    group: t('settings.action-cam.group.rhythm'),
     min: 1,
     max: 12,
     step: 0.1,
@@ -35,8 +36,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'maxSpeed',
-    label: 'Límite de velocidad del efecto',
-    group: 'Ritmo y movimiento',
+    label: t('settings.action-cam.max-speed'),
+    group: t('settings.action-cam.group.rhythm'),
     min: 1,
     max: 16,
     step: 0.1,
@@ -45,8 +46,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'bobMetres',
-    label: 'Movimiento vertical',
-    group: 'Ritmo y movimiento',
+    label: t('settings.action-cam.bob'),
+    group: t('settings.action-cam.group.rhythm'),
     min: 0,
     max: 8,
     step: 0.05,
@@ -55,8 +56,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'swayMetres',
-    label: 'Movimiento lateral',
-    group: 'Ritmo y movimiento',
+    label: t('settings.action-cam.sway'),
+    group: t('settings.action-cam.group.rhythm'),
     min: 0,
     max: 5,
     step: 0.05,
@@ -65,8 +66,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'stepRollRadians',
-    label: 'Balanceo por pasos',
-    group: 'Ángulos',
+    label: t('settings.action-cam.step-roll'),
+    group: t('settings.action-cam.group.angles'),
     min: 0,
     max: 5,
     step: 0.05,
@@ -75,8 +76,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'stepPitchRadians',
-    label: 'Cabeceo por pasos',
-    group: 'Ángulos',
+    label: t('settings.action-cam.step-pitch'),
+    group: t('settings.action-cam.group.angles'),
     min: 0,
     max: 5,
     step: 0.05,
@@ -85,8 +86,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'strafeRollRadians',
-    label: 'Inclinación al desplazarse de lado',
-    group: 'Ángulos',
+    label: t('settings.action-cam.strafe-roll'),
+    group: t('settings.action-cam.group.angles'),
     min: 0,
     max: 8,
     step: 0.05,
@@ -95,8 +96,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'maxTurnRollRadians',
-    label: 'Inclinación máxima en giros',
-    group: 'Ángulos',
+    label: t('settings.action-cam.max-turn-roll'),
+    group: t('settings.action-cam.group.angles'),
     min: 0,
     max: 12,
     step: 0.05,
@@ -105,8 +106,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'turnLeanSeconds',
-    label: 'Sensibilidad al giro',
-    group: 'Respuesta y apuntado',
+    label: t('settings.action-cam.turn-lean'),
+    group: t('settings.action-cam.group.response-aiming'),
     min: 0,
     max: 0.15,
     step: 0.005,
@@ -115,8 +116,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'response',
-    label: 'Rapidez de respuesta · menor = más suave',
-    group: 'Respuesta y apuntado',
+    label: t('settings.action-cam.response'),
+    group: t('settings.action-cam.group.response-aiming'),
     min: 1,
     max: 20,
     step: 0.1,
@@ -125,8 +126,8 @@ export const actionCamControls: Array<{
   },
   {
     key: 'aimedScale',
-    label: 'Intensidad al apuntar',
-    group: 'Respuesta y apuntado',
+    label: t('settings.action-cam.aimed-scale'),
+    group: t('settings.action-cam.group.response-aiming'),
     min: 0,
     max: 100,
     step: 1,

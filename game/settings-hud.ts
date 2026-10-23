@@ -42,6 +42,7 @@ import {
   type PlanetSettingsPanel,
 } from '../src/runtime/planet-settings-panel.js'
 import { t } from '@nabla/engine/i18n'
+import { sectionMerges } from './settings-nav.js'
 
 export type SettingsHud = {
   open: () => void
@@ -134,7 +135,9 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-sound': t('settings.sound'),
   'settings-planet-air': t('settings.weather'),
   'quality-shadows': t('settings.sun-shadows'),
-  'camera-extras': t('settings.options'),
+  'camera-extras': t('settings.general'),
+  'settings-effects': t('settings.smoke'),
+  'driving-extras': t('settings.recovery-and-physics'),
   'settings-management': t('settings.management'),
   'settings-camera-fov': t('settings.field-of-view'),
   'settings-weapon': t('settings.weapon-wheel'),
@@ -953,7 +956,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       slider.step = input.step
       slider.value = input.value
       slider.setAttribute('aria-label', title)
-      input.setAttribute('aria-label', title + ' valor')
+      input.setAttribute('aria-label', t('settings.value-suffix', { name: title }))
       input.style.width = '90px'
       slider.addEventListener('input', () => {
         input.value = slider.value
@@ -1336,7 +1339,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         input.min = position ? '-500' : '-180'
         input.max = position ? '500' : '180'
         input.step = '0.1'
-        input.setAttribute('aria-label', `${title}${input === number ? ' valor' : ''}`)
+        input.setAttribute('aria-label', input === number ? t('settings.value-suffix', { name: title }) : title)
         input.addEventListener('input', () => {
           if (!Number.isFinite(input.valueAsNumber)) return
           const values = runtime.weaponPoseTuning
@@ -1454,7 +1457,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     section.append(actionCam)
     place(section)
   }
-  const effects = fieldset('settings-effects', t('settings.effects'))
+  const effects = fieldset('settings-effects', t('settings.smoke'))
   for (const id of ['quality-smoke']) {
     const row = rowOf(id)
     if (row) effects.append(row)
@@ -1691,6 +1694,24 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         section.dataset.sectionTitle = legend?.textContent ?? section.id
         layout.body.append(section)
       }
+      // Same-title sections in one group are one section: fold the later ones into the first.
+      const groupOf = (id: string) =>
+        navigationGroups.find((group) => group.tab === tab && group.sections.includes(id))?.id
+      const present = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')]
+      for (const [keep, ids] of sectionMerges(
+        present.map((el) => ({
+          id: el.id,
+          title: el.dataset.sectionTitle ?? el.id,
+          group: groupOf(el.id),
+        })),
+      )) {
+        const target = present.find((el) => el.id === keep)!
+        for (const id of ids)
+          for (const twin of present.filter((el) => el.id === id && el !== target)) {
+            for (const child of [...twin.children]) if (child.tagName !== 'LEGEND') target.append(child)
+            twin.remove()
+          }
+      }
       const ordered = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')].sort(
         (a, b) => rankOf(a) - rankOf(b),
       )
@@ -1742,6 +1763,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
           }
           group.append(button)
         } else items.push(button)
+      }
+      // A group holding a single section is not a folder: show that section under the group's name.
+      for (const [i, item] of items.entries()) {
+        if (!(item instanceof HTMLDetailsElement)) continue
+        const only = item.querySelectorAll<HTMLButtonElement>(':scope > button')
+        if (only.length !== 1) continue
+        only[0].textContent = item.querySelector('summary')?.textContent ?? only[0].textContent
+        items[i] = only[0]
       }
       // The mobile body may be nested in a group about to be replaced.
       pane.append(layout.body)

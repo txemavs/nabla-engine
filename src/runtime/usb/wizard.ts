@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js'
 import {
   newUsbBinding,
   normalizeUsbAxis,
@@ -18,29 +19,29 @@ export interface UsbWizardStep {
 export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>): UsbWizardStep[] {
   const camera: UsbWizardStep = {
     target: 'camera',
-    label: 'Cambiar cámara',
-    positive: 'Pulsa el botón que quieras usar para cambiar de cámara.',
+    label: t('usb.step.camera'),
+    positive: t('usb.step.camera.press'),
     button: true,
   }
   if (kind === 'wheel')
     return [
       {
         target: 'steering',
-        label: 'Volante',
-        positive: 'Gira el volante a la DERECHA hasta el tope y mantenlo.',
-        negative: 'Gíralo a la IZQUIERDA hasta el tope y mantenlo.',
+        label: t('usb.step.wheel'),
+        positive: t('usb.step.wheel.pos'),
+        negative: t('usb.step.wheel.neg'),
       },
       ...(parts.has('pedals')
         ? [
             {
               target: 'throttle' as const,
-              label: 'Acelerador',
-              positive: 'Pisa el acelerador hasta el fondo y mantenlo.',
+              label: t('usb.axis.throttle'),
+              positive: t('usb.step.throttle.pos'),
             },
             {
               target: 'brake' as const,
-              label: 'Freno',
-              positive: 'Pisa el freno hasta el fondo y mantenlo.',
+              label: t('usb.axis.brake'),
+              positive: t('usb.step.brake.pos'),
             },
           ]
         : []),
@@ -48,8 +49,8 @@ export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>):
         ? [
             {
               target: 'clutch' as const,
-              label: 'Embrague',
-              positive: 'Pisa el embrague hasta el fondo y mantenlo.',
+              label: t('usb.axis.clutch'),
+              positive: t('usb.step.clutch.pos'),
             },
           ]
         : []),
@@ -57,14 +58,14 @@ export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>):
         ? [
             {
               target: 'gear.up' as const,
-              label: 'Subir marcha',
-              positive: 'Pulsa la leva o botón para subir marcha.',
+              label: t('usb.step.gear-up'),
+              positive: t('usb.step.gear-up.pos'),
               button: true,
             },
             {
               target: 'gear.down' as const,
-              label: 'Bajar marcha',
-              positive: 'Pulsa la leva o botón para bajar marcha.',
+              label: t('usb.step.gear-down'),
+              positive: t('usb.step.gear-down.pos'),
               button: true,
             },
           ]
@@ -73,8 +74,8 @@ export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>):
         ? [
             {
               target: 'handbrake' as const,
-              label: 'Freno de mano',
-              positive: 'Acciona el freno de mano por completo y mantenlo.',
+              label: t('usb.axis.handbrake'),
+              positive: t('usb.step.handbrake.pos'),
             },
           ]
         : []),
@@ -83,23 +84,23 @@ export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>):
   return [
     {
       target: 'roll',
-      label: 'Alabeo',
-      positive: 'Mueve el mando hacia la DERECHA hasta el tope y mantenlo.',
-      negative: 'Muévelo hacia la IZQUIERDA hasta el tope y mantenlo.',
+      label: t('usb.axis.roll'),
+      positive: t('usb.step.roll.pos'),
+      negative: t('usb.step.roll.neg'),
     },
     {
       target: 'pitch',
-      label: 'Cabeceo',
-      positive: 'Empuja el mando hacia DELANTE hasta el tope y mantenlo.',
-      negative: 'Tira del mando hacia ATRÁS hasta el tope y mantenlo.',
+      label: t('usb.axis.pitch'),
+      positive: t('usb.step.pitch.pos'),
+      negative: t('usb.step.pitch.neg'),
     },
     ...(kind === 'radio' || parts.has('yaw')
       ? [
           {
             target: 'yaw' as const,
-            label: 'Timón / giro',
-            positive: 'Acciona el giro a la DERECHA hasta el tope y mantenlo.',
-            negative: 'Acciona el giro a la IZQUIERDA hasta el tope y mantenlo.',
+            label: t('usb.step.yaw'),
+            positive: t('usb.step.yaw.pos'),
+            negative: t('usb.step.yaw.neg'),
           },
         ]
       : []),
@@ -107,8 +108,8 @@ export function usbWizardSteps(kind: UsbWizardKind, parts: ReadonlySet<string>):
       ? [
           {
             target: 'flightThrottle' as const,
-            label: 'Gases',
-            positive: 'Lleva la palanca de gases al MÁXIMO y mantenla.',
+            label: t('usb.step.throttle-lever'),
+            positive: t('usb.step.throttle-lever.pos'),
           },
         ]
       : []),
@@ -169,16 +170,16 @@ export class UsbWizard {
   }
   get instruction(): string {
     if (this.stage === 'review')
-      return 'Prueba cada control. Si todo responde como esperas, guarda el perfil.'
+      return t('usb.step.review')
     if (this.stage === 'rest')
       return this.step.negative
-        ? 'Deja este control centrado y los demás en reposo.'
-        : 'Deja este control suelto, o los gases al mínimo. Los demás controles en reposo.'
+        ? t('usb.step.rest-centred')
+        : t('usb.step.rest-released')
     if (this.stage === 'positive') return this.step.positive
     if (this.stage === 'negative') return this.step.negative!
     return this.step.negative
-      ? 'Vuelve al centro y suelta el control.'
-      : 'Suelta el control o devuelve los gases al mínimo.'
+      ? t('usb.step.return-centre')
+      : t('usb.step.return-release')
   }
   sample(pads: readonly UsbPad[]): void {
     this.pads = pads.filter((p) => p.connected)
@@ -187,7 +188,7 @@ export class UsbWizard {
       const p = this.device()
       if (!p) {
         this.message =
-          'El dispositivo se ha desconectado o no se puede distinguir. Reconéctalo y repite este paso.'
+          t('usb.err.lost')
         return
       }
       const v = this.value
@@ -246,7 +247,7 @@ export class UsbWizard {
     if (this.stage === 'rest') {
       if (!this.pads.length)
         throw new Error(
-          'No hay dispositivos conectados. Pulsa un botón de tu mando para detectarlo.',
+          t('usb.err.no-devices'),
         )
       this.baseline = this.pads.map((p) => ({
         key: usbDeviceKey(p),
@@ -258,7 +259,7 @@ export class UsbWizard {
       return
     }
     if (!this.detected || !this.device())
-      throw new Error('Mantén el control en el extremo unos instantes para detectarlo.')
+      throw new Error(t('usb.err.hold'))
     const d = this.detected
     if (this.stage === 'positive') {
       if (Math.abs(d.positive - d.rest) < 0.2)
@@ -275,7 +276,7 @@ export class UsbWizard {
     if (Math.abs(this.value - d.rest) > Math.max(0.05, (d.max - d.min) * 0.12))
       throw new Error('Devuelve el control al reposo antes de continuar.')
     const binding = this.build()
-    if (!binding) throw new Error('Calibración incompleta')
+    if (!binding) throw new Error(t('usb.err.incomplete'))
     if (
       this.bindings.some(
         (b) =>
@@ -287,7 +288,7 @@ export class UsbWizard {
       )
     )
       throw new Error(
-        'Ese eje ya está asignado a otro control. Repite y mueve el control correcto.',
+        t('usb.err.taken'),
       )
     this.bindings.push(binding)
     this.advance()

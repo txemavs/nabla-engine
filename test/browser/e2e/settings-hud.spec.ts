@@ -426,7 +426,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   ).toBe(6)
   await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
   // Sounds: the engine volume follows the mix; a motorcycle has no reversing alarm.
-  await page.getByRole('button', { name: 'Sonido', exact: true }).click()
+  await page.getByRole('button', { name: 'Sound', exact: true }).click()
   const engineVolume = page.getByRole('slider', { name: 'Volumen del motor', exact: true })
   await expect(engineVolume).toHaveValue('50')
   await engineVolume.fill('80')

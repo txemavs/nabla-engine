@@ -59,35 +59,35 @@
       <summary>Menú</summary>
       <fieldset class="menu-section" id="display-quality-section">
         <legend>Calidad</legend>
-        <label
+        <label data-i18n="settings.quality-profile"
           >Perfil
           <select id="display-quality">
-            <option value="custom">Predeterminada</option>
-            <option value="minimal">Mínima</option>
-            <option value="mobile">Móvil</option>
-            <option value="low">Baja</option>
-            <option value="balanced">Equilibrada</option>
-            <option value="high">Alta</option>
-            <option value="ultra">Ultra</option>
+            <option data-i18n="settings.quality.custom" value="custom">Predeterminada</option>
+            <option data-i18n="settings.quality.minimal" value="minimal">Mínima</option>
+            <option data-i18n="settings.quality.mobile" value="mobile">Móvil</option>
+            <option data-i18n="settings.quality.low" value="low">Baja</option>
+            <option data-i18n="settings.quality.balanced" value="balanced">Equilibrada</option>
+            <option data-i18n="settings.quality.high" value="high">Alta</option>
+            <option data-i18n="settings.quality.ultra" value="ultra">Ultra</option>
           </select>
         </label>
-        <button id="display-apply-quality" type="button">Aplicar calidad y reiniciar demo</button>
-        <p>Sincronización: automática del navegador.</p>
+        <button data-i18n="settings.quality-apply" id="display-apply-quality" type="button">Aplicar calidad y reiniciar demo</button>
+        <p data-i18n="settings.vsync-note">Sincronización: automática del navegador.</p>
       </fieldset>
       <fieldset class="menu-section" id="display-performance">
-        <legend>Rendimiento</legend>
-        <label
+        <legend data-i18n="settings.performance">Rendimiento</legend>
+        <label data-i18n="settings.fps-limit"
           >Límite de FPS (0 = automático)
           <input id="display-fps" type="number" min="0" max="360" step="1" value="0" />
         </label>
-        <label
+        <label data-i18n="settings.resolution-scale"
           >Escala de resolución <span id="display-scale-label">80% del perfil</span>
           <input id="display-scale" type="range" min="25" max="200" step="5" value="80" />
         </label>
-        <label class="inline"
+        <label data-i18n="settings.scale-auto" class="inline"
           ><input id="display-scale-auto" type="checkbox" /> Escala automática (50–100%)</label
         >
-        <p>FPS y escala se aplican durante la partida.</p>
+        <p data-i18n="settings.performance-note">FPS y escala se aplican durante la partida.</p>
       </fieldset>
       <div id="menu-sections"></div>
     </details>

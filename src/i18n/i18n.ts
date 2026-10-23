@@ -99,3 +99,19 @@ export function catalogGaps(set: Catalogs): string[] {
   }
   return gaps
 }
+
+/**
+ * Translates static markup: every element under `root` with `data-i18n="key"` gets its first
+ * non-blank text node replaced by `t(key)`, keeping surrounding whitespace and child elements.
+ */
+export function applyI18nAttributes(root: ParentNode | undefined = globalThis.document): void {
+  if (!root) return
+  for (const el of root.querySelectorAll<HTMLElement>('[data-i18n]')) {
+    const key = el.dataset.i18n
+    if (!key) continue
+    const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent!.trim())
+    if (!node) continue
+    const text = node.textContent!
+    node.textContent = text.match(/^\s*/)![0] + t(key) + text.match(/\s*$/)![0]
+  }
+}

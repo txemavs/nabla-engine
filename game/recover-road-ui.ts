@@ -38,9 +38,9 @@ export function saveRecoverToRoadEnabled(
   }
 }
 
-/** Checkbox in its own «Conducción» section (shown under Ajustes → Opciones). */
+/** Checkbox in Settings → Options → Driving (shares the section with gravity). */
 export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void {
-  const group = menuSection('driving-extras', t('settings.driving'))
+  const group = menuSection('driving-extras', t('settings.recovery-and-physics'))
   const label = document.createElement('label')
   const key = inputBindings.recover.keys.map(keyLabel).join(' / ')
   label.title = t('settings.recover-road.title', { key })
