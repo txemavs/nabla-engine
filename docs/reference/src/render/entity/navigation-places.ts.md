@@ -142,11 +142,95 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `nearestLocality`
 - `nearestStreet`
 
+## buildRoadIndex
+
+[Implementation, line 135](../../../../../src/render/entity/navigation-places.ts#L135)
+
+Roads bucketed by padded bounds, so a query only touches roads near the pose.
+
+```ts
+buildRoadIndex(roads: NavigationRoad[], cell: number): RoadIndex
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Map`
+- `Math.floor`
+- `Math.max`
+- `Number.isFinite`
+- `bucket.push`
+- `grid.get`
+- `grid.set`
+- `order.set`
+- `wide.push`
+
+## sameList
+
+[Implementation, line 162](../../../../../src/render/entity/navigation-places.ts#L162)
+
+```ts
+sameList(a: readonly T[], b: readonly T[]): boolean
+```
+
+## indexedStreet
+
+[Implementation, line 169](../../../../../src/render/entity/navigation-places.ts#L169)
+
+```ts
+indexedStreet(index: RoadIndex, x: number, z: number): string | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.floor`
+- `[...near, ...index.wide].sort`
+- `[...near, ...index.wide].sort((a, b) => order.get(a)! - order.get(b)!).forEach`
+- `index.grid.get`
+- `near.forEach`
+
+## indexedStreet.test
+
+[Implementation, line 171](../../../../../src/render/entity/navigation-places.ts#L171)
+
+```ts
+test(road: NavigationRoad): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.abs`
+- `Math.max`
+- `polylineDistance`
+
+## indexedStreet.callback@188
+
+[Implementation, line 188](../../../../../src/render/entity/navigation-places.ts#L188)
+
+```ts
+callback@188(a, b): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `order.get`
+
+## NavigationPlaceLookup.constructor
+
+[Implementation, line 208](../../../../../src/render/entity/navigation-places.ts#L208)
+
+Coalesced HUD lookup. Queries only after the pose moved `minMove` metres (or `refreshMs`
+elapsed), and resolves streets through a spatial grid instead of scanning every road.
+
+```ts
+constructor(options: NavigationPlaceLookupOptions = {}): instance
+```
+
 ## NavigationPlaceLookup.request
 
-[Implementation, line 117](../../../../../src/render/entity/navigation-places.ts#L117)
+[Implementation, line 214](../../../../../src/render/entity/navigation-places.ts#L214)
 
-Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
+Coalesced HUD lookup. Queries only after the pose moved `minMove` metres (or `refreshMs`
+elapsed), and resolves streets through a spatial grid instead of scanning every road.
 
 ```ts
 request(position: readonly number[], apply: (city: string, street: string) => void): void
@@ -154,11 +238,12 @@ request(position: readonly number[], apply: (city: string, street: string) => vo
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.hypot`
 - `performance.now`
 
 ## NavigationPlaceLookup.request.yieldTask
 
-[Implementation, line 125](../../../../../src/render/entity/navigation-places.ts#L125)
+[Implementation, line 230](../../../../../src/render/entity/navigation-places.ts#L230)
 
 ```ts
 yieldTask(): inferred by TypeScript; see implementation
@@ -168,54 +253,54 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Promise`
 
-## NavigationPlaceLookup.request.yieldTask.callback@125
+## NavigationPlaceLookup.request.yieldTask.callback@230
 
-[Implementation, line 125](../../../../../src/render/entity/navigation-places.ts#L125)
+[Implementation, line 230](../../../../../src/render/entity/navigation-places.ts#L230)
 
 ```ts
-callback@125(resolve): inferred by TypeScript; see implementation
+callback@230(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `setTimeout`
 
-## NavigationPlaceLookup.request.callback@126
+## NavigationPlaceLookup.request.callback@231
 
-[Implementation, line 126](../../../../../src/render/entity/navigation-places.ts#L126)
+[Implementation, line 231](../../../../../src/render/entity/navigation-places.ts#L231)
 
 ```ts
-callback@126(): inferred by TypeScript; see implementation
+callback@231(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.abs`
+- `Array.from`
 - `Math.hypot`
-- `Math.max`
-- `Math.min`
 - `apply`
+- `buildRoadIndex`
+- `indexedStreet`
 - `performance.now`
 - `places`
 - `roads`
-- `segmentDistance`
+- `sameList`
 - `t`
 - `yieldTask`
 
-## NavigationPlaceLookup.request.callback@182
+## NavigationPlaceLookup.request.callback@259
 
-[Implementation, line 182](../../../../../src/render/entity/navigation-places.ts#L182)
+[Implementation, line 259](../../../../../src/render/entity/navigation-places.ts#L259)
 
 ```ts
-callback@182(): inferred by TypeScript; see implementation
+callback@259(): inferred by TypeScript; see implementation
 ```
 
-## NavigationPlaceLookup.request.callback@185
+## NavigationPlaceLookup.request.callback@262
 
-[Implementation, line 185](../../../../../src/render/entity/navigation-places.ts#L185)
+[Implementation, line 262](../../../../../src/render/entity/navigation-places.ts#L262)
 
 ```ts
-callback@185(): inferred by TypeScript; see implementation
+callback@262(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -224,9 +309,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## NavigationPlaceLookup.reset
 
-[Implementation, line 192](../../../../../src/render/entity/navigation-places.ts#L192)
+[Implementation, line 269](../../../../../src/render/entity/navigation-places.ts#L269)
 
-Coalesced HUD lookup. Work yields between small batches instead of blocking a render frame.
+Coalesced HUD lookup. Queries only after the pose moved `minMove` metres (or `refreshMs`
+elapsed), and resolves streets through a spatial grid instead of scanning every road.
 
 ```ts
 reset(): void
