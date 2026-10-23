@@ -1,4 +1,12 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+
+/** Expand every section group of the settings tree, so a grouped section's button can be clicked. */
+async function openNavGroups(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    for (const group of document.querySelectorAll<HTMLDetailsElement>('.settings-nav-group'))
+      group.open = true
+  })
+}
 
 /** The Ajustes window places every menu section in its tab, including sections bound later. */
 test('full-screen settings preserves controls, keyboard catalog and late terrain sections', async ({
@@ -35,15 +43,15 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       return box
     }
     // Sections bound before the HUD, as drive.ts / terrain-main.ts do.
-    check(menuSection('terrain-source', 'Terreno'), 'source')
-    check(menuSection('terrain-position', 'Posición'), 'position')
-    check(menuSection('camera-extras', 'Cámara'), 'flip')
-    check(menuSection('driving-extras', 'Conducción'), 'recover-to-road')
+    check(menuSection('terrain-source', 'Terrain'), 'source')
+    check(menuSection('terrain-position', 'Position'), 'position')
+    check(menuSection('camera-extras', 'Camera'), 'flip')
+    check(menuSection('driving-extras', 'Driving'), 'recover-to-road')
     check(menuSection('road-style', 'Asfalto'), 'asphalt')
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
-    check(menuSection('scene-vehicles', 'Vehículos'), 'vehicles')
+    check(menuSection('scene-vehicles', 'Vehicles'), 'vehicles')
     // Bound by exhaust-ui.ts in the game; rows carry data-exhaust-group.
-    const exhaust = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
+    const exhaust = menuSection('settings-truck-exhaust', 'Vehicle · exhaust and smoke')
     const exhaustRow = document.createElement('label')
     exhaustRow.dataset.exhaustGroup = 'position'
     exhaustRow.textContent = 'Escape posición'
@@ -202,7 +210,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
         .map((tab) => tab.textContent)
     const before = tabs()
     // The terrain game binds the layer list after the HUD mounts.
-    const layers = menuSection('terrain-layers', 'Capas')
+    const layers = menuSection('terrain-layers', 'Layers')
     for (const id of ['road', 'buildings', 'photo', 'places']) {
       check(layers, `layer-${id}`).dataset.layer = id
     }
@@ -250,7 +258,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     }
   }, process.cwd())
 
-  const visible = ['Mundo', 'Configuración', 'Objetos', 'Desarrollo']
+  const visible = ['Main', 'World', 'Settings', 'Development']
   expect(result.before).toEqual(visible)
   expect(result.actionCam).toBe(false)
   expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
@@ -259,7 +267,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(result.actionCamPane).toBe('settings-pane-options')
   expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
   expect(result.smoke).toBe(false)
-  expect(result.smokePane).toBe('settings-pane-options')
+  expect(result.smokePane).toBe('settings-pane-planet')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
   expect(result.weaponOutputs).toEqual(['-33.00 mm', '0.70°'])
@@ -282,70 +290,83 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'driving-extras',
       'settings-controls',
       'display-quality-section',
-      'settings-effects',
-      // Rendering quality and the muzzle flash live in Configuración (Pantalla, Efectos).
+      // Rendering quality lives in Settings › Simulation; the effects switches in World › View › Options.
       'quality-shadows',
-      'settings-muzzle-flash',
     ]),
   )
+  expect(result.planet).toEqual(expect.arrayContaining(['settings-effects', 'terrain-source']))
   expect(result.planet).not.toContain('quality-shadows')
-  expect(result.dev).not.toContain('settings-muzzle-flash')
+  expect(result.options).not.toContain('settings-muzzle-flash')
   expect(result.dev).toEqual(
     expect.arrayContaining([
       'settings-config-planet',
-      'terrain-source',
       'settings-options-sidearm',
       'settings-weapon-poses',
+      'settings-muzzle-flash',
     ]),
   )
   expect(result.places).toBe('settings-pane-planet')
   expect(result.placesGroup).toBe('terrain-layers')
   expect(result.road).toBe('settings-pane-planet')
-  expect(result.layersTitle).toBe('Suelo')
-  expect(result.asphaltTitle).toBe('Contraste del asfalto')
+  expect(result.layersTitle).toBe('Land')
+  expect(result.asphaltTitle).toBe('Asphalt contrast')
   expect(result.copy).toBe('settings-pane-dev')
   expect(result.configText).toContain('cloudAmount=0.35')
   expect(result.planetHasCopy).toBe(false)
   expect(result.sky).toBe('settings-pane-planet')
   expect(result.clouds).toBe('settings-layer-air')
-  expect(result.flare).toBe('settings-layer-air')
-  expect(result.vehicles).toBe('settings-pane-objects')
+  expect(result.flare).toBe('settings-lens-flare')
+  expect(result.vehicles).toBe('settings-pane-planet')
   await page.locator('#settings-toggle').click()
   await expect(page.locator('.settings-header strong')).toHaveText('EUSKADI.ONLINE')
   await expect(page.locator('#settings-toggle')).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Volver al juego' })).toBeVisible()
-  await page.getByRole('tab', { name: 'Desarrollo' }).click()
+  await expect(page.getByRole('button', { name: 'Back to the game' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Development' }).click()
   const branch = page.locator('#settings-pane-dev .settings-nav-group')
   await expect(branch).toHaveAttribute('open', '')
   const indent = await branch
-    .getByRole('button', { name: 'Apuntado', exact: true })
+    .getByRole('button', { name: 'Aiming', exact: true })
     .evaluate((el) => getComputedStyle(el).marginLeft)
-  expect(parseFloat(indent)).toBeGreaterThanOrEqual(20)
-  await branch.getByRole('button', { name: 'Apuntado', exact: true }).click()
+  // Nested sections sit indented under their group by the stylesheet's nested-button margin
+  // (src/ui/styles/settings.css: 14px since the compact one-stylesheet UI).
+  expect(parseFloat(indent)).toBeGreaterThanOrEqual(14)
+  await branch.getByRole('button', { name: 'Aiming', exact: true }).click()
   await expect(page.locator('#sidearm-aim-height')).toBeVisible()
-  await page.getByRole('tab', { name: 'Configuración', exact: true }).click()
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click()
   await expect(page.locator('.settings-footer button')).toHaveCount(0)
   await expect(page.locator('#settings-defaults')).toHaveCount(0)
+  // Settings › Camera is a group: open it to reach its Action Cam section.
+  await page
+    .locator('#settings-pane-options .settings-nav-group', {
+      has: page.locator('summary', { hasText: /^Camera$/ }),
+    })
+    .evaluate((group) => ((group as HTMLDetailsElement).open = true))
   await page.getByRole('button', { name: 'Action Cam', exact: true }).click()
-  await page.locator('#camera-action-cam-settings').getByText('Ángulos', { exact: true }).click()
+  await page.locator('#camera-action-cam-settings').getByText('Angles', { exact: true }).click()
   await expect(page.locator('#action-cam-stepRollRadians')).toBeVisible()
   await expect(
     page.locator(
       '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
     ),
   ).toHaveCount(1)
-  await page.getByRole('button', { name: 'Gestión', exact: true }).click()
+  await page.getByRole('button', { name: 'Settings management', exact: true }).click()
   await expect(
-    page.getByRole('button', { name: 'Guardar todos los ajustes en JSON', exact: true }),
+    page.getByRole('button', { name: 'Save all settings as JSON', exact: true }),
   ).toBeVisible()
-  await page.getByRole('button', { name: 'Teclas', exact: true }).click()
-  await page.getByRole('searchbox', { name: 'Buscar teclas' }).fill('forklift')
+  // Keys sit in the Settings › Controls group.
+  await page
+    .locator('#settings-pane-options .settings-nav-group', {
+      has: page.locator('summary', { hasText: /^Controls$/ }),
+    })
+    .evaluate((group) => ((group as HTMLDetailsElement).open = true))
+  await page.getByRole('button', { name: 'Keys', exact: true }).click()
+  await page.getByRole('searchbox', { name: 'Search keys' }).fill('forklift')
   await expect(page.locator('.settings-key-table tbody tr')).toHaveCount(7)
-  await expect(page.locator('.settings-key-table')).toContainText('Subir horquillas')
-  await page.getByRole('tab', { name: 'Mundo', exact: true }).click()
-  await page.getByRole('button', { name: 'Mapa', exact: true }).click()
+  await expect(page.locator('.settings-key-table')).toContainText('Raise forks')
+  await page.getByRole('tab', { name: 'World', exact: true }).click()
+  await page.getByRole('button', { name: 'Map', exact: true }).click()
   await expect(page.locator('.settings-map-tile')).toHaveCount(2)
-  await expect(page.locator('.settings-map-legend')).toContainText('Pedida: 1')
+  await expect(page.locator('.settings-map-legend')).toContainText('Requested: 1')
   const layout = await page.locator('#settings-window').boundingBox()
   expect(layout?.width).toBe(1440)
   expect(layout?.height).toBe(960)
@@ -366,7 +387,13 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(
     await page.locator('#settings-map').evaluate((el) => getComputedStyle(el, '::before').display),
   ).toBe('none')
-  await page.getByRole('button', { name: 'Aire', exact: true }).click()
+  // World › View › Atmosphere (the sky layer section).
+  await page
+    .locator('#settings-pane-planet .settings-nav-group', {
+      has: page.locator('summary', { hasText: /^View$/ }),
+    })
+    .evaluate((group) => ((group as HTMLDetailsElement).open = true))
+  await page.getByRole('button', { name: 'Atmosphere', exact: true }).click()
   expect(
     await mobileBody.evaluate((el) => el.previousElementSibling?.getAttribute('data-section')),
   ).toBe('settings-layer-air')
@@ -383,50 +410,62 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     .poll(() => mobileBody.evaluate((el) => el.parentElement?.id))
     .toBe('settings-pane-planet')
   await expect(page.locator('#ps-sun')).toBeVisible()
-  await page.getByRole('button', { name: 'Señales de tráfico', exact: true }).click()
-  const count = page.getByRole('spinbutton', { name: 'Cantidad máxima valor', exact: true })
+  // Traffic signs is a member of the flat World › View › Options section.
+  await page
+    .locator('#settings-pane-planet')
+    .getByRole('button', { name: 'Options', exact: true })
+    .click()
+  const count = page.getByRole('spinbutton', { name: 'Maximum count value', exact: true })
   await expect(count).toBeEnabled()
   await count.fill('75')
   await count.press('Enter')
   await page
-    .getByRole('spinbutton', { name: 'Distancia alrededor del jugador (m) valor', exact: true })
+    .getByRole('spinbutton', { name: 'Distance around the player (m) value', exact: true })
     .fill('120')
-  await page
-    .getByRole('spinbutton', { name: 'Distancia de física (m) valor', exact: true })
-    .fill('20')
-  await page.getByText('Colisiones e impactos de señalización', { exact: true }).click()
+  await page.getByRole('spinbutton', { name: 'Physics distance (m) value', exact: true }).fill('20')
+  await page.getByText('Signage collisions and impacts', { exact: true }).click()
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('euskadi.irun-signs')!)),
   ).toMatchObject({ limit: 75, radius: 120, physicsRadius: 20 })
   expect(await page.evaluate(() => document.documentElement.dataset.signPhysicsRadius)).toBe('20')
-  await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
-  await page.getByRole('button', { name: 'Luces', exact: true }).click()
+  // Main › current vehicle (titled with its name) holds the occupied vehicle's sections.
+  await page.getByRole('tab', { name: 'Main', exact: true }).click()
+  await openNavGroups(page)
+  await page.getByRole('button', { name: 'Lights', exact: true }).click()
   await expect(page.locator('#settings-car-beams')).toContainText('Moto de prueba')
   const rearHeight = page.getByRole('slider', {
-    name: 'Luz trasera: arriba / abajo (m)',
+    name: 'Rear light: up / down (m)',
     exact: true,
   })
-  // Objetos → Arma resets the weapon wheel.
-  await page.getByRole('button', { name: 'Rueda de armas', exact: true }).click()
-  await page.getByRole('button', { name: 'Restablecer rueda de armas' }).click()
+  // World › Weapons resets the weapon wheel.
+  await page.getByRole('tab', { name: 'World', exact: true }).click()
+  await openNavGroups(page)
+  // With no combat section on this page the Weapons group is a single button.
+  await page
+    .locator('#settings-pane-planet')
+    .getByRole('button', { name: 'Weapons', exact: true })
+    .click()
+  await page.getByRole('button', { name: 'Reset weapon wheel' }).click()
   expect(
     await page.evaluate(
       () => (window as never as { __rt: { weaponWheelResets: number } }).__rt.weaponWheelResets,
     ),
   ).toBe(1)
-  // Configuración → Cámara → field of view.
-  await page.getByRole('tab', { name: 'Configuración', exact: true }).click()
-  await page.getByRole('button', { name: 'Campo de visión', exact: true }).click()
-  await page.getByRole('slider', { name: 'Campo de visión (°)' }).fill('6')
+  // Settings › Camera › field of view.
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click()
+  await openNavGroups(page)
+  await page.getByRole('button', { name: 'Field of view', exact: true }).click()
+  await page.getByRole('slider', { name: 'Field of view (°)' }).fill('6')
   expect(
     await page.evaluate(
       () => (window as never as { __rt: { cameraFovOffset: number } }).__rt.cameraFovOffset,
     ),
   ).toBe(6)
-  await page.getByRole('tab', { name: 'Objetos', exact: true }).click()
+  await page.getByRole('tab', { name: 'Main', exact: true }).click()
+  await openNavGroups(page)
   // Sounds: the engine volume follows the mix; a motorcycle has no reversing alarm.
   await page.getByRole('button', { name: 'Sound', exact: true }).click()
-  const engineVolume = page.getByRole('slider', { name: 'Volumen del motor', exact: true })
+  const engineVolume = page.getByRole('slider', { name: 'Engine volume', exact: true })
   await expect(engineVolume).toHaveValue('50')
   await engineVolume.fill('80')
   expect(
@@ -434,9 +473,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       () => (window as never as { __rt: { audioMix: { engine: number } } }).__rt.audioMix.engine,
     ),
   ).toBeCloseTo(0.8)
-  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeHidden()
+  await expect(page.getByRole('checkbox', { name: 'Reversing beeper' })).toBeHidden()
   // The exhaust section only exists for vehicles whose data adjusts it.
-  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Exhaust and smoke', exact: true })).toBeHidden()
   // A vehicle with a reversing alarm and adjustable exhaust lists both.
   await page.evaluate(() => {
     const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
@@ -447,9 +486,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       sound: { engine: true, reverseAlarm: true },
     }
   })
-  await expect(page.getByRole('checkbox', { name: 'Aviso de marcha atrás' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Luces', exact: true })).toBeHidden()
-  await expect(page.getByRole('button', { name: 'Escape y humo', exact: true })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Reversing beeper' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Lights', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Exhaust and smoke', exact: true })).toBeVisible()
   await page.evaluate(() => {
     const rt = (window as never as { __rt: { occupiedVehicle: { options: object } } }).__rt
     rt.occupiedVehicle.options = {
@@ -459,10 +498,10 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       sound: { engine: true, reverseAlarm: false },
     }
   })
-  await page.getByRole('button', { name: 'Luces', exact: true }).click()
+  await page.getByRole('button', { name: 'Lights', exact: true }).click()
   await rearHeight.fill('0.12')
-  await page.getByRole('button', { name: 'Compartir ajustes de luces' }).click()
-  const shared = page.getByRole('textbox', { name: 'Ajustes de luces para compartir' })
+  await page.getByRole('button', { name: 'Share light settings' }).click()
+  const shared = page.getByRole('textbox', { name: 'Light settings to share' })
   expect(JSON.parse(await shared.inputValue())).toMatchObject({
     model: '/test-bike.glb',
     values: { rearY: 0.12 },
@@ -475,12 +514,14 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   await clock.dispatchEvent('wheel', { deltaY: 100 })
   await clock.dispatchEvent('wheel', { deltaY: 100 })
   await expect(clock).toHaveText('11:30')
-  await page.getByRole('tab', { name: 'Desarrollo', exact: true }).click()
-  await page.getByRole('button', { name: 'Luz trasera (ajuste fino)', exact: true }).click()
-  await page.getByRole('button', { name: 'Atrás / delante (m) +0.01' }).click()
-  await page.getByRole('button', { name: 'Atrás / delante (m) +0.05' }).click()
-  await page.getByRole('button', { name: 'Copiar JSON' }).click()
-  const nudged = page.getByRole('textbox', { name: 'JSON de la luz trasera' })
+  // The rear light fine tuning is one more section of the current vehicle (Main).
+  await page.getByRole('tab', { name: 'Main', exact: true }).click()
+  await openNavGroups(page)
+  await page.getByRole('button', { name: 'Rear light (fine tuning)', exact: true }).click()
+  await page.getByRole('button', { name: 'Back / front (m) +0.01' }).click()
+  await page.getByRole('button', { name: 'Back / front (m) +0.05' }).click()
+  await page.getByRole('button', { name: 'Copy JSON' }).click()
+  const nudged = page.getByRole('textbox', { name: 'Rear light JSON' })
   expect(JSON.parse(await nudged.inputValue()).vehicle.lights.tuning).toMatchObject({
     rearY: 0.12,
     rearZ: 0.06,
