@@ -107,7 +107,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.removeItem
 
-[Implementation, line 128](../../../../src/net/authority.ts#L128)
+[Implementation, line 139](../../../../src/net/authority.ts#L139)
 
 Take an item off the ground for nobody (e.g. a scenario swap).
 
@@ -122,7 +122,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.onItems
 
-[Implementation, line 133](../../../../src/net/authority.ts#L133)
+[Implementation, line 144](../../../../src/net/authority.ts#L144)
 
 Single player: decides in-process (first come wins, HealthLedger for damage and respawn).
 
@@ -138,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.onClaims
 
-[Implementation, line 137](../../../../src/net/authority.ts#L137)
+[Implementation, line 148](../../../../src/net/authority.ts#L148)
 
 Single player: decides in-process (first come wins, HealthLedger for damage and respawn).
 
@@ -153,7 +153,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.onHealth
 
-[Implementation, line 141](../../../../src/net/authority.ts#L141)
+[Implementation, line 152](../../../../src/net/authority.ts#L152)
 
 Single player: decides in-process (first come wins, HealthLedger for damage and respawn).
 
@@ -167,7 +167,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.update
 
-[Implementation, line 144](../../../../src/net/authority.ts#L144)
+[Implementation, line 155](../../../../src/net/authority.ts#L155)
 
 Single player: decides in-process (first come wins, HealthLedger for damage and respawn).
 
@@ -183,7 +183,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LocalAuthority.dispose
 
-[Implementation, line 151](../../../../src/net/authority.ts#L151)
+[Implementation, line 162](../../../../src/net/authority.ts#L162)
 
 Single player: decides in-process (first come wins, HealthLedger for damage and respawn).
 
@@ -197,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.constructor
 
-[Implementation, line 173](../../../../src/net/authority.ts#L173)
+[Implementation, line 184](../../../../src/net/authority.ts#L184)
 
 ```ts
 constructor(private readonly link: RelayLink, private readonly shared: SharedEntities): instance
@@ -205,7 +205,7 @@ constructor(private readonly link: RelayLink, private readonly shared: SharedEnt
 
 ## RelayAuthority.self
 
-[Implementation, line 177](../../../../src/net/authority.ts#L177)
+[Implementation, line 188](../../../../src/net/authority.ts#L188)
 
 ```ts
 self(): string | null
@@ -213,7 +213,7 @@ self(): string | null
 
 ## RelayAuthority.request
 
-[Implementation, line 180](../../../../src/net/authority.ts#L180)
+[Implementation, line 191](../../../../src/net/authority.ts#L191)
 
 ```ts
 request(raw: AuthorityRequest): boolean
@@ -231,7 +231,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.receive
 
-[Implementation, line 204](../../../../src/net/authority.ts#L204)
+[Implementation, line 229](../../../../src/net/authority.ts#L229)
 
 Relay events: health, death and respawn.
 
@@ -246,7 +246,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.entityChanged
 
-[Implementation, line 213](../../../../src/net/authority.ts#L213)
+[Implementation, line 252](../../../../src/net/authority.ts#L252)
 
 Shared entity placed or changed (SharedEntityHooks `changed`).
 
@@ -264,7 +264,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.entityRemoved
 
-[Implementation, line 222](../../../../src/net/authority.ts#L222)
+[Implementation, line 265](../../../../src/net/authority.ts#L265)
 
 Shared entity taken by `by` or gone (SharedEntityHooks `removed`, and `despawn` with null).
 
@@ -279,7 +279,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.onItems
 
-[Implementation, line 225](../../../../src/net/authority.ts#L225)
+[Implementation, line 269](../../../../src/net/authority.ts#L269)
 
 ```ts
 onItems(fn: (c: ItemChange) => void): Unsubscribe
@@ -295,7 +295,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.onClaims
 
-[Implementation, line 229](../../../../src/net/authority.ts#L229)
+[Implementation, line 274](../../../../src/net/authority.ts#L274)
 
 ```ts
 onClaims(fn: (c: ClaimChange) => void): Unsubscribe
@@ -309,7 +309,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.onHealth
 
-[Implementation, line 233](../../../../src/net/authority.ts#L233)
+[Implementation, line 279](../../../../src/net/authority.ts#L279)
 
 ```ts
 onHealth(fn: (c: HealthChange) => void): Unsubscribe
@@ -321,7 +321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RelayAuthority.update
 
-[Implementation, line 236](../../../../src/net/authority.ts#L236)
+[Implementation, line 282](../../../../src/net/authority.ts#L282)
 
 ```ts
 update(): void
@@ -329,7 +329,7 @@ update(): void
 
 ## RelayAuthority.dispose
 
-[Implementation, line 239](../../../../src/net/authority.ts#L239)
+[Implementation, line 285](../../../../src/net/authority.ts#L285)
 
 ```ts
 dispose(): void
@@ -341,7 +341,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.constructor
 
-[Implementation, line 257](../../../../src/net/authority.ts#L257)
+[Implementation, line 303](../../../../src/net/authority.ts#L303)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -357,7 +357,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.current
 
-[Implementation, line 261](../../../../src/net/authority.ts#L261)
+[Implementation, line 307](../../../../src/net/authority.ts#L307)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -369,7 +369,7 @@ current(): GameAuthority
 
 ## SwitchAuthority.self
 
-[Implementation, line 264](../../../../src/net/authority.ts#L264)
+[Implementation, line 310](../../../../src/net/authority.ts#L310)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -381,7 +381,7 @@ self(): string | null
 
 ## SwitchAuthority.use
 
-[Implementation, line 268](../../../../src/net/authority.ts#L268)
+[Implementation, line 314](../../../../src/net/authority.ts#L314)
 
 Forward to `next` from now on.
 
@@ -397,7 +397,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.attach
 
-[Implementation, line 275](../../../../src/net/authority.ts#L275)
+[Implementation, line 321](../../../../src/net/authority.ts#L321)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -413,36 +413,36 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.target.onHealth`
 - `this.target.onItems`
 
-## SwitchAuthority.attach.callback@277
+## SwitchAuthority.attach.callback@323
 
-[Implementation, line 277](../../../../src/net/authority.ts#L277)
+[Implementation, line 323](../../../../src/net/authority.ts#L323)
 
 ```ts
-callback@277(c): inferred by TypeScript; see implementation
+callback@323(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.item`
 
-## SwitchAuthority.attach.callback@278
+## SwitchAuthority.attach.callback@324
 
-[Implementation, line 278](../../../../src/net/authority.ts#L278)
+[Implementation, line 324](../../../../src/net/authority.ts#L324)
 
 ```ts
-callback@278(c): inferred by TypeScript; see implementation
+callback@324(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.claimsL.emit`
 
-## SwitchAuthority.attach.callback@279
+## SwitchAuthority.attach.callback@325
 
-[Implementation, line 279](../../../../src/net/authority.ts#L279)
+[Implementation, line 325](../../../../src/net/authority.ts#L325)
 
 ```ts
-callback@279(c): inferred by TypeScript; see implementation
+callback@325(c): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -451,7 +451,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.item
 
-[Implementation, line 282](../../../../src/net/authority.ts#L282)
+[Implementation, line 328](../../../../src/net/authority.ts#L328)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -469,7 +469,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.request
 
-[Implementation, line 287](../../../../src/net/authority.ts#L287)
+[Implementation, line 333](../../../../src/net/authority.ts#L333)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -485,7 +485,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.onItems
 
-[Implementation, line 290](../../../../src/net/authority.ts#L290)
+[Implementation, line 336](../../../../src/net/authority.ts#L336)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -503,7 +503,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.onClaims
 
-[Implementation, line 295](../../../../src/net/authority.ts#L295)
+[Implementation, line 341](../../../../src/net/authority.ts#L341)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -521,7 +521,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.onHealth
 
-[Implementation, line 299](../../../../src/net/authority.ts#L299)
+[Implementation, line 345](../../../../src/net/authority.ts#L345)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -537,7 +537,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.update
 
-[Implementation, line 302](../../../../src/net/authority.ts#L302)
+[Implementation, line 348](../../../../src/net/authority.ts#L348)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -553,7 +553,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SwitchAuthority.dispose
 
-[Implementation, line 305](../../../../src/net/authority.ts#L305)
+[Implementation, line 351](../../../../src/net/authority.ts#L351)
 
 One authority for the game's lifetime that forwards to the current one: LocalAuthority while
 offline, RelayAuthority once joined. Switching removes the old authority's items (for nobody)
@@ -570,7 +570,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## itemOf
 
-[Implementation, line 311](../../../../src/net/authority.ts#L311)
+[Implementation, line 357](../../../../src/net/authority.ts#L357)
 
 ```ts
 itemOf(r: SharedEntityRecord): AuthorityItem

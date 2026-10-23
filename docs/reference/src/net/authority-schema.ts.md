@@ -16,7 +16,7 @@ and multiplayer accept exactly the same requests. See docs/net.md.
 
 ## parseAuthorityRequest
 
-[Implementation, line 68](../../../../src/net/authority-schema.ts#L68)
+[Implementation, line 81](../../../../src/net/authority-schema.ts#L81)
 
 Validate a request (null when malformed or out of bounds).
 

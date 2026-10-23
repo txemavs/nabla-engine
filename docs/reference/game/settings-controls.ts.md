@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createControlsSection.refresh
 
-[Implementation, line 63](../../../game/settings-controls.ts#L63)
+[Implementation, line 62](../../../game/settings-controls.ts#L62)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -71,12 +71,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `search.value.trim().toLocaleLowerCase`
 - `t`
 
-## createControlsSection.refresh.callback@67
+## createControlsSection.refresh.callback@66
 
-[Implementation, line 67](../../../game/settings-controls.ts#L67)
+[Implementation, line 66](../../../game/settings-controls.ts#L66)
 
 ```ts
-callback@67([action, binding]): inferred by TypeScript; see implementation
+callback@66([action, binding]): inferred by TypeScript; see implementation
+```
+
+## createControlsSection.refresh.callback@68
+
+[Implementation, line 68](../../../game/settings-controls.ts#L68)
+
+```ts
+callback@68(binding): inferred by TypeScript; see implementation
 ```
 
 ## createControlsSection.refresh.callback@69
@@ -87,26 +95,18 @@ callback@67([action, binding]): inferred by TypeScript; see implementation
 callback@69(binding): inferred by TypeScript; see implementation
 ```
 
-## createControlsSection.refresh.callback@70
-
-[Implementation, line 70](../../../game/settings-controls.ts#L70)
-
-```ts
-callback@70(binding): inferred by TypeScript; see implementation
-```
-
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Set`
 - `[...new Set(binding.keys.map(keyLabel))].join`
 - `binding.keys.map`
 
-## createControlsSection.refresh.callback@81
+## createControlsSection.refresh.callback@80
 
-[Implementation, line 81](../../../game/settings-controls.ts#L81)
+[Implementation, line 80](../../../game/settings-controls.ts#L80)
 
 ```ts
-callback@81(action): inferred by TypeScript; see implementation
+callback@80(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -115,12 +115,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...new Set(inputBindings[action].keys.map(keyLabel))].join`
 - `inputBindings[action].keys.map`
 
-## createControlsSection.refresh.callback@85
+## createControlsSection.refresh.callback@84
 
-[Implementation, line 85](../../../game/settings-controls.ts#L85)
+[Implementation, line 84](../../../game/settings-controls.ts#L84)
 
 ```ts
-callback@85(row): inferred by TypeScript; see implementation
+callback@84(row): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,12 +128,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase`
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase().includes`
 
-## createControlsSection.refresh.callback@89
+## createControlsSection.refresh.callback@88
 
-[Implementation, line 89](../../../game/settings-controls.ts#L89)
+[Implementation, line 88](../../../game/settings-controls.ts#L88)
 
 ```ts
-callback@89(row): inferred by TypeScript; see implementation
+callback@88(row): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

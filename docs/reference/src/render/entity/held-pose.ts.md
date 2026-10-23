@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## heldPoseWorld
 
-[Implementation, line 49](../../../../../src/render/entity/held-pose.ts#L49)
+[Implementation, line 57](../../../../../src/render/entity/held-pose.ts#L57)
 
 World position and orientation of `pose` on `body` (after its last animate/apply).
 
@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## holdItem
 
-[Implementation, line 71](../../../../../src/render/entity/held-pose.ts#L71)
+[Implementation, line 79](../../../../../src/render/entity/held-pose.ts#L79)
 
 Put the hand on the held item: two-bone IK of `hand`'s arm to the pose's grip and, when given,
 place `item` (any object; its parent may be anywhere in the scene) at the pose.

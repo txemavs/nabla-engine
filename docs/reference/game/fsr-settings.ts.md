@@ -54,7 +54,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## appendFsrControls.sync
 
-[Implementation, line 62](../../../game/fsr-settings.ts#L62)
+[Implementation, line 61](../../../game/fsr-settings.ts#L61)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -67,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## appendFsrControls.apply
 
-[Implementation, line 69](../../../game/fsr-settings.ts#L69)
+[Implementation, line 68](../../../game/fsr-settings.ts#L68)
 
 ```ts
 apply(): inferred by TypeScript; see implementation

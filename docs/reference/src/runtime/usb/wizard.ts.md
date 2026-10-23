@@ -106,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbWizard.sample
 
-[Implementation, line 184](../../../../../src/runtime/usb/wizard.ts#L184)
+[Implementation, line 179](../../../../../src/runtime/usb/wizard.ts#L179)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -129,48 +129,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pads.filter`
 - `usbDeviceKey`
 
-## UsbWizard.sample.callback@185
+## UsbWizard.sample.callback@180
 
-[Implementation, line 185](../../../../../src/runtime/usb/wizard.ts#L185)
+[Implementation, line 180](../../../../../src/runtime/usb/wizard.ts#L180)
 
 ```ts
-callback@185(p): inferred by TypeScript; see implementation
+callback@180(p): inferred by TypeScript; see implementation
 ```
 
-## UsbWizard.sample.callback@207
+## UsbWizard.sample.callback@201
 
-[Implementation, line 207](../../../../../src/runtime/usb/wizard.ts#L207)
+[Implementation, line 201](../../../../../src/runtime/usb/wizard.ts#L201)
 
 ```ts
-callback@207(b): inferred by TypeScript; see implementation
+callback@201(b): inferred by TypeScript; see implementation
 ```
 
-## UsbWizard.sample.callback@208
+## UsbWizard.sample.callback@202
 
-[Implementation, line 208](../../../../../src/runtime/usb/wizard.ts#L208)
+[Implementation, line 202](../../../../../src/runtime/usb/wizard.ts#L202)
 
 ```ts
-callback@208(q): inferred by TypeScript; see implementation
+callback@202(q): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `usbDeviceKey`
 
-## UsbWizard.sample.callback@209
+## UsbWizard.sample.callback@203
 
-[Implementation, line 209](../../../../../src/runtime/usb/wizard.ts#L209)
+[Implementation, line 203](../../../../../src/runtime/usb/wizard.ts#L203)
 
 ```ts
-callback@209(b): inferred by TypeScript; see implementation
+callback@203(b): inferred by TypeScript; see implementation
 ```
 
-## UsbWizard.sample.callback@210
+## UsbWizard.sample.callback@204
 
-[Implementation, line 210](../../../../../src/runtime/usb/wizard.ts#L210)
+[Implementation, line 204](../../../../../src/runtime/usb/wizard.ts#L204)
 
 ```ts
-callback@210(v, i): inferred by TypeScript; see implementation
+callback@204(v, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -181,17 +181,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `candidates.push`
 
-## UsbWizard.sample.callback@230
+## UsbWizard.sample.callback@224
 
-[Implementation, line 230](../../../../../src/runtime/usb/wizard.ts#L230)
+[Implementation, line 224](../../../../../src/runtime/usb/wizard.ts#L224)
 
 ```ts
-callback@230(a, b): inferred by TypeScript; see implementation
+callback@224(a, b): inferred by TypeScript; see implementation
 ```
 
 ## UsbWizard.next
 
-[Implementation, line 244](../../../../../src/runtime/usb/wizard.ts#L244)
+[Implementation, line 238](../../../../../src/runtime/usb/wizard.ts#L238)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -214,20 +214,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 Explicit throws in this body:
 
-- `new Error( t('usb.err.no-devices'), )`
+- `new Error(t('usb.err.no-devices'))`
 - `new Error(t('usb.err.hold'))`
 - `new Error('No se ha detectado recorrido suficiente. Repite este paso.')`
 - `new Error('Falta recorrer el otro lado del control.')`
 - `new Error('Devuelve el control al reposo antes de continuar.')`
 - `new Error(t('usb.err.incomplete'))`
-- `new Error( t('usb.err.taken'), )`
+- `new Error(t('usb.err.taken'))`
 
-## UsbWizard.next.callback@252
+## UsbWizard.next.callback@243
 
-[Implementation, line 252](../../../../../src/runtime/usb/wizard.ts#L252)
+[Implementation, line 243](../../../../../src/runtime/usb/wizard.ts#L243)
 
 ```ts
-callback@252(p): inferred by TypeScript; see implementation
+callback@243(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -235,25 +235,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `p.buttons.map`
 - `usbDeviceKey`
 
-## UsbWizard.next.callback@252.callback@256
+## UsbWizard.next.callback@243.callback@247
 
-[Implementation, line 256](../../../../../src/runtime/usb/wizard.ts#L256)
+[Implementation, line 247](../../../../../src/runtime/usb/wizard.ts#L247)
 
 ```ts
-callback@256(b): inferred by TypeScript; see implementation
+callback@247(b): inferred by TypeScript; see implementation
 ```
 
-## UsbWizard.next.callback@282
+## UsbWizard.next.callback@272
 
-[Implementation, line 282](../../../../../src/runtime/usb/wizard.ts#L282)
+[Implementation, line 272](../../../../../src/runtime/usb/wizard.ts#L272)
 
 ```ts
-callback@282(b): inferred by TypeScript; see implementation
+callback@272(b): inferred by TypeScript; see implementation
 ```
 
 ## UsbWizard.repeat
 
-[Implementation, line 296](../../../../../src/runtime/usb/wizard.ts#L296)
+[Implementation, line 284](../../../../../src/runtime/usb/wizard.ts#L284)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -263,7 +263,7 @@ repeat(): void
 
 ## UsbWizard.skip
 
-[Implementation, line 303](../../../../../src/runtime/usb/wizard.ts#L303)
+[Implementation, line 291](../../../../../src/runtime/usb/wizard.ts#L291)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -277,7 +277,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbWizard.advance
 
-[Implementation, line 306](../../../../../src/runtime/usb/wizard.ts#L306)
+[Implementation, line 294](../../../../../src/runtime/usb/wizard.ts#L294)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -291,7 +291,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbWizard.device
 
-[Implementation, line 311](../../../../../src/runtime/usb/wizard.ts#L311)
+[Implementation, line 299](../../../../../src/runtime/usb/wizard.ts#L299)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -303,12 +303,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.pads.filter`
 
-## UsbWizard.device.callback@312
+## UsbWizard.device.callback@300
 
-[Implementation, line 312](../../../../../src/runtime/usb/wizard.ts#L312)
+[Implementation, line 300](../../../../../src/runtime/usb/wizard.ts#L300)
 
 ```ts
-callback@312(p): inferred by TypeScript; see implementation
+callback@300(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -317,7 +317,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbWizard.build
 
-[Implementation, line 315](../../../../../src/runtime/usb/wizard.ts#L315)
+[Implementation, line 303](../../../../../src/runtime/usb/wizard.ts#L303)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -331,7 +331,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbWizard.commit
 
-[Implementation, line 325](../../../../../src/runtime/usb/wizard.ts#L325)
+[Implementation, line 313](../../../../../src/runtime/usb/wizard.ts#L313)
 
 Staged calibration. Nothing touches saved bindings until the final explicit commit.
 
@@ -351,20 +351,20 @@ Explicit throws in this body:
 
 - `new Error('Completa al menos un control antes de guardar.')`
 
-## UsbWizard.commit.callback@329
+## UsbWizard.commit.callback@317
 
-[Implementation, line 329](../../../../../src/runtime/usb/wizard.ts#L329)
+[Implementation, line 317](../../../../../src/runtime/usb/wizard.ts#L317)
 
 ```ts
-callback@329(b): inferred by TypeScript; see implementation
+callback@317(b): inferred by TypeScript; see implementation
 ```
 
-## UsbWizard.commit.callback@331
+## UsbWizard.commit.callback@319
 
-[Implementation, line 331](../../../../../src/runtime/usb/wizard.ts#L331)
+[Implementation, line 319](../../../../../src/runtime/usb/wizard.ts#L319)
 
 ```ts
-callback@331(b): inferred by TypeScript; see implementation
+callback@319(b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

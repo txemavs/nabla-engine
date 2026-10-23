@@ -149,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.strongest
 
-[Implementation, line 118](../../../../src/runtime/input.ts#L118)
+[Implementation, line 122](../../../../src/runtime/input.ts#L122)
 
 ```ts
 strongest(...values: number[]): inferred by TypeScript; see implementation
@@ -159,29 +159,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `values.reduce`
 
-## GameInput.read.strongest.callback@119
+## GameInput.read.strongest.callback@123
 
-[Implementation, line 119](../../../../src/runtime/input.ts#L119)
+[Implementation, line 123](../../../../src/runtime/input.ts#L123)
 
 ```ts
-callback@119(a, b): inferred by TypeScript; see implementation
+callback@123(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## GameInput.read.callback@128
+## GameInput.read.callback@132
 
-[Implementation, line 128](../../../../src/runtime/input.ts#L128)
+[Implementation, line 132](../../../../src/runtime/input.ts#L132)
 
 ```ts
-callback@128(e): inferred by TypeScript; see implementation
+callback@132(e): inferred by TypeScript; see implementation
 ```
 
 ## GameInput.read.held
 
-[Implementation, line 130](../../../../src/runtime/input.ts#L130)
+[Implementation, line 134](../../../../src/runtime/input.ts#L134)
 
 ```ts
 held(action: Parameters<typeof actionHeld>[1]): inferred by TypeScript; see implementation
@@ -194,7 +194,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 132](../../../../src/runtime/input.ts#L132)
+[Implementation, line 136](../../../../src/runtime/input.ts#L136)
 
 ```ts
 axis(positive: Parameters<typeof actionAxis>[1], negative: Parameters<typeof actionAxis>[2]): inferred by TypeScript; see implementation

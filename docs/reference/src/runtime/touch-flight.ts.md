@@ -40,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.constructor
 
-[Implementation, line 56](../../../../src/runtime/touch-flight.ts#L56)
+[Implementation, line 55](../../../../src/runtime/touch-flight.ts#L55)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -68,12 +68,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `touchActionIcon`
 - `window.addEventListener`
 
-## TouchFlight.constructor.callback@82
+## TouchFlight.constructor.callback@81
 
-[Implementation, line 82](../../../../src/runtime/touch-flight.ts#L82)
+[Implementation, line 81](../../../../src/runtime/touch-flight.ts#L81)
 
 ```ts
-callback@82(e): inferred by TypeScript; see implementation
+callback@81(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -86,11 +86,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.constructor.release
 
-[Implementation, line 95](../../../../src/runtime/touch-flight.ts#L95)
+[Implementation, line 94](../../../../src/runtime/touch-flight.ts#L94)
 
 ```ts
 release(): inferred by TypeScript; see implementation
 ```
+
+## TouchFlight.constructor.callback@112
+
+[Implementation, line 112](../../../../src/runtime/touch-flight.ts#L112)
+
+```ts
+callback@112(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
 
 ## TouchFlight.constructor.callback@113
 
@@ -116,21 +128,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.clear`
 
-## TouchFlight.constructor.callback@115
-
-[Implementation, line 115](../../../../src/runtime/touch-flight.ts#L115)
-
-```ts
-callback@115(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.clear`
-
 ## TouchFlight.stick
 
-[Implementation, line 120](../../../../src/runtime/touch-flight.ts#L120)
+[Implementation, line 119](../../../../src/runtime/touch-flight.ts#L119)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -148,7 +148,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.bindStick
 
-[Implementation, line 137](../../../../src/runtime/touch-flight.ts#L137)
+[Implementation, line 136](../../../../src/runtime/touch-flight.ts#L136)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -159,7 +159,7 @@ bindStick(el: HTMLElement, hand: 'left' | 'right'): inferred by TypeScript; see 
 
 ## TouchFlight.bindStick.apply
 
-[Implementation, line 138](../../../../src/runtime/touch-flight.ts#L138)
+[Implementation, line 137](../../../../src/runtime/touch-flight.ts#L137)
 
 ```ts
 apply(e: PointerEvent): inferred by TypeScript; see implementation
@@ -172,12 +172,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.paint`
 - `touchCoordinates`
 
-## TouchFlight.bindStick.callback@151
+## TouchFlight.bindStick.callback@150
 
-[Implementation, line 151](../../../../src/runtime/touch-flight.ts#L151)
+[Implementation, line 150](../../../../src/runtime/touch-flight.ts#L150)
 
 ```ts
-callback@151(e): inferred by TypeScript; see implementation
+callback@150(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -187,12 +187,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `e.stopPropagation`
 - `el.setPointerCapture`
 
-## TouchFlight.bindStick.callback@161
+## TouchFlight.bindStick.callback@160
 
-[Implementation, line 161](../../../../src/runtime/touch-flight.ts#L161)
+[Implementation, line 160](../../../../src/runtime/touch-flight.ts#L160)
 
 ```ts
-callback@161(e): inferred by TypeScript; see implementation
+callback@160(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -202,7 +202,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.bindStick.release
 
-[Implementation, line 165](../../../../src/runtime/touch-flight.ts#L165)
+[Implementation, line 164](../../../../src/runtime/touch-flight.ts#L164)
 
 ```ts
 release(e: PointerEvent): inferred by TypeScript; see implementation
@@ -214,7 +214,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.paint
 
-[Implementation, line 183](../../../../src/runtime/touch-flight.ts#L183)
+[Implementation, line 182](../../../../src/runtime/touch-flight.ts#L182)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -229,7 +229,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.paint.place
 
-[Implementation, line 184](../../../../src/runtime/touch-flight.ts#L184)
+[Implementation, line 183](../../../../src/runtime/touch-flight.ts#L183)
 
 ```ts
 place(knob: HTMLElement, x: number, y: number): inferred by TypeScript; see implementation
@@ -237,7 +237,7 @@ place(knob: HTMLElement, x: number, y: number): inferred by TypeScript; see impl
 
 ## TouchFlight.clear
 
-[Implementation, line 192](../../../../src/runtime/touch-flight.ts#L192)
+[Implementation, line 191](../../../../src/runtime/touch-flight.ts#L191)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -252,7 +252,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.busy
 
-[Implementation, line 199](../../../../src/runtime/touch-flight.ts#L199)
+[Implementation, line 198](../../../../src/runtime/touch-flight.ts#L198)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -263,7 +263,7 @@ busy(): boolean
 
 ## TouchFlight.setActive
 
-[Implementation, line 203](../../../../src/runtime/touch-flight.ts#L203)
+[Implementation, line 202](../../../../src/runtime/touch-flight.ts#L202)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -279,7 +279,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.dispose
 
-[Implementation, line 210](../../../../src/runtime/touch-flight.ts#L210)
+[Implementation, line 209](../../../../src/runtime/touch-flight.ts#L209)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -296,7 +296,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchFlight.input
 
-[Implementation, line 218](../../../../src/runtime/touch-flight.ts#L218)
+[Implementation, line 217](../../../../src/runtime/touch-flight.ts#L217)
 
 Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
 Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.

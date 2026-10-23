@@ -328,7 +328,7 @@ callback@183(s): inferred by TypeScript; see implementation
 
 ## CharacterInventory.changed
 
-[Implementation, line 195](../../../../src/character/inventory.ts#L195)
+[Implementation, line 197](../../../../src/character/inventory.ts#L197)
 
 ```ts
 changed(): void

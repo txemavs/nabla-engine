@@ -136,7 +136,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.snapshot
 
-[Implementation, line 192](../../../../../src/runtime/usb/controllers.ts#L192)
+[Implementation, line 191](../../../../../src/runtime/usb/controllers.ts#L191)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.export
 
-[Implementation, line 195](../../../../../src/runtime/usb/controllers.ts#L195)
+[Implementation, line 194](../../../../../src/runtime/usb/controllers.ts#L194)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -164,7 +164,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.configure
 
-[Implementation, line 198](../../../../../src/runtime/usb/controllers.ts#L198)
+[Implementation, line 197](../../../../../src/runtime/usb/controllers.ts#L197)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -182,7 +182,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.reset
 
-[Implementation, line 206](../../../../../src/runtime/usb/controllers.ts#L206)
+[Implementation, line 205](../../../../../src/runtime/usb/controllers.ts#L205)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -197,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.mappedDevices
 
-[Implementation, line 212](../../../../../src/runtime/usb/controllers.ts#L212)
+[Implementation, line 211](../../../../../src/runtime/usb/controllers.ts#L211)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -210,17 +210,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Set`
 - `this.settings.profiles[profile].bindings.map`
 
-## UsbControllers.mappedDevices.callback@214
+## UsbControllers.mappedDevices.callback@213
 
-[Implementation, line 214](../../../../../src/runtime/usb/controllers.ts#L214)
+[Implementation, line 213](../../../../../src/runtime/usb/controllers.ts#L213)
 
 ```ts
-callback@214(b): inferred by TypeScript; see implementation
+callback@213(b): inferred by TypeScript; see implementation
 ```
 
 ## UsbControllers.read
 
-[Implementation, line 216](../../../../../src/runtime/usb/controllers.ts#L216)
+[Implementation, line 215](../../../../../src/runtime/usb/controllers.ts#L215)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -250,44 +250,44 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.settings.profiles[mode].bindings.some`
 - `usbDeviceKey`
 
-## UsbControllers.read.callback@226
+## UsbControllers.read.callback@225
 
-[Implementation, line 226](../../../../../src/runtime/usb/controllers.ts#L226)
+[Implementation, line 225](../../../../../src/runtime/usb/controllers.ts#L225)
 
 ```ts
-callback@226(p): p is UsbPad
+callback@225(p): p is UsbPad
 ```
 
-## UsbControllers.read.callback@233
+## UsbControllers.read.callback@232
 
-[Implementation, line 233](../../../../../src/runtime/usb/controllers.ts#L233)
+[Implementation, line 232](../../../../../src/runtime/usb/controllers.ts#L232)
 
 ```ts
-callback@233(p): inferred by TypeScript; see implementation
+callback@232(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `usbDeviceKey`
 
-## UsbControllers.read.callback@245
+## UsbControllers.read.callback@244
 
-[Implementation, line 245](../../../../../src/runtime/usb/controllers.ts#L245)
+[Implementation, line 244](../../../../../src/runtime/usb/controllers.ts#L244)
 
 ```ts
-callback@245(action): inferred by TypeScript; see implementation
+callback@244(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `inputActionAvailable`
 
-## UsbControllers.read.callback@246
+## UsbControllers.read.callback@245
 
-[Implementation, line 246](../../../../../src/runtime/usb/controllers.ts#L246)
+[Implementation, line 245](../../../../../src/runtime/usb/controllers.ts#L245)
 
 ```ts
-callback@246(binding, i): inferred by TypeScript; see implementation
+callback@245(binding, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -308,12 +308,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.previous.delete`
 - `this.previous.has`
 
-## UsbControllers.read.callback@282
+## UsbControllers.read.callback@281
 
-[Implementation, line 282](../../../../../src/runtime/usb/controllers.ts#L282)
+[Implementation, line 281](../../../../../src/runtime/usb/controllers.ts#L281)
 
 ```ts
-callback@282(b, i): inferred by TypeScript; see implementation
+callback@281(b, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -321,12 +321,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `b.target.startsWith`
 - `this.armed.has`
 
-## UsbControllers.read.callback@291
+## UsbControllers.read.callback@290
 
-[Implementation, line 291](../../../../../src/runtime/usb/controllers.ts#L291)
+[Implementation, line 290](../../../../../src/runtime/usb/controllers.ts#L290)
 
 ```ts
-callback@291(action): inferred by TypeScript; see implementation
+callback@290(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -335,7 +335,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## usbTemplate
 
-[Implementation, line 300](../../../../../src/runtime/usb/controllers.ts#L300)
+[Implementation, line 299](../../../../../src/runtime/usb/controllers.ts#L299)
 
 Starting points only: always calibrate against the actual OS/browser device report.
 
@@ -348,12 +348,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `newUsbBinding`
 - `targets.map`
 
-## usbTemplate.callback@321
+## usbTemplate.callback@320
 
-[Implementation, line 321](../../../../../src/runtime/usb/controllers.ts#L321)
+[Implementation, line 320](../../../../../src/runtime/usb/controllers.ts#L320)
 
 ```ts
-callback@321(target, index): inferred by TypeScript; see implementation
+callback@320(target, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

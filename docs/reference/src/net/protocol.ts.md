@@ -309,7 +309,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeHeld
 
-[Implementation, line 307](../../../../src/net/protocol.ts#L307)
+[Implementation, line 305](../../../../src/net/protocol.ts#L305)
 
 ```ts
 quantizeHeld(held: NonNullable<AvatarSample['held']>): AvatarBlock['g']
@@ -329,7 +329,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeHeld.c
 
-[Implementation, line 308](../../../../src/net/protocol.ts#L308)
+[Implementation, line 306](../../../../src/net/protocol.ts#L306)
 
 ```ts
 c(v: number, m: number): inferred by TypeScript; see implementation
@@ -342,7 +342,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeAvatar
 
-[Implementation, line 322](../../../../src/net/protocol.ts#L322)
+[Implementation, line 320](../../../../src/net/protocol.ts#L320)
 
 ```ts
 decodeAvatar(block: AvatarBlock): AvatarSample
@@ -350,7 +350,7 @@ decodeAvatar(block: AvatarBlock): AvatarSample
 
 ## encodeMessage
 
-[Implementation, line 403](../../../../src/net/protocol.ts#L403)
+[Implementation, line 409](../../../../src/net/protocol.ts#L409)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -362,7 +362,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 408](../../../../src/net/protocol.ts#L408)
+[Implementation, line 414](../../../../src/net/protocol.ts#L414)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -377,7 +377,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 418](../../../../src/net/protocol.ts#L418)
+[Implementation, line 424](../../../../src/net/protocol.ts#L424)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

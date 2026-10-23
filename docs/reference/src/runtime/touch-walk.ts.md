@@ -36,7 +36,7 @@ walkFromStick(stick: TouchStick): { forward: number; right: number }
 
 ## TouchWalk.constructor
 
-[Implementation, line 53](../../../../src/runtime/touch-walk.ts#L53)
+[Implementation, line 52](../../../../src/runtime/touch-walk.ts#L52)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -56,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.constructor.well
 
-[Implementation, line 61](../../../../src/runtime/touch-walk.ts#L61)
+[Implementation, line 60](../../../../src/runtime/touch-walk.ts#L60)
 
 ```ts
 well(side: 'move' | 'look', label: string): inferred by TypeScript; see implementation
@@ -70,6 +70,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.bind`
 - `this.root.append`
 - `this.text`
+
+## TouchWalk.constructor.callback@75
+
+[Implementation, line 75](../../../../src/runtime/touch-walk.ts#L75)
+
+```ts
+callback@75(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.clear`
 
 ## TouchWalk.constructor.callback@76
 
@@ -95,21 +107,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.clear`
 
-## TouchWalk.constructor.callback@78
-
-[Implementation, line 78](../../../../src/runtime/touch-walk.ts#L78)
-
-```ts
-callback@78(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `this.clear`
-
 ## TouchWalk.bind
 
-[Implementation, line 82](../../../../src/runtime/touch-walk.ts#L82)
+[Implementation, line 81](../../../../src/runtime/touch-walk.ts#L81)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -123,7 +123,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.bind.apply
 
-[Implementation, line 84](../../../../src/runtime/touch-walk.ts#L84)
+[Implementation, line 83](../../../../src/runtime/touch-walk.ts#L83)
 
 ```ts
 apply(e: PointerEvent): inferred by TypeScript; see implementation
@@ -137,12 +137,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `stickFromOffset`
 - `this.paint`
 
-## TouchWalk.bind.callback@96
+## TouchWalk.bind.callback@95
 
-[Implementation, line 96](../../../../src/runtime/touch-walk.ts#L96)
+[Implementation, line 95](../../../../src/runtime/touch-walk.ts#L95)
 
 ```ts
-callback@96(e): inferred by TypeScript; see implementation
+callback@95(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -152,12 +152,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `e.stopPropagation`
 - `el.setPointerCapture`
 
-## TouchWalk.bind.callback@108
+## TouchWalk.bind.callback@107
 
-[Implementation, line 108](../../../../src/runtime/touch-walk.ts#L108)
+[Implementation, line 107](../../../../src/runtime/touch-walk.ts#L107)
 
 ```ts
-callback@108(e): inferred by TypeScript; see implementation
+callback@107(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -166,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.bind.release
 
-[Implementation, line 113](../../../../src/runtime/touch-walk.ts#L113)
+[Implementation, line 112](../../../../src/runtime/touch-walk.ts#L112)
 
 ```ts
 release(e: PointerEvent): inferred by TypeScript; see implementation
@@ -178,7 +178,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.paint
 
-[Implementation, line 123](../../../../src/runtime/touch-walk.ts#L123)
+[Implementation, line 122](../../../../src/runtime/touch-walk.ts#L122)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -188,7 +188,7 @@ paint(): void
 
 ## TouchWalk.clear
 
-[Implementation, line 130](../../../../src/runtime/touch-walk.ts#L130)
+[Implementation, line 129](../../../../src/runtime/touch-walk.ts#L129)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -202,7 +202,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.busy
 
-[Implementation, line 137](../../../../src/runtime/touch-walk.ts#L137)
+[Implementation, line 136](../../../../src/runtime/touch-walk.ts#L136)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -212,7 +212,7 @@ busy(): boolean
 
 ## TouchWalk.setActive
 
-[Implementation, line 141](../../../../src/runtime/touch-walk.ts#L141)
+[Implementation, line 140](../../../../src/runtime/touch-walk.ts#L140)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -226,7 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.dispose
 
-[Implementation, line 147](../../../../src/runtime/touch-walk.ts#L147)
+[Implementation, line 146](../../../../src/runtime/touch-walk.ts#L146)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
@@ -242,7 +242,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchWalk.input
 
-[Implementation, line 155](../../../../src/runtime/touch-walk.ts#L155)
+[Implementation, line 154](../../../../src/runtime/touch-walk.ts#L154)
 
 Twin walking sticks ("setas"). Pointer capture always releases.
 
