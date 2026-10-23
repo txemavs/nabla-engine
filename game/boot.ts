@@ -74,6 +74,8 @@ export interface HostBootConfig {
    * seat, the engine start-up there, then out to the chase camera. See `StartCameraStep`.
    */
   startCameras?: StartCameraSequence
+  /** Local player's health: 'bar' (default) or 'readout' (`canvas.dataset.health`, 0–100, for a host HUD). */
+  healthDisplay?: 'bar' | 'readout'
   /**
    * Looping background music: encodings in preference order, e.g.
    * `{ sources: [{ url: '/music/x.ogg', type: 'audio/ogg; codecs=opus' }, { url: '/music/x.m4a', type: 'audio/mp4' }] }`.

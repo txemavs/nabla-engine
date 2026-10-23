@@ -7,18 +7,18 @@
 Combat HUD: the local player's health bar (bottom centre), the red flash on a hit and the
 death notice with the respawn countdown. Styles in styles/combat.css (tokens only).
 
+`display: 'readout'` keeps the bar hidden and only reports the health share through
+`onHealth` (0–100, null while there is no body), so a host can show it in its own readout.
+
 ## Module dependencies
 
 
 ## CombatHud.constructor
 
-[Implementation, line 13](../../../../src/ui/combat-hud.ts#L13)
-
-Combat HUD: the local player's health bar (bottom centre), the red flash on a hit and the
-death notice with the respawn countdown. Styles in styles/combat.css (tokens only).
+[Implementation, line 18](../../../../src/ui/combat-hud.ts#L18)
 
 ```ts
-constructor(parent: HTMLElement, private readonly text: { health: string; dead: (seconds: number) => string } = { health: 'HP', dead: (s) => `Down · respawn in ${s} s`, }): instance
+constructor(parent: HTMLElement, private readonly text: { health: string; dead: (seconds: number) => string } = { health: 'HP', dead: (s) => `Down · respawn in ${s} s`, }, private readonly display: HealthDisplay = 'bar', private readonly onHealth?: (percent: number | null) => void): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -31,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CombatHud.constructor.dead
 
-[Implementation, line 17](../../../../src/ui/combat-hud.ts#L17)
+[Implementation, line 22](../../../../src/ui/combat-hud.ts#L22)
 
 ```ts
 dead(s): inferred by TypeScript; see implementation
@@ -39,7 +39,7 @@ dead(s): inferred by TypeScript; see implementation
 
 ## CombatHud.setHealth
 
-[Implementation, line 43](../../../../src/ui/combat-hud.ts#L43)
+[Implementation, line 50](../../../../src/ui/combat-hud.ts#L50)
 
 Show `health` of `max`; hidden while `visible` is false (no body, home page).
 
@@ -53,12 +53,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `Math.round`
 - `String`
+- `this.onHealth`
 - `this.root.classList.toggle`
 - `this.root.setAttribute`
 
 ## CombatHud.hit
 
-[Implementation, line 54](../../../../src/ui/combat-hud.ts#L54)
+[Implementation, line 62](../../../../src/ui/combat-hud.ts#L62)
 
 Red flash on the victim's screen.
 
@@ -72,12 +73,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.flash.classList.add`
 
-## CombatHud.hit.callback@57
+## CombatHud.hit.callback@65
 
-[Implementation, line 57](../../../../src/ui/combat-hud.ts#L57)
+[Implementation, line 65](../../../../src/ui/combat-hud.ts#L65)
 
 ```ts
-callback@57(): inferred by TypeScript; see implementation
+callback@65(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -86,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CombatHud.setRespawnIn
 
-[Implementation, line 61](../../../../src/ui/combat-hud.ts#L61)
+[Implementation, line 69](../../../../src/ui/combat-hud.ts#L69)
 
 Death notice; null hides it.
 
@@ -102,10 +103,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## CombatHud.dispose
 
-[Implementation, line 66](../../../../src/ui/combat-hud.ts#L66)
-
-Combat HUD: the local player's health bar (bottom centre), the red flash on a hit and the
-death notice with the respawn countdown. Styles in styles/combat.css (tokens only).
+[Implementation, line 74](../../../../src/ui/combat-hud.ts#L74)
 
 ```ts
 dispose(): void

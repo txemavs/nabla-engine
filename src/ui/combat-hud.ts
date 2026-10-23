@@ -1,7 +1,12 @@
 /**
  * Combat HUD: the local player's health bar (bottom centre), the red flash on a hit and the
  * death notice with the respawn countdown. Styles in styles/combat.css (tokens only).
+ *
+ * `display: 'readout'` keeps the bar hidden and only reports the health share through
+ * `onHealth` (0–100, null while there is no body), so a host can show it in its own readout.
  */
+export type HealthDisplay = 'bar' | 'readout'
+
 export class CombatHud {
   readonly root: HTMLElement
   private readonly fill: HTMLElement
@@ -16,6 +21,8 @@ export class CombatHud {
       health: 'HP',
       dead: (s) => `Down · respawn in ${s} s`,
     },
+    private readonly display: HealthDisplay = 'bar',
+    private readonly onHealth?: (percent: number | null) => void,
   ) {
     const doc = parent.ownerDocument
     this.root = doc.createElement('div')
@@ -41,8 +48,9 @@ export class CombatHud {
 
   /** Show `health` of `max`; hidden while `visible` is false (no body, home page). */
   setHealth(health: number, max: number, visible = true): void {
-    this.root.hidden = !visible
     const share = Math.max(0, Math.min(1, health / max))
+    this.onHealth?.(visible ? Math.round(share * 100) : null)
+    this.root.hidden = !visible || this.display !== 'bar'
     this.fill.style.width = `${share * 100}%`
     this.root.classList.toggle('nabla-health--low', share <= 0.3)
     this.root.setAttribute('aria-valuemax', String(max))

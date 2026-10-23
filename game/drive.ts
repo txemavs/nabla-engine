@@ -271,6 +271,7 @@ try {
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
+    healthDisplay: boot.healthDisplay,
     hud: true,
     touchControls:
       new URLSearchParams(pageSearch()).has('xr') || location.pathname === '/xr.html'
