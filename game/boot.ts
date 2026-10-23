@@ -47,6 +47,8 @@ export interface HostBootConfig {
    * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes → Opciones → Cámara.
    */
   flipCinematic?: boolean
+  /** Simulated fire (Ajustes → Opciones «Fuego simulado»). Default on. URL `?simFire=0|1`. */
+  simulatedFire?: boolean
   /**
    * R reset puts the vehicle on the nearest road/vía. Default on when omitted.
    * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Opciones.
@@ -125,6 +127,9 @@ export function readBootConfig(
   const flip = params.get('flipCinematic') ?? params.get('flipcam')
   if (flip === '0' || flip === 'false') url.flipCinematic = false
   else if (flip === '1' || flip === 'true') url.flipCinematic = true
+  const simFire = params.get('simFire')
+  if (simFire === '0' || simFire === 'false') url.simulatedFire = false
+  else if (simFire === '1' || simFire === 'true') url.simulatedFire = true
   const road = params.get('recoverToRoad') ?? params.get('roadReset')
   if (road === '0' || road === 'false') url.recoverToRoad = false
   else if (road === '1' || road === 'true') url.recoverToRoad = true
@@ -132,6 +137,7 @@ export function readBootConfig(
   if (shadowBias !== undefined) url.shadowBias = shadowBias
   const merged: HostBootConfig = { ...url, ...built, ...host }
   if (url.flipCinematic !== undefined) merged.flipCinematic = url.flipCinematic
+  if (url.simulatedFire !== undefined) merged.simulatedFire = url.simulatedFire
   if (url.recoverToRoad !== undefined) merged.recoverToRoad = url.recoverToRoad
   if (url.shadowBias !== undefined) merged.shadowBias = url.shadowBias
   // An explicit URL ?boot= still wins so testers can compare both modes on a skinned host.

@@ -278,6 +278,23 @@ export class VehicleDestruction {
   }
   /** Fire spreading into trees under burning wrecks and debris. */
   readonly trees: TreeFires
+  /**
+   * Simulated fire (default on): fuel-driven lingering fire plus tree ignition, char and removal.
+   * Off restores the #287 behaviour exactly and skips every tree grid lookup.
+   */
+  get simulatedFire(): boolean {
+    return this.simFire
+  }
+  set simulatedFire(on: boolean) {
+    if (on === this.simFire) return
+    this.simFire = on
+    if (!on) {
+      this.trees.clear()
+      for (const f of this.debrisFires) f.flames.scale.setScalar(0.28)
+      for (const burn of this.burns.values()) burn.flames.scale.setScalar(1)
+    }
+  }
+  private simFire = true
   private smokeEnabled = true
   private readonly fireSources: FireSource[] = []
   /** Small weapon rupture: existing bounded debris pool and swept ground collision. */
@@ -636,15 +653,19 @@ export class VehicleDestruction {
       const f = this.debrisFires[i]
       f.clock.value += dt
       f.flames.position.copy(f.anchor.position)
-      // Burning debris: catches, flares, burns its little fuel out in ~6 s.
-      const fuel = fuelCurve(f.clock.value, 6)
-      f.flames.scale.set(
-        0.28 * (0.6 + 0.4 * fuel),
-        0.28 * (0.45 + 0.6 * fuel),
-        0.28 * (0.6 + 0.4 * fuel),
-      )
-      f.material.opacity = Math.min(1, fuel * 1.4)
-      if (fuel > 0.3) this.fireSources.push({ position: f.flames.position, strength: fuel * 0.6 })
+      if (!this.simFire) {
+        f.material.opacity = Math.max(0, 1 - f.clock.value / 6)
+      } else {
+        // Burning debris: catches, flares, burns its little fuel out in ~6 s.
+        const fuel = fuelCurve(f.clock.value, 6)
+        f.flames.scale.set(
+          0.28 * (0.6 + 0.4 * fuel),
+          0.28 * (0.45 + 0.6 * fuel),
+          0.28 * (0.6 + 0.4 * fuel),
+        )
+        f.material.opacity = Math.min(1, fuel * 1.4)
+        if (fuel > 0.3) this.fireSources.push({ position: f.flames.position, strength: fuel * 0.6 })
+      }
       f.smoke.setEnabled(smokeEnabled)
       f.smoke.update(dt, f.clock.value < 6, 0.5)
       if (f.clock.value > 9 || !f.anchor.parent) {
@@ -663,9 +684,16 @@ export class VehicleDestruction {
       burn.flames.position.y += 0.3
       burn.age += dt
       burn.clock.value = burn.age
-      const life = wreckFire(burn.age, explosionTuning.flameSeconds)
-      const intensity = burn.age < 0.4 ? 40 * (1 - burn.age / 0.4) : life.light
-      if (life.strength > 0.3)
+      const life = this.simFire ? wreckFire(burn.age, explosionTuning.flameSeconds) : null
+      const intensity =
+        burn.age < 0.4
+          ? 40 * (1 - burn.age / 0.4)
+          : life
+            ? life.light
+            : burn.age < explosionTuning.flameSeconds
+              ? 5 + Math.sin(burn.age * 17) * 2
+              : 0
+      if (life && life.strength > 0.3)
         this.fireSources.push({ position: burn.flames.position, strength: life.strength })
       if (!this.fx && intensity > this.light.intensity) {
         this.light.intensity = intensity
@@ -683,10 +711,12 @@ export class VehicleDestruction {
       }
       const flash = burn.age < 0.4
       burn.fire.visible = flash && !this.fx
-      burn.flames.visible = !flash && life.strength > 0.01
-      // Fuel drives the flame size: low at ignition, tall at the flare-up, shrinking as it burns out.
-      const spread = 0.6 + 0.45 * Math.min(1, life.strength)
-      burn.flames.scale.set(spread, (0.45 + 0.7 * life.strength) * life.flicker, spread)
+      if (life) {
+        burn.flames.visible = !flash && life.strength > 0.01
+        // Fuel drives the flame size: low at ignition, tall at the flare-up, shrinking as it burns out.
+        const spread = 0.6 + 0.45 * Math.min(1, life.strength)
+        burn.flames.scale.set(spread, (0.45 + 0.7 * life.strength) * life.flicker, spread)
+      } else burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
       // Merged tongues sway in the vertex shader from the same age.
       burn.tongues?.updateBounds()
       if (!burn.tongues)
@@ -696,7 +726,9 @@ export class VehicleDestruction {
             (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
           tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
         })
-      burn.flameMaterial.opacity = Math.min(1, life.strength * 1.6)
+      burn.flameMaterial.opacity = life
+        ? Math.min(1, life.strength * 1.6)
+        : Math.max(0, Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3))
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
         flash ? 0.2 + burn.age * 8 : 0.8 + Math.sin(burn.age * 17) * 0.15,
@@ -714,7 +746,7 @@ export class VehicleDestruction {
       )
       burn.smoke.update(dt, burn.age < explosionTuning.smokeSeconds, 0.8)
     }
-    this.trees.update(dt, this.fireSources)
+    if (this.simFire) this.trees.update(dt, this.fireSources)
     for (let i = this.bursts.length - 1; i >= 0; i--) {
       const burst = this.bursts[i]
       burst.age += dt
