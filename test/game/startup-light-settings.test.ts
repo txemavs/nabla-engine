@@ -17,7 +17,7 @@ describe('startup flashlight shadow layout', () => {
     expect(runtime.setHeadlampShadows).toHaveBeenLastCalledWith(false)
   })
 
-  it.each(['terrain-main.ts', 'drive.ts'])(
+  it.each(['terrain-main.ts', 'game-page.ts'])(
     'restores before play and HUD mounting in %s',
     (file) => {
       const source = readFileSync(new URL(`../../game/${file}`, import.meta.url), 'utf8')

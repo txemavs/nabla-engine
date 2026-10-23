@@ -41,7 +41,7 @@ if (entry.search !== pageSearch())
   history.replaceState(null, '', pageAddress(entry.search || location.pathname))
 // Literal import() paths so Vite can pre-transform both graphs (ternary was opaque).
 if (entry.mode === 'terrain') await import('./terrain-main.js')
-else await import('./drive.js')
+else await import('./game-page.js')
 hostDone()
 summarizeBootTrace()
 console.info(`[nabla-boot] host module ready after ${(performance.now() - bootMark).toFixed(0)}ms`)

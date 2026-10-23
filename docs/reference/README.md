@@ -29,13 +29,13 @@ Coverage: **642 modules; 8257 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
 | [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
 | [game/drive-host.ts](game/drive-host.ts.md) | 2 |
-| [game/drive.ts](game/drive.ts.md) | 21 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 4 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 7 |
 | [game/flip-cinematic-ui.ts](game/flip-cinematic-ui.ts.md) | 5 |
 | [game/fps-readout.ts](game/fps-readout.ts.md) | 2 |
 | [game/fsr-settings.ts](game/fsr-settings.ts.md) | 4 |
+| [game/game-page.ts](game/game-page.ts.md) | 21 |
 | [game/gravity-ui.ts](game/gravity-ui.ts.md) | 9 |
 | [game/headset.ts](game/headset.ts.md) | 9 |
 | [game/host-mirrors.ts](game/host-mirrors.ts.md) | 8 |

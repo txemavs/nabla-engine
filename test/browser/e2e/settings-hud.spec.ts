@@ -42,7 +42,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       section.append(label)
       return box
     }
-    // Sections bound before the HUD, as drive.ts / terrain-main.ts do.
+    // Sections bound before the HUD, as game-page.ts / terrain-main.ts do.
     check(menuSection('terrain-source', 'Terrain'), 'source')
     check(menuSection('terrain-position', 'Position'), 'position')
     check(menuSection('camera-extras', 'Camera'), 'flip')

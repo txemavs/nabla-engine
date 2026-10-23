@@ -56,5 +56,6 @@ the host. See [reference-game startup](../game-runtime.md) for that workflow.
 
 - [Public exports](../../package.json).
 - [Core coordinator](../../src/runtime/game.ts).
+- [Game page](../../game/game-page.ts): mounts the game scene, runtime, HUD and XR bindings.
 - [Terrain hooks](../../game/terrain-host.ts) and [drive hooks](../../game/drive-host.ts).
 - [Asset distribution](../asset-packs.md).

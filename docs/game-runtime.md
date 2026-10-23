@@ -33,7 +33,7 @@ insufficient for newer hooks, translations, inventory and scenarios.
 ## Startup sequence
 
 1. game/main.ts resolves the terrain source through entry.ts; explicit sources win over a remembered choice.
-2. drive.ts or terrain-main.ts creates the document and GameRuntime, mounts optional host hooks and starts the boot phase.
+2. game-page.ts or terrain-main.ts creates the document and GameRuntime, mounts optional host hooks and starts the boot phase.
 3. play() streams usable ground before starting the simulation. The terrain page requests the four nearby startup cells; the wider radius opens after reveal.
 4. PlaySession starts physics, normally in a worker, and waits for its initial state.
 5. prepareReveal loads audio, vehicles and weapons, runs beforeReveal tasks, prepares terrain presentation, compiles GPU programs, uploads textures and warms camera views.

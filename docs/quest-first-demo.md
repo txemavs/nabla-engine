@@ -7,7 +7,7 @@ floor-space origin and eye height. Hosts own button placement and error messages
 A top-right page button exits VR. Inside the headset, a head-mounted “Salir de VR”
 target highlights when aimed at with either tracked controller; its trigger ends
 the session without firing the weapon for that captured press.
-Both `game/drive.ts` and `game/terrain-main.ts` bind the same entry button, so
+Both `game/game-page.ts` and `game/terrain-main.ts` bind the same entry button, so
 `test.html` and the Euskadi host use the same session, simulation and streaming.
 
 - `/xr.html`: the test fleet and floor, with the minimal quality preset by default.

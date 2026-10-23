@@ -68,3 +68,20 @@ commit hash. Until that commit is published, use `ENGINE_SOURCE` with the valida
 local Engine source; a remote builder cannot fetch a local-only commit. Preserve the
 host overlay when updating its Engine checkout. The signs adapter remains compatible
 with the previous pin, `7015b8c25a083c8fa22e2d608d395ad74540e16c`.
+
+## Game page module naming
+
+The reference game entry formerly named `game/drive.ts` is now
+[`game/game-page.ts`](../game/game-page.ts). `game/main.ts` selects this module; the
+terrain and XR entry routes remain unchanged. Historical recovery/backup paths above
+retain their original names.
+
+The host contract remains `game/drive-host.ts`, including `setDriveHost`, `driveHost`
+and its global symbol. The adjacent Euskadi host sources register through that contract
+and do not import the old page module directly. The rename requires no host configuration
+or `ENGINE_REF` changes in this commit.
+
+Validation for the rename: Engine checks and PC/HeadSet browser compatibility tests;
+an isolated overlay of the adjacent Euskadi host also passes its HeadSet configuration
+check and Vite production build with the new game-page module. The host checkout and
+its pinned Engine revision are not modified.

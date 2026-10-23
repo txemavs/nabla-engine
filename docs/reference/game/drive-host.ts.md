@@ -4,9 +4,9 @@
 
 [Source](../../../game/drive-host.ts)
 
-Host hooks for the drive page (game/drive.ts). A host registers them from a module that runs
-before drive.ts (an earlier `<script type="module">` on the page), so it never has to patch
-drive.ts. Kept on a global symbol so every module copy sees the same host.
+Host hooks for the game page (game/game-page.ts). A host registers them from a module that runs
+before game-page.ts (an earlier `<script type="module">` on the page), so it never has to patch
+game-page.ts. Kept on a global symbol so every module copy sees the same host.
 
 ## Module dependencies
 

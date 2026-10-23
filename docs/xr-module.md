@@ -21,7 +21,7 @@ El punto de entrada real es `game/xr-entry.ts`, no `game/xr.ts`.
 El recorrido es:
 
 ```text
-xr.html → xr-entry.ts → main.ts → drive.ts / terrain-main.ts
+xr.html → xr-entry.ts → main.ts → game-page.ts / terrain-main.ts
                                       ↓
                           engine/runtime/browser.GameRuntime
                             ├─ Simulation + SceneView
