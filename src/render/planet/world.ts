@@ -1,3 +1,4 @@
+import { waterThickness } from './water-material.js'
 import {
   installTileClusterCulling,
   installTileClusterCullingWith,
@@ -927,6 +928,8 @@ export class PlanetWorld {
     material.color.set('#102f43')
     material.vertexColors = false
     material.side = side
+    // A sunk vehicle shows through, tinted; the bed itself stays opaque.
+    waterThickness(material)
     return material
   }
   /** Re-apply the hidden tile layers (see `setHiddenTileLayers`) to everything already loaded. */
