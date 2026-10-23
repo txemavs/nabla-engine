@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **630 modules; 8046 executable function definitions**.
+Coverage: **632 modules; 8061 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -440,13 +440,14 @@ Coverage: **630 modules; 8046 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 572 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |
 | [src/runtime/corner-buttons.ts](src/runtime/corner-buttons.ts.md) | 4 |
+| [src/runtime/display-controller.ts](src/runtime/display-controller.ts.md) | 6 |
 | [src/runtime/engine-version.ts](src/runtime/engine-version.ts.md) | 1 |
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
@@ -478,6 +479,7 @@ Coverage: **630 modules; 8046 executable function definitions**.
 | [src/runtime/perf-meter.ts](src/runtime/perf-meter.ts.md) | 4 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
+| [src/runtime/planet-preferences.ts](src/runtime/planet-preferences.ts.md) | 10 |
 | [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 23 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |

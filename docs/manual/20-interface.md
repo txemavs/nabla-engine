@@ -91,6 +91,25 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+[RuntimeDisplayController](../../src/runtime/display-controller.ts) owns the runtime's
+display settings and adaptive resolution state. It preserves preset defaults, explicit
+manual scaling, auto-mode limits, FPS budgets and probe application. The runtime still
+owns the GPU probe, frame loop, resize operations and host notifications. This controller
+does not introduce storage keys: hosts continue to restore and save display preferences
+through their existing controls. Regression coverage includes
+`test/runtime/display-controller.test.ts`, `test/runtime/resolution-scale.test.ts` and
+the two-runtime browser test.
+
+[RuntimePlanetPreferences](../../src/runtime/planet-preferences.ts) owns the live
+planet layers, clouds and solar flare preferences. It preserves `nabla.planetVisual`
+and the existing startup order: valid saved preferences override the quality-selected
+cloud style, then the host's `sea` option determines initial sea visibility. Startup
+never saves those overrides. Numeric setters validate before changing state; changes update
+only that runtime's sky and persist through its settings store. Snapshot methods
+return copies. Rendering lifecycles, the sky clock and physical water remain separate.
+Regression coverage: `test/runtime/planet-preferences.test.ts` and the two-runtime
+browser test in `test/browser/e2e/runtime-settings.spec.ts`.
+
 [RuntimeCameraPreferences](../../src/runtime/camera-preferences.ts) handles each runtime's
 FOV offset and ActionCam/bodycam preferences. It uses the existing camera state and
 ActionCam settings rather than duplicating live state. Camera options establish the base

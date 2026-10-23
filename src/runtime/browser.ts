@@ -95,18 +95,13 @@ import { WeaponControls } from './weapon-controls.js'
  * monitors and a single frame loop. Hosts supply a canvas and authored planetary
  * scene; dispose releases owned resources without removing the host canvas.
  */
+import { maxPixelRatio, type DisplaySettings } from '../config/display.js'
 import {
-  autoResolutionScaleRange,
-  maxPixelRatio,
-  resolveDisplaySettings,
-  type DisplaySettings,
-} from '../config/display.js'
-import {
-  AdaptiveResolutionScale,
   probeResolutionTier,
   type ResolutionProbeResult,
   type ResolutionScaleState,
 } from './resolution-scale.js'
+import { RuntimeDisplayController } from './display-controller.js'
 import type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 export type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 import { controlDefaults } from '../config/controls.js'
@@ -144,7 +139,6 @@ import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
 import {
   browserPerformanceDefaults,
-  cloudStyleForPerformancePreset,
   normalizePerformance,
   performancePresets,
   streamBudget,
@@ -153,7 +147,7 @@ import {
   type PerformanceSettings,
   type VisibilitySettings,
 } from './performance.js'
-import { readSavedPlanetVisual, writeSavedPlanetVisual } from './planet-visual.js'
+import { RuntimePlanetPreferences } from './planet-preferences.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
 import {
@@ -307,11 +301,7 @@ export {
   lightTuningRanges,
   type LightTuning,
 } from './light-tuning.js'
-import {
-  WorldEnvironment,
-  configureWorldRenderer,
-  PLANET_DEFAULTS,
-} from '../render/planet/world-environment.js'
+import { WorldEnvironment, configureWorldRenderer } from '../render/planet/world-environment.js'
 import { CatchFloor } from '../render/planet/catch-floor.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
@@ -714,8 +704,7 @@ export class GameRuntime {
   private readonly fieldLighting: FieldLighting | null
   /** Static bodies of lamp posts and tree trunks: a world layer of the scenery-physics service. */
   private readonly fieldPoles: SceneryLayer | null
-  private display: DisplaySettings
-  private readonly adaptive: AdaptiveResolutionScale
+  private readonly displayController: RuntimeDisplayController
   private probing: Promise<unknown> | null = null
   private attract: {
     loop: FrameLoop
@@ -941,26 +930,8 @@ export class GameRuntime {
     return rig ? normalizeWeaponPoses(rig, this.legacyWeaponPoses) : this.legacyWeaponPoses
   }
   private smokeOn = true
-  private planet: {
-    sky: boolean
-    sun: boolean
-    clouds: boolean
-    sea: boolean
-    cloudStyle: 'low' | 'artistic'
-    cloudAmount: number
-    cloudPressure: number
-    lensFlareAmount: number
-  } = {
-    sky: PLANET_DEFAULTS.sky,
-    sun: PLANET_DEFAULTS.sun,
-    clouds: PLANET_DEFAULTS.clouds,
-    sea: PLANET_DEFAULTS.sea,
-    // Overwritten after quality is resolved. Alto and Ultra start artistic; a saved Planeta choice wins.
-    cloudStyle: 'low',
-    cloudAmount: PLANET_DEFAULTS.cloudAmount,
-    cloudPressure: 0.12,
-    lensFlareAmount: 1,
-  }
+  private readonly planetPreferences = new RuntimePlanetPreferences()
+  private readonly planet = this.planetPreferences.state
 
   constructor(private readonly options: GameRuntimeOptions) {
     this.visuals.bindScene(this.scene)
@@ -1074,12 +1045,10 @@ export class GameRuntime {
     )
     this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
     this.scene.add(this.wheelDebug.root)
-    this.display = resolveDisplaySettings(options.display, options.performance?.preset)
-    this.adaptive = new AdaptiveResolutionScale({
-      mode: this.display.resolutionScaleMode,
-      scale: this.display.resolutionScale,
-    })
-    this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
+    this.displayController = new RuntimeDisplayController(
+      options.display,
+      options.performance?.preset,
+    )
     Object.assign(this.cameraState, createGameCameraState(options.camera))
     this.cameraPreferences.restoreView(this.settings)
     this.camera.near = this.cameraState.settings.nearClip
@@ -1102,9 +1071,7 @@ export class GameRuntime {
     } catch {
       this.visuals.setSmokePercent(this.quality.smoke)
     }
-    const savedPlanet = readSavedPlanetVisual(this.settings)
-    if (savedPlanet) Object.assign(this.planet, savedPlanet)
-    else this.planet.cloudStyle = cloudStyleForPerformancePreset(this.quality.preset)
+    this.planetPreferences.restore(this.settings, this.quality.preset)
     this.document = parseScene(options.scene)
     this.worldContent = options.world ? structuredClone(options.world) : undefined
     this.remoteViews = new RemotePortalViews(
@@ -1302,8 +1269,7 @@ export class GameRuntime {
     // Reattach after Play extraction: viewer still parents the flare; game must too.
     this.scene.add(this.sky.lensFlare)
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
-    this.planet.sea = this.options.sea !== false
-    this.syncPlanet()
+    this.planetPreferences.initializeView(this.sky, this.options.sea !== false)
     this.effects = new VehicleEffects(this.scene, undefined, this.visuals.smokeDensity)
     this.effects.audio.mixer.set(readAudioMix(this.settings) ?? {})
     this.effects.reverseAlarmEnabled = (entity) =>
@@ -1441,7 +1407,7 @@ export class GameRuntime {
         this.options.onError?.(error)
       }
     })
-    this.loop.setMaxFps(this.display.maxFps)
+    this.loop.setMaxFps(this.displayController.settings.maxFps)
     this.originalTabIndex = options.canvas.getAttribute('tabindex')
     options.canvas.tabIndex = 0
     this.bindInput()
@@ -3404,24 +3370,14 @@ export class GameRuntime {
   }
   /** Visible planetary layers (sky, sun, clouds, sea). */
   get planetLayers(): { sky: boolean; sun: boolean; clouds: boolean; sea: boolean } {
-    return {
-      sky: this.planet.sky,
-      sun: this.planet.sun,
-      clouds: this.planet.clouds,
-      sea: this.planet.sea,
-    }
+    return this.planetPreferences.layers
   }
   /** Show or hide planetary layers; wires `GeographicView.setLayers` and the sea sheet. */
   setPlanetLayers(
     layers: Partial<{ sky: boolean; sun: boolean; clouds: boolean; sea: boolean }>,
   ): void {
     this.assertAlive()
-    if (layers.sky !== undefined) this.planet.sky = layers.sky
-    if (layers.sun !== undefined) this.planet.sun = layers.sun
-    if (layers.clouds !== undefined) this.planet.clouds = layers.clouds
-    if (layers.sea !== undefined) this.planet.sea = layers.sea
-    this.syncPlanet()
-    this.rememberPlanetVisual()
+    this.planetPreferences.setLayers(layers, this.sky, this.settings)
   }
   get cloudStyle(): 'low' | 'artistic' {
     return this.planet.cloudStyle
@@ -3429,9 +3385,7 @@ export class GameRuntime {
   /** Artistic sheets or the simpler globe layer (`GeographicView.setCloudStyle`). */
   setCloudStyle(style: 'low' | 'artistic'): void {
     this.assertAlive()
-    this.planet.cloudStyle = style
-    this.sky.setCloudStyle(style)
-    this.rememberPlanetVisual()
+    this.planetPreferences.setCloudStyle(style, this.sky, this.settings)
   }
   get cloudAmount(): number {
     return this.planet.cloudAmount
@@ -3442,15 +3396,7 @@ export class GameRuntime {
    */
   setCloudWeather(amount: number, storm?: number): void {
     this.assertAlive()
-    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
-      throw new Error('Cloud amount must be between 0 and 1')
-    const pressure = storm === undefined ? this.planet.cloudPressure : storm
-    if (!Number.isFinite(pressure) || pressure < 0 || pressure > 1)
-      throw new Error('Cloud pressure must be between 0 and 1')
-    this.planet.cloudAmount = amount
-    this.planet.cloudPressure = pressure
-    this.sky.setCloudWeather(amount, pressure)
-    this.rememberPlanetVisual()
+    this.planetPreferences.setCloudWeather(amount, storm, this.sky, this.settings)
   }
   get cloudPressure(): number {
     return this.planet.cloudPressure
@@ -3461,48 +3407,11 @@ export class GameRuntime {
   /** 0-1 sun lens flare strength (`GeographicView.setLensFlareAmount`). */
   setLensFlareAmount(amount: number): void {
     this.assertAlive()
-    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
-      throw new Error('Lens flare amount must be between 0 and 1')
-    this.planet.lensFlareAmount = amount
-    this.sky.setLensFlareAmount(amount)
-    this.rememberPlanetVisual()
+    this.planetPreferences.setLensFlareAmount(amount, this.sky, this.settings)
   }
   /** Snapshot of Planeta visual knobs for host/demo config paste. */
   planetVisualConfig() {
-    return {
-      cloudStyle: this.planet.cloudStyle,
-      cloudAmount: this.planet.cloudAmount,
-      cloudPressure: this.planet.cloudPressure,
-      lensFlare: this.planet.lensFlareAmount,
-      sky: this.planet.sky,
-      sun: this.planet.sun,
-      clouds: this.planet.clouds,
-      sea: this.planet.sea,
-    }
-  }
-  private rememberPlanetVisual(): void {
-    writeSavedPlanetVisual(this.settings, {
-      sky: this.planet.sky,
-      sun: this.planet.sun,
-      sea: this.planet.sea,
-      clouds: this.planet.clouds,
-      cloudStyle: this.planet.cloudStyle,
-      cloudAmount: this.planet.cloudAmount,
-      cloudPressure: this.planet.cloudPressure,
-      lensFlareAmount: this.planet.lensFlareAmount,
-    })
-  }
-  private syncPlanet(): void {
-    this.sky.setLayers({
-      sky: this.planet.sky,
-      planets: this.planet.sky,
-      sun: this.planet.sun,
-      moon: this.planet.sky,
-      clouds: this.planet.clouds,
-    })
-    this.sky.setCloudStyle(this.planet.cloudStyle)
-    this.sky.setCloudWeather(this.planet.cloudAmount, this.planet.cloudPressure)
-    this.sky.setLensFlareAmount(this.planet.lensFlareAmount)
+    return this.planetPreferences.config()
   }
   /** Sea settings in use; undefined means the simplified tide. */
   get waterSettings(): SceneDocument['water'] {
@@ -4585,7 +4494,7 @@ export class GameRuntime {
     this.fieldLighting?.lights.setShadows(enabled)
   }
   get displaySettings(): DisplaySettings {
-    return { ...this.display }
+    return { ...this.displayController.settings }
   }
   /** Whether the post-flip cinematic camera is allowed (default on). */
   get flipCinematicEnabled(): boolean {
@@ -5065,30 +4974,14 @@ export class GameRuntime {
    */
   setDisplay(settings: Partial<DisplaySettings>): void {
     if (this.disposed) throw new Error('Game runtime is disposed')
-    let mode = settings.resolutionScaleMode ?? this.display.resolutionScaleMode
-    if (settings.resolutionScale !== undefined && settings.resolutionScaleMode === undefined)
-      mode = 'manual'
-    let scale = settings.resolutionScale ?? this.display.resolutionScale
-    if (mode === 'auto')
-      scale = Math.min(autoResolutionScaleRange.max, Math.max(autoResolutionScaleRange.min, scale))
-    const next = resolveDisplaySettings({
-      maxFps: settings.maxFps ?? this.display.maxFps,
-      resolutionScale: scale,
-      resolutionScaleMode: mode,
-    })
-    const resize = next.resolutionScale !== this.display.resolutionScale
-    const modeChanged = next.resolutionScaleMode !== this.display.resolutionScaleMode
-    if (next.maxFps !== this.display.maxFps) {
-      this.loop.setMaxFps(next.maxFps)
-      this.adaptive.setTargetFrameMs(next.maxFps ? 1000 / next.maxFps : null)
-    }
-    this.display = next
-    this.adaptive.applyDisplay(next)
+    const { resize, modeChanged } = this.displayController.update(settings, (fps) =>
+      this.loop.setMaxFps(fps),
+    )
     if (resize) {
       this.applyPixelRatio()
       this.resize()
     }
-    if (resize || modeChanged) this.options.onResolutionScale?.(this.adaptive.state)
+    if (resize || modeChanged) this.options.onResolutionScale?.(this.displayController.state)
   }
   /** Current spatial upscaling mode and sharpening strength. */
   get fsrSettings(): FsrSettings {
@@ -5100,7 +4993,7 @@ export class GameRuntime {
   }
   /** Current auto/manual mode and live drawing-buffer scale. */
   get resolutionScaleState(): ResolutionScaleState {
-    return this.adaptive.state
+    return this.displayController.state
   }
   /**
    * Run a short (~3 s by default) machine-speed probe while the host waits (ideally during
@@ -5147,10 +5040,7 @@ export class GameRuntime {
           }),
         sleep: async () => {},
       })
-      if (this.display.resolutionScaleMode === 'auto') {
-        this.display = { ...this.display, resolutionScale: result.resolutionScale }
-        this.adaptive.setAuto(result.resolutionScale)
-      }
+      this.displayController.applyProbe(result.resolutionScale)
       this.options.canvas.dataset.probeTier = result.qualityTier
       this.options.canvas.dataset.probeMedianMs = result.medianFrameMs.toFixed(1)
       return result
@@ -5158,7 +5048,7 @@ export class GameRuntime {
       if (!this.disposed) {
         this.applyPixelRatio()
         this.resize()
-        this.options.onResolutionScale?.(this.adaptive.state)
+        this.options.onResolutionScale?.(this.displayController.state)
       }
     }
   }
@@ -5578,7 +5468,7 @@ export class GameRuntime {
         this.options.onError?.(error)
       }
     })
-    loop.setMaxFps(this.display.maxFps)
+    loop.setMaxFps(this.displayController.settings.maxFps)
     this.attract = {
       loop,
       elapsed: 0,
@@ -5644,23 +5534,24 @@ export class GameRuntime {
     }
   }
   private observeResolution(frameMs: number, time: number): void {
-    const changed = this.adaptive.observeFrame(frameMs, time)
-    if (changed === null) return
-    this.display = { ...this.display, resolutionScale: changed }
+    if (!this.displayController.observeFrame(frameMs, time)) return
     this.applyPixelRatio()
     this.resize()
-    this.options.onResolutionScale?.(this.adaptive.state)
+    this.options.onResolutionScale?.(this.displayController.state)
   }
   private applyPixelRatio(): void {
     this.renderer.setPixelRatio(
       Math.min(
         maxPixelRatio,
         Math.min(window.devicePixelRatio || 1, this.quality.resolution) *
-          this.display.resolutionScale,
+          this.displayController.settings.resolutionScale,
       ),
     )
-    this.options.canvas.dataset.resolutionScale = String(this.display.resolutionScale)
-    this.options.canvas.dataset.resolutionScaleMode = this.display.resolutionScaleMode
+    this.options.canvas.dataset.resolutionScale = String(
+      this.displayController.settings.resolutionScale,
+    )
+    this.options.canvas.dataset.resolutionScaleMode =
+      this.displayController.settings.resolutionScaleMode
   }
 
   private cull(position: THREE.Vector3): void {

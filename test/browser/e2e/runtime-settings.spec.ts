@@ -16,6 +16,17 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
       const { installSettingsScope } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
       const methods = [Storage.prototype.getItem, Storage.prototype.setItem, localStorage.getItem]
+      const planet = {
+        sky: true,
+        sun: true,
+        sea: true,
+        clouds: true,
+        cloudStyle: 'low',
+        cloudAmount: 0.35,
+        cloudPressure: 0.12,
+        lensFlareAmount: 1,
+      }
+      localStorage.setItem('nabla.planetVisual', JSON.stringify(planet))
       localStorage.setItem('nabla.cameraFov', '12')
       localStorage.setItem('nabla.smokePercent', '65')
       localStorage.setItem('nabla.actionCam', 'true')
@@ -60,6 +71,12 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         a.setActionCamEnabled(false)
         a.setBodycamEnabled(false)
         a.setActionCamSettings({ strideMetres: 3 })
+        a.setDisplay({ resolutionScale: 0.75, maxFps: 60 })
+        const displayBeforePlay = [a.displaySettings, b.displaySettings]
+        a.setPlanetLayers({ sky: false, sun: false, clouds: false })
+        a.setCloudStyle('artistic')
+        a.setCloudWeather(0.2, 0.7)
+        a.setLensFlareAmount(0.3)
         a.setCameraFovOffset(25)
         a.setSmokePercent(20)
         a.setHiddenLayers(['road'])
@@ -110,6 +127,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         c = make('left')
         return {
           initial,
+          displayBeforePlay,
+          planetPreferences: [b.planetVisualConfig(), c.planetVisualConfig()],
+          savedPlanet: JSON.parse(localStorage.getItem('nabla.planetVisual')!),
           initialCamera,
           cameraPreferences: [
             b.actionCamEnabled,
@@ -151,6 +171,38 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
     modes: ['pc', 'pc'],
     uniforms: [0.2, 0.8],
   })
+  expect(result.planetPreferences).toEqual([
+    {
+      sky: true,
+      sun: true,
+      clouds: true,
+      sea: false,
+      cloudStyle: 'low',
+      cloudAmount: 0.35,
+      cloudPressure: 0.12,
+      lensFlare: 1,
+    },
+    {
+      sky: false,
+      sun: false,
+      clouds: false,
+      sea: false,
+      cloudStyle: 'artistic',
+      cloudAmount: 0.2,
+      cloudPressure: 0.7,
+      lensFlare: 0.3,
+    },
+  ])
+  expect(result.savedPlanet).toMatchObject({
+    sky: true,
+    sea: true,
+    cloudAmount: 0.35,
+    lensFlareAmount: 1,
+  })
+  expect(result.displayBeforePlay).toEqual([
+    { maxFps: 60, resolutionScale: 0.75, resolutionScaleMode: 'manual' },
+    { maxFps: 0, resolutionScale: 1, resolutionScaleMode: 'manual' },
+  ])
   expect(result.initialCamera).toEqual([true, true, true, true, 2, 2])
   expect(result.cameraPreferences).toEqual([true, true, 2, false, false, 3])
   expect(result.entryModes).toEqual(['pc', 'headset-pc', 'pc'])
