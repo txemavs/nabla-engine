@@ -126,11 +126,22 @@ failure remains a separate regression task; it is not covered by a passing runti
 focus handling and ordered release of held controls. Binding is idempotent and every
 listener uses the runtime's lifetime abort signal. Gesture capture, secondary mouse-button
 events, Shift resynchronization and non-passive wheel handling preserve their existing
-order. Game-specific wheel, keyboard and look handlers remain in `GameRuntime` for the
-separate action-dispatch extraction; the input owner receives explicit callbacks, never
-the whole runtime. Release order remains beams, USB, weapons, touch, monitors, gameplay,
+order. Gesture-specific wheel, keyboard and look handlers remain in `GameRuntime`;
+semantic action execution delegates to `RuntimeActionDispatch`. The input owner receives
+explicit callbacks, never the whole runtime. Release order remains beams, USB, weapons, touch, monitors, gameplay,
 gamepad edges, then pointer ownership. No storage keys or public methods change.
 Coverage: `test/browser/e2e/input-events.spec.ts` and `input-contexts.spec.ts`.
+
+[RuntimeActionDispatch](../../src/runtime/action-dispatch.ts) executes semantic actions and
+legacy key aliases in the original priority order: UI/aiming gates, stance chords, pickups,
+body slots and weapons, then vehicle/world operations. It also owns camera action routing,
+vehicle menu callbacks and the per-instance pending vehicle-entry guard. Dependencies use
+live accessors for replaceable state; the component does not receive a browser runtime.
+Vehicle preparation completion rechecks runtime lifetime, simulation identity, play state,
+occupancy and proximity before retrying interaction through the shared game dispatch.
+That dispatch retains host/Relay confirmations; the extraction does not bypass it with a
+direct simulation interaction. Menu FOV continues through the existing preference owner.
+Tests: `test/runtime/action-dispatch.test.ts` and the real keyboard browser test.
 
 [RuntimePointerCapture](../../src/runtime/pointer-capture.ts) owns each runtime's
 free-mouse state and pointer-lock policy. Capture remains restricted to playing and

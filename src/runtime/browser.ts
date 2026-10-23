@@ -5,14 +5,7 @@ import {
 } from './settings-scope.js'
 import { startBootPhase } from './boot-trace.js'
 import { createMonitorAvatar } from '../render/entity/avatar.js'
-import {
-  bodySlotForAction,
-  DROP_ACTION,
-  MAGAZINE_ACTION,
-  MAGAZINE_SLOT,
-  magazineActionFor,
-  type BodySlot,
-} from '../character/body-slots.js'
+import { type BodySlot } from '../character/body-slots.js'
 import type { HeldPose } from '../render/entity/held-pose.js'
 export {
   defaultHeldPose,
@@ -51,12 +44,9 @@ import type { UsbFrame, UsbStorage } from './usb/controllers.js'
 import {
   actionHeld,
   inputMode,
-  actionCompletesChord,
   actionAxis,
   bindingForKey,
   inputBindings,
-  contextualAction,
-  legacyInputAction,
   gamepadActionButtons,
   controlsHint,
   type InputContext,
@@ -101,6 +91,7 @@ import {
   type ResolutionScaleState,
 } from './resolution-scale.js'
 import { RuntimePerformanceSettings } from './performance-settings.js'
+import { RuntimeActionDispatch } from './action-dispatch.js'
 import { RuntimeInputEvents } from './input-events.js'
 import { RuntimePointerCapture } from './pointer-capture.js'
 import { RuntimeWeaponPreferences } from './weapon-preferences.js'
@@ -151,7 +142,7 @@ import {
   type WeaponPoseTuning,
 } from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
-import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
+import { fireModeLabel } from '../simulation/weapons/machine-pistol.js'
 import { FirearmSamples } from '../audio/firearm-samples.js'
 import { FireModeBadge } from './fire-mode-badge.js'
 import { Gallery } from './gallery.js'
@@ -173,7 +164,6 @@ import {
 import { TouchFlight } from './touch-flight.js'
 import { TouchWalk, touchLookPitchRate, touchLookRate } from './touch-walk.js'
 import { SceneryPhysics, type SceneryLayer } from './scenery-physics.js'
-import { vehicleMenuKey } from './vehicle-menu.js'
 import { VehicleWarmup } from './vehicle-warmup.js'
 import { nextPaint } from './next-paint.js'
 import { activePlayMode, isVRMode } from './settings-scope.js'
@@ -399,14 +389,6 @@ export interface MirrorState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
-/** H notices per light switch position (English keys, see messages.es.ts). */
-const lightModeNotice: Record<VehicleLightMode, string> = {
-  off: 'Lights off',
-  position: 'Position lights',
-  low: 'Dipped beams',
-  auto: 'Automatic lights',
-}
-
 /** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
 export interface VehiclePlacement {
   id: string
@@ -765,7 +747,6 @@ export class GameRuntime {
   }
   private vehicleWarmup: VehicleWarmup | null = null
   private readonly drivingPrepared = new Set<string>()
-  private enteringVehicle = false
   private vehiclePreparationCount = 0
   private finishVehiclePreparation: (() => void) | null = null
   private placed: { id: string; name: string; ids: string[] }[] = []
@@ -802,6 +783,7 @@ export class GameRuntime {
   private magazineMotion: CasingMotion | null = null
   private magazineMeshes: DroppedMagazines | null = null
   private droppedMagazines = new Map<string, MagazineEntity>()
+  private readonly actions: RuntimeActionDispatch
   private readonly inputEvents: RuntimeInputEvents
   /**
    * Free-mouse mode. While playing, the game owns the pointer (pointer lock on the canvas);
@@ -1338,6 +1320,144 @@ export class GameRuntime {
       document,
       () => this.session.state === 'playing',
     )
+    const actionRuntime = this
+    this.actions = new RuntimeActionDispatch({
+      get inspector() {
+        return actionRuntime.inspector
+      },
+      get disposed() {
+        return actionRuntime.disposed
+      },
+      get session() {
+        return actionRuntime.session
+      },
+      get game() {
+        return actionRuntime.game
+      },
+      get keys() {
+        return actionRuntime.keys
+      },
+      get controlContext() {
+        return actionRuntime.controlContext
+      },
+      get document() {
+        return actionRuntime.document
+      },
+      get view() {
+        return actionRuntime.view
+      },
+      get camera() {
+        return actionRuntime.camera
+      },
+      get firearmSamples() {
+        return actionRuntime.firearmSamples
+      },
+      get inventory() {
+        return actionRuntime.inventory
+      },
+      get pickupModels() {
+        return actionRuntime.pickupModels
+      },
+      get loadout() {
+        return actionRuntime.loadout
+      },
+      get bodySlotHost() {
+        return actionRuntime.bodySlotHost
+      },
+      get wheelDebug() {
+        return actionRuntime.wheelDebug
+      },
+      get gallery() {
+        return actionRuntime.gallery
+      },
+      get drivingPrepared() {
+        return actionRuntime.drivingPrepared
+      },
+      get xrActive() {
+        return actionRuntime.xrActive
+      },
+      get weaponOwned() {
+        return actionRuntime.weaponOwned
+      },
+      get headlampEnabled() {
+        return actionRuntime.headlampEnabled
+      },
+      get weaponLight() {
+        return actionRuntime.weaponLight
+      },
+      get text() {
+        return actionRuntime.text
+      },
+      get sidearm() {
+        return actionRuntime.sidearm
+      },
+      set sidearm(value) {
+        actionRuntime.sidearm = value
+      },
+      get weaponDrawn() {
+        return actionRuntime.weaponDrawn
+      },
+      set weaponDrawn(value) {
+        actionRuntime.weaponDrawn = value
+      },
+      get heldDrawn() {
+        return actionRuntime.heldDrawn
+      },
+      set heldDrawn(value) {
+        actionRuntime.heldDrawn = value
+      },
+      get ownedWeaponId() {
+        return actionRuntime.ownedWeaponId
+      },
+      set ownedWeaponId(value) {
+        actionRuntime.ownedWeaponId = value
+      },
+      get fireRequested() {
+        return actionRuntime.fireRequested
+      },
+      set fireRequested(value) {
+        actionRuntime.fireRequested = value
+      },
+      get triggerDown() {
+        return actionRuntime.triggerDown
+      },
+      set triggerDown(value) {
+        actionRuntime.triggerDown = value
+      },
+      get weaponLightOn() {
+        return actionRuntime.weaponLightOn
+      },
+      set weaponLightOn(value) {
+        actionRuntime.weaponLightOn = value
+      },
+      get magazineAction() {
+        return actionRuntime.magazineAction
+      },
+      set magazineAction(value) {
+        actionRuntime.magazineAction = value
+      },
+      get audio() {
+        return actionRuntime.effects.audio
+      },
+      report: (message) => this.options.onMessage?.(message),
+      nearbyPickup: (sim) => this.nearbyPickup(sim),
+      pickupVisible: (sim, item) => this.pickupVisible(sim, item),
+      loadoutWeaponFor: (id) => this.loadoutWeaponFor(id),
+      createSidearm: (preset) => this.createSidearm(preset),
+      selectWeaponSlot: (slot) => this.selectWeaponSlot(slot),
+      setHeadlamp: (enabled) => this.setHeadlamp(enabled),
+      prewarmVehicle: (entities) => this.prewarmVehicle(entities),
+      skipStartCamera: (sim) => this.startCameraController.skip(sim, false),
+      adjustFov: (step) => {
+        this.cameraPreferences.setFovOffset(
+          nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
+          this.settings,
+        )
+        const { firstPersonFov, chaseFov } = this.cameraState.settings
+        return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+      },
+      loadTrailerCars: (id) => this.loadTrailerCars(id),
+    })
     this.inputEvents = new RuntimeInputEvents(
       options.canvas,
       window,
@@ -6274,13 +6394,7 @@ export class GameRuntime {
     if (sim) this.startCameraController.skip(sim)
   }
   private cycleCamera(): void {
-    // The headset owns the view in XR: the camera action (key, USB or gamepad) does nothing there.
-    if (this.xrActive) return
-    // The camera action during the start sequence hands the view to the player (a held engine starts).
-    const sim = this.session.simulation
-    if (sim) this.startCameraController.skip(sim, false)
-    const message = this.game.dispatch('camera')
-    if (message) this.options.onMessage?.(message)
+    this.actions.cycleCamera()
   }
   private pollGamepad(): Gamepad | null {
     const pads = availableGamepads()
@@ -6551,229 +6665,7 @@ export class GameRuntime {
     return !!sim && !sim.player.vehicleId && sim.nearestVehicle() !== null
   }
   private action(value: string): void {
-    if (this.inspector) return
-    const sim = this.session.simulation
-    if (!sim) return
-    const context = this.controlContext
-    const raw = legacyInputAction(value) ?? bindingForKey(value, context)
-    if (!raw || (context.menu && !raw.startsWith('menu.'))) return
-    const action = contextualAction(raw, context)
-    if (
-      (action === 'lean.left' || action === 'lean.right' || action === 'interact') &&
-      !sim.player.vehicleId &&
-      this.weaponDrawn &&
-      this.sidearm?.isAiming
-    )
-      return
-    if (!sim.player.vehicleId && actionCompletesChord(this.keys.values, 'prone', action, context)) {
-      sim.setStance('prone')
-      this.options.onMessage?.('Cuerpo a tierra · ' + controlsHint({ mode: 'walk' }, ['stance']))
-      return
-    }
-    if (action === 'interact') {
-      const nearby = this.nearbyPickup(sim)
-      // With a loadout the weapon must land in it (it decides what may fire); a world pickup it
-      // cannot keep stays on the ground.
-      const kept = nearby && this.loadout ? this.loadoutWeaponFor(nearby.itemId) : undefined
-      const item =
-        nearby &&
-        (!this.loadout || kept) &&
-        this.inventory.take(nearby.id, sim.renderPlayerPosition, (pickup) =>
-          this.pickupVisible(sim, pickup),
-        )
-      if (item) {
-        const root = this.pickupModels.get(item.id)
-        if (root) {
-          root.removeFromParent()
-          disposeObject(root)
-          this.pickupModels.delete(item.id)
-        }
-        this.ownedWeaponId = item.itemId
-        if (this.loadout && kept) {
-          const result = this.loadout.collect({ type: kept, count: 1 })
-          if (!result.ok) console.info(`[weapon] cannot keep ${item.itemId}: ${result.reason}`)
-          this.options.onMessage?.(
-            this.text('Picked up {0}', item.name) + ' · ' + controlsHint(context, ['holster']),
-          )
-          return
-        }
-        if (this.sidearm?.preset?.id !== item.itemId) {
-          this.sidearm?.dispose()
-          this.sidearm = this.createSidearm(
-            weaponPresets().find((preset) => preset.id === item.itemId),
-          )
-        }
-        this.weaponDrawn = true
-        this.sidearm.visible = true
-        this.options.onMessage?.(
-          this.text('Picked up {0}', item.name) + ' · ' + controlsHint(context, ['holster']),
-        )
-        return
-      }
-    }
-    if (action === 'debug.wheels') {
-      this.wheelDebug.toggle()
-      return
-    }
-    if (action === DROP_ACTION) {
-      if (!sim.player.vehicleId) this.bodySlotHost?.drop()
-      return
-    }
-    const bodySlot = bodySlotForAction(action)
-    // The magazine pocket with the pistol drawn is the reload, handled below with the weapon keys.
-    if (bodySlot && !(bodySlot === MAGAZINE_SLOT && this.weaponDrawn)) {
-      if (sim.player.vehicleId || this.bodySlotHost?.select(bodySlot)) return
-      if (/^\d$/.test(bodySlot.key)) this.selectWeaponSlot(Number(bodySlot.key))
-      return
-    }
-    if (action === 'holster' && this.loadout) {
-      const result = this.loadout.toggleHolster()
-      if (!result.ok) this.options.onMessage?.(result.reason)
-      return
-    }
-    if (action === 'holster' && this.heldDrawn) {
-      this.heldDrawn = false
-      this.options.onMessage?.(this.text('Weapon holstered'))
-      return
-    }
-    if (action === 'holster') {
-      if (!this.weaponOwned) return
-      this.weaponDrawn = !this.weaponDrawn
-      this.fireRequested = false
-      this.triggerDown = false
-      if (this.weaponDrawn && !this.sidearm) this.sidearm = this.createSidearm()
-      this.sidearm?.setAiming(false)
-      this.view.laser.enabled = this.weaponDrawn && !!this.sidearm?.laserEnabled
-      if (this.weaponLight)
-        this.weaponLight.intensity = this.weaponDrawn && this.weaponLightOn ? 35 : 0
-      this.options.onMessage?.(
-        this.weaponDrawn ? this.text('Weapon drawn') : this.text('Weapon holstered'),
-      )
-      return
-    }
-    if (
-      this.xrActive &&
-      this.weaponDrawn &&
-      [MAGAZINE_ACTION, 'weapon.slide', 'weapon.auto', 'weapon.chamber', 'weapon.inspect'].includes(
-        action,
-      )
-    )
-      return
-    if ((action === MAGAZINE_ACTION || action === 'weapon.slide') && this.weaponDrawn) {
-      if (this.sidearm?.state.reload !== 'none') return
-      this.magazineAction =
-        action === 'weapon.slide'
-          ? 'release'
-          : (magazineActionFor({
-              drawn: true,
-              seated: !!this.sidearm?.state.magazineSeated,
-            }) as 'drop' | 'insert')
-      return
-    }
-    if (
-      (action === 'weapon.inspect' || action === 'weapon.chamber') &&
-      this.weaponDrawn &&
-      this.sidearm
-    ) {
-      this.sidearm.inspect(performance.now(), action === 'weapon.chamber')
-      if (action === 'weapon.chamber')
-        this.firearmSamples.cue(this.sidearm?.preset, 'slide-back', this.camera.position.toArray())
-      return
-    }
-    if (
-      (action === 'weapon.laser' || action === 'weapon.light') &&
-      this.weaponDrawn &&
-      this.sidearm
-    ) {
-      if (action === 'weapon.laser') {
-        const on = this.sidearm.toggleLaser()
-        this.view.laser.enabled = on
-        this.options.onMessage?.(on ? this.text('Laser on') : this.text('Laser off'))
-      } else {
-        this.weaponLightOn = !this.weaponLightOn
-        this.sidearm.setLightEnabled(this.weaponLightOn)
-        this.options.onMessage?.(this.weaponLightOn ? 'Linterna encendida' : 'Linterna apagada')
-      }
-      return
-    }
-    // Experimental full-auto: M on foot with the pistol drawn. At a ship helm (or on foot without
-    // the pistol) M keeps its game meaning (helm mode / its notice).
-    if (
-      action === 'weapon.auto' &&
-      this.weaponDrawn &&
-      !sim.player.vehicleId &&
-      this.sidearm?.selectFire
-    ) {
-      this.sidearm.setFireMode(nextFireMode(this.sidearm.fireMode))
-      this.triggerDown = false
-      this.effects.audio.weaponSound('safety', this.camera.position.toArray())
-      this.options.onMessage?.(this.sidearm.fireMode === 'semi' ? 'SEMI' : 'AUTO')
-      return
-    }
-    if (action === 'weapon.auto' && this.weaponDrawn && !sim.player.vehicleId && this.sidearm) {
-      this.magazineAction = 'automatic'
-      this.triggerDown = false
-      return
-    }
-    if (action === 'headlamp' && !sim.player.vehicleId) {
-      this.setHeadlamp(!this.headlampEnabled)
-      return
-    }
-    if (action === 'horn' && sim.player.vehicleId) {
-      this.effects.audio.horn()
-      return
-    }
-    if (action === 'gallery.reset') this.gallery.reset()
-    if (action === 'interact' && !sim.player.vehicleId) {
-      const id = sim.nearestVehicle()
-      if (id && !this.drivingPrepared.has(id)) {
-        if (this.enteringVehicle) return
-        const entity = this.document.entities.find((e) => e.id === id)
-        if (!entity) return
-        this.enteringVehicle = true
-        const assembly = [entity, ...this.document.entities.filter((e) => e.parentId === id)]
-        void this.prewarmVehicle(assembly)
-          .then(() => {
-            if (this.disposed || this.session.simulation !== sim) return
-            this.drivingPrepared.add(id)
-            if (
-              this.session.state === 'playing' &&
-              !sim.player.vehicleId &&
-              sim.nearestVehicle() === id
-            )
-              this.action('interact')
-          })
-          .catch((error) => {
-            this.options.onMessage?.(t('game.could-not-prepare-the-vehicle-you-can-try-again'))
-            console.error('Vehicle preparation failed', error)
-          })
-          .finally(() => {
-            this.enteringVehicle = false
-          })
-        return
-      }
-    }
-    let message = this.game.dispatch(action)
-    if ((action === 'signal.left' || action === 'signal.right') && sim.player.vehicleId) {
-      this.view.signal(sim.player.vehicleId, action === 'signal.left' ? -1 : 1)
-      message = controlsHint(context, ['signal.left', 'signal.right'])
-    }
-    if (action === 'lights') {
-      if (sim.player.vehicleId) {
-        const mode = this.view.cycleVehicleLights(sim.player.vehicleId)
-        if (mode !== null) message = this.text(lightModeNotice[mode])
-      }
-    }
-    if (action === 'gps' && sim.player.vehicleId) {
-      const open = this.view.toggleVehicleGps(sim.player.vehicleId)
-      if (open !== null) message = open ? this.text('GPS on') : this.text('GPS off')
-    }
-    if (action === 'highBeam' && sim.player.vehicleId) {
-      const high = this.view.toggleVehicleHighBeam(sim.player.vehicleId)
-      if (high !== null)
-        message = high ? this.text('High beams selected') : this.text('Low beams selected')
-    }
-    if (message) this.options.onMessage?.(message)
+    this.actions.dispatch(value)
   }
   private handleInputWheel(event: WheelEvent): void {
     const canvas = this.options.canvas
@@ -6850,51 +6742,7 @@ export class GameRuntime {
     if (bindingForKey(event.code, this.controlContext) !== undefined) event.preventDefault()
     const id = this.session.simulation?.player.vehicleId
     if (id && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      const result = vehicleMenuKey(
-        this.view,
-        this.document,
-        id,
-        event.code,
-        event.repeat,
-        (message) => this.options.onMessage?.(message),
-        (entityId, patch) => {
-          const entity = this.document.entities.find((e) => e.id === entityId)
-          if (entity) Object.assign(entity, patch)
-        },
-        this.text,
-        (entityId, mode) =>
-          this.session.simulation?.setEngineMode(entityId, mode) ??
-          t('game.this-vehicle-has-a-single-engine-mode'),
-        (step) => {
-          this.cameraPreferences.setFovOffset(
-            nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
-            this.settings,
-          )
-          const { firstPersonFov, chaseFov } = this.cameraState.settings
-          return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
-        },
-        (action) => {
-          const track = this.effects.audio.musicTrack
-          if (!track) return t('game.no-music')
-          if (action === 'stop') {
-            this.effects.audio.fadeOutMusic(0.8)
-            return t('game.music-stopped')
-          }
-          return this.effects.audio.playMusic()
-            ? t('game.music-track', { title: track.title ?? t('game.track') })
-            : t('game.music-muted-in-settings-to-audio')
-        },
-        (action) => {
-          const sim = this.session.simulation!
-          if (action === 'cargo') {
-            void this.loadTrailerCars(id).catch((error) => this.options.onMessage?.(String(error)))
-            return 'Preparando carga del portacoches'
-          }
-          if (['extend', 'retract', 'angle-up', 'angle-down'].includes(action))
-            return sim.adjustTrailerRamp(id, action)
-          return sim.setTrailerPlatform(id, action === 'flat')
-        },
-      )
+      const result = this.actions.menuKey(id, event.code, event.repeat)
       if (result.handled) {
         event.preventDefault()
         this.game.releaseInput()

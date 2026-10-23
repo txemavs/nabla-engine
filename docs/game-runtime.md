@@ -194,3 +194,14 @@ vehicle menus and action execution deliberately remain for topic 2. The public f
 and preference keys are unchanged. Browser coverage exercises two owners, repeated bind,
 abort cleanup, secondary mouse buttons, pointer recapture, Shift synchronization,
 non-passive wheel handling and release order, alongside the real runtime keyboard test.
+
+### Topic 2 completion: action execution
+
+`RuntimeActionDispatch` owns ordered semantic action execution, legacy key adaptation,
+vehicle menu callbacks and camera actions. Its per-instance preparation guard retains the
+existing retry and stale-completion checks; shared game dispatch remains the confirmation
+boundary for hosts and Relay. Browser gesture handling and resource/frame ownership stay
+in their existing components. Explicit live dependencies preserve replacement of the
+sidearm, loadout, simulation and other mutable state without copying preferences.
+Coverage includes action priorities, pickup versus entry, vehicle messages, XR camera
+ownership, menu FOV forwarding, concurrent owners, repeated entry and failed/stale warmups.

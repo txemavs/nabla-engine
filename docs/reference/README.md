@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **638 modules; 8133 executable function definitions**.
+Coverage: **639 modules; 8187 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -429,6 +429,7 @@ Coverage: **638 modules; 8133 executable function definitions**.
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/action-cam-settings.ts](src/runtime/action-cam-settings.ts.md) | 1 |
 | [src/runtime/action-cam.ts](src/runtime/action-cam.ts.md) | 6 |
+| [src/runtime/action-dispatch.ts](src/runtime/action-dispatch.ts.md) | 19 |
 | [src/runtime/actor.ts](src/runtime/actor.ts.md) | 8 |
 | [src/runtime/ar/index.ts](src/runtime/ar/index.ts.md) | 0 |
 | [src/runtime/ar/map-quarters.ts](src/runtime/ar/map-quarters.ts.md) | 18 |
@@ -440,7 +441,7 @@ Coverage: **638 modules; 8133 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 606 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
