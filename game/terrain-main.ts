@@ -166,6 +166,7 @@ try {
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
+    healthDisplay: boot.healthDisplay,
     music: boot.music,
     hud: true,
     touchControls:

@@ -24,7 +24,7 @@ Defaults keep the classic centred Nabla splash, no attract, probe on in auto sca
 
 ## buildTimeBoot
 
-[Implementation, line 91](../../../game/boot.ts#L91)
+[Implementation, line 93](../../../game/boot.ts#L93)
 
 ```ts
 buildTimeBoot(): HostBootConfig
@@ -37,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## numberOrUndefined
 
-[Implementation, line 98](../../../game/boot.ts#L98)
+[Implementation, line 100](../../../game/boot.ts#L100)
 
 ```ts
 numberOrUndefined(raw: string | null | undefined): number | undefined
@@ -51,7 +51,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## buildTimeBootJson
 
-[Implementation, line 104](../../../game/boot.ts#L104)
+[Implementation, line 106](../../../game/boot.ts#L106)
 
 ```ts
 buildTimeBootJson(raw: string | undefined): HostBootConfig
@@ -64,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readBootConfig
 
-[Implementation, line 116](../../../game/boot.ts#L116)
+[Implementation, line 118](../../../game/boot.ts#L118)
 
 Merge URL, build-time and page-supplied boot configuration.
 
@@ -82,7 +82,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bootHiddenLayers
 
-[Implementation, line 153](../../../game/boot.ts#L153)
+[Implementation, line 155](../../../game/boot.ts#L155)
 
 The host's default hidden terrain layers, the base for the URL and the stored player choice.
 
@@ -92,7 +92,7 @@ bootHiddenLayers(config: HostBootConfig): string[]
 
 ## runBootPhase
 
-[Implementation, line 162](../../../game/boot.ts#L162)
+[Implementation, line 164](../../../game/boot.ts#L164)
 
 Start attract and the probe; call right before `play()` without awaiting the probe.
 The probe overlaps the terrain wait and `play()` finishes it before gameplay frames start.

@@ -227,7 +227,7 @@ import type { MirrorAdjustment, MirrorAngle } from '../render/entity/car-mirrors
 import { VehicleMonitors } from './vehicle-monitors.js'
 import { idleInput, type Simulation } from '../simulation/simulation.js'
 import { Combat } from './combat.js'
-import { CombatHud } from '../ui/combat-hud.js'
+import { CombatHud, type HealthDisplay } from '../ui/combat-hud.js'
 import { weaponBaseDamage } from '../simulation/combat/damage.js'
 import * as THREE from 'three'
 import { parseScene, type SceneDocument } from '../scene/document.js'
@@ -608,6 +608,11 @@ export interface GameRuntimeOptions {
    * See `StartCameraStep`.
    */
   startCameras?: StartCameraSequence
+  /**
+   * Local player's health: 'bar' (default) shows the bottom-centre bar; 'readout' hides it and
+   * publishes the share as `canvas.dataset.health` (0–100, absent with no body) for a host readout.
+   */
+  healthDisplay?: HealthDisplay
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -1265,10 +1270,18 @@ export class GameRuntime {
     this.monitors.rebuild(this.document)
     installEngineStyles(options.canvas.ownerDocument)
     this.gallery = new Gallery(options.canvas.parentElement!, this.text)
-    this.combatHud = new CombatHud(options.canvas.parentElement!, {
-      health: this.text('HP'),
-      dead: (seconds) => this.text('Down · respawn in {0} s', seconds),
-    })
+    this.combatHud = new CombatHud(
+      options.canvas.parentElement!,
+      {
+        health: this.text('HP'),
+        dead: (seconds) => this.text('Down · respawn in {0} s', seconds),
+      },
+      options.healthDisplay ?? 'bar',
+      (percent) => {
+        if (percent === null) delete options.canvas.dataset.health
+        else options.canvas.dataset.health = String(percent)
+      },
+    )
     this.combat = new Combat({
       now: () => performance.now() / 1000,
       sceneOffset: () => this.view.root.position.clone(),
