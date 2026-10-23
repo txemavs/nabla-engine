@@ -24,9 +24,8 @@ groups are the `groups` list at the end of `mountSettingsHud`.
 | Objetos    | Vehículos (add, placed objects, layout); Vehículo actual, titled with its name (driver head and view, steering wheel, mirrors, lights, sound, exhaust and smoke; only what applies); Arma (weapon, combat)                        |
 | Desarrollo | Armas (aiming, poses and animations); light fine tuning; rear-light fine tuning; sign and experimental light shadows; planet config; collision view; terrain source and cache; diagnostics                                        |
 
-Not placed: the legacy «Planeta» section (`scene-planet`, `game/scene-controls.ts`) stays
-hidden (`sectionTab` returns undefined), and «Rendimiento» (`display-performance`) is emptied
-into Pantalla's quality section and hidden.
+The FPS limit and resolution scale live in Calidad. The scene rows (time, sky, sun, sea,
+clouds) are built in a hidden holder (`scene-controls-staging`) and moved into Mundo by the HUD.
 
 The field of view (Cámara) is the same offset as the J menu, saved as `nabla.cameraFov`. The
 occupied vehicle's exhaust offset and quantity and its reversing-alarm switch are saved per

@@ -12,7 +12,7 @@ Once the game starts, the settings HUD (`settings-hud.ts`, `SECTION_TABS`) moves
 
 ## menuSections
 
-[Implementation, line 19](../../../game/menu.ts#L19)
+[Implementation, line 18](../../../game/menu.ts#L18)
 
 ```ts
 menuSections(): HTMLElement
@@ -26,7 +26,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSection
 
-[Implementation, line 30](../../../game/menu.ts#L30)
+[Implementation, line 29](../../../game/menu.ts#L29)
 
 ```ts
 menuSection(id: string, title: string): HTMLFieldSetElement
@@ -44,12 +44,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sections.append`
 - `sections.insertBefore`
 
-## menuSection.callback@43
+## menuSection.callback@42
 
-[Implementation, line 43](../../../game/menu.ts#L43)
+[Implementation, line 42](../../../game/menu.ts#L42)
 
 ```ts
-callback@43(el): inferred by TypeScript; see implementation
+callback@42(el): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSubtitle
 
-[Implementation, line 53](../../../game/menu.ts#L53)
+[Implementation, line 52](../../../game/menu.ts#L52)
 
 Nested heading inside a menu section (Cielo, Sol, Mar, …).
 
