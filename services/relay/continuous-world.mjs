@@ -144,7 +144,7 @@ export class ContinuousWorlds {
       resume: session.token,
       peers: [],
       color: session.color,
-      entities: [],
+      entities: this.refreshObjects(session, true),
       health: { [session.peer]: world.ledger.get(session.peer).health },
     })
     this.refresh(world)
@@ -230,7 +230,7 @@ export class ContinuousWorlds {
       }
     }
   }
-  refreshObjects(s) {
+  refreshObjects(s, initial = false) {
     const world = s.world
     const rows = world.objects
       .near(s.position, this.radius + this.margin)
@@ -245,10 +245,12 @@ export class ContinuousWorlds {
     const own = world.drivers.has(s.peer) ? [world.drivers.get(s.peer)] : []
     const selected = new Set([...own, ...rows.map((r) => r.id)].slice(0, this.maxVisibleEntities))
     for (const id of s.objects)
-      if (!selected.has(id)) this.event(s.socket, 'entity.hidden', { i: id })
+      if (!initial && !selected.has(id)) this.event(s.socket, 'entity.hidden', { i: id })
     for (const id of selected)
-      if (!s.objects.has(id)) this.event(s.socket, 'entity', entityData(world.entities.get(id)))
+      if (!initial && !s.objects.has(id))
+        this.event(s.socket, 'entity', entityData(world.entities.get(id)))
     s.objects = selected
+    return initial ? [...selected].map((id) => entityData(world.entities.get(id))) : undefined
   }
   entityOutcome(world, e) {
     for (const s of world.members.values())

@@ -73,7 +73,8 @@ with the room and reason. Termination bypasses a blocked write queue; it follows
 close cleanup: announce `left`, release driven entities, remove the peer's health, and remove
 the room if empty. The client may observe an abnormal WebSocket close rather than a close
 frame carrying the reason. `NetWorker` can reconnect; the direct `WebSocketTransport`
-fallback does not automatically retry. Rejoining currently creates a new peer identity.
+fallback does not automatically retry. Protocol 1 rejoining creates a new peer identity;
+protocol 2 resumes the tab's retained session (see the continuous-world contract).
 
 Both maintenance timers are cleared by `relay.close()`. The Docker image includes the
 connection policy module. No active development/game server is required to run the tests.

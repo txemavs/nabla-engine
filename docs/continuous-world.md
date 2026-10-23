@@ -169,4 +169,24 @@ npx tsc -p tsconfig.build.json --noEmit
 Tests exercise 70 simultaneous clients with a per-client cap of 64, traversal without
 rejoining/control loss, resume and expiry, content/instance isolation, planetary date-line
 neighbours, real relay-to-client conversion between geographic origins, and local GLB space.
-This is functional integration coverage, not a load benchmark or a rendered multiplayer playtest.
+This is functional integration coverage, not a load benchmark.
+
+The Euskadi host also enables protocol 2 on its terrain page and GLB scenario page. Terrain
+uses the loaded scene's geographical origin; GLBs use local metres and versioned content ids.
+`?scenario=multiplayer-yard&room=my-match` selects the reference GLB independently of the
+instance. The host's `docs/continuous-multiplayer.md` describes publication and local checks.
+
+During a temporary protocol-2 disconnect the client retains shared-object/local-object
+associations, but pauses their updates. The welcome contains an initial bounded set of nearby
+parked entities; subsequent visibility events add entities driven by newly visible peers.
+Reconciliation removes records no longer present and keeps surviving local objects. This
+prevents a reconnecting driver from publishing a duplicate vehicle. If the session expired,
+the new identity clears these associations. A socket disconnect releases control, so a
+resuming client must request its vehicle again and may lose that claim to another player.
+
+On 2026-10-23, three real Edge clients were exercised on both Euskadi's Atlas terrain and a
+local GLB: proximity exit/re-entry and identity-preserving reconnect passed. The GLB run also
+used keyboard vehicle entry/exit to transfer a shared car between players, checked that an
+observer leaving its area did not release the driver, resumed while driving another player's
+car without duplication, and changed scenarios through the host picker. These browser checks
+do not establish production capacity or durable persistence.

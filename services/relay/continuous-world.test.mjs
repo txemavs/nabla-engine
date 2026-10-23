@@ -27,6 +27,7 @@ async function connect(port) {
   s.on('message', (raw) => {
     const m = JSON.parse(String(raw))
     s.inbox.push(m)
+    if (m.type === 'welcome') for (const e of m.entities ?? []) s.objects.set(e.i, e)
     if (m.type === 'visible') s.visible.add(m.peer)
     if (m.type === 'hidden') s.visible.delete(m.peer)
     if (m.type === 'event' && m.kind === 'entity') s.objects.set(m.data.i, m.data)
@@ -189,6 +190,10 @@ test(
     assert.equal(resumed.welcome.peer, a.welcome.peer)
     assert.equal(resumed.welcome.health[a.welcome.peer], 75)
     assert.equal(resumed.welcome.color, a.welcome.color)
+    assert.equal(resumed.welcome.entities.find((e) => e.i === 'car')?.o, a.welcome.peer)
+    assert.equal(resumed.welcome.entities.find((e) => e.i === 'car')?.d, undefined)
+    resumed.json({ type: 'event', kind: 'entity.claim', data: { i: 'car' } })
+    await until(() => b.objects.get('car')?.d === a.welcome.peer)
   },
 )
 
