@@ -18,6 +18,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { MeshoptDecoder } from 'meshoptimizer'
 import type { Vec3Tuple } from '../../entity/schema.js'
+import { getRetargetedClips } from './retarget-clips.js'
 
 /** Animation states of a body; each is the name of a clip in the animations file. */
 export const AVATAR_ANIM_STATES = [
@@ -154,7 +155,14 @@ export class PlayerBodyRig {
       socket.add(scene)
     })
     if (assets.colors) recolor(source, assets.colors)
-    return new PlayerBodyRig(source, (animations ?? model).animations)
+    // Shared clips (another skeleton) are remapped to this model's proportions and grounded, once
+    // per model URL; clips authored on the model itself play as they are.
+    const clips = animations
+      ? getRetargetedClips(assets.model, animations.animations, animations.scene, source, {
+          ground: true,
+        })
+      : model.animations
+    return new PlayerBodyRig(source, clips)
   }
   /** A new body sharing this rig's geometry, materials and clips. */
   create(): PlayerBody {
