@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-/** «Distancias»: one section in Configuración → Pantalla with every draw/fog/road/collision distance in km. */
+/** Distances: one section in Settings → Simulation with every draw/fog/road/collision distance in km (English UI). */
 test('distances section gathers existing and new controls and applies them live', async ({
   page,
 }) => {
@@ -103,10 +103,10 @@ test('distances section gathers existing and new controls and applies them live'
       untouched,
       hidden: section.hidden,
       group: section.closest('.menu-section') === section,
-      navGroup: document
-        .querySelector('#settings-pane-options button[data-section="settings-distances"]')!
-        .closest('details')!
-        .querySelector('summary')!.textContent,
+      // The fixture has no other Simulation section, so the group shows as one entry with its name.
+      navGroup: document.querySelector(
+        '#settings-pane-options button[data-section="settings-distances"]',
+      )!.textContent,
       labels: [...section.querySelectorAll('label')].map((l) => l.textContent?.trim()),
       adopted: [radiusSelect, detailSelect].every((el) => section.contains(el)),
       roadOptions: [...roads.options].map((o) => o.textContent),
@@ -117,13 +117,13 @@ test('distances section gathers existing and new controls and applies them live'
   }, process.cwd())
   expect(result.untouched).toBe(0)
   expect(result.hidden).toBe(false)
-  expect(result.navGroup).toBe('Pantalla')
+  expect(result.navGroup).toBe('Simulation')
   expect(result.adopted).toBe(true)
-  expect(result.labels[0]).toContain('Distancia de dibujo del terreno')
+  expect(result.labels[0]).toContain('Terrain draw distance')
   expect(result.labels.some((label) => label?.startsWith('Fog'))).toBe(true)
   expect(result.labels.at(-1)).toContain('Distancia de detalle del suelo')
   expect(result.fogOptions).toEqual(['500 m', '1 km', '2 km', '4 km', '8 km', '16 km'])
-  expect(result.roadOptions[0]).toBe('Ocultas')
+  expect(result.roadOptions[0]).toBe('Hidden')
   expect(result.calls).toEqual([{ fog: 8000 }])
   expect(JSON.parse(result.stored[0][1])).toMatchObject({
     schema: 'nabla.visibility/1',
