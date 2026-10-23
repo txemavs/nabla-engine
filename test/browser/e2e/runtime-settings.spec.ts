@@ -27,6 +27,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         lensFlareAmount: 1,
       }
       localStorage.setItem('nabla.planetVisual', JSON.stringify(planet))
+      localStorage.setItem('nabla.muzzleFlash', JSON.stringify({ x: 12, intensity: 220 }))
       localStorage.setItem('nabla.cameraFov', '12')
       localStorage.setItem('nabla.smokePercent', '65')
       localStorage.setItem('nabla.actionCam', 'true')
@@ -71,6 +72,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         a.setActionCamEnabled(false)
         a.setBodycamEnabled(false)
         a.setActionCamSettings({ strideMetres: 3 })
+        const initialFlash = [a.muzzleFlashTuning, b.muzzleFlashTuning]
+        a.setMuzzleFlashTuning({ intensity: 40 })
+        a.setSidearmTuning({ angle: 3 })
         a.setDisplay({ resolutionScale: 0.75, maxFps: 60 })
         const displayBeforePlay = [a.displaySettings, b.displaySettings]
         a.setPlanetLayers({ sky: false, sun: false, clouds: false })
@@ -127,6 +131,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         c = make('left')
         return {
           initial,
+          initialFlash,
+          restoredFlash: c.muzzleFlashTuning,
+          survivorFlash: b.muzzleFlashTuning,
           displayBeforePlay,
           planetPreferences: [b.planetVisualConfig(), c.planetVisualConfig()],
           savedPlanet: JSON.parse(localStorage.getItem('nabla.planetVisual')!),
@@ -203,6 +210,12 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
     { maxFps: 60, resolutionScale: 0.75, resolutionScaleMode: 'manual' },
     { maxFps: 0, resolutionScale: 1, resolutionScaleMode: 'manual' },
   ])
+  expect(result.initialFlash).toEqual([
+    { x: 12, y: 0, z: -72, intensity: 220 },
+    { x: 12, y: 0, z: -72, intensity: 220 },
+  ])
+  expect(result.restoredFlash).toEqual({ x: 12, y: 0, z: -72, intensity: 40 })
+  expect(result.survivorFlash).toEqual({ x: 12, y: 0, z: -72, intensity: 220 })
   expect(result.initialCamera).toEqual([true, true, true, true, 2, 2])
   expect(result.cameraPreferences).toEqual([true, true, 2, false, false, 3])
   expect(result.entryModes).toEqual(['pc', 'headset-pc', 'pc'])

@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **632 modules; 8061 executable function definitions**.
+Coverage: **633 modules; 8070 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -440,7 +440,7 @@ Coverage: **632 modules; 8061 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 570 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -524,6 +524,7 @@ Coverage: **632 modules; 8061 executable function definitions**.
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/weapon-controls.ts](src/runtime/weapon-controls.ts.md) | 8 |
 | [src/runtime/weapon-pose-tuning.ts](src/runtime/weapon-pose-tuning.ts.md) | 2 |
+| [src/runtime/weapon-preferences.ts](src/runtime/weapon-preferences.ts.md) | 10 |
 | [src/runtime/weapon-wheel.ts](src/runtime/weapon-wheel.ts.md) | 5 |
 | [src/runtime/world-content.ts](src/runtime/world-content.ts.md) | 12 |
 | [src/runtime/world-weapon-pose.ts](src/runtime/world-weapon-pose.ts.md) | 1 |

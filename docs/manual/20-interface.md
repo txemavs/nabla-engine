@@ -91,6 +91,16 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+[RuntimeWeaponPreferences](../../src/runtime/weapon-preferences.ts) owns sidearm tuning,
+weapon-wheel comfort settings, muzzle-flash calibration and the per-weapon pose cache.
+Existing `nabla.sidearmTuning`, `nabla.weaponWheel`, `nabla.muzzleFlash`,
+`nabla.weaponPoses` and `nabla.weaponPoses.<id>` keys are unchanged. Saved per-weapon
+poses override rig poses, which override legacy poses; provisional results are not
+cached while the rig loads. Flash preferences now load after the runtime settings
+store exists, fixing the previous field-initialization ordering that ignored saved
+flash values. Combat, model loading and preview actions remain in their existing owners.
+Tests: `test/runtime/weapon-preferences.test.ts` and the two-runtime browser test.
+
 [RuntimeDisplayController](../../src/runtime/display-controller.ts) owns the runtime's
 display settings and adaptive resolution state. It preserves preset defaults, explicit
 manual scaling, auto-mode limits, FPS budgets and probe application. The runtime still

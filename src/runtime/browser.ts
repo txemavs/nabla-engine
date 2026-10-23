@@ -73,7 +73,7 @@ import {
   type VehiclePreferences,
 } from './vehicle-preferences.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
-import { normalizeWeaponWheel, stepWeaponWheel } from './weapon-wheel.js'
+import { normalizeWeaponWheel } from './weapon-wheel.js'
 import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
 import { presetVehicle } from '../catalog/vehicles/library.js'
@@ -101,6 +101,7 @@ import {
   type ResolutionProbeResult,
   type ResolutionScaleState,
 } from './resolution-scale.js'
+import { RuntimeWeaponPreferences } from './weapon-preferences.js'
 import { RuntimeDisplayController } from './display-controller.js'
 import type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
 export type { RuntimeFrameSample } from '../diagnostics/runtime-frame.js'
@@ -128,12 +129,7 @@ import { liveSkyClock, skyRate, type SkyClock } from '../planet/sky.js'
 import { HeldWeapon } from './held-weapon.js'
 import { weaponSlots } from '../catalog/weapons/slots.js'
 import { weaponPresets } from '../catalog/weapons/library.js'
-import {
-  readSidearmTuning,
-  writeSidearmTuning,
-  normalizeSidearmTuning,
-  type SidearmTuning,
-} from './sidearm-tuning.js'
+import { type SidearmTuning } from './sidearm-tuning.js'
 import { setCarMenuMusicLabel } from '../catalog/monitors/car.js'
 import { assets, disposeObject } from '../render/entity/assets.js'
 import type { Entity, Vec3Tuple } from '../entity/schema.js'
@@ -160,7 +156,6 @@ import {
   normalizeWeaponPoses,
   type WeaponPose,
   type WeaponPoseTuning,
-  weaponPoseStorageKey,
 } from './weapon-pose-tuning.js'
 import { PickupInventory, type WorldPickup } from '../simulation/items/pickups.js'
 import { fireModeLabel, nextFireMode } from '../simulation/weapons/machine-pistol.js'
@@ -897,38 +892,9 @@ export class GameRuntime {
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
-  private weaponTuning: ReturnType<typeof readSidearmTuning>
+  private readonly weaponPreferences: RuntimeWeaponPreferences
   private sidearmAimPreview = false
   private weaponPosePreview: WeaponPose | null = null
-  private weaponWheel: ReturnType<typeof normalizeWeaponWheel>
-
-  /** Shared legacy tuning: the baseline for weapons whose rig has no `poses`. */
-  private readonly legacyWeaponPoses: WeaponPoseTuning
-  /** Resolved poses per weapon id (local override over rig poses over legacy tuning). */
-  private readonly weaponPoseCache = new Map<string, WeaponPoseTuning>()
-  private get weaponPoses(): WeaponPoseTuning {
-    const sidearm = this.sidearm
-    const id = sidearm?.preset?.id
-    if (!id) return this.legacyWeaponPoses
-    const cached = this.weaponPoseCache.get(id)
-    if (cached) return cached
-    const base = this.weaponPoseBaseline
-    let result = base
-    try {
-      const saved = this.settings?.getItem(weaponPoseStorageKey(id))
-      if (saved) result = normalizeWeaponPoses(JSON.parse(saved), base)
-    } catch {
-      /* Optional persistence. */
-    }
-    // Cache only once the rig (and its poses) has loaded.
-    if (sidearm.rigPoses !== undefined) this.weaponPoseCache.set(id, result)
-    return result
-  }
-  /** Poses without local edits: the rig file's `poses`, else the shared legacy tuning. */
-  private get weaponPoseBaseline(): WeaponPoseTuning {
-    const rig = this.sidearm?.rigPoses
-    return rig ? normalizeWeaponPoses(rig, this.legacyWeaponPoses) : this.legacyWeaponPoses
-  }
   private smokeOn = true
   private readonly planetPreferences = new RuntimePlanetPreferences()
   private readonly planet = this.planetPreferences.state
@@ -952,21 +918,7 @@ export class GameRuntime {
       },
     }
     this.lighting = readLightTuning(this.settings)
-    this.weaponTuning = readSidearmTuning(this.settings)
-    this.weaponWheel = (() => {
-      try {
-        return normalizeWeaponWheel(JSON.parse(this.settings?.getItem('nabla.weaponWheel') ?? '{}'))
-      } catch {
-        return normalizeWeaponWheel()
-      }
-    })()
-    this.legacyWeaponPoses = (() => {
-      try {
-        return normalizeWeaponPoses(JSON.parse(this.settings?.getItem('nabla.weaponPoses') ?? '{}'))
-      } catch {
-        return normalizeWeaponPoses()
-      }
-    })()
+    this.weaponPreferences = new RuntimeWeaponPreferences(this.settings)
     this.actorChoice = loadActor(this.settings)
     this.sceneryPhysics = new SceneryPhysics(() => this.session.simulation, this.settings)
     this.pipeline.diagnostics = !!options.performanceLog
@@ -2168,8 +2120,8 @@ export class GameRuntime {
       this.magazineAction = null
       for (const [index, pistol] of loadout.pistols.entries()) {
         const weapon = pistol.weapon
-        weapon.setTuning(this.weaponTuning)
-        weapon.flashTuning = this.flashSettings
+        weapon.setTuning(this.weaponPreferences.tuning)
+        weapon.flashTuning = this.weaponPreferences.flash
         weapon.setSmokeEnabled(this.smokeOn)
         const down =
           weapon.visible &&
@@ -2618,11 +2570,13 @@ export class GameRuntime {
     this.updateRemoteArrows(sim, dt)
     this.view.heldPose = this.localHeld
     if (this.sidearm) {
-      this.sidearm.setTuning(this.weaponTuning)
+      this.sidearm.setTuning(this.weaponPreferences.tuning)
       this.sidearm.slidePosePreview =
         this.sidearmAimPreview && !!this.weaponPosePreview?.startsWith('slide')
-      this.sidearm.poseTuning = this.weaponPoses
-      this.sidearm.playerWheel = this.sidearmAimPreview ? normalizeWeaponWheel() : this.weaponWheel
+      this.sidearm.poseTuning = this.weaponPreferences.resolvePoses(this.sidearm)
+      this.sidearm.playerWheel = this.sidearmAimPreview
+        ? normalizeWeaponWheel()
+        : this.weaponPreferences.wheel
       this.sidearm.setSmokeEnabled(this.smokeOn)
       this.sidearm.visible = this.weaponDrawn || this.sidearmAimPreview
       if (this.weaponControls.aiming) this.sidearm.setAiming(true)
@@ -2859,7 +2813,7 @@ export class GameRuntime {
       hud.update(this.camera, this.origin, time, inside ? sim.vehicleInfo(id) : null)
     }
     this.applyLightTuning()
-    if (this.sidearm) this.sidearm.flashTuning = this.flashSettings
+    if (this.sidearm) this.sidearm.flashTuning = this.weaponPreferences.flash
     this.sidearm?.syncMuzzleLight(time, this.scene, this.camera, eyes || this.sidearmAimPreview)
     const lightsMs = performance.now() - lightsStarted
     const renderStarted = performance.now()
@@ -3869,12 +3823,7 @@ export class GameRuntime {
   /** Put the aiming weapon wheel back to its default and forget the saved one. */
   resetWeaponWheel(): void {
     this.assertAlive()
-    this.weaponWheel = normalizeWeaponWheel()
-    try {
-      this.settings?.setItem('nabla.weaponWheel', JSON.stringify(this.weaponWheel))
-    } catch {
-      /* Optional storage. */
-    }
+    this.weaponPreferences.resetWheel()
   }
   /** Mirrors of the occupied vehicle; all copies of its model share one adjustment. */
   get mirrors(): MirrorState | null {
@@ -4628,7 +4577,7 @@ export class GameRuntime {
   }
   /** Saved eye-level pistol height (metres) and muzzle-up angle (degrees). */
   get sidearmTuning(): SidearmTuning {
-    return { ...this.weaponTuning }
+    return { ...this.weaponPreferences.tuning }
   }
   /** World pickups and inventory are session state; previewing settings never grants a weapon. */
   /** Explicit host loadout for a test session, after play() has started. */
@@ -4854,9 +4803,7 @@ export class GameRuntime {
   }
   setSidearmTuning(patch: Partial<SidearmTuning>): SidearmTuning {
     this.assertAlive()
-    this.weaponTuning = normalizeSidearmTuning(patch, this.weaponTuning)
-    this.sidearm?.setTuning(this.weaponTuning)
-    writeSidearmTuning(this.settings, this.weaponTuning)
+    this.weaponPreferences.setTuning(patch, (tuning) => this.sidearm?.setTuning(tuning))
     return this.sidearmTuning
   }
   /** Keep the aimed model visible while its settings are adjusted with a free mouse. */
@@ -4869,46 +4816,20 @@ export class GameRuntime {
     }
     if (!enabled) this.sidearm?.setAiming(false)
   }
-  private flashSettings = (() => {
-    const result = { x: 0, y: 0, z: -72, intensity: 100 }
-    try {
-      const saved = JSON.parse(this.settings?.getItem('nabla.muzzleFlash') ?? '{}')
-      for (const key of ['x', 'y', 'z', 'intensity'] as const)
-        if (typeof saved?.[key] === 'number' && Number.isFinite(saved[key]))
-          result[key] = Math.max(
-            key === 'intensity' ? 0 : -200,
-            Math.min(key === 'intensity' ? 300 : 200, saved[key]),
-          )
-    } catch {
-      /* Optional preference. */
-    }
-    return result
-  })()
   get muzzleFlashTuning() {
-    return { ...this.flashSettings }
+    return { ...this.weaponPreferences.flash }
   }
   setMuzzleFlashTuning(
     value: Partial<{ x: number; y: number; z: number; intensity: number }>,
   ): void {
-    for (const key of ['x', 'y', 'z', 'intensity'] as const) {
-      const n = value[key]
-      if (typeof n === 'number' && Number.isFinite(n))
-        this.flashSettings[key] = Math.max(
-          key === 'intensity' ? 0 : -200,
-          Math.min(key === 'intensity' ? 300 : 200, n),
-        )
-    }
-    if (this.sidearm) this.sidearm.flashTuning = { ...this.flashSettings }
-    try {
-      this.settings?.setItem('nabla.muzzleFlash', JSON.stringify(this.flashSettings))
-    } catch {
-      /* Optional preference. */
-    }
+    this.weaponPreferences.setFlash(value, (flash) => {
+      if (this.sidearm) this.sidearm.flashTuning = flash
+    })
   }
   previewMuzzleFlash(): void {
     this.setSidearmAimPreview(true)
     if (this.sidearm) {
-      this.sidearm.flashTuning = { ...this.flashSettings }
+      this.sidearm.flashTuning = { ...this.weaponPreferences.flash }
       this.sidearm.previewFlash()
     }
   }
@@ -4918,24 +4839,16 @@ export class GameRuntime {
     return { id: preset?.id ?? null, name: preset?.name ?? 'Pistola', rig: preset?.rig ?? null }
   }
   get weaponPoseTuning(): WeaponPoseTuning {
-    return normalizeWeaponPoses(this.weaponPoses)
+    return normalizeWeaponPoses(this.weaponPreferences.resolvePoses(this.sidearm))
   }
   /** Poses of the edited weapon before local edits, for "reset". */
   get weaponPoseDefaults(): WeaponPoseTuning {
-    return normalizeWeaponPoses(this.weaponPoseBaseline)
+    return normalizeWeaponPoses(this.weaponPreferences.baseline(this.sidearm))
   }
   setWeaponPoseTuning(value: WeaponPoseTuning): void {
-    const id = this.sidearm?.preset?.id
-    const key = id ? weaponPoseStorageKey(id) : 'nabla.weaponPoses'
-    const poses = normalizeWeaponPoses(value, id ? this.weaponPoseBaseline : undefined)
-    if (id) this.weaponPoseCache.set(id, poses)
-    else Object.assign(this.legacyWeaponPoses, poses)
-    if (this.sidearm) this.sidearm.poseTuning = poses
-    try {
-      this.settings?.setItem(key, JSON.stringify(poses))
-    } catch {
-      /* Optional persistence. */
-    }
+    this.weaponPreferences.setPoses(value, this.sidearm, (poses) => {
+      if (this.sidearm) this.sidearm.poseTuning = poses
+    })
   }
   previewWeaponPose(pose: WeaponPose | null): void {
     this.setSidearmAimPreview(pose !== null)
@@ -7018,15 +6931,11 @@ export class GameRuntime {
           !this.sidearmAimPreview &&
           isFirstPersonView(state, false)
         ) {
-          this.weaponWheel = stepWeaponWheel(this.weaponWheel, this.sidearm.isAiming, event.deltaY)
-          this.sidearm.playerWheel = this.weaponWheel
-          try {
-            this.settings?.setItem('nabla.weaponWheel', JSON.stringify(this.weaponWheel))
-          } catch {
-            /* Storage is optional. */
-          }
-          canvas.dataset.weaponHandStep = String(this.weaponWheel.hand + 1)
-          canvas.dataset.weaponAimDistance = this.weaponWheel.distance.toFixed(2)
+          this.weaponPreferences.stepWheel(this.sidearm.isAiming, event.deltaY, (wheel) => {
+            this.sidearm!.playerWheel = wheel
+          })
+          canvas.dataset.weaponHandStep = String(this.weaponPreferences.wheel.hand + 1)
+          canvas.dataset.weaponAimDistance = this.weaponPreferences.wheel.distance.toFixed(2)
           event.preventDefault()
           return
         }
