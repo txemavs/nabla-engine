@@ -18,9 +18,6 @@ import {
   parseTimeSpeedParam,
 } from '../../game/terrain.js'
 
-beforeAll(() => setLocale('es'))
-afterAll(() => setLocale(null))
-
 it('does not preload unused menu vehicles unless explicitly requested', () => {
   expect(menuPreloadVehicles()).toEqual([])
   expect(menuPreloadVehicles([])).toEqual([])
@@ -67,6 +64,8 @@ describe('&time= and &sea= URL parameters', () => {
 })
 
 describe('menu helpers', () => {
+  beforeAll(() => setLocale('es'))
+  afterAll(() => setLocale(null))
   it('writes time and sea into the URL and keeps everything else', () => {
     const next = withSceneParams('?terrain=/terrain&lat=1&lon=2&quality=low', {
       time: '21:30',
