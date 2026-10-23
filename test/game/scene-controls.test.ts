@@ -1,3 +1,5 @@
+import { afterAll, beforeAll } from 'vitest'
+import { setLocale } from '@nabla/engine/i18n'
 import { describe, expect, it } from 'vitest'
 import {
   addLabel,
@@ -9,17 +11,15 @@ import {
   withSceneParams,
 } from '../../game/scene-controls.js'
 import {
-import { afterAll, beforeAll } from 'vitest'
-import { setLocale } from '@nabla/engine/i18n'
-
-beforeAll(() => setLocale('es'))
-afterAll(() => setLocale(null))
   parseSeaParam,
   parseLocationOverride,
   parseTerrainConfig,
   parseTimeParam,
   parseTimeSpeedParam,
 } from '../../game/terrain.js'
+
+beforeAll(() => setLocale('es'))
+afterAll(() => setLocale(null))
 
 it('does not preload unused menu vehicles unless explicitly requested', () => {
   expect(menuPreloadVehicles()).toEqual([])
