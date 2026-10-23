@@ -30,11 +30,6 @@ import {
 import { detectCompressedTextureSupport } from '../render/planet/tile-compression.js'
 import { installEngineStyles } from '../ui/styles.js'
 import { mountEngineVersionLabel } from './engine-version.js'
-import {
-  createBeamSettings,
-  getVehicleBeamCutoff,
-  setVehicleBeamCutoff,
-} from '../render/vehicle-presentation/authored-lights.js'
 import type { FsrSettings } from '../render/effects/fsr1.js'
 import { describePrograms, latestProgramId } from './shader-diagnostics.js'
 import { MapInspector } from './map-inspector.js'
@@ -92,7 +87,7 @@ import { GameToolbar } from './game-toolbar.js'
 import { BodycamAim } from './bodycam-aim.js'
 import { ActionCam } from './action-cam.js'
 import type { ActionCamSettings } from './action-cam-settings.js'
-import { bindSmokeDensity, setSmokeDensity } from '../render/entity/smoke-density.js'
+import { RuntimeVisualSettings } from './visual-settings.js'
 import { WeaponControls } from './weapon-controls.js'
 /**
  * Compose a complete browser game over the shared gameplay coordinator.
@@ -248,9 +243,6 @@ import {
   type LoadDiagnostics,
   type TileDiscoveryMode,
   type PlanetSourceOptions,
-  createWorldVisualSettings,
-  groundPhotoAnisotropy,
-  setGroundPhotoAnisotropy,
 } from '../render/planet/world.js'
 import { setPlanetCharts } from '../render/entity/helm-map.js'
 import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
@@ -327,10 +319,6 @@ import {
   PLANET_DEFAULTS,
 } from '../render/planet/world-environment.js'
 import { CatchFloor } from '../render/planet/catch-floor.js'
-import {
-  asphaltContrast as currentAsphaltContrast,
-  setAsphaltContrast as applyAsphaltContrast,
-} from '../render/planet/ground-material.js'
 import { ShadowManager } from '../render/shadows.js'
 import { shadowBiasRange, shadowTiers } from '../render/shadow-tiers.js'
 import {
@@ -367,7 +355,6 @@ export type { StartCameraName, StartCameraSequence, StartCameraStep } from './st
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
-import { hiddenTileLayers, setHiddenTileLayers } from '../render/planet/tile-layers.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
 import { FrameLoop } from './frame-loop.js'
 import { normalizeTilesBase } from '../render/planet/static-tiles.js'
@@ -679,9 +666,7 @@ export interface BodySlotHost {
 
 export class GameRuntime {
   readonly settings: SettingsStore
-  private readonly beams = createBeamSettings()
-  private readonly smokeDensity = { value: smokeTuning.defaultPercent / 100 }
-  private readonly worldVisual = createWorldVisualSettings()
+  private readonly visuals = new RuntimeVisualSettings()
   private readonly versionLabel: HTMLElement | null
   /** XR system once `loadXR()` resolved; null on a page that never asked for XR. */
   private xrSystem: GameXR | null = null
@@ -983,7 +968,7 @@ export class GameRuntime {
   }
 
   constructor(private readonly options: GameRuntimeOptions) {
-    bindSmokeDensity(this.scene, this.smokeDensity)
+    this.visuals.bindScene(this.scene)
     this.settings = createSettingsStore(options.settings)
     // An opted-in model-settings section uses the same owner; explicit stores/null retain their contract.
     options = this.options = {
@@ -1027,9 +1012,8 @@ export class GameRuntime {
       this.smokeOn = this.settings?.getItem('nabla.smoke') !== '0'
       this.actionCamOn =
         (this.settings?.getItem('nabla.actionCam') ?? String(actionCamTuning.enabled)) === 'true'
-      setSmokeDensity(
+      this.visuals.setSmokePercent(
         Number(this.settings?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
-        this.smokeDensity,
       )
     } catch {
       /* Keep the default if storage is disabled. */
@@ -1043,7 +1027,7 @@ export class GameRuntime {
       /* Keep defaults when storage is unavailable or invalid. */
     }
     this.flipCinematic.enabled = options.flipCinematic !== false
-    applyAsphaltContrast(options.asphaltContrast ?? 1, this.worldVisual.asphalt)
+    this.visuals.setAsphaltContrast(options.asphaltContrast ?? 1)
     // Reject malformed JavaScript callers before allocating browser resources.
     if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
     this.text = createRuntimeText(options.locale, options.messages)
@@ -1131,11 +1115,11 @@ export class GameRuntime {
     })
     // Profile smoke: off forces it off for the session; otherwise it is the default under a saved value.
     try {
-      if (this.quality.smoke === 0) setSmokeDensity(0, this.smokeDensity)
+      if (this.quality.smoke === 0) this.visuals.setSmokePercent(0)
       else if (this.settings?.getItem('nabla.smokePercent') == null)
-        setSmokeDensity(this.quality.smoke, this.smokeDensity)
+        this.visuals.setSmokePercent(this.quality.smoke)
     } catch {
-      setSmokeDensity(this.quality.smoke, this.smokeDensity)
+      this.visuals.setSmokePercent(this.quality.smoke)
     }
     const savedPlanet = readSavedPlanetVisual(this.settings)
     if (savedPlanet) Object.assign(this.planet, savedPlanet)
@@ -1147,8 +1131,8 @@ export class GameRuntime {
       (message) => options.onMessage?.(message),
       (doc) =>
         new SceneView(doc, false, false, {
-          smokeDensity: this.smokeDensity,
-          beams: this.beams,
+          smokeDensity: this.visuals.smokeDensity,
+          beams: this.visuals.beams,
           vehicleLightStorage: this.settings,
         }),
       (doc) =>
@@ -1161,7 +1145,7 @@ export class GameRuntime {
               options.tiles.apiUrl ?? '/prepare',
               options.tiles.mode ?? 'static',
               options.tiles,
-              this.worldVisual,
+              this.visuals.world,
             )
           : undefined,
     )
@@ -1233,8 +1217,8 @@ export class GameRuntime {
         })
       : null
     this.view = new SceneView(this.document, false, false, {
-      smokeDensity: this.smokeDensity,
-      beams: this.beams,
+      smokeDensity: this.visuals.smokeDensity,
+      beams: this.visuals.beams,
       vehicleLightStorage: this.settings,
       assetQuality:
         this.options.assetQuality ??
@@ -1339,7 +1323,7 @@ export class GameRuntime {
     this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
     this.planet.sea = this.options.sea !== false
     this.syncPlanet()
-    this.effects = new VehicleEffects(this.scene, undefined, this.smokeDensity)
+    this.effects = new VehicleEffects(this.scene, undefined, this.visuals.smokeDensity)
     this.effects.audio.mixer.set(readAudioMix(this.settings) ?? {})
     this.effects.reverseAlarmEnabled = (entity) =>
       this.vehiclePreferences(entity.visual?.body.url ?? entity.id).reverseAlarm
@@ -1419,7 +1403,7 @@ export class GameRuntime {
                   loading: workerLoading(),
                 }
               : options.tiles,
-            this.worldVisual,
+            this.visuals.world,
           )
         : null
     if (this.world) {
@@ -3746,8 +3730,8 @@ export class GameRuntime {
           false,
           false,
           {
-            smokeDensity: this.smokeDensity,
-            beams: this.beams,
+            smokeDensity: this.visuals.smokeDensity,
+            beams: this.visuals.beams,
             vehicleLightStorage: this.settings,
             assetQuality:
               this.options.assetQuality ??
@@ -4578,12 +4562,12 @@ export class GameRuntime {
   }
   /** Ids of the terrain layers switched off (see `TILE_LAYERS`). */
   get hiddenLayers(): string[] {
-    return hiddenTileLayers(this.worldVisual.hidden)
+    return this.visuals.hiddenLayers
   }
   /** Show or hide terrain layers live; only drawing changes, never collision. */
   setHiddenLayers(ids: Iterable<string>): void {
     this.assertAlive()
-    setHiddenTileLayers(ids, this.worldVisual.hidden)
+    this.visuals.setHiddenLayers(ids)
     this.world?.applyLayers()
   }
   /** Where every vehicle and the player sit against the loaded ground; null when not playing. */
@@ -4711,7 +4695,7 @@ export class GameRuntime {
   private groundDetail = 1
   /** Anisotropic filtering of the ground photo (asphalt and road markings). */
   get anisotropy(): number {
-    return groundPhotoAnisotropy(this.worldVisual)
+    return this.visuals.anisotropy
   }
   /** Largest anisotropy this GPU supports. */
   get maxAnisotropy(): number {
@@ -4720,14 +4704,11 @@ export class GameRuntime {
   /** Set the ground photo anisotropy live (1–16), clamped to the GPU maximum. Returns the value used. */
   setAnisotropy(value: number): number {
     this.assertAlive()
-    return setGroundPhotoAnisotropy(
-      Math.min(Math.max(1, value), this.maxAnisotropy),
-      this.worldVisual,
-    )
+    return this.visuals.setAnisotropy(value, this.maxAnisotropy)
   }
   /** Asphalt contrast on the roads photo drape (1 = unchanged). */
   get asphaltContrast(): number {
-    return currentAsphaltContrast(this.worldVisual.asphalt)
+    return this.visuals.asphaltContrast
   }
   /**
    * Set the asphalt contrast live, clamped to 0.5–2.5; a uniform change, no shader recompile. On
@@ -4736,7 +4717,7 @@ export class GameRuntime {
    */
   setAsphaltContrast(value: number): void {
     this.assertAlive()
-    applyAsphaltContrast(value, this.worldVisual.asphalt)
+    this.visuals.setAsphaltContrast(value)
     this.world?.refreshAsphaltMasks()
   }
   /** Change the host's mute preference without replacing the audio graph. */
@@ -4989,13 +4970,10 @@ export class GameRuntime {
     }
   }
   get smokePercent(): number {
-    return this.smokeDensity.value * 100
+    return this.visuals.smokePercent
   }
   setSmokePercent(percent: number): void {
-    const value = setSmokeDensity(percent, this.smokeDensity)
-    try {
-      this.settings?.setItem('nabla.smokePercent', String(value))
-    } catch {}
+    this.visuals.setSmokePercent(percent, this.settings)
   }
   get smokeEnabled(): boolean {
     return this.smokeOn
@@ -6377,7 +6355,7 @@ export class GameRuntime {
       this.options.canvas.parentElement!,
       preset,
       this.options.assetQuality ?? assetQualityForDevice(this.quality.preset, navigator.userAgent),
-      this.smokeDensity,
+      this.visuals.smokeDensity,
     )
   }
   private ejectionPose(eyes: boolean, sidearm = this.sidearm) {
@@ -6874,10 +6852,10 @@ export class GameRuntime {
     this.view.setHeadLight(this.headlamp.enabled)
   }
   getVehicleBeamCutoff(kind: 'low' | 'high'): number {
-    return getVehicleBeamCutoff(kind, this.beams)
+    return this.visuals.getVehicleBeamCutoff(kind)
   }
   setVehicleBeamCutoff(kind: 'low' | 'high', degrees: number): void {
-    setVehicleBeamCutoff(kind, degrees, this.beams)
+    this.visuals.setVehicleBeamCutoff(kind, degrees)
   }
 
   get headlampShadows(): boolean {

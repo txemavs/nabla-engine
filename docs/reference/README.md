@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **628 modules; 8012 executable function definitions**.
+Coverage: **629 modules; 8023 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -517,6 +517,7 @@ Coverage: **628 modules; 8012 executable function definitions**.
 | [src/runtime/vehicle-warmup.ts](src/runtime/vehicle-warmup.ts.md) | 13 |
 | [src/runtime/viewmodel-lighting.ts](src/runtime/viewmodel-lighting.ts.md) | 2 |
 | [src/runtime/visibility-settings.ts](src/runtime/visibility-settings.ts.md) | 3 |
+| [src/runtime/visual-settings.ts](src/runtime/visual-settings.ts.md) | 11 |
 | [src/runtime/water.ts](src/runtime/water.ts.md) | 1 |
 | [src/runtime/weapon-controls.ts](src/runtime/weapon-controls.ts.md) | 8 |
 | [src/runtime/weapon-pose-tuning.ts](src/runtime/weapon-pose-tuning.ts.md) | 2 |

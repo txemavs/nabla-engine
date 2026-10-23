@@ -91,6 +91,15 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+Internally, [RuntimeVisualSettings](../../src/runtime/visual-settings.ts) owns the
+terrain visual state, beam settings and shared smoke-density object for one runtime.
+Current and later-created views receive the same objects. `GameRuntime` retains
+its public methods, lifecycle checks, terrain refreshes and startup preference
+precedence. Only explicit smoke edits persist through the supplied runtime store;
+boot and quality overrides do not write preferences. The component creates no
+listeners or GPU resources of its own; existing scene/view owners still dispose
+their textures and effects. It has no dependency on the whole `GameRuntime`.
+
 Regression evidence: [store contracts](../../test/settings-scope.test.ts),
 [two browser runtimes](../../test/browser/e2e/runtime-settings.spec.ts), and
 [XR calibration migrations](../../test/game/xr-calibration.test.ts).
