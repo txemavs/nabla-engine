@@ -39,6 +39,34 @@ export function isInstalledApp(win: Window = window): boolean {
   )
 }
 
+/**
+ * The install action as a menu entry (main-menu.ts Application > Info): a `.nabla-btn` that is
+ * hidden while the browser offers no installation, and inside the installed app.
+ */
+export function createInstallEntry(doc: Document, t: (key: string) => string): HTMLButtonElement {
+  const win = doc.defaultView
+  const button = doc.createElement('button')
+  button.type = 'button'
+  button.id = 'nabla-menu-install'
+  button.className = 'nabla-btn'
+  button.textContent = t('pwa.install')
+  const sync = () => {
+    button.hidden = !win || isInstalledApp(win) || !win.nablaInstallPrompt
+  }
+  button.addEventListener('click', async () => {
+    const prompt = win?.nablaInstallPrompt
+    if (!win || !prompt) return sync()
+    win.nablaInstallPrompt = undefined
+    sync()
+    await prompt.prompt()
+    await prompt.userChoice
+  })
+  win?.addEventListener('nabla-installable', sync)
+  win?.addEventListener('appinstalled', sync)
+  sync()
+  return button
+}
+
 /** Watch for the install offer and show the button while it is available. */
 export function mountInstallButton(doc: Document, options: InstallButtonOptions): void {
   const win = doc.defaultView

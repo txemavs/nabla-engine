@@ -222,6 +222,9 @@ export const engineEn: Readonly<Record<string, string>> = {
   'menu.release': 'Press Esc to release the cursor',
   'menu.resume': 'Back to game',
   'menu.vr': 'Virtual reality',
+  'menu.info': 'Info',
+  'menu.version': 'Version',
+  'menu.version-dev': 'development build',
   'menu.vr-enter': 'Play in the headset (VR)',
   'menu.vr-unavailable': 'No VR headset detected',
   'mirror.get-into-a-vehicle-with-mirrors-to-adjust-them':
@@ -274,7 +277,7 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.actor-color-blue': 'Blue',
   'settings.actor-color-green': 'Green',
   'settings.actor-color-orange': 'Orange',
-  'settings.more': 'More',
+  'settings.application': 'Application',
   'settings.combat': 'Combat',
   'settings.combat-note':
     'A prota dummy 3 m ahead to shoot at: head ×4, neck ×2.5, torso ×1, arms ×0.6, legs ×0.75 of the weapon damage. It respawns 5 s after it falls.',

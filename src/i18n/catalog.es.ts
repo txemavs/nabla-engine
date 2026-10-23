@@ -226,6 +226,9 @@ export const engineEs: Readonly<Record<string, string>> = {
   'menu.release': 'Pulsa Esc para liberar el cursor',
   'menu.resume': 'Volver al juego',
   'menu.vr': 'Realidad virtual',
+  'menu.info': 'Información',
+  'menu.version': 'Versión',
+  'menu.version-dev': 'versión de desarrollo',
   'menu.vr-enter': 'Jugar con el casco (VR)',
   'menu.vr-unavailable': 'No se detecta un casco VR',
   'mirror.get-into-a-vehicle-with-mirrors-to-adjust-them':
@@ -278,7 +281,7 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.actor-color-blue': 'Azul',
   'settings.actor-color-green': 'Verde',
   'settings.actor-color-orange': 'Naranja',
-  'settings.more': 'Más',
+  'settings.application': 'Aplicación',
   'settings.combat': 'Combate',
   'settings.combat-note':
     'Un muñeco prota a 3 m para disparar: cabeza ×4, cuello ×2,5, torso ×1, brazos ×0,6, piernas ×0,75 del daño del arma. Reaparece 5 s después de caer.',

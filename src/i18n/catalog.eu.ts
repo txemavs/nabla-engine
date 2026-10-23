@@ -228,6 +228,9 @@ export const engineEu: Readonly<Record<string, string>> = {
   'menu.release': 'Sakatu Esc kurtsorea askatzeko',
   'menu.resume': 'Itzuli jokora',
   'menu.vr': 'Errealitate birtuala',
+  'menu.info': 'Informazioa',
+  'menu.version': 'Bertsioa',
+  'menu.version-dev': 'garapen bertsioa',
   'menu.vr-enter': 'Kaskoarekin jolastu (VR)',
   'menu.vr-unavailable': 'Ez da VR kaskorik detektatu',
   'mirror.get-into-a-vehicle-with-mirrors-to-adjust-them':
@@ -279,7 +282,7 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.actor-color-blue': 'Urdina',
   'settings.actor-color-green': 'Berdea',
   'settings.actor-color-orange': 'Laranja',
-  'settings.more': 'Gehiago',
+  'settings.application': 'Aplikazioa',
   'settings.combat': 'Borroka',
   'settings.combat-note':
     'Prota panpina bat 3 m aurrean tiro egiteko: burua ×4, lepoa ×2,5, enborra ×1, besoak ×0,6, hankak ×0,75 armaren kaltearen. Erori eta 5 s geroago itzultzen da.',

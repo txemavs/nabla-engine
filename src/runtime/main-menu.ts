@@ -9,6 +9,8 @@
  * `mountMobileQualityButton`.
  */
 import { installEngineStyles } from '../ui/styles.js'
+import { engineVersion } from './engine-version.js'
+import { createInstallEntry } from './pwa-install.js'
 
 /** Translate function of the host: the engine `t`, or an inlined copy (`window.euskadiT`). */
 export type MenuTranslate = (
@@ -472,17 +474,24 @@ const SETTINGS_TABS: ReadonlyArray<readonly [tab: string, key: string]> = [
   ['dev', 'settings.development'],
 ]
 
-/** The engine's sections: the settings tabs, then virtual reality (enter, note, headset page). */
+/**
+ * The engine's sections: Application first (info: version and install; virtual reality: enter,
+ * note, headset page), then the game's settings tabs. In the settings window the Application
+ * sections fill its first tab, before World.
+ */
+/** Ids of the Application > Info entries (version line, install button). */
+export const GAME_MENU_VERSION_ID = 'nabla-menu-version'
+export const GAME_MENU_INSTALL_ID = 'nabla-menu-install'
+
 export function defaultGameMenuSections(): SideMenuSection[] {
   return [
     {
-      id: 'game',
-      titleKey: 'menu.game',
-      entries: SETTINGS_TABS.map(([tab, key]) => ({
-        id: `${MENU_TAB_ENTRY}${tab}`,
-        labelKey: key,
-        run: () => openGameSettings(tab),
-      })),
+      id: 'info',
+      titleKey: 'menu.info',
+      entries: [
+        { id: GAME_MENU_VERSION_ID, labelKey: 'menu.version', note: true },
+        { id: GAME_MENU_INSTALL_ID, labelKey: 'pwa.install' },
+      ],
     },
     {
       id: 'vr',
@@ -497,6 +506,15 @@ export function defaultGameMenuSections(): SideMenuSection[] {
         { labelKey: 'menu.headset', href: '/headset.html' },
       ],
     },
+    {
+      id: 'game',
+      titleKey: 'menu.game',
+      entries: SETTINGS_TABS.map(([tab, key]) => ({
+        id: `${MENU_TAB_ENTRY}${tab}`,
+        labelKey: key,
+        run: () => openGameSettings(tab),
+      })),
+    },
   ]
 }
 
@@ -508,6 +526,24 @@ export function openGameSettings(tab?: string): void {
   state.settings.open(tab)
 }
 
+/** Info entries: the version line with the number, the install action as a live button. */
+function infoEntry(doc: Document, t: MenuTranslate, entry: SideMenuEntry): SideMenuEntry {
+  if (entry.element) return entry
+  if (entry.id === GAME_MENU_VERSION_ID) {
+    const line = doc.createElement('p')
+    line.id = GAME_MENU_VERSION_ID
+    line.className = 'nabla-side-menu-note'
+    line.textContent = `${t(entry.labelKey)} ${engineVersion ? `v${engineVersion}` : t('menu.version-dev')}`
+    return { ...entry, element: line }
+  }
+  if (entry.id === GAME_MENU_INSTALL_ID) {
+    const button = createInstallEntry(doc, t)
+    button.textContent = t(entry.labelKey)
+    return { ...entry, element: button }
+  }
+  return entry
+}
+
 function buildGameMenu(state: GameMenuState): void {
   const { doc, options } = state
   state.menu?.destroy()
@@ -516,7 +552,9 @@ function buildGameMenu(state: GameMenuState): void {
   const defaults = defaultGameMenuSections()
   const sections = (options.sections ? options.sections(defaults) : defaults).map((section) => ({
     ...section,
-    entries: [...section.entries, ...(state.extra.get(section.id) ?? [])],
+    entries: [...section.entries, ...(state.extra.get(section.id) ?? [])].map((entry) =>
+      infoEntry(doc, t, entry),
+    ),
   }))
   const menu = mountSideMenu(doc, {
     t,
