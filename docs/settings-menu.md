@@ -5,20 +5,28 @@ open, the same button shows a down arrow that folds the monitor away. It is the 
 button; Escape closes too. Both return focus to the game. The style is `src/ui/styles/settings.css`, built on the engine UI tokens
 ([UI theme](ui-theme.md)). This is the
 desktop interface: it does not change the XR/AR monitor menus or any simulation parameter.
-UI labels are Spanish (the game's language); this document and the code are English.
+UI labels come from the engine catalogs (`src/i18n/catalog.{en,es,eu}.ts`, `t()`); the tab and
+section names below are the Spanish ones.
 
 ## Navigation
 
-The top tabs are Mundo, Configuración, Objetos and Desarrollo (see
-[UI/UX pattern](ui-ux-pattern.md)). Each tab has a left navigation and a single visible section
-on the right. The last section chosen in each tab is kept.
+The top tabs are Aplicación, Mundo, Ajustes, Objetos and Desarrollo (`TABS` in
+`game/settings-hud.ts`; see [UI/UX pattern](ui-ux-pattern.md)). Aplicación holds the main
+menu's own sections (`mountGameMenu`, `src/runtime/main-menu.ts`: info, virtual reality, AR,
+scenarios). Each other tab has a left navigation and a single visible section on the right. The
+last section chosen in each tab is kept. Section placement is `SECTION_TABS`; the left-navigation
+groups are the `groups` list at the end of `mountSettingsHud`.
 
-| Tab           | Groups and sections                                                                                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mundo         | Hora; Mapa (map, position); Capas (ground, air); Opciones (asphalt contrast, weather, sea, street lights, headlamp, traffic signs, place names)                                                            |
-| Configuración | Pantalla (quality, sharpness, sun shadows, distances, performance); Efectos (smoke, muzzle flash); Cámara (options, field of view, Action Cam); Conducción; Controles (keys, USB devices); Sonido; Gestión |
-| Objetos       | Vehículos (add, placed objects, layout); the occupied vehicle's group, titled with its name (driver and mirrors, lights, sound, exhaust and smoke; only what applies); Arma (weapon wheel reset)           |
-| Desarrollo    | Armas (aiming, poses and animations); light fine tuning; rear-light nudge; sign and experimental shadows; planet config; terrain source and cache; diagnostics                                             |
+| Tab        | Groups and sections                                                                                                                                                                                                               |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mundo      | Fecha y hora; Mapa (map, position); Capas (ground, air); Opciones (road style, weather, sea, street lights, headlamp, traffic signs with signage physics, place names)                                                            |
+| Ajustes    | Actor; Pantalla (quality, sharpness, sun shadows, distances, performance); Efectos (smoke, muzzle flash, simulated fire); Cámara (options, field of view, Action Cam); Conducción; Controles (keys, USB devices); Sonido; Gestión |
+| Objetos    | Vehículos (add, placed objects, layout); Vehículo actual, titled with its name (driver head and view, steering wheel, mirrors, lights, sound, exhaust and smoke; only what applies); Arma (weapon, combat)                        |
+| Desarrollo | Armas (aiming, poses and animations); light fine tuning; rear-light fine tuning; sign and experimental light shadows; planet config; collision view; terrain source and cache; diagnostics                                        |
+
+Not placed: the legacy «Planeta» section (`scene-planet`, `game/scene-controls.ts`) stays
+hidden (`sectionTab` returns undefined), and «Rendimiento» (`display-performance`) is emptied
+into Pantalla's quality section and hidden.
 
 The field of view (Cámara) is the same offset as the J menu, saved as `nabla.cameraFov`. The
 occupied vehicle's exhaust offset and quantity and its reversing-alarm switch are saved per

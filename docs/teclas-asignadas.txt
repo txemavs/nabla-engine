@@ -10,7 +10,7 @@ delantero completos en moto
 Interactuar / entrar / salir / recoger   [interact]             E
 Cambiar cámara                           [camera]               V
 Postura a pie / tierra-vuelo en nave     [stance]               C
-Recuperar vehículo                       [recover]              R
+Recuperar vehículo                       [recover]              Y
 Sacar / enfundar arma                    [holster]              Tab
 Reiniciar galería de tiro                [gallery.reset]        N
 Diagnóstico de ruedas                    [debug.wheels]         F9
@@ -30,10 +30,12 @@ Luces del vehículo                       [lights]               H
 GPS                                      [gps]                  G
 Largas / cortas                          [highBeam]             K
 Menú del vehículo                        [vehicle.menu]         J
+Claxon                                   [horn]                 R
 
 A pie
 
 Saltar / levantar moto cercana           [jump]                 Espacio
+Pecho derecho (ranura de arma)           [weapon.slotR]         R
 
 Moto
 

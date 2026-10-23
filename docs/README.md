@@ -15,14 +15,32 @@ stack and follow the guided source-code tour.
 See [Asset packs](asset-packs.md) for compressed model distribution, server
 requirements, caching, build settings and reproducible loading measurements.
 
-This documentation describes the working 0.2.0 baseline. The playground keeps its
-Spanish interface; UI labels are quoted where needed to locate a control.
+Most guides were written against the 0.2.0 baseline; the package is now 0.3.x. The interface is
+translated (English, Spanish, Basque: `src/i18n/catalog.{en,es,eu}.ts`); guides quote the Spanish
+labels where needed to locate a control.
+
+## Game UI, input and multiplayer
+
+| Guide                                                   | Read it to…                                                                   |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [Settings menu](settings-menu.md)                       | Find a section in the tabbed menu (`SECTION_TABS`), map view, backups         |
+| [UI theme](ui-theme.md)                                 | Change the look through tokens; regenerate `styles.generated.ts`              |
+| [Controls](controls.md)                                 | Edit, drive, latch cargo, fly; menu options that change a key                 |
+| [Assigned keys](teclas-asignadas.txt)                   | List every binding per context (Spanish, from `src/config/input-bindings.ts`) |
+| [Weapon and camera controls](weapon-camera-controls.md) | Aim, camera and weapon keys on foot                                           |
+| [Weapons](weapons.md)                                   | Understand the single owner of what a character carries (`WeaponLoadout`)     |
+| [Net: game authority](net.md)                           | See who decides pickups, hits, claims and respawns (local vs relay)           |
+
+Key contexts in short: on foot R is the magazine (`weapon.magazine`, weapon drawn) and the right
+chest slot (`weapon.slotR`); in a vehicle R is the horn and weapon keys are off; Y (`recover`)
+always recovers the vehicle.
+
+## Other guides
 
 | Guide                                            | Read it to…                                                      |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
 | [Visibility distances](visibility-settings.md)   | Find draw, fog, road and collision distances in the menu         |
 | [Impact sounds](impact-sounds.md)                | Know what rings when a shot hits metal, and add a surface kind   |
-| [Controls](controls.md)                          | Edit, drive, latch cargo, fly and select location/time           |
 | [Vehicle control profiles](vehicle-controls.md)  | Pick the touch rig and HUD per vehicle; register new types       |
 | [Videotiro review](videotiro-review.md)          | Understand the original layered scenarios and proposed reuse     |
 | [Architecture](architecture.md)                  | Understand ownership, units, scene validation and simulation     |
