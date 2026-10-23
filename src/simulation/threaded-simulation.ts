@@ -820,15 +820,24 @@ export class ThreadedSimulation {
     position: Vec3Tuple,
     height: number,
     movable: boolean,
+    shape?: Parameters<Simulation['createSceneryPole']>[3],
   ): ReturnType<Simulation['createSceneryPole']> {
     if (height <= 0 || !Number.isFinite(height) || !position.every(Number.isFinite))
       throw new Error('Invalid scenery pole')
     const pole = this.nextPole++
     let pose = {
       position: [...position] as Vec3Tuple,
-      rotation: [0, 0, 0, 1] as Transform['rotation'],
+      // Rest pose matches the worker body, which is yawed like the inline simulation's.
+      rotation: (shape?.yaw
+        ? [0, Math.sin(shape.yaw / 2), 0, Math.cos(shape.yaw / 2)]
+        : [0, 0, 0, 1]) as Transform['rotation'],
     }
-    this.forward({ type: 'pole', pole, op: 'create', args: [position, height, movable] })
+    this.forward({
+      type: 'pole',
+      pole,
+      op: 'create',
+      args: shape ? [position, height, movable, shape] : [position, height, movable],
+    })
     return {
       impact: (point, direction, impulse) =>
         void this.forward({ type: 'pole', pole, op: 'impact', args: [point, direction, impulse] }),

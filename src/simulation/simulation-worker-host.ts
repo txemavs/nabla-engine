@@ -286,10 +286,10 @@ export function serveSimulation(port: SimulationPort): void {
       case 'pole': {
         if (!sim) throw new Error('Simulation not created')
         if (message.op === 'create') {
-          const [position, height, movable] = message.args as Parameters<
+          const [position, height, movable, shape] = message.args as Parameters<
             Simulation['createSceneryPole']
           >
-          poles.set(message.pole, sim.createSceneryPole(position, height, movable))
+          poles.set(message.pole, sim.createSceneryPole(position, height, movable, shape))
         } else {
           const pole = poles.get(message.pole)
           if (pole) (pole[message.op] as (...a: unknown[]) => void)(...message.args)
