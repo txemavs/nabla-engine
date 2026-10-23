@@ -10,21 +10,32 @@ section names below are the Spanish ones.
 
 ## Navigation
 
-The top tabs are Aplicación, Mundo, Ajustes, Objetos and Desarrollo (`TABS` in
-`game/settings-hud.ts`; see [UI/UX pattern](ui-ux-pattern.md)). Aplicación holds the main
-menu's own sections (`mountGameMenu`, `src/runtime/main-menu.ts`: info, virtual reality, AR,
-scenarios). Each other tab has a left navigation and a single visible section on the right. The
-last section chosen in each tab is kept. Section placement is `SECTION_TABS`; the left-navigation
-groups are the `groups` list at the end of `mountSettingsHud`.
+The top tabs are Principal, Mundo, Ajustes and Desarrollo (`MENU_TABS` in
+`game/menu-layout.ts`; see [UI/UX pattern](ui-ux-pattern.md)). The whole layout (which section
+goes in which tab, in which left-navigation group, in which order) is pure data in
+`game/menu-layout.ts` (`MENU_LAYOUT`, `MENU_FLAT_SECTIONS`); `game/settings-hud.ts` only applies
+it, moving each control by its id. A product (Euskadi) configures it by mounting sections under
+those ids, not by changing the layout code. Each tab has a left navigation and a single visible
+section on the right. The last section chosen in each tab is kept.
 
-| Tab        | Groups and sections                                                                                                                                                                                                               |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mundo      | Fecha y hora; Mapa (map, position); Capas (ground, air); Opciones (road style, weather, sea, street lights, headlamp, traffic signs with signage physics, place names)                                                            |
-| Ajustes    | Actor; Pantalla (quality, sharpness, sun shadows, distances, performance); Efectos (smoke, muzzle flash, simulated fire); Cámara (options, field of view, Action Cam); Conducción; Controles (keys, USB devices); Sonido; Gestión |
-| Objetos    | Vehículos (add, placed objects, layout); Vehículo actual, titled with its name (driver head and view, steering wheel, mirrors, lights, sound, exhaust and smoke; only what applies); Arma (weapon, combat)                        |
-| Desarrollo | Armas (aiming, poses and animations); light fine tuning; rear-light fine tuning; sign and experimental light shadows; planet config; collision view; terrain source and cache; diagnostics                                        |
+| Tab        | Groups and sections                                                                                                                                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Principal  | Escenarios (on the scenario page, the scenario list itself); Información (with engine and scenario status lines); VR; AR; terrain cache; Vehículo actual (driver, beams, sound, exhaust, rear lights; hidden on foot)      |
+| Mundo      | Mapa; Situación (Fecha, Ubicación); terrain source; Ver (Tierra, Atmósfera, Opciones); Vehículos (add, placed objects, layout); Armas (weapon wheel, combat)                                                               |
+| Ajustes    | Simulación (Tiempo: day/night cycle and gravity; distances; sun shadows; driving); Controles (keys, USB); Cámara (options, field of view, Action Cam); Vídeo (quality, sharpness, light); Audio; Gestión de ajustes; Actor |
+| Desarrollo | Armas (sidearm, poses, muzzle flash); Exportar (planet config); Colisiones; diagnostics                                                                                                                                    |
 
-The FPS limit and resolution scale live in Calidad. The scene rows (time, sky, sun, sea,
+Mundo › Ver › Opciones is a flat section: road style, lens flare, air and sea, traffic signs and
+sign shadows, street lights and experimental light shadows, headlamp, smoke and simulated fire,
+place names, shown as one list without their own titles (`.settings-flat-section`). The
+Actor section is kept at the end of Ajustes; it is not part of the menu spec.
+
+Información shows two status lines: the engine (WebGPU or WebGL, physics in a worker or on the
+main thread; `GameRuntime.physicsThread`) and the current scenario (set by the product with
+`setGameMenuNote(GAME_MENU_SCENARIO_ID, …)`). Gravity (Ajustes › Simulación › Tiempo) is set in
+m/s² and stored as the existing multiplier of g (`game/gravity-ui.ts`).
+
+The FPS limit and resolution scale live in Calidad (Vídeo), with anisotropy. The scene rows (time, sky, sun, sea,
 clouds) are built in a hidden holder (`scene-controls-staging`) and moved into Mundo by the HUD.
 
 The field of view (Cámara) is the same offset as the J menu, saved as `nabla.cameraFov`. The
@@ -94,3 +105,9 @@ module reads its configuration with its own validation.
 Tests: `settings-backup.test.ts`, `settings-management.spec.ts` and `settings-hud.spec.ts` check
 file limits, exclusion of foreign data, rollback of failed writes, confirmation, kept
 calibrations, navigation and preserved listeners on the original controls.
+
+## Future ideas
+
+- **VR white-room lobby.** Entering VR from the menu could start in a plain white room with the
+  scenario list on a wall panel, choosing one loads it around the player. Not built; the
+  scenario page's test ground plus Principal › Escenarios cover it for now.
