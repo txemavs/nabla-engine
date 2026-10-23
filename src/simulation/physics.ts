@@ -269,15 +269,32 @@ export class Heightfield {
   }
 }
 
+/** Vertical capsule (Y axis): a segment of half length `halfHeight` swept by `radius`. */
+export class Capsule {
+  halfHeight: number
+  radius: number
+  collisionResponse = true
+  boundingSphereRadius: number
+  constructor(halfHeight: number, radius: number) {
+    this.halfHeight = Math.max(0, halfHeight)
+    this.radius = radius
+    this.boundingSphereRadius = this.halfHeight + radius
+  }
+}
+
 /** Static triangle mesh. One collider for a whole surface, not a hull per face. */
 export class Trimesh {
   vertices: Float32Array
+  /** Both windings (queries and legacy users). */
   indices: Uint32Array
+  /** The authored winding only: the collider uses it with internal-edge fixing. */
+  forward: Uint32Array
   collisionResponse = true
   boundingSphereRadius: number
   constructor(vertices: Float32Array, indices: Uint32Array) {
     this.vertices = new Float32Array(vertices)
     const forward = new Uint32Array(indices)
+    this.forward = forward
     const both = new Uint32Array(forward.length * 2)
     both.set(forward)
     for (let i = 0; i < forward.length; i += 3) {
@@ -293,7 +310,7 @@ export class Trimesh {
   }
 }
 
-type Shape = Sphere | Box | Heightfield | Trimesh
+type Shape = Sphere | Box | Capsule | Heightfield | Trimesh
 
 export class RaycastResult {
   get hasHit(): boolean {
@@ -493,6 +510,30 @@ export class Body {
     this.breakawayAnchored = anchored
     this.raw?.setBodyType(anchored ? R().RigidBodyType.Fixed : R().RigidBodyType.Dynamic, true)
   }
+  /** True while the body follows `moveKinematic` targets instead of forces (networked mirrors). */
+  kinematic = false
+  setKinematic(enabled: boolean): void {
+    if (this.kinematic === enabled || this.breakawayAnchored) return
+    this.kinematic = enabled
+    const api = R()
+    this.raw?.setBodyType(
+      enabled ? api.RigidBodyType.KinematicPositionBased : api.RigidBodyType.Dynamic,
+      true,
+    )
+  }
+  /** Target pose for the next world step; Rapier derives contact velocities from the motion. */
+  moveKinematic(position: Vec3, quaternion: Quaternion): void {
+    if (!this.kinematic) return
+    this.previousPosition.copy(this.position)
+    this.previousQuaternion.copy(this.quaternion)
+    this.position.silent = this.quaternion.silent = true
+    this.position.copy(position)
+    this.quaternion.copy(quaternion)
+    this.position.silent = this.quaternion.silent = false
+    if (!this.raw) return
+    this.raw.setNextKinematicTranslation(position.vsub(this.world?.origin ?? new Vec3()))
+    this.raw.setNextKinematicRotation(quaternion)
+  }
   /** Streamed breakaway props stay dormant until an actual contact wakes them. */
   preserveSleep = false
   push() {
@@ -535,7 +576,7 @@ export class Body {
       this.velocity.silent =
       this.angularVelocity.silent =
         false
-    this.mass = this.raw.isFixed() ? 0 : this.raw.mass()
+    if (!this.kinematic) this.mass = this.raw.isFixed() ? 0 : this.raw.mass()
     this.updateAABB()
   }
   mount(world: World) {
@@ -624,8 +665,9 @@ export class Body {
     if (shape instanceof Sphere) desc = api.ColliderDesc.ball(shape.radius)
     else if (shape instanceof Box)
       desc = api.ColliderDesc.cuboid(shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z)
-    else if (shape instanceof Trimesh)
-      desc = api.ColliderDesc.trimesh(shape.vertices, shape.indices)
+    else if (shape instanceof Capsule)
+      desc = api.ColliderDesc.capsule(shape.halfHeight, shape.radius)
+    else if (shape instanceof Trimesh) desc = trimeshDesc(shape)
     else if (shape instanceof Heightfield) {
       const columns = shape.data.length
       const rows = shape.data[0]?.length ?? 0
@@ -658,6 +700,42 @@ export class Body {
   }
 }
 
+/**
+ * Trimesh collider with internal-edge fixing (merged duplicate vertices, oriented pseudo-normals):
+ * bodies sliding across the seams between triangles of one surface no longer catch on the shared
+ * edges (ghost collisions). Falls back to the plain double-sided mesh if the topology is rejected.
+ */
+function trimeshDesc(shape: Trimesh) {
+  const api = R()
+  try {
+    const desc = api.ColliderDesc.trimesh(
+      shape.vertices,
+      shape.forward,
+      api.TriMeshFlags.FIX_INTERNAL_EDGES,
+    )
+    if (desc) return desc
+  } catch {
+    // Non-manifold topology: keep the legacy collider.
+  }
+  return api.ColliderDesc.trimesh(shape.vertices, shape.indices)
+}
+
+/** Line segments of every collider (Rapier debug render), world metres; colours RGBA. */
+export interface CollisionDebugLines {
+  vertices: Float32Array
+  colors: Float32Array
+}
+
+/**
+ * Per-wheel presentation values of a wheeled vehicle: steer angle (rad), suspension length (m)
+ * and spin rate (rad/s). Used to show a networked copy as its owner drives it.
+ */
+export interface WheelVisuals {
+  steer: number[]
+  suspension: number[]
+  spinRate: number[]
+}
+
 interface WheelState {
   connection: Vec3
   direction: Vec3
@@ -686,6 +764,15 @@ export class RaycastVehicle {
   indexUpAxis = 1
   indexForwardAxis = 2
   controller: ReturnType<RapierWorld['createVehicleController']> | null = null
+  /**
+   * Received wheel values that replace the raycast result in the wheel transforms (a remote copy
+   * driven by its owner). While set, the controller does not raycast or push the chassis.
+   */
+  visualOverride: WheelVisuals | null = null
+  /** Measured wheel spin rate per wheel, rad/s, from the last step. */
+  readonly spinRate: number[] = []
+  private readonly spinAngle: number[] = []
+  private readonly lastRotation: (number | undefined)[] = []
   private world: World | null = null
   constructor(options: {
     chassisBody: Body
@@ -768,15 +855,21 @@ export class RaycastVehicle {
     const body = this.chassisBody
     if (!wheel) return
     // Rapier's hard point is from the last vehicle update, before this step moved the chassis.
-    const length = this.controller?.wheelSuspensionLength(index) ?? wheel.suspensionRestLength
+    const override = this.visualOverride
+    const length = override
+      ? (override.suspension[index] ?? wheel.suspensionRestLength)
+      : (this.controller?.wheelSuspensionLength(index) ?? wheel.suspensionRestLength)
     const dir = body.quaternion.vmult(wheel.direction)
     const origin = body.pointToWorldFrame(wheel.connection)
     const dropped = dir.scale(length, new Vec3())
     origin.vadd(dropped, wheel.worldTransform.position)
-    const steer = new Quaternion().setFromAxisAngle(new Vec3(0, 1, 0), wheel.steering)
+    const steer = new Quaternion().setFromAxisAngle(
+      new Vec3(0, 1, 0),
+      override ? (override.steer[index] ?? 0) : wheel.steering,
+    )
     const spin = new Quaternion().setFromAxisAngle(
       new Vec3(1, 0, 0),
-      this.controller?.wheelRotation(index) ?? 0,
+      override ? (this.spinAngle[index] ?? 0) : (this.controller?.wheelRotation(index) ?? 0),
     )
     wheel.worldTransform.quaternion.copy(body.quaternion.mult(steer).mult(spin))
     wheel.suspensionLength = length
@@ -797,7 +890,25 @@ export class RaycastVehicle {
         hit.z + (this.world?.origin.z ?? 0),
       )
   }
+  /** Spin bookkeeping: measure the controller's wheel rotation, or advance the received rate. */
+  private trackSpin(dt: number) {
+    for (let i = 0; i < this.wheelInfos.length; i++) {
+      if (this.visualOverride) {
+        this.spinAngle[i] =
+          ((this.spinAngle[i] ?? 0) + (this.visualOverride.spinRate[i] ?? 0) * dt) % (2 * Math.PI)
+        continue
+      }
+      const rotation = this.controller?.wheelRotation(i) ?? 0
+      const last = this.lastRotation[i]
+      const delta =
+        last === undefined ? 0 : Math.atan2(Math.sin(rotation - last), Math.cos(rotation - last))
+      this.spinRate[i] = dt > 0 ? delta / dt : 0
+      this.lastRotation[i] = rotation
+    }
+  }
   preStep(dt: number) {
+    this.trackSpin(dt)
+    if (this.visualOverride) return
     if (!this.controller || !this.chassisBody.raw) return
     this.wheelInfos.forEach((wheel, i) => {
       this.controller!.setWheelFrictionSlip(i, wheel.frictionSlip)
@@ -1020,6 +1131,14 @@ export class World {
       callback(result)
       return true
     })
+  }
+  /** Wireframe of every collider (Rapier debug render). Copies, so they survive the next step. */
+  debugLines(): CollisionDebugLines {
+    const buffers = this.raw.debugRender()
+    return {
+      vertices: new Float32Array(buffers.vertices),
+      colors: new Float32Array(buffers.colors),
+    }
   }
   step(dt: number) {
     this.raw.gravity = this.gravity

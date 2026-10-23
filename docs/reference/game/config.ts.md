@@ -4,35 +4,19 @@
 
 [Source](../../../game/config.ts)
 
-Game configuration from URL parameters and defaults.
-
-URL parameters:
-  - lat: spawn latitude (default: Zaisa, Irun center)
-  - lon: spawn longitude
-  - alt: origin altitude in metres (default 50)
-  - heading: player compass heading, degrees clockwise from north (default 0)
-  - vehicle: vehicle preset ID (default: 'car') — the possessed start vehicle
-  - color: body paint for the start vehicle (`#rrggbb`, same `entity.color` as cars)
-  - vehicles: JSON array of extra host vehicles `{lat, lon, heading, vehicle, alt?, color?, tow?, box?}`
-    (WGS84). Also `VITE_NABLA_VEHICLES` at build time. See `host-vehicles.ts`.
-  - portals: JSON array of standalone portals `{name, lat, lon, heading, alt?, to?, mode?}`.
-    Also `VITE_NABLA_PORTALS`. See `host-portals.ts`.
-  - tiles: explicit tile base URL, WITHOUT the trailing /z (required for geographic static mode);
-           manifests are read from {tiles}/z/15/{x}/{y}/manifest.json
-  - static: use static tile mode ('true' or '1')
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/planet/static-tiles`
 - `./host-vehicles.js`
 - `./host-portals.js`
 
 ## parseGameConfig
 
-[Implementation, line 49](../../../game/config.ts#L49)
+[Implementation, line 50](../../../game/config.ts#L50)
 
 ```ts
-parseGameConfig(search: string = location.search): GameConfig
+parseGameConfig(search: string = pageSearch()): GameConfig
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -44,6 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `coordinate`
 - `hostVehiclesFromSearch`
 - `normalizeTilesBase`
+- `pageSearch`
 - `params.get`
 - `portalsConfig`
 - `tilesParam.trim`
@@ -51,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseGameConfig.coordinate
 
-[Implementation, line 52](../../../game/config.ts#L52)
+[Implementation, line 53](../../../game/config.ts#L53)
 
 ```ts
 coordinate(key: string, fallback: number): inferred by TypeScript; see implementation
@@ -65,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## configToUrl
 
-[Implementation, line 92](../../../game/config.ts#L92)
+[Implementation, line 93](../../../game/config.ts#L93)
 
 ```ts
 configToUrl(config: GameConfig): string
@@ -84,7 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## requireGeographicTileBase
 
-[Implementation, line 124](../../../game/config.ts#L124)
+[Implementation, line 125](../../../game/config.ts#L125)
 
 Validate geographic terrain before allocating a renderer or starting any requests.
 
@@ -102,7 +87,7 @@ Explicit throws in this body:
 
 ## portalsConfig
 
-[Implementation, line 135](../../../game/config.ts#L135)
+[Implementation, line 136](../../../game/config.ts#L136)
 
 `portals` only when the host listed some, so configs without portals keep their shape.
 

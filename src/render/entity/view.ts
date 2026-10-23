@@ -1,4 +1,6 @@
+import { softDepth } from './soft-smoke.js'
 import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
+import { holdItem, type HeldPose } from './held-pose.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
   VehiclePresentationResolver,
@@ -33,7 +35,11 @@ import { takeMapGeometry } from '../planet/geometry.js'
 import { Streetlights } from './streetlights.js'
 import type { CarLights } from './car-lights.js'
 import { AuthoredVehicleLights } from '../vehicle-presentation/authored-lights.js'
-import type { VehicleLightMode } from '../vehicle-presentation/light-controller.js'
+import type {
+  VehicleLampState,
+  VehicleLightMode,
+  VehicleLightSwitches,
+} from '../vehicle-presentation/light-controller.js'
 import { StartLights } from '../vehicle-presentation/start-lights.js'
 import {
   mountLandingGear,
@@ -114,6 +120,12 @@ import { SceneGraph } from '../../scene/graph.js'
 import { parseScene, type SceneDocument } from '../../scene/document.js'
 import type { Simulation } from '../../simulation/simulation.js'
 import * as THREE from 'three'
+import {
+  localAvatarState,
+  type AvatarAnimState,
+  type AvatarNetState,
+  type PlayerBody,
+} from './player-body.js'
 
 function standardMaterial(
   parameters: THREE.MeshStandardMaterialParameters,
@@ -490,6 +502,35 @@ export class SceneView {
     if (controller.level('high', 0, state, 0)) return 'high'
     return controller.level('low', 0, state, 0) ? 'low' : null
   }
+  /**
+   * Lamp inputs (power, brake, reverse) forced for vehicles nobody drives here, such as a car
+   * mirrored from another player. Without an entry, lamps follow the local simulation.
+   */
+  private readonly lampOverrides = new Map<string, VehicleLampState>()
+  /** Switch positions and lamp inputs of a vehicle's lights; null without a light controller. */
+  vehicleLightState(id: string): VehicleLightSwitches | null {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    if (!controller) return null
+    return { mode: controller.mode, highBeam: controller.highBeam, signal: controller.signal }
+  }
+  /**
+   * Drive a vehicle's existing light switches and lamp inputs from outside (for example from the
+   * network). `lamp: null` returns the lamp inputs to the local simulation.
+   */
+  setVehicleLightState(
+    id: string,
+    switches: Partial<VehicleLightSwitches> | null,
+    lamp: VehicleLampState | null,
+  ): boolean {
+    const controller = this.carLights.get(id)?.controller ?? this.authoredLights.get(id)?.controller
+    if (lamp) this.lampOverrides.set(id, { ...lamp })
+    else this.lampOverrides.delete(id)
+    if (!controller) return false
+    if (switches?.mode !== undefined) controller.mode = switches.mode
+    if (switches?.highBeam !== undefined) controller.highBeam = switches.highBeam
+    if (switches?.signal !== undefined) controller.signal = Math.sign(switches.signal)
+    return true
+  }
   /** Lights after the start-up (`SceneViewOptions.startLights`); change `mode` to override. */
   readonly startLights = new StartLights()
   beginVehicleBeamFlash(id: string): boolean {
@@ -566,6 +607,30 @@ export class SceneView {
   get headLightMount(): THREE.Object3D {
     return this.monitor
   }
+  private collisionLines: THREE.LineSegments | null = null
+  /** Collider wireframe (Development › Show collision) in simulation metres; null removes it. */
+  setCollisionLines(lines: { vertices: Float32Array; colors: Float32Array } | null): void {
+    if (!lines) {
+      this.collisionLines?.geometry.dispose()
+      ;(this.collisionLines?.material as THREE.Material | undefined)?.dispose()
+      this.collisionLines?.removeFromParent()
+      this.collisionLines = null
+      return
+    }
+    if (!this.collisionLines) {
+      this.collisionLines = new THREE.LineSegments(
+        new THREE.BufferGeometry(),
+        new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthTest: false }),
+      )
+      this.collisionLines.name = 'collision-debug'
+      this.collisionLines.frustumCulled = false
+      this.collisionLines.renderOrder = 999
+      this.root.add(this.collisionLines)
+    }
+    const geometry = this.collisionLines.geometry
+    geometry.setAttribute('position', new THREE.BufferAttribute(lines.vertices, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(lines.colors, 4))
+  }
   setHeadLight(enabled: boolean): void {
     setMonitorFaceLight(this.monitor, enabled)
   }
@@ -575,6 +640,34 @@ export class SceneView {
   private readonly avatarFollow = new AvatarFollow()
   private readonly avatarTransfer = new AvatarTransfer()
   private readonly ejectionTumble = new EjectionTumble()
+  private playerBody: PlayerBody | null = null
+  private playerBodyState: AvatarAnimState = 'idle'
+  private playerNetState: AvatarNetState | null = null
+  /** Point one arm of the local body along `direction` (world) over the animation; null: none. */
+  /** Item the local body holds (body-space pose); its arm reaches it by IK after animating. */
+  heldPose: { hand: 'left' | 'right'; pose: HeldPose } | null = null
+  /** The local player's body, if any (read-only use: holding items, sockets). */
+  get localBody(): PlayerBody | null {
+    return this.playerBody
+  }
+  /** Give the player a skinned body (null removes it and shows the monitor helmet alone). */
+  setPlayerBody(body: PlayerBody | null): void {
+    this.playerBody?.dispose()
+    this.playerBody = body
+    this.playerBodyState = 'idle'
+    this.playerNetState = null
+    if (body) this.avatar.add(body.root)
+    // A body brings its own head: the monitor helmet is the head-only avatar (no body) alone.
+    this.monitor.visible = !body
+  }
+  /** The local player's body, or null (monitor helmet only). */
+  get localPlayerBody(): PlayerBody | null {
+    return this.playerBody
+  }
+  /** The local player's body state for the network (null without a body). */
+  get avatarNetState(): AvatarNetState | null {
+    return this.playerNetState
+  }
   private graph: SceneGraph
   constructor(
     readonly document: SceneDocument,
@@ -801,6 +894,7 @@ export class SceneView {
   }
   /** Remove a vehicle installed by `addVehicles`, releasing its meshes and per-vehicle equipment. */
   removeVehicle(id: string): void {
+    this.lampOverrides.delete(id)
     const group = this.objects.get(id)
     for (const wheel of this.wheels.get(id) ?? []) {
       wheel.removeFromParent()
@@ -1564,6 +1658,8 @@ export class SceneView {
     )
     this.roads.update(this.mapRenderEntities!, this.objects, enabled, position, roadDistance)
     this.landcover.update(this.mapRenderEntities!, this.objects, enabled, position, distance, now)
+    // The river's depth copy (shared with soft smoke, which may hold it in its own group).
+    if (!softDepth.grabber.parent) this.root.add(softDepth.grabber)
     for (const e of this.document.entities) {
       if (this.mapOmissions.has(e.id)) {
         const object = this.objects.get(e.id)
@@ -1781,7 +1877,7 @@ export class SceneView {
       const source = tractor ? sim.vehicleInfo(tractor) : info
       const controller = tractor ? this.authoredLights.get(tractor)?.controller : lights.controller
       lights.apply(
-        {
+        this.lampOverrides.get(tractor ?? id) ?? {
           powered: (tractor ?? id) === sim.player.vehicleId,
           braking: source.braking,
           reversing: source.reversing,
@@ -1816,7 +1912,11 @@ export class SceneView {
     for (const [id, lights] of this.carLights) {
       const info = sim.vehicleInfo(id)
       lights.update(
-        { powered: sim.player.vehicleId === id, braking: info.braking, reversing: info.reversing },
+        this.lampOverrides.get(id) ?? {
+          powered: sim.player.vehicleId === id,
+          braking: info.braking,
+          reversing: info.reversing,
+        },
         lightNow,
         this.night,
       )
@@ -1930,6 +2030,88 @@ export class SceneView {
       )
     }
     this.avatarTransfer.update(this.avatar, this.monitor, vehicleId, elapsed, !!sim.playerEjection)
+    this.updatePlayerBody(sim, vehicleId, elapsed)
+  }
+  /**
+   * Pose the skinned body (player-body.ts) under the monitor: on foot its feet stand on the
+   * ground and the monitor rides its head socket; seated it plays `drive` with the socket at
+   * the head pose.
+   */
+  private updatePlayerBody(sim: Simulation, vehicleId: string | null, elapsed: number): void {
+    const body = this.playerBody
+    const seated = !!vehicleId
+    if (!body) {
+      // No body (head-only hosts): the same network state, from the avatar's feet.
+      this.playerNetState = this.headOnlyNetState(sim, seated)
+      return
+    }
+    const velocity = this.avatarFollow.velocity
+    const speed = seated ? 0 : Math.hypot(velocity.x, velocity.z)
+    const previous = this.playerBodyState
+    let state = localAvatarState(previous, {
+      grounded: sim.player.grounded,
+      rising: seated ? 0 : velocity.y,
+      speed,
+      crouching: sim.stance !== 'standing',
+      seated,
+      runAbove: (simulationDefaults.walkSpeed + simulationDefaults.sprintSpeed) / 2,
+    })
+    if (previous === 'jump_land' && state === 'idle' && !body.finished) state = 'jump_land'
+    this.playerBodyState = state
+    const hover = sim.options.playerMode === 'hover'
+    body.root.visible = !hover && !sim.playerEjection
+    const half =
+      sim.stance === 'prone'
+        ? 0.2
+        : sim.stance === 'crouching'
+          ? 0.5
+          : simulationDefaults.playerHalfHeight
+    body.root.position.set(0, seated ? 0 : -half, 0)
+    body.animate(state, speed, elapsed)
+    if (this.heldPose && !seated) holdItem(body, this.heldPose.pose, this.heldPose.hand)
+    const head = body.headIn(this.avatar, this.scratchVectors[3])
+    if (head && seated) body.root.position.sub(head)
+    else if (head && body.root.visible) {
+      // The monitor keeps its own sway; only its rest point moves to the socket.
+      this.monitor.position.x += head.x
+      this.monitor.position.z += head.z
+      this.monitor.position.y += head.y - 0.35
+    }
+    // Scene (view root) space, not the floating render origin: the same on every client.
+    const feet = this.root.worldToLocal(body.root.getWorldPosition(this.scratchVectors[3]))
+    this.playerNetState = {
+      animState: state,
+      yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
+      position: [feet.x, feet.y, feet.z],
+      speed,
+    }
+  }
+  private headOnlyNetState(sim: Simulation, seated: boolean): AvatarNetState {
+    const velocity = this.avatarFollow.velocity
+    const speed = seated ? 0 : Math.hypot(velocity.x, velocity.z)
+    const state = localAvatarState(this.playerBodyState, {
+      grounded: sim.player.grounded,
+      rising: seated ? 0 : velocity.y,
+      speed,
+      runAbove: (simulationDefaults.walkSpeed + simulationDefaults.sprintSpeed) / 2,
+      crouching: sim.stance !== 'standing',
+      seated,
+    })
+    this.playerBodyState = state
+    const half =
+      sim.stance === 'prone'
+        ? 0.2
+        : sim.stance === 'crouching'
+          ? 0.5
+          : simulationDefaults.playerHalfHeight
+    const feet = this.root.worldToLocal(this.avatar.getWorldPosition(this.scratchVectors[3]))
+    if (!seated) feet.y -= half
+    return {
+      animState: state,
+      yaw: seated ? sim.player.yaw : this.avatarFollow.heading,
+      position: [feet.x, feet.y, feet.z],
+      speed,
+    }
   }
   /**
    * Advance the ride smoothing with the player's vehicle. Crashes, a fallen bike, rollovers and

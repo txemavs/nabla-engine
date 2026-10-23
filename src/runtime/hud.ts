@@ -38,9 +38,7 @@ export class GameHud {
     private readonly text: RuntimeText = createRuntimeText(),
   ) {
     this.root.className = 'nabla-game-hud'
-    this.root.style.cssText =
-      'position:absolute;left:16px;bottom:16px;z-index:30;pointer-events:none;color:white;text-shadow:0 1px 3px black;font:14px system-ui;white-space:pre-line'
-    this.telemetry.style.fontSize = '24px'
+    this.telemetry.className = 'nabla-game-hud-telemetry'
     this.hint.className = 'nabla-game-hud-hint'
     this.root.append(this.telemetry, this.hint, this.debug)
     host.append(this.root)

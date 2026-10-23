@@ -5,6 +5,7 @@
  * (`GameRuntime.setMirrorAngle`); this file only shows it, in degrees.
  */
 import { menuSubtitle } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 /** Degrees, as in the engine (`MirrorAngle`): yaw + outward, tilt + up. */
 export interface GlassAngle {
@@ -109,24 +110,32 @@ export function mirrorControls(): {
   const status = document.createElement('p')
   status.id = 'mirror-status'
   status.setAttribute('role', 'status')
-  status.textContent = 'Entra en un vehículo con espejos para ajustarlos.'
-  const rows = MIRROR_SIDES.map(({ side, label }) => {
-    const yaw = slider(`mirror-${side}-yaw`, `Espejo ${label}: giro`, MIRROR_RANGE.yaw)
-    yaw.row.title = '+ lo gira hacia fuera (se ve más por fuera); − hacia dentro (más del costado)'
-    const tilt = slider(`mirror-${side}-tilt`, `Espejo ${label}: inclinación`, MIRROR_RANGE.tilt)
-    tilt.row.title = '+ lo inclina hacia arriba; − hacia abajo'
+  status.textContent = t('mirror.get-into-a-vehicle-with-mirrors-to-adjust-them')
+  const rows = MIRROR_SIDES.map(({ side }) => {
+    const yaw = slider(
+      `mirror-${side}-yaw`,
+      t('mirror.slider-yaw', { side: t(`mirror.side-${side}`) }),
+      MIRROR_RANGE.yaw,
+    )
+    yaw.row.title = t('mirror.turns-it-outwards-more-of-the-outside-inwards-mo')
+    const tilt = slider(
+      `mirror-${side}-tilt`,
+      t('mirror.slider-tilt', { side: t(`mirror.side-${side}`) }),
+      MIRROR_RANGE.tilt,
+    )
+    tilt.row.title = t('mirror.tilts-it-up-down')
     return { side, yaw, tilt }
   })
   const reset = document.createElement('button')
   reset.type = 'button'
   reset.id = 'mirror-reset'
-  reset.textContent = 'Restablecer espejos'
+  reset.textContent = t('mirror.reset-mirrors')
   const values = document.createElement('p')
   values.id = 'mirror-values'
   values.className = 'planet-settings-config'
   values.hidden = true
   root.append(
-    menuSubtitle('Espejos'),
+    menuSubtitle(t('settings.mirrors')),
     status,
     ...rows.flatMap((r) => [r.yaw.row, r.tilt.row]),
     reset,
@@ -167,12 +176,12 @@ export function mirrorControls(): {
       }
       if (!mirrors) {
         model = null
-        status.textContent = 'Entra en un vehículo con espejos para ajustarlos.'
+        status.textContent = t('mirror.get-into-a-vehicle-with-mirrors-to-adjust-them')
         values.hidden = true
         return
       }
       status.textContent =
-        `Espejos del ${mirrors.name}` + (mirrors.saved ? ' (ajuste guardado)' : '')
+        t('mirror.title', { name: mirrors.name }) + (mirrors.saved ? t('mirror.saved') : '')
       // Only a new vehicle model moves the sliders; never fight a drag in progress.
       if (next !== model) {
         model = next

@@ -53,7 +53,7 @@ export class RoadAssist {
 
   /**
    * Drivable scene-road centrelines in world X/Z (terrain-level, no footways/paths), for the
-   * R reset snap. Shares the assist's per-revision cache.
+   * recover (Y) reset snap. Shares the assist's per-revision cache.
    */
   centerlines(
     entities: readonly Entity[],

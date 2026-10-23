@@ -6,17 +6,19 @@
 
 ## Module dependencies
 
+- `./page-query.js`
 - `../src/render/effects/fsr1.js`
 - `@nabla/engine/runtime/browser`
+- `@nabla/engine/i18n`
 
 ## readFsrSettings
 
-[Implementation, line 6](../../../game/fsr-settings.ts#L6)
+[Implementation, line 8](../../../game/fsr-settings.ts#L8)
 
 Apply before preload, so startup prepares the actual chosen render path.
 
 ```ts
-readFsrSettings(search = location.search): FsrSettings
+readFsrSettings(search = pageSearch()): FsrSettings
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -25,13 +27,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `URLSearchParams`
 - `localStorage.getItem`
+- `pageSearch`
 - `params.get`
 - `params.has`
 - `resolveFsr`
 
 ## appendFsrControls
 
-[Implementation, line 27](../../../game/fsr-settings.ts#L27)
+[Implementation, line 29](../../../game/fsr-settings.ts#L29)
 
 ```ts
 appendFsrControls(parent: HTMLElement, runtime: GameRuntime): void
@@ -47,10 +50,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sharp.addEventListener`
 - `sharpLabel.append`
 - `sync`
+- `t`
 
 ## appendFsrControls.sync
 
-[Implementation, line 60](../../../game/fsr-settings.ts#L60)
+[Implementation, line 61](../../../game/fsr-settings.ts#L61)
 
 ```ts
 sync(): inferred by TypeScript; see implementation
@@ -63,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## appendFsrControls.apply
 
-[Implementation, line 67](../../../game/fsr-settings.ts#L67)
+[Implementation, line 68](../../../game/fsr-settings.ts#L68)
 
 ```ts
 apply(): inferred by TypeScript; see implementation

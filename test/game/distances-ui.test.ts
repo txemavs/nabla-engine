@@ -17,8 +17,8 @@ describe('distance rows', () => {
       for (const value of visibilityChoices[row.field] as readonly number[])
         expect(row.format(value).length).toBeGreaterThan(0)
     const roads = distanceRows.find((row) => row.field === 'roads')!
-    expect(roads.format(0)).toBe('Ocultas')
+    expect(roads.format(0)).toBe('Hidden')
     expect(roads.format(2000)).toBe('2 km')
-    expect(distanceRows.find((row) => row.field === 'relief')!.format(2)).toBe('5×5 celdas')
+    expect(distanceRows.find((row) => row.field === 'relief')!.format(2)).toBe('5×5 cells')
   })
 })

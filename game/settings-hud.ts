@@ -1,8 +1,17 @@
+import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
 import { appendFsrControls } from './fsr-settings.js'
 import { HEADLAMP_SHADOWS_KEY } from './startup-light-settings.js'
 import { createUsbSettingsPanel } from '@nabla/engine/runtime/core'
-import { settingsNavigationStyles } from './settings-navigation-styles.js'
+import { installEngineStyles } from '../src/ui/styles.js'
+import {
+  GAME_MENU_ENGINE_ID,
+  GAME_MENU_TOGGLE_ID,
+  mountGameMenu,
+  registerGameMenuSettings,
+  setGameMenuNote,
+} from '../src/runtime/main-menu.js'
+import { addCornerButton } from '../src/runtime/corner-buttons.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
 import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
@@ -22,11 +31,8 @@ import { keyboardAction, menuNavigationKey } from '@nabla/engine/config/controls
 import { createSettingsManagement } from './settings-management.js'
 import { actionCamControls, softActionCamSettings } from '../src/runtime/action-cam-settings.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
-import {
-  weaponPoseNames,
-  normalizeWeaponPoses,
-  type WeaponPose,
-} from '../src/runtime/weapon-pose-tuning.js'
+import { ACTOR_COLOR_NAMES, ACTOR_KINDS, parseActor } from '../src/runtime/actor.js'
+import { weaponPoseNames, type WeaponPose } from '../src/runtime/weapon-pose-tuning.js'
 import {
   sidearmTuningDefaults,
   sidearmTuningRanges,
@@ -37,6 +43,16 @@ import {
   installVehicleMonitorStyles,
   type PlanetSettingsPanel,
 } from '../src/runtime/planet-settings-panel.js'
+import { t } from '@nabla/engine/i18n'
+import { sectionMerges } from './settings-nav.js'
+import {
+  CURRENT_VEHICLE_GROUP,
+  MENU_FLAT_SECTIONS,
+  MENU_TABS,
+  layoutGroups,
+  layoutSectionTabs,
+  type MenuTabId,
+} from './menu-layout.js'
 
 export type SettingsHud = {
   open: () => void
@@ -45,102 +61,63 @@ export type SettingsHud = {
   destroy: () => void
 }
 
-const TABS = [
-  { id: 'planet', label: 'Mundo' },
-  { id: 'options', label: 'Configuración' },
-  { id: 'objects', label: 'Objetos' },
-  { id: 'dev', label: 'Desarrollo' },
-] as const
+// Tabs, groups and section placement: the generic layout in menu-layout.ts.
+const TABS = MENU_TABS.map((tab) => ({ id: tab.id, label: t(tab.labelKey) }))
 
-type TabId = (typeof TABS)[number]['id']
+type TabId = MenuTabId
 
 /** Sections retain their DOM, listeners and persistence; only their location changes. */
-export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = [
-  ['settings-planet-time', 'planet'],
-  ['settings-map', 'planet'],
-  ['terrain-position', 'planet'],
-  ['terrain-layers', 'planet'],
-  ['settings-layer-air', 'planet'],
-  ['road-style', 'planet'],
-  ['settings-planet-air', 'planet'],
-  ['settings-planet-sea', 'planet'],
-  ['settings-streetlights', 'planet'],
-  ['settings-headlamp', 'planet'],
-  ['settings-traffic-signs', 'planet'],
-  ['settings-options-labels', 'planet'],
-  ['display-quality-section', 'options'],
-  ['settings-sharpness', 'options'],
-  ['quality-shadows', 'options'],
-  ['settings-distances', 'options'],
-  ['display-performance', 'options'],
-  ['settings-effects', 'options'],
-  ['settings-muzzle-flash', 'options'],
-  ['camera-extras', 'options'],
-  ['settings-camera-fov', 'options'],
-  ['settings-action-cam', 'options'],
-  ['driving-extras', 'options'],
-  ['settings-controls', 'options'],
-  ['settings-usb', 'options'],
-  ['settings-sound', 'options'],
-  ['settings-management', 'options'],
-  ['scene-vehicles', 'objects'],
-  ['settings-placed-objects', 'objects'],
-  ['settings-object-layout', 'objects'],
-  ['settings-options-driver', 'objects'],
-  ['settings-car-beams', 'objects'],
-  ['settings-vehicle-sound', 'objects'],
-  ['settings-truck-exhaust', 'objects'],
-  ['settings-weapon', 'objects'],
-  ['settings-options-sidearm', 'dev'],
-  ['settings-weapon-poses', 'dev'],
-  ['settings-light', 'dev'],
-  ['settings-rear-light-nudge', 'dev'],
-  ['settings-sign-shadows', 'dev'],
-  ['settings-experimental-light-shadows', 'dev'],
-  ['settings-config-planet', 'dev'],
-  ['terrain-source', 'dev'],
-  ['terrain-cache', 'dev'],
-  ['settings-diagnostics', 'dev'],
-]
+export const SECTION_TABS: ReadonlyArray<readonly [id: string, tab: TabId]> = layoutSectionTabs()
 
-/** Tab for a section id, or undefined when the HUD does not place it (the legacy Planeta). */
+/** The first tab the window shows. */
+const DEFAULT_TAB: TabId = 'app'
+
+/** Tab for a section id. */
 export function sectionTab(id: string): TabId | undefined {
-  if (id === 'scene-planet') return undefined
   return SECTION_TABS.find(([section]) => section === id)?.[1] ?? 'options'
 }
 
 /** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
 const SECTION_TITLES: Readonly<Record<string, string>> = {
-  'terrain-layers': 'Suelo',
-  'road-style': 'Contraste del asfalto',
-  'scene-vehicles': 'Añadir',
-  'settings-car-beams': 'Luces',
-  'settings-rear-light-nudge': 'Luz trasera (ajuste fino)',
-  'settings-truck-exhaust': 'Escape y humo',
-  'settings-vehicle-sound': 'Sonido',
-  'settings-options-driver': 'Conductor y espejos',
-  'display-quality-section': 'Calidad',
-  'settings-options-labels': 'Nombres de lugares',
-  'settings-sound': 'Sonido',
-  'settings-planet-air': 'Climatología',
-  'quality-shadows': 'Sombras del sol',
-  'camera-extras': 'Opciones',
-  'settings-management': 'Gestión',
-  'settings-camera-fov': 'Campo de visión',
-  'settings-weapon': 'Rueda de armas',
-  'settings-options-sidearm': 'Apuntado',
-  'settings-muzzle-flash': 'Fogonazo',
-  'settings-config-planet': 'Planeta',
-  'terrain-source': 'Terreno',
-  'settings-light': 'Luz (ajuste fino)',
-  'settings-weapon-poses': 'Posturas y animaciones',
+  'terrain-layers': t('settings.land'),
+  'settings-layer-air': t('settings.atmosphere'),
+  'settings-planet-time': t('settings.date'),
+  'terrain-position': t('settings.location'),
+  'settings-simulation-time': t('settings.time'),
+  'settings-collision-debug': t('settings.collisions'),
+  'settings-config-planet': t('settings.export'),
+  'road-style': t('settings.asphalt-contrast'),
+  'scene-vehicles': t('settings.add'),
+  'settings-car-beams': t('settings.lights'),
+  'settings-rear-light-nudge': t('settings.rear-light-fine-tuning'),
+  'settings-truck-exhaust': t('settings.exhaust-and-smoke'),
+  'settings-vehicle-sound': t('settings.sound'),
+  'settings-options-driver': t('settings.driver-and-mirrors'),
+  'display-quality-section': t('settings.quality'),
+  'settings-options-labels': t('settings.place-names'),
+  'settings-sound': t('settings.sound'),
+  'settings-planet-air': t('settings.weather'),
+  'quality-shadows': t('settings.sun-shadows'),
+  'camera-extras': t('settings.general'),
+  'settings-effects': t('settings.smoke'),
+  'driving-extras': t('settings.recovery-and-physics'),
+  'settings-management': t('settings.settings-management'),
+  'settings-camera-fov': t('settings.field-of-view'),
+  'settings-weapon': t('settings.weapon-wheel'),
+  'settings-combat': t('settings.combat'),
+  'settings-actor': t('settings.actor'),
+  'settings-options-sidearm': t('settings.aiming'),
+  'settings-muzzle-flash': t('settings.muzzle-flash'),
+  'terrain-source': t('settings.terrain'),
+  'settings-light': t('settings.light-fine-tuning'),
+  'settings-weapon-poses': t('settings.poses-and-animations'),
 }
 
 /** Shorter names for the Tierra layer switches (by `data-layer`). */
 const LAYER_LABELS: Readonly<Record<string, string>> = {
-  photo: 'Suelo',
-  road: 'Carreteras',
-  buildings: 'Edificios',
+  photo: t('settings.ground'),
+  road: t('settings.roads'),
+  buildings: t('settings.buildings'),
 }
 
 /** The city labels toggle is a player preference: it leaves the Tierra list for Opciones. */
@@ -171,10 +148,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const toggle = doc.createElement('button')
   toggle.type = 'button'
   toggle.id = 'settings-toggle'
-  toggle.className = 'settings-toggle'
-  toggle.title = 'Abrir menú · rueda: ±1 h'
+  toggle.className = 'settings-toggle nabla-btn nabla-corner nabla-corner--tr'
+  toggle.title = t('settings.open-menu-wheel-1-h')
   toggle.classList.add('settings-clock')
-  toggle.setAttribute('aria-label', 'Abrir ajustes')
+  toggle.setAttribute('aria-label', t('settings.open-settings'))
   toggle.setAttribute('aria-expanded', 'false')
   toggle.setAttribute('aria-controls', 'settings-window')
   toggle.textContent = '12:00'
@@ -184,12 +161,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   win.className = 'settings-window portal-tablet-layer'
   win.hidden = true
   win.setAttribute('role', 'dialog')
-  win.setAttribute('aria-label', 'Ajustes')
+  win.setAttribute('aria-label', t('settings.settings'))
 
   const console = doc.createElement('div')
-  console.className = 'portal-console settings-console'
+  console.className = 'settings-console'
   const title = doc.createElement('strong')
-  title.textContent = doc.documentElement.dataset.appName ?? 'NABLA · AJUSTES'
+  title.textContent = doc.documentElement.dataset.appName ?? t('settings.nabla-settings')
   const tabBar = doc.createElement('div')
   tabBar.className = 'settings-tabs'
   tabBar.setAttribute('role', 'tablist')
@@ -205,7 +182,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     btn.id = `settings-tab-${tab.id}`
     btn.dataset.tab = tab.id
     btn.setAttribute('role', 'tab')
-    btn.setAttribute('aria-selected', tab.id === 'planet' ? 'true' : 'false')
+    btn.setAttribute('aria-selected', tab.id === DEFAULT_TAB ? 'true' : 'false')
     btn.textContent = tab.label
     tabBar.append(btn)
 
@@ -214,7 +191,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     pane.id = `settings-pane-${tab.id}`
     pane.dataset.pane = tab.id
     pane.setAttribute('role', 'tabpanel')
-    pane.hidden = tab.id !== 'planet'
+    pane.hidden = tab.id !== DEFAULT_TAB
     panes.append(pane)
     paneEls.set(tab.id, pane)
   }
@@ -236,13 +213,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const closeButton = doc.createElement('button')
   closeButton.type = 'button'
   closeButton.className = 'settings-close'
-  closeButton.textContent = 'Volver al juego'
+  closeButton.textContent = t('settings.back-to-the-game')
   closeButton.addEventListener('click', () => close())
   header.append(title, closeButton)
   const footer = doc.createElement('footer')
   footer.className = 'settings-footer'
   const footerHint = doc.createElement('small')
-  footerHint.textContent = 'Copias y restauración en Configuración → Ajustes'
+  footerHint.textContent = t('settings.backups-and-restore-in-settings-to-settings')
   footer.append(footerHint)
   console.append(header, tabBar, panes, footer)
   win.append(console)
@@ -266,7 +243,38 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   /** Move a section into its tab, keeping the `SECTION_TABS` order inside the pane. */
   const order = (id: string) => SECTION_TABS.findIndex(([section]) => section === id)
+  /**
+   * Host configuration of the sections, on <html>: `data-settings-hidden` lists section ids the
+   * page leaves out (their tree entries go too); a section's own `data-section-order` (a number)
+   * places it before (negative) or among the engine sections.
+   */
+  const hostHidden = () => new Set((doc.documentElement.dataset.settingsHidden ?? '').split(/\s+/))
+  const rankOf = (section: HTMLElement) => {
+    const own = Number(section.dataset.sectionOrder)
+    if (Number.isFinite(own) && section.dataset.sectionOrder !== undefined) return own
+    const index = order(section.id)
+    return index < 0 ? 999 : index
+  }
+  // Flat sections (Mundo › Ver › Opciones): their member sections are blocks inside them, untitled.
+  const flatBoxes = new Map<string, HTMLElement>()
+  const flatOf = (id: string) => MENU_FLAT_SECTIONS.find((flat) => flat.members.includes(id))
+  const placeInFlat = (el: HTMLElement): boolean => {
+    const flat = flatOf(el.id)
+    const box = flat && flatBoxes.get(flat.id)
+    if (!flat || !box) return false
+    el.classList.add('settings-flat-member')
+    const rank = flat.members.indexOf(el.id)
+    if (el.parentElement !== box) {
+      const next = [...box.children].find((child) => flat.members.indexOf(child.id) > rank)
+      box.insertBefore(el, next ?? null)
+    }
+    const title = SECTION_TITLES[el.id]
+    const legend = el.querySelector(':scope > legend')
+    if (title && legend) legend.textContent = title
+    return true
+  }
   const place = (el: HTMLElement) => {
+    if (placeInFlat(el)) return
     const tab = sectionTab(el.id)
     if (!tab) return
     const pane = paneEls.get(tab)!
@@ -291,18 +299,38 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
   }
 
+  for (const flat of MENU_FLAT_SECTIONS) {
+    const box = fieldset(flat.id, t(flat.labelKey))
+    box.classList.add('settings-flat-section')
+    flatBoxes.set(flat.id, box)
+    place(box)
+  }
+
   // «Nombres de poblaciones» keeps its checkbox (and the layer selector's listener and storage);
   // only its row moves to Opciones → Mapa.
   const moveOptionLayers = (layers: HTMLElement) => {
     for (const id of OPTION_LAYERS)
       relabel(
         layers.querySelector(`input[data-layer="${id}"]`)?.closest('label'),
-        'Nombres de lugares',
+        t('settings.place-names'),
       )
   }
 
+  // Desarrollo: «Mostrar colisiones», every collider and the player capsule as lines.
+  {
+    const section = fieldset('settings-collision-debug', t('settings.show-collision'))
+    const input = doc.createElement('input')
+    input.type = 'checkbox'
+    input.checked = runtime.collisionDebug
+    input.addEventListener('change', () => runtime.setCollisionDebug(input.checked))
+    const label = doc.createElement('label')
+    label.append(t('settings.show-collision'), input)
+    section.append(label)
+    place(section)
+  }
+
   // Desarrollo: the planet config text and «Copiar config».
-  const configGroup = fieldset('settings-config-planet', 'Valores del planeta')
+  const configGroup = fieldset('settings-config-planet', t('settings.planet-values'))
   configGroup.append(planetPanel.config)
   place(configGroup)
 
@@ -333,43 +361,64 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const seaRow = rowOf('ps-sea')
   const cloudsRow = rowOf('ps-clouds')
   const artisticRow = rowOf('ps-artistic')
-  relabel(skyRow, 'Estrellas y planetas')
-  relabel(sunRow, 'Sol')
-  relabel(seaRow, 'Mar')
-  relabel(artisticRow, 'Activar clima')
-  relabel(rowOf('ps-cloud-amount'), 'Nublado')
-  relabel(rowOf('ps-cloud-pressure-mode'), 'Presión')
-  relabel(rowOf('ps-cloud-pressure'), 'Presión (valor)')
-  relabel(rowOf('ps-lens-flare'), 'Destello')
+  relabel(skyRow, t('settings.stars-and-planets'))
+  relabel(sunRow, t('settings.sun'))
+  relabel(seaRow, t('settings.sea'))
+  relabel(artisticRow, t('settings.enable-weather'))
+  relabel(rowOf('ps-cloud-amount'), t('settings.cloud-cover'))
+  relabel(rowOf('ps-cloud-pressure-mode'), t('settings.pressure'))
+  relabel(rowOf('ps-cloud-pressure'), t('settings.pressure-value'))
+  relabel(rowOf('ps-lens-flare'), t('settings.lens-flare'))
+  {
+    // Lens flare is a world option of its own (Ver › Opciones), not part of Atmósfera.
+    const flare = rowOf('ps-lens-flare')
+    if (flare) {
+      const section = fieldset('settings-lens-flare', t('settings.lens-flare'))
+      section.append(flare)
+      place(section)
+    }
+  }
 
   if (timeGroup) {
-    const time = fieldset('settings-planet-time', 'Fecha y hora')
+    const time = fieldset('settings-planet-time', t('settings.date-and-time'))
     hideSubtitle(timeGroup)
-    relabel(rowOf('time-range'), 'Fijar')
-    relabel(rowOf('time-speed'), 'Velocidad')
+    relabel(rowOf('time-range'), t('settings.set'))
     time.append(timeGroup)
     place(time)
   }
+  {
+    // Ajustes › Simulación › Tiempo: the day/night cycle speed and the gravity (gravity-ui.ts adds
+    // its row to the same section, before or after this mount).
+    const speed = rowOf('time-speed')
+    if (speed) {
+      relabel(speed, t('settings.day-night-cycle'))
+      const simTime =
+        (doc.getElementById('settings-simulation-time') as HTMLElement | null) ??
+        fieldset('settings-simulation-time', t('settings.time'))
+      simTime.prepend(...rows(simTime.querySelector<HTMLElement>(':scope > legend'), speed))
+      place(simTime)
+    }
+  }
   const seaGroup = byId('scene-sea')
-  const sea = fieldset('settings-planet-sea', 'Nivel del mar')
+  const sea = fieldset('settings-planet-sea', t('settings.sea-level'))
   if (seaGroup) {
     hideSubtitle(seaGroup)
     // The panel's sea switch replaces the legacy duplicate; the tide button sits before the level.
     byId('planet-sea')?.closest('label')?.setAttribute('hidden', '')
     const tide = byId('sea-tide')
-    if (tide) tide.textContent = 'Mareas'
+    if (tide) tide.textContent = t('settings.tides')
     const level = rowOf('sea-range')
-    relabel(level, 'Nivel m')
+    relabel(level, t('settings.level-m'))
     seaGroup.append(...rows(seaRow, tide, level))
     sea.append(seaGroup)
   } else sea.append(...rows(seaRow))
   place(sea)
 
-  const air = fieldset('settings-planet-air', 'Aire')
+  const air = fieldset('settings-planet-air', t('settings.air'))
   air.append(
     ...rows(
       artisticRow,
-      subtitle('Cielo'),
+      subtitle(t('settings.sky')),
       rowOf('ps-cloud-amount'),
       rowOf('ps-cloud-pressure-mode'),
       rowOf('ps-cloud-pressure'),
@@ -377,32 +426,23 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   )
   place(air)
 
-  const sky = fieldset('settings-layer-air', 'Aire')
-  sky.append(...rows(sunRow, skyRow, cloudsRow, rowOf('ps-lens-flare')))
+  const sky = fieldset('settings-layer-air', t('settings.atmosphere'))
+  sky.append(...rows(sunRow, skyRow, cloudsRow))
   place(sky)
 
   const menu = doc.getElementById('menu-sections')
   const legacySections = () =>
     [...(menu?.children ?? [])].filter((el): el is HTMLElement => el instanceof HTMLElement)
-  for (const id of ['display-quality-section', 'display-performance']) {
-    const el = doc.getElementById(id)
-    if (el) place(el)
-  }
+  const qualitySection = doc.getElementById('display-quality-section')
+  if (qualitySection) place(qualitySection)
   for (const el of legacySections()) place(el)
 
-  // Rendimiento → Calidad: profile, FPS limit and resolution scale in one section, with the
+  // Calidad: profile, FPS limit and resolution scale in one section, with the
   // «Aplicar calidad y reiniciar» button and its note last. The controls keep their ids and binds.
   const quality = byId('display-quality-section')
   if (quality && typeof runtime.setFsr === 'function') appendFsrControls(quality, runtime)
-  const performanceGroup = byId('display-performance')
-  if (quality && performanceGroup) {
-    const tail = [...quality.children].filter((el) => el.matches('button, p'))
-    quality.append(
-      ...[...performanceGroup.children].filter((el) => el.tagName !== 'LEGEND'),
-      ...tail,
-    )
-    performanceGroup.hidden = true
-  }
+  // FPS limit and resolution scale sit in Calidad (HTML); the apply button and its note stay last.
+  if (quality) quality.append(...[...quality.children].filter((el) => el.matches('button, p')))
 
   if (quality && runtime.fieldLightLimit !== undefined) {
     const lightProfile = readQualityPreset()
@@ -414,7 +454,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       /* Storage is optional. */
     }
     const label = doc.createElement('label')
-    label.textContent = 'Farolas cercanas con luz '
+    label.textContent = t('settings.nearby-lit-street-lamps') + ' '
     const input = doc.createElement('input')
     input.id = 'field-light-limit'
     input.type = 'range'
@@ -422,16 +462,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.max = '24'
     input.step = '1'
     input.value = String(runtime.fieldLightLimit)
-    input.setAttribute('aria-label', 'Farolas cercanas con luz')
+    input.setAttribute('aria-label', t('settings.nearby-lit-street-lamps'))
     const value = doc.createElement('output')
     value.textContent = input.value
     const apply = doc.createElement('button')
     apply.type = 'button'
-    apply.textContent = 'Aplicar farolas'
+    apply.textContent = t('settings.apply-street-lamps')
     apply.disabled = true
     const warning = doc.createElement('p')
-    warning.textContent =
-      'Aplicar cambia el número de luces y recompila shaders: la imagen puede congelarse unos segundos.'
+    warning.textContent = t('settings.applying-changes-the-number-of-lights-and-recomp')
     input.addEventListener('input', () => {
       value.textContent = input.value
       apply.disabled = Number(input.value) === runtime.fieldLightLimit
@@ -440,7 +479,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       const requested = Number(input.value)
       apply.disabled = true
       input.disabled = true
-      apply.textContent = 'Aplicando…'
+      apply.textContent = t('settings.applying')
       // Paint the warning/status before the next render compiles the new light layout.
       await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
       try {
@@ -453,12 +492,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         }
       } finally {
         input.disabled = false
-        apply.textContent = 'Aplicar farolas'
+        apply.textContent = t('settings.apply-street-lamps')
         apply.disabled = Number(input.value) === runtime.fieldLightLimit
       }
     })
     label.append(input, value)
-    const lamps = fieldset('settings-streetlights', 'Farolas')
+    const lamps = fieldset('settings-streetlights', t('settings.street-lamps'))
     lamps.append(label, warning, apply)
     place(lamps)
     // Experimental opt-in for this session only; never restore an expensive saved setting.
@@ -474,12 +513,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     shadows.checked = runtime.fieldLightShadows
     shadows.addEventListener('change', () => runtime.setFieldLightShadows(shadows.checked))
     const shadowLabel = doc.createElement('label')
-    shadowLabel.append(shadows, ' Sombras de farolas · experimental')
-    shadowLabel.title =
-      'Requiere las sombras generales activadas. Solo las farolas cercanas proyectan sombras.'
+    shadowLabel.append(shadows, ' ' + t('settings.street-lamp-shadows-experimental'))
+    shadowLabel.title = t('settings.requires-general-shadows-to-be-on-only-nearby-st')
     const experimental = fieldset(
       'settings-experimental-light-shadows',
-      'Sombras de farolas · experimental',
+      t('settings.street-lamp-shadows-experimental'),
     )
     experimental.append(shadowLabel)
     place(experimental)
@@ -487,21 +525,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   let refreshVehicleLights = () => {}
   {
-    const section = fieldset('settings-car-beams', 'Vehículo · luces')
+    const section = fieldset('settings-car-beams', t('settings.vehicle-lights'))
     const status = doc.createElement('p')
     section.append(status)
     const controls = new Map<string, HTMLInputElement>()
     const spec = [
-      ['low', 'Corte de cortas (°)', -5, 5, 0.01],
-      ['high', 'Corte de largas (°)', -5, 5, 0.01],
-      ['frontX', 'Faros: derecha / izquierda (m)', -2, 2, 0.01],
-      ['frontY', 'Faros: arriba / abajo (m)', -2, 2, 0.01],
-      ['frontZ', 'Faros: atrás / delante (m)', -2, 2, 0.01],
-      ['rearX', 'Luz trasera: derecha / izquierda (m)', -2, 2, 0.01],
-      ['rearY', 'Luz trasera: arriba / abajo (m)', -2, 2, 0.01],
-      ['rearZ', 'Luz trasera: atrás / delante (m)', -2, 2, 0.01],
-      ['rearIntensity', 'Luz trasera: intensidad (×)', 0, 3, 0.05],
-      ['rearReach', 'Luz trasera: alcance (×)', 0, 3, 0.05],
+      ['low', t('settings.low-beam-cutoff'), -5, 5, 0.01],
+      ['high', t('settings.high-beam-cutoff'), -5, 5, 0.01],
+      ['frontX', t('settings.headlights-right-left-m'), -2, 2, 0.01],
+      ['frontY', t('settings.headlights-up-down-m'), -2, 2, 0.01],
+      ['frontZ', t('settings.headlights-back-front-m'), -2, 2, 0.01],
+      ['rearX', t('settings.rear-light-right-left-m'), -2, 2, 0.01],
+      ['rearY', t('settings.rear-light-up-down-m'), -2, 2, 0.01],
+      ['rearZ', t('settings.rear-light-back-front-m'), -2, 2, 0.01],
+      ['rearIntensity', t('settings.rear-light-intensity'), 0, 3, 0.05],
+      ['rearReach', t('settings.rear-light-range'), 0, 3, 0.05],
     ] as const
     for (const [key, title, min, max, step] of spec) {
       const label = doc.createElement('label'),
@@ -525,12 +563,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const reset = doc.createElement('button'),
       share = doc.createElement('button')
     reset.type = share.type = 'button'
-    reset.textContent = 'Restablecer luces'
-    share.textContent = 'Compartir ajustes de luces'
+    reset.textContent = t('settings.reset-lights')
+    share.textContent = t('settings.share-light-settings')
     const exported = doc.createElement('textarea')
     exported.readOnly = true
     exported.hidden = true
-    exported.setAttribute('aria-label', 'Ajustes de luces para compartir')
+    exported.setAttribute('aria-label', t('settings.light-settings-to-share'))
     share.addEventListener('click', async () => {
       const current = runtime.vehicleLightAdjustment
       if (!current) return
@@ -549,7 +587,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       exported.hidden = false
       try {
         await navigator.clipboard.writeText(text)
-        share.textContent = 'Ajustes copiados'
+        share.textContent = t('settings.settings-copied')
       } catch {
         exported.focus()
         exported.select()
@@ -562,8 +600,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       if (signature === previous) return
       previous = signature
       status.textContent = current
-        ? current.name + ' · ajustes guardados para este modelo'
-        : 'Entra en un vehículo para ajustar sus luces.'
+        ? current.name + ' ' + t('settings.settings-saved-for-this-model')
+        : t('settings.get-into-a-vehicle-to-adjust-its-lights')
       // Only the lamps the occupied vehicle actually has are listed.
       const lamps = current?.lamps ?? { front: true, rear: true }
       for (const [key, input] of controls) {
@@ -577,7 +615,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       }
       reset.disabled = share.disabled = !current
       exported.hidden = true
-      share.textContent = 'Compartir ajustes de luces'
+      share.textContent = t('settings.share-light-settings')
     }
     reset.addEventListener('click', () => {
       runtime.setVehicleLightAdjustment()
@@ -585,8 +623,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       refreshVehicleLights()
     })
     const note = doc.createElement('p')
-    note.textContent =
-      'Ajusta la posición de las luces, no la geometría del piloto. Se guarda por modelo en este navegador. Compartir copia los valores para convertirlos después en valores de fábrica.'
+    note.textContent = t('settings.adjusts-the-light-positions-not-the-lamp-geometr')
     section.append(reset, share, exported, note)
     refreshVehicleLights()
     place(section)
@@ -595,7 +632,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // Cámara → field of view: the same offset as the J menu (`nabla.cameraFov`).
   let refreshCameraFov = () => {}
   if (typeof runtime.setCameraFovOffset === 'function') {
-    const section = fieldset('settings-camera-fov', 'Campo de visión')
+    const section = fieldset('settings-camera-fov', t('settings.field-of-view'))
     const label = doc.createElement('label'),
       slider = doc.createElement('input'),
       value = doc.createElement('output')
@@ -604,12 +641,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     slider.min = String(range.min)
     slider.max = String(range.max)
     slider.step = '1'
-    slider.setAttribute('aria-label', 'Campo de visión (°)')
+    slider.setAttribute('aria-label', t('settings.field-of-view-2'))
     slider.addEventListener('input', () => {
       const offset = runtime.setCameraFovOffset(Number(slider.value))
       value.textContent = `${offset > 0 ? '+' : ''}${offset}°`
     })
-    label.append('Campo de visión ', slider, value)
+    label.append(t('settings.field-of-view') + ' ', slider, value)
     section.append(label)
     refreshCameraFov = () => {
       if (doc.activeElement === slider) return
@@ -623,14 +660,96 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   // Objetos → Arma: put the aiming weapon wheel (moved with the mouse wheel) back to default.
   if (typeof runtime.resetWeaponWheel === 'function') {
-    const section = fieldset('settings-weapon', 'Rueda de armas')
+    const section = fieldset('settings-weapon', t('settings.weapon-wheel'))
     const note = doc.createElement('p')
-    note.textContent = 'La rueda del ratón mientras apuntas mueve el arma; aquí vuelve a su sitio.'
+    note.textContent = t('settings.the-mouse-wheel-moves-the-weapon-while-aiming-th')
     const reset = doc.createElement('button')
     reset.type = 'button'
-    reset.textContent = 'Restablecer rueda de armas'
+    reset.textContent = t('settings.reset-weapon-wheel')
     reset.addEventListener('click', () => runtime.resetWeaponWheel())
     section.append(note, reset)
+    place(section)
+  }
+
+  // Opciones → Actor: the player's robot (src/runtime/actor.ts), worn live and saved. Head-only
+  // hosts leave it out (`data-settings-hidden="settings-actor"`).
+  if (typeof runtime.setActor === 'function' && runtime.actorSelectable) {
+    const section = fieldset('settings-actor', t('settings.actor'))
+    const choice = (
+      id: string,
+      label: string,
+      values: ReadonlyArray<readonly [string, string]>,
+    ) => {
+      const row = doc.createElement('label')
+      const select = doc.createElement('select')
+      select.id = id
+      for (const [value, text] of values) {
+        const option = doc.createElement('option')
+        option.value = value
+        option.textContent = text
+        select.append(option)
+      }
+      row.append(label + ' ', select)
+      section.append(row)
+      return select
+    }
+    const kind = choice(
+      'settings-actor-kind',
+      t('settings.actor-body'),
+      ACTOR_KINDS.map((id) => [id, t(`settings.actor-${id}`)] as const),
+    )
+    const color = choice(
+      'settings-actor-color',
+      t('settings.actor-color'),
+      ACTOR_COLOR_NAMES.map((id) => [id, t(`settings.actor-color-${id}`)] as const),
+    )
+    const sync = () => {
+      kind.value = runtime.actor.kind
+      color.value = runtime.actor.color
+      color.disabled = runtime.actor.kind !== 'default'
+    }
+    const apply = () => {
+      void runtime
+        .setActor(parseActor({ kind: kind.value, color: color.value }))
+        .catch((error) => globalThis.console.warn('actor', error))
+      sync()
+    }
+    kind.addEventListener('change', apply)
+    color.addEventListener('change', apply)
+    sync()
+    place(section)
+  }
+
+  // Objetos → Arma: offline test dummies to shoot at (character damage, docs/combat.md).
+  const combatRuntime = runtime as unknown as Partial<{
+    spawnCombatDummy(): string | null
+    clearCombatDummies(): void
+    combatDummyCount: number
+  }>
+  if (typeof combatRuntime.spawnCombatDummy === 'function') {
+    const section = fieldset('settings-combat', t('settings.combat'))
+    const note = doc.createElement('p')
+    note.textContent = t('settings.combat-note')
+    const count = doc.createElement('p')
+    const refresh = () =>
+      (count.textContent = t('settings.dummies', { count: combatRuntime.combatDummyCount ?? 0 }))
+    const spawn = doc.createElement('button')
+    spawn.type = 'button'
+    spawn.id = 'settings-spawn-dummy'
+    spawn.textContent = t('settings.spawn-dummy')
+    spawn.addEventListener('click', () => {
+      combatRuntime.spawnCombatDummy?.()
+      refresh()
+    })
+    const clear = doc.createElement('button')
+    clear.type = 'button'
+    clear.textContent = t('settings.remove-dummies')
+    clear.addEventListener('click', () => {
+      combatRuntime.clearCombatDummies?.()
+      refresh()
+    })
+    refresh()
+    section.append(note, spawn, clear, count)
     place(section)
   }
 
@@ -638,7 +757,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // and the reversing alarm, for vehicles that have one.
   let refreshVehicleSound = () => {}
   {
-    const section = fieldset('settings-vehicle-sound', 'Vehículo · sonido')
+    const section = fieldset('settings-vehicle-sound', t('settings.vehicle-sound'))
     const status = doc.createElement('p')
     const engineLabel = doc.createElement('label'),
       engine = doc.createElement('input'),
@@ -647,25 +766,25 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     engine.min = '0'
     engine.max = '100'
     engine.step = '1'
-    engine.setAttribute('aria-label', 'Volumen del motor')
+    engine.setAttribute('aria-label', t('settings.engine-volume'))
     engine.addEventListener('input', () => {
       const mix = runtime.setAudioMix({ engine: Number(engine.value) / 100 })
       engineValue.textContent = `${Math.round(mix.engine * 100)}%`
     })
-    engineLabel.append('Motor ', engine, engineValue)
+    engineLabel.append(t('settings.engine') + ' ', engine, engineValue)
     const alarmLabel = doc.createElement('label'),
       alarm = doc.createElement('input')
     alarm.type = 'checkbox'
-    alarm.setAttribute('aria-label', 'Aviso de marcha atrás')
+    alarm.setAttribute('aria-label', t('settings.reversing-beeper'))
     alarm.addEventListener('change', () => runtime.setReverseAlarmEnabled(alarm.checked))
-    alarmLabel.append(alarm, ' Aviso de marcha atrás')
+    alarmLabel.append(alarm, ' ' + t('settings.reversing-beeper'))
     section.append(status, engineLabel, alarmLabel)
     refreshVehicleSound = () => {
       const occupied = runtime.occupiedVehicle ?? null
       const show = vehicleGroupVisibility(occupied)
       status.textContent = occupied
-        ? occupied.name + ' · el volumen del motor es el mismo de Configuración → Sonido'
-        : 'Entra en un vehículo para ajustar su sonido.'
+        ? occupied.name + ' ' + t('settings.engine-volume-is-the-one-in-settings-to-sound')
+        : t('settings.get-into-a-vehicle-to-adjust-its-sound')
       engine.disabled = !occupied
       alarm.disabled = !occupied
       alarmLabel.hidden = !show.reverseAlarm
@@ -683,15 +802,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // Development: nudge where the tail lamp's light lands in small steps, then copy the JSON.
   let refreshRearNudge = () => {}
   {
-    const section = fieldset('settings-rear-light-nudge', 'Luz trasera (ajuste fino)')
+    const section = fieldset('settings-rear-light-nudge', t('settings.rear-light-fine-tuning'))
     const status = doc.createElement('p')
     section.append(status)
     const rows = [
-      ['rearX', 'Derecha / izquierda (m)', 0.01, 0.05],
-      ['rearY', 'Arriba / abajo (m)', 0.01, 0.05],
-      ['rearZ', 'Atrás / delante (m)', 0.01, 0.05],
-      ['rearIntensity', 'Intensidad (×)', 0.05, 0.25],
-      ['rearReach', 'Alcance (×)', 0.05, 0.25],
+      ['rearX', t('settings.right-left-m'), 0.01, 0.05],
+      ['rearY', t('settings.up-down-m'), 0.01, 0.05],
+      ['rearZ', t('settings.back-front-m'), 0.01, 0.05],
+      ['rearIntensity', t('settings.intensity'), 0.05, 0.25],
+      ['rearReach', t('settings.range'), 0.05, 0.25],
     ] as const
     const outputs = new Map<string, HTMLOutputElement>()
     const buttons: HTMLButtonElement[] = []
@@ -725,12 +844,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const copy = doc.createElement('button'),
       reset = doc.createElement('button')
     copy.type = reset.type = 'button'
-    copy.textContent = 'Copiar JSON'
-    reset.textContent = 'Restablecer'
+    copy.textContent = t('settings.copy-json')
+    reset.textContent = t('settings.reset')
     const exported = doc.createElement('textarea')
     exported.readOnly = true
     exported.hidden = true
-    exported.setAttribute('aria-label', 'JSON de la luz trasera')
+    exported.setAttribute('aria-label', t('settings.rear-light-json'))
     copy.addEventListener('click', async () => {
       const current = runtime.vehicleLightAdjustment
       if (!current) return
@@ -739,7 +858,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       exported.hidden = false
       try {
         await navigator.clipboard.writeText(text)
-        copy.textContent = 'JSON copiado'
+        copy.textContent = t('settings.json-copied')
       } catch {
         exported.focus()
         exported.select()
@@ -758,15 +877,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       previous = signature
       const usable = !!current?.lamps.rear
       status.textContent = usable
-        ? current!.name + ' · pega el JSON en vehicle.lights.tuning del vehículo'
-        : 'Entra en un vehículo con luz trasera para ajustarla.'
+        ? current!.name + ' ' + t('settings.paste-the-json-into-the-vehicle-s-vehicle-lights')
+        : t('settings.get-into-a-vehicle-with-a-rear-light-to-adjust-i')
       for (const button of [...buttons, copy, reset]) button.disabled = !usable
       for (const [key, output] of outputs)
         output.textContent = current
           ? current.values[key as keyof typeof current.values].toFixed(3)
           : '–'
       exported.hidden = true
-      copy.textContent = 'Copiar JSON'
+      copy.textContent = t('settings.copy-json')
     }
     section.append(copy, reset, exported)
     refreshRearNudge()
@@ -774,7 +893,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   if (doc.documentElement.dataset.irunSigns === 'true') {
-    const physicsSection = fieldset('settings-sign-physics', 'Física de señalización')
+    // Signage physics is part of «Traffic signs»: a plain group inside it, not a section of its own.
+    const physicsSection = doc.createElement('div')
+    physicsSection.id = 'settings-sign-physics'
     const physicsInput = doc.createElement('input')
     physicsInput.type = 'checkbox'
     physicsInput.checked = runtime.sceneryPhysics.enabled
@@ -783,12 +904,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       window.dispatchEvent(new Event('euskadi-sign-physics'))
     })
     const physicsLabel = doc.createElement('label')
-    physicsLabel.append('Colisiones e impactos de señalización', physicsInput)
+    physicsLabel.append(t('settings.signage-collisions-and-impacts'), physicsInput)
     const physicsNote = doc.createElement('p')
-    physicsNote.textContent =
-      'Activa señales derribables, marcas de disparos y semáforos sólidos cercanos. Activado al iniciar; puedes desactivarlo para reducir el coste de física.'
+    physicsNote.textContent = t('settings.enables-knock-down-signs-bullet-marks-and-solid')
     physicsSection.append(physicsLabel, physicsNote)
-    const experimental = fieldset('settings-sign-shadows', 'Sombras de señales')
+    const experimental = fieldset('settings-sign-shadows', t('settings.sign-shadows'))
     const shadows = doc.createElement('input')
     shadows.type = 'checkbox'
     shadows.checked = doc.documentElement.dataset.irunSignShadows === 'true'
@@ -797,13 +917,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       window.dispatchEvent(new Event('euskadi-sign-shadows'))
     })
     const shadowLabel = doc.createElement('label')
-    shadowLabel.append('Activar sombras de señales y postes', shadows)
+    shadowLabel.append(t('settings.enable-sign-and-pole-shadows'), shadows)
     const warning = doc.createElement('p')
-    warning.textContent =
-      'Experimental: aumenta el coste de renderizado. La primera activación puede tardar mientras se preparan los shaders. Requiere sombras activadas en la luz. Se desactiva al recargar.'
+    warning.textContent = t('settings.experimental-raises-rendering-cost-the-first-act')
     experimental.append(shadowLabel, warning)
     place(experimental)
-    const section = fieldset('settings-traffic-signs', 'Señales de tráfico')
+    const section = fieldset('settings-traffic-signs', t('settings.traffic-signs'))
     const key = 'euskadi.irun-signs'
     let saved: Record<string, unknown> = {}
     try {
@@ -815,7 +934,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     enabled.type = 'checkbox'
     enabled.checked = saved.enabled !== false
     const enabledLabel = doc.createElement('label')
-    enabledLabel.append('Activar señales de tráfico', enabled)
+    enabledLabel.append(t('settings.enable-traffic-signs'), enabled)
     section.append(enabledLabel)
     const number = (
       title: string,
@@ -843,7 +962,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       slider.step = input.step
       slider.value = input.value
       slider.setAttribute('aria-label', title)
-      input.setAttribute('aria-label', title + ' valor')
+      input.setAttribute('aria-label', t('settings.value-suffix', { name: title }))
       input.style.width = '90px'
       slider.addEventListener('input', () => {
         input.value = slider.value
@@ -860,10 +979,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       parent.append(label)
       return input
     }
-    const limit = number('Cantidad máxima', saved.limit, 50, 1, 500)
-    const radius = number('Distancia alrededor del jugador (m)', saved.radius, 150, 25, 500)
+    const limit = number(t('settings.maximum-count'), saved.limit, 50, 1, 500)
+    const radius = number(t('settings.distance-around-the-player-m'), saved.radius, 150, 25, 500)
     const physicsRadius = number(
-      'Distancia de física (m)',
+      t('settings.physics-distance-m'),
       saved.physicsRadius,
       30,
       5,
@@ -916,15 +1035,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         /* optional storage */
       }
     })
-    label.append(input, ' Sombras de la linterna')
-    const headlamp = fieldset('settings-headlamp', 'Linterna')
+    label.append(input, ' ' + t('settings.flashlight-shadows'))
+    const headlamp = fieldset('settings-headlamp', t('settings.flashlight'))
     headlamp.append(label)
     place(headlamp)
   }
 
   let cameraOptions = byId('camera-extras')
   if (!cameraOptions) {
-    cameraOptions = fieldset('camera-extras', 'Cámara')
+    cameraOptions = fieldset('camera-extras', t('settings.camera'))
     place(cameraOptions)
   }
   {
@@ -932,8 +1051,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const input = doc.createElement('select')
     input.id = 'camera-first-person-mode'
     for (const [value, text] of [
-      ['normal', 'Normal'],
-      ['pointer', 'Modo Puntero'],
+      ['normal', t('settings.normal')],
+      ['pointer', t('settings.pointer-mode')],
     ]) {
       const option = doc.createElement('option')
       option.value = value
@@ -942,7 +1061,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
     input.value = runtime.bodycamEnabled ? 'normal' : 'pointer'
     input.addEventListener('change', () => runtime.setBodycamEnabled(input.value === 'normal'))
-    label.append('Primera persona ', input)
+    label.append(t('settings.first-person') + ' ', input)
     cameraOptions.append(label)
   }
 
@@ -953,18 +1072,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.id = 'camera-action-cam'
     input.checked = runtime.actionCamEnabled
     input.addEventListener('change', () => runtime.setActionCamEnabled(input.checked))
-    label.append(input, ' Action cam (pasos e inclinación al caminar)')
+    label.append(input, ' ' + t('settings.action-cam-steps-and-tilt-while-walking'))
     cameraOptions.append(label)
   }
   if (runtime.actionCamSettings && typeof runtime.setActionCamSettings === 'function') {
     const tuning = doc.createElement('details'),
       title = doc.createElement('summary')
     tuning.id = 'camera-action-cam-settings'
-    title.textContent = 'Ajustar Action Cam'
+    title.textContent = t('settings.tune-action-cam')
     tuning.append(title)
     const note = doc.createElement('p')
-    note.textContent =
-      'Cambios en directo y guardados en este navegador. Un ciclo más largo baja el ritmo de pasos. Las velocidades controlan el efecto, no al personaje.'
+    note.textContent = t('settings.live-changes-saved-in-this-browser-a-longer-cycl')
     tuning.append(note)
     const groups = new Map<string, HTMLDetailsElement>(),
       refresh: Array<() => void> = []
@@ -1006,8 +1124,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     soft.type = reset.type = 'button'
     soft.id = 'action-cam-soft'
     reset.id = 'action-cam-reset'
-    soft.textContent = 'Aplicar suave'
-    reset.textContent = 'Restablecer Action Cam'
+    soft.textContent = t('settings.apply-smoothly')
+    reset.textContent = t('settings.reset-action-cam')
     soft.addEventListener('click', () => {
       runtime.setActionCamSettings(softActionCamSettings)
       refresh.forEach((sync) => sync())
@@ -1026,7 +1144,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.id = 'quality-tunnel'
     input.checked = runtime.tunnelEnabled
     input.addEventListener('change', () => runtime.setTunnelEnabled(input.checked))
-    label.append(input, ' Efecto túnel al apuntar')
+    label.append(input, ' ' + t('settings.tunnel-effect-when-aiming'))
     cameraOptions.append(label)
   }
 
@@ -1037,7 +1155,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     input.type = 'checkbox'
     input.id = 'quality-smoke'
     input.checked = runtime.smokeEnabled
-    label.append(input, ' Humo (escapes y disparos)')
+    label.append(input, ' ' + t('settings.smoke-exhausts-and-shots'))
     input.addEventListener('change', () => runtime.setSmokeEnabled(input.checked))
     const amount = doc.createElement('input'),
       value = doc.createElement('output')
@@ -1046,7 +1164,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     amount.max = '300'
     amount.step = '1'
     amount.value = String(runtime.smokePercent)
-    amount.setAttribute('aria-label', 'Cantidad de humo (%)')
+    amount.setAttribute('aria-label', t('settings.smoke-amount'))
     value.textContent = amount.value + ' %'
     amount.addEventListener('input', () => {
       runtime.setSmokePercent(amount.valueAsNumber)
@@ -1063,16 +1181,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     byId('scene-mirrors'),
   )
   if (driverGroups.length) {
-    const driver = fieldset('settings-options-driver', 'Vehículo · conductor y espejos')
+    const driver = fieldset('settings-options-driver', t('settings.vehicle-driver-and-mirrors'))
     driver.append(...driverGroups)
     place(driver)
   }
 
   {
-    const group = fieldset('settings-muzzle-flash', 'Pistola · fogonazo')
+    const group = fieldset('settings-muzzle-flash', t('settings.pistol-muzzle-flash'))
     const note = doc.createElement('p')
-    note.textContent =
-      'Desplazamiento respecto a la posición original, en milímetros. Intensidad de luz en %. Se guarda en este navegador.'
+    note.textContent = t('settings.offset-from-the-original-position-in-millimetres')
     group.append(note)
     const controls = new Map<string, [HTMLInputElement, HTMLInputElement]>()
     const refresh = () => {
@@ -1081,10 +1198,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         for (const input of inputs) input.value = String(values[key as keyof typeof values])
     }
     for (const [key, text] of [
-      ['x', 'Izquierda / derecha (mm)'],
-      ['y', 'Abajo / arriba (mm)'],
-      ['z', 'Adelante / atrás (mm)'],
-      ['intensity', 'Intensidad (%)'],
+      ['x', t('settings.left-right-mm')],
+      ['y', t('settings.down-up-mm')],
+      ['z', t('settings.forward-back-mm')],
+      ['intensity', t('settings.intensity-2')],
     ] as const) {
       const row = doc.createElement('label'),
         slider = doc.createElement('input'),
@@ -1097,7 +1214,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         input.min = key === 'intensity' ? '0' : '-200'
         input.max = key === 'intensity' ? '300' : '200'
         input.step = key === 'intensity' ? '1' : '0.1'
-        input.setAttribute('aria-label', text + (input === number ? ' valor' : ''))
+        input.setAttribute(
+          'aria-label',
+          input === number ? t('settings.value-suffix', { name: text }) : text,
+        )
         input.addEventListener('input', () => {
           if (!Number.isFinite(input.valueAsNumber)) return
           runtime.setMuzzleFlashTuning({ [key]: input.valueAsNumber })
@@ -1112,9 +1232,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const preview = doc.createElement('button'),
       reset = doc.createElement('button')
     preview.type = reset.type = 'button'
-    preview.textContent = 'Probar fogonazo (1 s)'
+    preview.textContent = t('settings.test-muzzle-flash-1-s')
     preview.onclick = () => runtime.previewMuzzleFlash()
-    reset.textContent = 'Restablecer fogonazo'
+    reset.textContent = t('settings.reset-muzzle-flash')
     reset.onclick = () => {
       runtime.setMuzzleFlashTuning({ x: 0, y: 0, z: -72, intensity: 100 })
       refresh()
@@ -1127,14 +1247,14 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // Live aimed-pistol adjustments remain visible with the mouse free over the sliders.
   let refreshSidearm = () => {}
   if (runtime.sidearmTuning && runtime.setSidearmTuning) {
-    const group = fieldset('settings-options-sidearm', 'Pistola · apuntado')
+    const group = fieldset('settings-options-sidearm', t('settings.pistol-aiming'))
     const controls = new Map<
       keyof SidearmTuning,
       { input: HTMLInputElement; output: HTMLOutputElement }
     >()
     for (const [key, title] of [
-      ['height', 'Altura al apuntar'],
-      ['angle', 'Ángulo al apuntar'],
+      ['height', t('settings.height-when-aiming')],
+      ['angle', t('settings.angle-when-aiming')],
     ] as const) {
       const row = doc.createElement('label'),
         input = doc.createElement('input'),
@@ -1170,7 +1290,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
     const reset = doc.createElement('button')
     reset.type = 'button'
-    reset.textContent = 'Restablecer pistola'
+    reset.textContent = t('settings.reset-pistol')
     reset.addEventListener('click', () => {
       runtime.setSidearmTuning(sidearmTuningDefaults)
       runtime.setSidearmAimPreview(true)
@@ -1182,12 +1302,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   {
-    const group = fieldset('settings-weapon-poses', 'Arma · posición y ángulos de las posturas')
+    const group = fieldset('settings-weapon-poses', t('settings.weapon-pose-position-and-angles'))
     const note = doc.createElement('p')
-    note.textContent =
-      'Giros en grados y posición en milímetros. F tiene ajustes propios; F+Z y F+X usan posturas independientes, sin sumar giros. 0 conserva el giro original. Se guardan en este navegador.'
+    note.textContent = t('settings.rotations-in-degrees-and-position-in-millimetres')
+    const target = doc.createElement('p')
+    target.style.fontWeight = 'bold'
     const select = doc.createElement('select')
-    select.setAttribute('aria-label', 'Postura del arma')
+    select.setAttribute('aria-label', t('settings.weapon-pose'))
     for (const [value, text] of Object.entries(weaponPoseNames)) {
       const option = doc.createElement('option')
       option.value = value
@@ -1200,18 +1321,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       number: HTMLInputElement
     }> = []
     const refresh = () => {
+      const weapon = runtime.weaponPoseTarget
+      target.textContent = `Editando: ${weapon.name}${weapon.rig ? ` · ${weapon.rig}` : ''} (elige el arma con su tecla 1-5)`
       const values = runtime.weaponPoseTuning[select.value as WeaponPose]
       for (const { axis, range, number } of controls)
         range.value = number.value = String(values[axis])
     }
-    group.append(note, select)
+    group.append(note, target, select)
+    group.addEventListener('pointerenter', () => refresh())
     for (const [axis, title] of [
-      ['pitch', 'Arriba / abajo'],
-      ['yaw', 'Izquierda / derecha'],
-      ['roll', 'Inclinación lateral'],
-      ['x', 'Posición lateral'],
-      ['y', 'Altura'],
-      ['z', 'Acercar / alejar'],
+      ['pitch', t('settings.up-down')],
+      ['yaw', t('settings.left-right')],
+      ['roll', t('settings.side-tilt')],
+      ['x', t('settings.side-position')],
+      ['y', t('settings.height')],
+      ['z', t('settings.closer-farther')],
     ] as const) {
       const row = doc.createElement('label'),
         range = doc.createElement('input'),
@@ -1224,7 +1348,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         input.min = position ? '-500' : '-180'
         input.max = position ? '500' : '180'
         input.step = '0.1'
-        input.setAttribute('aria-label', `${title}${input === number ? ' valor' : ''}`)
+        input.setAttribute(
+          'aria-label',
+          input === number ? t('settings.value-suffix', { name: title }) : title,
+        )
         input.addEventListener('input', () => {
           if (!Number.isFinite(input.valueAsNumber)) return
           const values = runtime.weaponPoseTuning
@@ -1248,15 +1375,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       reset = doc.createElement('button'),
       copy = doc.createElement('button')
     for (const button of [preview, stop, reset, copy]) button.type = 'button'
-    preview.textContent = 'Ver postura'
-    stop.textContent = 'Volver al juego'
-    reset.textContent = 'Restablecer esta postura'
-    copy.textContent = 'Copiar todos los ajustes'
+    preview.textContent = t('settings.view-pose')
+    stop.textContent = t('settings.back-to-the-game')
+    reset.textContent = t('settings.reset-this-pose')
+    copy.textContent = t('settings.copy-all-settings')
     preview.onclick = () => runtime.previewWeaponPose(select.value as WeaponPose)
     stop.onclick = () => runtime.previewWeaponPose(null)
     reset.onclick = () => {
       const values = runtime.weaponPoseTuning
-      values[select.value as WeaponPose] = normalizeWeaponPoses()[select.value as WeaponPose]
+      values[select.value as WeaponPose] = runtime.weaponPoseDefaults[select.value as WeaponPose]
       runtime.setWeaponPoseTuning(values)
       refresh()
       runtime.previewWeaponPose(select.value as WeaponPose)
@@ -1266,13 +1393,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     status.setAttribute('role', 'status')
     exportText.readOnly = true
     exportText.hidden = true
-    exportText.setAttribute('aria-label', 'Todos los ajustes del arma para copiar')
+    exportText.setAttribute('aria-label', t('settings.all-weapon-settings-to-copy'))
     exportText.style.width = '100%'
     exportText.rows = 12
     copy.onclick = async () => {
+      const weapon = runtime.weaponPoseTarget
       const text = JSON.stringify(
         {
           version: 2,
+          weapon: weapon.id,
+          rig: weapon.rig,
+          hint: t('settings.paste-poses-into-the-rig-json-as-a-top-level-pos'),
           positionUnits: 'millimeters',
           units: 'degrees',
           angles: 'offsets from reviewed poses',
@@ -1286,11 +1417,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       exportText.hidden = false
       try {
         await navigator.clipboard.writeText(text)
-        status.textContent = 'Copiado: todas las posturas y el ajuste de apuntado.'
+        status.textContent = t('settings.copied-all-poses-and-the-aiming-setting')
       } catch {
         exportText.focus()
         exportText.select()
-        status.textContent = 'Seleccionado. Pulsa Ctrl+C para copiar todos los ajustes.'
+        status.textContent = t('settings.selected-press-ctrl-c-to-copy-all-settings')
       }
     }
     group.append(preview, stop, reset, copy, status, exportText)
@@ -1300,13 +1431,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
 
   const vehicleList = byId('vehicle-list')
   if (vehicleList) {
-    const placed = fieldset('settings-placed-objects', 'En el mundo')
+    const placed = fieldset('settings-placed-objects', t('settings.in-the-world'))
     placed.append(vehicleList)
     place(placed)
   }
   const exportButton = byId('vehicle-export')
   if (exportButton) {
-    const distribution = fieldset('settings-object-layout', 'Guardar distribución')
+    const distribution = fieldset('settings-object-layout', t('settings.save-layout'))
     distribution.append(exportButton, ...rows(byId('vehicle-export-text')))
     place(distribution)
   }
@@ -1314,7 +1445,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const management = createSettingsManagement(doc, {
     local: () => localStorage,
     session: () => sessionStorage,
-    search: () => location.search,
+    search: () => pageSearch(),
     reload: (search) => {
       const url = new URL(location.href)
       url.search = search
@@ -1332,13 +1463,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   place(mapSection.root)
   const actionCam = byId('camera-action-cam-settings')
   if (actionCam) {
-    const section = fieldset('settings-action-cam', 'Action Cam')
+    const section = fieldset('settings-action-cam', t('settings.action-cam'))
     ;(actionCam as HTMLDetailsElement).open = true
     actionCam.querySelector('summary')?.setAttribute('hidden', '')
     section.append(actionCam)
     place(section)
   }
-  const effects = fieldset('settings-effects', 'Efectos')
+  const effects = fieldset('settings-effects', t('settings.smoke'))
   for (const id of ['quality-smoke']) {
     const row = rowOf(id)
     if (row) effects.append(row)
@@ -1348,28 +1479,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // The legacy Planeta section (scene-controls) duplicates the sky / sun / clouds toggles the
   // planet panel already has; its Hora and Mar groups moved above. Keep it in the DOM (it holds
   // the listeners) but hidden.
-  const diagnostics = fieldset('settings-diagnostics', 'Diagnóstico')
+  const diagnostics = fieldset('settings-diagnostics', t('settings.diagnostics'))
   for (const id of ['terrain-missing-show', 'terrain-missing-retry', 'terrain-missing-list']) {
     const control = byId(id)
     if (control) diagnostics.append(control)
   }
   if (diagnostics.children.length > 1) place(diagnostics)
 
-  const legacyPlanet = byId('scene-planet')
-  if (legacyPlanet) {
-    for (const id of ['scene-sky', 'scene-sun', 'scene-clouds']) {
-      const el = byId(id)
-      if (el) el.hidden = true
-    }
-    legacyPlanet.hidden = true
-    paneEls.get('planet')!.append(legacyPlanet)
-  }
-
-  const sharpness = fieldset('settings-sharpness', 'Nitidez')
+  const sharpness = fieldset('settings-sharpness', t('settings.sharpness'))
   for (const id of ['display-scale', 'display-scale-auto']) {
     const row = rowOf(id)
     if (row) {
-      relabel(row, id === 'display-scale' ? 'Nitidez' : 'Nitidez automática')
+      relabel(
+        row,
+        id === 'display-scale' ? t('settings.sharpness') : t('settings.automatic-sharpness'),
+      )
       sharpness.append(row)
     }
   }
@@ -1384,88 +1508,30 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
   }
   // Fold existing controls rather than rebuild them: values, listeners and exports stay live.
-  const navigationGroups = [
-    { tab: 'planet', id: 'map', label: 'Mapa', sections: ['settings-map', 'terrain-position'] },
+  const navigationGroups = layoutGroups().map((group) => ({ ...group, label: t(group.labelKey) }))
+  const sections = new Map<
+    TabId,
     {
-      tab: 'planet',
-      id: 'layers',
-      label: 'Capas',
-      sections: ['terrain-layers', 'settings-layer-air'],
-    },
-    {
-      tab: 'planet',
-      id: 'world-options',
-      label: 'Opciones',
-      sections: [
-        'road-style',
-        'settings-planet-air',
-        'settings-planet-sea',
-        'settings-streetlights',
-        'settings-headlamp',
-        'settings-traffic-signs',
-        'settings-options-labels',
-      ],
-    },
-    {
-      tab: 'options',
-      id: 'display',
-      label: 'Pantalla',
-      sections: [
-        'display-quality-section',
-        'settings-sharpness',
-        'quality-shadows',
-        'settings-distances',
-        'display-performance',
-      ],
-    },
-    {
-      tab: 'options',
-      id: 'effects',
-      label: 'Efectos',
-      sections: ['settings-effects', 'settings-muzzle-flash'],
-    },
-    {
-      tab: 'options',
-      id: 'cameras',
-      label: 'Cámara',
-      sections: ['camera-extras', 'settings-camera-fov', 'settings-action-cam'],
-    },
-    { tab: 'options', id: 'driving', label: 'Conducción', sections: ['driving-extras'] },
-    {
-      tab: 'options',
-      id: 'controls',
-      label: 'Controles',
-      sections: ['settings-controls', 'settings-usb'],
-    },
-    {
-      tab: 'objects',
-      id: 'vehicles',
-      label: 'Vehículos',
-      sections: ['scene-vehicles', 'settings-placed-objects', 'settings-object-layout'],
-    },
-    {
-      tab: 'objects',
-      id: 'current-vehicle',
-      label: 'Vehículo actual',
-      sections: [...vehicleGroupSections],
-    },
-    { tab: 'objects', id: 'weapon', label: 'Arma', sections: ['settings-weapon'] },
-    {
-      tab: 'dev',
-      id: 'weapons',
-      label: 'Armas',
-      sections: ['settings-options-sidearm', 'settings-weapon-poses'],
-    },
-  ]
-  const sections = new Map<TabId, { nav: HTMLElement; body: HTMLElement; active?: string }>()
+      nav: HTMLElement
+      body: HTMLElement
+      toggle: HTMLButtonElement
+      active?: string
+      /** The player chose `active`; otherwise a refold reopens the first section in order. */
+      picked?: boolean
+    }
+  >()
   const mobileLayout = window.matchMedia('(max-width:600px)')
+  // Narrow screens fold the tree under its own button (.settings-sections-toggle); the content
+  // always follows the tree in the pane.
+  // Wide screens: tree left, content right. Narrow screens: one tree, the open section's content
+  // directly under its entry (one open at a time).
   const positionContent = (tab: TabId) => {
     const layout = sections.get(tab)
     if (!layout) return
-    const selected = layout.nav.querySelector<HTMLButtonElement>(
-      `button[data-section="${layout.active}"]`,
-    )
-    if (mobileLayout.matches && selected) selected.after(layout.body)
+    const entry = layout.active
+      ? layout.nav.querySelector<HTMLElement>(`button[data-section="${CSS.escape(layout.active)}"]`)
+      : null
+    if (mobileLayout.matches && entry) entry.after(layout.body)
     else paneEls.get(tab)!.append(layout.body)
   }
   const onMenuResize = () => {
@@ -1494,11 +1560,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       label.classList.add('settings-inline-row')
     }
   }
-  let activeTab: TabId = 'planet'
+  let activeTab: TabId = DEFAULT_TAB
   const chooseSection = (tab: TabId, id: string) => {
     const layout = sections.get(tab)
     if (!layout) return
     layout.active = id
+    layout.body.hidden = false
     for (const group of layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section'))
       group.hidden = group.id !== id
     for (const button of layout.nav.querySelectorAll<HTMLButtonElement>('button[data-section]')) {
@@ -1510,21 +1577,56 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       .querySelector<HTMLButtonElement>(`button[data-section="${id}"]`)
       ?.closest('details')
     if (category) category.open = true
+    layout.toggle.textContent =
+      layout.body.querySelector<HTMLElement>(`#${CSS.escape(id)}`)?.dataset.sectionTitle ?? id
+    layout.nav.removeAttribute('data-open')
+    layout.toggle.setAttribute('aria-expanded', 'false')
     positionContent(tab)
     layout.body.scrollTop = 0
     if (tab === 'planet' && id === 'settings-map' && !win.hidden) mapSection.refresh()
   }
+  // The anisotropy row (bound by the game after or before the HUD) belongs in Vídeo › Calidad.
+  const moveAnisotropy = () => {
+    const quality = byId('display-quality-section')
+    const row = rowOf('anisotropy')
+    if (!quality || !row || quality.contains(row)) return
+    quality.insertBefore(row, [...quality.children].find((el) => el.matches('button, p')) ?? null)
+  }
   const foldSections = () => {
+    moveAnisotropy()
+    const hiddenIds = hostHidden()
+    for (const [id, box] of flatBoxes) {
+      // Host sections added straight to a pane join their flat section first.
+      for (const pane of paneEls.values())
+        for (const el of pane.querySelectorAll<HTMLElement>('.menu-section'))
+          if (el.parentElement !== box && flatOf(el.id)?.id === id) placeInFlat(el)
+      const members = [...box.querySelectorAll<HTMLElement>(':scope > .settings-flat-member')]
+      for (const member of members)
+        member.toggleAttribute('data-section-hidden', hiddenIds.has(member.id))
+      box.toggleAttribute(
+        'data-flat-empty',
+        !members.some((member) => !member.hidden && !hiddenIds.has(member.id)),
+      )
+    }
     for (const [tab, pane] of paneEls) {
       let layout = sections.get(tab)
       if (!layout) {
         const nav = doc.createElement('nav'),
           body = doc.createElement('div')
         nav.className = 'settings-sections'
-        nav.setAttribute('aria-label', 'Secciones')
+        nav.setAttribute('aria-label', t('settings.sections'))
         body.className = 'settings-section-content'
+        const toggle = doc.createElement('button')
+        toggle.type = 'button'
+        toggle.className = 'settings-sections-toggle'
+        toggle.setAttribute('aria-expanded', 'false')
+        toggle.addEventListener('click', () => {
+          const open = !nav.hasAttribute('data-open')
+          nav.toggleAttribute('data-open', open)
+          toggle.setAttribute('aria-expanded', String(open))
+        })
         pane.append(nav, body)
-        layout = { nav, body }
+        layout = { nav, body, toggle }
         sections.set(tab, layout)
       }
       for (const section of [...pane.querySelectorAll<HTMLElement>(':scope > .menu-section')]) {
@@ -1534,9 +1636,35 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         section.dataset.sectionTitle = legend?.textContent ?? section.id
         layout.body.append(section)
       }
+      // Same-title sections in one group are one section: fold the later ones into the first.
+      const groupOf = (id: string) =>
+        navigationGroups.find((group) => group.tab === tab && group.sections.includes(id))?.id
+      const present = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')]
+      for (const [keep, ids] of sectionMerges(
+        present.map((el) => ({
+          id: el.id,
+          title: el.dataset.sectionTitle ?? el.id,
+          group: groupOf(el.id),
+        })),
+      )) {
+        const target = present.find((el) => el.id === keep)!
+        for (const id of ids)
+          for (const twin of present.filter((el) => el.id === id && el !== target)) {
+            for (const child of [...twin.children])
+              if (child.tagName !== 'LEGEND') target.append(child)
+            twin.remove()
+          }
+      }
       const ordered = [...layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')].sort(
-        (a, b) => (order(a.id) < 0 ? 999 : order(a.id)) - (order(b.id) < 0 ? 999 : order(b.id)),
+        (a, b) => rankOf(a) - rankOf(b),
       )
+      const hidden = hostHidden()
+      for (const section of ordered)
+        section.toggleAttribute(
+          'data-section-hidden',
+          hidden.has(section.id) || section.hasAttribute('data-flat-empty'),
+        )
+      const shown = ordered.filter((section) => !section.hasAttribute('data-section-hidden'))
       const items: HTMLElement[] = []
       const previousGroups = new Map(
         [...layout.nav.querySelectorAll<HTMLDetailsElement>('details[data-nav-group]')].map(
@@ -1544,13 +1672,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         ),
       )
       const groups = new Map<string, HTMLDetailsElement>()
-      for (const section of ordered) {
+      for (const section of shown) {
         const button = doc.createElement('button')
         button.type = 'button'
         button.textContent = section.dataset.sectionTitle ?? section.id
         button.dataset.section = section.id
         button.addEventListener('click', () => {
           runtime.setSidearmAimPreview?.(false)
+          // Narrow tree: the open entry folds again on a second press.
+          const current = sections.get(tab)
+          if (mobileLayout.matches && current?.active === section.id && !current.body.hidden) {
+            current.body.hidden = true
+            button.removeAttribute('aria-current')
+            return
+          }
+          if (current) current.picked = true
           chooseSection(tab, section.id)
         })
         const category = navigationGroups.find(
@@ -1562,7 +1698,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
             group = doc.createElement('details')
             group.className = 'settings-nav-group'
             group.dataset.navGroup = category.id
-            group.open = previousGroups.get(category.id) ?? true
+            // Exclusive accordion: one open group per tab (the active section's group).
+            group.name = `settings-nav-${tab}`
+            group.open = previousGroups.get(category.id) ?? false
             const summary = doc.createElement('summary')
             summary.textContent = category.label
             group.append(summary)
@@ -1572,11 +1710,20 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
           group.append(button)
         } else items.push(button)
       }
+      // A group holding a single section is not a folder: show that section under the group's name.
+      for (const [i, item] of items.entries()) {
+        if (!(item instanceof HTMLDetailsElement)) continue
+        const only = item.querySelectorAll<HTMLButtonElement>(':scope > button')
+        if (only.length !== 1) continue
+        only[0].textContent = item.querySelector('summary')?.textContent ?? only[0].textContent
+        items[i] = only[0]
+      }
       // The mobile body may be nested in a group about to be replaced.
       pane.append(layout.body)
       alignSettingRows(layout.body)
-      layout.nav.replaceChildren(...items)
-      const chosen = ordered.find((el) => el.id === layout.active) ?? ordered[0]
+      layout.nav.replaceChildren(layout.toggle, ...items)
+      const chosen =
+        (layout.picked ? shown.find((el) => el.id === layout.active) : undefined) ?? shown[0]
       if (chosen) chooseSection(tab, chosen.id)
     }
   }
@@ -1592,12 +1739,28 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       })
     : null
   observer?.observe(menu!, { childList: true })
+  // Host sections added straight to a pane (or a changed `data-settings-hidden`) refold the tree.
+  const refold = () => {
+    foldSections()
+    syncTabs()
+  }
+  const paneObserver = new MutationObserver((records) => {
+    if (
+      records.some((record) =>
+        [...record.addedNodes].some(
+          (node) => node instanceof HTMLElement && node.classList.contains('menu-section'),
+        ),
+      )
+    )
+      refold()
+  })
+  for (const pane of paneEls.values()) paneObserver.observe(pane, { childList: true })
+  new MutationObserver(refold).observe(doc.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-settings-hidden'],
+  })
 
-  const style = doc.createElement('style')
-  style.id = 'nabla-settings-hud-layout'
-  style.textContent = settingsNavigationStyles
-
-  doc.head.append(style)
+  installEngineStyles(doc)
   doc.body.append(toggle, win)
 
   planetPanel.bind(runtime)
@@ -1621,12 +1784,12 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     win.hidden = false
     if (legacy) legacy.open = true
     toggle.setAttribute('aria-expanded', 'true')
-    toggle.setAttribute('aria-label', 'Recoger menú')
-    toggle.title = 'Recoger menú · rueda: ±1 h'
+    toggle.setAttribute('aria-label', t('settings.collapse-menu'))
+    toggle.title = t('settings.collapse-menu-wheel-1-h')
     doc.body.classList.add('settings-is-open')
     if (activeTab === 'planet' && sections.get('planet')?.active === 'settings-map')
       mapSection.refresh()
-    ;(doc.getElementById('euskadi-options-toggle') ?? closeButton).focus()
+    ;(doc.getElementById(GAME_MENU_TOGGLE_ID) ?? closeButton).focus()
     // Taking focus from the canvas is enough: the runtime frees the pointer when it loses input.
     doc.getElementById('game-canvas')?.blur()
     planetPanel?.refresh()
@@ -1636,8 +1799,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     win.hidden = true
     if (legacy) legacy.open = false
     toggle.setAttribute('aria-expanded', 'false')
-    toggle.setAttribute('aria-label', 'Abrir menú')
-    toggle.title = 'Abrir menú · rueda: ±1 h'
+    toggle.setAttribute('aria-label', t('settings.open-menu'))
+    toggle.title = t('settings.open-menu-wheel-1-h')
     doc.body.classList.remove('settings-is-open')
     doc.getElementById('game-canvas')?.focus()
   }
@@ -1669,15 +1832,24 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
   })
   /**
-   * Every per-vehicle option lives in one group of the Objetos tab, titled with the occupied
-   * vehicle's name; options the vehicle cannot use (exhaust smoke on a bike) are not listed.
+   * Every per-vehicle option lives in one group of the Principal tab, titled with the occupied
+   * vehicle's name and listed only while mounted; options the vehicle cannot use (exhaust smoke
+   * on a bike) are not listed.
    */
   const refreshVehicleGroup = () => {
     const occupied = runtime.occupiedVehicle ?? null
-    const group = doc.querySelector<HTMLDetailsElement>('details[data-nav-group="current-vehicle"]')
+    const group = doc.querySelector<HTMLDetailsElement>(
+      `details[data-nav-group="${CURRENT_VEHICLE_GROUP}"]`,
+    )
     if (!group) return
+    group.hidden = !occupied
+    const app = sections.get('app')
+    if (!occupied && (vehicleGroupSections as readonly string[]).includes(app?.active ?? '')) {
+      const first = app?.nav.querySelector<HTMLButtonElement>('button[data-section]')
+      if (first?.dataset.section) chooseSection('app', first.dataset.section)
+    }
     const summary = group.querySelector('summary')
-    const label = occupied?.name ?? 'Vehículo actual'
+    const label = occupied?.name ?? t('settings.current-vehicle')
     if (summary && summary.textContent !== label) summary.textContent = label
     const show = vehicleGroupVisibility(occupied)
     // A section the vehicle cannot use disappears from the list; rows inside follow its options.
@@ -1687,9 +1859,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       const visible = show.sections[id]
       button.hidden = !visible
       button.style.display = visible ? '' : 'none'
-      if (!visible && sections.get('objects')?.active === id) {
+      if (!visible && sections.get('app')?.active === id) {
         const next = vehicleGroupSections.find((candidate) => show.sections[candidate])
-        if (next) chooseSection('objects', next)
+        if (next) chooseSection('app', next)
       }
     }
     const mirrorsGroup = doc.getElementById('scene-mirrors')
@@ -1699,7 +1871,21 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         ? show.exhaustAmount
         : show.exhaustPosition)
   }
+  const engineStatus = () => {
+    // GameRuntime.physicsThread (src/runtime/browser.ts); read loosely while the package types lag.
+    const physics = (runtime as { physicsThread?: 'worker' | 'inline' | null }).physicsThread
+    return t('menu.engine-status', {
+      renderer: runtime.backend === 'webgpu' ? 'WebGPU' : 'WebGL',
+      physics:
+        physics === 'worker'
+          ? t('menu.physics-worker')
+          : physics === 'inline'
+            ? t('menu.physics-inline')
+            : '–',
+    })
+  }
   const updateClock = () => {
+    setGameMenuNote(GAME_MENU_ENGINE_ID, engineStatus())
     refreshVehicleGroup()
     refreshVehicleLights()
     refreshRearNudge()
@@ -1771,6 +1957,26 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   doc.addEventListener('keydown', onKeyDown, true)
 
+  // The one main menu (☰ top-left): its game entries open this window on a tab. Hosts configure
+  // its sections with mountGameMenu() too; the engine defaults apply until they do.
+  mountGameMenu(doc, t, {}, (button) => addCornerButton('tl', button, 10))
+  registerGameMenuSettings({
+    open: (tab, section) => {
+      open()
+      const id = TABS.find((item) => item.id === tab)?.id
+      if (id) selectTab(id)
+      if (id && section && sections.get(id)?.body.querySelector(`#${CSS.escape(section)}`)) {
+        sections.get(id)!.picked = true
+        chooseSection(id, section)
+      }
+    },
+    close,
+    get isOpen() {
+      return !win.hidden
+    },
+    menuPane: paneEls.get('app'),
+  })
+
   return {
     open,
     close,
@@ -1790,7 +1996,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       toggle.removeEventListener('wheel', onClockWheel)
       toggle.remove()
       win.remove()
-      style.remove()
       if (legacy) legacy.hidden = false
     },
   }

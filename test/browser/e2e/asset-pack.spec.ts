@@ -40,10 +40,15 @@ test('packed GLBs preserve scenes and avoid range downloads on a warm visit', as
       const { GLTFLoader } = await import(
         `/@fs/${root}/node_modules/three/examples/jsm/loaders/GLTFLoader.js`
       )
+      // The packed avatars are meshopt-compressed; decode them the way the engine's loaders do.
+      const { MeshoptDecoder } = await import(
+        `/@fs/${root}/node_modules/meshoptimizer/meshopt_decoder.mjs`
+      )
+      await MeshoptDecoder.ready
       await caches.delete('nabla-assets-v1')
       const manifest = await (await fetch('/packs/index.json')).json()
       const urls = Object.keys(manifest.entries)
-      const loader = new GLTFLoader()
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
       const signature = (scene: any) => {
         const nodes: unknown[] = []
         scene.traverse((node: any) =>

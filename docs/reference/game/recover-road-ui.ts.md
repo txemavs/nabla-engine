@@ -4,16 +4,18 @@
 
 [Source](../../../game/recover-road-ui.ts)
 
-Menu toggle for the R reset: nearest road/vía (default on) vs upright in place.
+Menu toggle for the vehicle reset (recover key): nearest road/vía (default on) vs upright in place.
 
 ## Module dependencies
 
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
+- `@nabla/engine/i18n`
+- `@nabla/engine/config/controls`
 
 ## browserStorage
 
-[Implementation, line 9](../../../game/recover-road-ui.ts#L9)
+[Implementation, line 11](../../../game/recover-road-ui.ts#L11)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -21,7 +23,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveRecoverToRoadEnabled
 
-[Implementation, line 18](../../../game/recover-road-ui.ts#L18)
+[Implementation, line 20](../../../game/recover-road-ui.ts#L20)
 
 Resolve initial preference like the flip cinematic: localStorage > boot (URL/NABLA_BOOT) > on.
 
@@ -36,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveRecoverToRoadEnabled
 
-[Implementation, line 28](../../../game/recover-road-ui.ts#L28)
+[Implementation, line 30](../../../game/recover-road-ui.ts#L30)
 
 ```ts
 saveRecoverToRoadEnabled(enabled: boolean, storage: StorageLike | undefined = browserStorage()): void
@@ -49,9 +51,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindRecoverToRoadToggle
 
-[Implementation, line 40](../../../game/recover-road-ui.ts#L40)
+[Implementation, line 42](../../../game/recover-road-ui.ts#L42)
 
-Checkbox in its own «Conducción» section (shown under Ajustes → Opciones).
+Checkbox in Settings → Options → Driving (shares the section with gravity).
 
 ```ts
 bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void
@@ -63,15 +65,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `browserStorage`
 - `document.createElement`
 - `group.append`
+- `inputBindings.recover.keys.map`
+- `inputBindings.recover.keys.map(keyLabel).join`
 - `label.append`
 - `menuSection`
+- `t`
 
-## bindRecoverToRoadToggle.callback@49
+## bindRecoverToRoadToggle.callback@51
 
-[Implementation, line 49](../../../game/recover-road-ui.ts#L49)
+[Implementation, line 51](../../../game/recover-road-ui.ts#L51)
 
 ```ts
-callback@49(): inferred by TypeScript; see implementation
+callback@51(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -9,6 +9,7 @@
  * Per-setting exceptions (the URL wins) are noted on each field.
  * Defaults keep the classic centred Nabla splash, no attract, probe on in auto scale.
  */
+import { pageSearch } from './page-query.js'
 import type { EngineSplashSkin } from '@nabla/engine/runtime/splash'
 import type {
   AttractOptions,
@@ -47,8 +48,10 @@ export interface HostBootConfig {
    * Hosts set this on `window.NABLA_BOOT`; players can also toggle it in Ajustes → Opciones → Cámara.
    */
   flipCinematic?: boolean
+  /** Simulated fire (Settings → Effects «Simulated fire»). Default on; host config only, no URL param. */
+  simulatedFire?: boolean
   /**
-   * R reset puts the vehicle on the nearest road/vía. Default on when omitted.
+   * recover (Y) reset puts the vehicle on the nearest road/vía. Default on when omitted.
    * URL `?recoverToRoad=0|1` (alias `?roadReset=`); players can toggle it in Ajustes → Opciones.
    */
   recoverToRoad?: boolean
@@ -111,7 +114,7 @@ function buildTimeBootJson(raw: string | undefined): HostBootConfig {
 
 /** Merge URL, build-time and page-supplied boot configuration. */
 export function readBootConfig(
-  search = location.search,
+  search = pageSearch(),
   page: Pick<Window, 'NABLA_BOOT'> | undefined = globalThis.window,
 ): HostBootConfig {
   const params = new URLSearchParams(search)
@@ -160,7 +163,7 @@ export async function runBootPhase(
   runtime: GameRuntime,
   loading: LoadingScreen,
   config: HostBootConfig,
-  search = location.search,
+  search = pageSearch(),
 ): Promise<void> {
   const canvas = document.getElementById('game-canvas')
   if (config.attract) {

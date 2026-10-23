@@ -1,5 +1,6 @@
 import { Vector3 } from 'three'
 import type { OsmChartRoad } from '../../planet/osm-snapshot.js'
+import { t } from '../../i18n/index.js'
 
 export interface NavigationPlace {
   id: string
@@ -36,7 +37,11 @@ export function nearestLocality(position: readonly number[]): string {
       nearest = place
     }
   }
-  return nearest ? `${distance > 2000 ? 'Cerca de ' : ''}${nearest.text}` : 'Localidad sin datos'
+  return nearest
+    ? distance > 2000
+      ? t('place.near', { name: nearest.text })
+      : nearest.text
+    : t('place.unknown')
 }
 
 function segmentDistance(
@@ -120,7 +125,7 @@ export class NavigationPlaceLookup {
     const yieldTask = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
     void (async () => {
       await yieldTask()
-      let city = 'Localidad sin datos',
+      let city = t('place.unknown'),
         distance = 20000
       let budget = performance.now()
       for (const place of places()) {

@@ -8,11 +8,15 @@
 
 - `three`
 - `three/addons/loaders/GLTFLoader.js`
+- `meshoptimizer`
 - `../render/entity/asset-pack.js`
+- `../render/entity/player-body.js`
+- `./actor.js`
+- `./xr-actor-hand.js`
 
 ## XRControllerHand.loadModel
 
-[Implementation, line 47](../../../../src/runtime/xr-hand.ts#L47)
+[Implementation, line 55](../../../../src/runtime/xr-hand.ts#L55)
 
 GLB contract: nablaHand extras map five fingers to named bones and open/closed quaternions.
 Legacy assets use finger-{0..4}-{0..2} bones (index through thumb), index-tip marker.
@@ -51,17 +55,17 @@ Explicit throws in this body:
 - `new Error('Invalid hand pose descriptor')`
 - `new Error('Hand GLB is missing finger bones or index-tip')`
 
-## XRControllerHand.loadModel.callback@59
+## XRControllerHand.loadModel.callback@67
 
-[Implementation, line 59](../../../../src/runtime/xr-hand.ts#L59)
+[Implementation, line 67](../../../../src/runtime/xr-hand.ts#L67)
 
 ```ts
-callback@59(object): inferred by TypeScript; see implementation
+callback@67(object): inferred by TypeScript; see implementation
 ```
 
 ## XRControllerHand.loadModel.validQuaternion
 
-[Implementation, line 62](../../../../src/runtime/xr-hand.ts#L62)
+[Implementation, line 70](../../../../src/runtime/xr-hand.ts#L70)
 
 ```ts
 validQuaternion(value: unknown): value is [number, number, number, number]
@@ -73,17 +77,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `value.every`
 - `value.reduce`
 
-## XRControllerHand.loadModel.validQuaternion.callback@66
+## XRControllerHand.loadModel.validQuaternion.callback@74
 
-[Implementation, line 66](../../../../src/runtime/xr-hand.ts#L66)
+[Implementation, line 74](../../../../src/runtime/xr-hand.ts#L74)
 
 ```ts
-callback@66(sum, v): inferred by TypeScript; see implementation
+callback@74(sum, v): inferred by TypeScript; see implementation
 ```
 
 ## XRControllerHand.loadModel.validVector
 
-[Implementation, line 67](../../../../src/runtime/xr-hand.ts#L67)
+[Implementation, line 75](../../../../src/runtime/xr-hand.ts#L75)
 
 ```ts
 validVector(value: unknown): boolean
@@ -94,12 +98,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `value.every`
 
-## XRControllerHand.loadModel.callback@75
+## XRControllerHand.loadModel.callback@83
 
-[Implementation, line 75](../../../../src/runtime/xr-hand.ts#L75)
+[Implementation, line 83](../../../../src/runtime/xr-hand.ts#L83)
 
 ```ts
-callback@75(finger): inferred by TypeScript; see implementation
+callback@83(finger): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -107,12 +111,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `finger.some`
 
-## XRControllerHand.loadModel.callback@75.callback@80
+## XRControllerHand.loadModel.callback@83.callback@88
 
-[Implementation, line 80](../../../../src/runtime/xr-hand.ts#L80)
+[Implementation, line 88](../../../../src/runtime/xr-hand.ts#L88)
 
 ```ts
-callback@80(pose): inferred by TypeScript; see implementation
+callback@88(pose): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -120,92 +124,92 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `validQuaternion`
 - `validVector`
 
-## XRControllerHand.loadModel.callback@96
+## XRControllerHand.loadModel.callback@104
 
-[Implementation, line 96](../../../../src/runtime/xr-hand.ts#L96)
+[Implementation, line 104](../../../../src/runtime/xr-hand.ts#L104)
 
 ```ts
-callback@96(finger): inferred by TypeScript; see implementation
+callback@104(finger): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `finger.map`
 
-## XRControllerHand.loadModel.callback@96.callback@96
+## XRControllerHand.loadModel.callback@104.callback@104
 
-[Implementation, line 96](../../../../src/runtime/xr-hand.ts#L96)
+[Implementation, line 104](../../../../src/runtime/xr-hand.ts#L104)
 
 ```ts
-callback@96(pose): inferred by TypeScript; see implementation
+callback@104(pose): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `scene.getObjectByName`
 
-## XRControllerHand.loadModel.callback@97
+## XRControllerHand.loadModel.callback@105
 
-[Implementation, line 97](../../../../src/runtime/xr-hand.ts#L97)
+[Implementation, line 105](../../../../src/runtime/xr-hand.ts#L105)
 
 ```ts
-callback@97(_, f): inferred by TypeScript; see implementation
+callback@105(_, f): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Array.from`
 
-## XRControllerHand.loadModel.callback@97.callback@98
+## XRControllerHand.loadModel.callback@105.callback@106
 
-[Implementation, line 98](../../../../src/runtime/xr-hand.ts#L98)
+[Implementation, line 106](../../../../src/runtime/xr-hand.ts#L106)
 
 ```ts
-callback@98(_, j): inferred by TypeScript; see implementation
+callback@106(_, j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `scene.getObjectByName`
 
-## XRControllerHand.loadModel.callback@101
+## XRControllerHand.loadModel.callback@109
 
-[Implementation, line 101](../../../../src/runtime/xr-hand.ts#L101)
+[Implementation, line 109](../../../../src/runtime/xr-hand.ts#L109)
 
 ```ts
-callback@101(finger): inferred by TypeScript; see implementation
+callback@109(finger): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `finger.some`
 
-## XRControllerHand.loadModel.callback@101.callback@101
+## XRControllerHand.loadModel.callback@109.callback@109
 
-[Implementation, line 101](../../../../src/runtime/xr-hand.ts#L101)
+[Implementation, line 109](../../../../src/runtime/xr-hand.ts#L109)
 
 ```ts
-callback@101(joint): inferred by TypeScript; see implementation
+callback@109(joint): inferred by TypeScript; see implementation
 ```
 
-## XRControllerHand.loadModel.callback@106
+## XRControllerHand.loadModel.callback@114
 
-[Implementation, line 106](../../../../src/runtime/xr-hand.ts#L106)
+[Implementation, line 114](../../../../src/runtime/xr-hand.ts#L114)
 
 ```ts
-callback@106(finger): inferred by TypeScript; see implementation
+callback@114(finger): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `finger.map`
 
-## XRControllerHand.loadModel.callback@106.callback@107
+## XRControllerHand.loadModel.callback@114.callback@115
 
-[Implementation, line 107](../../../../src/runtime/xr-hand.ts#L107)
+[Implementation, line 115](../../../../src/runtime/xr-hand.ts#L115)
 
 ```ts
-callback@107(pose): inferred by TypeScript; see implementation
+callback@115(pose): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -217,24 +221,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.Quaternion().fromArray(pose.open).normalize`
 - `new THREE.Vector3().fromArray`
 
-## XRControllerHand.loadModel.callback@126
+## XRControllerHand.loadModel.callback@134
 
-[Implementation, line 126](../../../../src/runtime/xr-hand.ts#L126)
+[Implementation, line 134](../../../../src/runtime/xr-hand.ts#L134)
 
 ```ts
-callback@126(finger, f): inferred by TypeScript; see implementation
+callback@134(finger, f): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `finger.forEach`
 
-## XRControllerHand.loadModel.callback@126.callback@127
+## XRControllerHand.loadModel.callback@134.callback@135
 
-[Implementation, line 127](../../../../src/runtime/xr-hand.ts#L127)
+[Implementation, line 135](../../../../src/runtime/xr-hand.ts#L135)
 
 ```ts
-callback@127(joint, j): inferred by TypeScript; see implementation
+callback@135(joint, j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -243,17 +247,79 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `joint.quaternion.copy`
 - `joint.scale.copy`
 
-## XRControllerHand.loadModel.callback@139
+## XRControllerHand.loadModel.callback@147
 
-[Implementation, line 139](../../../../src/runtime/xr-hand.ts#L139)
+[Implementation, line 147](../../../../src/runtime/xr-hand.ts#L147)
 
 ```ts
-callback@139(object): inferred by TypeScript; see implementation
+callback@147(object): inferred by TypeScript; see implementation
 ```
+
+## XRControllerHand.loadActorModel
+
+[Implementation, line 158](../../../../src/runtime/xr-hand.ts#L158)
+
+Wear the actor's hands (see `actorHandAssets`): recoloured with its colour slots and swapped
+in place of the glove; a later call replaces them (live actor change). Throws, keeping the
+current hands, when the GLB has no mixamorig hand.
+
+```ts
+loadActorModel(assets: ActorHandAssets): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `AssetPack`
+- `Error`
+- `GLTFLoader`
+- `assets.model.lastIndexOf`
+- `assets.model.slice`
+- `buildActorHand`
+- `loader.loadAsync`
+- `loader.parseAsync`
+- `new AssetPack().read`
+- `new GLTFLoader().setMeshoptDecoder`
+- `recolor`
+- `this.clearActorHands`
+- `this.disposeModel`
+- `this.root.add`
+
+Explicit throws in this body:
+
+- `new Error(\`No mixamorig hands in ${assets.model}\`)`
+
+## XRControllerHand.clearActorHands
+
+[Implementation, line 185](../../../../src/runtime/xr-hand.ts#L185)
+
+Lightweight controller-driven glove: five articulated fingers, no hand-tracking permission.
+
+```ts
+clearActorHands(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.values`
+- `hand.root.removeFromParent`
+- `hand.root.traverse`
+- `this.disposeModel`
+
+## XRControllerHand.clearActorHands.callback@189
+
+[Implementation, line 189](../../../../src/runtime/xr-hand.ts#L189)
+
+```ts
+callback@189(o): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `o.geometry.dispose`
 
 ## XRControllerHand.disposeModel
 
-[Implementation, line 145](../../../../src/runtime/xr-hand.ts#L145)
+[Implementation, line 197](../../../../src/runtime/xr-hand.ts#L197)
 
 Lightweight controller-driven glove: five articulated fingers, no hand-tracking permission.
 
@@ -268,12 +334,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `model.traverse`
 - `textures.forEach`
 
-## XRControllerHand.disposeModel.callback@148
+## XRControllerHand.disposeModel.callback@200
 
-[Implementation, line 148](../../../../src/runtime/xr-hand.ts#L148)
+[Implementation, line 200](../../../../src/runtime/xr-hand.ts#L200)
 
 ```ts
-callback@148(object): inferred by TypeScript; see implementation
+callback@200(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -285,12 +351,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `object.skeleton.dispose`
 - `textures.add`
 
-## XRControllerHand.disposeModel.callback@161
+## XRControllerHand.disposeModel.callback@213
 
-[Implementation, line 161](../../../../src/runtime/xr-hand.ts#L161)
+[Implementation, line 213](../../../../src/runtime/xr-hand.ts#L213)
 
 ```ts
-callback@161(texture): inferred by TypeScript; see implementation
+callback@213(texture): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -299,7 +365,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRControllerHand.constructor
 
-[Implementation, line 164](../../../../src/runtime/xr-hand.ts#L164)
+[Implementation, line 216](../../../../src/runtime/xr-hand.ts#L216)
 
 Lightweight controller-driven glove: five articulated fingers, no hand-tracking permission.
 
@@ -327,7 +393,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRControllerHand.constructor.ellipsoid
 
-[Implementation, line 166](../../../../src/runtime/xr-hand.ts#L166)
+[Implementation, line 218](../../../../src/runtime/xr-hand.ts#L218)
 
 ```ts
 ellipsoid(size: number[], at: number[], material = this.material): inferred by TypeScript; see implementation
@@ -342,17 +408,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.geometries.push`
 - `this.root.add`
 
-## XRControllerHand.constructor.callback@179
+## XRControllerHand.constructor.callback@231
 
-[Implementation, line 179](../../../../src/runtime/xr-hand.ts#L179)
+[Implementation, line 231](../../../../src/runtime/xr-hand.ts#L231)
 
 ```ts
-callback@179(n): inferred by TypeScript; see implementation
+callback@231(n): inferred by TypeScript; see implementation
 ```
 
 ## XRControllerHand.update
 
-[Implementation, line 221](../../../../src/runtime/xr-hand.ts#L221)
+[Implementation, line 273](../../../../src/runtime/xr-hand.ts#L273)
 
 Lightweight controller-driven glove: five articulated fingers, no hand-tracking permission.
 
@@ -362,13 +428,15 @@ update(source: XRInputSource | null, tracked: boolean): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `actor.tip.add`
 - `amount`
+- `poseActorHand`
 - `this.fingers.forEach`
 - `this.modelFingers.forEach`
 
 ## XRControllerHand.update.amount
 
-[Implementation, line 225](../../../../src/runtime/xr-hand.ts#L225)
+[Implementation, line 279](../../../../src/runtime/xr-hand.ts#L279)
 
 ```ts
 amount(i: number): inferred by TypeScript; see implementation
@@ -378,48 +446,48 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `THREE.MathUtils.clamp`
 
-## XRControllerHand.update.callback@231
+## XRControllerHand.update.callback@285
 
-[Implementation, line 231](../../../../src/runtime/xr-hand.ts#L231)
+[Implementation, line 285](../../../../src/runtime/xr-hand.ts#L285)
 
 ```ts
-callback@231(joints, i): inferred by TypeScript; see implementation
+callback@285(joints, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `joints.forEach`
 
-## XRControllerHand.update.callback@231.callback@232
+## XRControllerHand.update.callback@285.callback@286
 
-[Implementation, line 232](../../../../src/runtime/xr-hand.ts#L232)
+[Implementation, line 286](../../../../src/runtime/xr-hand.ts#L286)
 
 ```ts
-callback@232(joint, j): inferred by TypeScript; see implementation
+callback@286(joint, j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.max`
 
-## XRControllerHand.update.callback@239
+## XRControllerHand.update.callback@293
 
-[Implementation, line 239](../../../../src/runtime/xr-hand.ts#L239)
+[Implementation, line 293](../../../../src/runtime/xr-hand.ts#L293)
 
 ```ts
-callback@239(joints, i): inferred by TypeScript; see implementation
+callback@293(joints, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `joints.forEach`
 
-## XRControllerHand.update.callback@239.callback@240
+## XRControllerHand.update.callback@293.callback@294
 
-[Implementation, line 240](../../../../src/runtime/xr-hand.ts#L240)
+[Implementation, line 294](../../../../src/runtime/xr-hand.ts#L294)
 
 ```ts
-callback@240(joint, j): inferred by TypeScript; see implementation
+callback@294(joint, j): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -431,7 +499,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRControllerHand.dispose
 
-[Implementation, line 258](../../../../src/runtime/xr-hand.ts#L258)
+[Implementation, line 318](../../../../src/runtime/xr-hand.ts#L318)
 
 Lightweight controller-driven glove: five articulated fingers, no hand-tracking permission.
 
@@ -442,6 +510,7 @@ dispose(): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `geometry.dispose`
+- `this.clearActorHands`
 - `this.cuffMaterial.dispose`
 - `this.disposeModel`
 - `this.material.dispose`

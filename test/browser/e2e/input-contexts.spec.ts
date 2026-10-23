@@ -42,7 +42,16 @@ test('real keyboard routes forklift hydraulics, weapon priority and browser shor
         internal.capturePointer = () => {}
         const sim = runtime.game.simulation!
         let now = performance.now()
-        for (let i = 0; i < 30; i++) runtime.tick((now += 1000 / 60))
+        // Animation frames paced in real time: the default pipelined physics worker answers between
+        // them, and the forklift pose read afterwards is its published state.
+        const frames = async (count: number) => {
+          for (let i = 0; i < count; i++) {
+            runtime.tick((now += 1000 / 60))
+            while (internal.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
+            await new Promise((resolve) => setTimeout(resolve, 1000 / 60))
+          }
+        }
+        await frames(30)
         const initial = sim.forkliftPose('toro')!.tilt
         const press = (code: string, options: KeyboardEventInit = {}) => {
           const event = new KeyboardEvent('keydown', {
@@ -57,7 +66,7 @@ test('real keyboard routes forklift hydraulics, weapon priority and browser shor
         const release = (code: string) =>
           window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }))
         press('KeyJ')
-        for (let i = 0; i < 30; i++) runtime.tick((now += 1000 / 60))
+        await frames(30)
         release('KeyJ')
         const tilted = sim.forkliftPose('toro')!.tilt
         const view = internal.view

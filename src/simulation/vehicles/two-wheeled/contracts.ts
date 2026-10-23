@@ -158,7 +158,7 @@ export interface TwoWheeledState {
   rearSpinAngle: number
   /** Stationary-burnout donut lean, radians, left positive (0 outside a donut). */
   donutLean: number
-  /** Looped, went over the front, hit something hard or lowsided: fallen until reset (R). */
+  /** Looped, went over the front, hit something hard or lowsided: fallen until reset (Y). */
   crashed: boolean
   /** Why it crashed (null while riding). */
   crashCause: CrashCause | null
@@ -231,6 +231,6 @@ export interface TwoWheeledPose {
   scrapePoint: [number, number, number] | null
   /** Shift hooligan effect running. */
   hooligan: HooliganMode
-  /** Crashed (until R). */
+  /** Crashed (until recovered (Y)). */
   crashed: boolean
 }

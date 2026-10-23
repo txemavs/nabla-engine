@@ -1,24 +1,29 @@
 import { assets, disposeObject } from '../render/entity/assets.js'
+export {
+  arcoBow,
+  defaultBow,
+  bowModels,
+  buildBowModel,
+  recurveBow,
+  type BowModel,
+  type BowModelDescription,
+} from './bow-model.js'
 import * as THREE from 'three'
 import RAPIER from '@dimforge/rapier3d-compat/rapier.es.js'
 import type { RigidBody, Collider } from '@dimforge/rapier3d-compat'
 import type { World } from '../simulation/physics.js'
 import { BowDraw } from '../simulation/weapons/bow.js'
+import {
+  bowString,
+  buildBowModel,
+  createBowString,
+  setBowString,
+  type BowModelDescription,
+} from './bow-model.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import type { GrabHand } from './xr-grab.js'
 import type { XRDisposalTest } from './xr-disposal-portal.js'
 
-export interface BowModelDescription {
-  bowNode: string
-  arrowNode: string
-  stringTriangles: readonly number[]
-  bowScale: number
-  bowRotationX: number
-  bowOffset: readonly number[]
-  arrowScale: number
-  arrowRotationX: number
-  arrowOffset: readonly number[]
-}
 type Arrow = {
   root: THREE.Group
   body: RigidBody
@@ -45,66 +50,17 @@ export class XRBow {
   private modelArrow: THREE.Mesh | null = null
   private disposed = false
   async loadModel(url: string, options: BowModelDescription): Promise<void> {
-    if (
-      options.bowOffset.length !== 3 ||
-      options.arrowOffset.length !== 3 ||
-      ![
-        options.bowScale,
-        options.arrowScale,
-        options.bowRotationX,
-        options.arrowRotationX,
-        ...options.bowOffset,
-        ...options.arrowOffset,
-      ].every(Number.isFinite) ||
-      options.bowScale <= 0 ||
-      options.arrowScale <= 0
-    )
-      throw new RangeError('Invalid bow model transform')
     const asset = await assets.instantiate(url)
-    if (this.disposed) {
-      disposeObject(asset)
-      return
-    }
     try {
-      const bow = asset.getObjectByName(options.bowNode),
-        arrow = asset.getObjectByName(options.arrowNode)
-      if (!(bow instanceof THREE.Mesh) || !(arrow instanceof THREE.Mesh))
-        throw new Error('Bow/arrow nodes missing from GLB')
-      const clone = (source: THREE.Mesh) =>
-        new THREE.Mesh(
-          source.geometry.clone(),
-          Array.isArray(source.material)
-            ? source.material.map((m) => m.clone())
-            : source.material.clone(),
-        )
-      this.modelBow = clone(bow)
-      const geometry = this.modelBow.geometry,
-        indices = geometry.getIndex()
-      if (indices) {
-        const hidden = new Set(options.stringTriangles)
-        geometry.setIndex(
-          Array.from(indices.array).filter((_, i) => !hidden.has(Math.floor(i / 3))),
-        )
-      }
-      const scale = options.bowScale
-      geometry
-        .rotateX(options.bowRotationX)
-        .scale(scale, scale, scale)
-        .translate(options.bowOffset[0], options.bowOffset[1], options.bowOffset[2])
-      geometry.computeBoundingBox()
-      geometry.computeBoundingSphere()
-      this.modelArrow = clone(arrow)
-      const arrowScale = options.arrowScale
-      this.modelArrow.geometry
-        .rotateX(options.arrowRotationX)
-        .scale(arrowScale, arrowScale, arrowScale)
-        .translate(options.arrowOffset[0], options.arrowOffset[1], options.arrowOffset[2])
-      this.modelArrow.geometry.computeBoundingSphere()
-      this.modelBow.userData.bowModelPart = this.modelArrow.userData.bowModelPart = true
+      if (this.disposed) return
+      const { bow, arrow } = buildBowModel(asset, options)
+      this.modelBow = bow
+      this.modelArrow = arrow
     } finally {
       disposeObject(asset)
     }
   }
+
   private holder: GrabHand | null = null
   private stringHand: GrabHand | null = null
   private readonly grab = new XRObjectGrab()
@@ -174,14 +130,7 @@ export class XRBow {
           new THREE.MeshStandardMaterial({ color: 0x845e38, roughness: 0.75 }),
         ),
       )
-    this.string = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-      ]),
-      new THREE.LineBasicMaterial({ color: 0xe8dfce }),
-    )
+    this.string = createBowString()
     this.root.add(this.string)
     this.preview = this.arrowModel()
     this.preview.visible = false
@@ -213,13 +162,8 @@ export class XRBow {
     if (!this.root || !this.string || !this.preview) return
     const local = this.draw.drawing
       ? this.root.worldToLocal(this.nock.clone())
-      : new THREE.Vector3(0, 0, 0.155)
-    const attr = this.string.geometry.getAttribute('position') as THREE.BufferAttribute
-    attr.setXYZ(0, 0, -0.481, 0.155)
-    attr.setXYZ(1, local.x, local.y, local.z)
-    attr.setXYZ(2, 0, 0.481, 0.155)
-    attr.needsUpdate = true
-    this.string.geometry.computeBoundingSphere()
+      : new THREE.Vector3(0, 0, bowString.restZ)
+    setBowString(this.string, local)
     this.preview.visible = this.draw.drawing
     this.preview.position
       .copy(local)
@@ -227,7 +171,7 @@ export class XRBow {
         this.direction
           .clone()
           .applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()).invert()),
-        0.29,
+        bowString.arrowLead,
       )
     this.preview.quaternion
       .copy(this.root.getWorldQuaternion(new THREE.Quaternion()).invert())

@@ -131,6 +131,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Math.min`
 - `Number`
+- `Number.isFinite`
 - `actionChordHeld`
 - `axis`
 - `document.entities.find`
@@ -148,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.strongest
 
-[Implementation, line 116](../../../../src/runtime/input.ts#L116)
+[Implementation, line 122](../../../../src/runtime/input.ts#L122)
 
 ```ts
 strongest(...values: number[]): inferred by TypeScript; see implementation
@@ -158,29 +159,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `values.reduce`
 
-## GameInput.read.strongest.callback@117
+## GameInput.read.strongest.callback@123
 
-[Implementation, line 117](../../../../src/runtime/input.ts#L117)
+[Implementation, line 123](../../../../src/runtime/input.ts#L123)
 
 ```ts
-callback@117(a, b): inferred by TypeScript; see implementation
+callback@123(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
 
-## GameInput.read.callback@126
+## GameInput.read.callback@132
 
-[Implementation, line 126](../../../../src/runtime/input.ts#L126)
+[Implementation, line 132](../../../../src/runtime/input.ts#L132)
 
 ```ts
-callback@126(e): inferred by TypeScript; see implementation
+callback@132(e): inferred by TypeScript; see implementation
 ```
 
 ## GameInput.read.held
 
-[Implementation, line 128](../../../../src/runtime/input.ts#L128)
+[Implementation, line 134](../../../../src/runtime/input.ts#L134)
 
 ```ts
 held(action: Parameters<typeof actionHeld>[1]): inferred by TypeScript; see implementation
@@ -193,7 +194,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameInput.read.axis
 
-[Implementation, line 130](../../../../src/runtime/input.ts#L130)
+[Implementation, line 136](../../../../src/runtime/input.ts#L136)
 
 ```ts
 axis(positive: Parameters<typeof actionAxis>[1], negative: Parameters<typeof actionAxis>[2]): inferred by TypeScript; see implementation

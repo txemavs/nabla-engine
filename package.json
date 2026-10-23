@@ -1,6 +1,6 @@
 {
   "name": "@nabla/engine",
-  "version": "0.3.1",
+  "version": "0.3.9",
   "description": "Independent scene, simulation and editing foundation for Nabla applications",
   "type": "module",
   "main": "./dist/index.js",
@@ -51,6 +51,14 @@
       "types": "./dist/simulation/physics-api.d.ts",
       "import": "./dist/simulation/physics-api.js"
     },
+    "./net": {
+      "types": "./dist/net/index.d.ts",
+      "import": "./dist/net/index.js"
+    },
+    "./character": {
+      "types": "./dist/character/index.d.ts",
+      "import": "./dist/character/index.js"
+    },
     "./vehicles/boat": {
       "types": "./dist/simulation/vehicles/boat.d.ts",
       "import": "./dist/simulation/vehicles/boat.js"
@@ -90,6 +98,30 @@
     "./runtime/splash": {
       "types": "./dist/runtime/splash.d.ts",
       "import": "./dist/runtime/splash.js"
+    },
+    "./runtime/settings-scope": {
+      "types": "./dist/runtime/settings-scope.d.ts",
+      "import": "./dist/runtime/settings-scope.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.js"
+    },
+    "./pwa": {
+      "types": "./dist/pwa/index.d.ts",
+      "import": "./dist/pwa/index.js"
+    },
+    "./runtime/pwa-install": {
+      "types": "./dist/runtime/pwa-install.d.ts",
+      "import": "./dist/runtime/pwa-install.js"
+    },
+    "./runtime/main-menu": {
+      "types": "./dist/runtime/main-menu.d.ts",
+      "import": "./dist/runtime/main-menu.js"
+    },
+    "./runtime/corner-buttons": {
+      "types": "./dist/runtime/corner-buttons.d.ts",
+      "import": "./dist/runtime/corner-buttons.js"
     },
     "./runtime/quality-preset": {
       "types": "./dist/runtime/quality-preset.d.ts",
@@ -234,6 +266,10 @@
     "./xr/ui": {
       "types": "./dist/runtime/xr/ui.d.ts",
       "import": "./dist/runtime/xr/ui.js"
+    },
+    "./combat": {
+      "types": "./dist/simulation/combat/damage.d.ts",
+      "import": "./dist/simulation/combat/damage.js"
     }
   },
   "imports": {

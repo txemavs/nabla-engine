@@ -6,7 +6,7 @@
 
 ## Module dependencies
 
-- `./interface-theme.js`
+- `../ui/theme.js`
 - `three`
 
 ## targetScore

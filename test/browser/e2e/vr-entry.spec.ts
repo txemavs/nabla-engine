@@ -1,71 +1,53 @@
-import { test, expect } from '@playwright/test'
-test('PC VR entry appears before the clock only with ?vr=pc and immersive VR support', async ({
-  page,
-}) => {
-  await page.route('**/vr-entry-check?vr=pc', (r) =>
-    r.fulfill({
-      contentType: 'text/html',
-      body: '<div id="euskadi-clock-group"><span id="clock">12:00</span></div>',
-    }),
-  )
-  await page.goto('/vr-entry-check?vr=pc')
-  await page.evaluate(async (root) => {
-    const system = new EventTarget() as any
-    system.isSessionSupported = async () => true
-    Object.defineProperty(navigator, 'xr', { configurable: true, value: system })
-    const { mountVREntry } = await import(`/@fs/${root}/game/vr-entry.ts`)
-    // XR code loads on demand: the runtime hands the XR system out through loadXR().
-    const xr = {
-      enter: async () => {
-        document.body.dataset.entered = 'true'
-      },
-    }
-    mountVREntry({ loadXR: async () => xr } as any)
-  }, process.cwd())
-  await expect(page.locator('#euskadi-clock-group > :first-child')).toHaveAttribute(
-    'id',
-    'euskadi-enter-vr',
-  )
-  await page.getByRole('button', { name: 'Entrar en realidad virtual' }).click()
-  await expect(page.locator('body')).toHaveAttribute('data-entered', 'true')
-  await page.evaluate(() => {
-    ;(navigator.xr as any).isSessionSupported = async () => false
-    navigator.xr!.dispatchEvent(new Event('devicechange'))
-  })
-  await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
-})
+import { test, expect, type Page } from '@playwright/test'
 
-test('the normal game never touches navigator.xr', async ({ page }) => {
+async function mount(page: Page, supported: boolean) {
   await page.route('**/vr-entry-check', (r) =>
-    r.fulfill({
-      contentType: 'text/html',
-      body: '<div id="euskadi-clock-group"><span id="clock">12:00</span></div>',
-    }),
+    r.fulfill({ contentType: 'text/html', body: '<canvas id="game-canvas"></canvas>' }),
   )
   await page.goto('/vr-entry-check')
-  const touched = await page.evaluate(async (root) => {
-    let reads = 0
-    Object.defineProperty(navigator, 'xr', {
-      configurable: true,
-      get() {
-        reads++
-        return undefined
-      },
-    })
-    const { mountVREntry } = await import(`/@fs/${root}/game/vr-entry.ts`)
-    mountVREntry(
-      new Proxy(
-        {},
-        {
-          get() {
-            throw new Error('touched the runtime')
-          },
+  return page.evaluate(
+    async ({ root, supported }) => {
+      let probes = 0
+      const system = new EventTarget() as any
+      system.isSessionSupported = async () => {
+        probes++
+        return supported
+      }
+      Object.defineProperty(navigator, 'xr', { configurable: true, value: system })
+      const { mountVREntry } = await import(`/@fs/${root}/game/vr-entry.ts`)
+      const xr = {
+        enter: async () => {
+          document.body.dataset.entered = 'true'
         },
-      ) as any,
-    )
-    await new Promise((resolve) => setTimeout(resolve, 200))
-    return reads
-  }, process.cwd())
-  expect(touched).toBe(0)
-  await expect(page.locator('#euskadi-enter-vr')).toHaveCount(0)
+      }
+      mountVREntry({ loadXR: async () => xr } as any)
+      // The probe waits for the loaded, idle page: nothing touches navigator.xr during boot.
+      return probes
+    },
+    { root: process.cwd(), supported },
+  )
+}
+
+test('one casco button left of the clock when a headset is there; it enters PC VR', async ({
+  page,
+}) => {
+  expect(await mount(page, true)).toBe(0)
+  const button = page.locator('#nabla-corner-tr > .nabla-btn--icon[aria-label*="VR"]')
+  await expect(button).toBeVisible()
+  await expect(button).toHaveAttribute('data-order', '50')
+  await expect(page.locator('.nabla-btn[aria-label*="VR"]')).toHaveCount(1)
+  await button.click()
+  await expect(page.locator('body')).toHaveAttribute('data-entered', 'true')
+  expect(new URL(page.url()).searchParams.get('vr')).toBe('pc')
+  const mode = await page.evaluate(
+    async (root) => (await import(`/@fs/${root}/src/runtime/settings-scope.ts`)).activePlayMode(),
+    process.cwd(),
+  )
+  expect(mode).toBe('headset-pc')
+})
+
+test('no casco button without immersive VR support', async ({ page }) => {
+  await mount(page, false)
+  await page.waitForTimeout(2500)
+  await expect(page.locator('.nabla-btn[aria-label*="VR"]')).toHaveCount(0)
 })

@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /**
  * Terrain-folder example: play on real Atlas Z15 tiles served by any static host.
  *
@@ -168,7 +169,7 @@ export function parseSeaParam(raw: string): number {
 }
 
 /** True when the URL asks for the terrain-folder example. */
-export function wantsTerrain(search: string = location.search): boolean {
+export function wantsTerrain(search: string = pageSearch()): boolean {
   const params = new URLSearchParams(search)
   return params.has('terrain') || params.has('z15') || params.get('example') === 'z15'
 }
@@ -182,7 +183,20 @@ const finite = (params: URLSearchParams, key: string): number | undefined => {
 }
 
 /** Parse the URL. Errors are Spanish because they are shown to the player. */
-export function parseTerrainConfig(search: string = location.search): TerrainConfig {
+/**
+ * `?location=<lon>,<lat>` (longitude first, decimal degrees): a session start override that wins
+ * over `lat`/`lon`, `ll` and `tile`, so hosts that prepend their own start (the closed Euskadi demo)
+ * can still be sent elsewhere. Anything not two finite in-range numbers is ignored (undefined).
+ */
+export function parseLocationOverride(search: string = pageSearch()): LatLon | undefined {
+  const raw = new URLSearchParams(search).get('location')
+  const match = raw?.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/)
+  if (!match) return undefined
+  const point = { latitude: Number(match[2]), longitude: Number(match[1]) }
+  return isValidLatLon(point) ? point : undefined
+}
+
+export function parseTerrainConfig(search: string = pageSearch()): TerrainConfig {
   const params = new URLSearchParams(search)
   const raw = params.get('terrain') ?? params.get('z15')
   if (raw === null || raw.trim() === '')
@@ -221,6 +235,7 @@ export function parseTerrainConfig(search: string = location.search): TerrainCon
       if (!isValidLatLon(point))
         throw new Error('lat/lon fuera de rango (latitud ±85,05°, longitud ±180°)')
     }
+    point = parseLocationOverride(search) ?? point
     if (point) {
       start = point
       tile = tileOffsetFromGeo(point).tile

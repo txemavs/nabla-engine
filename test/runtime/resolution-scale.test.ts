@@ -22,7 +22,7 @@ describe('display resolution modes', () => {
       balanced: 1,
       custom: 1.5,
       low: 0.5,
-      mobile: 0.45,
+      mobile: 0.5,
       minimal: 0.4,
     })
     for (const [preset, scale] of Object.entries(presetResolutionScales))

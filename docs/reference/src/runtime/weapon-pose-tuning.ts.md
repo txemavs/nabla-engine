@@ -8,12 +8,20 @@
 
 - `../config/gameplay-tuning.js`
 
-## normalizeWeaponPoses
+## weaponPoseStorageKey
 
-[Implementation, line 28](../../../../src/runtime/weapon-pose-tuning.ts#L28)
+[Implementation, line 32](../../../../src/runtime/weapon-pose-tuning.ts#L32)
 
 ```ts
-normalizeWeaponPoses(value: Partial<WeaponPoseTuning> = {}): WeaponPoseTuning
+weaponPoseStorageKey(weaponId: string): string
+```
+
+## normalizeWeaponPoses
+
+[Implementation, line 34](../../../../src/runtime/weapon-pose-tuning.ts#L34)
+
+```ts
+normalizeWeaponPoses(value: PartialWeaponPoses = {}, base: WeaponPoseTuning = weaponPoseDefaults): WeaponPoseTuning
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -7,5 +7,7 @@
 ## Module dependencies
 
 - `./library.js`
+- `./held-library.js`
+- `./slots.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

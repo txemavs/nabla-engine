@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mobileWeaponUI.button
 
-[Implementation, line 17](../../../game/ar-mobile-weapon.ts#L17)
+[Implementation, line 15](../../../game/ar-mobile-weapon.ts#L15)
 
 ```ts
 button(label: string, symbol: string, run: () => void): inferred by TypeScript; see implementation
@@ -41,20 +41,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `bar.append`
 - `document.createElement`
 
-## mobileWeaponUI.callback@30
+## mobileWeaponUI.callback@26
 
-[Implementation, line 30](../../../game/ar-mobile-weapon.ts#L30)
+[Implementation, line 26](../../../game/ar-mobile-weapon.ts#L26)
 
 ```ts
-callback@30(): inferred by TypeScript; see implementation
+callback@26(): inferred by TypeScript; see implementation
 ```
 
-## mobileWeaponUI.callback@31
+## mobileWeaponUI.callback@27
 
-[Implementation, line 31](../../../game/ar-mobile-weapon.ts#L31)
+[Implementation, line 27](../../../game/ar-mobile-weapon.ts#L27)
 
 ```ts
-callback@31(e): inferred by TypeScript; see implementation
+callback@27(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -63,64 +63,64 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `e.preventDefault`
 - `fire.setPointerCapture`
 
-## mobileWeaponUI.callback@36
+## mobileWeaponUI.callback@32
 
-[Implementation, line 36](../../../game/ar-mobile-weapon.ts#L36)
+[Implementation, line 32](../../../game/ar-mobile-weapon.ts#L32)
 
 ```ts
-callback@36(): inferred by TypeScript; see implementation
+callback@32(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `actions.fire`
 
+## mobileWeaponUI.callback@34
+
+[Implementation, line 34](../../../game/ar-mobile-weapon.ts#L34)
+
+```ts
+callback@34(): inferred by TypeScript; see implementation
+```
+
 ## mobileWeaponUI.callback@38
 
 [Implementation, line 38](../../../game/ar-mobile-weapon.ts#L38)
 
 ```ts
-callback@38(): inferred by TypeScript; see implementation
-```
-
-## mobileWeaponUI.callback@42
-
-[Implementation, line 42](../../../game/ar-mobile-weapon.ts#L42)
-
-```ts
-callback@42(e): inferred by TypeScript; see implementation
+callback@38(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `move.setPointerCapture`
 
-## mobileWeaponUI.callback@48
+## mobileWeaponUI.callback@44
 
-[Implementation, line 48](../../../game/ar-mobile-weapon.ts#L48)
+[Implementation, line 44](../../../game/ar-mobile-weapon.ts#L44)
 
 ```ts
-callback@48(e): inferred by TypeScript; see implementation
+callback@44(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `actions.move`
 
-## mobileWeaponUI.callback@57
+## mobileWeaponUI.callback@53
 
-[Implementation, line 57](../../../game/ar-mobile-weapon.ts#L57)
+[Implementation, line 53](../../../game/ar-mobile-weapon.ts#L53)
 
 ```ts
-callback@57(): inferred by TypeScript; see implementation
+callback@53(): inferred by TypeScript; see implementation
 ```
 
-## mobileWeaponUI.callback@65
+## mobileWeaponUI.callback@60
 
-[Implementation, line 65](../../../game/ar-mobile-weapon.ts#L65)
+[Implementation, line 60](../../../game/ar-mobile-weapon.ts#L60)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@60(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -1,6 +1,10 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'meshoptimizer'
 import { AssetPack } from '../render/entity/asset-pack.js'
+import { recolor } from '../render/entity/player-body.js'
+import type { ActorHandAssets } from './actor.js'
+import { buildActorHand, poseActorHand, type ActorHand, type HandSide } from './xr-actor-hand.js'
 
 interface HandPose {
   name: string
@@ -38,6 +42,10 @@ export class XRControllerHand {
       }[][]
     | null = null
   private loadVersion = 0
+  private actorVersion = 0
+  /** The worn actor's hands (both sides; the controller's handedness picks one). */
+  private actorHands: Partial<Record<HandSide, ActorHand>> = {}
+  private actorSource: THREE.Object3D | null = null
   private disposed = false
 
   /** GLB contract: nablaHand extras map five fingers to named bones and open/closed quaternions.
@@ -142,6 +150,50 @@ export class XRControllerHand {
     this.root.add(scene)
   }
 
+  /**
+   * Wear the actor's hands (see `actorHandAssets`): recoloured with its colour slots and swapped
+   * in place of the glove; a later call replaces them (live actor change). Throws, keeping the
+   * current hands, when the GLB has no mixamorig hand.
+   */
+  async loadActorModel(assets: ActorHandAssets): Promise<void> {
+    const version = ++this.actorVersion
+    const buffer = await new AssetPack().read(assets.model)
+    // Gepeto's avatar GLBs are meshopt-compressed.
+    await MeshoptDecoder.ready
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
+    const base = assets.model.slice(0, assets.model.lastIndexOf('/') + 1)
+    const { scene } = buffer
+      ? await loader.parseAsync(buffer, base)
+      : await loader.loadAsync(assets.model)
+    if (this.disposed || version !== this.actorVersion) return this.disposeModel(scene)
+    if (assets.colors) recolor(scene, assets.colors)
+    const left = buildActorHand(scene, 'left')
+    const right = buildActorHand(scene, 'right')
+    if (!left || !right) {
+      this.disposeModel(scene)
+      throw new Error(`No mixamorig hands in ${assets.model}`)
+    }
+    this.clearActorHands()
+    this.actorSource = scene
+    this.actorHands = { left, right }
+    for (const hand of [left, right]) {
+      hand.root.visible = false
+      this.root.add(hand.root)
+    }
+  }
+
+  private clearActorHands(): void {
+    for (const hand of Object.values(this.actorHands)) hand.root.removeFromParent()
+    // Cut geometries are per hand; shared materials/textures belong to the source.
+    for (const hand of Object.values(this.actorHands))
+      hand.root.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.geometry.dispose()
+      })
+    if (this.actorSource) this.disposeModel(this.actorSource)
+    this.actorSource = null
+    this.actorHands = {}
+  }
+
   private disposeModel(model: THREE.Object3D): void {
     model.removeFromParent()
     const textures = new Set<THREE.Texture>()
@@ -221,7 +273,9 @@ export class XRControllerHand {
   update(source: XRInputSource | null, tracked: boolean): void {
     this.root.visible = tracked && !!source && !source.hand && source.handedness !== 'none'
     if (!this.root.visible) return
-    this.root.scale.x = source!.handedness === 'left' ? -1 : 1
+    const side: HandSide = source!.handedness === 'left' ? 'left' : 'right'
+    const actor = this.actorHands[side]
+    this.root.scale.x = side === 'left' && !actor ? -1 : 1
     const amount = (i: number) => {
       const b = source!.gamepad?.buttons[i]
       return THREE.MathUtils.clamp(b?.value ?? (b?.pressed ? 1 : 0), 0, 1)
@@ -252,6 +306,12 @@ export class XRControllerHand {
         if (i === 4) joint.rotation.z = curl * (j === 0 ? 0.7 : 0)
       }),
     )
+    if (actor) {
+      for (const child of this.root.children) child.visible = child === actor.root
+      if (this.indexTip.parent !== actor.tip) actor.tip.add(this.indexTip)
+      poseActorHand(actor, grip, trigger)
+      return
+    }
     this.thumb.rotation.y = 0.8 - grip * 0.65
     this.thumb.rotation.z = -grip * 0.5
   }
@@ -259,6 +319,7 @@ export class XRControllerHand {
     this.disposed = true
     ++this.loadVersion
     if (this.model) this.disposeModel(this.model)
+    this.clearActorHands()
     this.root.removeFromParent()
     for (const geometry of this.geometries) geometry.dispose()
     this.material.dispose()

@@ -1,14 +1,15 @@
 /** Ajustes → Opciones → Sonido: General, Motor and Música sliders plus a music mute. Saved by the runtime. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 type Mix = GameRuntime['audioMix']
 type SliderKey = 'master' | 'engine' | 'music'
 
-const SLIDERS: ReadonlyArray<readonly [key: SliderKey, id: string, label: string]> = [
-  ['master', 'sound-master', 'General'],
-  ['engine', 'sound-engine', 'Motor'],
-  ['music', 'sound-music', 'Música'],
+const SLIDERS: ReadonlyArray<readonly [key: SliderKey, id: string, labelKey: string]> = [
+  ['master', 'sound-master', 'settings.sound-master'],
+  ['engine', 'sound-engine', 'settings.engine'],
+  ['music', 'sound-music', 'settings.sound-music'],
 ]
 
 /** Percentage label for a 0..1 slider value. */
@@ -19,7 +20,7 @@ export function soundPercent(value: number): string {
 export function bindSoundControls(
   runtime: Pick<GameRuntime, 'audioMix' | 'setAudioMix'>,
 ): HTMLFieldSetElement {
-  const group = menuSection('settings-sound', 'Sonido')
+  const group = menuSection('settings-sound', t('settings.sound'))
   const outputs = new Map<SliderKey, [HTMLInputElement, HTMLOutputElement]>()
   for (const [key, id, text] of SLIDERS) {
     const label = document.createElement('label')
@@ -35,7 +36,7 @@ export function bindSoundControls(
       const mix = runtime.setAudioMix({ [key]: Number(slider.value) / 100 } as Partial<Mix>)
       output.textContent = soundPercent(mix[key])
     })
-    label.append(`${text} `, slider, ' ', output)
+    label.append(`${t(text)} `, slider, ' ', output)
     group.append(label)
     outputs.set(key, [slider, output])
   }
@@ -44,7 +45,7 @@ export function bindSoundControls(
   mute.type = 'checkbox'
   mute.id = 'sound-music-mute'
   mute.addEventListener('change', () => runtime.setAudioMix({ musicMuted: mute.checked }))
-  muteLabel.append(mute, ' Silenciar música')
+  muteLabel.append(mute, ' ' + t('settings.mute-music'))
   group.append(muteLabel)
   const mix = runtime.audioMix
   for (const [key, [slider, output]] of outputs) {

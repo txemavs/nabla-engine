@@ -4,19 +4,18 @@
 
 [Source](../../../game/ar-mode.ts)
 
-A user-selected mode wins over the pre-session hardware hint. Capabilities are checked separately.
-
 ## Module dependencies
 
+- `./page-query.js`
 
 ## arMode
 
-[Implementation, line 2](../../../game/ar-mode.ts#L2)
+[Implementation, line 3](../../../game/ar-mode.ts#L3)
 
 A user-selected mode wins over the pre-session hardware hint. Capabilities are checked separately.
 
 ```ts
-arMode(search = location.search, ua = navigator.userAgent): 'mobile' | 'headset'
+arMode(search = pageSearch(), ua = navigator.userAgent): 'mobile' | 'headset'
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -25,3 +24,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `/Quest|Oculus|PicoBrowser|PICO/i.test`
 - `URLSearchParams`
 - `new URLSearchParams(search).get`
+- `pageSearch`

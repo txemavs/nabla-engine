@@ -95,18 +95,13 @@ animation. The ramp changes pose immediately rather than animating gradually.
 The gear icon (top right) opens **Ajustes**, a tabbed window; **Esc** or «Cerrar» closes it.
 A tab with nothing to show in the current game is hidden (Posición and Capas on the flat demo).
 
-| Tab               | Contents                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Planeta**       | Hora (clock, speed, «Ahora») first; sky / sun / sea / cloud switches; cloud amount and pressure, sun flare; sea level and tide |
-| **Posición**      | current `lat, lon`, «Copiar posición», «Ir a latitud, longitud»                                                                |
-| **Calidad**       | quality profile, FPS limit and resolution scale; «Asfalto» (asphalt contrast)                                                  |
-| **Capas**         | map layers: «Carretera», «Edificios y techos», «Foto del suelo»                                                                |
-| **Vehículos**     | add a vehicle or object; «Volante» and «Espejos» (below)                                                                       |
-| **Opciones**      | «Cámara cinematográfica al volcar», «R: reaparecer en la vía más cercana», «Nombres de poblaciones»                            |
-| **Configuración** | «Valores del planeta» (config text + «Copiar config»); «Terreno» (source, cache, missing cells)                                |
+The tabs and their sections are listed in [Settings menu](settings-menu.md#navigation); the
+placement table is `SECTION_TABS` in `game/settings-hud.ts`. «Reaparecer en la vía más cercana (Y)»
+(Ajustes → Conducción) changes what **Y** (`recover`) does: right the vehicle on the nearest road, or
+where it is.
 
 Every control keeps its storage key, URL parameter and host default (`NABLA_BOOT`); only its
-place in the window changed. The placement table is `SECTION_TABS` in `game/settings-hud.ts`.
+place in the window changed.
 
 ## Steering wheel position
 

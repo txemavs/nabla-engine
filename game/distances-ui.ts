@@ -16,6 +16,7 @@ import {
 } from '../src/runtime/visibility-settings.js'
 import { browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 type Field = keyof VisibilitySettings
 
@@ -29,25 +30,25 @@ export const distanceRows: ReadonlyArray<{
   label: string
   format: (value: number) => string
 }> = [
-  { field: 'fog', id: 'distance-fog', label: 'Niebla', format: km },
+  { field: 'fog', id: 'distance-fog', label: t('settings.fog'), format: km },
   {
     field: 'roads',
     id: 'distance-roads',
-    label: 'Carreteras',
-    format: (value) => (value === 0 ? 'Ocultas' : km(value)),
+    label: t('settings.roads'),
+    format: (value) => (value === 0 ? t('settings.hidden-f') : km(value)),
   },
   {
     field: 'buildings',
     id: 'distance-buildings',
-    label: 'Edificios',
-    format: (value) => (value ? 'Visibles' : 'Ocultos'),
+    label: t('settings.buildings'),
+    format: (value) => (value ? t('settings.visible') : t('settings.hidden-m')),
   },
-  { field: 'collisions', id: 'distance-collisions', label: 'Colisiones', format: km },
+  { field: 'collisions', id: 'distance-collisions', label: t('settings.collisions'), format: km },
   {
     field: 'relief',
     id: 'distance-relief',
-    label: 'Relieve lejano',
-    format: (value) => `${2 * value + 1}×${2 * value + 1} celdas`,
+    label: t('settings.far-relief'),
+    format: (value) => t('settings.cells', { n: 2 * value + 1 }),
   },
 ]
 
@@ -68,7 +69,7 @@ export function bindDistances(
   runtime: GameRuntime,
   storage: Pick<Storage, 'getItem' | 'setItem'> | undefined = browserStorage(),
 ): HTMLElement {
-  const section = menuSection('settings-distances', 'Distancias')
+  const section = menuSection('settings-distances', t('settings.distances'))
   const live = runtime.visibility
   let remembered: Partial<VisibilitySettings> = {}
   try {
@@ -79,7 +80,7 @@ export function bindDistances(
   if (Object.keys(remembered).length) runtime.setVisibility(remembered)
 
   // Existing controls first: terrain draw distance (a km list) and ground detail (cells ≈ km).
-  adopt(section, 'terrain-cache-distance', 'Distancia de dibujo del terreno')
+  adopt(section, 'terrain-cache-distance', t('settings.terrain-draw-distance'))
   for (const row of distanceRows) {
     const select = document.createElement('select')
     select.id = row.id
@@ -103,9 +104,7 @@ export function bindDistances(
   }
   adopt(section, 'ground-detail')
   const note = document.createElement('p')
-  note.textContent =
-    'Cada perfil de calidad trae sus distancias; lo que elijas aquí se recuerda para ese perfil. ' +
-    'Más distancia cuesta más fotogramas. Los valores se aplican al momento.'
+  note.textContent = t('settings.distances-note')
   section.append(note)
   return section
 }

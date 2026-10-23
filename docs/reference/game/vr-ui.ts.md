@@ -6,12 +6,16 @@
 
 ## Module dependencies
 
+- `./page-query.js`
+- `../src/runtime/actor.js`
 - `@nabla/engine/xr/ui`
 - `@nabla/engine/runtime/browser`
+- `@nabla/engine/i18n`
+- `../src/runtime/main-menu.js`
 
 ## isImmersiveEntry
 
-[Implementation, line 5](../../../game/vr-ui.ts#L5)
+[Implementation, line 9](../../../game/vr-ui.ts#L9)
 
 An explicit XR entry: the XR page, the demo, or any page opened with `?xr`.
 
@@ -22,11 +26,12 @@ isImmersiveEntry(): boolean
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URLSearchParams`
-- `new URLSearchParams(location.search).has`
+- `new URLSearchParams(pageSearch()).has`
+- `pageSearch`
 
 ## preloadVR
 
-[Implementation, line 17](../../../game/vr-ui.ts#L17)
+[Implementation, line 21](../../../game/vr-ui.ts#L21)
 
 Start loading the XR code as soon as the runtime exists on an explicit XR entry, so the XR
 system is ready before `play()` resolves (as when it was bundled statically).
@@ -41,12 +46,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.loadXR`
 - `runtime.loadXR().catch`
 
-## preloadVR.callback@19
+## preloadVR.callback@23
 
-[Implementation, line 19](../../../game/vr-ui.ts#L19)
+[Implementation, line 23](../../../game/vr-ui.ts#L23)
 
 ```ts
-callback@19(error): inferred by TypeScript; see implementation
+callback@23(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -55,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindVR
 
-[Implementation, line 23](../../../game/vr-ui.ts#L23)
+[Implementation, line 27](../../../game/vr-ui.ts#L27)
 
 Mount immersive controls only for an explicit XR entry; desktop keeps its own UI.
 
@@ -68,24 +73,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `isImmersiveEntry`
 - `mountVR`
 
-## bindVR.callback@30
+## bindVR.callback@34
 
-[Implementation, line 30](../../../game/vr-ui.ts#L30)
+[Implementation, line 34](../../../game/vr-ui.ts#L34)
 
 ```ts
-callback@30(): inferred by TypeScript; see implementation
+callback@34(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `mountVR`
 
-## bindVR.callback@31
+## bindVR.callback@35
 
-[Implementation, line 31](../../../game/vr-ui.ts#L31)
+[Implementation, line 35](../../../game/vr-ui.ts#L35)
 
 ```ts
-callback@31(error): inferred by TypeScript; see implementation
+callback@35(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -94,7 +99,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountVR
 
-[Implementation, line 34](../../../game/vr-ui.ts#L34)
+[Implementation, line 38](../../../game/vr-ui.ts#L38)
 
 ```ts
 mountVR(runtime: GameRuntime): void
@@ -103,53 +108,71 @@ mountVR(runtime: GameRuntime): void
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URLSearchParams`
+- `actorHandAssets`
+- `addGameMenuEntries`
 - `bindXRQuality`
 - `document.body.append`
 - `document.body.classList.add`
 - `document.createElement`
 - `document.getElementById`
-- `document.head.append`
 - `errorStatus.setAttribute`
-- `new URLSearchParams(location.search).has`
+- `new URLSearchParams(pageSearch()).has`
+- `pageSearch`
 - `runtime.xr.enableCalibrationScreen`
 - `runtime.xr.enableStats`
-- `runtime.xr.setHandModel`
-- `runtime.xr.setHandModel('/library/hands/fps-hand-rigged.glb').catch`
 - `screen.navigate`
+- `t`
 - `toolbar.append`
 - `toolbar.setAttribute`
 
-## mountVR.callback@36
+## mountVR.callback@43
 
-[Implementation, line 36](../../../game/vr-ui.ts#L36)
+[Implementation, line 43](../../../game/vr-ui.ts#L43)
 
 ```ts
-callback@36(error): inferred by TypeScript; see implementation
+callback@43(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `runtime.xr.setHandModel`
+
+## mountVR.callback@44
+
+[Implementation, line 44](../../../game/vr-ui.ts#L44)
+
+```ts
+callback@44(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `console.warn`
+- `t`
 
-## mountVR.callback@60
+## mountVR.callback@58
 
-[Implementation, line 60](../../../game/vr-ui.ts#L60)
-
-```ts
-callback@60(text): inferred by TypeScript; see implementation
-```
-
-## mountVR.callback@63
-
-[Implementation, line 63](../../../game/vr-ui.ts#L63)
+[Implementation, line 58](../../../game/vr-ui.ts#L58)
 
 ```ts
-callback@63(): inferred by TypeScript; see implementation
+callback@58(text): inferred by TypeScript; see implementation
 ```
+
+## mountVR.callback@61
+
+[Implementation, line 61](../../../game/vr-ui.ts#L61)
+
+```ts
+callback@61(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
 
 ## mountVR.progress
 
-[Implementation, line 68](../../../game/vr-ui.ts#L68)
+[Implementation, line 66](../../../game/vr-ui.ts#L66)
 
 ```ts
 progress(text: string): inferred by TypeScript; see implementation
@@ -157,7 +180,7 @@ progress(text: string): inferred by TypeScript; see implementation
 
 ## mountVR.loadTerrain
 
-[Implementation, line 71](../../../game/vr-ui.ts#L71)
+[Implementation, line 69](../../../game/vr-ui.ts#L69)
 
 ```ts
 loadTerrain(): Promise<void>
@@ -167,13 +190,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `String`
 - `URLSearchParams`
-- `new URLSearchParams(location.search).get`
+- `new URLSearchParams(pageSearch()).get`
+- `pageSearch`
 - `progress`
 - `runtime.loadNearestZ15`
 
 ## mountVR.leave
 
-[Implementation, line 85](../../../game/vr-ui.ts#L85)
+[Implementation, line 83](../../../game/vr-ui.ts#L83)
 
 ```ts
 leave(): inferred by TypeScript; see implementation
@@ -183,17 +207,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `runtime.xr.exit`
 
-## mountVR.callback@88
+## mountVR.callback@86
 
-[Implementation, line 88](../../../game/vr-ui.ts#L88)
+[Implementation, line 86](../../../game/vr-ui.ts#L86)
 
 ```ts
-callback@88(): inferred by TypeScript; see implementation
+callback@86(): inferred by TypeScript; see implementation
 ```
 
-## mountVR.callback@88.run
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 92](../../../game/vr-ui.ts#L92)
+- `t`
+
+## mountVR.callback@86.run
+
+[Implementation, line 90](../../../game/vr-ui.ts#L90)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -203,9 +231,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `loadTerrain`
 
-## mountVR.callback@88.run
+## mountVR.callback@86.run
 
-[Implementation, line 99](../../../game/vr-ui.ts#L99)
+[Implementation, line 97](../../../game/vr-ui.ts#L97)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -215,33 +243,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `leave`
 
-## mountVR.callback@88.run.callback@101
+## mountVR.callback@86.run.callback@99
 
-[Implementation, line 101](../../../game/vr-ui.ts#L101)
+[Implementation, line 99](../../../game/vr-ui.ts#L99)
 
 ```ts
-callback@101(): inferred by TypeScript; see implementation
+callback@99(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `location.assign`
 
-## mountVR.callback@88.run.callback@102
+## mountVR.callback@86.run.callback@100
 
-[Implementation, line 102](../../../game/vr-ui.ts#L102)
+[Implementation, line 100](../../../game/vr-ui.ts#L100)
 
 ```ts
-callback@102(error): inferred by TypeScript; see implementation
+callback@100(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## mountVR.callback@88.run
+## mountVR.callback@86.run
 
-[Implementation, line 110](../../../game/vr-ui.ts#L110)
+[Implementation, line 108](../../../game/vr-ui.ts#L108)
 
 ```ts
 run(): inferred by TypeScript; see implementation
@@ -252,74 +280,82 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `leave`
 - `leave().catch`
 
-## mountVR.callback@88.run.callback@111
+## mountVR.callback@86.run.callback@109
 
-[Implementation, line 111](../../../game/vr-ui.ts#L111)
+[Implementation, line 109](../../../game/vr-ui.ts#L109)
 
 ```ts
-callback@111(error): inferred by TypeScript; see implementation
+callback@109(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## mountVR.callback@131
+## mountVR.callback@130
 
-[Implementation, line 131](../../../game/vr-ui.ts#L131)
+[Implementation, line 130](../../../game/vr-ui.ts#L130)
 
 ```ts
-callback@131(): inferred by TypeScript; see implementation
+callback@130(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.xr.toggleMenu`
 
-## mountVR.callback@149
+## mountVR.callback@151
 
-[Implementation, line 149](../../../game/vr-ui.ts#L149)
+[Implementation, line 151](../../../game/vr-ui.ts#L151)
 
 ```ts
-callback@149(supported): inferred by TypeScript; see implementation
+callback@151(supported): inferred by TypeScript; see implementation
 ```
 
-## mountVR.callback@153
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 153](../../../game/vr-ui.ts#L153)
+- `t`
+
+## mountVR.callback@155
+
+[Implementation, line 155](../../../game/vr-ui.ts#L155)
 
 ```ts
-callback@153(): inferred by TypeScript; see implementation
+callback@155(): inferred by TypeScript; see implementation
 ```
 
-## mountVR.callback@156
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 156](../../../game/vr-ui.ts#L156)
+- `t`
+
+## mountVR.callback@158
+
+[Implementation, line 158](../../../game/vr-ui.ts#L158)
 
 ```ts
-callback@156(): inferred by TypeScript; see implementation
+callback@158(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.startMusic`
 
-## mountVR.callback@156.callback@161
+## mountVR.callback@158.callback@163
 
-[Implementation, line 161](../../../game/vr-ui.ts#L161)
+[Implementation, line 163](../../../game/vr-ui.ts#L163)
 
 ```ts
-callback@161(error: unknown): inferred by TypeScript; see implementation
+callback@163(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 
-## mountVR.callback@156.callback@164
+## mountVR.callback@158.callback@166
 
-[Implementation, line 164](../../../game/vr-ui.ts#L164)
+[Implementation, line 166](../../../game/vr-ui.ts#L166)
 
 ```ts
-callback@164(): inferred by TypeScript; see implementation
+callback@166(): inferred by TypeScript; see implementation
 ```

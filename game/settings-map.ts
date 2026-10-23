@@ -1,6 +1,7 @@
 /** Streaming overview uses the engine's existing tile states, without loading any extra cells. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import type { TileDiagnostic } from '../src/render/planet/debug.js'
+import { t } from '@nabla/engine/i18n'
 
 export function tileMapLayout(tiles: readonly TileDiagnostic[]) {
   if (!tiles.length) return []
@@ -22,30 +23,29 @@ export function tileMapLayout(tiles: readonly TileDiagnostic[]) {
   }))
 }
 const labels: Record<TileDiagnostic['state'], string> = {
-  visible: 'Visible',
-  resident: 'En memoria',
-  downloading: 'Pedida',
-  installing: 'Preparando',
-  planned: 'En espera',
-  retry: 'Reintento',
+  visible: t('map.visible'),
+  resident: t('map.in-memory'),
+  downloading: t('map.requested'),
+  installing: t('map.preparing'),
+  planned: t('map.waiting'),
+  retry: t('map.retry'),
 }
 export function createMapSection(doc: Document, runtime: Pick<GameRuntime, 'terrainTiles'>) {
   const root = doc.createElement('fieldset')
   root.id = 'settings-map'
   root.className = 'menu-section'
   const legend = doc.createElement('legend')
-  legend.textContent = 'Mapa'
+  legend.textContent = t('settings.map')
   const note = doc.createElement('p')
   note.className = 'settings-note'
-  note.textContent =
-    'Estados reales del streaming. Las texturas de las teselas se incorporarán en el siguiente paso.'
+  note.textContent = t('map.live-streaming-states-tile-textures-come-in-the')
   const summary = doc.createElement('p')
   summary.className = 'settings-map-legend'
   const map = doc.createElement('div')
   map.className = 'settings-tile-map'
-  map.setAttribute('aria-label', 'Teselas cargadas y pedidas')
+  map.setAttribute('aria-label', t('map.loaded-and-requested-tiles'))
   const empty = doc.createElement('p')
-  empty.textContent = 'No hay teselas cargadas ni pedidas en esta escena.'
+  empty.textContent = t('map.no-tiles-loaded-or-requested-in-this-scene')
   root.append(legend, note, summary, map, empty)
   let signature = ''
   const refresh = () => {

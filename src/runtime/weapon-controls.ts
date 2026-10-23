@@ -1,4 +1,5 @@
 import { controlsHint } from '../config/input-bindings.js'
+import { MAGAZINE_ACTION } from '../character/body-slots.js'
 import { GameToolbar } from './game-toolbar.js'
 /** On-screen weapon controls, available with mouse and touch. */
 export class WeaponControls {
@@ -11,9 +12,7 @@ export class WeaponControls {
     private readonly aim: (held: boolean) => void,
     toolbar?: GameToolbar,
   ) {
-    this.root.className = 'weapon-controls'
-    this.root.style.cssText =
-      'position:absolute;right:8px;top:220px;z-index:48;display:flex;flex-direction:column;gap:8px;pointer-events:auto;max-width:260px'
+    this.root.className = 'weapon-controls nabla-btn-group nabla-btn-group--column'
     const options = { signal: this.lifetime.signal }
     const aiming = (held: boolean) => {
       this.aiming = held
@@ -21,27 +20,26 @@ export class WeaponControls {
     }
     for (const [label, code] of [
       ['Apuntar', 'aim'],
-      [controlsHint({ mode: 'walk', weapon: true }, ['weapon.magazine']), 'weapon.magazine'],
+      [controlsHint({ mode: 'walk', weapon: true }, [MAGAZINE_ACTION]), MAGAZINE_ACTION],
       [controlsHint({ mode: 'walk', weapon: true }, ['weapon.slide']), 'weapon.slide'],
     ]) {
       const button = document.createElement('button')
       button.type = 'button'
       button.dataset.toolbarLabel =
-        code === 'aim' ? 'AIM' : code === 'weapon.magazine' ? 'MAG' : 'SLIDE'
+        code === 'aim' ? 'AIM' : code === MAGAZINE_ACTION ? 'MAG' : 'SLIDE'
       button.title = label
       button.setAttribute('aria-label', label)
       const icon =
         code === 'aim'
           ? '<circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/>'
-          : code === 'weapon.magazine'
+          : code === MAGAZINE_ACTION
             ? '<path d="M8 3h8v17H8zM10 7h4m-4 4h4m-4 4h4"/>'
             : '<path d="M4 8h16v7H4zM8 4L4 8l4 4m8 0l4 4-4 4"/>'
       button.innerHTML =
         '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         icon +
         '</svg>'
-      button.style.cssText =
-        'width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:1px solid var(--line,#444);border-radius:var(--radius,2px);background:var(--button,#252525);color:var(--ink,#eee);touch-action:none;cursor:pointer'
+      GameToolbar.styleButton(button)
       button.addEventListener(
         'pointerdown',
         (event) => {
@@ -75,7 +73,7 @@ export class WeaponControls {
     this.setActive(false)
   }
   setActive(active: boolean): void {
-    this.root.style.display = active ? 'flex' : 'none'
+    this.root.hidden = !active
     if (!active && this.aiming) {
       this.aiming = false
       this.aim(false)

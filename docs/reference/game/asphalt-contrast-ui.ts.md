@@ -4,17 +4,17 @@
 
 [Source](../../../game/asphalt-contrast-ui.ts)
 
-Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched).
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/render`
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 14](../../../game/asphalt-contrast-ui.ts#L14)
+[Implementation, line 16](../../../game/asphalt-contrast-ui.ts#L16)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -22,7 +22,7 @@ browserStorage(): StorageLike | undefined
 
 ## validContrast
 
-[Implementation, line 23](../../../game/asphalt-contrast-ui.ts#L23)
+[Implementation, line 25](../../../game/asphalt-contrast-ui.ts#L25)
 
 A finite number clamped to the engine range, or undefined for missing / invalid input.
 
@@ -39,13 +39,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveAsphaltContrast
 
-[Implementation, line 34](../../../game/asphalt-contrast-ui.ts#L34)
+[Implementation, line 36](../../../game/asphalt-contrast-ui.ts#L36)
 
 Start value: URL `?asphaltContrast=` (one visit) > the player's stored slider value > the host
 default (`NABLA_BOOT.asphaltContrast`) > 1 (unchanged).
 
 ```ts
-resolveAsphaltContrast(hostDefault: number | undefined, storage: StorageLike | undefined = browserStorage(), search: string = location.search): number
+resolveAsphaltContrast(hostDefault: number | undefined, storage: StorageLike | undefined = browserStorage(), search: string = pageSearch()): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,12 +53,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `URLSearchParams`
 - `browserStorage`
 - `new URLSearchParams(search).get`
+- `pageSearch`
 - `storage?.getItem`
 - `validContrast`
 
 ## bindAsphaltContrastSlider
 
-[Implementation, line 54](../../../game/asphalt-contrast-ui.ts#L54)
+[Implementation, line 56](../../../game/asphalt-contrast-ui.ts#L56)
 
 Slider «Contraste del asfalto» (×0.5–×2.5) plus «Por defecto», which returns to the host
 default and forgets the stored value. Changes apply live; the released value is stored.
@@ -79,11 +80,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `reset.addEventListener`
 - `show`
 - `slider.addEventListener`
+- `t`
 - `validContrast`
 
 ## bindAsphaltContrastSlider.show
 
-[Implementation, line 70](../../../game/asphalt-contrast-ui.ts#L70)
+[Implementation, line 72](../../../game/asphalt-contrast-ui.ts#L72)
 
 ```ts
 show(): inferred by TypeScript; see implementation
@@ -94,12 +96,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `runtime.asphaltContrast.toFixed`
 
-## bindAsphaltContrastSlider.callback@74
+## bindAsphaltContrastSlider.callback@76
 
-[Implementation, line 74](../../../game/asphalt-contrast-ui.ts#L74)
+[Implementation, line 76](../../../game/asphalt-contrast-ui.ts#L76)
 
 ```ts
-callback@74(): inferred by TypeScript; see implementation
+callback@76(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,12 +110,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.asphaltContrast.toFixed`
 - `runtime.setAsphaltContrast`
 
-## bindAsphaltContrastSlider.callback@78
+## bindAsphaltContrastSlider.callback@80
 
-[Implementation, line 78](../../../game/asphalt-contrast-ui.ts#L78)
+[Implementation, line 80](../../../game/asphalt-contrast-ui.ts#L80)
 
 ```ts
-callback@78(): inferred by TypeScript; see implementation
+callback@80(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -121,12 +123,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `storage?.setItem`
 
-## bindAsphaltContrastSlider.callback@88
+## bindAsphaltContrastSlider.callback@90
 
-[Implementation, line 88](../../../game/asphalt-contrast-ui.ts#L88)
+[Implementation, line 90](../../../game/asphalt-contrast-ui.ts#L90)
 
 ```ts
-callback@88(): inferred by TypeScript; see implementation
+callback@90(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -1,4 +1,5 @@
 import { touchCoordinates } from './touch-coordinates.js'
+import { installEngineStyles } from '../ui/styles.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 import { touchActionIcon } from './touch-icons.js'
 
@@ -35,38 +36,6 @@ export function flightFromMode2(pad: {
   }
 }
 
-const styles = `
-.touch-flight { display: none; position: absolute; inset: auto 8px 8px; z-index: 45;
- width: calc(100% - 16px); pointer-events: none; justify-content: space-between;
- align-items: flex-end; }
-.touch-flight > style { display: none; }
-.touch-flight-bar { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
- display: flex; flex-direction: row; justify-content: center; gap: 8px; pointer-events: none; }
-.touch-flight-col { pointer-events: auto; touch-action: none; user-select: none;
- display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.touch-flight-label { font: 10px/1 system-ui, sans-serif; letter-spacing: 0.08em;
- text-transform: uppercase; color: rgba(255, 187, 0, 0.75); }
-.touch-flight-stick { position: relative; width: min(28vw, 112px); height: min(28vw, 112px);
- border: 2px solid rgba(255, 187, 0, 0.35); border-radius: 50%;
- background: #111827aa; box-sizing: border-box; }
-.touch-flight-knob { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px;
- border-radius: 50%; background: #ffbb00; pointer-events: none;
- box-shadow: 0 0 10px rgba(255, 187, 0, 0.45); left: 50%; top: 50%; }
-.touch-flight button { pointer-events: auto; touch-action: none; user-select: none;
- min-height: 48px; min-width: 52px; width: 52px; height: 52px; padding: 0;
- display: inline-flex; align-items: center; justify-content: center;
- background: #111827dd; color: #fff;
- border: 1px solid #66758d; border-radius: 10px; font: 14px system-ui, sans-serif; }
-.touch-flight button svg { display: block; }
-.touch-flight button:active { background: #2563eb; }
-.touch-flight.is-idle button, .touch-flight.is-idle .touch-flight-stick { opacity: .55; }
-.touch-flight[data-visibility="always"] { display: flex; }
-.touch-flight[data-visibility="hidden"] { display: none; }
-@media (pointer: coarse) { .touch-flight[data-visibility="auto"] { display: flex; } }
-/* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
-.touch-flight[hidden] { display: none !important; }
-`
-
 /**
  * Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
  * Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.
@@ -91,9 +60,7 @@ export class TouchFlight {
   ) {
     this.root.className = 'touch-flight'
     this.root.dataset.visibility = visibility
-    const style = document.createElement('style')
-    style.textContent = styles
-    this.root.append(style)
+    installEngineStyles(document)
     this.root.setAttribute('aria-label', this.text('Flight controls'))
 
     const bar = document.createElement('div')

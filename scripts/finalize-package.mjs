@@ -53,3 +53,13 @@ for (const [file, name, sources] of [
   const file = new URL('runtime/engine-version.js', root)
   fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('__NABLA_ENGINE_VERSION__', version))
 }
+
+// Interface stylesheet files, for pages that link dist/ui/styles/index.css.
+{
+  const source = new URL('../src/ui/styles/', import.meta.url)
+  const target = new URL('ui/styles/', root)
+  fs.mkdirSync(target, { recursive: true })
+  for (const name of fs.readdirSync(source)) {
+    if (name.endsWith('.css')) fs.copyFileSync(new URL(name, source), new URL(name, target))
+  }
+}

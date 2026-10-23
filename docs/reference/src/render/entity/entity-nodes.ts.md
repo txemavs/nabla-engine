@@ -9,10 +9,11 @@
 - `three`
 - `../webgpu-substitutes.js`
 - `./particle-nodes.js`
+- `./soft-smoke.js`
 
 ## blendDisplay
 
-[Implementation, line 21](../../../../../src/render/entity/entity-nodes.ts#L21)
+[Implementation, line 22](../../../../../src/render/entity/entity-nodes.ts#L22)
 
 A `toneMapped: false` transparent colour blended as WebGL does: in display space over the frame
 below on screen, raw into a target. The twin is marked tone-mapped so the backend's display twin
@@ -31,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## live
 
-[Implementation, line 31](../../../../../src/render/entity/entity-nodes.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/entity-nodes.ts#L32)
 
 ```ts
 live(t: N, source: Live): inferred by TypeScript; see implementation
@@ -42,17 +43,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.uniform`
 - `t.uniform(source.value).onRenderUpdate`
 
-## live.callback@31
+## live.callback@32
 
-[Implementation, line 31](../../../../../src/render/entity/entity-nodes.ts#L31)
+[Implementation, line 32](../../../../../src/render/entity/entity-nodes.ts#L32)
 
 ```ts
-callback@31(): inferred by TypeScript; see implementation
+callback@32(): inferred by TypeScript; see implementation
 ```
 
 ## diffuse
 
-[Implementation, line 34](../../../../../src/render/entity/entity-nodes.ts#L34)
+[Implementation, line 35](../../../../../src/render/entity/entity-nodes.ts#L35)
 
 The material colour times its map, as `map_fragment` / `color_fragment` leave `diffuseColor`.
 
@@ -69,17 +70,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.uv`
 - `t.vec4`
 
-## diffuse.callback@37
+## diffuse.callback@38
 
-[Implementation, line 37](../../../../../src/render/entity/entity-nodes.ts#L37)
+[Implementation, line 38](../../../../../src/render/entity/entity-nodes.ts#L38)
 
 ```ts
-callback@37(): inferred by TypeScript; see implementation
+callback@38(): inferred by TypeScript; see implementation
 ```
 
 ## foliageNodes
 
-[Implementation, line 41](../../../../../src/render/entity/entity-nodes.ts#L41)
+[Implementation, line 42](../../../../../src/render/entity/entity-nodes.ts#L42)
 
 `softenFoliage` (billboard.ts): desaturate the map texel.
 
@@ -91,12 +92,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## foliageNodes.callback@42
+## foliageNodes.callback@43
 
-[Implementation, line 42](../../../../../src/render/entity/entity-nodes.ts#L42)
+[Implementation, line 43](../../../../../src/render/entity/entity-nodes.ts#L43)
 
 ```ts
-callback@42({ tsl }, target): inferred by TypeScript; see implementation
+callback@43({ tsl }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -109,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## shellDiscard
 
-[Implementation, line 52](../../../../../src/render/entity/entity-nodes.ts#L52)
+[Implementation, line 53](../../../../../src/render/entity/entity-nodes.ts#L53)
 
 The helmet shell aperture (avatar.ts `shell`): the same discards on the raw position.
 
@@ -139,24 +140,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.sqrt`
 - `t.sqrt(t.max(0.015, t.float(1).sub(t.pow(edge, 8)))).mul`
 
-## shellDiscard.callback@55
+## shellDiscard.callback@56
 
-[Implementation, line 55](../../../../../src/render/entity/entity-nodes.ts#L55)
+[Implementation, line 56](../../../../../src/render/entity/entity-nodes.ts#L56)
 
 ```ts
-callback@55(): inferred by TypeScript; see implementation
+callback@56(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t.Discard`
 
-## shellDiscard.callback@62
+## shellDiscard.callback@63
 
-[Implementation, line 62](../../../../../src/render/entity/entity-nodes.ts#L62)
+[Implementation, line 63](../../../../../src/render/entity/entity-nodes.ts#L63)
 
 ```ts
-callback@62(): inferred by TypeScript; see implementation
+callback@63(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -165,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## avatarShellNodes
 
-[Implementation, line 66](../../../../../src/render/entity/entity-nodes.ts#L66)
+[Implementation, line 67](../../../../../src/render/entity/entity-nodes.ts#L67)
 
 ```ts
 avatarShellNodes(material: THREE.Material): void
@@ -175,12 +176,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## avatarShellNodes.callback@67
+## avatarShellNodes.callback@68
 
-[Implementation, line 67](../../../../../src/render/entity/entity-nodes.ts#L67)
+[Implementation, line 68](../../../../../src/render/entity/entity-nodes.ts#L68)
 
 ```ts
-callback@67({ tsl }, target): inferred by TypeScript; see implementation
+callback@68({ tsl }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -188,12 +189,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `diffuse`
 - `t.Fn`
 
-## avatarShellNodes.callback@67.callback@71
+## avatarShellNodes.callback@68.callback@72
 
-[Implementation, line 71](../../../../../src/render/entity/entity-nodes.ts#L71)
+[Implementation, line 72](../../../../../src/render/entity/entity-nodes.ts#L72)
 
 ```ts
-callback@71(): inferred by TypeScript; see implementation
+callback@72(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -212,7 +213,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## avatarFoamNodes
 
-[Implementation, line 85](../../../../../src/render/entity/entity-nodes.ts#L85)
+[Implementation, line 86](../../../../../src/render/entity/entity-nodes.ts#L86)
 
 Foam grain (avatar.ts `foam`); `lining` adds the inner aperture, `black` the display surround.
 
@@ -224,12 +225,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## avatarFoamNodes.callback@86
+## avatarFoamNodes.callback@87
 
-[Implementation, line 86](../../../../../src/render/entity/entity-nodes.ts#L86)
+[Implementation, line 87](../../../../../src/render/entity/entity-nodes.ts#L87)
 
 ```ts
-callback@86({ tsl }, target): inferred by TypeScript; see implementation
+callback@87({ tsl }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -239,12 +240,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.uniform`
 - `t.vec4`
 
-## avatarFoamNodes.callback@86.callback@96
+## avatarFoamNodes.callback@87.callback@97
 
-[Implementation, line 96](../../../../../src/render/entity/entity-nodes.ts#L96)
+[Implementation, line 97](../../../../../src/render/entity/entity-nodes.ts#L97)
 
 ```ts
-callback@96(): inferred by TypeScript; see implementation
+callback@97(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -265,7 +266,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## avatarScreenNodes
 
-[Implementation, line 108](../../../../../src/render/entity/entity-nodes.ts#L108)
+[Implementation, line 109](../../../../../src/render/entity/entity-nodes.ts#L109)
 
 The avatar's monitor face (avatar.ts `screenMaterial`): matrix uv, pixel mask, face light.
 
@@ -277,12 +278,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## avatarScreenNodes.callback@115
+## avatarScreenNodes.callback@116
 
-[Implementation, line 115](../../../../../src/render/entity/entity-nodes.ts#L115)
+[Implementation, line 116](../../../../../src/render/entity/entity-nodes.ts#L116)
 
 ```ts
-callback@115({ tsl }, target): inferred by TypeScript; see implementation
+callback@116({ tsl }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -290,12 +291,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `live`
 - `t.Fn`
 
-## avatarScreenNodes.callback@115.callback@120
+## avatarScreenNodes.callback@116.callback@121
 
-[Implementation, line 120](../../../../../src/render/entity/entity-nodes.ts#L120)
+[Implementation, line 121](../../../../../src/render/entity/entity-nodes.ts#L121)
 
 ```ts
-callback@120(): inferred by TypeScript; see implementation
+callback@121(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -320,7 +321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireNodes
 
-[Implementation, line 145](../../../../../src/render/entity/entity-nodes.ts#L145)
+[Implementation, line 146](../../../../../src/render/entity/entity-nodes.ts#L146)
 
 Burst fire (vehicle-destruction.ts `createFire`).
 
@@ -332,12 +333,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## fireNodes.callback@146
+## fireNodes.callback@147
 
-[Implementation, line 146](../../../../../src/render/entity/entity-nodes.ts#L146)
+[Implementation, line 147](../../../../../src/render/entity/entity-nodes.ts#L147)
 
 ```ts
-callback@146({ tsl }, target): inferred by TypeScript; see implementation
+callback@147({ tsl }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -346,12 +347,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `live`
 - `t.Fn`
 
-## fireNodes.callback@146.callback@151
+## fireNodes.callback@147.callback@152
 
-[Implementation, line 151](../../../../../src/render/entity/entity-nodes.ts#L151)
+[Implementation, line 152](../../../../../src/render/entity/entity-nodes.ts#L152)
 
 ```ts
-callback@151(): inferred by TypeScript; see implementation
+callback@152(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -378,11 +379,40 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `t.vec3`
 - `time.mul`
 
+## softFade
+
+[Implementation, line 167](../../../../../src/render/entity/entity-nodes.ts#L167)
+
+`nablaSoft` (soft-smoke.ts): 0 where the fragment meets the opaque scene behind it, 1 once
+`softness` metres in front; 1 over the sky and where the scene is nearer (multisampled edges).
+
+```ts
+softFade(t: N, softness: number, logarithmic: boolean): N
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `depth.greaterThanEqual`
+- `depth.greaterThanEqual(1).or`
+- `gap.div`
+- `gap.lessThan`
+- `t.clamp`
+- `t.logarithmicDepthToViewZ`
+- `t.perspectiveDepthToViewZ`
+- `t.positionView.z.negate`
+- `t.select`
+- `t.viewportDepthTexture`
+- `viewZ.negate`
+- `viewZ.negate().sub`
+
 ## flameNodes
 
-[Implementation, line 163](../../../../../src/render/entity/entity-nodes.ts#L163)
+[Implementation, line 183](../../../../../src/render/entity/entity-nodes.ts#L183)
 
-Wreck flame sheets (vehicle-destruction.ts `createFlames`): sway in the vertex, tongues.
+Wreck flame sheets (vehicle-destruction.ts `createFlames`), the twin of `FLAME_REALISTIC_GLSL`
+and `FLAME_FLICKER_GLSL`: domain-warped noise tongues, hot root to thin red tip through the
+black-body ramp, per-tongue flicker from the `flameTongue` index, soft against the scene depth
+(`nablaSoft(0.12)`).
 
 ```ts
 flameNodes(material: THREE.Material, clock: Live): void
@@ -392,34 +422,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## flameNodes.callback@164
+## flameNodes.callback@184
 
-[Implementation, line 164](../../../../../src/render/entity/entity-nodes.ts#L164)
+[Implementation, line 184](../../../../../src/render/entity/entity-nodes.ts#L184)
 
 ```ts
-callback@164({ tsl }, target): inferred by TypeScript; see implementation
+callback@184({ tsl, logarithmicDepth }, target): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `diffuse`
+- `fireNoise`
+- `flicker.mul`
+- `flicker.mul(0.07).add`
 - `live`
 - `p.x.add`
+- `p.y.mul`
 - `p.z.add`
+- `ph.mul`
+- `ph.mul(2.31).add`
 - `t.Fn`
+- `t.attribute`
+- `t.fract`
+- `t.sin`
+- `t.sin(ph.mul(2.31).add(1.3)).mul`
 - `t.uv`
+- `t.varying`
 - `t.vec3`
 - `time.mul`
+- `time.mul(tongue.mul(0.83).add(6.3)).add`
+- `tongue.mul`
+- `tongue.mul(0.618).add`
+- `tongue.mul(0.83).add`
 - `uv.y.mul`
 - `uv.y.mul(5).sub`
 - `uv.y.mul(7).sub`
 
-## flameNodes.callback@164.callback@187
+## flameNodes.callback@184.callback@218
 
-[Implementation, line 187](../../../../../src/render/entity/entity-nodes.ts#L187)
+[Implementation, line 218](../../../../../src/render/entity/entity-nodes.ts#L218)
 
 ```ts
-callback@187(): inferred by TypeScript; see implementation
+callback@218(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -428,38 +473,66 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `base.a.mul`
 - `base.a.mul(alpha).mul`
 - `blendDisplay`
+- `body.mul`
+- `body.mul(flicker.mul(0.18).add(0.72)).add`
+- `core.mul`
+- `core.mul(t.float(1.15).sub(h)).add`
+- `fine.x.sub`
+- `fine.x.sub(0.5).mul`
+- `fine.x.sub(0.5).mul(1.1).mul`
+- `fine.y.mul`
+- `fine.y.mul(0.4).add`
+- `flicker.mul`
+- `flicker.mul(0.16).add`
+- `flicker.mul(0.18).add`
 - `h.mul`
-- `h.mul(22).sub`
-- `h.mul(22).sub(time.mul(10)).add`
-- `h.mul(37).sub`
-- `h.mul(9).sub`
+- `h.mul(0.5).sub`
+- `h.mul(1.4).sub`
+- `h.mul(1.4).sub(time.mul(1.3)).add`
+- `h.mul(7).sub`
+- `h.mul(7).sub(time.mul(6)).add`
+- `rawTemp.mul`
+- `s.mul`
+- `seed.add`
+- `softFade`
 - `t.If`
 - `t.abs`
+- `t.clamp`
 - `t.float`
 - `t.float(1).sub`
-- `t.float(1).sub(h).mul`
+- `t.float(1.05).sub`
+- `t.float(1.15).sub`
 - `t.max`
-- `t.mix`
-- `t.sin`
-- `t.sin(h.mul(37).sub(time.mul(16))).mul`
-- `t.sin(uv.x.mul(43).sub(time.mul(7))).mul`
+- `t.min`
+- `t.select`
 - `t.smoothstep`
+- `t.smoothstep(0.15, 0.85, temp).mul`
+- `t.smoothstep(0.15, 0.85, temp).mul(0.88).add`
+- `t.smoothstep(0.55, 1, temp).mul`
+- `t.smoothstep(0.55, 1, temp).mul(0.75).add`
+- `t.sqrt`
+- `t.texture`
+- `t.vec2`
 - `t.vec3`
+- `temp.mul`
+- `temp.mul(temp).mul`
 - `time.mul`
-- `tongues.add`
 - `uv.x.mul`
-- `uv.x.mul(25).add`
-- `uv.x.mul(43).sub`
+- `uv.x.mul(0.45).add`
+- `uv.x.mul(0.6).add`
+- `uv.x.mul(0.6).add(warp.x.mul(0.5).mul(h)).add`
 - `uv.x.sub`
 - `uv.x.sub(0.5).sub`
-- `width.mul`
+- `warp.x.mul`
+- `warp.x.mul(0.5).mul`
+- `warp.y.mul`
 
-## flameNodes.callback@164.callback@187.callback@210
+## flameNodes.callback@184.callback@218.callback@267
 
-[Implementation, line 210](../../../../../src/render/entity/entity-nodes.ts#L210)
+[Implementation, line 267](../../../../../src/render/entity/entity-nodes.ts#L267)
 
 ```ts
-callback@210(): inferred by TypeScript; see implementation
+callback@267(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

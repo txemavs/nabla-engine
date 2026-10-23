@@ -11,11 +11,12 @@ model (`GameRuntime.setSteeringWheelOffset`); this file only shows it, in centim
 
 ## Module dependencies
 
+- `@nabla/engine/i18n`
 - `./menu.js`
 
 ## formatWheelCm
 
-[Implementation, line 32](../../../game/steering-wheel-controls.ts#L32)
+[Implementation, line 33](../../../game/steering-wheel-controls.ts#L33)
 
 Centimetres as shown to the player: sign, one decimal and a decimal comma, e.g. "+1,5 cm".
 
@@ -32,7 +33,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## describeWheel
 
-[Implementation, line 39](../../../game/steering-wheel-controls.ts#L39)
+[Implementation, line 40](../../../game/steering-wheel-controls.ts#L40)
 
 Spanish summary of an adjustment, e.g. "distancia +1,5 cm · altura −0,5 cm".
 
@@ -46,7 +47,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wheelBakeValues
 
-[Implementation, line 44](../../../game/steering-wheel-controls.ts#L44)
+[Implementation, line 45](../../../game/steering-wheel-controls.ts#L45)
 
 The values a host default or a GLB bake takes, in metres: `{"distance":0.015,"height":-0.005}`.
 
@@ -60,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## slider
 
-[Implementation, line 48](../../../game/steering-wheel-controls.ts#L48)
+[Implementation, line 49](../../../game/steering-wheel-controls.ts#L49)
 
 ```ts
 slider(id: string, text: string): inferred by TypeScript; see implementation
@@ -76,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelControls
 
-[Implementation, line 69](../../../game/steering-wheel-controls.ts#L69)
+[Implementation, line 70](../../../game/steering-wheel-controls.ts#L70)
 
 Build the «Volante» group (disabled until `bind`). `bind` returns `refresh`, which follows the
 player into and out of vehicles; call it periodically.
@@ -97,13 +98,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.append`
 - `slider`
 - `status.setAttribute`
+- `t`
 
-## steeringWheelControls.callback@96
+## steeringWheelControls.callback@97
 
-[Implementation, line 96](../../../game/steering-wheel-controls.ts#L96)
+[Implementation, line 97](../../../game/steering-wheel-controls.ts#L97)
 
 ```ts
-callback@96(event): inferred by TypeScript; see implementation
+callback@97(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -112,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelControls.bind
 
-[Implementation, line 100](../../../game/steering-wheel-controls.ts#L100)
+[Implementation, line 101](../../../game/steering-wheel-controls.ts#L101)
 
 ```ts
 bind(runtime: Partial<SteeringWheelRuntime>): inferred by TypeScript; see implementation
@@ -127,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelControls.bind.show
 
-[Implementation, line 102](../../../game/steering-wheel-controls.ts#L102)
+[Implementation, line 103](../../../game/steering-wheel-controls.ts#L103)
 
 ```ts
 show(offset: WheelOffset, syncSliders: boolean): inferred by TypeScript; see implementation
@@ -142,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## steeringWheelControls.bind.refresh
 
-[Implementation, line 113](../../../game/steering-wheel-controls.ts#L113)
+[Implementation, line 114](../../../game/steering-wheel-controls.ts#L114)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -151,10 +153,11 @@ refresh(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `show`
+- `t`
 
 ## steeringWheelControls.bind.change
 
-[Implementation, line 130](../../../game/steering-wheel-controls.ts#L130)
+[Implementation, line 131](../../../game/steering-wheel-controls.ts#L131)
 
 ```ts
 change(): inferred by TypeScript; see implementation
@@ -167,12 +170,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setSteeringWheelOffset`
 - `show`
 
-## steeringWheelControls.bind.callback@140
+## steeringWheelControls.bind.callback@141
 
-[Implementation, line 140](../../../game/steering-wheel-controls.ts#L140)
+[Implementation, line 141](../../../game/steering-wheel-controls.ts#L141)
 
 ```ts
-callback@140(): inferred by TypeScript; see implementation
+callback@141(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

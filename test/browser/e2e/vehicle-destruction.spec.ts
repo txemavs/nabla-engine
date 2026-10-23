@@ -127,17 +127,32 @@ test('real S3 glass breaks and runtime renders a burning, disabled vehicle', asy
     runtime.tick(performance.now() + 16)
     const programsBefore = renderer.info.programs?.length ?? 0
     sim.damageVehicle('car', 100)
-    const now = performance.now()
-    runtime.tick(now)
+    // The physics worker (on by default since c1cdfdde) applies the damage on its own thread; the
+    // explosion reaches the render loop with a later state reply, not on the next tick. Tick real
+    // frames until the wreck burns; the cost measured is that of the frame that exploded it.
+    const exploded = () => view.root.children.some((child) => child.name === 'Wreck flames')
+    let now = performance.now()
+    let firstExplosionMs = 0
+    for (let i = 0; i < 300 && !exploded(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 16))
+      now = performance.now()
+      runtime.tick(now)
+      firstExplosionMs = performance.now() - now
+    }
     runtime.tick(now + 16)
-    const firstExplosionMs = performance.now() - now
     const programsAfter = renderer.info.programs?.length ?? 0
-    const burning = car.children.some(
-      (child) =>
-        (child as import('three').Mesh).isMesh &&
-        (child as import('three').Mesh).material &&
-        child.visible,
-    )
+    // The fireball is the flash sphere on the wreck (WebGPU) or the GPU explosion draw (WebGL).
+    const burning =
+      car.children.some(
+        (child) =>
+          (child as import('three').Mesh).isMesh &&
+          (child as import('three').Mesh).material &&
+          child.visible,
+      ) ||
+      view.root.children.some(
+        (child) =>
+          child.name === 'Explosion effects' && child.children.some((draw) => draw.visible),
+      )
     const effectCount = view.destruction.root.children.length
     const disabled = sim.vehicleDamage('car').destroyed && sim.vehicleInfo('car').rpm === 0
     const keptMaterials = [...originalMaterials].every(

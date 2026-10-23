@@ -11,10 +11,11 @@ Compile chase, cockpit and mirror programs once so later enter/exit and KeyC sta
 - `three`
 - `../render/entity/view.js`
 - `../config/camera.js`
+- `../i18n/index.js`
 
 ## warmEffectPresentation
 
-[Implementation, line 16](../../../../src/runtime/presentation-warmup.ts#L16)
+[Implementation, line 17](../../../../src/runtime/presentation-warmup.ts#L17)
 
 Compile hidden common effects and upload their buffers in an offscreen draw before play.
 
@@ -37,17 +38,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scene.add`
 - `target.dispose`
 
-## warmEffectPresentation.callback@26
+## warmEffectPresentation.callback@27
 
-[Implementation, line 26](../../../../src/runtime/presentation-warmup.ts#L26)
+[Implementation, line 27](../../../../src/runtime/presentation-warmup.ts#L27)
 
 ```ts
-callback@26(object): inferred by TypeScript; see implementation
+callback@27(object): inferred by TypeScript; see implementation
 ```
 
 ## warmGamePresentation
 
-[Implementation, line 68](../../../../src/runtime/presentation-warmup.ts#L68)
+[Implementation, line 69](../../../../src/runtime/presentation-warmup.ts#L69)
 
 Complete GPU preparation before play; propagate errors rather than claiming readiness.
 
@@ -62,15 +63,16 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `performance.now`
 - `renderer.compileAsync`
 - `signal?.throwIfAborted`
+- `t`
 - `target.onProgress`
 - `view.renderMirrors`
 
-## warmGamePresentation.callback@87
+## warmGamePresentation.callback@88
 
-[Implementation, line 87](../../../../src/runtime/presentation-warmup.ts#L87)
+[Implementation, line 88](../../../../src/runtime/presentation-warmup.ts#L88)
 
 ```ts
-callback@87(resolve): inferred by TypeScript; see implementation
+callback@88(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -79,7 +81,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## uploadSceneTextures
 
-[Implementation, line 112](../../../../src/runtime/presentation-warmup.ts#L112)
+[Implementation, line 113](../../../../src/runtime/presentation-warmup.ts#L113)
 
 Upload every texture in `scene` (hidden objects included) before it is first drawn, a few
 milliseconds per frame, so the first gameplay frames (a descent over freshly streamed tiles)
@@ -98,12 +100,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `scene.traverse`
 - `signal?.throwIfAborted`
 
-## uploadSceneTextures.callback@119
+## uploadSceneTextures.callback@120
 
-[Implementation, line 119](../../../../src/runtime/presentation-warmup.ts#L119)
+[Implementation, line 120](../../../../src/runtime/presentation-warmup.ts#L120)
 
 ```ts
-callback@119(object): inferred by TypeScript; see implementation
+callback@120(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -111,12 +113,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `textures.add`
 
-## uploadSceneTextures.callback@142
+## uploadSceneTextures.callback@143
 
-[Implementation, line 142](../../../../src/runtime/presentation-warmup.ts#L142)
+[Implementation, line 143](../../../../src/runtime/presentation-warmup.ts#L143)
 
 ```ts
-callback@142(resolve): inferred by TypeScript; see implementation
+callback@143(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

@@ -1,9 +1,11 @@
+import { pageSearch } from './page-query.js'
 import { resolveFsr, type FsrSettings } from '../src/render/effects/fsr1.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
+import { t } from '@nabla/engine/i18n'
 const KEY = 'nabla.fsr1'
 
 /** Apply before preload, so startup prepares the actual chosen render path. */
-export function readFsrSettings(search = location.search): FsrSettings {
+export function readFsrSettings(search = pageSearch()): FsrSettings {
   let saved: Partial<FsrSettings> = {}
   try {
     saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
@@ -27,15 +29,15 @@ export function readFsrSettings(search = location.search): FsrSettings {
 export function appendFsrControls(parent: HTMLElement, runtime: GameRuntime): void {
   const doc = parent.ownerDocument
   const label = doc.createElement('label')
-  label.textContent = 'FSR 1 · escritorio '
+  label.textContent = t('settings.fsr') + ' '
   const select = doc.createElement('select')
   select.id = 'display-fsr'
   for (const [value, text] of [
-    ['off', 'Desactivado'],
-    ['ultra-quality', 'Ultra calidad · 77%'],
-    ['quality', 'Calidad · 67%'],
-    ['balanced', 'Equilibrado · 59%'],
-    ['performance', 'Rendimiento · 50%'],
+    ['off', t('settings.fsr.off')],
+    ['ultra-quality', t('settings.fsr.ultra-quality')],
+    ['quality', t('settings.fsr.quality')],
+    ['balanced', t('settings.fsr.balanced')],
+    ['performance', t('settings.fsr.performance')],
   ]) {
     const option = doc.createElement('option')
     option.value = value
@@ -44,7 +46,7 @@ export function appendFsrControls(parent: HTMLElement, runtime: GameRuntime): vo
   }
   label.append(select)
   const sharpLabel = doc.createElement('label')
-  sharpLabel.textContent = 'Nitidez FSR '
+  sharpLabel.textContent = t('settings.fsr-sharpness') + ' '
   const sharp = doc.createElement('input')
   sharp.id = 'display-fsr-sharpness'
   sharp.type = 'range'
@@ -55,8 +57,7 @@ export function appendFsrControls(parent: HTMLElement, runtime: GameRuntime): vo
   value.htmlFor = sharp.id
   sharpLabel.append(sharp, value)
   const hint = doc.createElement('small')
-  hint.textContent =
-    'QLTY fija la salida; FSR reduce la resolución interna. Menús a resolución completa. No se aplica al casco. La primera activación puede preparar shaders.'
+  hint.textContent = t('settings.fsr-hint')
   const sync = () => {
     const settings = runtime.fsrSettings
     select.value = settings.mode

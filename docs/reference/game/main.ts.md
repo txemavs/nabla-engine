@@ -4,17 +4,18 @@
 
 [Source](../../../game/main.ts)
 
-Entry point: the terrain chosen by the URL or the menu (flat tile, tile host, package folder).
-
 ## Module dependencies
 
+- `./page-query.js`
+- `./settings-scope-boot.js`
 - `@nabla/engine/runtime/splash`
 - `./boot.js`
 - `./entry.js`
+- `@nabla/engine/i18n`
 
 ## bootSay
 
-[Implementation, line 13](../../../game/main.ts#L13)
+[Implementation, line 17](../../../game/main.ts#L17)
 
 ```ts
 bootSay(text: string): inferred by TypeScript; see implementation

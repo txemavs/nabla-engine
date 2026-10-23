@@ -1,3 +1,5 @@
+import { applyI18nAttributes, t } from '@nabla/engine/i18n'
+import { pageSearch } from './page-query.js'
 /** Demo-owned display controls; Engine owns validation, frame pacing and buffer resizing. */
 import { resolveDisplaySettings, type DisplaySettings } from '@nabla/engine/config/display'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -8,7 +10,7 @@ import { readQualityPreset, saveQualityPreset } from '@nabla/engine/runtime/qual
  * The player's saved `scale` wins: `scale=<0.25..5>` fixes it (above 1 supersamples), `scale=auto` adapts live.
  * Without `scale` the quality preset's fixed step decides (`presetResolutionScales`).
  */
-export function readDisplaySettings(search = location.search): DisplaySettings {
+export function readDisplaySettings(search = pageSearch()): DisplaySettings {
   const params = new URLSearchParams(search)
   const scale = params.get('scale')
   const preset = readQualityPreset(search)
@@ -30,18 +32,21 @@ export function readDisplaySettings(search = location.search): DisplaySettings {
 }
 
 /** True when the player chose auto resolution (`scale=auto`); the boot probe then picks the start. */
-export function wantsAutoResolution(search = location.search): boolean {
+export function wantsAutoResolution(search = pageSearch()): boolean {
   return new URLSearchParams(search).get('scale') === 'auto'
 }
 
 function scaleLabel(runtime: GameRuntime): string {
   const { mode, scale } = runtime.resolutionScaleState
   const percent = Math.round(scale * 100)
-  return mode === 'auto' ? `Auto · ${percent}% del perfil` : `${percent}% del perfil`
+  return t(mode === 'auto' ? 'settings.scale-auto-of-profile' : 'settings.scale-of-profile', {
+    percent,
+  })
 }
 
 /** Bind host controls; FPS/scale apply live, while a quality-profile change explicitly reloads. */
 export function bindDisplaySettings(runtime: GameRuntime): void {
+  applyI18nAttributes(document.getElementById('display-settings') ?? undefined)
   const panel = document.getElementById('display-settings') as HTMLDetailsElement
   const fps = document.getElementById('display-fps') as HTMLInputElement
   const scale = document.getElementById('display-scale') as HTMLInputElement
@@ -81,7 +86,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
     } else document.getElementById('game-canvas')?.focus()
   })
   // Only a scale the player picked is saved; otherwise a later quality change keeps its default.
-  let scaleChosen = new URLSearchParams(location.search).has('scale')
+  let scaleChosen = new URLSearchParams(pageSearch()).has('scale')
   const persist = () => {
     const url = new URL(location.href)
     const state = runtime.resolutionScaleState
@@ -94,7 +99,7 @@ export function bindDisplaySettings(runtime: GameRuntime): void {
     if (!fps.checkValidity()) return
     const maxFps = Number(fps.value)
     if (maxFps !== 0 && maxFps < 30) {
-      fps.setCustomValidity('Usa 0 o un valor entre 30 y 360.')
+      fps.setCustomValidity(t('settings.fps-invalid'))
       fps.reportValidity()
       return
     }

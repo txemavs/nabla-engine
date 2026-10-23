@@ -1,487 +1,44 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="nabla-game nabla-game--plain">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Nabla Engine · VR</title>
     <link rel="icon" type="image/svg+xml" href="/brand/source.svg" />
-    <style>
-      #xr-destinations {
-        position: fixed;
-        top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10001;
-        width: min(340px, calc(100vw - 32px));
-        padding: 12px 16px;
-        border: 1px solid #79bad4;
-        border-radius: 12px;
-        background: #102632f2;
-        box-shadow: 0 8px 28px #0005;
+    <!-- Critical CSS: nothing unstyled (or the error overlay) shows before ui-styles.ts runs. -->
+    <style id="nabla-critical">
+      html {
+        background: #121212;
+        color-scheme: dark;
       }
-      #xr-destinations {
-        max-height: calc(100dvh - 24px);
-        overflow-y: auto;
-      }
-      #xr-destinations summary {
-        cursor: pointer;
-        font-weight: 600;
-      }
-      #xr-destinations nav {
-        display: grid;
-        gap: 10px;
-        margin-top: 14px;
-      }
-      #xr-destinations a {
-        display: block;
-        padding: 14px;
-        border-radius: 8px;
-        background: #24516a;
-        color: #fff;
-        text-decoration: none;
-        font-weight: 600;
-      }
-      #xr-destinations a:hover,
-      #xr-destinations a:focus-visible {
-        background: #367291;
-      }
-      #xr-destinations p {
-        margin-top: 12px;
-        font-size: 13px;
-        line-height: 1.5;
-        color: #c3d6df;
-      }
-
-      * {
+      /* The page box before ui-styles.ts (base.css) lands: no body margin, no overflow, so the
+         black first paint never shows a scrollbar. */
+      html.nabla-game,
+      html.nabla-game body {
         margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #1a1a1a;
-        color: #eee;
-        font-family:
-          system-ui,
-          -apple-system,
-          sans-serif;
       }
-      /* Host skins override these variables (see docs/boot-and-splash.md). */
-      #loading-screen {
-        --splash-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        --splash-fg: #eee;
-        --splash-muted: #888;
-        --splash-accent: #4a9eff;
-        --splash-accent-2: #7c3aed;
-        --splash-track: #333;
-        --splash-logo-height: 72px;
-        position: fixed;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        background: var(--splash-bg);
-        color: var(--splash-fg);
-        z-index: 1000;
-        transition: opacity 0.5s ease-out;
+      html:not(.nabla-styles-ready) body {
+        visibility: hidden;
       }
-      #loading-logo {
-        height: var(--splash-logo-height);
-        width: auto;
-      }
-      #loading-logo[hidden] {
+      #error-message:not(.visible) {
         display: none;
-      }
-      /* Attract / TV-style boot: canvas shows the planet; status sits bottom-left. */
-      #loading-screen.splash-corner {
-        inset: auto auto 24px 24px;
-        align-items: flex-start;
-        justify-content: flex-end;
-        gap: 10px;
-        max-width: min(520px, calc(100vw - 48px));
-        padding: 14px 18px;
-        background: rgba(0, 0, 0, 0.45);
-        border-radius: 10px;
-        pointer-events: none;
-      }
-      #loading-screen.splash-corner #loading-logo {
-        height: calc(var(--splash-logo-height) * 0.5);
-      }
-      #loading-screen.splash-corner h1 {
-        font-size: 1.1rem;
-      }
-      #loading-screen.splash-corner #loading-progress {
-        width: 220px;
-      }
-      #loading-screen.splash-corner #loading-tiles {
-        display: none;
-      }
-      /*
-       * Mark-only pre-attract (layout 'mark'): black screen, only the small Nabla ▽ bottom-right,
-       * no title, load texts, progress or tiles. Hosts may override --splash-mark-bg/-size/-inset.
-       */
-      #loading-screen.splash-mark {
-        inset: 0;
-        align-items: flex-end;
-        justify-content: flex-end;
-        gap: 0;
-        padding: var(--splash-mark-inset, 24px);
-        background: var(--splash-mark-bg, #000);
-        transition:
-          opacity 0.5s ease-out,
-          background-color 0.8s ease-out;
-      }
-      #loading-screen.splash-no-status :is(#loading-status, #loading-detail) {
-        display: none !important;
-      }
-      #loading-screen.splash-mark > :not(#loading-logo) {
-        display: none !important;
-      }
-      #loading-screen.splash-mark #loading-logo {
-        height: var(--splash-mark-size, 40px);
-      }
-      /* Once attract draws the planet the black curtain lifts; only the mark stays until play. */
-      body:has(#game-canvas[data-boot-mode='attract']) #loading-screen.splash-mark {
-        background-color: transparent;
-        pointer-events: none;
-      }
-      body:has(#loading-screen.splash-mark:not(.hidden))
-        :is(
-          #display-settings,
-          #controls-hint,
-          #road-hidden-hint,
-          .nabla-game-hud,
-          .touch-driving,
-          .touch-flight
-        ) {
-        display: none !important;
-      }
-      /* While the planet attract view runs, keep gameplay overlays out of the shot. */
-      body:has(#game-canvas[data-boot-mode='attract']) :is(.touch-driving, .touch-flight),
-      body:has(#game-canvas[data-boot-mode='attract']) :is(#controls-hint, #road-hidden-hint) {
-        display: none !important;
-      }
-      #loading-screen.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-      #loading-screen h1 {
-        font-size: 2rem;
-        font-weight: 300;
-        letter-spacing: 0.1em;
-      }
-      #loading-status {
-        font-size: 1rem;
-        color: var(--splash-muted);
-      }
-      #loading-progress {
-        width: 300px;
-        height: 4px;
-        background: var(--splash-track);
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      #loading-progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, var(--splash-accent), var(--splash-accent-2));
-        width: 0%;
-        transition: width 0.3s ease-out;
-      }
-      #loading-tiles {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-        margin-top: 16px;
-      }
-      .tile-indicator {
-        width: 24px;
-        height: 24px;
-        background: #333;
-        border-radius: 4px;
-        transition: background 0.3s;
-      }
-      .tile-indicator.loaded {
-        background: var(--splash-accent);
-      }
-      .tile-indicator.center {
-        background: var(--splash-accent-2);
-      }
-      #game-container {
-        width: 100%;
-        height: 100%;
-        position: relative;
-      }
-      #game-canvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-      #game-hud,
-      #controls-hint {
-        z-index: 10;
-        pointer-events: none;
-      }
-      #game-hud {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        font-size: 14px;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 16px;
-        border-radius: 8px;
-        pointer-events: none;
-      }
-      #game-hud.hidden {
-        display: none;
-      }
-      #speed-display {
-        font-size: 2rem;
-        font-weight: 600;
-      }
-      #controls-hint {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-size: 12px;
-        color: #888;
-      }
-      @media (pointer: coarse) {
-        #controls-hint {
-          display: none;
-        }
-      }
-      body:has(.touch-driving[data-visibility='always']) #controls-hint {
-        display: none;
-      }
-      #road-hidden-hint {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 11;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 10px;
-        border-radius: 6px;
-        background: rgba(0, 0, 0, 0.6);
-        color: #ddd;
-        font-size: 13px;
-      }
-      #road-hidden-hint.hidden {
-        display: none;
-      }
-      #road-hidden-hint button {
-        font: inherit;
-        padding: 2px 8px;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 4px;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-      }
-      #controls-hint kbd {
-        display: inline-block;
-        padding: 2px 6px;
-        background: #333;
-        border-radius: 4px;
-        margin: 0 2px;
-      }
-      #error-message {
-        position: fixed;
-        inset: 0;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 2000;
-      }
-      #error-message.visible {
-        display: flex;
-      }
-      #error-message h2 {
-        color: #ff4444;
-      }
-      #error-message p {
-        max-width: min(560px, calc(100vw - 40px));
-        margin: 0;
-        text-align: center;
-      }
-      #error-message button {
-        padding: 12px 24px;
-        background: #333;
-        border: none;
-        color: #eee;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      #error-message button:hover {
-        background: #444;
-      }
-      #display-settings {
-        max-height: calc(100vh - 40px);
-        overflow: auto;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 20;
-        max-width: min(310px, calc(100vw - 40px));
-        padding: 12px;
-        background: #161c24ed;
-        border: 1px solid #495362;
-        border-radius: 8px;
-        font-size: 13px;
-      }
-      #display-settings summary {
-        cursor: pointer;
-      }
-      #display-settings label {
-        display: grid;
-        gap: 5px;
-        margin-top: 14px;
-      }
-      #display-settings label.inline {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      #display-settings input,
-      #display-settings select,
-      #display-settings button {
-        color: #eee;
-        background: #283340;
-        border: 1px solid #627084;
-        border-radius: 4px;
-        padding: 6px;
-      }
-      #display-settings p {
-        margin-top: 12px;
-        color: #b9c6d4;
-      }
-      #display-settings button {
-        margin-top: 8px;
-        cursor: pointer;
-      }
-      .menu-section {
-        margin: 12px 0 0;
-        padding: 0;
-        border: 0;
-      }
-      .menu-section legend {
-        padding: 0;
-        font-weight: 600;
-      }
-      #display-settings .menu-section label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 8px;
-      }
-      #display-settings .menu-section label:has(input[type='url']),
-      #display-settings .menu-section label:has(input[type='text']) {
-        display: grid;
-      }
-      #display-settings .menu-section label:has(select) {
-        justify-content: space-between;
-      }
-      #display-settings .menu-section label[hidden] {
-        display: none;
-      }
-      #display-settings .menu-subtitle {
-        margin: 12px 0 0;
-        font-weight: 600;
-      }
-      #display-settings .planet-group {
-        margin-top: 4px;
-      }
-      #display-settings .planet-group .menu-subtitle {
-        margin: 10px 0 0;
-      }
-      #vehicle-list {
-        margin: 8px 0 0;
-        padding: 0;
-        list-style: none;
-      }
-      #vehicle-list li {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      #display-settings .menu-section label:has(input[type='range']) {
-        display: flex;
-        flex-wrap: wrap;
-      }
-      #display-settings input[type='range'] {
-        flex: 1 1 120px;
-        padding: 0;
-      }
-      #display-settings #time-input,
-      #display-settings #sea-input {
-        width: 70px;
-      }
-      #terrain-missing-list {
-        max-height: 8em;
-        overflow: auto;
-        font-size: 11px;
-      }
-      #loading-detail {
-        max-width: 560px;
-        margin-top: 8px;
-        font-size: 12px;
-        opacity: 0.8;
-        white-space: pre-line;
-        text-align: center;
-      }
-      #location-display {
-        pointer-events: auto;
-        cursor: copy;
-        user-select: all;
-      }
-      #position-message {
-        min-height: 1em;
-        font-size: 12px;
-      }
-      #terrain-cache-usage {
-        min-height: 1em;
-      }
-      #terrain-message {
-        min-height: 1em;
       }
     </style>
+    <script type="module" src="./ui-styles.ts"></script>
   </head>
   <body>
     <div id="loading-screen">
-      <img id="loading-logo" alt="" hidden />
-      <h1 id="loading-title">NABLA ENGINE</h1>
+      <img
+        id="loading-logo"
+        alt="Nabla"
+        src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22180%22%20viewBox%3D%220%200%20180%20180%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22a%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%23D9F5FF%22%2F%3E%3Cstop%20offset%3D%22.382%22%20stop-color%3D%22%2381B5D8%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23245580%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22b%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%23244F7B%22%2F%3E%3Cstop%20offset%3D%22.618%22%20stop-color%3D%22%23609BBF%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23DFFAFF%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22c%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%23ECFCFF%22%2F%3E%3Cstop%20offset%3D%22.382%22%20stop-color%3D%22%236498BA%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23C7EDF4%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpolygon%20fill%3D%22%23E8FAFF%22%20points%3D%2218%2C48.43%20162%2C48.43%20157.68%2C50.92%2022.32%2C50.92%22%2F%3E%3Cpolygon%20fill%3D%22%23719AB8%22%20points%3D%22162%2C48.43%2090%2C173.14%2090%2C168.15%20157.68%2C50.92%22%2F%3E%3Cpolygon%20fill%3D%22%23C6E9F8%22%20points%3D%2290%2C173.14%2018%2C48.43%2022.32%2C50.92%2090%2C168.15%22%2F%3E%3Cpolygon%20fill%3D%22url(%23a)%22%20points%3D%2222.32%2C50.92%20157.68%2C50.92%20141.84%2C60.07%2038.16%2C60.07%22%2F%3E%3Cpolygon%20fill%3D%22url(%23b)%22%20points%3D%22157.68%2C50.92%2090%2C168.15%2090%2C149.86%20141.84%2C60.07%22%2F%3E%3Cpolygon%20fill%3D%22url(%23c)%22%20points%3D%2290%2C168.15%2022.32%2C50.92%2038.16%2C60.07%2090%2C149.86%22%2F%3E%3Cpolygon%20fill%3D%22%23274D70%22%20points%3D%2238.16%2C60.07%20141.84%2C60.07%20137.52%2C62.56%2042.48%2C62.56%22%2F%3E%3Cpolygon%20fill%3D%22%23D2EDF4%22%20points%3D%22141.84%2C60.07%2090%2C149.86%2090%2C144.87%20137.52%2C62.56%22%2F%3E%3Cpolygon%20fill%3D%22%2384B5D2%22%20points%3D%2290%2C149.86%2038.16%2C60.07%2042.48%2C62.56%2090%2C144.87%22%2F%3E%3C%2Fsvg%3E"
+      />
+      <h1 id="loading-title" hidden></h1>
       <div id="loading-status">Cargando el motor…</div>
       <div id="loading-progress">
         <div id="loading-progress-bar"></div>
-      </div>
-      <div id="loading-tiles">
-        <div class="tile-indicator" data-tile="0"></div>
-        <div class="tile-indicator" data-tile="1"></div>
-        <div class="tile-indicator" data-tile="2"></div>
-        <div class="tile-indicator" data-tile="3"></div>
-        <div class="tile-indicator center" data-tile="4"></div>
-        <div class="tile-indicator" data-tile="5"></div>
-        <div class="tile-indicator" data-tile="6"></div>
-        <div class="tile-indicator" data-tile="7"></div>
-        <div class="tile-indicator" data-tile="8"></div>
       </div>
     </div>
     <script>
@@ -514,35 +71,34 @@
       <summary>Menú</summary>
       <fieldset class="menu-section" id="display-quality-section">
         <legend>Calidad</legend>
-        <label
+        <label data-i18n="settings.quality-profile"
           >Perfil
           <select id="display-quality">
-            <option value="custom">Predeterminada</option>
-            <option value="minimal">Mínima</option>
-            <option value="mobile">Móvil</option>
-            <option value="low">Baja</option>
-            <option value="balanced">Equilibrada</option>
-            <option value="high">Alta</option>
-            <option value="ultra">Ultra</option>
+            <option data-i18n="settings.quality.custom" value="custom">Predeterminada</option>
+            <option data-i18n="settings.quality.minimal" value="minimal">Mínima</option>
+            <option data-i18n="settings.quality.mobile" value="mobile">Móvil</option>
+            <option data-i18n="settings.quality.low" value="low">Baja</option>
+            <option data-i18n="settings.quality.balanced" value="balanced">Equilibrada</option>
+            <option data-i18n="settings.quality.high" value="high">Alta</option>
+            <option data-i18n="settings.quality.ultra" value="ultra">Ultra</option>
           </select>
         </label>
-        <button id="display-apply-quality" type="button">Aplicar calidad y reiniciar demo</button>
-        <p>Sincronización: automática del navegador.</p>
-      </fieldset>
-      <fieldset class="menu-section" id="display-performance">
-        <legend>Rendimiento</legend>
-        <label
+        <label data-i18n="settings.fps-limit"
           >Límite de FPS (0 = automático)
           <input id="display-fps" type="number" min="0" max="360" step="1" value="0" />
         </label>
-        <label
+        <label data-i18n="settings.resolution-scale"
           >Escala de resolución <span id="display-scale-label">80% del perfil</span>
           <input id="display-scale" type="range" min="25" max="200" step="5" value="80" />
         </label>
-        <label class="inline"
+        <label data-i18n="settings.scale-auto" class="inline"
           ><input id="display-scale-auto" type="checkbox" /> Escala automática (50–100%)</label
         >
-        <p>FPS y escala se aplican durante la partida.</p>
+        <p data-i18n="settings.performance-note">FPS y escala se aplican durante la partida.</p>
+        <button data-i18n="settings.quality-apply" id="display-apply-quality" type="button">
+          Aplicar calidad y reiniciar demo
+        </button>
+        <p data-i18n="settings.vsync-note">Sincronización: automática del navegador.</p>
       </fieldset>
       <div id="menu-sections"></div>
     </details>
@@ -551,7 +107,7 @@
       <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Drive · <kbd>Space</kbd> Brake ·
       <kbd>C</kbd> Cámara · <kbd>J</kbd> Menú · <kbd>H</kbd> Luces · <kbd>G</kbd> GPS ·
       <kbd>K</kbd> Cortas/largas · <kbd>Z/X</kbd> Intermitentes · <kbd>E</kbd> Entrar/salir ·
-      <kbd>V</kbd> Vuelo · <kbd>R</kbd> Recuperar · <kbd>Tab</kbd> Arma · Clic disparar · Arma:
+      <kbd>V</kbd> Vuelo · <kbd>Y</kbd> Recuperar · <kbd>Tab</kbd> Arma · Clic disparar · Arma:
       <kbd>R</kbd> sacar / meter cargador · <kbd>M</kbd> largo/automático · <kbd>F</kbd> corredera ·
       <kbd>Z</kbd> + clic: seguro · <kbd>X</kbd> recámara · <kbd>G</kbd> láser ·
       <kbd>H</kbd> linterna · <kbd>U</kbd><kbd>O</kbd><kbd>I</kbd><kbd>L</kbd> Peso del piloto
@@ -566,7 +122,7 @@
       <button onclick="location.reload()">Recargar</button>
     </div>
 
-    <details id="xr-destinations" open>
+    <details id="xr-destinations" class="nabla-panel" open>
       <summary>Elegir escenario VR</summary>
       <nav aria-label="Escenarios VR">
         <a href="/headset.html">Nabla HeadSet · menú principal</a>
@@ -585,6 +141,5 @@
       <p>Elige un escenario. Cuando termine de cargar, pulsa «Entrar en VR».</p>
     </details>
     <script type="module" src="./xr-entry.ts"></script>
-    <script type="module" src="./interface-theme.ts"></script>
   </body>
 </html>

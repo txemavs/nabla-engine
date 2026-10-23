@@ -1,0 +1,5 @@
+export * from './inventory.js'
+export * from './body-slots.js'
+export { LocalAuthority, SwitchAuthority } from '../net/authority.js'
+export type { AuthorityItem, GameAuthority, HealthChange, ItemChange } from '../net/authority.js'
+export * from './weapon-loadout.js'

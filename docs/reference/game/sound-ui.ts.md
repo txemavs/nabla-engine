@@ -10,10 +10,11 @@ Ajustes → Opciones → Sonido: General, Motor and Música sliders plus a music
 
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## soundPercent
 
-[Implementation, line 15](../../../game/sound-ui.ts#L15)
+[Implementation, line 16](../../../game/sound-ui.ts#L16)
 
 Percentage label for a 0..1 slider value.
 
@@ -27,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindSoundControls
 
-[Implementation, line 19](../../../game/sound-ui.ts#L19)
+[Implementation, line 20](../../../game/sound-ui.ts#L20)
 
 ```ts
 bindSoundControls(runtime: Pick<GameRuntime, 'audioMix' | 'setAudioMix'>): HTMLFieldSetElement
@@ -48,13 +49,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `outputs.set`
 - `slider.addEventListener`
 - `soundPercent`
+- `t`
 
-## bindSoundControls.callback@34
+## bindSoundControls.callback@35
 
-[Implementation, line 34](../../../game/sound-ui.ts#L34)
+[Implementation, line 35](../../../game/sound-ui.ts#L35)
 
 ```ts
-callback@34(): inferred by TypeScript; see implementation
+callback@35(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -63,12 +65,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setAudioMix`
 - `soundPercent`
 
-## bindSoundControls.callback@46
+## bindSoundControls.callback@47
 
-[Implementation, line 46](../../../game/sound-ui.ts#L46)
+[Implementation, line 47](../../../game/sound-ui.ts#L47)
 
 ```ts
-callback@46(): inferred by TypeScript; see implementation
+callback@47(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

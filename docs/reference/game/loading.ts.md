@@ -4,7 +4,8 @@
 
 [Source](../../../game/loading.ts)
 
-Loading screen controller for the 3x3 initial tile grid.
+Loading screen controller: Nabla mark, one message line and a progress bar on real progress
+(the initial map tiles when the page loads terrain, otherwise the boot phase).
 
 ## Module dependencies
 
@@ -13,7 +14,7 @@ Loading screen controller for the 3x3 initial tile grid.
 
 ## LoadingScreen.constructor
 
-[Implementation, line 30](../../../game/loading.ts#L30)
+[Implementation, line 31](../../../game/loading.ts#L31)
 
 Default Nabla skin; hosts pass logo, title, messages, layout and theme CSS.
 
@@ -23,10 +24,8 @@ constructor(skin: EngineSplashSkin = {}): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Array.from`
 - `applySplashSkin`
 - `document.getElementById`
-- `document.querySelectorAll`
 
 ## LoadingScreen.setSkin
 
@@ -70,10 +69,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.min`
 - `splashMessageAt`
 - `this.setStatus`
+- `this.updateIndicators`
 
 ## LoadingScreen.setSpawn
 
-[Implementation, line 53](../../../game/loading.ts#L53)
+[Implementation, line 55](../../../game/loading.ts#L55)
 
 ```ts
 setSpawn(latitude: number, longitude: number): void
@@ -87,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.setTiles
 
-[Implementation, line 58](../../../game/loading.ts#L58)
+[Implementation, line 60](../../../game/loading.ts#L60)
 
 ```ts
 setTiles(tiles: MapTile[]): void
@@ -95,28 +95,12 @@ setTiles(tiles: MapTile[]): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Array.from`
-- `document.getElementById`
-- `grid.replaceChildren`
 - `this.loadedTiles.clear`
 - `this.updateIndicators`
-- `tiles.map`
-
-## LoadingScreen.setTiles.callback@62
-
-[Implementation, line 62](../../../game/loading.ts#L62)
-
-```ts
-callback@62(): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `document.createElement`
 
 ## LoadingScreen.get3x3Grid
 
-[Implementation, line 74](../../../game/loading.ts#L74)
+[Implementation, line 66](../../../game/loading.ts#L66)
 
 ```ts
 get3x3Grid(center: MapTile): MapTile[]
@@ -128,7 +112,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.getRequiredTiles
 
-[Implementation, line 91](../../../game/loading.ts#L91)
+[Implementation, line 83](../../../game/loading.ts#L83)
 
 ```ts
 getRequiredTiles(): MapTile[]
@@ -136,7 +120,7 @@ getRequiredTiles(): MapTile[]
 
 ## LoadingScreen.markTileLoaded
 
-[Implementation, line 95](../../../game/loading.ts#L95)
+[Implementation, line 87](../../../game/loading.ts#L87)
 
 ```ts
 markTileLoaded(tileId: string): void
@@ -149,7 +133,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.isComplete
 
-[Implementation, line 100](../../../game/loading.ts#L100)
+[Implementation, line 92](../../../game/loading.ts#L92)
 
 ```ts
 isComplete(): boolean
@@ -159,12 +143,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.grid3x3.every`
 
-## LoadingScreen.isComplete.callback@101
+## LoadingScreen.isComplete.callback@93
 
-[Implementation, line 101](../../../game/loading.ts#L101)
+[Implementation, line 93](../../../game/loading.ts#L93)
 
 ```ts
-callback@101(tile): inferred by TypeScript; see implementation
+callback@93(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -174,7 +158,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.getProgress
 
-[Implementation, line 104](../../../game/loading.ts#L104)
+[Implementation, line 96](../../../game/loading.ts#L96)
 
 ```ts
 getProgress(): LoadingProgress
@@ -189,7 +173,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.updateIndicators
 
-[Implementation, line 116](../../../game/loading.ts#L116)
+[Implementation, line 108](../../../game/loading.ts#L108)
 
 ```ts
 updateIndicators(): void
@@ -197,14 +181,12 @@ updateIndicators(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `indicator.classList.toggle`
-- `mapTileId`
+- `Math.round`
 - `this.getProgress`
-- `this.loadedTiles.has`
 
 ## LoadingScreen.setStatus
 
-[Implementation, line 134](../../../game/loading.ts#L134)
+[Implementation, line 114](../../../game/loading.ts#L114)
 
 ```ts
 setStatus(message: string): void
@@ -212,7 +194,7 @@ setStatus(message: string): void
 
 ## LoadingScreen.setDetail
 
-[Implementation, line 139](../../../game/loading.ts#L139)
+[Implementation, line 119](../../../game/loading.ts#L119)
 
 Extra lines under the status (requests in flight, last error); empty hides them.
 
@@ -230,7 +212,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LoadingScreen.hide
 
-[Implementation, line 152](../../../game/loading.ts#L152)
+[Implementation, line 132](../../../game/loading.ts#L132)
 
 ```ts
 hide(): void
@@ -241,17 +223,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.screen.classList.add`
 
-## LoadingScreen.hide.callback@154
+## LoadingScreen.hide.callback@134
 
-[Implementation, line 154](../../../game/loading.ts#L154)
+[Implementation, line 134](../../../game/loading.ts#L134)
 
 ```ts
-callback@154(): inferred by TypeScript; see implementation
+callback@134(): inferred by TypeScript; see implementation
 ```
 
 ## LoadingScreen.show
 
-[Implementation, line 159](../../../game/loading.ts#L159)
+[Implementation, line 139](../../../game/loading.ts#L139)
 
 ```ts
 show(): void
@@ -263,7 +245,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showError
 
-[Implementation, line 170](../../../game/loading.ts#L170)
+[Implementation, line 150](../../../game/loading.ts#L150)
 
 ```ts
 showError(message: string, buttons: readonly ErrorButton[] = []): void
@@ -280,12 +262,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `errorEl.querySelectorAll`
 - `errorEl.querySelectorAll('button.recovery').forEach`
 
-## showError.callback@175
+## showError.callback@155
 
-[Implementation, line 175](../../../game/loading.ts#L175)
+[Implementation, line 155](../../../game/loading.ts#L155)
 
 ```ts
-callback@175(button): inferred by TypeScript; see implementation
+callback@155(button): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

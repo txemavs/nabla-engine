@@ -15,5 +15,6 @@ forklift grips, wheel grab and the weapon loadout.
 - `./xr-forklift.js`
 - `./xr-loadout.js`
 - `./xr-grab.js`
+- `./xr-splash.js`
 
 This module contains declarations, data or re-exports; it defines no executable functions.

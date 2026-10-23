@@ -168,7 +168,7 @@ callback@250(v): inferred by TypeScript; see implementation
 
 [Implementation, line 307](../../../../../../src/simulation/vehicles/two-wheeled/runtime.ts#L307)
 
-Forget transient controller state, e.g. after an R reset uprighted the chassis.
+Forget transient controller state, e.g. after an recover (Y) reset uprighted the chassis.
 
 ```ts
 resetTwoWheeled(state: TwoWheeledState): void

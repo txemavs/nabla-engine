@@ -1,9 +1,12 @@
+import type { SparkSurface } from '../render/entity/shot-sparks.js'
 import { mouseButtons } from '../config/input-bindings.js'
 import { Vector3, PerspectiveCamera } from 'three'
 import type { Simulation } from '../simulation/simulation.js'
 import type { SceneView } from '../render/entity/view.js'
 import type { Sidearm } from './sidearm.js'
 import type { Gallery } from './gallery.js'
+import type { Combat } from './combat.js'
+import { weaponBaseDamage } from '../simulation/combat/damage.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import {
   bulletEnergy,
@@ -39,6 +42,15 @@ export interface SidearmShot extends FirearmEvent {
 /** Straight check for gallery targets after a ballistic miss, m (drop there is ~1 cm). */
 const NEAR_MISS_CHECK = 25
 
+/**
+ * Spark profile of a hit. Physics only tags metal (vehicle bodies, sign poles); untagged hits
+ * are told apart by their normal: floor-like is ground, anything else concrete.
+ */
+function sparkSurface(gallery: Gallery, point: Vector3, normal: Vec3 | undefined): SparkSurface {
+  const tagged = gallery.lastImpact
+  if (tagged && point.distanceToSquared(new Vector3(...tagged.point)) < 0.25) return 'metal'
+  return normal && normal[1] > 0.7 ? 'ground' : 'concrete'
+}
 /** Fitted drag and zero angle per load (they only depend on the preset). */
 const fits = new WeakMap<BallisticLoad, { k: number; angle: number }>()
 /** Shared geometric aim for shots and laser convergence; coordinates are simulation-world. */
@@ -49,7 +61,25 @@ export function sidearmAimRay(
   camera: PerspectiveCamera,
   firstPerson: boolean,
   now = 0,
+  /**
+   * Host-held weapon (a synced held-item pose): shots leave its muzzle (simulation world) toward
+   * what the camera looks at (world or character), whatever the view.
+   */
+  heldMuzzle?: Vec3 | null,
+  combat?: Combat | null,
 ): { origin: Vector3; direction: Vector3 } {
+  if (heldMuzzle) {
+    // Called before the render origin is applied: the camera position is simulation world.
+    const look = camera.getWorldDirection(new Vector3())
+    const at = camera.position.clone()
+    const eye = at.toArray() as Vec3
+    const world = sim.shoot(eye, look.toArray() as Vec3, sidearm.range, 0)
+    const far = world ? at.distanceTo(new Vector3(...world.point)) : sidearm.range
+    const body = combat?.raycast(eye, look.toArray() as Vec3, far)
+    const target = body ? new Vector3(...body.point) : at.clone().addScaledVector(look, far)
+    const origin = new Vector3(...heldMuzzle)
+    return { origin, direction: target.sub(origin).normalize() }
+  }
   const barrel = sidearm.accessoryRay(now, firstPerson, camera.fov, 'Barrel')
   if (barrel) {
     for (const point of [barrel.origin, barrel.target]) {
@@ -95,10 +125,34 @@ export function fireSidearm(
   camera: PerspectiveCamera,
   now: number,
   firstPerson: boolean,
+  combat?: Combat | null,
+  /** The fire origin (GameRuntime's weapon position) reported with character hits. */
+  fireOrigin?: Vec3,
+  /** See {@link sidearmAimRay}. */
+  heldMuzzle?: Vec3 | null,
 ): SidearmShot | null {
   if (!sidearm.visible) return null
+  // Characters (hit zones) stop the bullet too: the nearer of world and body wins.
+  const cast = (from: Vec3, dir: Vec3, length: number) => sim.shoot(from, dir, length, 0)
+  const query = combat
+    ? combat.shotQuery(
+        cast,
+        sidearm.preset?.id ?? 'sidearm',
+        weaponBaseDamage(sidearm.preset ?? {}),
+        heldMuzzle ?? fireOrigin,
+      )
+    : cast
   // Capture the pose before pulling the trigger adds recoil or ends an inspection.
-  const { origin, direction } = sidearmAimRay(sidearm, sim, view, camera, firstPerson, now)
+  const { origin, direction } = sidearmAimRay(
+    sidearm,
+    sim,
+    view,
+    camera,
+    firstPerson,
+    now,
+    heldMuzzle,
+    combat,
+  )
   const event: SidearmShot = sidearm.pull(now)
   if (!event.fired) return event
   const spread = sidearm.temperature.spreadRadians
@@ -119,13 +173,10 @@ export function fireSidearm(
   let impulse = sidearm.impulse
   if (load) {
     const { k, angle } = fitted(load)
-    const result = traceBullet(
-      load,
-      origin.toArray() as Vec3,
-      direction.toArray() as Vec3,
-      (from, dir, length) => sim.shoot(from, dir, length, 0),
-      { k, angle },
-    )
+    const result = traceBullet(load, origin.toArray() as Vec3, direction.toArray() as Vec3, query, {
+      k,
+      angle,
+    })
     destination = new Vector3(...result.end)
     if (result.hit) {
       normal = result.hit.normal
@@ -136,7 +187,7 @@ export function fireSidearm(
     }
     event.end = result.end
   } else {
-    const aimed = sim.shoot(origin.toArray(), direction.toArray(), sidearm.range, 0)
+    const aimed = query(origin.toArray() as Vec3, direction.toArray() as Vec3, sidearm.range)
     destination = aimed
       ? new Vector3(...aimed.point)
       : origin.clone().addScaledVector(direction, sidearm.range)
@@ -164,7 +215,11 @@ export function fireSidearm(
     Math.min(25, (event.impactJoules ?? 480) / 40),
   )
   sidearm.impact(hit)
+  view.tracers.add(origin.toArray() as Vec3, destination.toArray() as Vec3, now)
   if (hit && !gallery.lastGlassImpact)
-    view.sparks.add(destination.toArray() as [number, number, number], now, normal)
+    view.sparks.add(destination.toArray() as Vec3, now, normal, {
+      surface: sparkSurface(gallery, destination, normal),
+      incoming: destination.clone().sub(origin).toArray() as Vec3,
+    })
   return event
 }

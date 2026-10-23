@@ -1,0 +1,533 @@
+/**
+ * Skinned player body: one shared rig (mesh + animation clips, loaded once) and one
+ * {@link PlayerBody} per player, local or remote. A body is driven only by an
+ * {@link AvatarNetState} ({@link AVATAR_ANIM_STATES} name, yaw, position, speed), so the
+ * local player and remote players run the same code: the local one derives its state from the
+ * simulation ({@link localAvatarState}); a remote one gets it from the network.
+ *
+ * Asset contract: glTF, metres, Y-up, facing +Z, feet at y = 0, clips named as the states,
+ * no root motion (the game moves the object). An `Object3D` with
+ * `userData.nabla_attach === 'createMonitorAvatar'` is the head socket. Optional named sockets:
+ * `WeaponSocket_R` (held weapon: −Z barrel, +Y top; the weapon's `GripSocket` lands on it) and
+ * any socket an {@link PlayerBodyAttachment} names (belt, holster, baton…). Materials may carry
+ * `extras.nabla_color_slot` (`primary` / `secondary` / `tertiary` / `light`) for
+ * {@link PlayerBodyAssets.colors}.
+ */
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
+import { MeshoptDecoder } from 'meshoptimizer'
+import type { Vec3Tuple } from '../../entity/schema.js'
+import { getRetargetedClips } from './retarget-clips.js'
+
+/** Animation states of a body; each is the name of a clip in the animations file. */
+export const AVATAR_ANIM_STATES = [
+  'idle',
+  'walk',
+  'run',
+  'jump_start',
+  'jump_loop',
+  'jump_land',
+  'crouch_idle',
+  'crouch_walk',
+  'sit',
+  'drive',
+] as const
+export type AvatarAnimState = (typeof AVATAR_ANIM_STATES)[number]
+
+/**
+ * Everything another client needs to draw a player's body (network contract): the
+ * animation state, the heading (gameplay radians, 0 faces −Z), the feet position in local
+ * metres and the horizontal speed in m/s (it sets the stride rate).
+ */
+export interface AvatarNetState {
+  animState: AvatarAnimState
+  yaw: number
+  position: Vec3Tuple
+  speed: number
+}
+
+/** Where the rig files are: the skinned mesh and the clips (may be the same file). */
+export interface PlayerBodyAssets {
+  model: string
+  animations: string
+  /** Static parts hung at sockets, in order (a later part may use a socket of an earlier one). */
+  attachments?: readonly PlayerBodyAttachment[]
+  /** Colour overrides per material colour slot; unset slots keep the authored colour. */
+  colors?: Partial<Record<PlayerBodyColorSlot, THREE.ColorRepresentation>>
+}
+
+/** A static glTF part (belt, holster, holstered pistol…) attached at a named socket. */
+export interface PlayerBodyAttachment {
+  model: string
+  /** Name of the socket node in the body or in an earlier attachment. */
+  socket: string
+  /**
+   * `holstered`: the weapon shown on the body while no weapon is drawn
+   * ({@link PlayerBody.setHolstered}). Its `GripSocket`, if any, is ignored: the root sits at
+   * the socket.
+   */
+  role?: 'holstered'
+}
+
+export const PLAYER_BODY_COLOR_SLOTS = ['primary', 'secondary', 'tertiary', 'light'] as const
+export type PlayerBodyColorSlot = (typeof PLAYER_BODY_COLOR_SLOTS)[number]
+/** Socket the held weapon's `GripSocket` is placed on. */
+export const WEAPON_SOCKET = 'WeaponSocket_R'
+const HOLSTERED = 'nabla_holstered'
+
+/** Speeds the clips were authored for, m/s: their playback rate follows the real speed. */
+export const AVATAR_STRIDE_SPEED = { walk: 1.4, run: 3.5, crouch_walk: 0.8 } as const
+/** Above this horizontal speed a player walks (or crouch-walks). */
+const MOVING = 0.25
+const LOOPING = new Set<AvatarAnimState>([
+  'idle',
+  'walk',
+  'run',
+  'jump_loop',
+  'crouch_idle',
+  'crouch_walk',
+  'sit',
+  'drive',
+])
+const FADE = 0.25
+
+/** What the local simulation says about the player, for {@link localAvatarState}. */
+export interface AvatarInput {
+  grounded: boolean
+  /** Upward speed, m/s. */
+  rising: number
+  /** Horizontal speed, m/s. */
+  speed: number
+  crouching: boolean
+  seated: boolean
+  /**
+   * Speed above which a standing player runs, m/s: the host passes the midpoint of its walk and
+   * sprint speeds, so normal walking plays `walk` and only sprinting plays `run`.
+   */
+  runAbove: number
+}
+
+/**
+ * Next animation state from the player's movement. Pure, so the same rules hold wherever the
+ * state is computed. `previous` keeps the jump phases in order (start → loop → land).
+ */
+export function localAvatarState(previous: AvatarAnimState, input: AvatarInput): AvatarAnimState {
+  if (input.seated) return 'drive'
+  if (!input.grounded)
+    return previous === 'jump_start' || input.rising > 0.5 ? 'jump_start' : 'jump_loop'
+  if (previous === 'jump_start' || previous === 'jump_loop') return 'jump_land'
+  if (input.crouching) return input.speed > MOVING ? 'crouch_walk' : 'crouch_idle'
+  if (input.speed > input.runAbove) return 'run'
+  if (input.speed > MOVING) return 'walk'
+  return 'idle'
+}
+
+/** The shared rig: one load of the mesh and clips for every body. */
+export class PlayerBodyRig {
+  private constructor(
+    private readonly source: THREE.Object3D,
+    readonly clips: readonly THREE.AnimationClip[],
+  ) {}
+  static async load(assets: PlayerBodyAssets): Promise<PlayerBodyRig> {
+    await MeshoptDecoder.ready
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
+    const parts = assets.attachments ?? []
+    const [model, animations, ...loaded] = await Promise.all([
+      loader.loadAsync(assets.model),
+      assets.animations === assets.model ? null : loader.loadAsync(assets.animations),
+      ...parts.map((part) => loader.loadAsync(part.model)),
+    ])
+    const source = model.scene
+    parts.forEach((part, index) => {
+      const socket = source.getObjectByName(part.socket)
+      if (!socket) {
+        console.warn(`player body: no socket ${part.socket} for ${part.model}`)
+        return
+      }
+      const scene = loaded[index].scene
+      scene.name =
+        part.model
+          .split('/')
+          .pop()
+          ?.replace(/\.glb$/, '') ?? 'attachment'
+      if (part.role === 'holstered') scene.userData[HOLSTERED] = true
+      socket.add(scene)
+    })
+    if (assets.colors) recolor(source, assets.colors)
+    // Shared clips (another skeleton) are remapped to this model's proportions and grounded, once
+    // per model URL; clips authored on the model itself play as they are.
+    const clips = animations
+      ? getRetargetedClips(assets.model, animations.animations, animations.scene, source, {
+          ground: true,
+        })
+      : model.animations
+    return new PlayerBodyRig(source, clips)
+  }
+  /** A new body sharing this rig's geometry, materials and clips. */
+  create(): PlayerBody {
+    return new PlayerBody(cloneSkinned(this.source), this.clips)
+  }
+}
+
+/** Swap materials tagged `nabla_color_slot` for tinted copies (bodies and XR hands share it). */
+export function recolor(
+  root: THREE.Object3D,
+  colors: NonNullable<PlayerBodyAssets['colors']>,
+): void {
+  const done = new Map<THREE.Material, THREE.Material>()
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh
+    if (!mesh.isMesh) return
+    const swap = (material: THREE.Material): THREE.Material => {
+      const slot = material.userData?.nabla_color_slot as PlayerBodyColorSlot | undefined
+      const color = slot ? colors[slot] : undefined
+      if (color === undefined || !('color' in material)) return material
+      let copy = done.get(material)
+      if (!copy) {
+        copy = material.clone()
+        ;(copy as THREE.MeshStandardMaterial).color.set(color)
+        done.set(material, copy)
+      }
+      return copy
+    }
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material)
+  })
+}
+
+const scratch = new THREE.Matrix4()
+const scratchQ = new THREE.Quaternion()
+/** Hit flinch length, s. */
+export const FLINCH_S = 0.3
+/** Death collapse length, s. */
+export const COLLAPSE_S = 0.7
+const gripInverse = new THREE.Matrix4()
+
+/** Turn `bone` (world space) so the direction to `child` points along `direction`. */
+function alignBone(bone: THREE.Object3D, child: THREE.Object3D, direction: THREE.Vector3): void {
+  if (direction.lengthSq() === 0) return
+  const along = child
+    .getWorldPosition(new THREE.Vector3())
+    .sub(bone.getWorldPosition(new THREE.Vector3()))
+    .normalize()
+  const turn = new THREE.Quaternion().setFromUnitVectors(along, direction.clone().normalize())
+  const world = bone.getWorldQuaternion(new THREE.Quaternion()).premultiply(turn)
+  const parent = bone.parent
+    ? bone.parent.getWorldQuaternion(new THREE.Quaternion())
+    : new THREE.Quaternion()
+  bone.quaternion.copy(parent.invert().multiply(world))
+  bone.updateWorldMatrix(false, true)
+}
+
+/** One player's body: its own skeleton and mixer over the shared rig. */
+export class PlayerBody {
+  /** Feet origin; facing −Z at yaw 0 like every game object. */
+  readonly root = new THREE.Group()
+  /** The head socket, or null when the asset has none. */
+  readonly head: THREE.Object3D | null
+  /** Where a held weapon's grip goes ({@link WEAPON_SOCKET}), or null. */
+  readonly weaponSocket: THREE.Object3D | null
+  private readonly holstered: THREE.Object3D[] = []
+  private readonly mixer: THREE.AnimationMixer
+  private readonly actions = new Map<AvatarAnimState, THREE.AnimationAction>()
+  private current: THREE.AnimationAction | null = null
+  private readonly fall = new THREE.Group()
+  private readonly flinches: {
+    bone: THREE.Object3D
+    axis: THREE.Vector3
+    angle: number
+    t: number
+  }[] = []
+  private collapse: { axis: THREE.Vector3; t: number } | null = null
+  private currentState: AvatarAnimState | null = null
+
+  constructor(model: THREE.Object3D, clips: readonly THREE.AnimationClip[]) {
+    this.root.name = 'player-body'
+    // glTF faces +Z; game objects face −Z.
+    model.rotation.y = Math.PI
+    // Pivot at the feet for the death collapse; the root keeps position and yaw.
+    this.fall.name = 'player-body-fall'
+    this.fall.add(model)
+    this.root.add(this.fall)
+    let head: THREE.Object3D | null = null
+    model.traverse((object) => {
+      if (object.userData.nabla_attach === 'createMonitorAvatar') head = object
+      if (object.userData[HOLSTERED]) this.holstered.push(object)
+      if ((object as THREE.Mesh).isMesh) object.frustumCulled = false
+    })
+    this.head = head
+    this.weaponSocket = model.getObjectByName(WEAPON_SOCKET) ?? null
+    this.mixer = new THREE.AnimationMixer(model)
+    for (const state of AVATAR_ANIM_STATES) {
+      const clip = THREE.AnimationClip.findByName(clips as THREE.AnimationClip[], state)
+      if (!clip) continue
+      const action = this.mixer.clipAction(clip)
+      if (!LOOPING.has(state)) {
+        action.setLoop(THREE.LoopOnce, 1)
+        action.clampWhenFinished = true
+      }
+      this.actions.set(state, action)
+    }
+  }
+
+  /** The state being shown (after a one-shot ends this is what follows it). */
+  get state(): AvatarAnimState | null {
+    return this.currentState
+  }
+
+  /** True when the one-shot clip of the current state has finished. */
+  get finished(): boolean {
+    const action = this.current
+    return !!action && action.loop === THREE.LoopOnce && !action.isRunning()
+  }
+
+  /** Show `state` at `speed` (m/s, sets the stride rate) and advance the clips by `dt`. */
+  animate(state: AvatarAnimState, speed: number, dt: number): void {
+    const next = this.actions.get(state) ?? this.actions.get('idle')
+    if (next && next !== this.current) {
+      next.reset().play()
+      if (this.current) next.crossFadeFrom(this.current, FADE, true)
+      this.current = next
+    }
+    this.currentState = state
+    const stride = AVATAR_STRIDE_SPEED[state as keyof typeof AVATAR_STRIDE_SPEED]
+    if (next) next.timeScale = stride ? THREE.MathUtils.clamp(speed / stride, 0.5, 3) : 1
+    const step = Math.min(Math.max(dt, 0), 0.1)
+    if (!this.collapse) this.mixer.update(step)
+    this.applyReactions(step)
+  }
+
+  /** Remote players: place and animate from a network state. */
+  apply(state: AvatarNetState, dt: number): void {
+    this.root.position.fromArray(state.position)
+    this.root.rotation.set(0, state.yaw, 0)
+    this.animate(state.animState, state.speed, dt)
+  }
+
+  /**
+   * Bones of one arm (upper arm, forearm, hand), found by name: `<Left|Right>Arm`,
+   * `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig`). Null when
+   * the rig has no such bones.
+   */
+  armBones(
+    hand: 'left' | 'right',
+  ): { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null {
+    const cached = this.arms.get(hand)
+    if (cached !== undefined) return cached
+    const side = hand === 'left' ? 'Left' : 'Right'
+    const find = (suffix: string) => {
+      let found: THREE.Object3D | null = null
+      // Any prefix: glTF loading strips ':' (`mixamorig:RightArm` becomes `mixamorigRightArm`).
+      const tail = new RegExp(`${side}${suffix}$`)
+      this.root.traverse((object) => {
+        if (!found && tail.test(object.name)) found = object
+      })
+      return found as THREE.Object3D | null
+    }
+    const arm = find('Arm')
+    const forearm = find('ForeArm')
+    const handBone = find('Hand')
+    const chain = arm && forearm && handBone ? { arm, forearm, hand: handBone } : null
+    this.arms.set(hand, chain)
+    return chain
+  }
+  private readonly arms = new Map<
+    'left' | 'right',
+    { arm: THREE.Object3D; forearm: THREE.Object3D; hand: THREE.Object3D } | null
+  >()
+
+  /**
+   * Point one arm straight along `direction` (world space), over the animated pose: call after
+   * {@link animate}/{@link apply} every frame (e.g. a held pistol aimed where the player looks).
+   */
+  aimArm(hand: 'left' | 'right', direction: THREE.Vector3): void {
+    const chain = this.armBones(hand)
+    if (!chain || direction.lengthSq() === 0) return
+    const target = direction.clone().normalize()
+    const a = new THREE.Vector3()
+    const b = new THREE.Vector3()
+    const turn = new THREE.Quaternion()
+    const world = new THREE.Quaternion()
+    const parent = new THREE.Quaternion()
+    this.root.updateWorldMatrix(true, true)
+    for (const [bone, child] of [
+      [chain.arm, chain.forearm],
+      [chain.forearm, chain.hand],
+    ] as const) {
+      const along = child.getWorldPosition(a).sub(bone.getWorldPosition(b)).normalize()
+      turn.setFromUnitVectors(along, target)
+      bone.getWorldQuaternion(world).premultiply(turn)
+      if (bone.parent) bone.parent.getWorldQuaternion(parent)
+      else parent.identity()
+      bone.quaternion.copy(parent.invert().multiply(world))
+      bone.updateWorldMatrix(false, true)
+    }
+  }
+
+  /**
+   * Two-bone IK: bend `hand`'s arm so the hand reaches `target` (world space), elbow down and
+   * back; a target out of reach gets the arm stretched toward it. Call after {@link animate}.
+   */
+  reachHand(hand: 'left' | 'right', target: THREE.Vector3): void {
+    const chain = this.armBones(hand)
+    if (!chain) return
+    this.root.updateWorldMatrix(true, true)
+    const a = chain.arm.getWorldPosition(new THREE.Vector3())
+    const b = chain.forearm.getWorldPosition(new THREE.Vector3())
+    const c = chain.hand.getWorldPosition(new THREE.Vector3())
+    const upper = a.distanceTo(b)
+    const lower = b.distanceTo(c)
+    const toTarget = target.clone().sub(a)
+    const d = THREE.MathUtils.clamp(toTarget.length(), 1e-3, upper + lower - 1e-3)
+    const u = toTarget.normalize()
+    // Elbow plane: down and a little back from the body (world down, body back).
+    const back = new THREE.Vector3(0, 0, 1).applyQuaternion(
+      this.root.getWorldQuaternion(new THREE.Quaternion()),
+    )
+    const pole = new THREE.Vector3(0, -1, 0).addScaledVector(back, 0.4)
+    const n = pole.sub(u.clone().multiplyScalar(pole.dot(u)))
+    if (n.lengthSq() < 1e-6) n.set(0, -1, 0)
+    n.normalize()
+    const cosA = THREE.MathUtils.clamp(
+      (upper * upper + d * d - lower * lower) / (2 * upper * d),
+      -1,
+      1,
+    )
+    const elbow = a
+      .clone()
+      .addScaledVector(u, upper * cosA)
+      .addScaledVector(n, upper * Math.sqrt(1 - cosA * cosA))
+    const reach = a.clone().addScaledVector(u, d)
+    alignBone(chain.arm, chain.forearm, elbow.clone().sub(a))
+    alignBone(
+      chain.forearm,
+      chain.hand,
+      reach.sub(chain.forearm.getWorldPosition(new THREE.Vector3())),
+    )
+  }
+
+  /** Head socket position in `frame`'s local space (after the last {@link animate}). */
+  headIn(frame: THREE.Object3D, target = new THREE.Vector3()): THREE.Vector3 | null {
+    if (!this.head) return null
+    this.root.updateWorldMatrix(true, true)
+    return frame.worldToLocal(this.head.getWorldPosition(target))
+  }
+
+  /**
+   * A hit reaction: `bone` turns away from the shot (`direction`, world) by up to `strength`
+   * radians, then eases back in {@link FLINCH_S}. Added on top of the animation pose.
+   */
+  flinch(bone: THREE.Object3D, direction: THREE.Vector3, strength = 0.35): void {
+    if (this.collapse) return
+    bone.parent?.updateWorldMatrix(true, false)
+    const axis = new THREE.Vector3(0, 1, 0).cross(direction)
+    if (axis.lengthSq() < 1e-6) axis.set(1, 0, 0)
+    // World axis into the bone's parent-relative rotation frame.
+    const world = bone.getWorldQuaternion(new THREE.Quaternion())
+    axis.normalize().applyQuaternion(world.invert())
+    this.flinches.push({ bone, axis, angle: strength, t: 0 })
+    if (this.flinches.length > 6) this.flinches.shift()
+  }
+
+  /** True while collapsed (dead). */
+  get collapsed(): boolean {
+    return !!this.collapse
+  }
+
+  /** Death: fall over away from `direction` (world; default backwards) and stop animating. */
+  collapseFrom(direction?: THREE.Vector3): void {
+    if (this.collapse) return
+    this.root.updateWorldMatrix(true, false)
+    const local = (
+      direction?.clone() ??
+      new THREE.Vector3(0, 0, 1).applyQuaternion(
+        this.root.getWorldQuaternion(new THREE.Quaternion()),
+      )
+    ).applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()).invert())
+    local.y = 0
+    if (local.lengthSq() < 1e-6) local.set(0, 0, 1)
+    // Rotating about up × push tips the top along the push.
+    const axis = new THREE.Vector3(0, 1, 0).cross(local.normalize()).normalize()
+    this.collapse = { axis, t: 0 }
+  }
+
+  /** Stand up again (respawn). */
+  revive(): void {
+    this.collapse = null
+    this.fall.quaternion.identity()
+    this.fall.position.set(0, 0, 0)
+    this.flinches.length = 0
+  }
+
+  private applyReactions(dt: number): void {
+    for (let i = this.flinches.length - 1; i >= 0; i--) {
+      const f = this.flinches[i]
+      f.t += dt
+      const k = f.t / FLINCH_S
+      if (k >= 1) {
+        this.flinches.splice(i, 1)
+        continue
+      }
+      // Fast in (first fifth), slow out.
+      const amount = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8
+      f.bone.quaternion.multiply(scratchQ.setFromAxisAngle(f.axis, f.angle * amount))
+    }
+    const c = this.collapse
+    if (c) {
+      c.t = Math.min(1, c.t + dt / COLLAPSE_S)
+      // Knees give first, then the fall accelerates.
+      const e = c.t * c.t
+      this.fall.quaternion.setFromAxisAngle(c.axis, (Math.PI / 2) * e)
+      this.fall.position.y = 0.12 * e
+    }
+  }
+
+  /** True when the body has a holstered weapon part. */
+  get hasHolster(): boolean {
+    return this.holstered.length > 0
+  }
+
+  /** Show or hide the holstered weapon (hide it while the player holds a weapon). */
+  setHolstered(visible: boolean): void {
+    for (const object of this.holstered) object.visible = visible
+  }
+
+  /**
+   * Move `weapon` (already in the scene graph) so its `GripSocket` (or its origin when it has
+   * none) sits on the hand's weapon socket. Call after {@link animate}. False without a socket.
+   * `keepOrientation`: only move it (the caller already aimed it); else take the socket's turn.
+   */
+  holdAtHand(weapon: THREE.Object3D, keepOrientation = false): boolean {
+    const socket = this.weaponSocket
+    const parent = weapon.parent
+    if (!socket || !parent) return false
+    this.root.updateWorldMatrix(true, true)
+    weapon.updateWorldMatrix(true, true)
+    const grip = weapon.getObjectByName('GripSocket')
+    if (keepOrientation) {
+      const target = socket.getWorldPosition(new THREE.Vector3())
+      const at = grip && grip !== weapon ? grip.getWorldPosition(new THREE.Vector3()) : null
+      const from = at ?? weapon.getWorldPosition(new THREE.Vector3())
+      const delta = parent.worldToLocal(target.clone()).sub(parent.worldToLocal(from))
+      weapon.position.add(delta)
+      weapon.updateMatrixWorld(true)
+      return true
+    }
+    gripInverse.identity()
+    if (grip && grip !== weapon)
+      gripInverse.copy(weapon.matrixWorld).invert().multiply(grip.matrixWorld).invert()
+    scratch
+      .copy(parent.matrixWorld)
+      .invert()
+      .multiply(socket.matrixWorld)
+      .multiply(gripInverse)
+      .decompose(weapon.position, weapon.quaternion, weapon.scale)
+    weapon.updateMatrixWorld(true)
+    return true
+  }
+
+  dispose(): void {
+    this.mixer.stopAllAction()
+    this.root.removeFromParent()
+  }
+}

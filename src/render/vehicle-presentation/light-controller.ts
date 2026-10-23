@@ -25,6 +25,13 @@ export type VehicleLightChannel =
  * main beams). H cycles off → position → low → off.
  */
 export type VehicleLightMode = 'off' | 'position' | 'low' | 'auto'
+/** Switch positions of a vehicle's lights, for saving or mirroring them on another vehicle. */
+export interface VehicleLightSwitches {
+  mode: VehicleLightMode
+  highBeam: boolean
+  /** -1 left indicator, 1 right, 0 none. */
+  signal: number
+}
 /** Order of `VehicleLightController.toggleLights` (H). */
 export const vehicleLightCycle: readonly VehicleLightMode[] = ['off', 'position', 'low']
 

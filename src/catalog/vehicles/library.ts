@@ -4,6 +4,7 @@ import { createEntity, type Entity, type Vec3Tuple } from '../../entity/schema.j
 import { vector } from '../../entity/coords.js'
 import { vehicleField, visualField } from '../../entity/vehicle/field.js'
 import { readVehiclePresetSources } from './preset-source.js'
+import { presetBucket, type PresetBucket } from '../preset-bucket.js'
 import { generatedVehicleRigs } from './generated-rigs.js'
 import { hasTrailerBox, trailerBox } from './trailer-boxes.js'
 
@@ -38,6 +39,7 @@ const presetSchema = z
 export type VehiclePreset = z.infer<typeof presetSchema>
 
 let cached: VehiclePreset[] | undefined
+const buckets = new Map<string, PresetBucket>()
 
 /** Every preset found at startup, in menu order. An empty assets folder yields none. */
 export function vehiclePresets(): VehiclePreset[] {
@@ -46,6 +48,7 @@ export function vehiclePresets(): VehiclePreset[] {
   for (const source of readVehiclePresetSources()) {
     try {
       const { rig, ...authored } = source.data as VehiclePreset & { rig?: string }
+      buckets.set(authored.id, presetBucket(source.file))
       if (rig !== undefined && rig !== 'glb') throw new Error(`Unknown rig source: ${rig}`)
       const extracted = rig === 'glb' ? generatedVehicleRigs[authored.id] : undefined
       if (rig === 'glb' && (!extracted || extracted.source !== authored.visual.body.url))
@@ -91,6 +94,12 @@ export function vehiclePresets(): VehiclePreset[] {
     seen.add(preset.id)
   }
   return (cached = presets)
+}
+
+/** `library` (ships with the engine) or `custom` (this machine only); undefined for unknown ids. */
+export function vehiclePresetBucket(id: string): PresetBucket | undefined {
+  vehiclePresets()
+  return buckets.get(id)
 }
 
 export function hasVehiclePreset(id: string): boolean {

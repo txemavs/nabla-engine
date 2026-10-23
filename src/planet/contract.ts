@@ -191,6 +191,17 @@ export interface PlanetPhoto {
    */
   frame?: string
 }
+/** Transcoded KTX2 texture: one transferable buffer per mip level (BC7/ASTC/ETC2/... or RGBA8). */
+export interface PlanetCompressedTexture {
+  width: number
+  height: number
+  /** three.js format constant (e.g. `RGBA_BPTC_Format`, `RGBA_ASTC_4x4_Format`, `RGBAFormat`). */
+  format: number
+  /** three.js type constant (`UnsignedByteType` for every Basis target). */
+  type: number
+  colorSpace: string
+  mipmaps: { data: Uint8Array; width: number; height: number }[]
+}
 export interface PlanetMesh {
   name: string
   position: Float32Array
@@ -199,6 +210,11 @@ export interface PlanetMesh {
   index?: Uint32Array
   uv?: Float32Array
   map?: ImageBitmap
+  /**
+   * GPU-ready texture transcoded in the worker from a `KHR_texture_basisu` (KTX2) GLB texture.
+   * Set instead of `map`; the main thread wraps it in a `THREE.CompressedTexture`.
+   */
+  compressedMap?: PlanetCompressedTexture
   tint: string
   side: number
   metadata: Record<string, any>

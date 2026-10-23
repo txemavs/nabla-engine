@@ -9,7 +9,7 @@
 - `three`
 - `../simulation/sports/hoop.js`
 - `./xr-station-placement.js`
-- `./interface-theme.js`
+- `../ui/theme.js`
 - `./xr-disposal-portal.js`
 
 ## XRHoop.constructor

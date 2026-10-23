@@ -12,12 +12,13 @@
 - `../../entity/coords.js`
 - `../../entity/vehicle/field.js`
 - `./preset-source.js`
+- `../preset-bucket.js`
 - `./generated-rigs.js`
 - `./trailer-boxes.js`
 
 ## vehiclePresets
 
-[Implementation, line 43](../../../../../src/catalog/vehicles/library.ts#L43)
+[Implementation, line 45](../../../../../src/catalog/vehicles/library.ts#L45)
 
 Every preset found at startup, in menu order. An empty assets folder yields none.
 
@@ -29,6 +30,8 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Error`
 - `Set`
+- `buckets.set`
+- `presetBucket`
 - `presetSchema.parse`
 - `presets.push`
 - `presets.sort`
@@ -43,21 +46,36 @@ Explicit throws in this body:
 - `new Error(\`Vehicle preset ${source.file} is invalid\`, { cause: error })`
 - `new Error(\`Duplicate vehicle preset id ${preset.id}\`)`
 
-## vehiclePresets.callback@87
+## vehiclePresets.callback@90
 
-[Implementation, line 87](../../../../../src/catalog/vehicles/library.ts#L87)
+[Implementation, line 90](../../../../../src/catalog/vehicles/library.ts#L90)
 
 ```ts
-callback@87(a, b): inferred by TypeScript; see implementation
+callback@90(a, b): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `a.id.localeCompare`
 
+## vehiclePresetBucket
+
+[Implementation, line 100](../../../../../src/catalog/vehicles/library.ts#L100)
+
+`library` (ships with the engine) or `custom` (this machine only); undefined for unknown ids.
+
+```ts
+vehiclePresetBucket(id: string): PresetBucket | undefined
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `buckets.get`
+- `vehiclePresets`
+
 ## hasVehiclePreset
 
-[Implementation, line 96](../../../../../src/catalog/vehicles/library.ts#L96)
+[Implementation, line 105](../../../../../src/catalog/vehicles/library.ts#L105)
 
 ```ts
 hasVehiclePreset(id: string): boolean
@@ -68,17 +86,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehiclePresets`
 - `vehiclePresets().some`
 
-## hasVehiclePreset.callback@97
+## hasVehiclePreset.callback@106
 
-[Implementation, line 97](../../../../../src/catalog/vehicles/library.ts#L97)
+[Implementation, line 106](../../../../../src/catalog/vehicles/library.ts#L106)
 
 ```ts
-callback@97(preset): inferred by TypeScript; see implementation
+callback@106(preset): inferred by TypeScript; see implementation
 ```
 
 ## vehiclePreset
 
-[Implementation, line 100](../../../../../src/catalog/vehicles/library.ts#L100)
+[Implementation, line 109](../../../../../src/catalog/vehicles/library.ts#L109)
 
 ```ts
 vehiclePreset(id: string): VehiclePreset
@@ -94,17 +112,17 @@ Explicit throws in this body:
 
 - `new Error(\`No vehicle preset "${id}"\`)`
 
-## vehiclePreset.callback@101
+## vehiclePreset.callback@110
 
-[Implementation, line 101](../../../../../src/catalog/vehicles/library.ts#L101)
+[Implementation, line 110](../../../../../src/catalog/vehicles/library.ts#L110)
 
 ```ts
-callback@101(entry): inferred by TypeScript; see implementation
+callback@110(entry): inferred by TypeScript; see implementation
 ```
 
 ## applyTrailerBox
 
-[Implementation, line 115](../../../../../src/catalog/vehicles/library.ts#L115)
+[Implementation, line 124](../../../../../src/catalog/vehicles/library.ts#L124)
 
 ```ts
 applyTrailerBox(entity: Entity, box: string | false): void
@@ -125,7 +143,7 @@ Explicit throws in this body:
 
 ## presetVehicle
 
-[Implementation, line 140](../../../../../src/catalog/vehicles/library.ts#L140)
+[Implementation, line 149](../../../../../src/catalog/vehicles/library.ts#L149)
 
 One vehicle. Omit position to use the preset's placement.
 
@@ -142,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## presetEntities
 
-[Implementation, line 162](../../../../../src/catalog/vehicles/library.ts#L162)
+[Implementation, line 171](../../../../../src/catalog/vehicles/library.ts#L171)
 
 The vehicle, plus the carrier stern portal when the preset asks for one.
 

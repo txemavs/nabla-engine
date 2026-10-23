@@ -8,6 +8,7 @@ export const preferenceKeys = new Set([
   'nabla.terrain.source',
   'nabla.terrain.layers',
   'nabla.flipCinematic',
+  'nabla.simFire',
   'nabla.recoverToRoad',
   'nabla.shadowBias',
   'nabla.shadowsEnabled',
@@ -64,6 +65,7 @@ export const preferenceQueryKeys = new Set([
 export const isPreferenceKey = (key: string): boolean =>
   preferenceKeys.has(key) ||
   key.startsWith('nabla.mirrors:') ||
+  key.startsWith('nabla.weaponPoses.') ||
   key.startsWith('nabla.vehicle-lights.') ||
   key.startsWith('nabla.vehicle-preferences/1:') ||
   key.startsWith('nabla.steeringWheel:')

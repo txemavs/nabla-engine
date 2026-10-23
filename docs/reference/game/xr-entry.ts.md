@@ -6,14 +6,15 @@
 
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/vehicles`
 
-## callback@56
+## callback@57
 
-[Implementation, line 56](../../../game/xr-entry.ts#L56)
+[Implementation, line 57](../../../game/xr-entry.ts#L57)
 
 ```ts
-callback@56(key): inferred by TypeScript; see implementation
+callback@57(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

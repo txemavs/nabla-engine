@@ -1,3 +1,4 @@
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -8,6 +9,8 @@ it.skipIf(!hasLocalPreset('cessna'))('cuts the Cessna propeller off the cowling'
   Object.assign(globalThis, { self: globalThis })
   const buf = readFileSync('assets/custom/planes/cessna/cessna.172.glb')
   const loader = new GLTFLoader()
+  // Local GLBs may be meshopt-compressed (gltfpack).
+  loader.setMeshoptDecoder(MeshoptDecoder)
   const gltf = await new Promise<import('three/addons/loaders/GLTFLoader.js').GLTF>(
     (resolve, reject) =>
       loader.parse(

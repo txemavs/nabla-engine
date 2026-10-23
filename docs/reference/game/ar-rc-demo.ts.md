@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `./page-query.js`
 - `three`
 - `@nabla/engine/ar`
 
 ## report
 
-[Implementation, line 28](../../../game/ar-rc-demo.ts#L28)
+[Implementation, line 29](../../../game/ar-rc-demo.ts#L29)
 
 ```ts
 report(error: unknown): inferred by TypeScript; see implementation
@@ -21,12 +22,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `String`
 
-## callback@37
+## callback@38
 
-[Implementation, line 37](../../../game/ar-rc-demo.ts#L37)
+[Implementation, line 38](../../../game/ar-rc-demo.ts#L38)
 
 ```ts
-callback@37(active): inferred by TypeScript; see implementation
+callback@38(active): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -35,12 +36,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `vehicle.clear`
 - `vehicle.setAudioActive`
 
-## callback@53
+## callback@54
 
-[Implementation, line 53](../../../game/ar-rc-demo.ts#L53)
+[Implementation, line 54](../../../game/ar-rc-demo.ts#L54)
 
 ```ts
-callback@53(time, frame): inferred by TypeScript; see implementation
+callback@54(time, frame): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -54,32 +55,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `xr.interactCalibration`
 - `xr.update`
 
-## callback@53.callback@58
+## callback@54.callback@59
 
-[Implementation, line 58](../../../game/ar-rc-demo.ts#L58)
+[Implementation, line 59](../../../game/ar-rc-demo.ts#L59)
 
 ```ts
-callback@58(): inferred by TypeScript; see implementation
+callback@59(): inferred by TypeScript; see implementation
 ```
 
-## callback@53.callback@68
+## callback@54.callback@69
 
-[Implementation, line 68](../../../game/ar-rc-demo.ts#L68)
+[Implementation, line 69](../../../game/ar-rc-demo.ts#L69)
 
 ```ts
-callback@68(): inferred by TypeScript; see implementation
+callback@69(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `vehicle.controls.place`
 
-## callback@53.callback@72
+## callback@54.callback@73
 
-[Implementation, line 72](../../../game/ar-rc-demo.ts#L72)
+[Implementation, line 73](../../../game/ar-rc-demo.ts#L73)
 
 ```ts
-callback@72(error): inferred by TypeScript; see implementation
+callback@73(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -87,17 +88,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `report`
 - `xr.exit`
 
-## callback@53.callback@76
+## callback@54.callback@77
 
-[Implementation, line 76](../../../game/ar-rc-demo.ts#L76)
+[Implementation, line 77](../../../game/ar-rc-demo.ts#L77)
 
 ```ts
-callback@76(): inferred by TypeScript; see implementation
+callback@77(): inferred by TypeScript; see implementation
 ```
 
 ## resize
 
-[Implementation, line 83](../../../game/ar-rc-demo.ts#L83)
+[Implementation, line 84](../../../game/ar-rc-demo.ts#L84)
 
 ```ts
 resize(): inferred by TypeScript; see implementation
@@ -108,32 +109,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `camera.updateProjectionMatrix`
 - `renderer.setSize`
 
-## callback@90
+## callback@91
 
-[Implementation, line 90](../../../game/ar-rc-demo.ts#L90)
+[Implementation, line 91](../../../game/ar-rc-demo.ts#L91)
 
 ```ts
-callback@90(): inferred by TypeScript; see implementation
+callback@91(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `vehicle.unlockAudio`
 
-## callback@90.callback@96
+## callback@91.callback@97
 
-[Implementation, line 96](../../../game/ar-rc-demo.ts#L96)
+[Implementation, line 97](../../../game/ar-rc-demo.ts#L97)
 
 ```ts
-callback@96(): inferred by TypeScript; see implementation
+callback@97(): inferred by TypeScript; see implementation
 ```
 
-## callback@100
+## callback@101
 
-[Implementation, line 100](../../../game/ar-rc-demo.ts#L100)
+[Implementation, line 101](../../../game/ar-rc-demo.ts#L101)
 
 ```ts
-callback@100(): inferred by TypeScript; see implementation
+callback@101(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -141,12 +142,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `kind.toUpperCase`
 - `navigator.xr.isSessionSupported`
 
-## callback@110
+## callback@111
 
-[Implementation, line 110](../../../game/ar-rc-demo.ts#L110)
+[Implementation, line 111](../../../game/ar-rc-demo.ts#L111)
 
 ```ts
-callback@110(): inferred by TypeScript; see implementation
+callback@111(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

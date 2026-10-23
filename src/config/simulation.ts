@@ -341,7 +341,7 @@ export const twoWheeledDefaults = Object.freeze({
   }),
   /**
    * TODO(unverified): pitch beyond which a wheelie has looped or a stoppie has gone over the
-   * front, radians (~75°): the machine has crashed until R recovers it. The assists never get
+   * front, radians (~75°): the machine has crashed until recovered (Y) recovers it. The assists never get
    * near it; only the Shift hooligan modifier (assists off) can.
    */
   crashPitch: 1.3,
@@ -351,7 +351,7 @@ export const twoWheeledDefaults = Object.freeze({
    *   `impactSeconds`) while the machine was doing at least `minKmh`: a wall, a car, a pole.
    *   Hard braking (~1.3 g) and the steepest turns (~1.4 g) stay far below it.
    * - Lowside: the machine falls past `fallLean` at `minKmh` or more.
-   * Either one is a crash until R, like a looped wheelie. At the onset the machine gets a spin
+   * Either one is a crash until recovered (Y), like a looped wheelie. At the onset the machine gets a spin
    * of `spin` rad/s per m/s of speed (at most `maxSpin`) and, for impacts, a hop of `hop` s
    * × speed (at most `maxHop` m/s): it tumbles instead of just lying down. At `ejectKmh` or more
    * the rider is thrown off (see `ejectionDefaults`).

@@ -472,4 +472,36 @@ describe('spawn ground guard', () => {
     expect(sim.groundHeld).toBe(true)
     expect(sim.player.position[1]).toBe(before)
   })
+  it('does not settle a spawn on a collider far below the loaded terrain', () => {
+    const sim = new Simulation(scene())
+    finishStartUp(sim)
+    const before = sim.player.position[1]
+    // The render terrain says ground is 20 m up; the only collider is the floor far below it.
+    sim.holdForGround(before + 20)
+    advance(sim, 1)
+    expect(sim.groundHeld).toBe(true)
+    expect(sim.player.position[1]).toBe(before)
+  })
+})
+
+describe('relocatePlayer', () => {
+  it('moves the on-foot player, stops it and lets it land and walk there', () => {
+    const sim = new Simulation(scene())
+    advance(sim, 0.5)
+    sim.relocatePlayer([20, 3, -15], 1.25)
+    expect(sim.player.position).toEqual([20, 3, -15])
+    expect(sim.player.yaw).toBe(1.25)
+    expect(sim.player.speed).toBe(0)
+    expect(sim.player.grounded).toBe(false)
+    advance(sim, 2)
+    const [x, y, z] = sim.player.position
+    expect(x).toBeCloseTo(20, 1)
+    expect(z).toBeCloseTo(-15, 1)
+    expect(y).toBeCloseTo(simulationDefaults.playerHalfHeight, 1)
+    expect(sim.player.grounded).toBe(true)
+  })
+  it('rejects non-finite positions', () => {
+    const sim = new Simulation(scene())
+    expect(() => sim.relocatePlayer([Number.NaN, 0, 0])).toThrow()
+  })
 })

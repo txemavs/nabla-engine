@@ -1,0 +1,249 @@
+/*
+ * Buttons and bars: the only button styles of the engine and its hosts.
+ * Corners place bars (groups), bars place buttons. Use addCornerButton() (corner-buttons.ts).
+ */
+.nabla-corner {
+  position: fixed;
+  z-index: var(--nabla-z-bar);
+  pointer-events: auto;
+}
+.nabla-corner--tl {
+  top: var(--nabla-ui-margin);
+  left: var(--nabla-ui-margin);
+  /* The menu toggle sits over the side menu drawer. */
+  z-index: var(--nabla-z-menu-toggle);
+}
+.nabla-corner--tr {
+  top: var(--nabla-ui-margin);
+  right: var(--nabla-ui-margin);
+}
+.nabla-corner--bl {
+  bottom: var(--nabla-ui-margin);
+  left: var(--nabla-ui-margin);
+}
+.nabla-corner--br {
+  right: var(--nabla-ui-margin);
+  bottom: var(--nabla-ui-margin);
+}
+
+/* A bar: one row (or column) of equal-height buttons with one gap; never wraps unless asked. */
+.nabla-btn-group {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nabla-btn-gap);
+}
+.nabla-btn-group--column {
+  flex-direction: column;
+  align-items: flex-end;
+}
+.nabla-btn-group--wrap {
+  flex-wrap: wrap;
+}
+.nabla-btn-group[hidden] {
+  display: none;
+}
+
+/* A button with a dropdown panel: same box as the button, the panel hangs below it. */
+.nabla-btn-popover {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.nabla-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nabla-space-2);
+  box-sizing: border-box;
+  height: var(--nabla-btn-size);
+  min-width: var(--nabla-btn-size);
+  margin: 0;
+  padding: 0 var(--nabla-btn-pad);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: 700 var(--nabla-btn-font) / 1 var(--nabla-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: none;
+}
+.nabla-btn[hidden],
+.nabla-corner .nabla-btn--menu-only {
+  display: none;
+}
+.nabla-btn svg {
+  display: block;
+  flex: none;
+  width: var(--nabla-btn-icon);
+  height: var(--nabla-btn-icon);
+}
+.nabla-btn kbd {
+  font: inherit;
+  font-size: var(--nabla-btn-key-font);
+  color: inherit;
+}
+.nabla-btn--icon,
+.nabla-btn:has(> svg:only-child) {
+  width: var(--nabla-btn-size);
+  padding: 0;
+}
+.nabla-btn--wide {
+  min-width: var(--nabla-btn-wide);
+}
+.nabla-btn--key {
+  font-size: var(--nabla-btn-key-font);
+}
+.nabla-btn:hover:not(:disabled),
+.nabla-btn:active:not(:disabled) {
+  background: var(--nabla-color-pressed);
+}
+.nabla-btn:focus-visible {
+  outline: 2px solid var(--nabla-color-muted);
+  outline-offset: 2px;
+}
+.nabla-btn--active,
+.nabla-btn[aria-pressed='true'] {
+  border-color: var(--nabla-btn-active);
+  color: var(--nabla-btn-active);
+}
+.nabla-btn--disabled,
+.nabla-btn[aria-disabled='true'],
+.nabla-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* --menu-only: a corner button the host offers from its menu instead (kept for its action). */
+/* Colour modifiers: red for a stop/escape action, green for play/go. */
+.nabla-btn.nabla-btn--danger {
+  border-color: var(--nabla-color-danger);
+  background: var(--nabla-color-danger);
+  color: #fff;
+}
+.nabla-btn.nabla-btn--go {
+  border-color: var(--nabla-color-go);
+  background: var(--nabla-color-go);
+  color: #fff;
+}
+
+/* Dropdown panel of a popover (FOV, quality, clock): value box + vertical slider. */
+.nabla-slider-panel {
+  position: absolute;
+  top: calc(100% + var(--nabla-btn-gap));
+  right: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nabla-btn-gap);
+  box-sizing: border-box;
+  min-width: 100%;
+  color: var(--nabla-color-ink);
+  text-align: center;
+}
+.nabla-slider-panel[hidden] {
+  display: none;
+}
+.nabla-slider-panel label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nabla-btn-gap);
+  margin: 0;
+  padding: 0;
+}
+.nabla-slider-panel label > :is(span, output) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--nabla-btn-size);
+  min-width: 100%;
+  padding: 0 var(--nabla-btn-pad);
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font: 700 var(--nabla-btn-font) / 1 var(--nabla-font);
+}
+.nabla-slider-well {
+  position: relative;
+  width: 36px;
+  margin: 0 auto;
+}
+.nabla-slider-notch {
+  position: absolute;
+  left: -4px;
+  width: 44px;
+  height: 2px;
+  background: #aaa;
+  pointer-events: none;
+}
+.nabla-vertical-range {
+  width: 36px;
+  height: 150px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  touch-action: none;
+  cursor: pointer;
+}
+.nabla-vertical-range::-webkit-slider-runnable-track {
+  width: 4px;
+  border-radius: 2px;
+  background: var(--nabla-color-rail);
+}
+.nabla-vertical-range::-webkit-slider-thumb {
+  width: 36px;
+  height: 36px;
+  margin-left: -16px;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  appearance: none;
+}
+.nabla-vertical-range::-moz-range-track {
+  width: 4px;
+  background: var(--nabla-color-rail);
+}
+.nabla-vertical-range::-moz-range-thumb {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+}
+
+/* Engine pages without a host bar: the toolbar is a column under the menu button. */
+body > .game-toolbar {
+  top: calc(var(--nabla-ui-margin) + var(--nabla-bar-height) + var(--nabla-btn-gap));
+  flex-direction: column;
+  align-items: flex-end;
+}
+body > .game-toolbar .nabla-slider-panel {
+  top: 0;
+  right: calc(100% + var(--nabla-btn-gap));
+}
+.weapon-controls:not(.nabla-corner *) {
+  position: absolute;
+  top: 220px;
+  right: var(--nabla-space-4);
+  z-index: var(--nabla-z-bar);
+  max-width: 260px;
+}
+/* Per-action active colours (lights green, high beam blue). */
+[data-control-action='lights'] {
+  --nabla-btn-active: #48e078;
+}
+[data-control-action='highBeam'] {
+  --nabla-btn-active: #429bff;
+}

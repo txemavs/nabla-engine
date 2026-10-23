@@ -8,12 +8,83 @@
 
 - `three`
 - `../../entity/schema.js`
+- `./gpu-particles.js`
+- `./legacy-particles.js`
+- `./soft-smoke.js`
+- `./effect-culling.js`
 
-## ShotSparks.constructor
+## sparkPosition
 
-[Implementation, line 43](../../../../../src/render/entity/shot-sparks.ts#L43)
+[Implementation, line 128](../../../../../src/render/entity/shot-sparks.ts#L128)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+JS twin of `nablaSparkPath`.
+
+```ts
+sparkPosition(p0: ArrayLike<number>, v0: ArrayLike<number>, drift: ArrayLike<number>, groundY: number, t: number): [number, number, number]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+- `Math.max`
+- `Math.min`
+- `Math.sqrt`
+- `[0, 1, 2].map`
+- `d`
+- `h`
+
+## sparkPosition.d
+
+[Implementation, line 135](../../../../../src/render/entity/shot-sparks.ts#L135)
+
+```ts
+d(x: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+
+## sparkPosition.callback@137
+
+[Implementation, line 137](../../../../../src/render/entity/shot-sparks.ts#L137)
+
+```ts
+callback@137(i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `d`
+
+## sparkPosition.h
+
+[Implementation, line 156](../../../../../src/render/entity/shot-sparks.ts#L156)
+
+```ts
+h(i: number): inferred by TypeScript; see implementation
+```
+
+## range
+
+[Implementation, line 265](../../../../../src/render/entity/shot-sparks.ts#L265)
+
+```ts
+range([lo, hi]: [number, number]): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.random`
+
+## AnalyticShotSparks.constructor
+
+[Implementation, line 322](../../../../../src/render/entity/shot-sparks.ts#L322)
+
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
 
 ```ts
 constructor(): instance
@@ -21,25 +92,97 @@ constructor(): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Float32Array`
 - `THREE.BufferAttribute`
+- `THREE.InstancedBufferAttribute`
+- `THREE.Mesh`
 - `THREE.Points`
-- `this.geometry.setAttribute`
-- `this.geometry.setDrawRange`
+- `THREE.Sphere`
+- `THREE.Vector3`
+- `cullOffscreen`
+- `g.setAttribute`
+- `g.setIndex`
+- `pg.setAttribute`
+- `softConsumer`
 - `this.root.add`
 
-## ShotSparks.constructor.callback@51
+## AnalyticShotSparks.constructor.box
 
-[Implementation, line 51](../../../../../src/render/entity/shot-sparks.ts#L51)
+[Implementation, line 357](../../../../../src/render/entity/shot-sparks.ts#L357)
 
 ```ts
-callback@51(): inferred by TypeScript; see implementation
+box(target: THREE.Box3): inferred by TypeScript; see implementation
 ```
 
-## ShotSparks.add
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 54](../../../../../src/render/entity/shot-sparks.ts#L54)
+- `this.bounds.unionInto`
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+## AnalyticShotSparks.constructor.pad
+
+[Implementation, line 358](../../../../../src/render/entity/shot-sparks.ts#L358)
+
+```ts
+pad(camera: THREE.Camera, height: number, distance: number): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pixelsToWorld`
+
+## AnalyticShotSparks.constructor.measure
+
+[Implementation, line 365](../../../../../src/render/entity/shot-sparks.ts#L365)
+
+```ts
+measure(renderer: THREE.WebGLRenderer, camera: THREE.Camera): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.tan`
+- `renderer.getDrawingBufferSize`
+
+## AnalyticShotSparks.constructor.callback@370
+
+[Implementation, line 370](../../../../../src/render/entity/shot-sparks.ts#L370)
+
+```ts
+callback@370(renderer, _scene, camera): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `measure`
+
+## AnalyticShotSparks.constructor.callback@371
+
+[Implementation, line 371](../../../../../src/render/entity/shot-sparks.ts#L371)
+
+```ts
+callback@371(renderer, _scene, camera): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `measure`
+
+## AnalyticShotSparks.constructor.callback@374
+
+[Implementation, line 374](../../../../../src/render/entity/shot-sparks.ts#L374)
+
+```ts
+callback@374(): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.add
+
+[Implementation, line 377](../../../../../src/render/entity/shot-sparks.ts#L377)
+
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
 
 ```ts
 add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
@@ -48,26 +191,72 @@ add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptio
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.abs`
+- `Math.cos`
+- `Math.hypot`
 - `Math.max`
 - `Math.min`
 - `Math.random`
 - `Math.round`
+- `Math.sin`
+- `Math.sqrt`
 - `Number.isFinite`
-- `THREE.Vector3`
-- `new THREE.Vector3().crossVectors`
-- `new THREE.Vector3().crossVectors(n, tangent).normalize`
-- `new THREE.Vector3(...normal).normalize`
+- `d.dot`
+- `d.lengthSq`
+- `d.normalize`
+- `markRange`
+- `n.lengthSq`
+- `n.set`
+- `n.toArray`
+- `profile.dustRgb.map`
+- `range`
+- `side.crossVectors`
+- `side.crossVectors(ax, axis).normalize`
 - `tangent.crossVectors`
 - `tangent.crossVectors(bitangent, n).normalize`
-- `this.bursts.push`
-- `this.bursts.shift`
-- `velocities.push`
+- `this.bounds.advance`
+- `this.bounds.expandSphere`
+- `this.drifts.set`
+- `this.geometry.getAttribute`
+- `this.live`
+- `this.origins.set`
+- `this.puffColors.set`
+- `this.puffData.set`
+- `this.puffGeometry.getAttribute`
+- `this.puffOrigins.set`
+- `this.rebase`
+- `tmpA.copy`
+- `tmpB.crossVectors`
+- `tmpB.crossVectors(n, tangent).normalize`
+- `tmpB2.crossVectors`
+- `tmpB2.crossVectors(axis, side).normalize`
+- `tmpN.set`
+- `tmpN.set(...normal).normalize`
+- `tmpT.set`
+- `tmpT2.set`
+- `tmpV.addScaledVector`
+- `tmpV.dot`
+- `tmpV.length`
+- `tmpV.normalize`
+- `tmpV.normalize().multiplyScalar`
+- `tmpV.set`
+- `tmpV.toArray`
 
-## ShotSparks.update
+## AnalyticShotSparks.add.callback@475
 
-[Implementation, line 83](../../../../../src/render/entity/shot-sparks.ts#L83)
+[Implementation, line 475](../../../../../src/render/entity/shot-sparks.ts#L475)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+```ts
+callback@475(c): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.update
+
+[Implementation, line 513](../../../../../src/render/entity/shot-sparks.ts#L513)
+
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
 
 ```ts
 update(now: number): void
@@ -75,26 +264,17 @@ update(now: number): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Math.max`
-- `this.bursts.filter`
-- `this.bursts.push`
 - `this.clear`
-- `this.geometry.computeBoundingSphere`
-- `this.geometry.setDrawRange`
+- `this.live`
 
-## ShotSparks.update.callback@89
+## AnalyticShotSparks.clear
 
-[Implementation, line 89](../../../../../src/render/entity/shot-sparks.ts#L89)
+[Implementation, line 525](../../../../../src/render/entity/shot-sparks.ts#L525)
 
-```ts
-callback@89(b): inferred by TypeScript; see implementation
-```
-
-## ShotSparks.clear
-
-[Implementation, line 111](../../../../../src/render/entity/shot-sparks.ts#L111)
-
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
 
 ```ts
 clear(): void
@@ -102,13 +282,17 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `this.geometry.setDrawRange`
+- `this.births.fill`
+- `this.bounds.clear`
 
-## ShotSparks.dispose
+## AnalyticShotSparks.dispose
 
-[Implementation, line 117](../../../../../src/render/entity/shot-sparks.ts#L117)
+[Implementation, line 532](../../../../../src/render/entity/shot-sparks.ts#L532)
 
-Brief pin-spark bursts at bullet impact points (also footpeg scrapes, via `options`).
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
 
 ```ts
 dispose(): void
@@ -119,4 +303,174 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.clear`
 - `this.geometry.dispose`
 - `this.material.dispose`
+- `this.puffGeometry.dispose`
+- `this.puffMaterial.dispose`
 - `this.root.removeFromParent`
+
+## AnalyticShotSparks.livePositions
+
+[Implementation, line 544](../../../../../src/render/entity/shot-sparks.ts#L544)
+
+Head positions of the live sparks at `now`, oldest burst first (the shader's maths).
+
+```ts
+livePositions(now: number): Float32Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Float32Array.from`
+- `out.push`
+- `sparkPosition`
+- `this.births.keys`
+- `this.drifts.subarray`
+- `this.origins.subarray`
+- `this.velocities.subarray`
+
+## AnalyticShotSparks.livePositions.callback@547
+
+[Implementation, line 547](../../../../../src/render/entity/shot-sparks.ts#L547)
+
+```ts
+callback@547(b): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.livePositions.callback@548
+
+[Implementation, line 548](../../../../../src/render/entity/shot-sparks.ts#L548)
+
+```ts
+callback@548(a, b): inferred by TypeScript; see implementation
+```
+
+## AnalyticShotSparks.live
+
+[Implementation, line 567](../../../../../src/render/entity/shot-sparks.ts#L567)
+
+Analytic GPU sparks: each burst writes its spawn data once into a ring of `MAX_BURSTS` slots;
+the vertex shader evaluates the ballistic path with drag and two bounces. Sparks draw as
+camera-facing, velocity-aligned quads (head to a shutter-delayed tail, so slow ones are dots)
+with a hot core and soft edges, thinning and cooling from white to dull red, additive HDR; dust and the hit flash share one premultiplied point draw. Two draws in total.
+
+```ts
+live(now: number): boolean
+```
+
+## AnalyticShotSparks.rebase
+
+[Implementation, line 573](../../../../../src/render/entity/shot-sparks.ts#L573)
+
+Start a new float epoch at `now`: rewrite every live birth against it (rare).
+
+```ts
+rebase(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `geometry.getAttribute`
+- `markRange`
+
+## ShotSparks.enabled
+
+[Implementation, line 611](../../../../../src/render/entity/shot-sparks.ts#L611)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+enabled(): boolean
+```
+
+## ShotSparks.enabled
+
+[Implementation, line 614](../../../../../src/render/entity/shot-sparks.ts#L614)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+enabled(enabled: boolean): inferred by TypeScript; see implementation
+```
+
+## ShotSparks.add
+
+[Implementation, line 617](../../../../../src/render/entity/shot-sparks.ts#L617)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+add(origin: Vec3Tuple, now: number, normal?: Vec3Tuple, options: SparkBurstOptions = {}): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.add`
+
+## ShotSparks.update
+
+[Implementation, line 620](../../../../../src/render/entity/shot-sparks.ts#L620)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+update(now: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.update`
+
+## ShotSparks.livePositions
+
+[Implementation, line 624](../../../../../src/render/entity/shot-sparks.ts#L624)
+
+Positions of the live sparks at `now` (after `update(now)`).
+
+```ts
+livePositions(now: number): Float32Array
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `array.slice`
+- `points.geometry.getAttribute`
+- `this.impl.livePositions`
+
+## ShotSparks.clear
+
+[Implementation, line 630](../../../../../src/render/entity/shot-sparks.ts#L630)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.clear`
+
+## ShotSparks.dispose
+
+[Implementation, line 633](../../../../../src/render/entity/shot-sparks.ts#L633)
+
+Spark streaks, dust and a hit flash at bullet impacts (also footpeg scrapes, via `options`). Under
+WebGL the paths are analytic on the GPU; under WebGPU the former pin-spark CPU update
+runs (legacy-particles.ts), because `onBeforeCompile` does not apply there.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.impl.dispose`

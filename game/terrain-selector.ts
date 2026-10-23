@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** "Terreno" section of the menu: choose where the terrain comes from; applying reloads with that URL. */
 import {
   DEFAULT_PACKAGES_URL,
@@ -13,6 +14,7 @@ import {
 } from '@nabla/engine/planet/terrain-source'
 import { SOURCE_STORAGE_KEY, browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 /** Build-time default for the tile host (VITE_NABLA_TILES_URL), else the public Atlas host. */
 function configuredTilesUrl(): string {
@@ -34,13 +36,13 @@ export function suggestedTilesUrl(
 }
 
 export function bindTerrainSelector(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
   reload: (search: string) => void = (next) => location.assign(location.pathname + next),
 ): void {
   const active = parseTerrainSource(search) ?? { kind: 'flat' as TerrainSourceKind }
   const stored = loadTerrainSource(storage, SOURCE_STORAGE_KEY)
-  const section = menuSection('terrain-source', 'Terreno')
+  const section = menuSection('terrain-source', t('settings.terrain'))
   const radios = new Map<TerrainSourceKind, HTMLInputElement>()
   for (const entry of TERRAIN_SOURCES) {
     const label = document.createElement('label')
@@ -56,7 +58,7 @@ export function bindTerrainSelector(
     section.append(label)
   }
   const tilesLabel = document.createElement('label')
-  tilesLabel.textContent = 'URL base de las teselas'
+  tilesLabel.textContent = t('settings.tiles-base-url')
   const tiles = document.createElement('input')
   tiles.type = 'url'
   tiles.id = 'terrain-tiles-url'
@@ -69,11 +71,11 @@ export function bindTerrainSelector(
   lidar.type = 'checkbox'
   lidar.id = 'terrain-lidar'
   lidar.checked = active.kind === 'packages' && active.relief === 'lidar'
-  lidarLabel.append(lidar, ' Relieve LiDAR (solo visual)')
+  lidarLabel.append(lidar, t('settings.lidar-relief'))
   const apply = document.createElement('button')
   apply.type = 'button'
   apply.id = 'terrain-apply'
-  apply.textContent = 'Aplicar y recargar'
+  apply.textContent = t('settings.apply-and-reload')
   const message = document.createElement('p')
   message.id = 'terrain-message'
   message.setAttribute('role', 'status')
@@ -103,7 +105,7 @@ export function bindTerrainSelector(
     try {
       const next = withTerrainSource(search, source)
       saveTerrainSource(storage, SOURCE_STORAGE_KEY, source)
-      message.textContent = 'Cargando el terreno elegido…'
+      message.textContent = t('boot.loading-the-chosen-terrain')
       reload(next)
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : String(error)

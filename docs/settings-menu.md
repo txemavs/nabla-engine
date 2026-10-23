@@ -2,23 +2,41 @@
 
 The Euskadi Online clock opens the HTML monitor defined in `game/settings-hud.ts`. While it is
 open, the same button shows a down arrow that folds the monitor away. It is the only close
-button; Escape closes too. Both return focus to the game. The style uses the variables and
-controls of `src/runtime/interface-theme.ts`, shared with the in-world monitors. This is the
+button; Escape closes too. Both return focus to the game. The style is `src/ui/styles/settings.css`, built on the engine UI tokens
+([UI theme](ui-theme.md)). This is the
 desktop interface: it does not change the XR/AR monitor menus or any simulation parameter.
-UI labels are Spanish (the game's language); this document and the code are English.
+UI labels come from the engine catalogs (`src/i18n/catalog.{en,es,eu}.ts`, `t()`); the tab and
+section names below are the Spanish ones.
 
 ## Navigation
 
-The top tabs are Mundo, Configuración, Objetos and Desarrollo (see
-[UI/UX pattern](ui-ux-pattern.md)). Each tab has a left navigation and a single visible section
-on the right. The last section chosen in each tab is kept.
+The top tabs are Principal, Mundo, Ajustes and Desarrollo (`MENU_TABS` in
+`game/menu-layout.ts`; see [UI/UX pattern](ui-ux-pattern.md)). The whole layout (which section
+goes in which tab, in which left-navigation group, in which order) is pure data in
+`game/menu-layout.ts` (`MENU_LAYOUT`, `MENU_FLAT_SECTIONS`); `game/settings-hud.ts` only applies
+it, moving each control by its id. A product (Euskadi) configures it by mounting sections under
+those ids, not by changing the layout code. Each tab has a left navigation and a single visible
+section on the right. The last section chosen in each tab is kept.
 
-| Tab           | Groups and sections                                                                                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mundo         | Hora; Mapa (map, position); Capas (ground, air); Opciones (asphalt contrast, weather, sea, street lights, headlamp, traffic signs, place names)                                                            |
-| Configuración | Pantalla (quality, sharpness, sun shadows, distances, performance); Efectos (smoke, muzzle flash); Cámara (options, field of view, Action Cam); Conducción; Controles (keys, USB devices); Sonido; Gestión |
-| Objetos       | Vehículos (add, placed objects, layout); the occupied vehicle's group, titled with its name (driver and mirrors, lights, sound, exhaust and smoke; only what applies); Arma (weapon wheel reset)           |
-| Desarrollo    | Armas (aiming, poses and animations); light fine tuning; rear-light nudge; sign and experimental shadows; planet config; terrain source and cache; diagnostics                                             |
+| Tab        | Groups and sections                                                                                                                                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Principal  | Escenarios (on the scenario page, the scenario list itself); Información (with engine and scenario status lines); VR; AR; terrain cache; Vehículo actual (driver, beams, sound, exhaust, rear lights; hidden on foot)      |
+| Mundo      | Mapa; Situación (Fecha, Ubicación); terrain source; Ver (Tierra, Atmósfera, Opciones); Vehículos (add, placed objects, layout); Armas (weapon wheel, combat)                                                               |
+| Ajustes    | Simulación (Tiempo: day/night cycle and gravity; distances; sun shadows; driving); Controles (keys, USB); Cámara (options, field of view, Action Cam); Vídeo (quality, sharpness, light); Audio; Gestión de ajustes; Actor |
+| Desarrollo | Armas (sidearm, poses, muzzle flash); Exportar (planet config); Colisiones; diagnostics                                                                                                                                    |
+
+Mundo › Ver › Opciones is a flat section: road style, lens flare, air and sea, traffic signs and
+sign shadows, street lights and experimental light shadows, headlamp, smoke and simulated fire,
+place names, shown as one list without their own titles (`.settings-flat-section`). The
+Actor section is kept at the end of Ajustes; it is not part of the menu spec.
+
+Información shows two status lines: the engine (WebGPU or WebGL, physics in a worker or on the
+main thread; `GameRuntime.physicsThread`) and the current scenario (set by the product with
+`setGameMenuNote(GAME_MENU_SCENARIO_ID, …)`). Gravity (Ajustes › Simulación › Tiempo) is set in
+m/s² and stored as the existing multiplier of g (`game/gravity-ui.ts`).
+
+The FPS limit and resolution scale live in Calidad (Vídeo), with anisotropy. The scene rows (time, sky, sun, sea,
+clouds) are built in a hidden holder (`scene-controls-staging`) and moved into Mundo by the HUD.
 
 The field of view (Cámara) is the same offset as the J menu, saved as `nabla.cameraFov`. The
 occupied vehicle's exhaust offset and quantity and its reversing-alarm switch are saved per
@@ -87,3 +105,9 @@ module reads its configuration with its own validation.
 Tests: `settings-backup.test.ts`, `settings-management.spec.ts` and `settings-hud.spec.ts` check
 file limits, exclusion of foreign data, rollback of failed writes, confirmation, kept
 calibrations, navigation and preserved listeners on the original controls.
+
+## Future ideas
+
+- **VR white-room lobby.** Entering VR from the menu could start in a plain white room with the
+  scenario list on a wall panel, choosing one loads it around the player. Not built; the
+  scenario page's test ground plus Principal › Escenarios cover it for now.

@@ -1,3 +1,4 @@
+import { installEngineStyles } from '../ui/styles.js'
 import { createRuntimeText, type RuntimeText } from './messages.js'
 
 export type TouchWalkVisibility = 'auto' | 'always' | 'hidden'
@@ -35,32 +36,6 @@ export function walkFromStick(stick: TouchStick): { forward: number; right: numb
   return { forward: -stick.y || 0, right: stick.x || 0 }
 }
 
-/**
- * Agency-style on-foot touch rig (agency-ui `AgencyStageWalkRig.vue`): two soft round pads,
- * left moves, right looks. Knob styled like the drive rig's throttle knob. Shown on touch /
- * no-hover devices (`auto`) and only while the host marks it active (walking).
- */
-const styles = `
-.touch-walk { display: none; position: absolute; inset: auto 0 0; z-index: 44;
- justify-content: space-between; align-items: flex-end; padding: 0 20px 20px;
- pointer-events: none; }
-.touch-walk > style { display: none; }
-.touch-walk-well { position: relative; width: 132px; height: 132px; border-radius: 50%;
- pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none;
- border: 2px solid rgba(220, 232, 244, 0.16); background: rgba(8, 12, 16, 0.12);
- box-shadow: inset 0 0 18px rgba(220, 232, 244, 0.06); box-sizing: border-box; }
-.touch-walk-knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px;
- margin: -20px 0 0 -20px; border-radius: 50%;
- background: radial-gradient(circle at 35% 30%, #f4f7fb, #b8c4d0 70%);
- box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7);
- pointer-events: none; }
-.touch-walk[data-visibility="always"] { display: flex; }
-.touch-walk[data-visibility="hidden"] { display: none; }
-@media (pointer: coarse), (hover: none) { .touch-walk[data-visibility="auto"] { display: flex; } }
-/* The visibility rules above beat the UA [hidden] style, so hiding needs its own rule. */
-.touch-walk[hidden] { display: none !important; }
-`
-
 /** Twin walking sticks ("setas"). Pointer capture always releases. */
 export class TouchWalk {
   readonly root = document.createElement('div')
@@ -81,9 +56,7 @@ export class TouchWalk {
   ) {
     this.root.className = 'touch-walk'
     this.root.dataset.visibility = visibility
-    const style = document.createElement('style')
-    style.textContent = styles
-    this.root.append(style)
+    installEngineStyles(document)
     const well = (side: 'move' | 'look', label: string) => {
       const el = document.createElement('div')
       el.className = 'touch-walk-well'

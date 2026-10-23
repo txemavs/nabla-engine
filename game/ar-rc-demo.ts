@@ -1,8 +1,9 @@
+import { pageSearch } from './page-query.js'
 import * as THREE from 'three'
 import { GameAR, ARRoom, ARVehicles } from '@nabla/engine/ar'
 
 // Application composition only: no weapons, balls, map, calibration screen or main menu.
-const query = new URLSearchParams(location.search)
+const query = new URLSearchParams(pageSearch())
 const kind =
   query.get('vehicle') === 's3' ? 's3' : query.get('vehicle') === 'truck' ? 'truck' : 'vfr'
 const denominator = Number(query.get('scale') ?? 100)

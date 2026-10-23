@@ -1,4 +1,6 @@
-import { mountVREntry } from './vr-entry.js'
+import { pageSearch } from './page-query.js'
+import { terrainHost } from './terrain-host.js'
+import { mountVREntry, pcVRRequested } from './vr-entry.js'
 import { readFsrSettings } from './fsr-settings.js'
 import { restoreStartupLightSettings } from './startup-light-settings.js'
 import { bindVR, preloadVR } from './vr-ui.js'
@@ -33,6 +35,7 @@ import { bindSoundControls } from './sound-ui.js'
 import { bindLightControls } from './light-ui.js'
 import { bindExhaustControls } from './exhaust-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
+import { bindSimulatedFireToggle, resolveSimulatedFireEnabled } from './simulated-fire-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
 import {
@@ -50,6 +53,7 @@ import { installHostVehicles } from './host-vehicles.js'
 import { installHostPortals } from './host-portals.js'
 import { describeLoading } from './loading-text.js'
 import { fpsReadout } from './fps-readout.js'
+import { t } from '@nabla/engine/i18n'
 
 // Bound first, so a terrain that fails to load can still be swapped from the menu.
 const bootMark = performance.now()
@@ -61,7 +65,7 @@ const attachSceneControls = bindSceneControls()
 let runtime: GameRuntime | undefined
 let cellsLabel = ''
 /** The tile host of this page, known even when the configuration fails to load. */
-let startBase = (new URLSearchParams(location.search).get('terrain') ?? '').replace(/\/+$/, '')
+let startBase = (new URLSearchParams(pageSearch()).get('terrain') ?? '').replace(/\/+$/, '')
 /** HUD line with the cells loaded and the ones the host lacks, e.g. "Celdas: 12 cargadas · 5 faltan". */
 function showCells(): void {
   const stats = runtime?.cellStats
@@ -80,7 +84,7 @@ function showCells(): void {
     'Celdas cargadas y celdas que el servidor no tiene (huecos en el mapa). Lista: nablaRuntime.missingTiles con ?diagnostics=1'
 }
 try {
-  const params = new URLSearchParams(location.search)
+  const params = new URLSearchParams(pageSearch())
   const solo = params.get('solo') === '1'
   const config = await startFromIndex(parseTerrainConfig())
   bootLog(`config ready (${config.vehicles.length} host vehicles)`)
@@ -120,12 +124,12 @@ try {
   loading.setTiles(config.tile ? [config.tile] : [])
   if (config.atlas.photo !== 'none') projectGroundPhoto()
   const layerDefaults = bootHiddenLayers(boot)
-  setHiddenTileLayers(initialHiddenLayers(location.search, undefined, layerDefaults))
+  setHiddenTileLayers(initialHiddenLayers(pageSearch(), undefined, layerDefaults))
   // `?clusterCulling=1`: opt-in 8×8 sub-tile culling of planet tile meshes.
-  setTileClusterCulling(parseClusterCulling(location.search))
+  setTileClusterCulling(parseClusterCulling(pageSearch()))
   bootLog('GameRuntime construct start')
   // `?renderer=webgpu|auto` opts into WebGPU (WebGL fallback); no parameter keeps the WebGL default.
-  const rendererPreference = parseRendererPreference(location.search)
+  const rendererPreference = parseRendererPreference(pageSearch())
   const backend =
     rendererPreference === 'webgl'
       ? undefined
@@ -137,26 +141,27 @@ try {
         })
   runtime = new GameRuntime({
     backend,
+    xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
-    performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
-    locale: 'es',
+    performanceLog: new URLSearchParams(pageSearch()).get('perfLog') === '1',
     // Until the game is shown only the spawn cell and its three neighbours stream; reveal then lifts
     // the startup restriction and the full streaming radius follows (one ~40 MB cell at a time
     // instead of the whole area at once).
     startupTerrain: 'nearby',
     fieldLights: {},
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    simulatedFire: resolveSimulatedFireEnabled(boot.simulatedFire),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
     steeringWheel: {
-      defaults: hostSteeringWheelsFromSearch(location.search, viteHostSteeringWheels()),
+      defaults: hostSteeringWheelsFromSearch(pageSearch(), viteHostSteeringWheels()),
       storage: steeringWheelStorage(),
     },
     shadowBias: resolveShadowBias(boot.shadowBias),
     // «Espejos»: host defaults from &mirrors= / VITE_NABLA_MIRRORS; the player's choice is saved.
     mirrors: {
-      defaults: hostMirrorsFromSearch(location.search, viteHostMirrors()),
+      defaults: hostMirrorsFromSearch(pageSearch(), viteHostMirrors()),
       storage: mirrorStorage(),
     },
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
@@ -164,7 +169,7 @@ try {
     music: boot.music,
     hud: true,
     touchControls:
-      new URLSearchParams(location.search).has('xr') || location.pathname === '/xr.html'
+      new URLSearchParams(pageSearch()).has('xr') || location.pathname === '/xr.html'
         ? false
         : 'always',
     display: readDisplaySettings(),
@@ -175,7 +180,13 @@ try {
     canvas: document.getElementById('game-canvas') as HTMLCanvasElement,
     weaponPickupLocation: { longitude: -1.76129, latitude: 43.34336, altitude: 41 },
     scene,
-    preloadVehicles: solo ? [] : menuPreloadVehicles(boot.preloadVehicles),
+    // VR modes: boarding must never load on demand in the headset, so the bike and car join.
+    preloadVehicles: solo
+      ? []
+      : menuPreloadVehicles([
+          ...(boot.preloadVehicles ?? []),
+          ...(pcVRRequested() ? ['vfr800', 'car'] : []),
+        ]),
     accidentReplacementVehicles: solo ? [] : menuPreloadVehicles(['vfr800', 'car', 'white-truck']),
     sea: true,
     restParkedOnGround: true,
@@ -187,6 +198,11 @@ try {
     tiles: {
       baseUrl: config.base,
       mode: 'static',
+      // ?tileManifest=compressed: per-cell compressed test manifests, production ones as fallback.
+      manifestFiles:
+        params.get('tileManifest') === 'compressed'
+          ? ['manifest.compressed.json', 'manifest.json']
+          : undefined,
       meshMaxZoom: params.get('meshMaxZoom') === '16' ? 16 : 15,
       developmentRefresh: params.get('tileRefresh') === '1',
       horizon: false,
@@ -239,6 +255,7 @@ try {
     },
   })
   bootLog('GameRuntime construct done')
+  terrainHost().afterRuntime?.(runtime)
   bindTerrainCache(runtime)
   // Headless checks read where vehicles and the player sit against the ground.
   if (params.has('diagnostics'))
@@ -247,7 +264,9 @@ try {
   window.addEventListener('pagehide', () => runtime?.dispose(), { once: true })
   preloadVR(runtime)
   loading.setStatus(
-    config.tile ? `Cargando el terreno ${mapTileId(config.tile)}…` : 'Cargando el terreno…',
+    config.tile
+      ? t('boot.loading-terrain-tile', { tile: mapTileId(config.tile) })
+      : t('boot.loading-terrain'),
   )
   void runBootPhase(runtime, loading, boot)
   // Host vehicles are placed inside play(), before the reveal: their models, lights and
@@ -265,6 +284,7 @@ try {
   if (params.has('xr')) runtime.equipTestSidearm()
   bindVR(runtime)
   bootLog('play() done (ground + physics)')
+  terrainHost().afterPlay?.(runtime, scene)
   if (scene.geography && config.portals?.length) {
     bootLog(`installHostPortals start (${config.portals?.length})`)
     await installHostPortals(runtime, scene.geography, config.portals)
@@ -275,6 +295,7 @@ try {
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
+  bindSimulatedFireToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindGravityScaleSlider(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)

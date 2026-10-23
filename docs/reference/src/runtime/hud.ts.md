@@ -43,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameHud.update
 
-[Implementation, line 49](../../../../src/runtime/hud.ts#L49)
+[Implementation, line 47](../../../../src/runtime/hud.ts#L47)
 
 Render the same frame model in any browser host without reading the simulation again.
 
@@ -58,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameHud.dispose
 
-[Implementation, line 56](../../../../src/runtime/hud.ts#L56)
+[Implementation, line 54](../../../../src/runtime/hud.ts#L54)
 
 Remove only the DOM owned by this HUD.
 

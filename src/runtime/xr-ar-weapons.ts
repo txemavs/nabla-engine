@@ -10,6 +10,8 @@ import { ImpactMarks } from '../render/entity/impact-marks.js'
 import { ShotSparks } from '../render/entity/shot-sparks.js'
 import type { FirearmEvent } from '../simulation/weapons/firearm.js'
 import { Sidearm } from './sidearm.js'
+import { FirearmSamples } from '../audio/firearm-samples.js'
+import type { WeaponPreset } from '../catalog/weapons/library.js'
 import { XRLoadout } from './xr-loadout.js'
 import type { GameXR } from './xr.js'
 import type { GrabHand } from './xr-grab.js'
@@ -26,6 +28,12 @@ export class XRARWeapons {
   readonly ready: Promise<void>
   private readonly contacts = new XRItemContacts()
   private readonly audio = new VehicleAudio()
+  private readonly samples = new Map<Sidearm, FirearmSamples>()
+  private samplesFor(weapon: Sidearm): FirearmSamples {
+    let samples = this.samples.get(weapon)
+    if (!samples) this.samples.set(weapon, (samples = new FirearmSamples(this.audio)))
+    return samples
+  }
   private readonly impacts = new ImpactMarks()
   private readonly sparks = new ShotSparks()
   private casingMotion: CasingMotion | null = null
@@ -40,14 +48,17 @@ export class XRARWeapons {
     private readonly xr: GameXR,
     viewport: HTMLElement,
     initialPistols = 2,
+    /** Extra firearm presets carried after the two default pistols (start absent). */
+    extra: readonly WeaponPreset[] = [],
   ) {
     const weapons = [
       new Sidearm(viewport, undefined, 'low'),
       new Sidearm(viewport, undefined, 'low'),
+      ...extra.map((preset) => new Sidearm(viewport, preset, 'low')),
     ]
     this.contacts.onContact = (point) => this.audio.weaponSound('prop-impact', point.toArray())
     this.loadout = new XRLoadout(scene, weapons, xr.calibration)
-    for (const p of this.loadout.allPistols.slice(Math.max(0, initialPistols)))
+    for (const p of this.loadout.allPistols.slice(Math.max(0, Math.min(2, initialPistols))))
       this.loadout.removePistol(p)
     this.loadout.physicalPistols = true
     this.loadout.discardDropped = (root, dt) =>
@@ -156,8 +167,12 @@ export class XRARWeapons {
         pending.push(shot)
         if (shot.fired) {
           this.eject(weapon, false)
-          this.audio.weaponSound('hammer', barrel?.origin.toArray())
-          this.audio.gunshot(barrel?.origin.toArray(), shot.locked)
+          this.samplesFor(weapon).shot(
+            weapon.preset,
+            barrel?.origin.toArray() ?? [0, 0, 0],
+            weapon.fireMode === 'burst30',
+            !!shot.locked,
+          )
           if (barrel) {
             this.ray.set(barrel.origin, barrel.target.sub(barrel.origin).normalize())
             this.ray.far = weapon.range
@@ -167,6 +182,9 @@ export class XRARWeapons {
         }
       }
       pistol.triggerDown = down
+      const samples = this.samples.get(weapon)
+      if (samples?.looping && (!down || weapon.state.chamber === 0))
+        samples.release(weapon.worldMuzzle()?.toArray() ?? [0, 0, 0])
       for (const event of pending) {
         if (event.cartridgeEjected) this.eject(weapon, true)
         this.sound(event, weapon)
@@ -240,10 +258,11 @@ export class XRARWeapons {
 
   private sound(event: FirearmEvent, weapon: Sidearm): void {
     const position = weapon.worldMuzzle()?.toArray()
-    if (event.dry) this.audio.weaponSound('dry', position)
-    if (event.magazineDropped) this.audio.weaponSound('magazine-out', position)
-    if (event.magazineSeated) this.audio.weaponSound('magazine-in', position)
-    if (event.slideReleased) this.audio.weaponSound('slide-forward', position)
+    const samples = this.samplesFor(weapon)
+    if (event.dry) samples.cue(weapon.preset, 'dry', position)
+    if (event.magazineDropped) samples.cue(weapon.preset, 'magazine-out', position)
+    if (event.magazineSeated) samples.cue(weapon.preset, 'magazine-in', position)
+    if (event.slideReleased) samples.cue(weapon.preset, 'slide-forward', position)
     if (event.manualSlideLocked) this.audio.weaponSound('slide-lock', position)
   }
 
@@ -316,8 +335,35 @@ export class XRARWeapons {
         new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld),
       )
       if (normal.dot(this.ray.ray.direction) > 0) normal.negate()
-      if (!glass) this.sparks.add(hit.point.toArray(), now, normal.toArray())
+      if (!glass)
+        this.sparks.add(hit.point.toArray(), now, normal.toArray(), {
+          surface: normal.y > 0.7 ? 'ground' : 'concrete',
+          incoming: this.ray.ray.direction.toArray(),
+        })
       if (!handled) this.impacts.addSurface(hit.object, hit.point.toArray(), normal.toArray())
+    }
+  }
+
+  /**
+   * Non-firearm hit (for example a melee swing) through the same impact path as a shot:
+   * host onHit, sparks and marks. True when something within `distance` was hit.
+   */
+  strike(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    distance: number,
+    targets: THREE.Object3D[],
+    now: number,
+  ): boolean {
+    this.ray.set(origin, direction.clone().normalize())
+    const far = this.ray.far
+    this.ray.far = distance
+    try {
+      if (!this.ray.intersectObjects(targets, false).length) return false
+      this.hitTargets(targets, now)
+      return true
+    } finally {
+      this.ray.far = far
     }
   }
 

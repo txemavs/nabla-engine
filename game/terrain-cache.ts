@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /**
  * Terrain cache and load radius in the "Terreno" menu section: disk cache size, cells kept in memory,
  * load radius and "Vaciar caché". The mechanisms are the engine's (the shared IndexedDB map cache and
@@ -24,6 +25,7 @@ import { formatMissingReport } from '@nabla/engine/planet/missing-tiles'
 import { browserStorage } from './entry.js'
 import { menuSection } from './menu.js'
 import type { SourceStorage } from '@nabla/engine/planet/terrain-source'
+import { t } from '@nabla/engine/i18n'
 
 export const CACHE_STORAGE_KEY = 'nabla.terrain.cache'
 /** Package cells are 11-15 MB each: the engine's 100 MB default would evict them as they arrive. */
@@ -31,7 +33,7 @@ export const DEFAULT_CACHE: TerrainCacheSettings = { diskMb: 1000 }
 
 /** Remembered values, overridden field by field by the URL. */
 export function currentCacheSettings(
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
 ): TerrainCacheSettings {
   return resolveCacheSettings(
@@ -71,13 +73,13 @@ function choice(
 /** Build the «Caché» section (only with a «Terreno» section), apply the remembered settings, keep the usage line fresh. */
 export function bindTerrainCache(
   runtime: GameRuntime,
-  search: string = location.search,
+  search: string = pageSearch(),
   storage: SourceStorage | undefined = browserStorage(),
 ): void {
   // Only the terrain games have a «Terreno» source section; the cache gets its own «Caché» section
   // (Ajustes → Rendimiento).
   if (!document.getElementById('terrain-source')) return
-  const section = menuSection('terrain-cache', 'Caché')
+  const section = menuSection('terrain-cache', t('settings.cache'))
   const settings = currentCacheSettings(search, storage)
   void applyCacheSettings(runtime, settings).catch(() => {})
   const live = runtime.streaming
@@ -85,21 +87,21 @@ export function bindTerrainCache(
 
   const disk = choice(
     'terrain-cache-disk',
-    'Espacio en disco',
+    t('cache.disk-space'),
     CACHE_BUDGETS_MB,
     formatBudget,
     settings.diskMb ?? 1000,
   )
   const memory = choice(
     'terrain-cache-memory',
-    'Celdas en memoria',
+    t('cache.cells-in-memory'),
     MEMORY_CELL_CHOICES,
     String,
     settings.cells ?? live.cells,
   )
   const distance = choice(
     'terrain-cache-distance',
-    'Radio de carga',
+    t('cache.load-radius'),
     LOAD_DISTANCES_M,
     formatDistance,
     settings.distance ?? live.distance,
@@ -110,17 +112,17 @@ export function bindTerrainCache(
   const clear = document.createElement('button')
   clear.type = 'button'
   clear.id = 'terrain-cache-clear'
-  clear.textContent = 'Vaciar caché'
+  clear.textContent = t('cache.clear-cache')
   const holes = document.createElement('button')
   holes.type = 'button'
   holes.id = 'terrain-missing-show'
-  holes.textContent = 'Celdas que faltan'
-  holes.title = 'Celdas que el servidor no tiene (huecos en el mapa), para pedirlas al productor'
+  holes.textContent = t('cache.missing-cells')
+  holes.title = t('cache.cells-the-server-lacks-holes-in-the-map-to-reque')
   const retry = document.createElement('button')
   retry.type = 'button'
   retry.id = 'terrain-missing-retry'
-  retry.textContent = 'Recargar'
-  retry.title = 'Volver a pedir al servidor las celdas que faltan'
+  retry.textContent = t('settings.reload')
+  retry.title = t('cache.request-the-missing-cells-from-the-server-again')
   const list = document.createElement('pre')
   list.id = 'terrain-missing-list'
   list.hidden = true
@@ -129,7 +131,7 @@ export function bindTerrainCache(
     const tiles = runtime.missingTiles
     list.textContent = tiles.length
       ? formatMissingReport(tiles)
-      : 'Ninguna: el servidor tiene todas las celdas pedidas.'
+      : t('cache.none-the-server-has-every-requested-cell')
     list.hidden = false
   }
   holes.addEventListener('click', () => (list.hidden ? showHoles() : (list.hidden = true)))
@@ -157,7 +159,7 @@ export function bindTerrainCache(
     history.replaceState(null, '', url)
     void applyCacheSettings(runtime, patch)
       .catch(() => {
-        usage.textContent = 'No se pudo ajustar la caché del navegador.'
+        usage.textContent = t('cache.could-not-adjust-the-browser-cache')
       })
       .then(() => {
         // A new radius without a chosen cell count brings the engine's own count for it.
@@ -176,7 +178,7 @@ export function bindTerrainCache(
       await clearMapCache()
       await refresh()
     } catch {
-      usage.textContent = 'No se pudo vaciar la caché.'
+      usage.textContent = t('cache.could-not-clear-the-cache')
     }
   })
 

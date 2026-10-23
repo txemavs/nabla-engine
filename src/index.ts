@@ -176,6 +176,12 @@ export {
   weaponPresets,
   type WeaponPreset,
 } from './catalog/weapons/library.js'
+export {
+  heldWeaponPresets,
+  parseHeldWeaponPreset,
+  type HeldWeaponPreset,
+} from './catalog/weapons/held-library.js'
+export { buildWeaponSlots, weaponSlots, type WeaponSlot } from './catalog/weapons/slots.js'
 
 export {
   HtmlMonitor,

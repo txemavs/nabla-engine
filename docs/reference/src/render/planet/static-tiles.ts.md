@@ -14,7 +14,7 @@
 
 ## StaticTileError.constructor
 
-[Implementation, line 73](../../../../../src/render/planet/static-tiles.ts#L73)
+[Implementation, line 79](../../../../../src/render/planet/static-tiles.ts#L79)
 
 A manifest request that failed for a reason worth showing to the user (never a plain "not found").
 
@@ -28,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeTilesBase
 
-[Implementation, line 85](../../../../../src/render/planet/static-tiles.ts#L85)
+[Implementation, line 91](../../../../../src/render/planet/static-tiles.ts#L91)
 
 Trim the base URL and drop trailing slashes.
 
@@ -48,10 +48,10 @@ Explicit throws in this body:
 
 ## tileManifestUrl
 
-[Implementation, line 93](../../../../../src/render/planet/static-tiles.ts#L93)
+[Implementation, line 99](../../../../../src/render/planet/static-tiles.ts#L99)
 
 ```ts
-tileManifestUrl(tile: MapTile, baseUrl: string): string
+tileManifestUrl(tile: MapTile, baseUrl: string, file = 'manifest.json'): string
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -61,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## assertSecureTileBase
 
-[Implementation, line 103](../../../../../src/render/planet/static-tiles.ts#L103)
+[Implementation, line 109](../../../../../src/render/planet/static-tiles.ts#L109)
 
 An `https:` page cannot fetch from an `http:` tile host (browsers block mixed content, and the failure shows up as a
 bare network error). Local development hosts are allowed. Relative URLs inherit the page protocol.
@@ -82,7 +82,7 @@ Explicit throws in this body:
 
 ## describeHttp
 
-[Implementation, line 119](../../../../../src/render/planet/static-tiles.ts#L119)
+[Implementation, line 125](../../../../../src/render/planet/static-tiles.ts#L125)
 
 ```ts
 describeHttp(status: number): string
@@ -90,7 +90,7 @@ describeHttp(status: number): string
 
 ## fetchTileManifest
 
-[Implementation, line 131](../../../../../src/render/planet/static-tiles.ts#L131)
+[Implementation, line 137](../../../../../src/render/planet/static-tiles.ts#L137)
 
 Fetch manifest.json for a single tile via GET request.
 Returns undefined if the tile is not published (404, or the statuses in `missingStatuses`). Every other failure throws a StaticTileError (or the caller's
@@ -98,6 +98,31 @@ AbortError) whose message names the URL and the real cause: HTTP status, network
 
 ```ts
 fetchTileManifest(tile: MapTile, options: StaticTileProviderOptions): Promise<PlanetManifest | undefined>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `[...(options.manifestFiles ?? ['manifest.json'])].reverse`
+- `earlier.reverse`
+- `fetchOneManifest`
+- `tileManifestUrl`
+
+## fetchTileManifest.onMissing
+
+[Implementation, line 148](../../../../../src/render/planet/static-tiles.ts#L148)
+
+```ts
+onMissing(): inferred by TypeScript; see implementation
+```
+
+## fetchOneManifest
+
+[Implementation, line 157](../../../../../src/render/planet/static-tiles.ts#L157)
+
+One manifest request: undefined when missing, a StaticTileError for every other failure.
+
+```ts
+fetchOneManifest(tile: MapTile, options: StaticTileProviderOptions, url: string): Promise<PlanetManifest | undefined>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -115,7 +140,6 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.onMissing`
 - `response.headers.get`
 - `response.json`
-- `tileManifestUrl`
 - `validatePlanetManifest`
 
 Explicit throws in this body:
@@ -130,7 +154,7 @@ Explicit throws in this body:
 
 ## adaptWithAtlasPackage
 
-[Implementation, line 206](../../../../../src/render/planet/static-tiles.ts#L206)
+[Implementation, line 232](../../../../../src/render/planet/static-tiles.ts#L232)
 
 Fetch, verify and apply the Atlas package a manifest points to. Every failure names the URL.
 
@@ -156,7 +180,7 @@ Explicit throws in this body:
 
 ## adaptWithAtlasPackage.fail
 
-[Implementation, line 212](../../../../../src/render/planet/static-tiles.ts#L212)
+[Implementation, line 238](../../../../../src/render/planet/static-tiles.ts#L238)
 
 ```ts
 fail(message: string, kind: StaticTileErrorKind, url: string, status?: number): inferred by TypeScript; see implementation
@@ -168,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fetchTileManifests
 
-[Implementation, line 237](../../../../../src/render/planet/static-tiles.ts#L237)
+[Implementation, line 263](../../../../../src/render/planet/static-tiles.ts#L263)
 
 Batch fetch manifests for multiple tiles.
 Returns a map of tile IDs to manifests (only includes available tiles). A tile that fails for any reason other than
@@ -184,12 +208,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.all`
 - `tiles.map`
 
-## fetchTileManifests.callback@242
+## fetchTileManifests.callback@268
 
-[Implementation, line 242](../../../../../src/render/planet/static-tiles.ts#L242)
+[Implementation, line 268](../../../../../src/render/planet/static-tiles.ts#L268)
 
 ```ts
-callback@242(tile): inferred by TypeScript; see implementation
+callback@268(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -200,7 +224,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isManifestCurrent
 
-[Implementation, line 255](../../../../../src/render/planet/static-tiles.ts#L255)
+[Implementation, line 281](../../../../../src/render/planet/static-tiles.ts#L281)
 
 Check if a manifest is current (has the expected geometry revision).
 
@@ -210,7 +234,7 @@ isManifestCurrent(manifest: PlanetManifest): boolean
 
 ## tileGlbUrl
 
-[Implementation, line 262](../../../../../src/render/planet/static-tiles.ts#L262)
+[Implementation, line 288](../../../../../src/render/planet/static-tiles.ts#L288)
 
 Build the URL for a tile's GLB file.
 

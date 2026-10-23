@@ -4,17 +4,16 @@
 
 [Source](../../../game/start-error.ts)
 
-What the player sees when the terrain cannot start: Spanish text and, over a hole, a way out.
-
 ## Module dependencies
 
+- `./page-query.js`
 - `@nabla/engine/runtime/core`
 - `@nabla/engine/scene`
 - `./terrain.js`
 
 ## isGroundMissing
 
-[Implementation, line 23](../../../game/start-error.ts#L23)
+[Implementation, line 24](../../../game/start-error.ts#L24)
 
 True for the engine's "no tile under the start position" error (by name, so any copy of the engine matches).
 
@@ -24,7 +23,7 @@ isGroundMissing(error: unknown): error is GroundMissingError
 
 ## describeStartError
 
-[Implementation, line 28](../../../game/start-error.ts#L28)
+[Implementation, line 29](../../../game/start-error.ts#L29)
 
 Spanish text for an error that stopped the terrain from starting.
 
@@ -40,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nearestCell
 
-[Implementation, line 41](../../../game/start-error.ts#L41)
+[Implementation, line 42](../../../game/start-error.ts#L42)
 
 The listed cell closest to `from` (Euclidean distance in cells), or undefined for an empty list.
 
@@ -50,7 +49,7 @@ nearestCell(from: MapTile, cells: readonly MapTile[]): MapTile | undefined
 
 ## searchForCell
 
-[Implementation, line 56](../../../game/start-error.ts#L56)
+[Implementation, line 57](../../../game/start-error.ts#L57)
 
 The current URL moved onto `cell`: its centre, with the old position (offsets, lat/lon) dropped.
 
@@ -67,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## searchForDefaultStart
 
-[Implementation, line 64](../../../game/start-error.ts#L64)
+[Implementation, line 65](../../../game/start-error.ts#L65)
 
 The current URL moved to the default road start of the package folder.
 
@@ -87,14 +86,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## startError
 
-[Implementation, line 77](../../../game/start-error.ts#L77)
+[Implementation, line 78](../../../game/start-error.ts#L78)
 
 Error text plus the buttons that can fix it. Over a hole the nearest available cell comes from the
 host's optional index (the dev-server mount has one); without it, the default start when that is published.
 Nothing here is remembered: a bad position lives only in the URL.
 
 ```ts
-startError(error: unknown, base: string, search: string = location.search): Promise<StartError>
+startError(error: unknown, base: string, search: string = pageSearch()): Promise<StartError>
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -104,6 +103,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `fetchCoverage`
 - `isGroundMissing`
 - `nearestCell`
+- `pageSearch`
 - `probeTerrainFolder`
 - `searchForCell`
 - `searchForDefaultStart`

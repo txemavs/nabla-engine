@@ -1,0 +1,48 @@
+/* The XR calibration screen (xr-calibration-screen.ts) is rasterised from an HTML template into
+   a texture, so this sheet is inlined into that template next to the tokens. */
+[data-monitor='xr-calibration'] {
+  background: var(--nabla-color-surface);
+  color: var(--nabla-color-ink);
+  font: var(--nabla-monitor-text, 20px) var(--nabla-font);
+}
+[data-monitor='xr-calibration']
+  :is(.header, .development, .selector, .prev, .next, .minus, .plus, .footer, .option, .close) {
+  border: 1px solid var(--nabla-color-line);
+  border-radius: var(--nabla-radius);
+  background: var(--nabla-color-button);
+  color: var(--nabla-color-ink);
+  font-size: var(--nabla-monitor-text, 20px);
+  font-weight: 400;
+}
+[data-monitor='xr-calibration']
+  :is(
+    .header,
+    .development,
+    .selector,
+    .prev,
+    .next,
+    .minus,
+    .plus,
+    .footer,
+    .option,
+    .close
+  ).pressed {
+  border-color: var(--nabla-color-accent);
+  background: var(--nabla-color-selected);
+  box-shadow: none;
+  transform: none;
+}
+[data-monitor='xr-calibration'] .row {
+  border-bottom: 1px solid var(--nabla-color-line);
+  border-radius: 0;
+  background: var(--nabla-color-surface);
+}
+[data-monitor='xr-calibration'] .dropdown {
+  background: var(--nabla-color-surface);
+}
+[data-monitor='xr-calibration'] :is(.hint, .status) {
+  color: var(--nabla-color-muted);
+}
+[data-monitor='xr-calibration'] .footer:empty {
+  display: none;
+}

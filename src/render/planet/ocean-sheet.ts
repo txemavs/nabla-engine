@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { EARTH_RADIUS, type GeoPoint } from '../../math/geo/sphere.js'
 import { SURFACE_COLORS } from '../../planet/land/surface.js'
 import { waterWaves } from './water-material.js'
+import { softDepth, softUniforms } from '../entity/soft-smoke.js'
 import { groundCloudShade, groundCloudShadow } from './artistic-clouds.js'
 
 export const SEA_ALTITUDE = 0
@@ -101,6 +102,8 @@ const seaShader = {
     uniform vec3 fogColor;
     uniform float fogNear;
     uniform float fogFar;
+    uniform sampler2D softDepth; uniform vec2 softState; uniform vec4 softCamera;
+    uniform float thickness;
     varying vec3 rayDir;
     ${groundCloudShade}
     #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
@@ -171,7 +174,24 @@ const seaShader = {
       #else
         gl_FragDepth = w > 0.0 ? min(clipHit.z / w * 0.5 + 0.5, 0.9999) : 1.0;
       #endif
-      gl_FragColor = vec4(color, opacity);
+      // Water thickness (WebGL, above water): Beer-Lambert opacity over the metres the ray
+      // crosses before the opaque scene behind it (depth copy). A bed at the surface stays
+      // opaque as before; something sunk below it (a vehicle) shows through, tinted.
+      float waterAlpha = 1.0;
+      if (thickness > 0.5 && softState.x > 0.5) {
+        float d = texture2D(softDepth, gl_FragCoord.xy * softCamera.zw).x;
+        float hitZ = -(viewMatrix * vec4(hit, 1.0)).z;
+        if (d < 1.0 && hitZ > 0.0) {
+          float sceneZ;
+          if (softState.y > 0.5) sceneZ = exp2(d * log2(softCamera.y + 1.0)) - 1.0;
+          else { float n = softCamera.x, f = softCamera.y; sceneZ = (n * f) / (f - d * (f - n)); }
+          float path = max(sceneZ - hitZ, 0.0) * t / hitZ;
+          float beer = 1.0 - exp(-path * 1.1);
+          float shallow = smoothstep(0.1, 0.35, path) * (1.0 - smoothstep(120.0, 220.0, hitZ));
+          waterAlpha = mix(1.0, max(beer, 0.45), shallow);
+        }
+      }
+      gl_FragColor = vec4(color, opacity * waterAlpha);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
     }
@@ -194,6 +214,10 @@ export class OceanSheet {
     ambient: { value: number }
     waterColor: { value: THREE.Color }
     opacity: { value: number }
+    thickness: { value: number }
+    softDepth: { value: THREE.Texture | null }
+    softState: { value: THREE.Vector2 }
+    softCamera: { value: THREE.Vector4 }
     fogOn: { value: number }
     fogColor: { value: THREE.Color }
     fogNear: { value: number }
@@ -246,6 +270,10 @@ export class OceanSheet {
       ambient: { value: 0.22 },
       waterColor: { value: new THREE.Color(SURFACE_COLORS.water) },
       opacity: { value: 1 },
+      thickness: { value: 1 },
+      softDepth: softUniforms.softDepth,
+      softState: softUniforms.softState,
+      softCamera: softUniforms.softCamera,
       fogOn: { value: 0 },
       fogColor: { value: new THREE.Color('#a6bbd5') },
       fogNear: { value: 1 },
@@ -262,7 +290,9 @@ export class OceanSheet {
       uniforms: this.uniforms,
       vertexShader: seaShader.vertex,
       fragmentShader: seaShader.fragment,
-      transparent: false,
+      // Above water: after the opaque list and its depth copy (water thickness), still writing
+      // depth for the transparents after it. Below water: the veil (see paint).
+      transparent: true,
       depthTest: true,
       depthWrite: true,
       fog: false,
@@ -272,6 +302,9 @@ export class OceanSheet {
     this.mesh.name = 'Sea'
     this.mesh.frustumCulled = false
     this.mesh.renderOrder = -1
+    this.mesh.onBeforeRender = () => {
+      if (this.uniforms.thickness.value > 0.5) softDepth.mark()
+    }
   }
   setLight(direction: THREE.Vector3, intensity: number, color: THREE.Color, ambient: number): void {
     if (direction.lengthSq() > 1e-8) this.uniforms.sunDir.value.copy(direction).normalize()
@@ -290,11 +323,12 @@ export class OceanSheet {
     this.uniforms.opacity.value = alpha
     const veil = this.seeThrough || this.space > 0.02
     const material = this.mesh.material
-    if (material.transparent !== veil) {
-      material.transparent = veil
+    // Transparent either way: thickness above water, the veil below.
+    if (material.depthWrite === veil) {
       material.depthWrite = !veil
       material.needsUpdate = true
     }
+    this.uniforms.thickness.value = veil ? 0 : 1
     this.mesh.renderOrder = veil ? 10 : -1
   }
   followFog(fog: THREE.Fog | null): void {

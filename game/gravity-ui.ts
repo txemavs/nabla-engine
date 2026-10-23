@@ -1,9 +1,14 @@
-/** Menu slider for the world gravity multiplier (0.5×–3×, 1× = 9.81 m/s²), applied live and stored. */
+/**
+ * Menu slider for the world gravity, shown in m/s² and stored as the existing multiplier
+ * (0.5×–3×, 1× = standard gravity), applied live.
+ */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { simulationDefaults } from '@nabla/engine/config/simulation'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const GRAVITY_SCALE_STORAGE_KEY = 'nabla.gravityScale'
+/** Slider step in m/s². */
 const STEP = 0.1
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
@@ -40,34 +45,40 @@ export function saveGravityScale(
   }
 }
 
+/** m/s² ↔ the stored multiplier of the standard gravity. */
+export const gravityFromScale = (scale: number): number => scale * simulationDefaults.gravity
+export const scaleFromGravity = (metresPerSecond2: number): number =>
+  metresPerSecond2 / simulationDefaults.gravity
+
 function describe(scale: number): string {
-  return `×${scale.toFixed(1)} (${(simulationDefaults.gravity * scale).toFixed(1)} m/s²)`
+  return `${gravityFromScale(scale).toFixed(1)} m/s² (×${scale.toFixed(2)})`
 }
 
-/** «Gravedad» slider in the «Conducción» section (Ajustes → Opciones). */
+/** Gravity slider in Ajustes → Simulación → Tiempo, in m/s². */
 export function bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void {
   const { min, max } = simulationDefaults.gravityScaleRange
-  const group = menuSection('driving-extras', 'Conducción')
+  const group = menuSection('settings-simulation-time', t('settings.time'))
   const label = document.createElement('label')
-  label.title = 'Multiplica la gravedad del mundo. ×1.0 es la gravedad real (9.81 m/s²).'
+  label.title = t('settings.gravity-hint')
   const input = document.createElement('input')
   input.type = 'range'
   input.id = 'gravity-scale'
-  input.min = String(min)
-  input.max = String(max)
+  input.min = gravityFromScale(min).toFixed(1)
+  input.max = gravityFromScale(max).toFixed(1)
   input.step = String(STEP)
   const output = document.createElement('output')
   const sync = (scale: number) => {
-    input.value = String(scale)
+    input.value = gravityFromScale(scale).toFixed(1)
     output.textContent = describe(scale)
     input.setAttribute('aria-valuetext', output.textContent)
   }
   input.addEventListener('input', () => {
-    const used = runtime.setGravityScale(Number(input.value))
+    const scale = Math.min(max, Math.max(min, scaleFromGravity(Number(input.value))))
+    const used = runtime.setGravityScale(scale)
     saveGravityScale(used, storage)
     sync(used)
   })
-  label.append('Gravedad ', input, ' ', output)
+  label.append(t('settings.gravity') + ' ', input, ' ', output)
   group.append(label)
   sync(runtime.gravityScale)
 }

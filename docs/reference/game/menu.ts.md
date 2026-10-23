@@ -5,7 +5,7 @@
 [Source](../../../game/menu.ts)
 
 The in-game menu is the existing `#display-settings` panel; features add titled sections to it in order.
-Once the game starts, the settings HUD (`settings-hud.ts`, `SECTION_TABS`) moves each section into its tab.
+Once the game starts, the settings HUD (`settings-hud.ts`, laid out by `menu-layout.ts`) moves each section into its tab.
 
 ## Module dependencies
 
@@ -37,17 +37,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(MENU_SECTION_ORDER as readonly string[]).indexOf`
 - `[...sections.children].find`
 - `document.createElement`
+- `document.getElementById`
+- `existing.classList.contains`
 - `group.append`
 - `menuSections`
 - `sections.append`
 - `sections.insertBefore`
 
-## menuSection.callback@38
+## menuSection.callback@42
 
-[Implementation, line 38](../../../game/menu.ts#L38)
+[Implementation, line 42](../../../game/menu.ts#L42)
 
 ```ts
-callback@38(el): inferred by TypeScript; see implementation
+callback@42(el): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -56,7 +58,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## menuSubtitle
 
-[Implementation, line 48](../../../game/menu.ts#L48)
+[Implementation, line 52](../../../game/menu.ts#L52)
 
 Nested heading inside a menu section (Cielo, Sol, Mar, …).
 

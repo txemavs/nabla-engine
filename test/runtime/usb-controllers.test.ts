@@ -74,7 +74,7 @@ describe('USB calibration and validation', () => {
         writes++
       },
     })
-    expect(h.error).toContain('inválido')
+    expect(h.error).toContain('Invalid')
     expect(writes).toBe(0)
   })
   it('uses raw index independently of transient connection index', () => {

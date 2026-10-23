@@ -4,9 +4,110 @@ import { TrunkBalloons } from './trunk-balloons.js'
 import { WreckDebris, type DebrisCast } from './wreck-debris.js'
 import * as THREE from 'three'
 import { ExhaustSmoke } from './exhaust-smoke.js'
+import { TreeFires, fuelCurve, type FireSource } from './tree-fire.js'
 import { createLensFlare } from '../planet/lens-flare.js'
+import { analyticParticles } from './gpu-particles.js'
+import { mergedFlameGeometry, TONGUE_GLSL, WreckFlames } from './wreck-flames.js'
+import { cullOffscreen } from './effect-culling.js'
+import { ExplosionEffects } from './explosion-fx.js'
+import {
+  SOFT_FRAGMENT_PARS,
+  SOFT_VERTEX_PARS,
+  softConsumer,
+  softDepth,
+  softSmokeUniforms,
+  softVertex,
+} from './soft-smoke.js'
+
+/** Most glass fragments alive at once (one instanced draw). */
+const MAX_SHARDS = 96
+/** Fragments per broken pane. */
+const SHARDS_PER_PANE = 24
+/** Seconds a fragment lives. */
+const SHARD_LIFE = 1.5
+/** Bounding radius of a fragment (the tetrahedron's circumradius), metres. */
+const SHARD_RADIUS = 0.035
+
+/**
+ * Flame tongue colour (WebGL). Two fetches of the flame noise per fragment, as before:
+ *
+ * - **Domain warp.** A coarse noise layer scrolling upward displaces the lookup of a finer one,
+ *   so the flame undulates and its upper half breaks into licks and detached tips instead of a
+ *   smooth blob.
+ * - **Temperature.** A teardrop core (wide root, thin tip) is hottest at the root (white-yellow
+ *   through the black-body ramp) and cools to orange and a thin dull-red tip.
+ * - **Flicker.** Each tongue has its own phase (`vFlameFlicker`) that scales its height in the
+ *   vertex shader and its brightness here.
+ *
+ * Faded softly where it meets the car or the ground (soft particles).
+ */
+const FLAME_REALISTIC_GLSL = /* glsl */ `#include <color_fragment>
+          float h = flameUv.y;
+          float seed = vFlameSeed + float(gl_FrontFacing) * 0.37;
+          // Coarse warp layer, rising slowly.
+          vec2 warp = texture2D(fireNoise, vec2(flameUv.x * 0.45 + seed, h * 0.5 - flameTime * 0.5)).rg - 0.5;
+          // Fine layer, rising faster, looked up through the warp (stronger higher up).
+          vec2 fine = texture2D(fireNoise, vec2(
+            flameUv.x * 0.6 + warp.x * 0.5 * h + seed * 1.7,
+            h * 1.4 - flameTime * 1.3 + warp.y * 0.45)).rg;
+          float sway = warp.x * 0.32 * h + sin(h * 7.0 - flameTime * 6.0 + seed * 6.2831) * 0.05 * h;
+          float x = abs(flameUv.x - 0.5 - sway);
+          // Teardrop: rounded root, widest low, thin tip.
+          float width = max(0.001, 0.42 * pow(1.0 - h, 1.35) * (0.8 + 0.4 * fine.g) * sqrt(smoothstep(-0.02, 0.22, h)));
+          float core = 1.0 - smoothstep(0.0, width, x);
+          // Noise takes over with height: tongues and detached tips at the top.
+          float density = core * (1.15 - h) + (fine.r - 0.5) * 1.1 * h;
+          float alpha = smoothstep(0.06, 0.28, density) * smoothstep(0.0, 0.12, h);
+          // Hot white-yellow root, orange body, thin dull-red tip.
+          float temp = density * 1.35 * (1.05 - 0.55 * h) + (1.0 - smoothstep(0.0, 0.35, h)) * core * 0.35;
+          temp = clamp(temp * (0.92 + 0.16 * vFlameFlicker), 0.0, 1.0);
+          alpha *= smoothstep(0.05, 0.22, temp) * nablaSoft(0.12);
+          if (alpha < 0.02) discard;
+          diffuseColor.rgb = nablaBlackbody(temp) * (0.72 + 0.18 * vFlameFlicker) + vec3(0.1, 0.018, 0.0);
+          diffuseColor.a *= alpha * 0.88;`
+
+/**
+ * Per-tongue phase and flicker (merged tongues only): height ±7 %, passed on to the brightness.
+ * Runs before {@link TONGUE_GLSL} (it scales the tongue's own plane).
+ */
+const FLAME_FLICKER_GLSL = /* glsl */ `
+          {
+            vFlameSeed = fract(flameTongue * 0.618 + 0.13);
+            float ph = flameTime * (6.3 + flameTongue * 0.83) + flameTongue * 1.9;
+            vFlameFlicker = 0.5 + 0.32 * sin(ph) + 0.18 * sin(ph * 2.31 + 1.3);
+            transformed.y *= 0.95 + 0.07 * vFlameFlicker;
+          }
+`
 
 /** Bounded, reusable explosions, burning wrecks and glass fragments in the scene frame. */
+/**
+ * Lingering wreck fire at `age` seconds: ignition after the blast, a flare-up as the fuel
+ * catches, fuel-driven decay to {@link explosionTuning.flameSeconds}, then embers that smoulder
+ * for `smoulder` more seconds. `strength` drives the flames (0..~1.25), `flicker` their height,
+ * `light` the fire lamp.
+ */
+export function wreckFire(
+  age: number,
+  flameSeconds: number,
+  smoulder = 10,
+): { strength: number; flicker: number; light: number } {
+  const t = age - 0.4
+  const strength = t > 0 && age < flameSeconds ? fuelCurve(t, flameSeconds - 0.4) : 0
+  const flicker =
+    1 + 0.1 * Math.sin(age * 13.3) * Math.sin(age * 7.1 + 1.3) + 0.06 * Math.sin(age * 29.7)
+  const ember =
+    age >= flameSeconds - 1 && age < flameSeconds + smoulder
+      ? (1 - (age - flameSeconds + 1) / (smoulder + 1)) *
+        (0.8 + 0.35 * Math.sin(age * 2.3) * Math.sin(age * 5.9))
+      : 0
+  return {
+    strength,
+    flicker,
+    light:
+      Math.max(ember, (1.5 + 4.5 * strength) * flicker) * (age < flameSeconds + smoulder ? 1 : 0),
+  }
+}
+
 export class VehicleDestruction {
   private readonly damageSmoke = new Map<
     string,
@@ -70,6 +171,7 @@ export class VehicleDestruction {
     anchor: THREE.Group
     flames: THREE.Group
     material: THREE.MeshBasicMaterial
+    tongues?: WreckFlames
     clock: { value: number }
     smoke: ExhaustSmoke
   }[] = []
@@ -77,6 +179,13 @@ export class VehicleDestruction {
   readonly glassRoot = new THREE.Group()
   private readonly geometry = new THREE.SphereGeometry(1, 10, 8)
   private readonly flameGeometry = new THREE.PlaneGeometry(1, 1, 1, 16).translate(0, 0.5, 0)
+  /** The six tongues merged (WebGL), built on first use and shared by every wreck. */
+  private mergedFlames?: THREE.BufferGeometry
+  /**
+   * WebGPU's six tongue planes: the shared plane plus each tongue's `flameTongue` index, so its
+   * flame twin gets the same per-tongue seed and flicker as the merged WebGL tongues.
+   */
+  private tongueGeometries?: THREE.BufferGeometry[]
   // Keep the light count constant: adding the first explosion lamp otherwise recompiles
   // every lit material in the scene on the gameplay frame.
   private readonly light = new THREE.PointLight('#ff9b22', 0, 8, 2)
@@ -103,29 +212,123 @@ export class VehicleDestruction {
       fire: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>
       flames: THREE.Group
       flameMaterial: THREE.MeshBasicMaterial
+      tongues?: WreckFlames
       smoke: ExhaustSmoke
       age: number
       clock: { value: number }
     }
   >()
   private readonly fragments = new THREE.InstancedMesh(
-    new THREE.TetrahedronGeometry(0.035),
+    new THREE.TetrahedronGeometry(SHARD_RADIUS),
     new THREE.MeshBasicMaterial({ color: '#b8e5ff', transparent: true, opacity: 0.65 }),
-    96,
+    MAX_SHARDS,
   )
-  private readonly shards: { position: THREE.Vector3; velocity: THREE.Vector3; age: number }[] = []
+  /**
+   * Glass fragments, oldest first, as a ring in preallocated arrays: `(x, y, z)` position and
+   * velocity and the age per slot. No allocation per frame or per pane.
+   */
+  private readonly shardPositions = new Float64Array(MAX_SHARDS * 3)
+  private readonly shardVelocities = new Float64Array(MAX_SHARDS * 3)
+  private readonly shardAges = new Float64Array(MAX_SHARDS)
+  /** Ring index of the oldest live fragment and the live count. */
+  private shardHead = 0
+  private shardCount = 0
+  private readonly shardDummy = new THREE.Object3D()
+  /** Local bounds of the live fragments, refreshed each update (for off-screen culling). */
+  private readonly shardBounds = new THREE.Box3()
+  /**
+   * GPU explosions, fragments and glass (WebGL). The WebGPU backend keeps the former flash
+   * sphere and CPU glass (its effect twins read CPU state).
+   */
+  private readonly fx = analyticParticles() ? new ExplosionEffects() : undefined
+  /** Ages of the GPU blasts still lighting the scene (light and lens flash only). */
+  private readonly flashes: { age: number; scale: number; position: THREE.Vector3 }[] = []
+  private readonly blastCenter = new THREE.Vector3()
   constructor(private readonly space: THREE.Group) {
     this.debris = new WreckDebris(space)
     this.balloons = new TrunkBalloons(space)
     this.root.name = 'Vehicle explosions'
     this.fragments.count = 0
+    this.fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    // Culled through its own bounds: the instanced sphere stays three's (fixed) sort centre.
     this.fragments.frustumCulled = false
+    cullOffscreen(this.fragments, {
+      box: (target) => target.copy(this.shardBounds),
+    })
     this.root.add(this.fragments, this.glassRoot)
+    // Beside `root`, which keeps its fixed children (fragments, glass).
+    if (this.fx) this.space.add(this.fx.root)
+    // Soft smoke and fire: the depth copy between the opaque and transparent lists.
+    if (this.fx) this.space.add(softDepth.grabber)
     this.space.add(this.light)
     this.flare.intensity.value = 0
     this.flare.mesh.name = 'Explosion lens flare'
     this.space.add(this.flare.mesh)
+    this.trees = new TreeFires(
+      space,
+      () => {
+        const clock = { value: Math.random() * 10 }
+        const kit = this.createFlames(clock, true)
+        return {
+          ...kit,
+          clock,
+          dispose: () => kit.material.dispose(),
+          update: (dt, strength) => {
+            clock.value += dt
+            kit.material.opacity = Math.min(1, strength * 1.4)
+            kit.tongues?.updateBounds()
+          },
+        }
+      },
+      (parent) => {
+        const anchor = new THREE.Object3D()
+        parent.add(anchor)
+        const smoke = new ExhaustSmoke(anchor, this.space, {
+          direction: [0, 1, 0],
+          color: '#1d1b19',
+          size: 1100,
+          emissionRate: 30,
+          capacity: 256,
+          lifetime: 6,
+          riseSpeed: 1.6,
+        })
+        this.root.add(smoke.root)
+        return {
+          root: anchor,
+          update: (dt, emitting, amount) => {
+            smoke.setEnabled(this.smokeEnabled)
+            smoke.setAmount(amount)
+            smoke.update(dt, emitting, 0.7)
+          },
+          dispose: () => {
+            smoke.dispose()
+            anchor.removeFromParent()
+          },
+        }
+      },
+    )
   }
+  /** Fire spreading into trees under burning wrecks and debris. */
+  readonly trees: TreeFires
+  /**
+   * Simulated fire (default on): fuel-driven lingering fire plus tree ignition, char and removal.
+   * Off restores the #287 behaviour exactly and skips every tree grid lookup.
+   */
+  get simulatedFire(): boolean {
+    return this.simFire
+  }
+  set simulatedFire(on: boolean) {
+    if (on === this.simFire) return
+    this.simFire = on
+    if (!on) {
+      this.trees.clear()
+      for (const f of this.debrisFires) f.flames.scale.setScalar(0.28)
+      for (const burn of this.burns.values()) burn.flames.scale.setScalar(1)
+    }
+  }
+  private simFire = true
+  private smokeEnabled = true
+  private readonly fireSources: FireSource[] = []
   /** Small weapon rupture: existing bounded debris pool and swept ground collision. */
   breakWeapon(object: THREE.Group): void {
     this.debris.explode(
@@ -150,10 +353,12 @@ export class VehicleDestruction {
         node.visible = false
       }
     })
-    for (const anchor of detached.slice(0, 8)) {
+    // Four burning pieces per wreck (formerly eight): each costs a flame and a smoke draw, and the
+    // blast's own smoke column now carries the look.
+    for (const anchor of detached.slice(0, this.fx ? 4 : 8)) {
       if (this.debrisFires.length >= 48) break
       const clock = { value: 0 },
-        { flames, material } = this.createFlames(clock)
+        { flames, material, tongues } = this.createFlames(clock)
       flames.scale.setScalar(0.28)
       this.space.add(flames)
       flames.position.copy(anchor.position)
@@ -163,7 +368,7 @@ export class VehicleDestruction {
         size: 250,
       })
       this.root.add(smoke.root)
-      this.debrisFires.push({ anchor, flames, material, clock, smoke })
+      this.debrisFires.push({ anchor, flames, material, tongues, clock, smoke })
     }
     object.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return
@@ -191,7 +396,7 @@ export class VehicleDestruction {
       }
     })
     const { fire, clock } = this.createFire()
-    const { flames, material: flameMaterial } = this.createFlames(clock)
+    const { flames, material: flameMaterial, tongues } = this.createFlames(clock, true)
     fire.position.y = 0.5
     const smoke = new ExhaustSmoke(flames, this.space, {
       direction: [0, 1, 0],
@@ -209,7 +414,18 @@ export class VehicleDestruction {
     this.space.worldToLocal(flames.position)
     flames.position.y += 0.3
     this.root.add(smoke.root)
-    this.burns.set(id, { object, fire, flames, flameMaterial, smoke, age: 0, clock })
+    this.burns.set(id, { object, fire, flames, flameMaterial, tongues, smoke, age: 0, clock })
+    if (this.fx) {
+      fire.visible = false
+      const box = new THREE.Box3().setFromObject(object)
+      const center = box.getCenter(this.blastCenter)
+      const ground = new THREE.Vector3(center.x, box.min.y, center.z)
+      this.space.worldToLocal(center)
+      this.space.worldToLocal(ground)
+      center.y = ground.y + Math.min(0.9, (center.y - ground.y) * 0.9)
+      this.fx.explode(center, ground.y)
+      this.flashes.push({ age: 0, scale: 1, position: center.clone() })
+    }
   }
   /**
    * The vehicle explosion's fireball, light and lens flash at `position` (scene space), `scale`
@@ -272,7 +488,14 @@ export class VehicleDestruction {
     fireNodes(fire.material, clock)
     return { fire, clock }
   }
-  private createFlames(clock: { value: number }) {
+  /**
+   * Six crossed flame planes. Under WebGL they are one merged draw ({@link WreckFlames}) with the
+   * per-tongue sway of a burning car (`animated`) evaluated in the vertex shader; the WebGPU
+   * backend keeps six meshes (its flame twin blends each draw over a fresh frame copy).
+   */
+  private createFlames(clock: { value: number }, animated = false) {
+    const merged = analyticParticles()
+    const sway = { value: animated ? 1 : 0 }
     const material = new THREE.MeshBasicMaterial({
       color: '#ffffff',
       transparent: true,
@@ -282,26 +505,42 @@ export class VehicleDestruction {
     })
     material.onBeforeCompile = (shader) => {
       shader.uniforms.flameTime = clock
+      shader.uniforms.flameAnimate = sway
+      if (merged) Object.assign(shader.uniforms, softSmokeUniforms())
       shader.vertexShader = shader.vertexShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
+            (merged
+              ? '\nattribute float flameTongue; uniform float flameAnimate;\nvarying float vFlameSeed; varying float vFlameFlicker;\n' +
+                SOFT_VERTEX_PARS
+              : ''),
+        )
+        .replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\n' + (merged ? softVertex('mvPosition') : ''),
         )
         .replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
           flameUv = uv;
           transformed.x += sin(uv.y * 7.0 - flameTime * 5.0) * uv.y * uv.y * 0.09;
-          transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;`,
+          transformed.z += sin(uv.y * 5.0 - flameTime * 3.7) * uv.y * uv.y * 0.055;` +
+            (merged ? FLAME_FLICKER_GLSL + TONGUE_GLSL : ''),
         )
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;',
+          '#include <common>\nvarying vec2 flameUv; uniform float flameTime;' +
+            (merged
+              ? '\nvarying float vFlameSeed; varying float vFlameFlicker;\n' + SOFT_FRAGMENT_PARS
+              : ''),
         )
         .replace(
           '#include <color_fragment>',
-          `#include <color_fragment>
+          merged
+            ? FLAME_REALISTIC_GLSL
+            : `#include <color_fragment>
           float h = flameUv.y;
           float sway = sin(h * 9.0 - flameTime * 8.0) * 0.08 * h;
           float x = abs(flameUv.x - 0.5 - sway);
@@ -318,19 +557,40 @@ export class VehicleDestruction {
           diffuseColor.a *= alpha * 0.8;`,
         )
     }
-    material.customProgramCacheKey = () => 'vehicle-flames-v2'
+    material.customProgramCacheKey = () =>
+      merged ? 'vehicle-flames-merged-v3' : 'vehicle-flames-v2'
+    if (merged) softConsumer(material)
     flameNodes(material, clock)
     const flames = new THREE.Group()
     flames.name = 'Wreck flames'
     flames.position.y = 0.3
+    if (merged) {
+      this.mergedFlames ??= mergedFlameGeometry(this.flameGeometry)
+      // The shader's `flameAnimate` is the same object the tongue order reads.
+      const tongues = new WreckFlames(this.mergedFlames, material, clock, sway)
+      flames.add(tongues.mesh)
+      return { flames, material, tongues }
+    }
+    this.tongueGeometries ??= Array.from({ length: 6 }, (_, i) => {
+      const geometry = new THREE.BufferGeometry()
+      for (const [name, attribute] of Object.entries(this.flameGeometry.attributes))
+        geometry.setAttribute(name, attribute)
+      geometry.setIndex(this.flameGeometry.getIndex())
+      const count = this.flameGeometry.getAttribute('position').count
+      geometry.setAttribute(
+        'flameTongue',
+        new THREE.BufferAttribute(new Float32Array(count).fill(i), 1),
+      )
+      return geometry
+    })
     for (let i = 0; i < 6; i++) {
-      const tongue = new THREE.Mesh(this.flameGeometry, material)
+      const tongue = new THREE.Mesh(this.tongueGeometries[i], material)
       tongue.rotation.y = ((i % 2) * Math.PI) / 2
       tongue.position.set((Math.floor(i / 2) - 1) * 0.24, 0, ((i % 3) - 1) * 0.1)
       tongue.scale.set(0.7, 1.0 + (i % 3) * 0.2, 1)
       flames.add(tongue)
     }
-    return { flames, material }
+    return { flames, material, tongues: undefined }
   }
   /** Compile effect programs during loading and keep them alive across session resets. */
   async warm(
@@ -350,8 +610,11 @@ export class VehicleDestruction {
     this.warmFire ??= this.createFire().fire
     this.warmFlames ??= this.createFlames({ value: 0 })
     this.warmSmoke ??= new ExhaustSmoke(this.space, this.space)
-    this.warmSmoke.root.visible = true
+    this.warmSmoke.warmUp(true)
     this.root.add(this.warmFire, this.warmSmoke.root, this.warmFlames.flames)
+    const fxWarm = this.fx?.warmObjects() ?? []
+    const fxVisible = fxWarm.map((o) => o.visible)
+    for (const o of fxWarm) o.visible = true
     try {
       await renderer.compileAsync(scene, camera)
       // A draw also warms transparent front/back passes and uploads effect buffers.
@@ -359,7 +622,13 @@ export class VehicleDestruction {
       target.texture.colorSpace = renderer.outputColorSpace
       const previous = renderer.getRenderTarget()
       const culled = new Map<THREE.Object3D, boolean>()
-      for (const root of [parts, this.warmFire, this.warmSmoke.root, this.warmFlames.flames])
+      for (const root of [
+        parts,
+        this.warmFire,
+        this.warmSmoke.root,
+        this.warmFlames.flames,
+        ...fxWarm,
+      ])
         root.traverse((node) => {
           culled.set(node, node.frustumCulled)
           node.frustumCulled = false
@@ -377,24 +646,36 @@ export class VehicleDestruction {
       parts.removeFromParent()
       parts.clear()
       this.warmFire.removeFromParent()
+      this.warmSmoke.warmUp(false)
       this.warmSmoke.root.removeFromParent()
       this.warmFlames.flames.removeFromParent()
+      fxWarm.forEach((o, i) => (o.visible = fxVisible[i]))
     }
   }
   glass(point: THREE.Vector3, direction: THREE.Vector3): void {
-    for (let i = 0; i < 24; i++) {
-      if (this.shards.length >= 96) this.shards.shift()
-      this.shards.push({
-        position: point.clone(),
-        velocity: direction
-          .clone()
-          .multiplyScalar(1.5)
-          .add(
-            new THREE.Vector3(Math.random() * 3 - 1.5, Math.random() * 2, Math.random() * 3 - 1.5),
-          ),
-        age: 0,
-      })
+    if (this.fx) return this.fx.glass(point, direction)
+    for (let i = 0; i < SHARDS_PER_PANE; i++) {
+      // Past the limit the oldest fragment makes room.
+      if (this.shardCount >= MAX_SHARDS) {
+        this.shardHead = (this.shardHead + 1) % MAX_SHARDS
+        this.shardCount--
+      }
+      const slot = (this.shardHead + this.shardCount++) % MAX_SHARDS
+      const rx = Math.random() * 3 - 1.5,
+        ry = Math.random() * 2,
+        rz = Math.random() * 3 - 1.5
+      this.shardPositions[slot * 3] = point.x
+      this.shardPositions[slot * 3 + 1] = point.y
+      this.shardPositions[slot * 3 + 2] = point.z
+      this.shardVelocities[slot * 3] = direction.x * 1.5 + rx
+      this.shardVelocities[slot * 3 + 1] = direction.y * 1.5 + ry
+      this.shardVelocities[slot * 3 + 2] = direction.z * 1.5 + rz
+      this.shardAges[slot] = 0
     }
+  }
+  /** Live glass fragments (tests and tools). */
+  get shardsAlive(): number {
+    return this.fx ? this.fx.shardsAlive : this.shardCount
   }
   update(dt: number, smokeEnabled: boolean, cast?: DebrisCast): void {
     for (const [id, entry] of this.damageSmoke) {
@@ -414,11 +695,24 @@ export class VehicleDestruction {
     dt = THREE.MathUtils.clamp(dt, 0, 0.1)
     this.debris.update(dt, cast)
     this.balloons.update(dt)
+    this.fireSources.length = 0
     for (let i = this.debrisFires.length - 1; i >= 0; i--) {
       const f = this.debrisFires[i]
       f.clock.value += dt
       f.flames.position.copy(f.anchor.position)
-      f.material.opacity = Math.max(0, 1 - f.clock.value / 6)
+      if (!this.simFire) {
+        f.material.opacity = Math.max(0, 1 - f.clock.value / 6)
+      } else {
+        // Burning debris: catches, flares, burns its little fuel out in ~6 s.
+        const fuel = fuelCurve(f.clock.value, 6)
+        f.flames.scale.set(
+          0.28 * (0.6 + 0.4 * fuel),
+          0.28 * (0.45 + 0.6 * fuel),
+          0.28 * (0.6 + 0.4 * fuel),
+        )
+        f.material.opacity = Math.min(1, fuel * 1.4)
+        if (fuel > 0.3) this.fireSources.push({ position: f.flames.position, strength: fuel * 0.6 })
+      }
       f.smoke.setEnabled(smokeEnabled)
       f.smoke.update(dt, f.clock.value < 6, 0.5)
       if (f.clock.value > 9 || !f.anchor.parent) {
@@ -430,41 +724,58 @@ export class VehicleDestruction {
     }
     this.light.intensity = 0
     this.flare.intensity.value = 0
+    this.smokeEnabled = smokeEnabled
     for (const burn of this.burns.values()) {
       burn.object.getWorldPosition(burn.flames.position)
       this.space.worldToLocal(burn.flames.position)
       burn.flames.position.y += 0.3
       burn.age += dt
       burn.clock.value = burn.age
+      const life = this.simFire ? wreckFire(burn.age, explosionTuning.flameSeconds) : null
       const intensity =
         burn.age < 0.4
           ? 40 * (1 - burn.age / 0.4)
-          : burn.age < explosionTuning.flameSeconds
-            ? 5 + Math.sin(burn.age * 17) * 2
-            : 0
-      if (intensity > this.light.intensity) {
+          : life
+            ? life.light
+            : burn.age < explosionTuning.flameSeconds
+              ? 5 + Math.sin(burn.age * 17) * 2
+              : 0
+      if (life && life.strength > 0.3)
+        this.fireSources.push({ position: burn.flames.position, strength: life.strength })
+      if (!this.fx && intensity > this.light.intensity) {
         this.light.intensity = intensity
         burn.fire.getWorldPosition(this.light.position)
         this.space.worldToLocal(this.light.position)
       }
-      if (burn.age < 0.25) {
+      if (this.fx && burn.age >= 0.4 && intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        this.light.position.copy(burn.flames.position)
+      }
+      if (!this.fx && burn.age < 0.25) {
         this.flare.intensity.value = 3 * (1 - burn.age / 0.25)
         burn.fire.getWorldPosition(this.flarePoint)
         this.flarePoint.y += 0.4
       }
       const flash = burn.age < 0.4
-      burn.fire.visible = flash
-      burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
-      burn.flames.children.forEach((tongue, i) => {
-        const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
-        tongue.scale.y =
-          (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
-        tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
-      })
-      burn.flameMaterial.opacity = Math.max(
-        0,
-        Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3),
-      )
+      burn.fire.visible = flash && !this.fx
+      if (life) {
+        burn.flames.visible = !flash && life.strength > 0.01
+        // Fuel drives the flame size: low at ignition, tall at the flare-up, shrinking as it burns out.
+        const spread = 0.6 + 0.45 * Math.min(1, life.strength)
+        burn.flames.scale.set(spread, (0.45 + 0.7 * life.strength) * life.flicker, spread)
+      } else burn.flames.visible = !flash && burn.age < explosionTuning.flameSeconds
+      // Merged tongues sway in the vertex shader from the same age.
+      burn.tongues?.updateBounds()
+      if (!burn.tongues)
+        burn.flames.children.forEach((tongue, i) => {
+          const phase = burn.age * (4.5 + i * 0.37) + i * 2.4
+          tongue.scale.y =
+            (1 + (i % 3) * 0.2) * (0.92 + Math.sin(phase) * 0.13 + Math.sin(phase * 1.7) * 0.05)
+          tongue.scale.x = 0.64 + Math.sin(phase * 0.8) * 0.06
+        })
+      burn.flameMaterial.opacity = life
+        ? Math.min(1, life.strength * 1.6)
+        : Math.max(0, Math.min(1, (explosionTuning.flameSeconds - burn.age) / 3))
       burn.fire.scale.set(
         flash ? 0.2 + burn.age * 8 : 0.45 + Math.sin(burn.age * 21) * 0.08,
         flash ? 0.2 + burn.age * 8 : 0.8 + Math.sin(burn.age * 17) * 0.15,
@@ -482,6 +793,7 @@ export class VehicleDestruction {
       )
       burn.smoke.update(dt, burn.age < explosionTuning.smokeSeconds, 0.8)
     }
+    if (this.simFire) this.trees.update(dt, this.fireSources)
     for (let i = this.bursts.length - 1; i >= 0; i--) {
       const burst = this.bursts[i]
       burst.age += dt
@@ -507,25 +819,99 @@ export class VehicleDestruction {
         }
       }
     }
-    const dummy = new THREE.Object3D()
-    for (let i = this.shards.length - 1; i >= 0; i--) {
-      const shard = this.shards[i]
-      shard.age += dt
-      if (shard.age > 1.5) {
-        this.shards.splice(i, 1)
+    this.updateShards(dt)
+    if (this.fx) {
+      this.fx.update(dt)
+      this.updateFlashes(dt)
+    }
+  }
+  /**
+   * Blast light: a 30 ms rise to a white-yellow peak, an exponential fall through orange (the
+   * fireball cooling), plus the lens flash. One shared lamp; the brightest blast owns it.
+   */
+  private updateFlashes(dt: number): void {
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const f = this.flashes[i]
+      f.age += dt
+      if (f.age > 1.2) {
+        this.flashes.splice(i, 1)
         continue
       }
-      shard.position.addScaledVector(shard.velocity, dt)
-      shard.velocity.y -= 9.8 * dt
+      const rise = Math.min(1, f.age / 0.03)
+      const intensity = 70 * f.scale * rise * Math.exp(-f.age / 0.16)
+      if (intensity > this.light.intensity) {
+        this.light.intensity = intensity
+        this.light.position.copy(f.position)
+        this.light.position.y += 0.6 * f.scale
+        // White-yellow at the peak, orange as the fireball cools.
+        this.light.color.setRGB(
+          1,
+          0.55 + 0.35 * Math.exp(-f.age / 0.1),
+          0.15 + 0.45 * Math.exp(-f.age / 0.08),
+        )
+        this.light.distance = 8 + 14 * f.scale * Math.exp(-f.age / 0.3)
+      }
+      if (f.age < 0.25) {
+        const flare = 3 * f.scale * (1 - f.age / 0.25)
+        if (flare > this.flare.intensity.value) {
+          this.flare.intensity.value = flare
+          this.flarePoint.copy(f.position)
+          this.flarePoint.y += 0.4 * f.scale
+        }
+      }
     }
-    this.fragments.count = this.shards.length
-    this.shards.forEach((shard, i) => {
-      dummy.position.copy(shard.position)
-      dummy.rotation.set(shard.age * 8, i, shard.age * 5)
+    if (!this.flashes.length && this.light.intensity > 0) {
+      this.light.color.set('#ff9b22')
+      this.light.distance = 8
+    }
+  }
+  /**
+   * Same motion and matrices as the former per-object fragments (age, then `p += v·dt` and
+   * `v.y -= 9.8·dt`; rotation `(age·8, index, age·5)`), without allocation. Fragments age in
+   * order, so the expired ones are always the oldest at the head of the ring.
+   */
+  private updateShards(dt: number): void {
+    const p = this.shardPositions,
+      v = this.shardVelocities,
+      ages = this.shardAges
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS
+      ages[slot] += dt
+    }
+    while (this.shardCount && ages[this.shardHead] > SHARD_LIFE) {
+      this.shardHead = (this.shardHead + 1) % MAX_SHARDS
+      this.shardCount--
+    }
+    const dummy = this.shardDummy
+    const bounds = this.shardBounds.makeEmpty()
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS,
+        o = slot * 3
+      if (ages[slot] > SHARD_LIFE) continue
+      p[o] += v[o] * dt
+      p[o + 1] += v[o + 1] * dt
+      p[o + 2] += v[o + 2] * dt
+      v[o + 1] -= 9.8 * dt
+    }
+    let i = 0
+    for (let k = 0; k < this.shardCount; k++) {
+      const slot = (this.shardHead + k) % MAX_SHARDS,
+        o = slot * 3
+      if (ages[slot] > SHARD_LIFE) continue
+      dummy.position.set(p[o], p[o + 1], p[o + 2])
+      dummy.rotation.set(ages[slot] * 8, i, ages[slot] * 5)
       dummy.updateMatrix()
       this.fragments.setMatrixAt(i, dummy.matrix)
-    })
-    this.fragments.instanceMatrix.needsUpdate = true
+      bounds.expandByPoint(dummy.position)
+      i++
+    }
+    if (i) bounds.expandByScalar(SHARD_RADIUS)
+    this.fragments.count = i
+    // Upload only the live matrices; nothing at all while no glass is flying.
+    if (i) {
+      this.fragments.instanceMatrix.addUpdateRange(0, i * 16)
+      this.fragments.instanceMatrix.needsUpdate = true
+    }
   }
   private remove(id: string): void {
     const burn = this.burns.get(id)
@@ -568,19 +954,26 @@ export class VehicleDestruction {
     }
     this.charred.clear()
     for (const id of this.burns.keys()) this.remove(id)
-    this.shards.length = 0
+    this.shardHead = this.shardCount = 0
+    this.shardBounds.makeEmpty()
     this.fragments.count = 0
     this.light.intensity = 0
     this.flare.intensity.value = 0
+    this.flashes.length = 0
+    this.trees.clear()
+    this.fx?.clear()
   }
   dispose(): void {
     this.clear()
+    this.trees.dispose()
     this.debris.dispose()
     this.balloons.dispose()
     this.root.removeFromParent()
     this.light.removeFromParent()
     this.flare.mesh.removeFromParent()
     this.flare.dispose()
+    this.fx?.dispose()
+    if (softDepth.grabber.parent === this.space) softDepth.grabber.removeFromParent()
     for (const fire of this.burstPool) fire.material.dispose()
     this.burstPool.length = 0
     this.warmFire?.material.dispose()
@@ -588,6 +981,8 @@ export class VehicleDestruction {
     this.warmSmoke?.dispose()
     this.geometry.dispose()
     this.flameGeometry.dispose()
+    this.mergedFlames?.dispose()
+    for (const geometry of this.tongueGeometries ?? []) geometry.dispose()
     this.fragments.geometry.dispose()
     ;(this.fragments.material as THREE.Material).dispose()
   }

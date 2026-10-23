@@ -25,6 +25,7 @@ describe('vehicle group visibility', () => {
       'settings-car-beams': false,
       'settings-vehicle-sound': false,
       'settings-truck-exhaust': false,
+      'settings-rear-light-nudge': false,
     })
     expect(show.mirrors).toBe(false)
   })

@@ -32,17 +32,15 @@ test('calibrates a nonstandard wheel in the reusable panel and restores its prof
     panel.refresh()
     Object.assign(window, { usbTest: state })
   }, root)
-  await page.getByText('Ajustes avanzados y diagnóstico', { exact: true }).click()
-  await expect(page.getByLabel('Dispositivo USB')).toContainText('Simulated USB wheel')
-  await page
-    .getByRole('button', { name: 'Cargar plantilla (requiere calibración)', exact: true })
-    .click()
-  await expect(page.getByRole('button', { name: 'Calibrar', exact: true })).toHaveCount(3)
-  await page.getByRole('button', { name: 'Exportar perfiles', exact: true }).click()
-  const json = page.getByLabel('Perfiles USB JSON')
+  await page.getByText('Advanced settings and diagnostics', { exact: true }).click()
+  await expect(page.getByLabel('USB device')).toContainText('Simulated USB wheel')
+  await page.getByRole('button', { name: 'Load template (needs calibration)', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Calibrate', exact: true })).toHaveCount(3)
+  await page.getByRole('button', { name: 'Export profiles', exact: true }).click()
+  const json = page.getByLabel('USB profiles JSON')
   expect(JSON.parse(await json.inputValue()).profiles.road.bindings).toHaveLength(3)
-  await page.getByLabel('Control a asignar').selectOption('camera')
-  await page.getByRole('button', { name: 'Mover / pulsar para asignar', exact: true }).click()
+  await page.getByLabel('Control to assign').selectOption('camera')
+  await page.getByRole('button', { name: 'Move / press to assign', exact: true }).click()
   await page.evaluate(() => {
     const s = (
       window as unknown as { usbTest: { pad: { buttons: { value: number; pressed: boolean }[] } } }
@@ -50,7 +48,7 @@ test('calibrates a nonstandard wheel in the reusable panel and restores its prof
     s.pad.buttons[4].value = 1
     s.pad.buttons[4].pressed = true
   })
-  await expect(page.locator('legend').filter({ hasText: 'Cambiar cámara · button 4' })).toHaveCount(
+  await expect(page.locator('legend').filter({ hasText: 'Change camera · button 4' })).toHaveCount(
     1,
   )
   const result = await page.evaluate(async (root) => {
@@ -197,11 +195,11 @@ test('the wheel wizard detects direction, tests the result and saves only after 
     },
     process.cwd().replaceAll('\\', '/'),
   )
-  await expect(page.getByLabel('Dispositivo USB')).not.toBeVisible()
-  await page.getByRole('button', { name: 'Configurar Volante y pedales', exact: true }).click()
-  await page.getByLabel('Acelerador y freno', { exact: true }).uncheck()
-  await page.getByRole('button', { name: 'Empezar asistente', exact: true }).click()
-  await page.getByRole('button', { name: 'Está en reposo', exact: true }).click()
+  await expect(page.getByLabel('USB device')).not.toBeVisible()
+  await page.getByRole('button', { name: 'Set up Wheel and pedals', exact: true }).click()
+  await page.getByLabel('Throttle and brake', { exact: true }).uncheck()
+  await page.getByRole('button', { name: 'Start assistant', exact: true }).click()
+  await page.getByRole('button', { name: 'It is at rest', exact: true }).click()
   const move = async (value: number) => {
     await page.evaluate((v) => {
       ;(
@@ -211,14 +209,14 @@ test('the wheel wizard detects direction, tests the result and saves only after 
     await page.waitForTimeout(450)
   }
   await move(-1)
-  await expect(page.getByText('Detectado: Wizard wheel', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Está en el tope', exact: true }).click()
+  await expect(page.getByText('Detected: Wizard wheel', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'It is at the limit', exact: true }).click()
   await move(1)
-  await page.getByRole('button', { name: 'Está en el tope', exact: true }).click()
+  await page.getByRole('button', { name: 'It is at the limit', exact: true }).click()
   await move(0)
-  await page.getByRole('button', { name: 'Está de nuevo en reposo', exact: true }).click()
+  await page.getByRole('button', { name: 'It is at rest again', exact: true }).click()
   await expect(
-    page.getByText('Prueba de controles · mueve cada pieza y comprueba su respuesta.', {
+    page.getByText('Control test · move each part and check its response.', {
       exact: true,
     }),
   ).toBeVisible()
@@ -231,7 +229,7 @@ test('the wheel wizard detects direction, tests the result and saves only after 
       ).usbWizardTest.hub.snapshot.profiles.road.bindings.length,
   )
   expect(before).toBe(0)
-  await page.getByRole('button', { name: 'Guardar perfil', exact: true }).click()
+  await page.getByRole('button', { name: 'Save profile', exact: true }).click()
   const result = await page.evaluate(
     () =>
       (
@@ -247,9 +245,9 @@ test('the wheel wizard detects direction, tests the result and saves only after 
   expect(result).toHaveLength(1)
   expect(result[0].target).toBe('steering')
   expect(result[0].invert).toBe(true)
-  await page.getByRole('button', { name: 'Configurar Volante y pedales', exact: true }).click()
-  await page.getByRole('button', { name: 'Empezar asistente', exact: true }).click()
-  await page.getByRole('button', { name: 'Cancelar sin guardar', exact: true }).click()
+  await page.getByRole('button', { name: 'Set up Wheel and pedals', exact: true }).click()
+  await page.getByRole('button', { name: 'Start assistant', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancel without saving', exact: true }).click()
   const cancelled = await page.evaluate(() => {
     const hub = (
       window as unknown as {

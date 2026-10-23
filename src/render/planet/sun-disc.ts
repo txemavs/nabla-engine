@@ -2,6 +2,9 @@ import { MeshBasicMaterial, Vector3, Color } from 'three'
 /** Angular disc and Gaussian halo adapted from Streets GL, StrandedKitty, MIT.
  * See assets/licenses/streets-gl-MIT.txt. No extra render target or bloom pass. */
 export function addSunDisc(material: MeshBasicMaterial, direction: Vector3) {
+  // Halo/glare are long exponential falloffs; three's dithering_fragment runs after
+  // tone mapping and sRGB, which removes the 8-bit rings around the sun.
+  material.dithering = true
   const color = { value: new Color('#ffffff') }
   material.onBeforeCompile = (shader) => {
     shader.uniforms.nablaSun = { value: direction }

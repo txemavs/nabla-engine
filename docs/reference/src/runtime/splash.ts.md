@@ -4,16 +4,13 @@
 
 [Source](../../../../src/runtime/splash.ts)
 
-Host-skinnable engine splash / loading chrome.
-Default Nabla skin remains; hosts (e.g. Euskadi Online) override logo, title,
-rotating messages, layout and optional theme CSS without forking the loader.
-
 ## Module dependencies
 
+- `../i18n/index.js`
 
 ## resolveSplashSkin
 
-[Implementation, line 88](../../../../src/runtime/splash.ts#L88)
+[Implementation, line 89](../../../../src/runtime/splash.ts#L89)
 
 Resolve a partial host override over the default Nabla skin.
 
@@ -23,7 +20,7 @@ resolveSplashSkin(skin: EngineSplashSkin = {}): Required<Pick<EngineSplashSkin, 
 
 ## applySplashSkin
 
-[Implementation, line 105](../../../../src/runtime/splash.ts#L105)
+[Implementation, line 106](../../../../src/runtime/splash.ts#L106)
 
 Apply skin slots to an existing splash DOM subtree.
 Expected optional ids/classes: `#loading-screen` (or `root`), `#loading-title` / `h1`,
@@ -47,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## injectSplashTheme
 
-[Implementation, line 157](../../../../src/runtime/splash.ts#L157)
+[Implementation, line 158](../../../../src/runtime/splash.ts#L158)
 
 Inject or replace host theme CSS for the splash.
 
@@ -64,7 +61,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## splashMessageAt
 
-[Implementation, line 168](../../../../src/runtime/splash.ts#L168)
+[Implementation, line 169](../../../../src/runtime/splash.ts#L169)
 
 Pick a message by progress 0..1 (or cycle by index). `undefined` uses the defaults; `[]` gives ''.
 
@@ -80,7 +77,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## splashElements
 
-[Implementation, line 183](../../../../src/runtime/splash.ts#L183)
+[Implementation, line 184](../../../../src/runtime/splash.ts#L184)
 
 Read the usual splash slots under a root element.
 

@@ -1,4 +1,4 @@
-import { xrMonitorThemeStyles } from './interface-theme.js'
+import { xrCalibrationStyleText } from '../ui/styles.js'
 import { XRDisposalPortal } from './xr-disposal-portal.js'
 import { XRObjectGrab } from './xr-object-grab.js'
 import { XRUiClick } from './xr-ui-click.js'
@@ -86,7 +86,7 @@ export class XRCalibrationScreen {
   readonly root = new THREE.Group()
   readonly monitor = new HtmlMonitor('/monitors/xr-calibration.html', 1024, 640, {
     intervalMs: 100,
-    styleText: xrMonitorThemeStyles,
+    styleText: xrCalibrationStyleText,
   })
   readonly face = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),

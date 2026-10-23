@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `../../ui/styles.js`
 - `../touch-driving.js`
 - `../touch-flight.js`
 
 ## ARTouchControls.constructor
 
-[Implementation, line 21](../../../../../src/runtime/ar/touch-controls.ts#L21)
+[Implementation, line 22](../../../../../src/runtime/ar/touch-controls.ts#L22)
 
 Existing Engine touch rigs, displayed only in screen-based XR sessions with DOM overlay.
 
@@ -26,25 +27,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `arm.setAttribute`
 - `document.body.append`
 - `document.createElement`
+- `installEngineStyles`
 - `this.root.addEventListener`
 - `this.root.append`
 - `this.root.querySelector`
 - `this.update`
 
-## ARTouchControls.constructor.callback@73
+## ARTouchControls.constructor.callback@49
 
-[Implementation, line 73](../../../../../src/runtime/ar/touch-controls.ts#L73)
+[Implementation, line 49](../../../../../src/runtime/ar/touch-controls.ts#L49)
 
 ```ts
-callback@73(button): inferred by TypeScript; see implementation
+callback@49(button): inferred by TypeScript; see implementation
 ```
 
-## ARTouchControls.constructor.callback@81
+## ARTouchControls.constructor.callback@57
 
-[Implementation, line 81](../../../../../src/runtime/ar/touch-controls.ts#L81)
+[Implementation, line 57](../../../../../src/runtime/ar/touch-controls.ts#L57)
 
 ```ts
-callback@81(event): inferred by TypeScript; see implementation
+callback@57(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -54,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARTouchControls.setActions
 
-[Implementation, line 88](../../../../../src/runtime/ar/touch-controls.ts#L88)
+[Implementation, line 64](../../../../../src/runtime/ar/touch-controls.ts#L64)
 
 Rebuild only when the controlled object changes; never allocate buttons per frame.
 
@@ -69,12 +71,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.actionBar.append`
 - `this.actionBar.replaceChildren`
 
-## ARTouchControls.setActions.callback@99
+## ARTouchControls.setActions.callback@75
 
-[Implementation, line 99](../../../../../src/runtime/ar/touch-controls.ts#L99)
+[Implementation, line 75](../../../../../src/runtime/ar/touch-controls.ts#L75)
 
 ```ts
-callback@99(): inferred by TypeScript; see implementation
+callback@75(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -83,7 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ARTouchControls.update
 
-[Implementation, line 103](../../../../../src/runtime/ar/touch-controls.ts#L103)
+[Implementation, line 79](../../../../../src/runtime/ar/touch-controls.ts#L79)
 
 Existing Engine touch rigs, displayed only in screen-based XR sessions with DOM overlay.
 
@@ -99,17 +101,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.driving.setDriving`
 - `this.flight.setActive`
 
-## ARTouchControls.update.callback@107
+## ARTouchControls.update.callback@83
 
-[Implementation, line 107](../../../../../src/runtime/ar/touch-controls.ts#L107)
+[Implementation, line 83](../../../../../src/runtime/ar/touch-controls.ts#L83)
 
 ```ts
-callback@107(source): inferred by TypeScript; see implementation
+callback@83(source): inferred by TypeScript; see implementation
 ```
 
 ## ARTouchControls.dispose
 
-[Implementation, line 121](../../../../../src/runtime/ar/touch-controls.ts#L121)
+[Implementation, line 97](../../../../../src/runtime/ar/touch-controls.ts#L97)
 
 Existing Engine touch rigs, displayed only in screen-based XR sessions with DOM overlay.
 

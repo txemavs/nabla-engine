@@ -28,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createInspector
 
-[Implementation, line 25](../../../game/xr-device-info.ts#L25)
+[Implementation, line 22](../../../game/xr-device-info.ts#L22)
 
 ```ts
 createInspector(summary: HTMLElement, text: HTMLElement, copy: HTMLButtonElement): inferred by TypeScript; see implementation
@@ -44,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createInspector.lines
 
-[Implementation, line 31](../../../game/xr-device-info.ts#L31)
+[Implementation, line 28](../../../game/xr-device-info.ts#L28)
 
 ```ts
 lines(): inferred by TypeScript; see implementation
@@ -57,29 +57,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `report.gamepads.map`
 - `report.inputs.map`
 
-## createInspector.lines.callback@41
+## createInspector.lines.callback@38
 
-[Implementation, line 41](../../../game/xr-device-info.ts#L41)
+[Implementation, line 38](../../../game/xr-device-info.ts#L38)
 
 ```ts
-callback@41(input): inferred by TypeScript; see implementation
+callback@38(input): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `input.profiles.join`
 
-## createInspector.lines.callback@51
+## createInspector.lines.callback@48
 
-[Implementation, line 51](../../../game/xr-device-info.ts#L51)
+[Implementation, line 48](../../../game/xr-device-info.ts#L48)
 
 ```ts
-callback@51(pad): inferred by TypeScript; see implementation
+callback@48(pad): inferred by TypeScript; see implementation
 ```
 
 ## createInspector.refresh
 
-[Implementation, line 62](../../../game/xr-device-info.ts#L62)
+[Implementation, line 59](../../../game/xr-device-info.ts#L59)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -92,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createInspector.ended
 
-[Implementation, line 67](../../../game/xr-device-info.ts#L67)
+[Implementation, line 64](../../../game/xr-device-info.ts#L64)
 
 ```ts
 ended(): inferred by TypeScript; see implementation
@@ -108,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createInspector.setSession
 
-[Implementation, line 73](../../../game/xr-device-info.ts#L73)
+[Implementation, line 70](../../../game/xr-device-info.ts#L70)
 
 ```ts
 setSession(next: XRSession | null): inferred by TypeScript; see implementation
@@ -120,12 +120,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `session?.addEventListener`
 - `session?.removeEventListener`
 
-## createInspector.callback@86
+## createInspector.callback@83
 
-[Implementation, line 86](../../../game/xr-device-info.ts#L86)
+[Implementation, line 83](../../../game/xr-device-info.ts#L83)
 
 ```ts
-callback@86(): inferred by TypeScript; see implementation
+callback@83(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -133,12 +133,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `clearInterval`
 - `setSession`
 
-## createInspector.callback@92
+## createInspector.callback@89
 
-[Implementation, line 92](../../../game/xr-device-info.ts#L92)
+[Implementation, line 89](../../../game/xr-device-info.ts#L89)
 
 ```ts
-callback@92(): inferred by TypeScript; see implementation
+callback@89(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -148,7 +148,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `navigator.clipboard.writeText`
 - `navigator.clipboard.writeText(lines().join('\n')).then`
 
-## createInspector.callback@92.callback@94
+## createInspector.callback@89.callback@91
+
+[Implementation, line 91](../../../game/xr-device-info.ts#L91)
+
+```ts
+callback@91(): inferred by TypeScript; see implementation
+```
+
+## createInspector.callback@89.callback@94
 
 [Implementation, line 94](../../../game/xr-device-info.ts#L94)
 
@@ -156,32 +164,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@94(): inferred by TypeScript; see implementation
 ```
 
-## createInspector.callback@92.callback@97
+## createInspector.callback@100
 
-[Implementation, line 97](../../../game/xr-device-info.ts#L97)
-
-```ts
-callback@97(): inferred by TypeScript; see implementation
-```
-
-## createInspector.callback@103
-
-[Implementation, line 103](../../../game/xr-device-info.ts#L103)
+[Implementation, line 100](../../../game/xr-device-info.ts#L100)
 
 ```ts
-callback@103(mode): inferred by TypeScript; see implementation
+callback@100(mode): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `navigator.xr.isSessionSupported`
 
-## createInspector.callback@110
+## createInspector.callback@107
 
-[Implementation, line 110](../../../game/xr-device-info.ts#L110)
+[Implementation, line 107](../../../game/xr-device-info.ts#L107)
 
 ```ts
-callback@110([vr, ar]): inferred by TypeScript; see implementation
+callback@107([vr, ar]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -190,7 +190,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createInspector.updateFrame
 
-[Implementation, line 118](../../../game/xr-device-info.ts#L118)
+[Implementation, line 115](../../../game/xr-device-info.ts#L115)
 
 ```ts
 updateFrame(frame: XRFrame, time: number): inferred by TypeScript; see implementation

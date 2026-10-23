@@ -4,6 +4,7 @@
  * the current values as JSON so they can be frozen as the new defaults; «Restablecer» goes back to
  * the shipped look.
  */
+import { t } from '@nabla/engine/i18n'
 import {
   lightTuningBase,
   lightTuningDefaults,
@@ -16,12 +17,12 @@ import { menuSection } from './menu.js'
 type SliderKey = keyof typeof lightTuningRanges
 
 const SLIDERS: ReadonlyArray<readonly [key: SliderKey, label: string]> = [
-  ['exposure', 'Exposición'],
-  ['sun', 'Sol'],
-  ['ambient', 'Ambiente'],
-  ['reflections', 'Reflejos'],
-  ['paint', 'Pintura'],
-  ['shadowIntensity', 'Sombras · intensidad'],
+  ['exposure', t('settings.light.exposure')],
+  ['sun', t('settings.sun')],
+  ['ambient', t('settings.light.ambient')],
+  ['reflections', t('settings.light.reflections')],
+  ['paint', t('settings.light.paint')],
+  ['shadowIntensity', t('settings.light.shadow-intensity')],
 ]
 
 /** Value text: the number, plus the absolute full-day intensity for sun and ambient. */
@@ -36,7 +37,7 @@ export function lightValueText(key: SliderKey, value: number): string {
 export function bindLightControls(
   runtime: Pick<GameRuntime, 'lightTuning' | 'setLightTuning'>,
 ): HTMLFieldSetElement {
-  const group = menuSection('settings-light', 'Luz')
+  const group = menuSection('settings-light', t('settings.light'))
   const rows = new Map<SliderKey, [HTMLInputElement, HTMLOutputElement]>()
   for (const [key, text] of SLIDERS) {
     const [min, max, step] = lightTuningRanges[key]
@@ -68,10 +69,10 @@ export function bindLightControls(
   const copy = document.createElement('button')
   copy.type = 'button'
   copy.id = 'light-copy'
-  copy.textContent = 'Copiar valores'
+  copy.textContent = t('settings.copy-values')
   copy.addEventListener('click', () => {
     const json = JSON.stringify(runtime.lightTuning)
-    const done = () => (status.textContent = 'Copiado')
+    const done = () => (status.textContent = t('settings.copied'))
     const fallback = () => {
       window.prompt('Valores de luz (copiar):', json)
       status.textContent = ''
@@ -82,7 +83,7 @@ export function bindLightControls(
   const reset = document.createElement('button')
   reset.type = 'button'
   reset.id = 'light-reset'
-  reset.textContent = 'Restablecer'
+  reset.textContent = t('settings.reset')
   reset.addEventListener('click', () => {
     runtime.setLightTuning({ ...lightTuningDefaults })
     show()

@@ -1,6 +1,6 @@
 /**
  * The in-game menu is the existing `#display-settings` panel; features add titled sections to it in order.
- * Once the game starts, the settings HUD (`settings-hud.ts`, `SECTION_TABS`) moves each section into its tab.
+ * Once the game starts, the settings HUD (`settings-hud.ts`, laid out by `menu-layout.ts`) moves each section into its tab.
  */
 
 /** Preferred section order after Calidad / Rendimiento. Unknown ids append after these. */
@@ -11,7 +11,7 @@ const MENU_SECTION_ORDER = [
   'road-style',
   'camera-extras',
   'driving-extras',
-  'scene-planet',
+  'effects',
   'scene-vehicles',
 ] as const
 
@@ -28,6 +28,10 @@ function menuSections(): HTMLElement {
 
 export function menuSection(id: string, title: string): HTMLFieldSetElement {
   const sections = menuSections()
+  // Several modules may contribute to one section: reuse it instead of creating a twin.
+  const existing = document.getElementById(id)
+  if (existing instanceof HTMLFieldSetElement && existing.classList.contains('menu-section'))
+    return existing
   const group = document.createElement('fieldset')
   group.id = id
   group.className = 'menu-section'

@@ -21,11 +21,20 @@ it('keeps only the latest MAX_IMPACT_MARKS marks and aligns them with the hit su
   const extra = 6
   for (let x = 0; x < MAX_IMPACT_MARKS + extra; x++) marks.add(parent, pose, [x, 0, 0], [0, 1, 0])
   expect(marks.count).toBe(MAX_IMPACT_MARKS)
-  expect(parent.children).toHaveLength(MAX_IMPACT_MARKS)
-  expect(parent.children.map((m) => m.position.x).sort((a, b) => a - b)).toEqual(
+  // One instanced draw holds every mark of the parent.
+  expect(parent.children).toHaveLength(1)
+  expect(parent.children[0]).toBeInstanceOf(THREE.InstancedMesh)
+  expect((parent.children[0] as THREE.InstancedMesh).count).toBe(MAX_IMPACT_MARKS)
+  const parts = marks.matricesFor(parent).map((m) => {
+    const position = new THREE.Vector3(),
+      quaternion = new THREE.Quaternion()
+    m.decompose(position, quaternion, new THREE.Vector3())
+    return { position, quaternion }
+  })
+  expect(parts.map((p) => Math.round(p.position.x)).sort((a, b) => a - b)).toEqual(
     Array.from({ length: MAX_IMPACT_MARKS }, (_, i) => i + extra),
   )
-  const last = parent.children.at(-1)!
+  const last = parts.at(-1)!
   expect(new THREE.Vector3(0, 0, 1).applyQuaternion(last.quaternion).y).toBeCloseTo(1)
   expect(last.position.y).toBeCloseTo(IMPACT_MARK_STANDOFF)
   marks.dispose()
@@ -45,9 +54,11 @@ it('anchors marks to moving entities and removes them when their owner unloads',
     [1, 0, 0],
   )
   parent.position.x += 5
-  expect(parent.children[0].getWorldPosition(new THREE.Vector3()).x).toBeCloseTo(
-    16 + IMPACT_MARK_STANDOFF,
+  root.updateMatrixWorld(true)
+  const world = new THREE.Vector3().applyMatrix4(
+    parent.matrixWorld.clone().multiply(marks.matricesFor(parent)[0]),
   )
+  expect(world.x).toBeCloseTo(16 + IMPACT_MARK_STANDOFF)
   marks.removeFor(root)
   expect(marks.count).toBe(0)
   expect(parent.children).toHaveLength(0)
@@ -113,9 +124,85 @@ it('trims existing marks and disables new marks at zero', () => {
   for (let i = 0; i < 8; i++) marks.addWorld(root, [i, 0, 0], [0, 1, 0])
   marks.setLimit(2)
   expect(marks.count).toBe(2)
-  expect(root.children.map((o) => o.position.x)).toEqual([6, 7])
+  expect(
+    marks
+      .matricesFor(root)
+      .map((m) => new THREE.Vector3().setFromMatrixPosition(m).x)
+      .sort(),
+  ).toEqual([6, 7])
   marks.setLimit(0)
   marks.addSurface(root, [0, 0, 0], [0, 1, 0])
   expect(root.children).toHaveLength(0)
+  marks.dispose()
+})
+
+it('matches the matrices of the former per-mark groups, also on moved and scaled parents', () => {
+  const seeded = (seed: number) => () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  const marks = new ImpactMarks()
+  const parent = new THREE.Group()
+  parent.position.set(3, 1, -2)
+  parent.rotation.set(0.3, 1.1, -0.2)
+  parent.scale.set(1, 1.3, 0.8)
+  parent.updateMatrixWorld(true)
+  // Object creation draws UUIDs from Math.random: create the batch and the groups first.
+  marks.addWorld(parent, [0, 0, 0], [0, 1, 0])
+  const surface = new THREE.Group()
+  const entity = new THREE.Group()
+  const random = Math.random
+  Math.random = seeded(7)
+  marks.addSurface(parent, [3.2, 1.4, -1.9], [0.2, 0.9, 0.1])
+  marks.add(parent, { position: [3, 1, -2], rotation: [0, 0.5, 0, 0.866] }, [3.5, 1, -2], [1, 0, 0])
+  Math.random = seeded(7)
+  // The former code: a group per mark, `attach` for surface hits, `add` in the pose frame.
+  surface.scale.setScalar(0.8 + Math.random() * 0.45)
+  const n = new THREE.Vector3(0.2, 0.9, 0.1).normalize()
+  surface.position.set(3.2, 1.4, -1.9).addScaledVector(n, IMPACT_MARK_STANDOFF)
+  surface.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n)
+  surface.rotateZ(Math.random() * Math.PI * 2)
+  surface.updateMatrixWorld(true)
+  parent.attach(surface)
+  entity.scale.setScalar(0.8 + Math.random() * 0.45)
+  const inverse = new THREE.Quaternion(0, 0.5, 0, 0.866).invert()
+  const m = new THREE.Vector3(1, 0, 0).applyQuaternion(inverse)
+  entity.position
+    .set(3.5, 1, -2)
+    .sub(new THREE.Vector3(3, 1, -2))
+    .applyQuaternion(inverse)
+    .addScaledVector(m, IMPACT_MARK_STANDOFF)
+  entity.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), m)
+  entity.rotateZ(Math.random() * Math.PI * 2)
+  Math.random = random
+  surface.updateMatrix()
+  entity.updateMatrix()
+  const [, a, b] = marks.matricesFor(parent)
+  for (let i = 0; i < 16; i++) {
+    expect(a.elements[i]).toBeCloseTo(surface.matrix.elements[i], 6)
+    expect(b.elements[i]).toBeCloseTo(entity.matrix.elements[i], 6)
+  }
+  marks.dispose()
+})
+
+it('keeps one instanced draw per parent and recycles the oldest mark across parents', () => {
+  const marks = new ImpactMarks()
+  const world = new THREE.Group(),
+    car = new THREE.Group()
+  marks.setLimit(3)
+  marks.addWorld(world, [0, 0, 0], [0, 1, 0])
+  marks.addWorld(world, [1, 0, 0], [0, 1, 0])
+  marks.addSurface(car, [2, 0, 0], [0, 1, 0])
+  expect(marks.batchCount).toBe(2)
+  marks.addSurface(car, [3, 0, 0], [0, 1, 0])
+  expect(marks.count).toBe(3)
+  // The oldest (x = 0) went; the batch kept its other mark in slot 0.
+  expect(
+    marks.matricesFor(world).map((m) => new THREE.Vector3().setFromMatrixPosition(m).x),
+  ).toEqual([1])
+  expect((world.children[0] as THREE.InstancedMesh).count).toBe(1)
+  marks.removeFor(car)
+  expect(car.children).toHaveLength(0)
+  expect(marks.count).toBe(1)
   marks.dispose()
 })

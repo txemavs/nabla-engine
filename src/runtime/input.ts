@@ -109,7 +109,13 @@ export class GameInput {
   ): PlayerInput {
     if (sources.menuOpen || sources.enabled === false) {
       this.reset()
-      return { ...idleInput(), brake: !!sources.menuOpen }
+      // Keep the facing: a menu or a released pointer must not turn the player (and the avatar
+      // other players see) back to yaw 0.
+      return {
+        ...idleInput(),
+        yaw: Number.isFinite(sources.yaw) ? sources.yaw : 0,
+        brake: !!sources.menuOpen,
+      }
     }
     const { keys, yaw, pad } = sources
     const usb = sources.usb ?? idleUsbFrame()

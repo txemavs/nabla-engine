@@ -16,39 +16,39 @@ the top right and a **contextual row of buttons** at the bottom changes with whe
 ## 1. Menu: tabs → sections → controls
 
 Source: `game/settings-hud.ts` (`mountSettingsHud`), styles in
-`game/settings-navigation-styles.ts`, tokens in `src/runtime/interface-theme.ts`.
+`src/ui/styles/settings.css`, tokens in `src/ui/styles/tokens.css` ([UI theme](ui-theme.md)).
 Behaviour description: [settings menu](settings-menu.md).
 
 ```
 Menú (full-screen, transparent window; world rendering continues behind it)
+├── Tab «Principal»      (id app)       scenarios, info and status, VR/AR, current vehicle
 ├── Tab «Mundo»          (id planet)
 │   ├── Mapa             real tile states (settings-map.ts) + position
 │   ├── Capas            terrain layers (layers-ui.ts)
 │   └── Opciones         world options
-├── Tab «Configuración»  (id options)
+├── Tab «Ajustes»        (id options)
 │   ├── Vídeo            quality, Distancias (draw, fog, roads, buildings, collisions, relief, ground detail; km),
 │   │                    resolution scale, anisotropy, post-process
 │   ├── Cámaras          view, FOV, camera effects
 │   ├── Controles        generated key list (settings-controls.ts, from inputBindings)
 │   └── …                audio, mirrors, lights, as registered
-├── Tab «Objetos»        (id objects)   add / export vehicles, scenery, trailers
 └── Tab «Desarrollo»     (id dev)       tuning and diagnostics, «Armas» group, dev-only toggles
 ```
 
 Rules:
 
-1. **Tabs are fixed** in `TABS` (`planet`, `options`, `objects`, `dev`). A tab with nothing to
+1. **Tabs are fixed** in `MENU_TABS` (`app`, `planet`, `options`, `dev`; `game/menu-layout.ts`). A tab with nothing to
    show is hidden (for example Audio on a host without the mixer). Add a _section_, not a tab.
 2. **Each tab has a left navigation and one visible section on the right.** The last section of
-   each tab is remembered. Sections are assigned to tabs by `SECTION_TABS` and the section
-   groups declared at the end of `settings-hud.ts`.
+   each tab is remembered. Sections are assigned to tabs and groups by `MENU_LAYOUT`
+   (`game/menu-layout.ts`), which `settings-hud.ts` applies.
 3. **Controls are moved into the menu, not cloned.** The original control keeps its events,
    storage and runtime reference; the menu only changes where it is. A control registered
    after mount is picked up by the section observer. Use `menuSection` (`game/menu.ts`) to
    add a section; one `*-ui.ts` file per control family.
 4. **Save like the other settings** (localStorage under a `nabla.*` key) and apply live.
-5. **Use the shared tokens** (`interfaceVariables`, `interfaceControls`, `interfaceTheme`). No
-   private palettes.
+5. **Use the shared tokens** (`src/ui/styles/tokens.css`; `interfaceTheme` for canvas). No
+   private palettes, no inline styles, no `!important`.
 6. **Defaults are code.** A new slider ships with a default in `src/config/`; production
    behaviour must not change by adding a control. Dev-only comparison toggles belong in
    «Desarrollo» and default to the existing behaviour.
@@ -58,9 +58,8 @@ Rules:
    toolbar, touch rigs and the Menú button); the same button becomes the close control, and
    `Escape` closes too. Both return focus to the game.
 9. Grid of the window: header row, tab bar, content (section list + pane), bottom action row.
-10. **Per-vehicle options live in one group of the «Objetos» tab, titled with the occupied
-    vehicle's name** (for example «Honda VFR800FI 1999»; «Vehículo actual» only while on
-    foot). Lights, driver, mirrors, exhaust smoke and any later per-vehicle option go in that
+10. **Per-vehicle options live in one group of the «Principal» tab, hidden on foot, titled with the occupied
+    vehicle's name** (for example «Honda VFR800FI 1999»). Lights, driver, mirrors, exhaust smoke and any later per-vehicle option go in that
     group, and a vehicle sees only what it has: a motorcycle has no exhaust-smoke section and
     lists only the lamps its model binds. Defaults of these options come from the vehicle's JSON
     (see [vehicle definition](vehicle-definition.md)); the player's choice is saved per model.
@@ -76,10 +75,10 @@ Rules:
     - Configuración: how the game runs for this player: Pantalla (quality, sharpness, shadows,
       distances, performance), Efectos (smoke, muzzle flash), Cámara (incl. field of view),
       Conducción, Controles, Sonido, Gestión.
-    - Objetos: Vehículos (add, placed objects), the occupied vehicle's group, Arma.
+    - Principal: scenarios, info and status, VR/AR, the occupied vehicle's group.
     - Desarrollo: tuning and diagnostics that a player does not need.
       Rendering quality never goes in Mundo; a visible effect is not a Desarrollo option.
-12. **Tab names** are Mundo, Configuración, Objetos and Desarrollo. «Opciones» is the name of a
+12. **Tab names** are Principal, Mundo, Ajustes and Desarrollo. «Opciones» is the name of a
     navigation group inside «Mundo» and of an older name of «Configuración»; do not use it for
     the tab.
 

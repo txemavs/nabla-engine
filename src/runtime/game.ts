@@ -45,7 +45,7 @@ export class GameRuntime {
   private portalSequence = 0
   private jumpRequested = false
   /**
-   * R reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
+   * recover (Y) reset policy. `snapToRoad` moves the car to the nearest road/vía before uprighting;
    * `roads` lets the host add streamed centrelines (OSM navigation roads) to the scene roads.
    */
   readonly recover: {
@@ -159,7 +159,8 @@ export class GameRuntime {
   /**
    * Advance physics and synchronize boarding and local portal camera transitions.
    * Elapsed time is seconds, water level is metres and now is milliseconds.
-   * Preserve a queued jump until a physics tick occurs. Return a newly observed
+   * A queued jump is sent once: the simulation latches it until its next physics tick (inline
+   * and worker alike), so one press is one jump. Return a newly observed
    * player/vehicle portal crossing, or null when no relevant crossing occurred.
    */
   step(
@@ -175,9 +176,22 @@ export class GameRuntime {
     sim.setSurfaceAreas(this.recover.pavedAreas?.())
     if (input.forward || input.right || input.brake || input.sprint)
       this.cameraState.entrance = null
-    const ticks = sim.stats.ticks
-    this.session.step(elapsed, { ...input, jump: input.jump || this.jumpRequested }, waterLevel)
-    if (sim.stats.ticks !== ticks) this.jumpRequested = false
+    const jump = input.jump || this.jumpRequested
+    // Worker physics replies between frames (stats.ticks is the last reply, not this step), so
+    // waiting for a tick would resend the jump; the simulation's latch makes one send enough.
+    this.jumpRequested = false
+    const stepped = this.session.step(elapsed, { ...input, jump }, waterLevel)
+    // A worker-hosted simulation resolves later; the rest of the frame waits for it.
+    if (stepped) return stepped.then(() => this.afterStep(sim, elapsed, now, document))
+    return this.afterStep(sim, elapsed, now, document)
+  }
+  /** Boarding and portal bookkeeping once the step has run. */
+  private afterStep(
+    sim: NonNullable<GameRuntime['simulation']>,
+    elapsed: number,
+    now: number,
+    document: SceneDocument,
+  ) {
     const crossing = sim.portalEvent
     let event: typeof crossing = null
     if (crossing && crossing.sequence !== this.portalSequence) {

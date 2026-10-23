@@ -6,20 +6,21 @@
 
 ## Module dependencies
 
+- `../../i18n/index.js`
 - `zod`
 - `../../config/input-bindings.js`
 
-## callback@50
+## callback@51
 
-[Implementation, line 50](../../../../../src/runtime/usb/controllers.ts#L50)
+[Implementation, line 51](../../../../../src/runtime/usb/controllers.ts#L51)
 
 ```ts
-callback@50(b): inferred by TypeScript; see implementation
+callback@51(b): inferred by TypeScript; see implementation
 ```
 
 ## idleUsbFrame
 
-[Implementation, line 91](../../../../../src/runtime/usb/controllers.ts#L91)
+[Implementation, line 92](../../../../../src/runtime/usb/controllers.ts#L92)
 
 ```ts
 idleUsbFrame(): UsbFrame
@@ -31,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## usbDeviceKey
 
-[Implementation, line 92](../../../../../src/runtime/usb/controllers.ts#L92)
+[Implementation, line 93](../../../../../src/runtime/usb/controllers.ts#L93)
 
 ```ts
 usbDeviceKey(pad: UsbPad): string
@@ -43,7 +44,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## browserUsbStorage
 
-[Implementation, line 96](../../../../../src/runtime/usb/controllers.ts#L96)
+[Implementation, line 97](../../../../../src/runtime/usb/controllers.ts#L97)
 
 ```ts
 browserUsbStorage(): UsbStorage | null
@@ -51,15 +52,19 @@ browserUsbStorage(): UsbStorage | null
 
 ## defaultUsbSettings
 
-[Implementation, line 103](../../../../../src/runtime/usb/controllers.ts#L103)
+[Implementation, line 104](../../../../../src/runtime/usb/controllers.ts#L104)
 
 ```ts
 defaultUsbSettings(): UsbSettings
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `t`
+
 ## parseUsbSettings
 
-[Implementation, line 114](../../../../../src/runtime/usb/controllers.ts#L114)
+[Implementation, line 115](../../../../../src/runtime/usb/controllers.ts#L115)
 
 ```ts
 parseUsbSettings(value: unknown): UsbSettings
@@ -71,7 +76,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## normalizeUsbAxis
 
-[Implementation, line 117](../../../../../src/runtime/usb/controllers.ts#L117)
+[Implementation, line 118](../../../../../src/runtime/usb/controllers.ts#L118)
 
 ```ts
 normalizeUsbAxis(raw: number, binding: UsbBinding): number
@@ -87,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readUsbBinding
 
-[Implementation, line 133](../../../../../src/runtime/usb/controllers.ts#L133)
+[Implementation, line 134](../../../../../src/runtime/usb/controllers.ts#L134)
 
 ```ts
 readUsbBinding(pad: UsbPad, binding: UsbBinding): number
@@ -101,7 +106,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## newUsbBinding
 
-[Implementation, line 150](../../../../../src/runtime/usb/controllers.ts#L150)
+[Implementation, line 151](../../../../../src/runtime/usb/controllers.ts#L151)
 
 ```ts
 newUsbBinding(device: string, kind: UsbBinding['kind'], index: number, target: UsbBinding['target']): UsbBinding
@@ -113,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## UsbControllers.constructor
 
-[Implementation, line 182](../../../../../src/runtime/usb/controllers.ts#L182)
+[Implementation, line 183](../../../../../src/runtime/usb/controllers.ts#L183)
 
 Owns per-device mapping, edges and neutral rearming; never owns physics.
 
@@ -127,6 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `browserUsbStorage`
 - `parseUsbSettings`
 - `storage?.getItem`
+- `t`
 
 ## UsbControllers.snapshot
 

@@ -6,18 +6,21 @@
 
 ## Module dependencies
 
+- `../render/entity/shot-sparks.js`
 - `../config/input-bindings.js`
 - `three`
 - `../simulation/simulation.js`
 - `../render/entity/view.js`
 - `./sidearm.js`
 - `./gallery.js`
+- `./combat.js`
+- `../simulation/combat/damage.js`
 - `../simulation/weapons/firearm.js`
 - `../simulation/weapons/ballistics.js`
 
 ## sidearmButtonAction
 
-[Implementation, line 21](../../../../src/runtime/shooting.ts#L21)
+[Implementation, line 24](../../../../src/runtime/shooting.ts#L24)
 
 Sidearm button edge. Left click fires even while right-button aim is already held: pointer
 lock often delivers that second press only as `mousedown`, not `pointerdown`.
@@ -26,24 +29,46 @@ lock often delivers that second press only as `mousedown`, not `pointerdown`.
 sidearmButtonAction(button: number, down: boolean): 'fire' | 'aim' | 'release' | 'unaim' | null
 ```
 
-## sidearmAimRay
+## sparkSurface
 
-[Implementation, line 45](../../../../src/runtime/shooting.ts#L45)
+[Implementation, line 49](../../../../src/runtime/shooting.ts#L49)
 
-Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
+Spark profile of a hit. Physics only tags metal (vehicle bodies, sign poles); untagged hits
+are told apart by their normal: floor-like is ground, anything else concrete.
 
 ```ts
-sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean, now = 0): { origin: Vector3; direction: Vector3 }
+sparkSurface(gallery: Gallery, point: Vector3, normal: Vec3 | undefined): SparkSurface
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Vector3`
+- `point.distanceToSquared`
+
+## sidearmAimRay
+
+[Implementation, line 57](../../../../src/runtime/shooting.ts#L57)
+
+Shared geometric aim for shots and laser convergence; coordinates are simulation-world.
+
+```ts
+sidearmAimRay(sidearm: Sidearm, sim: Simulation, view: SceneView, camera: PerspectiveCamera, firstPerson: boolean, now = 0, heldMuzzle?: Vec3 | null, combat?: Combat | null): { origin: Vector3; direction: Vector3 }
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Vector3`
+- `at.clone`
+- `at.clone().addScaledVector`
+- `at.distanceTo`
+- `at.toArray`
 - `barrel.target.sub`
 - `barrel.target.sub(barrel.origin).normalize`
+- `camera.getWorldDirection`
 - `camera.position.clone`
 - `camera.position.clone().addScaledVector`
 - `camera.position.toArray`
+- `combat?.raycast`
 - `look.toArray`
 - `new Vector3(0, 0, -1).applyQuaternion`
 - `origin.copy`
@@ -60,7 +85,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fitted
 
-[Implementation, line 74](../../../../src/runtime/shooting.ts#L74)
+[Implementation, line 104](../../../../src/runtime/shooting.ts#L104)
 
 ```ts
 fitted(load: BallisticLoad): { k: number; angle: number }
@@ -75,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## fireSidearm
 
-[Implementation, line 90](../../../../src/runtime/shooting.ts#L90)
+[Implementation, line 120](../../../../src/runtime/shooting.ts#L120)
 
 One trigger press: the firearm decides whether a round goes off; the bullet then flies the
 load's trajectory (drop and drag, `ballistics.ts`) through the world and hands its momentum
@@ -83,7 +108,7 @@ to whatever it hits. Presets without ammunition data keep the straight legacy ra
 Call before applying the render origin.
 
 ```ts
-fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView, camera: PerspectiveCamera, now: number, firstPerson: boolean): SidearmShot | null
+fireSidearm(sidearm: Sidearm, gallery: Gallery, sim: Simulation, view: SceneView, camera: PerspectiveCamera, now: number, firstPerson: boolean, combat?: Combat | null, fireOrigin?: Vec3, heldMuzzle?: Vec3 | null): SidearmShot | null
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -101,6 +126,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `axis.cross`
 - `axis.cross(direction).normalize`
 - `bulletEnergy`
+- `combat.shotQuery`
+- `destination.clone`
+- `destination.clone().sub`
+- `destination.clone().sub(origin).toArray`
 - `destination.toArray`
 - `direction.clone`
 - `direction.clone().cross`
@@ -117,19 +146,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `origin.clone`
 - `origin.clone().addScaledVector`
 - `origin.toArray`
+- `query`
 - `sidearm.impact`
 - `sidearm.pull`
 - `sidearmAimRay`
-- `sim.shoot`
+- `sparkSurface`
 - `traceBullet`
 - `view.sparks.add`
+- `view.tracers.add`
+- `weaponBaseDamage`
 
-## fireSidearm.callback@126
+## fireSidearm.cast
 
-[Implementation, line 126](../../../../src/runtime/shooting.ts#L126)
+[Implementation, line 136](../../../../src/runtime/shooting.ts#L136)
 
 ```ts
-callback@126(from, dir, length): inferred by TypeScript; see implementation
+cast(from: Vec3, dir: Vec3, length: number): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

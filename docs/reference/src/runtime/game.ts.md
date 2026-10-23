@@ -259,11 +259,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.step
 
-[Implementation, line 165](../../../../src/runtime/game.ts#L165)
+[Implementation, line 166](../../../../src/runtime/game.ts#L166)
 
 Advance physics and synchronize boarding and local portal camera transitions.
 Elapsed time is seconds, water level is metres and now is milliseconds.
-Preserve a queued jump until a physics tick occurs. Return a newly observed
+A queued jump is sent once: the simulation latches it until its next physics tick (inline
+and worker alike), so one press is one jump. Return a newly observed
 player/vehicle portal crossing, or null when no relevant crossing occurred.
 
 ```ts
@@ -272,27 +273,54 @@ step(elapsed: number, input: PlayerInput, waterLevel: number, now: number, docum
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `document.entities.find`
-- `last.position.clone`
-- `last.quaternion.clone`
 - `sim.setSurfaceAreas`
 - `sim.setSurfaceRoads`
-- `this.cameraState.telemetry.update`
+- `stepped.then`
+- `this.afterStep`
 - `this.recover.pavedAreas`
 - `this.recover.roads`
 - `this.session.step`
 
-## GameRuntime.step.callback@199
+## GameRuntime.step.callback@185
 
-[Implementation, line 199](../../../../src/runtime/game.ts#L199)
+[Implementation, line 185](../../../../src/runtime/game.ts#L185)
 
 ```ts
-callback@199(e): inferred by TypeScript; see implementation
+callback@185(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.afterStep`
+
+## GameRuntime.afterStep
+
+[Implementation, line 189](../../../../src/runtime/game.ts#L189)
+
+Boarding and portal bookkeeping once the step has run.
+
+```ts
+afterStep(sim: NonNullable<GameRuntime['simulation']>, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.entities.find`
+- `last.position.clone`
+- `last.quaternion.clone`
+- `this.cameraState.telemetry.update`
+
+## GameRuntime.afterStep.callback@213
+
+[Implementation, line 213](../../../../src/runtime/game.ts#L213)
+
+```ts
+callback@213(e): inferred by TypeScript; see implementation
 ```
 
 ## GameRuntime.updateCamera
 
-[Implementation, line 230](../../../../src/runtime/game.ts#L230)
+[Implementation, line 244](../../../../src/runtime/game.ts#L244)
 
 Update the host camera from live physics; now is milliseconds and dt is seconds.
 
@@ -311,7 +339,7 @@ Explicit throws in this body:
 
 ## GameRuntime.action
 
-[Implementation, line 241](../../../../src/runtime/game.ts#L241)
+[Implementation, line 255](../../../../src/runtime/game.ts#L255)
 
 Compatibility with existing hosts using key codes; prefer dispatch with an InputAction.
 
@@ -326,7 +354,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GameRuntime.dispatch
 
-[Implementation, line 246](../../../../src/runtime/game.ts#L246)
+[Implementation, line 260](../../../../src/runtime/game.ts#L260)
 
 Preferred entry for keyboard, XR and other hosts: no physical key codes.
 

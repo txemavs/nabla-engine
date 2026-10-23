@@ -1,3 +1,4 @@
+import { pageSearch } from './page-query.js'
 /** Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched). */
 import {
   ASPHALT_CONTRAST_DEFAULT,
@@ -6,6 +7,7 @@ import {
 } from '@nabla/engine/render'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
+import { t } from '@nabla/engine/i18n'
 
 export const ASPHALT_CONTRAST_STORAGE_KEY = 'nabla.asphaltContrast'
 
@@ -34,7 +36,7 @@ function validContrast(value: unknown): number | undefined {
 export function resolveAsphaltContrast(
   hostDefault: number | undefined,
   storage: StorageLike | undefined = browserStorage(),
-  search: string = location.search,
+  search: string = pageSearch(),
 ): number {
   const url = validContrast(new URLSearchParams(search).get('asphaltContrast'))
   if (url !== undefined) return url
@@ -84,7 +86,7 @@ export function bindAsphaltContrastSlider(
   })
   const reset = document.createElement('button')
   reset.type = 'button'
-  reset.textContent = 'Por defecto'
+  reset.textContent = t('settings.default')
   reset.addEventListener('click', () => {
     runtime.setAsphaltContrast(fallback)
     try {

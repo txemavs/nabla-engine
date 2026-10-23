@@ -9,10 +9,11 @@ Keyboard help reads the Engine catalog directly; no parallel list of assignments
 ## Module dependencies
 
 - `@nabla/engine/config/controls`
+- `@nabla/engine/i18n`
 
 ## createControlsSection
 
-[Implementation, line 10](../../../game/settings-controls.ts#L10)
+[Implementation, line 11](../../../game/settings-controls.ts#L11)
 
 ```ts
 createControlsSection(doc: Document): HTMLElement
@@ -29,16 +30,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `root.append`
 - `search.addEventListener`
 - `search.setAttribute`
+- `t`
 - `table.append`
 - `thead.append`
 - `tools.append`
 
-## createControlsSection.callback@36
+## createControlsSection.callback@37
 
-[Implementation, line 36](../../../game/settings-controls.ts#L36)
+[Implementation, line 37](../../../game/settings-controls.ts#L37)
 
 ```ts
-callback@36([label], index): inferred by TypeScript; see implementation
+callback@37([label], index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -67,6 +69,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rows.push`
 - `search.value.trim`
 - `search.value.trim().toLocaleLowerCase`
+- `t`
 
 ## createControlsSection.refresh.callback@66
 
@@ -123,7 +126,7 @@ callback@84(row): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase`
-- `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase('es').includes`
+- `\`${row.label} ${row.action} ${row.keys}\`.toLocaleLowerCase().includes`
 
 ## createControlsSection.refresh.callback@88
 

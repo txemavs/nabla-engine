@@ -4,14 +4,15 @@
 
 [Source](../../../../src/runtime/loading-badge.ts)
 
-Small "loading" pill over the game canvas while a vehicle is being prepared.
-
 ## Module dependencies
 
+- `../ui/styles.js`
 
 ## showLoadingBadge
 
-[Implementation, line 13](../../../../src/runtime/loading-badge.ts#L13)
+[Implementation, line 5](../../../../src/runtime/loading-badge.ts#L5)
+
+Small "loading" pill over the game canvas while a vehicle is being prepared (styles: loading.css).
 
 Show the pill in `host`; call the returned function to remove it. No-op without a DOM.
 
@@ -26,29 +27,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `badge.setAttribute`
 - `document.createElement`
 - `host.append`
+- `installEngineStyles`
 
-## showLoadingBadge.callback@18
+## showLoadingBadge.callback@10
 
-[Implementation, line 18](../../../../src/runtime/loading-badge.ts#L18)
+[Implementation, line 10](../../../../src/runtime/loading-badge.ts#L10)
 
 ```ts
-callback@18(): inferred by TypeScript; see implementation
+callback@10(): inferred by TypeScript; see implementation
 ```
 
 ## showLoadingBadge.update
 
-[Implementation, line 18](../../../../src/runtime/loading-badge.ts#L18)
+[Implementation, line 10](../../../../src/runtime/loading-badge.ts#L10)
 
 ```ts
 update(_label: string): inferred by TypeScript; see implementation
 ```
 
-## showLoadingBadge.callback@29
+## showLoadingBadge.callback@20
 
-[Implementation, line 29](../../../../src/runtime/loading-badge.ts#L29)
+[Implementation, line 20](../../../../src/runtime/loading-badge.ts#L20)
 
 ```ts
-callback@29(): inferred by TypeScript; see implementation
+callback@20(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -57,7 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## showLoadingBadge.update
 
-[Implementation, line 30](../../../../src/runtime/loading-badge.ts#L30)
+[Implementation, line 21](../../../../src/runtime/loading-badge.ts#L21)
 
 ```ts
 update(label: string): inferred by TypeScript; see implementation

@@ -4,17 +4,19 @@
 
 [Source](../../../game/gravity-ui.ts)
 
-Menu slider for the world gravity multiplier (0.5×–3×, 1× = 9.81 m/s²), applied live and stored.
+Menu slider for the world gravity, shown in m/s² and stored as the existing multiplier
+(0.5×–3×, 1× = standard gravity), applied live.
 
 ## Module dependencies
 
 - `@nabla/engine/runtime/browser`
 - `@nabla/engine/config/simulation`
 - `./menu.js`
+- `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 11](../../../game/gravity-ui.ts#L11)
+[Implementation, line 16](../../../game/gravity-ui.ts#L16)
 
 ```ts
 browserStorage(): StorageLike | undefined
@@ -22,7 +24,7 @@ browserStorage(): StorageLike | undefined
 
 ## resolveGravityScale
 
-[Implementation, line 20](../../../game/gravity-ui.ts#L20)
+[Implementation, line 25](../../../game/gravity-ui.ts#L25)
 
 Stored multiplier when it is inside the supported range, else 1.
 
@@ -39,7 +41,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveGravityScale
 
-[Implementation, line 32](../../../game/gravity-ui.ts#L32)
+[Implementation, line 37](../../../game/gravity-ui.ts#L37)
 
 ```ts
 saveGravityScale(scale: number, storage: StorageLike | undefined = browserStorage()): void
@@ -51,9 +53,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `browserStorage`
 - `storage?.setItem`
 
+## gravityFromScale
+
+[Implementation, line 49](../../../game/gravity-ui.ts#L49)
+
+```ts
+gravityFromScale(scale: number): number
+```
+
+## scaleFromGravity
+
+[Implementation, line 50](../../../game/gravity-ui.ts#L50)
+
+```ts
+scaleFromGravity(metresPerSecond2: number): number
+```
+
 ## describe
 
-[Implementation, line 43](../../../game/gravity-ui.ts#L43)
+[Implementation, line 53](../../../game/gravity-ui.ts#L53)
 
 ```ts
 describe(scale: number): string
@@ -61,14 +79,15 @@ describe(scale: number): string
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `(simulationDefaults.gravity * scale).toFixed`
+- `gravityFromScale`
+- `gravityFromScale(scale).toFixed`
 - `scale.toFixed`
 
 ## bindGravityScaleSlider
 
-[Implementation, line 48](../../../game/gravity-ui.ts#L48)
+[Implementation, line 58](../../../game/gravity-ui.ts#L58)
 
-«Gravedad» slider in the «Conducción» section (Ajustes → Opciones).
+Gravity slider in Ajustes → Simulación → Tiempo, in m/s².
 
 ```ts
 bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void
@@ -79,15 +98,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `browserStorage`
 - `document.createElement`
+- `gravityFromScale`
+- `gravityFromScale(max).toFixed`
+- `gravityFromScale(min).toFixed`
 - `group.append`
 - `input.addEventListener`
 - `label.append`
 - `menuSection`
 - `sync`
+- `t`
 
 ## bindGravityScaleSlider.sync
 
-[Implementation, line 60](../../../game/gravity-ui.ts#L60)
+[Implementation, line 70](../../../game/gravity-ui.ts#L70)
 
 ```ts
 sync(scale: number): inferred by TypeScript; see implementation
@@ -95,21 +118,25 @@ sync(scale: number): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `String`
 - `describe`
+- `gravityFromScale`
+- `gravityFromScale(scale).toFixed`
 - `input.setAttribute`
 
-## bindGravityScaleSlider.callback@65
+## bindGravityScaleSlider.callback@75
 
-[Implementation, line 65](../../../game/gravity-ui.ts#L65)
+[Implementation, line 75](../../../game/gravity-ui.ts#L75)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@75(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.max`
+- `Math.min`
 - `Number`
 - `runtime.setGravityScale`
 - `saveGravityScale`
+- `scaleFromGravity`
 - `sync`

@@ -10,20 +10,31 @@
 - `../../entity/schema.js`
 - `../webgpu-substitutes.js`
 - `./particle-nodes.js`
+- `./effect-culling.js`
 
 ## markGate
 
-[Implementation, line 15](../../../../../src/render/entity/tire-marks.ts#L15)
+[Implementation, line 24](../../../../../src/render/entity/tire-marks.ts#L24)
 
 ```ts
 markGate(contact: TireMarkContact): number
 ```
 
+## callback@31
+
+[Implementation, line 31](../../../../../src/render/entity/tire-marks.ts#L31)
+
+```ts
+callback@31(sum, floats): inferred by TypeScript; see implementation
+```
+
 ## TireMarks.constructor
 
-[Implementation, line 37](../../../../../src/render/entity/tire-marks.ts#L37)
+[Implementation, line 60](../../../../../src/render/entity/tire-marks.ts#L60)
 
-Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
+Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. Only the
+slots written in a frame are uploaded (`addUpdateRange`, split in two across the ring's wrap),
+and the draw is skipped while every live mark is off-screen.
 
 ```ts
 constructor(readonly capacity = 2048, readonly lifetime = 20): instance
@@ -31,11 +42,15 @@ constructor(readonly capacity = 2048, readonly lifetime = 20): instance
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(geometry.attributes[key] as BufferAttribute).setUsage`
 - `BufferAttribute`
 - `BufferGeometry`
 - `Float32Array`
 - `Mesh`
+- `Object.keys`
 - `ShaderMaterial`
+- `SpawnBounds`
+- `cullOffscreen`
 - `geometry.setAttribute`
 - `geometry.setDrawRange`
 - `setWebGPUSubstitute`
@@ -43,11 +58,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tireMarkMaterial`
 - `uv.set`
 
+## TireMarks.constructor.box
+
+[Implementation, line 114](../../../../../src/render/entity/tire-marks.ts#L114)
+
+```ts
+box(target): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.bounds.unionInto`
+
 ## TireMarks.update
 
-[Implementation, line 91](../../../../../src/render/entity/tire-marks.ts#L91)
+[Implementation, line 119](../../../../../src/render/entity/tire-marks.ts#L119)
 
-Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
+Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. Only the
+slots written in a frame are uploaded (`addUpdateRange`, split in two across the ring's wrap),
+and the draw is skipped while every live mark is off-screen.
 
 ```ts
 update(dt: number, vehicle: string | null, contacts: TireMarkContact[], origin: Vector3): void
@@ -58,17 +87,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.max`
 - `Number.isFinite`
 - `contacts.forEach`
+- `this.bounds.advance`
 - `this.previous.clear`
 - `this.root.geometry.setDrawRange`
 - `this.root.position.copy`
 - `this.root.position.copy(this.anchor).sub`
+- `this.upload`
 
-## TireMarks.update.callback@101
+## TireMarks.update.callback@130
 
-[Implementation, line 101](../../../../../src/render/entity/tire-marks.ts#L101)
+[Implementation, line 130](../../../../../src/render/entity/tire-marks.ts#L130)
 
 ```ts
-callback@101(c, i): inferred by TypeScript; see implementation
+callback@130(c, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -76,12 +107,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `markGate`
 - `this.previous.delete`
 
-## TireMarks.update.callback@107
+## TireMarks.update.callback@136
 
-[Implementation, line 107](../../../../../src/render/entity/tire-marks.ts#L107)
+[Implementation, line 136](../../../../../src/render/entity/tire-marks.ts#L136)
 
 ```ts
-callback@107(c, i): inferred by TypeScript; see implementation
+callback@136(c, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -107,19 +138,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `previous.point.clone().sub`
 - `previous.point.distanceTo`
 - `this.anchor.copy`
+- `this.bounds.expand`
 - `this.clear`
 - `this.colors.set`
 - `this.previous.get`
 - `this.previous.set`
 - `this.stamps.fill`
 - `this.strength.fill`
+- `this.written.push`
 
-## TireMarks.update.callback@107.callback@135
+## TireMarks.update.callback@136.callback@164
 
-[Implementation, line 135](../../../../../src/render/entity/tire-marks.ts#L135)
+[Implementation, line 164](../../../../../src/render/entity/tire-marks.ts#L164)
 
 ```ts
-callback@135(v, k): inferred by TypeScript; see implementation
+callback@164(v, k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -127,11 +160,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.positions.set`
 - `v.toArray`
 
+## TireMarks.upload
+
+[Implementation, line 189](../../../../../src/render/entity/tire-marks.ts#L189)
+
+Queue the written slots for upload, merging consecutive slots into one range; a run that
+crosses the end of the ring becomes two ranges (end of the buffer, then its start).
+
+```ts
+upload(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Object.entries`
+- `attribute.addUpdateRange`
+
 ## TireMarks.clear
 
-[Implementation, line 155](../../../../../src/render/entity/tire-marks.ts#L155)
+[Implementation, line 208](../../../../../src/render/entity/tire-marks.ts#L208)
 
-Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
+Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. Only the
+slots written in a frame are uploaded (`addUpdateRange`, split in two across the ring's wrap),
+and the draw is skipped while every live mark is off-screen.
 
 ```ts
 clear(): void
@@ -139,14 +190,17 @@ clear(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.bounds.clear`
 - `this.previous.clear`
 - `this.root.geometry.setDrawRange`
 
 ## TireMarks.dispose
 
-[Implementation, line 163](../../../../../src/render/entity/tire-marks.ts#L163)
+[Implementation, line 218](../../../../../src/render/entity/tire-marks.ts#L218)
 
-Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe.
+Fixed ring buffer: one draw, no textures, shader-based fading, floating-origin safe. Only the
+slots written in a frame are uploaded (`addUpdateRange`, split in two across the ring's wrap),
+and the draw is skipped while every live mark is off-screen.
 
 ```ts
 dispose(): void

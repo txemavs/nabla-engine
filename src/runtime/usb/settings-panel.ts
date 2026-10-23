@@ -12,6 +12,7 @@ import {
   type UsbMode,
 } from './controllers.js'
 import type { UsbFeedback } from './feedback.js'
+import { t } from '../../i18n/index.js'
 
 /** Host supplies controllers/feedback; the panel never accesses a simulation or synthesizes keys. */
 export function createUsbSettingsPanel(
@@ -27,22 +28,21 @@ export function createUsbSettingsPanel(
   root.id = 'settings-usb'
   root.className = 'menu-section usb-settings'
   const legend = doc.createElement('legend')
-  legend.textContent = 'Dispositivos USB'
+  legend.textContent = t('usb.title')
   root.append(legend)
   const note = doc.createElement('p')
-  note.textContent =
-    'Conecta el volante o joystick y mueve un eje o pulsa un botón. Calibra antes de conducir. Al volver al juego, deja los controles en reposo para activarlos.'
+  note.textContent = t('usb.note')
   root.append(note)
   const status = doc.createElement('p')
   status.setAttribute('role', 'status')
   const devices = doc.createElement('select')
-  devices.setAttribute('aria-label', 'Dispositivo USB')
+  devices.setAttribute('aria-label', t('usb.device'))
   const mode = doc.createElement('select')
-  mode.setAttribute('aria-label', 'Perfil USB')
+  mode.setAttribute('aria-label', t('usb.profile'))
   for (const [value, label] of [
-    ['road', 'Conducción'],
-    ['flight', 'Joystick / HOTAS'],
-    ['drone', 'Emisora para drones'],
+    ['road', t('usb.mode.road')],
+    ['flight', t('usb.mode.flight')],
+    ['drone', t('usb.mode.drone')],
   ]) {
     const o = doc.createElement('option')
     o.value = value
@@ -50,10 +50,10 @@ export function createUsbSettingsPanel(
     mode.append(o)
   }
   const live = doc.createElement('pre')
-  live.style.cssText = 'font:14px monospace;white-space:pre-wrap;max-height:180px;overflow:auto'
+  live.className = 'nabla-usb-live'
   const bindings = doc.createElement('div')
   const target = doc.createElement('select')
-  target.setAttribute('aria-label', 'Control a asignar')
+  target.setAttribute('aria-label', t('usb.target'))
   for (const [id, label] of Object.entries(usbAxes)) {
     const o = doc.createElement('option')
     o.value = id
@@ -68,7 +68,7 @@ export function createUsbSettingsPanel(
   }
   const row = (...children: Node[]) => {
     const div = doc.createElement('div')
-    div.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0'
+    div.className = 'nabla-usb-actions'
     div.append(...children)
     root.append(div)
     return div
@@ -104,25 +104,30 @@ export function createUsbSettingsPanel(
     rest: number
     mode: UsbMode
   } | null = null
-  const bind = button('Mover / pulsar para asignar', () => {
+  const bind = button(t('usb.bind'), () => {
     const pad = selected()
-    if (!pad) throw new Error('Selecciona un dispositivo conectado')
+    if (!pad) throw new Error(t('usb.select-device'))
     capture = {
       device: devices.value,
       axes: [...pad.axes],
       buttons: pad.buttons.map((b) => b.value),
       until: performance.now() + 10000,
     }
-    status.textContent = 'Mueve solo el control que quieres asignar (10 segundos).'
+    status.textContent = t('usb.bind-hint')
   })
   row(mode, devices)
   row(target, bind)
   const manualKind = doc.createElement('select')
-  manualKind.setAttribute('aria-label', 'Tipo de entrada')
+  manualKind.setAttribute('aria-label', t('usb.input-kind'))
   for (const kind of ['axis', 'button', 'hat']) {
     const o = doc.createElement('option')
     o.value = kind
-    o.textContent = kind === 'axis' ? 'Eje' : kind === 'button' ? 'Botón' : 'Hat / POV'
+    o.textContent =
+      kind === 'axis'
+        ? t('usb.kind.axis')
+        : kind === 'button'
+          ? t('usb.kind.button')
+          : t('usb.kind.hat')
     manualKind.append(o)
   }
   const manualIndex = doc.createElement('input')
@@ -130,27 +135,27 @@ export function createUsbSettingsPanel(
   manualIndex.min = '0'
   manualIndex.max = '127'
   manualIndex.value = '0'
-  manualIndex.setAttribute('aria-label', 'Índice del eje o botón')
+  manualIndex.setAttribute('aria-label', t('usb.index'))
   const hatValue = doc.createElement('input')
   hatValue.type = 'number'
   hatValue.min = '-1'
   hatValue.max = '1'
   hatValue.step = '0.01'
   hatValue.value = '-1'
-  hatValue.setAttribute('aria-label', 'Valor del hat')
+  hatValue.setAttribute('aria-label', t('usb.hat-value'))
   const install = (binding: UsbBinding) => {
     const list = hub.snapshot.profiles[selectedMode()].bindings.filter(
       (b) => !(b.device === binding.device && b.target === binding.target),
     )
     save([...list, binding])
-    status.textContent = 'Asignado. Comprueba inversión y calibra el recorrido.'
+    status.textContent = t('usb.assigned')
   }
   row(
     manualKind,
     manualIndex,
     hatValue,
-    button('Asignar por índice', () => {
-      if (!selected()) throw new Error('Selecciona un dispositivo conectado')
+    button(t('usb.assign-index'), () => {
+      if (!selected()) throw new Error(t('usb.select-device'))
       const binding = newUsbBinding(
         devices.value,
         manualKind.value as UsbBinding['kind'],
@@ -165,7 +170,7 @@ export function createUsbSettingsPanel(
     if (!calibration) return
     const c = calibration
     calibration = null
-    if (c.max - c.min < 0.1) throw new Error('No se ha recorrido el eje. Repite la calibración.')
+    if (c.max - c.min < 0.1) throw new Error(t('usb.axis-not-moved'))
     const settings = hub.snapshot,
       b = c.binding
     b.min = c.min
@@ -179,23 +184,23 @@ export function createUsbSettingsPanel(
     settings.profiles[c.mode].bindings[c.index] = b
     hub.configure(settings)
     renderBindings()
-    status.textContent = 'Recorrido calibrado y guardado.'
+    status.textContent = t('usb.calibrated')
   }
   row(
-    button('Terminar calibración', finishCalibration),
-    button('Cancelar captura', () => {
+    button(t('usb.finish-calibration'), finishCalibration),
+    button(t('usb.cancel-capture'), () => {
       capture = null
       calibration = null
-      status.textContent = 'Captura cancelada'
+      status.textContent = t('usb.capture-cancelled')
     }),
   )
   const templates = doc.createElement('select')
-  templates.setAttribute('aria-label', 'Plantilla USB')
+  templates.setAttribute('aria-label', t('usb.template'))
   for (const [value, text] of [
-    ['wheel', 'Volante genérico'],
-    ['hotas', 'Joystick / HOTAS'],
-    ['AETR', 'Emisora AETR'],
-    ['TAER', 'Emisora TAER'],
+    ['wheel', t('usb.template.wheel')],
+    ['hotas', t('usb.mode.flight')],
+    ['AETR', t('usb.template.aetr')],
+    ['TAER', t('usb.template.taer')],
   ]) {
     const o = doc.createElement('option')
     o.value = value
@@ -204,21 +209,20 @@ export function createUsbSettingsPanel(
   }
   row(
     templates,
-    button('Cargar plantilla (requiere calibración)', () => {
-      if (!selected()) throw new Error('Selecciona un dispositivo conectado')
+    button(t('usb.load-template'), () => {
+      if (!selected()) throw new Error(t('usb.select-device'))
       const kind = templates.value as 'wheel' | 'hotas' | 'AETR' | 'TAER'
       mode.value = kind === 'wheel' ? 'road' : 'flight'
       const list = hub.snapshot.profiles[selectedMode()].bindings.filter(
         (b) => b.device !== devices.value,
       )
       save([...list, ...usbTemplate(kind, devices.value)])
-      status.textContent =
-        'Plantilla cargada. Los índices son orientativos: comprueba y calibra cada eje.'
+      status.textContent = t('usb.template-loaded')
     }),
   )
   for (const [key, text] of [
-    ['wheelDegrees', 'Recorrido físico del volante (°)'],
-    ['steeringDegrees', 'Recorrido para giro completo (°)'],
+    ['wheelDegrees', t('usb.wheel-degrees')],
+    ['steeringDegrees', t('usb.steering-degrees')],
   ] as const) {
     const label = doc.createElement('label')
     label.textContent = text + ' '
@@ -250,9 +254,9 @@ export function createUsbSettingsPanel(
       group.append(title)
       const deviceLabel = doc.createElement('small')
       try {
-        deviceLabel.textContent = 'Dispositivo: ' + JSON.parse(binding.device)[0]
+        deviceLabel.textContent = t('usb.device-label', { device: JSON.parse(binding.device)[0] })
       } catch {
-        deviceLabel.textContent = 'Dispositivo: ' + binding.device
+        deviceLabel.textContent = t('usb.device-label', { device: binding.device })
       }
       deviceLabel.style.display = 'block'
       group.append(deviceLabel)
@@ -266,14 +270,14 @@ export function createUsbSettingsPanel(
       invert.checked = binding.invert
       invert.onchange = () => update({ invert: invert.checked })
       const label = doc.createElement('label')
-      label.append('Invertir ', invert)
+      label.append(t('usb.invert') + ' ', invert)
       group.append(label)
       const range = doc.createElement('select')
-      range.setAttribute('aria-label', 'Tipo de recorrido')
+      range.setAttribute('aria-label', t('usb.range-kind'))
       for (const [value, text] of [
-        ['signed', 'Centrado −1…1'],
-        ['positive', 'Pedal −1→+1'],
-        ['negative', 'Pedal +1→−1'],
+        ['signed', t('usb.range.signed')],
+        ['positive', t('usb.range.positive')],
+        ['negative', t('usb.range.negative')],
       ]) {
         const o = doc.createElement('option')
         o.value = value
@@ -285,12 +289,12 @@ export function createUsbSettingsPanel(
         update({ mode: range.value as UsbBinding['mode'], center: (binding.min + binding.max) / 2 })
       group.append(range)
       for (const [key, text, step] of [
-        ['deadzone', 'Zona muerta', 0.01],
-        ['saturation', 'Saturación', 0.01],
-        ['exponent', 'Curva', 0.05],
-        ['min', 'Mínimo', 0.01],
-        ['center', 'Centro/reposo', 0.01],
-        ['max', 'Máximo', 0.01],
+        ['deadzone', t('usb.deadzone'), 0.01],
+        ['saturation', t('usb.saturation'), 0.01],
+        ['exponent', t('usb.curve'), 0.05],
+        ['min', t('usb.min'), 0.01],
+        ['center', t('usb.center'), 0.01],
+        ['max', t('usb.max'), 0.01],
       ] as const) {
         const l = doc.createElement('label')
         l.textContent = text + ' '
@@ -314,11 +318,11 @@ export function createUsbSettingsPanel(
       output.dataset.usbBinding = String(index)
       group.append(output)
       group.append(
-        button('Calibrar', () => {
+        button(t('usb.calibrate'), () => {
           const p = pads().find((p) => usbDeviceKey(p) === binding.device)
           const value = p?.axes[binding.index]
           if (binding.kind !== 'axis' || value === undefined)
-            throw new Error('Calibración disponible para ejes conectados')
+            throw new Error(t('usb.calibrate-axes-only'))
           capture = null
           calibration = {
             binding: { ...binding },
@@ -328,10 +332,9 @@ export function createUsbSettingsPanel(
             rest: value,
             mode: selectedMode(),
           }
-          status.textContent =
-            'Reposo capturado. Recorre todo el eje y pulsa «Terminar calibración».'
+          status.textContent = t('usb.rest-captured')
         }),
-        button('Eliminar', () =>
+        button(t('usb.remove'), () =>
           save(hub.snapshot.profiles[selectedMode()].bindings.filter((_, i) => i !== index)),
         ),
       )
@@ -340,19 +343,19 @@ export function createUsbSettingsPanel(
   }
   const json = doc.createElement('textarea')
   json.rows = 5
-  json.style.cssText = 'width:100%;font:14px monospace'
-  json.setAttribute('aria-label', 'Perfiles USB JSON')
+  json.className = 'nabla-usb-json'
+  json.setAttribute('aria-label', t('usb.json'))
   row(
-    button('Exportar perfiles', () => {
+    button(t('usb.export'), () => {
       json.value = hub.export()
     }),
-    button('Importar perfiles', () => {
+    button(t('usb.import'), () => {
       hub.configure(JSON.parse(json.value))
       renderBindings()
-      status.textContent = 'Perfiles importados'
+      status.textContent = t('usb.imported')
     }),
-    button('Restaurar este perfil', () => save([])),
-    button('Informe de dispositivos', () => {
+    button(t('usb.restore'), () => save([])),
+    button(t('usb.report'), () => {
       json.value = JSON.stringify(
         {
           version: 1,
@@ -377,7 +380,7 @@ export function createUsbSettingsPanel(
   if (feedback) {
     const f = doc.createElement('fieldset'),
       fl = doc.createElement('legend')
-    fl.textContent = 'Vibración y force feedback'
+    fl.textContent = t('usb.ffb')
     f.append(fl)
     const enabled = doc.createElement('input')
     enabled.type = 'checkbox'
@@ -387,14 +390,14 @@ export function createUsbSettingsPanel(
       if (!enabled.checked) feedback.stop()
     }
     const label = doc.createElement('label')
-    label.append('Activar feedback (se desactiva al perder foco) ', enabled)
+    label.append(t('usb.ffb-enable') + ' ', enabled)
     const gain = doc.createElement('input')
     gain.type = 'range'
     gain.min = '0'
     gain.max = '1'
     gain.step = '0.01'
     gain.value = String(feedback.gain)
-    gain.setAttribute('aria-label', 'Intensidad de feedback')
+    gain.setAttribute('aria-label', t('usb.ffb-gain'))
     gain.oninput = () => {
       feedback.gain = Number(gain.value)
     }
@@ -404,18 +407,17 @@ export function createUsbSettingsPanel(
       feedback.invert = inverse.checked
     }
     const invLabel = doc.createElement('label')
-    invLabel.append('Invertir fuerza ', inverse)
+    invLabel.append(t('usb.ffb-invert') + ' ', inverse)
     const url = doc.createElement('input')
     url.value = 'ws://127.0.0.1:9876'
-    url.setAttribute('aria-label', 'URL del puente FFB')
+    url.setAttribute('aria-label', t('usb.ffb-url'))
     const token = doc.createElement('input')
     token.type = 'password'
     token.autocomplete = 'off'
-    token.placeholder = 'Token del puente local'
-    token.setAttribute('aria-label', 'Token del puente FFB')
+    token.placeholder = t('usb.ffb-token-placeholder')
+    token.setAttribute('aria-label', t('usb.ffb-token'))
     const description = doc.createElement('p')
-    description.textContent =
-      'Vibración: usa el dispositivo seleccionado. Fuerza real experimental: requiere el puente SDL local y validación con tu volante. La fuerza inicial está limitada al 20 %. Se usa el par de los contactos de las ruedas de Engine.'
+    description.textContent = t('usb.ffb-note')
     f.append(
       description,
       label,
@@ -423,12 +425,12 @@ export function createUsbSettingsPanel(
       invLabel,
       url,
       token,
-      button('Conectar puente FFB', () => {
+      button(t('usb.ffb-connect'), () => {
         feedback.connect(url.value, token.value)
         token.value = ''
-        status.textContent = 'Conectando al puente local…'
+        status.textContent = t('usb.ffb-connecting')
       }),
-      button('Detener y desconectar FFB', () => {
+      button(t('usb.ffb-stop'), () => {
         feedback.enabled = false
         enabled.checked = false
         feedback.stop()
@@ -454,32 +456,38 @@ export function createUsbSettingsPanel(
       for (const p of list) {
         const o = doc.createElement('option')
         o.value = usbDeviceKey(p)
-        o.textContent = `${p.id} · ${p.axes.length} ejes / ${p.buttons.length} botones`
+        o.textContent = t('usb.pad-summary', {
+          id: p.id,
+          axes: p.axes.length,
+          buttons: p.buttons.length,
+        })
         devices.append(o)
       }
       if ([...devices.options].some((o) => o.value === old)) devices.value = old
       status.textContent = list.length
-        ? 'Dispositivos detectados'
+        ? t('usb.devices-found')
         : globalThis.isSecureContext === false
-          ? 'Usa HTTPS o localhost para acceder a los mandos'
-          : 'Pulsa un botón del dispositivo para detectarlo.'
+          ? t('usb.need-https')
+          : t('usb.press-to-detect')
     }
     const p = selected()
     if (feedback) feedback.device = devices.value
     live.textContent = p
-      ? `Ejes: ${p.axes.map((v, i) => `${i}: ${v.toFixed(3)}`).join(' · ')}\nBotones: ${
-          p.buttons
-            .map((b, i) => (b.value > 0.05 ? `${i}: ${b.value.toFixed(2)}` : ''))
-            .filter(Boolean)
-            .join(' · ') || 'ninguno'
-        }`
-      : 'Sin dispositivo seleccionado'
+      ? t('usb.live', {
+          axes: p.axes.map((v, i) => `${i}: ${v.toFixed(3)}`).join(' · '),
+          buttons:
+            p.buttons
+              .map((b, i) => (b.value > 0.05 ? `${i}: ${b.value.toFixed(2)}` : ''))
+              .filter(Boolean)
+              .join(' · ') || t('usb.none'),
+        })
+      : t('usb.no-device')
     if (capture) {
       const c = capture,
         p = list.find((p) => usbDeviceKey(p) === c.device)
       if (!p || performance.now() > c.until) {
         capture = null
-        status.textContent = 'Captura cancelada o agotada'
+        status.textContent = t('usb.capture-timeout')
       } else {
         const axis = p.axes.findIndex((v, i) => Math.abs(v - (c.axes[i] ?? v)) > 0.3),
           button = p.buttons.findIndex((v, i) => v.value > 0.65 && (c.buttons[i] ?? 0) < 0.2)
@@ -518,8 +526,13 @@ export function createUsbSettingsPanel(
         p = list.find((p) => usbDeviceKey(p) === b?.device)
       o.value =
         p && b
-          ? ` Valor: ${b.kind === 'axis' ? normalizeUsbAxis(p.axes[b.index] ?? NaN, b).toFixed(3) : (p.buttons[b.index]?.value ?? 0)}`
-          : ' Desconectado'
+          ? t('usb.value', {
+              value:
+                b.kind === 'axis'
+                  ? normalizeUsbAxis(p.axes[b.index] ?? NaN, b).toFixed(3)
+                  : (p.buttons[b.index]?.value ?? 0),
+            })
+          : t('usb.disconnected-sp')
     })
     if (hub.error) status.textContent = hub.error
     if (feedback) {
@@ -539,7 +552,7 @@ export function createUsbSettingsPanel(
   renderBindings()
   const advanced = doc.createElement('details')
   const summary = doc.createElement('summary')
-  summary.textContent = 'Ajustes avanzados y diagnóstico'
+  summary.textContent = t('usb.advanced')
   advanced.append(summary, ...[...root.childNodes].filter((node) => node !== legend))
   const assistant = createUsbWizardPanel(hub, feedback, doc, renderBindings)
   root.append(assistant.root, advanced)

@@ -9,6 +9,7 @@ import { MapCollisions } from './map-collisions.js'
 import { PlanetCatchFloor } from './catch-floor.js'
 import { createEntityBody } from './entity-body.js'
 import { RoadAssist } from './road-assist.js'
+import { cameraClearance, nearestShotHit, type QueryExclusions } from './scene-queries.js'
 import {
   nearestRoadPoint,
   ROAD_SNAP_MAX_DISTANCE,
@@ -69,8 +70,10 @@ import {
   Quaternion,
   Sphere,
   Trimesh,
+  type CollisionDebugLines,
   Vec3,
   World,
+  type WheelVisuals,
 } from './physics.js'
 import { isMapBuilding, type Entity, type Transform, type Vec3Tuple } from '../entity/schema.js'
 import { parseScene, replaceMapScene, type SceneDocument } from '../scene/document.js'
@@ -88,7 +91,7 @@ import {
 
 export const FIXED_STEP = simulationDefaults.fixedStepSeconds
 
-/** R reset options; see `Simulation.recoverVehicle`. */
+/** recover (Y) reset options; see `Simulation.recoverVehicle`. */
 /** Read-only physical shapes for scaled contact adapters; never render mesh bounds. */
 export interface EntityCollisionPart {
   key: string
@@ -107,13 +110,24 @@ export interface RecoverVehicleOptions {
   maxRoadDistance?: number
 }
 const PLAYER_HALF_HEIGHT = simulationDefaults.playerHalfHeight
+/** Recover (Y) ignores surfaces more than this far above the vehicle (roofs, bridges). */
+const RECOVER_CEILING = 2
 /** Spawn guard probe: from this far above the actor (lifts a buried spawn) ... */
 const SPAWN_PROBE_UP = 5
 /** ... down to this far below it. */
 const SPAWN_PROBE_DOWN = 60
 /** Seconds the spawn guard waits for collision before releasing the actor anyway. */
 const SPAWN_HOLD_LIMIT = 30
+/**
+ * Spawn guard: a collider surface more than this far below the loaded render terrain the spawn
+ * was placed on is not the ground (the terrain collider is not installed yet), so keep waiting.
+ */
+const SPAWN_GROUND_TOLERANCE = 5
 const PLAYER_RADIUS = simulationDefaults.playerRadius
+/** The walker's collider for a stance's half height (a box; trimeshes fix internal edges). */
+function playerShape(halfHeight: number): Box {
+  return new Box(new Vec3(PLAYER_RADIUS, halfHeight, PLAYER_RADIUS))
+}
 export { idleInput, type PlayerInput, type PlayerSnapshot } from './contracts.js'
 import { gearLabel } from '../entity/vehicle/gear-label.js'
 import type { ImpactSurface } from '../config/impact-sounds.js'
@@ -413,14 +427,38 @@ export class Simulation {
     const body = this.controlledBody
     this.groundHold = {
       height: Math.max(body.position.y - visualGround, 0.05),
+      ground: visualGround,
       waited: 0,
     }
+  }
+  /**
+   * Move the on-foot player to `position` (body centre, metres) and, when given, face `yaw`
+   * (radians, the input yaw). Velocity and ground contact are reset, a queued jump is dropped and
+   * a pending spawn guard is cancelled. Ignored while seated in a vehicle.
+   */
+  relocatePlayer(position: Vec3Tuple, yaw?: number): void {
+    if (!position.every(Number.isFinite) || (yaw !== undefined && !Number.isFinite(yaw)))
+      throw new Error('Invalid player relocation')
+    if (this.vehicleId) return
+    const body = this.playerBody
+    body.position.set(...position)
+    body.previousPosition.copy(body.position)
+    body.interpolatedPosition.copy(body.position)
+    body.velocity.setZero()
+    body.angularVelocity.setZero()
+    body.aabbNeedsUpdate = true
+    body.wakeUp()
+    this.grounded = false
+    this.support = null
+    this.jumpPending = false
+    this.groundHold = null
+    if (yaw !== undefined) this.input = { ...this.input, yaw }
   }
   /** True while {@link holdForGround} still waits for collision under the actor. */
   get groundHeld(): boolean {
     return this.groundHold !== null
   }
-  private groundHold: { height: number; waited: number } | null = null
+  private groundHold: { height: number; ground: number; waited: number } | null = null
   /**
    * Drive the spawn guard from the host while frames may not step the simulation (the reveal is
    * still preparing). True once released; `force` releases without ground (host timeout).
@@ -452,6 +490,10 @@ export class Simulation {
       (hit) => {
         const other = hit.body as (Body & { collisionEnabled?: boolean }) | null
         if (!other || other === body || other.mass > 0 || other.collisionEnabled === false) return
+        // The catch floor (sea level - 30 m) and anything far under the loaded terrain are not
+        // the spawn ground: settling on them dropped the actor onto the catch floor.
+        if (this.fallbackFloor.owns(other)) return
+        if (hit.hitPointWorld.y < hold.ground - SPAWN_GROUND_TOLERANCE) return
         if (hit.distance < nearest) {
           nearest = hit.distance
           surface = hit.hitPointWorld.y
@@ -645,7 +687,7 @@ export class Simulation {
       linearDamping: 0,
       angularDamping: 1,
     })
-    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, this.playerHalfHeight, PLAYER_RADIUS)))
+    this.playerBody.addShape(playerShape(this.playerHalfHeight))
     this.playerBody.updateMassProperties()
     this.playerBody.position.set(...spawn.transform.position)
     this.playerBody.position.y += this.options.playerMode === 'hover' ? 1.25 : PLAYER_HALF_HEIGHT
@@ -1253,6 +1295,82 @@ export class Simulation {
     const body = this.bodies.get(id)
     return body ? vec(body.velocity) : [0, 0, 0]
   }
+  /** Angular velocity in radians/second (world frame). */
+  entityAngularVelocity(id: string): Vec3Tuple {
+    const body = this.bodies.get(id)
+    return body ? vec(body.angularVelocity) : [0, 0, 0]
+  }
+  /**
+   * Switch a physical entity between dynamic and kinematic (pose-driven) motion, for example to
+   * mirror an entity owned by another peer. The controlled entity cannot be made kinematic.
+   * Returns false when the entity has no dynamic body.
+   */
+  setEntityKinematic(id: string, kinematic: boolean): boolean {
+    const body = this.bodies.get(id)
+    if (!body || body.mass <= 0 || body.breakawayAnchored) return false
+    if (kinematic && id === this.vehicleId) return false
+    body.setKinematic(kinematic)
+    if (!kinematic) body.wakeUp()
+    return true
+  }
+  /**
+   * Per-wheel steer (rad), suspension length (m) and spin rate (rad/s) of a wheeled vehicle, for
+   * showing it elsewhere as driven; null for unknown ids or vehicles without wheels.
+   */
+  wheelVisualState(id: string): WheelVisuals | null {
+    const r = this.vehicles.get(id)?.raycast
+    if (!r?.wheelInfos.length) return null
+    return {
+      steer: r.wheelInfos.map((w) => w.steering),
+      suspension: r.wheelInfos.map(
+        (w, i) => r.controller?.wheelSuspensionLength(i) ?? w.suspensionLength,
+      ),
+      spinRate: r.wheelInfos.map((_, i) => r.spinRate[i] ?? 0),
+    }
+  }
+  /**
+   * Drive a vehicle's wheel visuals from received values instead of its own raycasts (a remote
+   * copy, normally kinematic); null returns it to local physics. False without wheels.
+   */
+  setWheelVisualState(id: string, state: WheelVisuals | null): boolean {
+    const r = this.vehicles.get(id)?.raycast
+    if (!r?.wheelInfos.length) return false
+    r.visualOverride = state
+      ? {
+          steer: [...state.steer],
+          suspension: [...state.suspension],
+          spinRate: [...state.spinRate],
+        }
+      : null
+    return true
+  }
+  /** Drive a kinematic entity toward `transform` over the next step; velocities are informative. */
+  moveKinematicEntity(
+    id: string,
+    transform: Transform,
+    velocity?: Vec3Tuple,
+    angularVelocity?: Vec3Tuple,
+  ): boolean {
+    const body = this.bodies.get(id)
+    if (!body?.kinematic) return false
+    const values = [
+      ...transform.position,
+      ...transform.rotation,
+      ...(velocity ?? []),
+      ...(angularVelocity ?? []),
+    ]
+    if (!values.every(Number.isFinite)) throw new Error(`Invalid kinematic pose: ${id}`)
+    const length = Math.hypot(...transform.rotation)
+    if (length < 1e-12) throw new Error(`Invalid kinematic pose: ${id}`)
+    const q = new Quaternion()
+    q.set(...(transform.rotation.map((v) => v / length) as Transform['rotation']))
+    body.moveKinematic(new Vec3(...transform.position), q)
+    body.velocity.silent = body.angularVelocity.silent = true
+    if (velocity) body.velocity.set(...velocity)
+    if (angularVelocity) body.angularVelocity.set(...angularVelocity)
+    body.velocity.silent = body.angularVelocity.silent = false
+    return true
+  }
   /** Physical chassis/equipment shapes and the raycast tyres' spherical envelopes.
    * This lets a differently scaled view share contacts with room props without
    * changing its drivetrain, gravity, suspension, or full-size simulation rules.
@@ -1296,6 +1414,14 @@ export class Simulation {
         })
       })
     return parts
+  }
+  /** Ids of every entity in the live scene, in document order. */
+  /** Ids of the portal mouths {@link portalState} answers for. */
+  portalIds(): string[] {
+    return this.portalEntities.map((e) => e.id)
+  }
+  entityIds(): string[] {
+    return this.document.entities.map((e) => e.id)
   }
   entityTransform(id: string, interpolated = false): Transform {
     const body = this.bodies.get(id)
@@ -1352,7 +1478,7 @@ export class Simulation {
     }
   }
   /**
-   * Carriageways used to tell asphalt from grass. Pass the same roads the R reset snaps to
+   * Carriageways used to tell asphalt from grass. Pass the same roads the recover (Y) reset snaps to
    * (OSM navigation roads). Scene roads are always included. Omit or pass nothing to clear
    * the host set. An empty world (no scene roads and no host roads) leaves the surface unknown.
    */
@@ -1637,7 +1763,7 @@ export class Simulation {
     this.footStance = next
     const half = this.playerHalfHeight
     this.playerBody.removeShape(this.playerBody.shapes[0])
-    this.playerBody.addShape(new Box(new Vec3(PLAYER_RADIUS, half, PLAYER_RADIUS)))
+    this.playerBody.addShape(playerShape(half))
     this.playerBody.position.vadd(
       this.radialUp(this.playerBody).scale(half - oldHalf),
       this.playerBody.position,
@@ -1785,39 +1911,16 @@ export class Simulation {
     /** What the hit body presents to a shot (scenery layers tag their poles); null when untagged. */
     surface: ImpactSurface | null
   } | null {
-    const ray = new Vec3(...direction)
-    if (
-      !Number.isFinite(range) ||
-      range <= 0 ||
-      !origin.every(Number.isFinite) ||
-      !direction.every(Number.isFinite) ||
-      ray.length() < 0.001
+    const hit = nearestShotHit(
+      this.world,
+      this.queryExclusions(),
+      origin,
+      direction,
+      range,
+      excludeEntityId ? this.bodies.get(excludeEntityId) : undefined,
     )
-      return null
-    ray.normalize()
-    const from = new Vec3(...origin),
-      to = from.vadd(ray.scale(Math.min(range, 1000)))
-    let nearest = Infinity
-    let point: Vec3 | null = null
-    let normal = new Vec3()
-    let body: Body | null = null
-    const occupiedBody = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
-    this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (
-        hit.body !== this.playerBody &&
-        hit.body !== occupiedBody &&
-        hit.body !== (excludeEntityId ? this.bodies.get(excludeEntityId) : undefined) &&
-        hit.distance < nearest
-      ) {
-        nearest = hit.distance
-        point = hit.hitPointWorld.clone()
-        normal = hit.hitNormalWorld.clone()
-        body = hit.body
-      }
-    })
-    if (!point || !body) return null
-    const target = body as Body,
-      impact = point as Vec3
+    if (!hit) return null
+    const { ray, point: impact, normal, body: target } = hit
     if (target.mass > 0 && Number.isFinite(impulse) && impulse > 0) {
       target.wakeUp()
       target.applyImpulse(ray.scale(Math.min(impulse, 50)), impact.vsub(target.position))
@@ -1828,6 +1931,27 @@ export class Simulation {
       entityId: [...this.bodies].find(([, value]) => value === target)?.[0] ?? null,
       surface: this.bodySurfaces.get(target) ?? null,
     }
+  }
+  /** Bodies instant queries skip; also mirrored to the main-thread query world. */
+  queryExclusions(): QueryExclusions {
+    const occupied = this.vehicleId ? (this.vehicles.get(this.vehicleId)?.body ?? null) : null
+    return {
+      player: this.playerBody,
+      occupied,
+      trailers: new Set(
+        [...this.vehicles.values()]
+          .filter((v) => this.vehicleId !== null && v.definition.tow?.vehicleId === this.vehicleId)
+          .map((v) => v.body),
+      ),
+    }
+  }
+  /** Wireframe of every collider, player included (Development › Show collision). */
+  collisionDebug(): CollisionDebugLines {
+    return this.world.debugLines()
+  }
+  /** Rapier world and entity bodies, read by the worker host to mirror a query world. */
+  queryState(): { world: World; bodies: ReadonlyMap<string, Body> } {
+    return { world: this.world, bodies: this.bodies }
   }
 
   private updateGrounded(): void {
@@ -2395,7 +2519,7 @@ export class Simulation {
         ],
         options.maxRoadDistance ?? ROAD_SNAP_MAX_DISTANCE,
         (candidate) => {
-          const y = this.groundUnder(candidate.x, candidate.z, v.body.position.y, true)
+          const y = this.restGround(candidate.x, candidate.z, v.body.position.y)
           if (y === null || !dry(candidate.x, y, candidate.z)) return false
           // Check a footprint, not just a centre point at the edge of a loaded tile.
           for (const along of [-2, 2])
@@ -2405,13 +2529,14 @@ export class Simulation {
                 candidate.z + candidate.dz * along + candidate.dx * across,
                 y,
                 true,
+                y + 1.5,
               )
               if (support === null || Math.abs(support - y) > 1.5) return false
             }
           return true
         },
       )
-      const ground = road ? this.groundUnder(road.x, road.z, v.body.position.y, true) : null
+      const ground = road ? this.restGround(road.x, road.z, v.body.position.y) : null
       if (road && ground !== null) {
         // Face along the road, keeping whichever direction is closer to the old heading.
         const sign = road.dx * forward.x + road.dz * forward.z < 0 ? -1 : 1
@@ -2420,7 +2545,7 @@ export class Simulation {
       } else roadMissing = true
     }
     const localGround = roadMissing
-      ? this.groundUnder(v.body.position.x, v.body.position.z, v.body.position.y, true)
+      ? this.restGround(v.body.position.x, v.body.position.z, v.body.position.y)
       : null
     if (
       roadMissing &&
@@ -2445,10 +2570,24 @@ export class Simulation {
     return roadMissing ? 'Sin vía cerca · coche enderezado' : 'Coche enderezado'
   }
   /**
-   * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY`, ignoring
-   * vehicles; null where no collision is loaded.
+   * Ground a recovered vehicle rests on at (x, z): the highest surface at most
+   * `RECOVER_CEILING` m above it (never the roof, bridge or canopy over it), else, for a car
+   * fallen through the map, the highest loaded surface.
    */
-  private groundUnder(x: number, z: number, nearY: number, allLoaded = false): number | null {
+  private restGround(x: number, z: number, y: number): number | null {
+    return this.groundUnder(x, z, y, true, y + RECOVER_CEILING) ?? this.groundUnder(x, z, y, true)
+  }
+  /**
+   * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY` (and not above
+   * `ceiling`), ignoring vehicles; null where no collision is loaded.
+   */
+  private groundUnder(
+    x: number,
+    z: number,
+    nearY: number,
+    allLoaded = false,
+    ceiling = Infinity,
+  ): number | null {
     const vehicleBodies = new Set<Body>([...this.vehicles.values()].map((v) => v.body))
     let best: number | null = null
     let top = nearY + 600,
@@ -2472,7 +2611,7 @@ export class Simulation {
       (hit) => {
         if (!hit.body || hit.body.mass !== 0 || vehicleBodies.has(hit.body)) return
         if (allLoaded && this.fallbackFloor.owns(hit.body)) return
-        if (hit.hitNormalWorld.y < 0.5) return
+        if (hit.hitNormalWorld.y < 0.5 || hit.hitPointWorld.y > ceiling) return
         if (best === null || hit.hitPointWorld.y > best) best = hit.hitPointWorld.y
       },
     )
@@ -3229,23 +3368,7 @@ export class Simulation {
 
   /** Keeps a third-person camera in front of the nearest physical obstruction. */
   cameraPosition(target: Vec3Tuple, desired: Vec3Tuple): Vec3Tuple {
-    const from = new Vec3(...target),
-      to = new Vec3(...desired)
-    const delta = to.vsub(from),
-      total = delta.length()
-    if (total < 0.001) return [...target]
-    let distance = total
-    const active = this.vehicleId ? this.vehicles.get(this.vehicleId)?.body : null
-    const trailers = new Set(
-      [...this.vehicles.values()]
-        .filter((v) => this.vehicleId !== null && v.definition.tow?.vehicleId === this.vehicleId)
-        .map((v) => v.body),
-    )
-    this.world.raycastAll(from, to, { skipBackfaces: true }, (hit) => {
-      if (hit.body !== this.playerBody && hit.body !== active && !trailers.has(hit.body!))
-        distance = Math.min(distance, Math.max(0.15, hit.distance - 0.2))
-    })
-    return vec(from.vadd(delta.scale(distance / total)))
+    return cameraClearance(this.world, this.queryExclusions(), target, desired)
   }
   dispose(): void {
     if (this.disposed) return

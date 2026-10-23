@@ -12,7 +12,7 @@ Renderer-independent vehicle light switches and channel evaluation, shared by ev
 
 ## VehicleLightController.beginFlash
 
-[Implementation, line 37](../../../../../src/render/vehicle-presentation/light-controller.ts#L37)
+[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-controller.ts#L44)
 
 Momentary main beams without changing the master switch or latched selection.
 
@@ -22,7 +22,7 @@ beginFlash(): boolean
 
 ## VehicleLightController.endFlash
 
-[Implementation, line 42](../../../../../src/render/vehicle-presentation/light-controller.ts#L42)
+[Implementation, line 49](../../../../../src/render/vehicle-presentation/light-controller.ts#L49)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -32,7 +32,7 @@ endFlash(): void
 
 ## VehicleLightController.sampleEnvironment
 
-[Implementation, line 50](../../../../../src/render/vehicle-presentation/light-controller.ts#L50)
+[Implementation, line 57](../../../../../src/render/vehicle-presentation/light-controller.ts#L57)
 
 Delay switching across short shadows so the beams do not flicker.
 
@@ -46,7 +46,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.drivingMode
 
-[Implementation, line 57](../../../../../src/render/vehicle-presentation/light-controller.ts#L57)
+[Implementation, line 64](../../../../../src/render/vehicle-presentation/light-controller.ts#L64)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -56,7 +56,7 @@ drivingMode(): Exclude<VehicleLightMode, 'auto'>
 
 ## VehicleLightController.dashboardLight
 
-[Implementation, line 61](../../../../../src/render/vehicle-presentation/light-controller.ts#L61)
+[Implementation, line 68](../../../../../src/render/vehicle-presentation/light-controller.ts#L68)
 
 Exclusive dashboard tell-tale, including automatic beams and momentary flashes.
 
@@ -66,7 +66,7 @@ dashboardLight(): 'off' | 'position' | 'low' | 'high'
 
 ## VehicleLightController.constructor
 
-[Implementation, line 65](../../../../../src/render/vehicle-presentation/light-controller.ts#L65)
+[Implementation, line 72](../../../../../src/render/vehicle-presentation/light-controller.ts#L72)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -76,7 +76,7 @@ constructor(readonly flashMs = lightingDefaults.signalFlashMs): instance
 
 ## VehicleLightController.enabled
 
-[Implementation, line 67](../../../../../src/render/vehicle-presentation/light-controller.ts#L67)
+[Implementation, line 74](../../../../../src/render/vehicle-presentation/light-controller.ts#L74)
 
 Any driving light on (position or dipped). Setting true from `off` selects dipped beams.
 
@@ -86,7 +86,7 @@ enabled(): boolean
 
 ## VehicleLightController.enabled
 
-[Implementation, line 70](../../../../../src/render/vehicle-presentation/light-controller.ts#L70)
+[Implementation, line 77](../../../../../src/render/vehicle-presentation/light-controller.ts#L77)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -96,7 +96,7 @@ enabled(on: boolean): inferred by TypeScript; see implementation
 
 ## VehicleLightController.cycleLights
 
-[Implementation, line 74](../../../../../src/render/vehicle-presentation/light-controller.ts#L74)
+[Implementation, line 81](../../../../../src/render/vehicle-presentation/light-controller.ts#L81)
 
 Step the light switch: off → position → low (dipped) → off. Returns the new mode.
 
@@ -110,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.toggleLights
 
-[Implementation, line 79](../../../../../src/render/vehicle-presentation/light-controller.ts#L79)
+[Implementation, line 86](../../../../../src/render/vehicle-presentation/light-controller.ts#L86)
 
 `cycleLights`, reporting whether any driving light is now on.
 
@@ -124,7 +124,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.toggleHighBeam
 
-[Implementation, line 83](../../../../../src/render/vehicle-presentation/light-controller.ts#L83)
+[Implementation, line 90](../../../../../src/render/vehicle-presentation/light-controller.ts#L90)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -134,7 +134,7 @@ toggleHighBeam(): boolean
 
 ## VehicleLightController.toggleSignal
 
-[Implementation, line 86](../../../../../src/render/vehicle-presentation/light-controller.ts#L86)
+[Implementation, line 93](../../../../../src/render/vehicle-presentation/light-controller.ts#L93)
 
 A trailer samples its tractor's controller and telemetry, without copying switches or clocks.
 
@@ -144,7 +144,7 @@ toggleSignal(side: number): void
 
 ## VehicleLightController.indicating
 
-[Implementation, line 90](../../../../../src/render/vehicle-presentation/light-controller.ts#L90)
+[Implementation, line 97](../../../../../src/render/vehicle-presentation/light-controller.ts#L97)
 
 Report a selected side independently of the on/off blink phase.
 
@@ -154,7 +154,7 @@ indicating(side: number, state: VehicleLampState): boolean
 
 ## VehicleLightController.level
 
-[Implementation, line 94](../../../../../src/render/vehicle-presentation/light-controller.ts#L94)
+[Implementation, line 101](../../../../../src/render/vehicle-presentation/light-controller.ts#L101)
 
 Return a multiplier for an authored lamp intensity; no geometry or material names are used.
 
@@ -170,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## VehicleLightController.glow
 
-[Implementation, line 124](../../../../../src/render/vehicle-presentation/light-controller.ts#L124)
+[Implementation, line 131](../../../../../src/render/vehicle-presentation/light-controller.ts#L131)
 
 Like `level`, for a lens emitter rather than a light source: in position mode a low-beam lens
 keeps a faint `positionLensGlow`, so a lamp unit without its own position bulb still glows.
