@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **622 modules; 7852 executable function definitions**.
+Coverage: **622 modules; 7874 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -29,7 +29,7 @@ Coverage: **622 modules; 7852 executable function definitions**.
 | [game/display-settings.ts](game/display-settings.ts.md) | 15 |
 | [game/distances-ui.ts](game/distances-ui.ts.md) | 8 |
 | [game/drive-host.ts](game/drive-host.ts.md) | 2 |
-| [game/drive.ts](game/drive.ts.md) | 7 |
+| [game/drive.ts](game/drive.ts.md) | 17 |
 | [game/driver-pose-controls.ts](game/driver-pose-controls.ts.md) | 9 |
 | [game/entry.ts](game/entry.ts.md) | 4 |
 | [game/exhaust-ui.ts](game/exhaust-ui.ts.md) | 7 |
@@ -322,14 +322,14 @@ Coverage: **622 modules; 7852 executable function definitions**.
 | [src/render/entity/shot-sparks.ts](src/render/entity/shot-sparks.ts.md) | 29 |
 | [src/render/entity/shot-tracers.ts](src/render/entity/shot-tracers.ts.md) | 15 |
 | [src/render/entity/smoke-density.ts](src/render/entity/smoke-density.ts.md) | 1 |
-| [src/render/entity/soft-smoke.ts](src/render/entity/soft-smoke.ts.md) | 18 |
+| [src/render/entity/soft-smoke.ts](src/render/entity/soft-smoke.ts.md) | 19 |
 | [src/render/entity/steering-wheel.ts](src/render/entity/steering-wheel.ts.md) | 9 |
 | [src/render/entity/streetlights.ts](src/render/entity/streetlights.ts.md) | 16 |
 | [src/render/entity/tire-marks.ts](src/render/entity/tire-marks.ts.md) | 11 |
 | [src/render/entity/tire-smoke.ts](src/render/entity/tire-smoke.ts.md) | 12 |
 | [src/render/entity/tree-fire.ts](src/render/entity/tree-fire.ts.md) | 20 |
 | [src/render/entity/trunk-balloons.ts](src/render/entity/trunk-balloons.ts.md) | 14 |
-| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 32 |
+| [src/render/entity/vehicle-destruction.ts](src/render/entity/vehicle-destruction.ts.md) | 38 |
 | [src/render/entity/view.ts](src/render/entity/view.ts.md) | 166 |
 | [src/render/entity/wreck-debris.ts](src/render/entity/wreck-debris.ts.md) | 22 |
 | [src/render/entity/wreck-flames.ts](src/render/entity/wreck-flames.ts.md) | 10 |
@@ -370,7 +370,7 @@ Coverage: **622 modules; 7852 executable function definitions**.
 | [src/render/planet/map-artifact.ts](src/render/planet/map-artifact.ts.md) | 2 |
 | [src/render/planet/night-sky.ts](src/render/planet/night-sky.ts.md) | 11 |
 | [src/render/planet/noise-nodes.ts](src/render/planet/noise-nodes.ts.md) | 12 |
-| [src/render/planet/ocean-sheet.ts](src/render/planet/ocean-sheet.ts.md) | 14 |
+| [src/render/planet/ocean-sheet.ts](src/render/planet/ocean-sheet.ts.md) | 15 |
 | [src/render/planet/osm-roads.ts](src/render/planet/osm-roads.ts.md) | 1 |
 | [src/render/planet/package-photo.ts](src/render/planet/package-photo.ts.md) | 2 |
 | [src/render/planet/place-label.ts](src/render/planet/place-label.ts.md) | 2 |
@@ -388,7 +388,7 @@ Coverage: **622 modules; 7852 executable function definitions**.
 | [src/render/planet/vegetation.ts](src/render/planet/vegetation.ts.md) | 9 |
 | [src/render/planet/visibility.ts](src/render/planet/visibility.ts.md) | 1 |
 | [src/render/planet/water-geometry.ts](src/render/planet/water-geometry.ts.md) | 17 |
-| [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 4 |
+| [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 8 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 24 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 31 |

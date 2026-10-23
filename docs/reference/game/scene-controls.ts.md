@@ -293,7 +293,9 @@ seaStatus(sea: { level: number; state: string }, manual: boolean): string
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `String`
 - `formatMetres`
+- `t`
 
 ## withSceneParams
 

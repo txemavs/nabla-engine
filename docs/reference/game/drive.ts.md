@@ -118,3 +118,124 @@ callback@155(p): inferred by TypeScript; see implementation
 ```ts
 callback@225(entity): inferred by TypeScript; see implementation
 ```
+
+## onResolutionScale
+
+[Implementation, line 280](../../../game/drive.ts#L280)
+
+```ts
+onResolutionScale(state): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `CustomEvent`
+
+## source
+
+[Implementation, line 292](../../../game/drive.ts#L292)
+
+```ts
+source(tile): inferred by TypeScript; see implementation
+```
+
+## source.callback@296
+
+[Implementation, line 296](../../../game/drive.ts#L296)
+
+```ts
+callback@296(mark): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `mapTileAt`
+
+## callback@326
+
+[Implementation, line 326](../../../game/drive.ts#L326)
+
+```ts
+callback@326(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.getElementById`
+
+## callback@328
+
+[Implementation, line 328](../../../game/drive.ts#L328)
+
+```ts
+callback@328(sample): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `CustomEvent`
+
+## onProgress
+
+[Implementation, line 334](../../../game/drive.ts#L334)
+
+```ts
+onProgress(status, tiles): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `describeLoading`
+- `loading.markTileLoaded`
+- `loading.setDetail`
+- `loading.setStatus`
+
+## onFrame
+
+[Implementation, line 340](../../../game/drive.ts#L340)
+
+```ts
+onFrame(frame): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `showLocation`
+- `showTelemetry`
+
+## onError
+
+[Implementation, line 344](../../../game/drive.ts#L344)
+
+```ts
+onError(error): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `String`
+- `showError`
+
+## onMessage
+
+[Implementation, line 347](../../../game/drive.ts#L347)
+
+```ts
+onMessage(message): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `document.getElementById`
+
+## callback@353
+
+[Implementation, line 353](../../../game/drive.ts#L353)
+
+```ts
+callback@353(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `runtime?.dispose`

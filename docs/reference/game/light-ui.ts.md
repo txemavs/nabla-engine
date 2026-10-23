@@ -11,12 +11,13 @@ the shipped look.
 
 ## Module dependencies
 
+- `@nabla/engine/i18n`
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
 
 ## lightValueText
 
-[Implementation, line 28](../../../game/light-ui.ts#L28)
+[Implementation, line 29](../../../game/light-ui.ts#L29)
 
 Value text: the number, plus the absolute full-day intensity for sun and ambient.
 
@@ -32,7 +33,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLightControls
 
-[Implementation, line 36](../../../game/light-ui.ts#L36)
+[Implementation, line 37](../../../game/light-ui.ts#L37)
 
 ```ts
 bindLightControls(runtime: Pick<GameRuntime, 'lightTuning' | 'setLightTuning'>): HTMLFieldSetElement
@@ -55,13 +56,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `shadows.addEventListener`
 - `show`
 - `slider.addEventListener`
+- `t`
 
-## bindLightControls.callback@52
+## bindLightControls.callback@53
 
-[Implementation, line 52](../../../game/light-ui.ts#L52)
+[Implementation, line 53](../../../game/light-ui.ts#L53)
 
 ```ts
-callback@52(): inferred by TypeScript; see implementation
+callback@53(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -70,24 +72,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `lightValueText`
 - `runtime.setLightTuning`
 
-## bindLightControls.callback@64
+## bindLightControls.callback@65
 
-[Implementation, line 64](../../../game/light-ui.ts#L64)
+[Implementation, line 65](../../../game/light-ui.ts#L65)
 
 ```ts
-callback@64(): inferred by TypeScript; see implementation
+callback@65(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime.setLightTuning`
 
-## bindLightControls.callback@72
+## bindLightControls.callback@73
 
-[Implementation, line 72](../../../game/light-ui.ts#L72)
+[Implementation, line 73](../../../game/light-ui.ts#L73)
 
 ```ts
-callback@72(): inferred by TypeScript; see implementation
+callback@73(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -97,17 +99,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `navigator.clipboard.writeText`
 - `navigator.clipboard.writeText(json).then`
 
-## bindLightControls.callback@72.done
+## bindLightControls.callback@73.done
 
-[Implementation, line 74](../../../game/light-ui.ts#L74)
+[Implementation, line 75](../../../game/light-ui.ts#L75)
 
 ```ts
 done(): inferred by TypeScript; see implementation
 ```
 
-## bindLightControls.callback@72.fallback
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-[Implementation, line 75](../../../game/light-ui.ts#L75)
+- `t`
+
+## bindLightControls.callback@73.fallback
+
+[Implementation, line 76](../../../game/light-ui.ts#L76)
 
 ```ts
 fallback(): inferred by TypeScript; see implementation
@@ -117,12 +123,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `window.prompt`
 
-## bindLightControls.callback@86
+## bindLightControls.callback@87
 
-[Implementation, line 86](../../../game/light-ui.ts#L86)
+[Implementation, line 87](../../../game/light-ui.ts#L87)
 
 ```ts
-callback@86(): inferred by TypeScript; see implementation
+callback@87(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -132,7 +138,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindLightControls.show
 
-[Implementation, line 93](../../../game/light-ui.ts#L93)
+[Implementation, line 94](../../../game/light-ui.ts#L94)
 
 ```ts
 show(): inferred by TypeScript; see implementation

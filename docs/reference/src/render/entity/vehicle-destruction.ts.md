@@ -503,8 +503,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `Math.max`
 - `Math.min`
+- `Math.sin`
 - `THREE.MathUtils.clamp`
+- `burn.fire.getWorldPosition`
+- `burn.fire.scale.set`
+- `burn.flames.children.forEach`
+- `burn.flames.scale.set`
 - `burn.object.getWorldPosition`
+- `burn.smoke.setAmount`
+- `burn.smoke.setEnabled`
+- `burn.smoke.update`
+- `burn.tongues?.updateBounds`
+- `burst.fire.scale.setScalar`
 - `entry.anchor.position.set`
 - `entry.anchor.position.set(0, 0.15, 0).applyMatrix4`
 - `entry.anchor.removeFromParent`
@@ -527,6 +537,146 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.debris.update`
 - `this.debrisFires.splice`
 - `this.fireSources.push`
+- `this.flarePoint.copy`
+- `this.fx.update`
+- `this.light.position.copy`
+- `this.removeBurst`
 - `this.space.worldToLocal`
-- `this.trees.clear`
+- `this.trees.update`
+- `this.updateFlashes`
+- `this.updateShards`
 - `wreckFire`
+
+## VehicleDestruction.update.callback@723
+
+[Implementation, line 723](../../../../../src/render/entity/vehicle-destruction.ts#L723)
+
+```ts
+callback@723(tongue, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.sin`
+
+## VehicleDestruction.updateFlashes
+
+[Implementation, line 785](../../../../../src/render/entity/vehicle-destruction.ts#L785)
+
+Blast light: a 30 ms rise to a white-yellow peak, an exponential fall through orange (the
+fireball cooling), plus the lens flash. One shared lamp; the brightest blast owns it.
+
+```ts
+updateFlashes(dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.exp`
+- `Math.min`
+- `this.flarePoint.copy`
+- `this.flashes.splice`
+- `this.light.color.set`
+- `this.light.color.setRGB`
+- `this.light.position.copy`
+
+## VehicleDestruction.updateShards
+
+[Implementation, line 826](../../../../../src/render/entity/vehicle-destruction.ts#L826)
+
+Same motion and matrices as the former per-object fragments (age, then `p += v·dt` and
+`v.y -= 9.8·dt`; rotation `(age·8, index, age·5)`), without allocation. Fragments age in
+order, so the expired ones are always the oldest at the head of the ring.
+
+```ts
+updateShards(dt: number): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `bounds.expandByPoint`
+- `bounds.expandByScalar`
+- `dummy.position.set`
+- `dummy.rotation.set`
+- `dummy.updateMatrix`
+- `this.fragments.instanceMatrix.addUpdateRange`
+- `this.fragments.setMatrixAt`
+- `this.shardBounds.makeEmpty`
+
+## VehicleDestruction.remove
+
+[Implementation, line 869](../../../../../src/render/entity/vehicle-destruction.ts#L869)
+
+```ts
+remove(id: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `burn.fire.material.dispose`
+- `burn.fire.removeFromParent`
+- `burn.flameMaterial.dispose`
+- `burn.flames.removeFromParent`
+- `burn.smoke.dispose`
+- `this.burns.delete`
+- `this.burns.get`
+
+## VehicleDestruction.clear
+
+[Implementation, line 879](../../../../../src/render/entity/vehicle-destruction.ts#L879)
+
+```ts
+clear(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `entry.anchor.removeFromParent`
+- `entry.smoke.dispose`
+- `f.flames.removeFromParent`
+- `f.material.dispose`
+- `f.smoke.dispose`
+- `material.color.copy`
+- `material.emissive.copy`
+- `this.balloons.clear`
+- `this.burns.keys`
+- `this.charred.clear`
+- `this.damageSmoke.clear`
+- `this.damageSmoke.values`
+- `this.debris.clear`
+- `this.fx?.clear`
+- `this.hiddenWreckParts.clear`
+- `this.remove`
+- `this.removeBurst`
+- `this.shardBounds.makeEmpty`
+- `this.trees.clear`
+
+## VehicleDestruction.dispose
+
+[Implementation, line 919](../../../../../src/render/entity/vehicle-destruction.ts#L919)
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `(this.fragments.material as THREE.Material).dispose`
+- `fire.material.dispose`
+- `softDepth.grabber.removeFromParent`
+- `this.balloons.dispose`
+- `this.clear`
+- `this.debris.dispose`
+- `this.flameGeometry.dispose`
+- `this.flare.dispose`
+- `this.flare.mesh.removeFromParent`
+- `this.fragments.geometry.dispose`
+- `this.fx?.dispose`
+- `this.geometry.dispose`
+- `this.light.removeFromParent`
+- `this.mergedFlames?.dispose`
+- `this.root.removeFromParent`
+- `this.trees.dispose`
+- `this.warmFire?.material.dispose`
+- `this.warmFlames?.material.dispose`
+- `this.warmSmoke?.dispose`

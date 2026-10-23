@@ -38,7 +38,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindingForKey
 
-[Implementation, line 169](../../../../src/config/input-bindings.ts#L169)
+[Implementation, line 170](../../../../src/config/input-bindings.ts#L170)
 
 Resolve holds as well as presses, so a held contextual control can consume a fallback action.
 
@@ -55,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## keyboardAction
 
-[Implementation, line 182](../../../../src/config/input-bindings.ts#L182)
+[Implementation, line 183](../../../../src/config/input-bindings.ts#L183)
 
 ```ts
 keyboardAction(code: string, context: InputContext): InputAction | undefined
@@ -67,7 +67,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## actionHeld
 
-[Implementation, line 186](../../../../src/config/input-bindings.ts#L186)
+[Implementation, line 187](../../../../src/config/input-bindings.ts#L187)
 
 ```ts
 actionHeld(keys: ReadonlySet<string>, action: InputAction, context: InputContext): boolean
@@ -77,12 +77,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `inputBindings[action].keys.some`
 
-## actionHeld.callback@192
+## actionHeld.callback@193
 
-[Implementation, line 192](../../../../src/config/input-bindings.ts#L192)
+[Implementation, line 193](../../../../src/config/input-bindings.ts#L193)
 
 ```ts
-callback@192(code): inferred by TypeScript; see implementation
+callback@193(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -92,7 +92,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## actionAxis
 
-[Implementation, line 195](../../../../src/config/input-bindings.ts#L195)
+[Implementation, line 196](../../../../src/config/input-bindings.ts#L196)
 
 ```ts
 actionAxis(keys: ReadonlySet<string>, positive: InputAction, negative: InputAction, context: InputContext): number
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## contextualAction
 
-[Implementation, line 204](../../../../src/config/input-bindings.ts#L204)
+[Implementation, line 205](../../../../src/config/input-bindings.ts#L205)
 
 Translate standard device buttons through the same context overrides without inventing keyboard events.
 
@@ -115,7 +115,7 @@ contextualAction(action: InputAction, context: InputContext): InputAction
 
 ## inputActionAvailable
 
-[Implementation, line 219](../../../../src/config/input-bindings.ts#L219)
+[Implementation, line 220](../../../../src/config/input-bindings.ts#L220)
 
 Compatibility adapter for existing hosts; new hosts should pass semantic action IDs.
 
@@ -129,12 +129,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `(inputBindings[action].scopes as readonly Scope[]).some`
 
-## inputActionAvailable.callback@220
+## inputActionAvailable.callback@221
 
-[Implementation, line 220](../../../../src/config/input-bindings.ts#L220)
+[Implementation, line 221](../../../../src/config/input-bindings.ts#L221)
 
 ```ts
-callback@220(scope): inferred by TypeScript; see implementation
+callback@221(scope): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -144,7 +144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## legacyInputAction
 
-[Implementation, line 224](../../../../src/config/input-bindings.ts#L224)
+[Implementation, line 225](../../../../src/config/input-bindings.ts#L225)
 
 ```ts
 legacyInputAction(value: string): InputAction | undefined
@@ -157,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## keyLabel
 
-[Implementation, line 229](../../../../src/config/input-bindings.ts#L229)
+[Implementation, line 230](../../../../src/config/input-bindings.ts#L230)
 
 ```ts
 keyLabel(code: string): string
@@ -170,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## controlsFor
 
-[Implementation, line 245](../../../../src/config/input-bindings.ts#L245)
+[Implementation, line 246](../../../../src/config/input-bindings.ts#L246)
 
 The same resolved declarations drive help; hidden fallback actions never appear as available.
 
@@ -183,24 +183,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `(Object.entries(inputBindings) as [InputAction, Binding][]).flatMap`
 - `Object.entries`
 
-## controlsFor.callback@249
+## controlsFor.callback@250
 
-[Implementation, line 249](../../../../src/config/input-bindings.ts#L249)
+[Implementation, line 250](../../../../src/config/input-bindings.ts#L250)
 
 ```ts
-callback@249([action, binding]): inferred by TypeScript; see implementation
+callback@250([action, binding]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `binding.keys.filter`
 
-## controlsFor.callback@249.callback@250
+## controlsFor.callback@250.callback@251
 
-[Implementation, line 250](../../../../src/config/input-bindings.ts#L250)
+[Implementation, line 251](../../../../src/config/input-bindings.ts#L251)
 
 ```ts
-callback@250(code): inferred by TypeScript; see implementation
+callback@251(code): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -209,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## controlsHint
 
-[Implementation, line 255](../../../../src/config/input-bindings.ts#L255)
+[Implementation, line 256](../../../../src/config/input-bindings.ts#L256)
 
 ```ts
 controlsHint(context: InputContext, actions?: readonly InputAction[]): string
@@ -218,18 +218,6 @@ controlsHint(context: InputContext, actions?: readonly InputAction[]): string
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `controlsFor`
-
-## controlsHint.callback@257
-
-[Implementation, line 257](../../../../src/config/input-bindings.ts#L257)
-
-```ts
-callback@257(binding): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `actions.includes`
 
 ## controlsHint.callback@258
 
@@ -241,13 +229,25 @@ callback@258(binding): inferred by TypeScript; see implementation
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `actions.includes`
+
+## controlsHint.callback@259
+
+[Implementation, line 259](../../../../src/config/input-bindings.ts#L259)
+
+```ts
+callback@259(binding): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `Set`
 - `[...new Set(binding.keys.map(keyLabel))].join`
 - `binding.keys.map`
 
 ## actionChordHeld
 
-[Implementation, line 283](../../../../src/config/input-bindings.ts#L283)
+[Implementation, line 284](../../../../src/config/input-bindings.ts#L284)
 
 ```ts
 actionChordHeld(keys: ReadonlySet<string>, chord: keyof typeof inputChords, context: InputContext): boolean
@@ -257,29 +257,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `inputChords[chord].every`
 
-## actionChordHeld.callback@288
+## actionChordHeld.callback@289
 
-[Implementation, line 288](../../../../src/config/input-bindings.ts#L288)
+[Implementation, line 289](../../../../src/config/input-bindings.ts#L289)
 
 ```ts
-callback@288(action): inferred by TypeScript; see implementation
+callback@289(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `actionHeld`
 
-## callback@293
+## callback@294
 
-[Implementation, line 293](../../../../src/config/input-bindings.ts#L293)
+[Implementation, line 294](../../../../src/config/input-bindings.ts#L294)
 
 ```ts
-callback@293(action): inferred by TypeScript; see implementation
+callback@294(action): inferred by TypeScript; see implementation
 ```
 
 ## actionCompletesChord
 
-[Implementation, line 309](../../../../src/config/input-bindings.ts#L309)
+[Implementation, line 310](../../../../src/config/input-bindings.ts#L310)
 
 A press completes a chord when the other declared actions are already held.
 
@@ -292,12 +292,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `actions.every`
 - `actions.includes`
 
-## actionCompletesChord.callback@318
+## actionCompletesChord.callback@319
 
-[Implementation, line 318](../../../../src/config/input-bindings.ts#L318)
+[Implementation, line 319](../../../../src/config/input-bindings.ts#L319)
 
 ```ts
-callback@318(action): inferred by TypeScript; see implementation
+callback@319(action): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -306,7 +306,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## inputMode
 
-[Implementation, line 323](../../../../src/config/input-bindings.ts#L323)
+[Implementation, line 324](../../../../src/config/input-bindings.ts#L324)
 
 Determine the one locomotion mode shared by mixing, event routing and help.
 
@@ -316,7 +316,7 @@ inputMode(seated: boolean, flight: boolean, vehicle?: { twoWheeled?: unknown; fo
 
 ## menuNavigationKey
 
-[Implementation, line 340](../../../../src/config/input-bindings.ts#L340)
+[Implementation, line 341](../../../../src/config/input-bindings.ts#L341)
 
 Keyboard intents for HTML tab lists and focus containment; independent of gameplay actions.
 

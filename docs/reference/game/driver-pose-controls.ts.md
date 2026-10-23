@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `@nabla/engine/i18n`
 - `./menu.js`
 - `@nabla/engine/config/driver-pose`
 
 ## driverPoseControls
 
-[Implementation, line 9](../../../game/driver-pose-controls.ts#L9)
+[Implementation, line 10](../../../game/driver-pose-controls.ts#L10)
 
 ```ts
 driverPoseControls(): inferred by TypeScript; see implementation
@@ -29,22 +30,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `menuSubtitle`
 - `root.append`
 - `row.append`
+- `t`
 - `values.setAttribute`
-
-## driverPoseControls.callback@69
-
-[Implementation, line 69](../../../game/driver-pose-controls.ts#L69)
-
-```ts
-callback@69(i): inferred by TypeScript; see implementation
-```
 
 ## driverPoseControls.callback@70
 
 [Implementation, line 70](../../../game/driver-pose-controls.ts#L70)
 
 ```ts
-callback@70(e): inferred by TypeScript; see implementation
+callback@70(i): inferred by TypeScript; see implementation
+```
+
+## driverPoseControls.callback@71
+
+[Implementation, line 71](../../../game/driver-pose-controls.ts#L71)
+
+```ts
+callback@71(e): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -53,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driverPoseControls.bind
 
-[Implementation, line 71](../../../game/driver-pose-controls.ts#L71)
+[Implementation, line 72](../../../game/driver-pose-controls.ts#L72)
 
 ```ts
 bind(runtime: Partial<DriverPoseRuntime>): inferred by TypeScript; see implementation
@@ -68,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driverPoseControls.bind.show
 
-[Implementation, line 73](../../../game/driver-pose-controls.ts#L73)
+[Implementation, line 74](../../../game/driver-pose-controls.ts#L74)
 
 ```ts
 show(offset: DriverPoseAdjustment): inferred by TypeScript; see implementation
@@ -82,7 +84,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## driverPoseControls.bind.refresh
 
-[Implementation, line 82](../../../game/driver-pose-controls.ts#L82)
+[Implementation, line 83](../../../game/driver-pose-controls.ts#L83)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -91,13 +93,14 @@ refresh(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `show`
+- `t`
 
-## driverPoseControls.bind.callback@100
+## driverPoseControls.bind.callback@99
 
-[Implementation, line 100](../../../game/driver-pose-controls.ts#L100)
+[Implementation, line 99](../../../game/driver-pose-controls.ts#L99)
 
 ```ts
-callback@100(): inferred by TypeScript; see implementation
+callback@99(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -106,12 +109,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setDriverPoseOffset`
 - `show`
 
-## driverPoseControls.bind.callback@107
+## driverPoseControls.bind.callback@106
 
-[Implementation, line 107](../../../game/driver-pose-controls.ts#L107)
+[Implementation, line 106](../../../game/driver-pose-controls.ts#L106)
 
 ```ts
-callback@107(): inferred by TypeScript; see implementation
+callback@106(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -119,16 +122,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.resetDriverPoseOffset`
 - `show`
 
-## driverPoseControls.bind.callback@111
+## driverPoseControls.bind.callback@110
 
-[Implementation, line 111](../../../game/driver-pose-controls.ts#L111)
+[Implementation, line 110](../../../game/driver-pose-controls.ts#L110)
 
 ```ts
-callback@111(): inferred by TypeScript; see implementation
+callback@110(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `navigator.clipboard.writeText`
+- `t`
 - `values.focus`
 - `values.select`

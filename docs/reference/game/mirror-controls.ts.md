@@ -133,7 +133,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 [Implementation, line 114](../../../game/mirror-controls.ts#L114)
 
 ```ts
-callback@114({ side, label }): inferred by TypeScript; see implementation
+callback@114({ side }): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -141,28 +141,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `slider`
 - `t`
 
-## mirrorControls.callback@132
+## mirrorControls.callback@140
 
-[Implementation, line 132](../../../game/mirror-controls.ts#L132)
+[Implementation, line 140](../../../game/mirror-controls.ts#L140)
 
 ```ts
-callback@132(r): inferred by TypeScript; see implementation
+callback@140(r): inferred by TypeScript; see implementation
 ```
 
-## mirrorControls.callback@136
+## mirrorControls.callback@144
 
-[Implementation, line 136](../../../game/mirror-controls.ts#L136)
+[Implementation, line 144](../../../game/mirror-controls.ts#L144)
 
 ```ts
-callback@136(r): inferred by TypeScript; see implementation
+callback@144(r): inferred by TypeScript; see implementation
 ```
 
-## mirrorControls.callback@139
+## mirrorControls.callback@147
 
-[Implementation, line 139](../../../game/mirror-controls.ts#L139)
+[Implementation, line 147](../../../game/mirror-controls.ts#L147)
 
 ```ts
-callback@139(event): inferred by TypeScript; see implementation
+callback@147(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -171,7 +171,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind
 
-[Implementation, line 143](../../../game/mirror-controls.ts#L143)
+[Implementation, line 151](../../../game/mirror-controls.ts#L151)
 
 ```ts
 bind(runtime: Partial<MirrorRuntime>): inferred by TypeScript; see implementation
@@ -186,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind.show
 
-[Implementation, line 145](../../../game/mirror-controls.ts#L145)
+[Implementation, line 153](../../../game/mirror-controls.ts#L153)
 
 ```ts
 show(adjustment: Record<string, GlassAngle>, syncSliders: boolean): inferred by TypeScript; see implementation
@@ -201,7 +201,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind.refresh
 
-[Implementation, line 160](../../../game/mirror-controls.ts#L160)
+[Implementation, line 168](../../../game/mirror-controls.ts#L168)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -217,7 +217,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mirrorControls.bind.change
 
-[Implementation, line 193](../../../game/mirror-controls.ts#L193)
+[Implementation, line 201](../../../game/mirror-controls.ts#L201)
 
 ```ts
 change(): inferred by TypeScript; see implementation
@@ -230,12 +230,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setMirrorAngle`
 - `show`
 
-## mirrorControls.bind.callback@204
+## mirrorControls.bind.callback@212
 
-[Implementation, line 204](../../../game/mirror-controls.ts#L204)
+[Implementation, line 212](../../../game/mirror-controls.ts#L212)
 
 ```ts
-callback@204(): inferred by TypeScript; see implementation
+callback@212(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

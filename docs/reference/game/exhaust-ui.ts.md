@@ -6,12 +6,13 @@
 
 ## Module dependencies
 
+- `@nabla/engine/i18n`
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
 
 ## bindExhaustControls
 
-[Implementation, line 9](../../../game/exhaust-ui.ts#L9)
+[Implementation, line 10](../../../game/exhaust-ui.ts#L10)
 
 Live controls for the exhaust of vehicles whose data lets the player adjust it
 (`vehicle.exhaust.adjustable`: outlet position; `smoke.amount: "manual"`: quantity). The rows
@@ -36,10 +37,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rows.push`
 - `setInterval`
 - `slider.addEventListener`
+- `t`
 
 ## bindExhaustControls.followModel
 
-[Implementation, line 25](../../../game/exhaust-ui.ts#L25)
+[Implementation, line 26](../../../game/exhaust-ui.ts#L26)
 
 ```ts
 followModel(): inferred by TypeScript; see implementation
@@ -51,12 +53,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setTruckExhaustAmount`
 - `runtime.setTruckExhaustOffset`
 
-## bindExhaustControls.callback@43
+## bindExhaustControls.callback@44
 
-[Implementation, line 43](../../../game/exhaust-ui.ts#L43)
+[Implementation, line 44](../../../game/exhaust-ui.ts#L44)
 
 ```ts
-callback@43(): inferred by TypeScript; see implementation
+callback@44(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -68,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindExhaustControls.refresh
 
-[Implementation, line 52](../../../game/exhaust-ui.ts#L52)
+[Implementation, line 53](../../../game/exhaust-ui.ts#L53)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -80,12 +82,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `runtime.truckExhaustOffset.forEach`
 
-## bindExhaustControls.refresh.callback@55
+## bindExhaustControls.refresh.callback@56
 
-[Implementation, line 55](../../../game/exhaust-ui.ts#L55)
+[Implementation, line 56](../../../game/exhaust-ui.ts#L56)
 
 ```ts
-callback@55(value, i): inferred by TypeScript; see implementation
+callback@56(value, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -93,12 +95,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.round`
 - `String`
 
-## bindExhaustControls.callback@74
+## bindExhaustControls.callback@75
 
-[Implementation, line 74](../../../game/exhaust-ui.ts#L74)
+[Implementation, line 75](../../../game/exhaust-ui.ts#L75)
 
 ```ts
-callback@74(): inferred by TypeScript; see implementation
+callback@75(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -108,12 +110,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime.setTruckExhaustOffset`
 - `runtime.setVehiclePreferences`
 
-## bindExhaustControls.callback@89
+## bindExhaustControls.callback@90
 
-[Implementation, line 89](../../../game/exhaust-ui.ts#L89)
+[Implementation, line 90](../../../game/exhaust-ui.ts#L90)
 
 ```ts
-callback@89(): inferred by TypeScript; see implementation
+callback@90(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

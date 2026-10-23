@@ -29,11 +29,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MeshStandardMaterial`
 - `THREE.TextureLoader`
 - `new THREE.TextureLoader().load`
+- `waterThickness`
 - `waterWaves`
 
 ## LandcoverBatches.getMaterial
 
-[Implementation, line 48](../../../../../src/render/planet/landcover-batches.ts#L48)
+[Implementation, line 49](../../../../../src/render/planet/landcover-batches.ts#L49)
 
 Batches landcover surfaces by 256m cell and surface type.
 Similar to RoadBatches but for landcover polygons.
@@ -51,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LandcoverBatches.cellKey
 
-[Implementation, line 67](../../../../../src/render/planet/landcover-batches.ts#L67)
+[Implementation, line 68](../../../../../src/render/planet/landcover-batches.ts#L68)
 
 Batches landcover surfaces by 256m cell and surface type.
 Similar to RoadBatches but for landcover polygons.
@@ -67,7 +68,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LandcoverBatches.update
 
-[Implementation, line 71](../../../../../src/render/planet/landcover-batches.ts#L71)
+[Implementation, line 72](../../../../../src/render/planet/landcover-batches.ts#L72)
 
 Batches landcover surfaces by 256m cell and surface type.
 Similar to RoadBatches but for landcover polygons.
@@ -111,28 +112,28 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.root.updateWorldMatrix`
 - `withinMapDistance`
 
-## LandcoverBatches.update.callback@86
+## LandcoverBatches.update.callback@87
 
-[Implementation, line 86](../../../../../src/render/planet/landcover-batches.ts#L86)
+[Implementation, line 87](../../../../../src/render/planet/landcover-batches.ts#L87)
 
 ```ts
-callback@86(e): inferred by TypeScript; see implementation
+callback@87(e): inferred by TypeScript; see implementation
 ```
 
-## LandcoverBatches.update.callback@86
+## LandcoverBatches.update.callback@87
 
-[Implementation, line 86](../../../../../src/render/planet/landcover-batches.ts#L86)
+[Implementation, line 87](../../../../../src/render/planet/landcover-batches.ts#L87)
 
 ```ts
-callback@86(e): inferred by TypeScript; see implementation
+callback@87(e): inferred by TypeScript; see implementation
 ```
 
-## LandcoverBatches.update.callback@105
+## LandcoverBatches.update.callback@106
 
-[Implementation, line 105](../../../../../src/render/planet/landcover-batches.ts#L105)
+[Implementation, line 106](../../../../../src/render/planet/landcover-batches.ts#L106)
 
 ```ts
-callback@105(mesh): inferred by TypeScript; see implementation
+callback@106(mesh): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -148,7 +149,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LandcoverBatches.rebuildCell
 
-[Implementation, line 143](../../../../../src/render/planet/landcover-batches.ts#L143)
+[Implementation, line 144](../../../../../src/render/planet/landcover-batches.ts#L144)
 
 Batches landcover surfaces by 256m cell and surface type.
 Similar to RoadBatches but for landcover polygons.
@@ -178,7 +179,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## LandcoverBatches.dispose
 
-[Implementation, line 178](../../../../../src/render/planet/landcover-batches.ts#L178)
+[Implementation, line 179](../../../../../src/render/planet/landcover-batches.ts#L179)
 
 Batches landcover surfaces by 256m cell and surface type.
 Similar to RoadBatches but for landcover polygons.

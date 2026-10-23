@@ -133,9 +133,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 softVertex(mv: string): inferred by TypeScript; see implementation
 ```
 
+## SoftDepth.formatsFor
+
+[Implementation, line 226](../../../../../src/render/entity/soft-smoke.ts#L226)
+
+```ts
+formatsFor(source: string): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.formats.get`
+- `this.formats.set`
+
 ## SoftDepth.constructor
 
-[Implementation, line 230](../../../../../src/render/entity/soft-smoke.ts#L230)
+[Implementation, line 241](../../../../../src/render/entity/soft-smoke.ts#L241)
 
 ```ts
 constructor(): instance
@@ -151,20 +164,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `geometry.setAttribute`
 - `geometry.setDrawRange`
 
-## SoftDepth.constructor.callback@240
+## SoftDepth.constructor.callback@251
 
-[Implementation, line 240](../../../../../src/render/entity/soft-smoke.ts#L240)
+[Implementation, line 251](../../../../../src/render/entity/soft-smoke.ts#L251)
 
 ```ts
-callback@240(): inferred by TypeScript; see implementation
+callback@251(): inferred by TypeScript; see implementation
 ```
 
-## SoftDepth.constructor.callback@243
+## SoftDepth.constructor.callback@254
 
-[Implementation, line 243](../../../../../src/render/entity/soft-smoke.ts#L243)
+[Implementation, line 254](../../../../../src/render/entity/soft-smoke.ts#L254)
 
 ```ts
-callback@243(renderer, _scene, camera): inferred by TypeScript; see implementation
+callback@254(renderer, _scene, camera): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -173,7 +186,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SoftDepth.mark
 
-[Implementation, line 246](../../../../../src/render/entity/soft-smoke.ts#L246)
+[Implementation, line 257](../../../../../src/render/entity/soft-smoke.ts#L257)
 
 A soft consumer is drawing; keeps the blit on for the next half second.
 
@@ -187,7 +200,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SoftDepth.grab
 
-[Implementation, line 249](../../../../../src/render/entity/soft-smoke.ts#L249)
+[Implementation, line 260](../../../../../src/render/entity/soft-smoke.ts#L260)
 
 ```ts
 grab(renderer: THREE.WebGLRenderer, camera: THREE.Camera): void
@@ -198,6 +211,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `THREE.DepthTexture`
 - `THREE.WebGLRenderTarget`
+- `formats.shift`
 - `gl.bindFramebuffer`
 - `gl.blitFramebuffer`
 - `gl.disable`
@@ -212,7 +226,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rt.dispose`
 - `softUniforms.softCamera.value.set`
 - `state.set`
-- `this.formats.shift`
+- `this.formatsFor`
 - `this.targets.find`
 - `this.targets.indexOf`
 - `this.targets.push`
@@ -220,17 +234,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.targets.shift()!.dispose`
 - `this.targets.splice`
 
-## SoftDepth.grab.callback@276
+## SoftDepth.grab.callback@293
 
-[Implementation, line 276](../../../../../src/render/entity/soft-smoke.ts#L276)
+[Implementation, line 293](../../../../../src/render/entity/soft-smoke.ts#L293)
 
 ```ts
-callback@276(t): inferred by TypeScript; see implementation
+callback@293(t): inferred by TypeScript; see implementation
 ```
 
 ## SoftDepth.dispose
 
-[Implementation, line 318](../../../../../src/render/entity/soft-smoke.ts#L318)
+[Implementation, line 336](../../../../../src/render/entity/soft-smoke.ts#L336)
 
 ```ts
 dispose(): void
@@ -244,7 +258,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## softConsumer
 
-[Implementation, line 330](../../../../../src/render/entity/soft-smoke.ts#L330)
+[Implementation, line 348](../../../../../src/render/entity/soft-smoke.ts#L348)
 
 Mark the soft depth as needed whenever `material` draws.
 
@@ -252,12 +266,12 @@ Mark the soft depth as needed whenever `material` draws.
 softConsumer(material: M): M
 ```
 
-## softConsumer.callback@332
+## softConsumer.callback@350
 
-[Implementation, line 332](../../../../../src/render/entity/soft-smoke.ts#L332)
+[Implementation, line 350](../../../../../src/render/entity/soft-smoke.ts#L350)
 
 ```ts
-callback@332(...args): inferred by TypeScript; see implementation
+callback@350(...args): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

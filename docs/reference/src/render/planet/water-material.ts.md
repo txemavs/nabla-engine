@@ -9,10 +9,11 @@
 - `three`
 - `../webgpu-substitutes.js`
 - `./surface-nodes.js`
+- `../entity/soft-smoke.js`
 
 ## waterWaves
 
-[Implementation, line 7](../../../../../src/render/planet/water-material.ts#L7)
+[Implementation, line 8](../../../../../src/render/planet/water-material.ts#L8)
 
 The river's three drifting normal samples, shared with the sea. No reflection pass.
 Adapted from Streets GL (MIT); assets/licenses/streets-gl-MIT.txt.
@@ -25,32 +26,32 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `addWebGPUMaterialNodes`
 
-## waterWaves.callback@13
-
-[Implementation, line 13](../../../../../src/render/planet/water-material.ts#L13)
-
-```ts
-callback@13(): inferred by TypeScript; see implementation
-```
-
 ## waterWaves.callback@14
 
 [Implementation, line 14](../../../../../src/render/planet/water-material.ts#L14)
 
 ```ts
-callback@14(kit, twin): inferred by TypeScript; see implementation
+callback@14(): inferred by TypeScript; see implementation
+```
+
+## waterWaves.callback@15
+
+[Implementation, line 15](../../../../../src/render/planet/water-material.ts#L15)
+
+```ts
+callback@15(kit, twin): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `riverWaveNodes`
 
-## waterWaves.callback@17
+## waterWaves.callback@18
 
-[Implementation, line 17](../../../../../src/render/planet/water-material.ts#L17)
+[Implementation, line 18](../../../../../src/render/planet/water-material.ts#L18)
 
 ```ts
-callback@17(shader): inferred by TypeScript; see implementation
+callback@18(shader): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -58,3 +59,49 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Vector3`
 - `shader.fragmentShader.replace`
 - `shader.vertexShader.replace`
+
+## waterThickness
+
+[Implementation, line 52](../../../../../src/render/planet/water-material.ts#L52)
+
+```ts
+waterThickness(material: THREE.MeshStandardMaterial): void
+```
+
+## waterThickness.callback@55
+
+[Implementation, line 55](../../../../../src/render/planet/water-material.ts#L55)
+
+```ts
+callback@55(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `key.call`
+
+## waterThickness.callback@62
+
+[Implementation, line 62](../../../../../src/render/planet/water-material.ts#L62)
+
+```ts
+callback@62(...args): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `before.apply`
+- `softDepth.mark`
+
+## waterThickness.callback@66
+
+[Implementation, line 66](../../../../../src/render/planet/water-material.ts#L66)
+
+```ts
+callback@66(shader, renderer): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `compile.call`
+- `shader.fragmentShader.replace`

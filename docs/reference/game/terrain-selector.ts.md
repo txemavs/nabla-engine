@@ -59,6 +59,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `section.append`
 - `suggestedTilesUrl`
+- `t`
 - `tilesLabel.append`
 
 ## bindTerrainSelector.callback@41
