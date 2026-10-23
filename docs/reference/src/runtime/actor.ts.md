@@ -13,9 +13,19 @@ Chosen in Settings → Options → Actor, kept in localStorage and applied live 
 
 - `../render/entity/player-body.js`
 
+## protaSet
+
+[Implementation, line 42](../../../../src/runtime/actor.ts#L42)
+
+Prota files: textured for the authored (white) look, solid low with colour slots otherwise.
+
+```ts
+protaSet(choice: ActorChoice): inferred by TypeScript; see implementation
+```
+
 ## actorBodyAssets
 
-[Implementation, line 41](../../../../src/runtime/actor.ts#L41)
+[Implementation, line 61](../../../../src/runtime/actor.ts#L61)
 
 Body assets of each actor (same mixamorig skeleton and clips, 1.70 m).
 
@@ -23,9 +33,13 @@ Body assets of each actor (same mixamorig skeleton and clips, 1.70 m).
 actorBodyAssets(choice: ActorChoice): PlayerBodyAssets
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `protaSet`
+
 ## actorHandAssets
 
-[Implementation, line 69](../../../../src/runtime/actor.ts#L69)
+[Implementation, line 90](../../../../src/runtime/actor.ts#L90)
 
 Hands each actor wears in VR/AR, tinted with the same colour slot as its body. Prota has
 Gepeto's hands-only file; Polibot has none, so its hands are cut from the body mesh (triangles
@@ -38,10 +52,11 @@ actorHandAssets(choice: ActorChoice): ActorHandAssets
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `actorBodyAssets`
+- `protaSet`
 
 ## parseActor
 
-[Implementation, line 76](../../../../src/runtime/actor.ts#L76)
+[Implementation, line 97](../../../../src/runtime/actor.ts#L97)
 
 A choice from anything (stored JSON, a peer's profile string); unknown parts fall back.
 
@@ -57,7 +72,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## actorProfile
 
-[Implementation, line 93](../../../../src/runtime/actor.ts#L93)
+[Implementation, line 114](../../../../src/runtime/actor.ts#L114)
 
 The profile string other players get (`kind:color`, e.g. `default:red`, `polibot:white`).
 
@@ -67,7 +82,7 @@ actorProfile(choice: ActorChoice): string
 
 ## loadActor
 
-[Implementation, line 97](../../../../src/runtime/actor.ts#L97)
+[Implementation, line 118](../../../../src/runtime/actor.ts#L118)
 
 ```ts
 loadActor(storage: Pick<Storage, 'getItem'> | null = safeStorage()): ActorChoice
@@ -81,7 +96,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveActor
 
-[Implementation, line 106](../../../../src/runtime/actor.ts#L106)
+[Implementation, line 127](../../../../src/runtime/actor.ts#L127)
 
 ```ts
 saveActor(choice: ActorChoice, storage: Pick<Storage, 'setItem'> | null = safeStorage()): void
@@ -95,7 +110,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## safeStorage
 
-[Implementation, line 117](../../../../src/runtime/actor.ts#L117)
+[Implementation, line 138](../../../../src/runtime/actor.ts#L138)
 
 ```ts
 safeStorage(): Storage | null

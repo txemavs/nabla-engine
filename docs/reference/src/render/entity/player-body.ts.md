@@ -25,10 +25,11 @@ any socket an {@link PlayerBodyAttachment} names (belt, holster, baton…). Mate
 - `three/addons/utils/SkeletonUtils.js`
 - `meshoptimizer`
 - `../../entity/schema.js`
+- `./retarget-clips.js`
 
 ## localAvatarState
 
-[Implementation, line 114](../../../../../src/render/entity/player-body.ts#L114)
+[Implementation, line 115](../../../../../src/render/entity/player-body.ts#L115)
 
 Next animation state from the player's movement. Pure, so the same rules hold wherever the
 state is computed. `previous` keeps the jump phases in order (start → loop → land).
@@ -39,7 +40,7 @@ localAvatarState(previous: AvatarAnimState, input: AvatarInput): AvatarAnimState
 
 ## PlayerBodyRig.constructor
 
-[Implementation, line 127](../../../../../src/render/entity/player-body.ts#L127)
+[Implementation, line 128](../../../../../src/render/entity/player-body.ts#L128)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -49,7 +50,7 @@ constructor(private readonly source: THREE.Object3D, readonly clips: readonly TH
 
 ## PlayerBodyRig.load
 
-[Implementation, line 131](../../../../../src/render/entity/player-body.ts#L131)
+[Implementation, line 132](../../../../../src/render/entity/player-body.ts#L132)
 
 The shared rig: one load of the mesh and clips for every body.
 
@@ -62,30 +63,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `GLTFLoader`
 - `PlayerBodyRig`
 - `Promise.all`
+- `getRetargetedClips`
 - `loader.loadAsync`
 - `new GLTFLoader().setMeshoptDecoder`
 - `parts.forEach`
 - `parts.map`
 - `recolor`
 
-## PlayerBodyRig.load.callback@138
+## PlayerBodyRig.load.callback@139
 
-[Implementation, line 138](../../../../../src/render/entity/player-body.ts#L138)
+[Implementation, line 139](../../../../../src/render/entity/player-body.ts#L139)
 
 ```ts
-callback@138(part): inferred by TypeScript; see implementation
+callback@139(part): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `loader.loadAsync`
 
-## PlayerBodyRig.load.callback@141
+## PlayerBodyRig.load.callback@142
 
-[Implementation, line 141](../../../../../src/render/entity/player-body.ts#L141)
+[Implementation, line 142](../../../../../src/render/entity/player-body.ts#L142)
 
 ```ts
-callback@141(part, index): inferred by TypeScript; see implementation
+callback@142(part, index): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -96,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBodyRig.create
 
-[Implementation, line 160](../../../../../src/render/entity/player-body.ts#L160)
+[Implementation, line 168](../../../../../src/render/entity/player-body.ts#L168)
 
 A new body sharing this rig's geometry, materials and clips.
 
@@ -111,7 +113,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## recolor
 
-[Implementation, line 166](../../../../../src/render/entity/player-body.ts#L166)
+[Implementation, line 174](../../../../../src/render/entity/player-body.ts#L174)
 
 Swap materials tagged `nabla_color_slot` for tinted copies (bodies and XR hands share it).
 
@@ -124,12 +126,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Map`
 - `root.traverse`
 
-## recolor.callback@171
+## recolor.callback@179
 
-[Implementation, line 171](../../../../../src/render/entity/player-body.ts#L171)
+[Implementation, line 179](../../../../../src/render/entity/player-body.ts#L179)
 
 ```ts
-callback@171(object): inferred by TypeScript; see implementation
+callback@179(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -138,9 +140,9 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `mesh.material.map`
 - `swap`
 
-## recolor.callback@171.swap
+## recolor.callback@179.swap
 
-[Implementation, line 174](../../../../../src/render/entity/player-body.ts#L174)
+[Implementation, line 182](../../../../../src/render/entity/player-body.ts#L182)
 
 ```ts
 swap(material: THREE.Material): THREE.Material
@@ -155,7 +157,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## alignBone
 
-[Implementation, line 199](../../../../../src/render/entity/player-body.ts#L199)
+[Implementation, line 207](../../../../../src/render/entity/player-body.ts#L207)
 
 Turn `bone` (world space) so the direction to `child` points along `direction`.
 
@@ -182,7 +184,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.constructor
 
-[Implementation, line 236](../../../../../src/render/entity/player-body.ts#L236)
+[Implementation, line 244](../../../../../src/render/entity/player-body.ts#L244)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -203,12 +205,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.mixer.clipAction`
 - `this.root.add`
 
-## PlayerBody.constructor.callback@245
+## PlayerBody.constructor.callback@253
 
-[Implementation, line 245](../../../../../src/render/entity/player-body.ts#L245)
+[Implementation, line 253](../../../../../src/render/entity/player-body.ts#L253)
 
 ```ts
-callback@245(object): inferred by TypeScript; see implementation
+callback@253(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -217,7 +219,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.state
 
-[Implementation, line 266](../../../../../src/render/entity/player-body.ts#L266)
+[Implementation, line 274](../../../../../src/render/entity/player-body.ts#L274)
 
 The state being shown (after a one-shot ends this is what follows it).
 
@@ -227,7 +229,7 @@ state(): AvatarAnimState | null
 
 ## PlayerBody.finished
 
-[Implementation, line 271](../../../../../src/render/entity/player-body.ts#L271)
+[Implementation, line 279](../../../../../src/render/entity/player-body.ts#L279)
 
 True when the one-shot clip of the current state has finished.
 
@@ -241,7 +243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.animate
 
-[Implementation, line 277](../../../../../src/render/entity/player-body.ts#L277)
+[Implementation, line 285](../../../../../src/render/entity/player-body.ts#L285)
 
 Show `state` at `speed` (m/s, sets the stride rate) and advance the clips by `dt`.
 
@@ -263,7 +265,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.apply
 
-[Implementation, line 293](../../../../../src/render/entity/player-body.ts#L293)
+[Implementation, line 301](../../../../../src/render/entity/player-body.ts#L301)
 
 Remote players: place and animate from a network state.
 
@@ -279,7 +281,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.armBones
 
-[Implementation, line 304](../../../../../src/render/entity/player-body.ts#L304)
+[Implementation, line 312](../../../../../src/render/entity/player-body.ts#L312)
 
 Bones of one arm (upper arm, forearm, hand), found by name: `<Left|Right>Arm`,
 `<Left|Right>ForeArm`, `<Left|Right>Hand` with any prefix (e.g. `mixamorig`). Null when
@@ -297,7 +299,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.armBones.find
 
-[Implementation, line 310](../../../../../src/render/entity/player-body.ts#L310)
+[Implementation, line 318](../../../../../src/render/entity/player-body.ts#L318)
 
 ```ts
 find(suffix: string): inferred by TypeScript; see implementation
@@ -308,12 +310,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `RegExp`
 - `this.root.traverse`
 
-## PlayerBody.armBones.find.callback@314
+## PlayerBody.armBones.find.callback@322
 
-[Implementation, line 314](../../../../../src/render/entity/player-body.ts#L314)
+[Implementation, line 322](../../../../../src/render/entity/player-body.ts#L322)
 
 ```ts
-callback@314(object): inferred by TypeScript; see implementation
+callback@322(object): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -322,7 +324,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.aimArm
 
-[Implementation, line 335](../../../../../src/render/entity/player-body.ts#L335)
+[Implementation, line 343](../../../../../src/render/entity/player-body.ts#L343)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -355,7 +357,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.reachHand
 
-[Implementation, line 363](../../../../../src/render/entity/player-body.ts#L363)
+[Implementation, line 371](../../../../../src/render/entity/player-body.ts#L371)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -399,7 +401,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.headIn
 
-[Implementation, line 402](../../../../../src/render/entity/player-body.ts#L402)
+[Implementation, line 410](../../../../../src/render/entity/player-body.ts#L410)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -416,7 +418,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.flinch
 
-[Implementation, line 412](../../../../../src/render/entity/player-body.ts#L412)
+[Implementation, line 420](../../../../../src/render/entity/player-body.ts#L420)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -441,7 +443,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.collapsed
 
-[Implementation, line 425](../../../../../src/render/entity/player-body.ts#L425)
+[Implementation, line 433](../../../../../src/render/entity/player-body.ts#L433)
 
 True while collapsed (dead).
 
@@ -451,7 +453,7 @@ collapsed(): boolean
 
 ## PlayerBody.collapseFrom
 
-[Implementation, line 430](../../../../../src/render/entity/player-body.ts#L430)
+[Implementation, line 438](../../../../../src/render/entity/player-body.ts#L438)
 
 Death: fall over away from `direction` (world; default backwards) and stop animating.
 
@@ -476,7 +478,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.revive
 
-[Implementation, line 447](../../../../../src/render/entity/player-body.ts#L447)
+[Implementation, line 455](../../../../../src/render/entity/player-body.ts#L455)
 
 Stand up again (respawn).
 
@@ -491,7 +493,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.applyReactions
 
-[Implementation, line 454](../../../../../src/render/entity/player-body.ts#L454)
+[Implementation, line 462](../../../../../src/render/entity/player-body.ts#L462)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -509,7 +511,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.hasHolster
 
-[Implementation, line 478](../../../../../src/render/entity/player-body.ts#L478)
+[Implementation, line 486](../../../../../src/render/entity/player-body.ts#L486)
 
 True when the body has a holstered weapon part.
 
@@ -519,7 +521,7 @@ hasHolster(): boolean
 
 ## PlayerBody.setHolstered
 
-[Implementation, line 483](../../../../../src/render/entity/player-body.ts#L483)
+[Implementation, line 491](../../../../../src/render/entity/player-body.ts#L491)
 
 Show or hide the holstered weapon (hide it while the player holds a weapon).
 
@@ -529,7 +531,7 @@ setHolstered(visible: boolean): void
 
 ## PlayerBody.holdAtHand
 
-[Implementation, line 492](../../../../../src/render/entity/player-body.ts#L492)
+[Implementation, line 500](../../../../../src/render/entity/player-body.ts#L500)
 
 One player's body: its own skeleton and mixer over the shared rig.
 
@@ -559,7 +561,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlayerBody.dispose
 
-[Implementation, line 521](../../../../../src/render/entity/player-body.ts#L521)
+[Implementation, line 529](../../../../../src/render/entity/player-body.ts#L529)
 
 One player's body: its own skeleton and mixer over the shared rig.
 

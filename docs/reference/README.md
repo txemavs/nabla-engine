@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **622 modules; 7900 executable function definitions**.
+Coverage: **623 modules; 7922 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -313,6 +313,7 @@ Coverage: **622 modules; 7900 executable function definitions**.
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 31 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
+| [src/render/entity/retarget-clips.ts](src/render/entity/retarget-clips.ts.md) | 21 |
 | [src/render/entity/ride-smoothing.ts](src/render/entity/ride-smoothing.ts.md) | 13 |
 | [src/render/entity/rider-head.ts](src/render/entity/rider-head.ts.md) | 2 |
 | [src/render/entity/ship-hud.ts](src/render/entity/ship-hud.ts.md) | 4 |
@@ -424,7 +425,7 @@ Coverage: **622 modules; 7900 executable function definitions**.
 | [src/runtime/accident-replacement.ts](src/runtime/accident-replacement.ts.md) | 8 |
 | [src/runtime/action-cam-settings.ts](src/runtime/action-cam-settings.ts.md) | 1 |
 | [src/runtime/action-cam.ts](src/runtime/action-cam.ts.md) | 6 |
-| [src/runtime/actor.ts](src/runtime/actor.ts.md) | 7 |
+| [src/runtime/actor.ts](src/runtime/actor.ts.md) | 8 |
 | [src/runtime/ar/index.ts](src/runtime/ar/index.ts.md) | 0 |
 | [src/runtime/ar/map-quarters.ts](src/runtime/ar/map-quarters.ts.md) | 18 |
 | [src/runtime/ar/model.ts](src/runtime/ar/model.ts.md) | 41 |
