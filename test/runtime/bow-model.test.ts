@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { bowModels, buildBowModel, defaultBow, recurveBow } from '../../src/runtime/bow-model.js'
+import { bowModels, buildBowModel, defaultBow, arcoBow } from '../../src/runtime/bow-model.js'
 import { parseHeldWeaponPreset } from '../../src/catalog/weapons/held-library.js'
 
 const mesh = (name: string) => {
@@ -15,7 +15,7 @@ describe('shared bow model', () => {
     const source = asset.getObjectByName('bow') as THREE.Mesh
     const before = source.geometry.getIndex()!.count
     const { bow, arrow } = buildBowModel(asset, {
-      ...recurveBow.model,
+      ...arcoBow.model,
       bowNode: 'bow',
       arrowNode: 'arrow',
       stringTriangles: [0, 1],
@@ -26,10 +26,10 @@ describe('shared bow model', () => {
     expect(arrow.userData.bowModelPart).toBe(true)
   })
   it('names the bows for held presets (arco by default)', () => {
-    expect(bowModels['recurve-bow']).toBe(recurveBow)
+    expect(Object.keys(bowModels)).toEqual(['arco'])
     expect(defaultBow).toBe(bowModels.arco)
     const preset = parseHeldWeaponPreset({
-      id: 'recurve-bow',
+      id: 'arco',
       name: 'Bow',
       kind: 'bow',
       slot: 4,

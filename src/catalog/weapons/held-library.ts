@@ -33,7 +33,7 @@ const heldSchema = z
     /** Base damage of one hit on a character (× hit-zone multiplier, docs/combat.md). */
     damage: z.number().finite().min(0).max(1000).optional(),
     scale: z.number().finite().positive().max(10).default(1),
-    /** Bow binding id (engine bowModels, e.g. `recurve-bow`): the same bow and string cut as
+    /** Bow binding id (engine bowModels, e.g. `arco`): the same bow and string cut as
      * the headset bow; replaces `model`, `node` and `scale`. */
     bowModel: z
       .string()

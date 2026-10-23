@@ -49,7 +49,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## buildBowModel
 
-[Implementation, line 116](../../../../src/runtime/bow-model.ts#L116)
+[Implementation, line 85](../../../../src/runtime/bow-model.ts#L85)
 
 The bow (its static string triangles removed) and one arrow, cloned out of `asset` and
 oriented, scaled and offset as `options` says. `asset` is left untouched.
@@ -80,7 +80,7 @@ Explicit throws in this body:
 
 ## buildBowModel.clone
 
-[Implementation, line 139](../../../../src/runtime/bow-model.ts#L139)
+[Implementation, line 108](../../../../src/runtime/bow-model.ts#L108)
 
 ```ts
 clone(source: THREE.Mesh): inferred by TypeScript; see implementation
@@ -94,24 +94,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `source.material.clone`
 - `source.material.map`
 
-## buildBowModel.clone.callback@143
+## buildBowModel.clone.callback@112
 
-[Implementation, line 143](../../../../src/runtime/bow-model.ts#L143)
+[Implementation, line 112](../../../../src/runtime/bow-model.ts#L112)
 
 ```ts
-callback@143(m): inferred by TypeScript; see implementation
+callback@112(m): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `m.clone`
 
-## buildBowModel.callback@151
+## buildBowModel.callback@120
 
-[Implementation, line 151](../../../../src/runtime/bow-model.ts#L151)
+[Implementation, line 120](../../../../src/runtime/bow-model.ts#L120)
 
 ```ts
-callback@151(_, i): inferred by TypeScript; see implementation
+callback@120(_, i): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

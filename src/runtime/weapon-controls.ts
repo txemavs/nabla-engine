@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { controlsHint } from '../config/input-bindings.js'
 import { MAGAZINE_ACTION } from '../character/body-slots.js'
 import { GameToolbar } from './game-toolbar.js'
@@ -19,7 +20,7 @@ export class WeaponControls {
       aim(held)
     }
     for (const [label, code] of [
-      ['Apuntar', 'aim'],
+      [t('toolbar.aim'), 'aim'],
       [controlsHint({ mode: 'walk', weapon: true }, [MAGAZINE_ACTION]), MAGAZINE_ACTION],
       [controlsHint({ mode: 'walk', weapon: true }, ['weapon.slide']), 'weapon.slide'],
     ]) {

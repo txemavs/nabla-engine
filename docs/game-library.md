@@ -340,7 +340,7 @@ physics composition and current limitations.
 
 ### Two-hand bow
 
-AR's monitor can add the user-supplied recurve bow. Reusable draw rules are
+AR's monitor can add Arco, the bundled original bow. Reusable draw rules are
 exported by `@nabla/engine/weapons/bow`, and the optional XR adapter by
 `@nabla/engine/xr/bow`. See [xr-bow.md](xr-bow.md) for controls, shared physics,
 model binding and resource licensing.

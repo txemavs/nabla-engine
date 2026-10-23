@@ -12,7 +12,7 @@ export function driverPoseControls() {
   root.id = 'scene-driver-pose'
   root.className = 'planet-group'
   const status = document.createElement('p')
-  status.textContent = t('settings.driver.enter-ferrari')
+  status.textContent = t('settings.driver.enter-vehicle')
   const inputs: {
     group: 'head' | 'view'
     axis: number
@@ -84,7 +84,7 @@ export function driverPoseControls() {
       const pose = runtime.driverPose
       for (const input of inputs) input.input.disabled = !pose
       reset.disabled = copy.disabled = !pose
-      status.textContent = pose ? `Ajustando ${pose.name}` : t('settings.driver.enter-ferrari')
+      status.textContent = pose ? `Ajustando ${pose.name}` : t('settings.driver.enter-vehicle')
       if (!pose) {
         model = undefined
         values.hidden = true

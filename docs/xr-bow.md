@@ -25,10 +25,9 @@ the actual solver contact point; the demo connects it to the existing target.
 Gun mechanisms and their marks/sparks remain unchanged.
 
 The default bow is `arcoBow` (`defaultBow`): an original model,
-`assets/library/weapons/arco/`, no third-party licence. The older recurve demo
-binding (`recurveBow`, CC BY-NC, kept but not default) and `bowModels` by id live in
-`src/runtime/bow-model.ts` and is exported from `@nabla/engine/xr/bow`. It is
-code, not JSON, so it stays outside `assets/library/weapons/**/*.json`, the
+`assets/library/weapons/arco/`, no third-party licence. Its binding and `bowModels`
+by id live in `src/runtime/bow-model.ts` and are exported from
+`@nabla/engine/xr/bow`. The binding is code, not JSON, so it stays outside `assets/library/weapons/**/*.json`, the
 strictly validated firearm preset catalog. `buildBowModel(asset, descriptor)`
 does the cut and transform for every bow: AR's `XRBow` and the held bow on foot
 (a held preset with `"bowModel": "arco"`) show the same meshes. On foot,
@@ -41,9 +40,7 @@ release to loose; `ArrowFlight` flies the arrow with gravity through
 bow/arrow nodes, authoring-to-metre transforms and static-string triangles to
 replace with a dynamic string. It works on cloned geometry and keeps the original
 GLB intact. The default Arco is original and needs no credit
-(`assets/library/weapons/arco/README.md`). The recurve bow is kept as an
-alternative binding; its provenance and **CC-BY-NC-4.0** noncommercial licence are
-in `assets/library/weapons/recurve-bow/README.md`. Importing the engine adapter
+(`assets/library/weapons/arco/README.md`). Importing the engine adapter
 loads no model; another host can provide another descriptor.
 
 The implementation is reusable in web/VR/AR with the same shared World and draw

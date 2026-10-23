@@ -7,14 +7,13 @@ at a new model and changing parameters.
 
 It is verified against the real code and the real JSON of the Honda VFR800FI 1999
 (`assets/library/motorcycles/vfr800fi-1999/vfr800.json`), the S3
-(`assets/library/cars/a3/s3.json`) and the Ferrari J50
-(`assets/library/cars/ferrari-j50/ferrari-j50.json`). Where an element **cannot be defined by data
+(`assets/library/cars/a3/s3.json`). Where an element **cannot be defined by data
 yet**, the section says so and it is collected in [What cannot be defined by data
 yet](#9-what-cannot-be-defined-by-data-yet).
 
 Related: [Create a vehicle](creating-a-vehicle.md) (hosts and physics wiring),
 [Vehicle rigs](vehicle-rigs.md) (anchors extracted from the GLB), [Motorcycles](motorcycles.md),
-[Ferrari J50](ferrari-j50.md), [UI/UX pattern](ui-ux-pattern.md) (where per-vehicle settings
+[UI/UX pattern](ui-ux-pattern.md) (where per-vehicle settings
 live) and the generated [module reference](reference/README.md). The JSON schema is
 `src/entity/vehicle/field.ts` (zod, **strict**: an unknown field is an error).
 
@@ -375,15 +374,13 @@ Each item is a follow-up. "Adapter" means a `visual.presentation` id registered 
 | White truck tractor (`tractor.low/modern.glb`) | `Headlamp` (reverse), `Indicator` (marker), `Tail_stop`, `LowBeam_L/R`, `HighBeam_L/R`, `Fog_L/R`, `Indicator_Front_L/R`, `Indicator_Rear_L/R`, `Tail_Stop_L/R`, `Reverse_L/R` | `nabla.light.reverse`, `nabla.light.marker`, `nabla.light.tail`, `nabla.light.low.l/.r`, `nabla.light.high.l/.r`, `nabla.light.fog.l/.r`, `nabla.light.indicator.l/.r`, `nabla.light.tail.l/.r`, `nabla.light.reverse.l/.r` |
 | White truck trailers (`trailer.*.glb`)         | `Headlamp.001`, `Tail_stop.001`, `Indicator_L/R`, `Tail_stop_L/R`, `Headlamp_L/R` (reverse), `Trans Plastic_L/R` (side only, no channel)                                       | `nabla.light.reverse`, `nabla.light.tail`, `nabla.light.indicator.l/.r`, `nabla.light.tail.l/.r`, `nabla.light.reverse.l/.r`; decide the role of `Trans Plastic`                                                            |
 | S3 (`a3.cabrio.glb`, `s3.body-low.glb`)        | No named lamp materials; lamps found by Spanish names in code; mirror lens `Llanta 2`                                                                                          | `nabla.light.*` materials per lamp, `extras.nabla.mirror` on the lenses, exhaust anchors                                                                                                                                    |
-| Ferrari J50 (`j50.body.glb`)                   | Nodes `Lights_M_2018_Ferrari_J50_BrakeLights`, `…HeadLightsBase`, `…HeadLightsChrome`, `…DRLs`, … with no lamp binding                                                         | Name their emissive materials `nabla.light.tail`, `nabla.light.low`, `nabla.light.position` (DRLs)                                                                                                                          |
 
 Both models of a pair (`…glb` and `…-quest.glb` / `-low.glb`) must be renamed together: they share
 anchors and names.
 
-## 10. Worked example: from the S3 JSON to a Ferrari
+## 10. Worked example: from the S3 JSON to a new car
 
-The Ferrari J50 is the proof that a car works from the S3 file with a new model. Start from
-`s3.json` and:
+To define another car, start from `s3.json` and:
 
 1. Change `id`, `label`, `name`, `color`, `size`, `mass`, `clearance`.
 2. Remove `visual.presentation` (`"nabla.s3"`). That id pulls in S3-only code (Spanish lamp
@@ -394,7 +391,7 @@ The Ferrari J50 is the proof that a car works from the S3 file with a new model.
    Give the GLB the anchors of section 3 (wheels, `steering`, `driver.seat`, `driver.eyes`) and
    keep `"rig": "glb"` so the rig is extracted.
 4. Replace `vehicle.colliders`, `wheelRadius`, `suspensionRest`, `stiffness`, `drivenWheels`
-   (the J50 is `"rear"`), `powertrain` (`powerCv` 600, `torqueNm` 650, its modes), `mass`.
+   (for example, `"rear"`), `powertrain` (power, torque and modes), `mass`.
 5. Sound: `vehicle.audio.engine` / `engineModes`.
 6. Lights: name the lamp materials `nabla.light.*` in the GLB, and if the rear wash needs moving
    add `vehicle.lights.tuning` (`rearY`, `rearZ`, `rearIntensity`, `rearReach`; see the caveat

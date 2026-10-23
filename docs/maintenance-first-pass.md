@@ -46,6 +46,11 @@ third-party assets and supported package versions; current evidence does not jus
 
 ## Verification scope
 
+The results below record the first pass, not current blockers. The Git index and
+`game/drive.ts` were subsequently recovered; the integrated settings/host pass
+completed package, type, unit and production-build checks. See
+[the host audit](host-settings-compatibility.md) for that later checkpoint.
+
 Run the focused terrain suite from the publication guide, plus:
 
 ```sh
