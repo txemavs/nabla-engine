@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **634 modules; 8076 executable function definitions**.
+Coverage: **635 modules; 8083 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -440,7 +440,7 @@ Coverage: **634 modules; 8076 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 570 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 567 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -499,6 +499,7 @@ Coverage: **634 modules; 8076 executable function definitions**.
 | [src/runtime/sidearm-tuning.ts](src/runtime/sidearm-tuning.ts.md) | 3 |
 | [src/runtime/sidearm.ts](src/runtime/sidearm.ts.md) | 96 |
 | [src/runtime/splash.ts](src/runtime/splash.ts.md) | 5 |
+| [src/runtime/start-camera-controller.ts](src/runtime/start-camera-controller.ts.md) | 10 |
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |

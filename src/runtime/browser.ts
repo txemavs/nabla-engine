@@ -318,14 +318,8 @@ import {
   type GameCameraState,
   type GameCameraView,
 } from './game-camera.js'
-import {
-  StartCameraSequencer,
-  descentWarmHeights,
-  resolveStartCameras,
-  type ResolvedStartCamera,
-  type StartCameraAction,
-  type StartCameraSequence,
-} from './start-cameras.js'
+import { descentWarmHeights, type StartCameraSequence } from './start-cameras.js'
+import { RuntimeStartCameraController, START_DESCENT_DAMPING } from './start-camera-controller.js'
 export type { StartCameraName, StartCameraSequence, StartCameraStep } from './start-cameras.js'
 import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
@@ -365,11 +359,6 @@ export interface GameFrame {
    */
   controls: ControlSurfaces
 }
-/**
- * Overhead damping of a start descent (`StartCameraStep.fromHeight`), 1/s: from 600 m about
- * 80 m remain after 2.2 s, versus 1.6 s to settle at the normal 3/s. A presentation choice.
- */
-const START_DESCENT_DAMPING = 1.2
 /** Loading stages `prepareReveal` reports, including mounted menu vehicle preparation. */
 const REVEAL_STAGES = 5
 
@@ -829,10 +818,7 @@ export class GameRuntime {
   private pointerFree = false
   private readonly touchDriving: TouchDriving | null
   private readonly flipCinematic = new FlipCinematic()
-  /** Resolved `startCameras`; validated once at construction. */
-  private readonly startCameras: ResolvedStartCamera[]
-  /** The start camera sequence of the current play, while it runs. */
-  private startSequence: StartCameraSequencer | null = null
+  private readonly startCameraController: RuntimeStartCameraController
   private readonly touchFlight: TouchFlight | null
   private readonly touchWalk: TouchWalk | null
   private readonly monitors: VehicleMonitors
@@ -867,7 +853,6 @@ export class GameRuntime {
   })
   private readonly preparationGates: Promise<unknown>[] = []
   private readonly revealTasks: (() => Promise<unknown>)[] = []
-  private startHold: Promise<unknown> | null = null
   private inspector: MapInspector | null = null
   private readonly inspectorState = createGameCameraState()
   private stallLog: string[] = []
@@ -931,7 +916,13 @@ export class GameRuntime {
     } catch {
       /* Keep the default if storage is disabled. */
     }
-    this.startCameras = resolveStartCameras(options.startCameras)
+    this.startCameraController = new RuntimeStartCameraController(
+      options.startCameras,
+      this.cameraState,
+      (status) => {
+        this.options.canvas.dataset.startCameras = status
+      },
+    )
     this.cameraPreferences.restoreActionCamSettings(this.settings)
     this.flipCinematic.enabled = options.flipCinematic !== false
     this.visuals.setAsphaltContrast(options.asphaltContrast ?? 1)
@@ -1582,15 +1573,7 @@ export class GameRuntime {
       if (spawnGround !== undefined) simulation.holdForGround(spawnGround)
       controller.signal.throwIfAborted()
       this.cameraState.mode = options.vehicleId ? 'cockpit' : 'chase'
-      this.startSequence =
-        options.vehicleId && this.startCameras.length
-          ? new StartCameraSequencer(this.startCameras)
-          : null
-      if (this.startSequence) {
-        setGameCameraView(this.cameraState, this.startSequence.first, true)
-        if (this.startSequence.holdsEngine) simulation.holdEngine()
-      }
-      this.options.canvas.dataset.startCameras = this.startSequence ? 'active' : 'none'
+      this.startCameraController.start(!!options.vehicleId, simulation)
       // Everything the first gameplay seconds need is ready before the attract view goes away:
       // vehicle and sidearm models, shader programs, and any host gate (an intro sequence).
       this.options.onProgress?.('Preparing…')
@@ -1619,7 +1602,7 @@ export class GameRuntime {
         undefined,
         '07 Entrada al juego',
       )
-      const first = this.startSequence?.steps[0]
+      const first = this.startCameraController.first
       if (first?.view === 'map' && first.fromHeight !== undefined) {
         this.cameraState.mapHeight = first.fromHeight
         this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
@@ -2284,7 +2267,7 @@ export class GameRuntime {
       time,
       playing &&
         !this.view.vehicleMenu(sim.player.vehicleId ?? '')?.open &&
-        !this.startSequence &&
+        !this.startCameraController.active &&
         !sim.playerEjection &&
         !sim.playerBikeRecovery,
     )
@@ -2351,8 +2334,8 @@ export class GameRuntime {
       walkTouch.look.y
     )
       this.cameraActivity()
-    if (this.startSequence && (input.forward || input.right || input.brake))
-      this.applyStartCamera(this.startSequence.skip(), sim)
+    if (this.startCameraController.active && (input.forward || input.right || input.brake))
+      this.startCameraController.skip(sim)
     const hydraulicContext = this.controlContext
     const hydraulicAxis = (
       positive: Parameters<typeof actionAxis>[1],
@@ -2412,7 +2395,7 @@ export class GameRuntime {
       this.cameraState.headPitch,
     )
     const presentationMs = performance.now() - presentationStarted
-    this.advanceStartCameras(sim, time)
+    this.startCameraController.advance(sim, time)
     const bodycamActive =
       !!this.cameraState.bodycam &&
       this.weaponDrawn &&
@@ -3181,7 +3164,7 @@ export class GameRuntime {
     }
     const origin = this.origin.clone(),
       root = this.view.root.position.clone()
-    const first = this.startSequence?.steps[0]
+    const first = this.startCameraController.first
     // Prepare all selectable views before the optional cinematic descent heights.
     const views: { mode: GameCameraView; height?: number }[] = [
       { mode: 'map' },
@@ -5327,11 +5310,7 @@ export class GameRuntime {
    */
   holdStartCameras(gate: Promise<unknown>): void {
     this.assertAlive()
-    const hold = gate.catch(() => undefined)
-    this.startHold = hold
-    void hold.then(() => {
-      if (this.startHold === hold) this.startHold = null
-    })
+    this.startCameraController.hold(gate)
   }
   /**
    * Boot/attract mode: render only sky and planet from orbit while `play()` streams terrain and
@@ -6326,65 +6305,19 @@ export class GameRuntime {
   }
   /** True while a start camera sequence (`startCameras`) is running. */
   get startCamerasActive(): boolean {
-    return !!this.startSequence
+    return !!this.startCameraController.active
   }
   /** End a running start camera sequence: a held engine starts and the camera blends to the last view. */
   skipStartCameras(): void {
     const sim = this.session.simulation
-    if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(), sim)
-  }
-  private advanceStartCameras(sim: Simulation, now: number): void {
-    const sequence = this.startSequence
-    if (!sequence) return
-    const id = sim.player.vehicleId
-    if (!id) {
-      this.applyStartCamera(sequence.skip(false), sim)
-      return
-    }
-    const info = sim.vehicleInfo(id)
-    const first = sequence.steps[0]
-    const descending = first.view === 'map' && first.fromHeight !== undefined
-    if (this.startHold) {
-      // Held (host fading in): the descent waits at its start height.
-      if (descending && sequence.step === 0) {
-        this.cameraState.mapHeight = first.fromHeight!
-        this.cameraState.mapDescentDamping = START_DESCENT_DAMPING
-      }
-      return
-    }
-    // The descent is never cut short by slow frames: the first view counts as arrived only
-    // once the camera is close to its normal overhead height.
-    const settling = descending && sequence.step === 0 && this.cameraState.mapDescentDamping != null
-    this.applyStartCamera(
-      sequence.update({
-        now,
-        arrived: !settling && !this.cameraState.transition && !this.cameraState.entrance,
-        engineRunning: info.ignition === 'running' && info.helm !== 'off',
-      }),
-      sim,
-    )
-  }
-  private applyStartCamera(action: StartCameraAction, sim: Simulation): void {
-    if (action.startEngine) sim.startEngine()
-    if (action.view && sim.player.vehicleId) {
-      const current = gameCameraView(this.cameraState, true)
-      // Normal first person is reported as bodycam, but it occupies the same driver seat.
-      if (action.view !== (current === 'bodycam' ? 'cockpit' : current)) {
-        this.cameraState.nextTransitionMs = action.transitionMs ?? null
-        setGameCameraView(this.cameraState, action.view, true)
-      }
-    }
-    if (action.done) {
-      this.startSequence = null
-      this.options.canvas.dataset.startCameras = 'complete'
-    }
+    if (sim) this.startCameraController.skip(sim)
   }
   private cycleCamera(): void {
     // The headset owns the view in XR: the camera action (key, USB or gamepad) does nothing there.
     if (this.xrActive) return
     // The camera action during the start sequence hands the view to the player (a held engine starts).
     const sim = this.session.simulation
-    if (this.startSequence && sim) this.applyStartCamera(this.startSequence.skip(false), sim)
+    if (sim) this.startCameraController.skip(sim, false)
     const message = this.game.dispatch('camera')
     if (message) this.options.onMessage?.(message)
   }

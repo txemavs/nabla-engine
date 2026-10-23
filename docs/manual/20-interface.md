@@ -91,6 +91,15 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+[RuntimeStartCameraController](../../src/runtime/start-camera-controller.ts) coordinates
+the initial vehicle camera sequence over the existing pure `StartCameraSequencer`.
+It owns sequence progress and the host hold promise, preserving descent settling,
+engine-start ordering, skip behavior and the `data-start-cameras` status. Replacing a
+hold prevents the old promise from releasing the newer one; rejected holds still settle.
+The runtime retains preparation, input, XR gating and simulation lifecycle. This
+controller adds no preference keys. Coverage: `test/runtime/start-camera-controller.test.ts`
+and `test/runtime/start-cameras.test.ts`.
+
 [RuntimeLightingPreferences](../../src/runtime/lighting-preferences.ts) owns the saved
 lighting values under the unchanged `nabla.lightTuning` key. It applies sun and ambient
 multipliers immediately after the environment refreshes their base intensities, then
