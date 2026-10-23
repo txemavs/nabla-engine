@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { jumpToPosition } from '../../game/position.js'
 import { parseTerrainConfig } from '../../game/terrain.js'
+import { afterAll, beforeAll } from 'vitest'
+import { setLocale } from '@nabla/engine/i18n'
+
+beforeAll(() => setLocale('es'))
+afterAll(() => setLocale(null))
 
 describe('Ir a latitud, longitud', () => {
   it('turns a pasted Google Maps position into a URL that keeps the other options', () => {

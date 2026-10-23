@@ -9,6 +9,11 @@ import {
   withSceneParams,
 } from '../../game/scene-controls.js'
 import {
+import { afterAll, beforeAll } from 'vitest'
+import { setLocale } from '@nabla/engine/i18n'
+
+beforeAll(() => setLocale('es'))
+afterAll(() => setLocale(null))
   parseSeaParam,
   parseLocationOverride,
   parseTerrainConfig,
