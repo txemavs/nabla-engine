@@ -10,8 +10,10 @@ import { resolve } from 'node:path'
 // not count as effective), bytes at bufferData/bufferSubData.
 // The base is the last commit that changed the look on purpose: after 83ed9e6e the GPU explosions
 // (7c70f728), soft particles and procedural fire (2679074b) and lingering fire (afb5e13d) redrew
-// the burning car and the glass; every scene matches afb5e13d at the same limit.
-const BASE = process.env.NABLA_PARITY_BASE ?? 'afb5e13d'
+// the burning car and the glass; then #308's better flames (84a956f4 domain-warped tongues,
+// 779ac303 rounded licks, at 04915692) redrew the burning car again. Every scene matches
+// 04915692 at the same limit.
+const BASE = process.env.NABLA_PARITY_BASE ?? '04915692'
 const root = process.cwd()
 const before = resolve(root, 'node_modules/.cache/nabla-parity-base')
 const scenes = [
