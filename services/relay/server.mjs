@@ -95,7 +95,8 @@ function validAvatar(a) {
     a.a <= 63 &&
     (a.w === undefined || (Number.isInteger(a.w) && a.w >= 0 && a.w <= 63)) &&
     (a.i === undefined || validStacks(a.i)) &&
-    (a.h === undefined || (Array.isArray(a.h) && a.h.length === 2 && a.h.every((n) => intIn(n, 0, 63)))) &&
+    (a.h === undefined ||
+      (Array.isArray(a.h) && a.h.length === 2 && a.h.every((n) => intIn(n, 0, 63)))) &&
     (a.v === undefined ||
       (finiteArray(a.v, 2) && Math.abs(a.v[0]) <= 3.2 && Math.abs(a.v[1]) <= 1.6)) &&
     (a.g === undefined ||
@@ -197,7 +198,15 @@ function validEntitySpawn(e) {
 }
 /** Entity record as event data (what `welcome` lists and `entity` events carry). */
 function entityData(e) {
-  return { i: e.id, y: e.type, p: e.p, q: e.q, o: e.owner, ...(e.driver ? { d: e.driver } : {}), ...e.params }
+  return {
+    i: e.id,
+    y: e.type,
+    p: e.p,
+    q: e.q,
+    o: e.owner,
+    ...(e.driver ? { d: e.driver } : {}),
+    ...e.params,
+  }
 }
 /** `peer` of the events the relay sends itself (health, death, respawn). */
 export const RELAY_PEER = 'relay'
@@ -352,7 +361,8 @@ export function startRelay({
   const entityRequest = (room, socket, member, kind, data) => {
     const map = entitiesOf(room)
     const entity = typeof data.i === 'string' ? map.get(data.i) : undefined
-    const tell = (e) => send(socket, { type: 'event', peer: RELAY_PEER, kind: 'entity', data: entityData(e) })
+    const tell = (e) =>
+      send(socket, { type: 'event', peer: RELAY_PEER, kind: 'entity', data: entityData(e) })
     const claim = (e) => {
       const present = [...rooms.get(room).values()].some((m) => m.peer === e.driver)
       if (e.driver && e.driver !== member.peer && present) return tell(e)
@@ -369,7 +379,15 @@ export function startRelay({
       const own = [...map.values()].filter((e) => e.owner === member.peer).length
       if (map.size >= maxEntities || own >= maxOwnEntities) return
       const params = Object.fromEntries(Object.entries(data).filter(([k]) => k.startsWith('_')))
-      const created = { id: data.i, type: data.y, params, p: data.p, q: data.q, owner: member.peer, driver: data.d ? member.peer : null }
+      const created = {
+        id: data.i,
+        type: data.y,
+        params,
+        p: data.p,
+        q: data.q,
+        owner: member.peer,
+        driver: data.d ? member.peer : null,
+      }
       map.set(created.id, created)
       relayEvent(room, 'entity', entityData(created))
       log('spawn', room, created.id, created.type, 'by', member.peer)
@@ -505,7 +523,11 @@ export function startRelay({
           // Slot bounds, a living reloader, at most one per RELOAD_INTERVAL seconds.
           const now = seconds()
           const ledger = ledgerOf(state.room)
-          if (!validReload(message.data) || (ledger.has(member.peer) && ledger.get(member.peer).dead)) return
+          if (
+            !validReload(message.data) ||
+            (ledger.has(member.peer) && ledger.get(member.peer).dead)
+          )
+            return
           if (now - (state.reloadAt ?? -Infinity) < reloadInterval) return
           state.reloadAt = now
         }
@@ -525,12 +547,17 @@ export function startRelay({
             ...(hit.r ? { r: hit.r } : {}),
           })
           if (result.died) {
-            relayEvent(state.room, 'death', { t: hit.t, s: member.peer, ...(hit.r ? { r: hit.r } : {}) })
+            relayEvent(state.room, 'death', {
+              t: hit.t,
+              s: member.peer,
+              ...(hit.r ? { r: hit.r } : {}),
+            })
             log('death', state.room, hit.t, 'by', member.peer)
           }
           return
         }
-        if (message.kind.startsWith('entity')) return entityRequest(state.room, socket, member, message.kind, message.data)
+        if (message.kind.startsWith('entity'))
+          return entityRequest(state.room, socket, member, message.kind, message.data)
         if (['health', 'death', 'respawn'].includes(message.kind)) return
         broadcast(state.room, socket, {
           type: 'event',

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { initPhysics } from '../../src/simulation/physics.js'
-import { serveSimulation, type SimulationPort } from '../../src/simulation/simulation-worker-host.js'
+import {
+  serveSimulation,
+  type SimulationPort,
+} from '../../src/simulation/simulation-worker-host.js'
 import { ThreadedSimulation, threadedSimulation } from '../../src/simulation/threaded-simulation.js'
 import { idleInput } from '../../src/simulation/simulation.js'
 import { createEntity } from '../../src/entity/schema.js'
@@ -10,7 +13,11 @@ import type { SceneDocument } from '../../src/scene/document.js'
 function doc(): SceneDocument {
   const ground = createEntity('ground', 'box', [0, -0.5, 0])
   ground.size = [2000, 1, 2000]
-  return { version: 1, name: 'Vehicle mesh', entities: [ground, createEntity('spawn', 'spawn', [0, 0.05, 4])] }
+  return {
+    version: 1,
+    name: 'Vehicle mesh',
+    entities: [ground, createEntity('spawn', 'spawn', [0, 0.05, 4])],
+  }
 }
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -24,7 +31,11 @@ describe('worker physics: driven vehicle mesh is continuous', () => {
     await initPhysics()
     const channel = new MessageChannel()
     serveSimulation(channel.port2 as unknown as SimulationPort)
-    const sim = await ThreadedSimulation.start(doc(), {}, channel.port1 as unknown as SimulationPort)
+    const sim = await ThreadedSimulation.start(
+      doc(),
+      {},
+      channel.port1 as unknown as SimulationPort,
+    )
     try {
       sim.addVehicles([presetVehicle('car', 'car-1', [0, 1, -10])])
       await sim.step(1 / 60)

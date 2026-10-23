@@ -122,7 +122,12 @@ export function createUsbSettingsPanel(
   for (const kind of ['axis', 'button', 'hat']) {
     const o = doc.createElement('option')
     o.value = kind
-    o.textContent = kind === 'axis' ? t('usb.kind.axis') : kind === 'button' ? t('usb.kind.button') : t('usb.kind.hat')
+    o.textContent =
+      kind === 'axis'
+        ? t('usb.kind.axis')
+        : kind === 'button'
+          ? t('usb.kind.button')
+          : t('usb.kind.hat')
     manualKind.append(o)
   }
   const manualIndex = doc.createElement('input')
@@ -212,8 +217,7 @@ export function createUsbSettingsPanel(
         (b) => b.device !== devices.value,
       )
       save([...list, ...usbTemplate(kind, devices.value)])
-      status.textContent =
-        t('usb.template-loaded')
+      status.textContent = t('usb.template-loaded')
     }),
   )
   for (const [key, text] of [
@@ -328,8 +332,7 @@ export function createUsbSettingsPanel(
             rest: value,
             mode: selectedMode(),
           }
-          status.textContent =
-            t('usb.rest-captured')
+          status.textContent = t('usb.rest-captured')
         }),
         button(t('usb.remove'), () =>
           save(hub.snapshot.profiles[selectedMode()].bindings.filter((_, i) => i !== index)),
@@ -414,8 +417,7 @@ export function createUsbSettingsPanel(
     token.placeholder = t('usb.ffb-token-placeholder')
     token.setAttribute('aria-label', t('usb.ffb-token'))
     const description = doc.createElement('p')
-    description.textContent =
-      t('usb.ffb-note')
+    description.textContent = t('usb.ffb-note')
     f.append(
       description,
       label,
@@ -454,7 +456,11 @@ export function createUsbSettingsPanel(
       for (const p of list) {
         const o = doc.createElement('option')
         o.value = usbDeviceKey(p)
-        o.textContent = t('usb.pad-summary', { id: p.id, axes: p.axes.length, buttons: p.buttons.length })
+        o.textContent = t('usb.pad-summary', {
+          id: p.id,
+          axes: p.axes.length,
+          buttons: p.buttons.length,
+        })
         devices.append(o)
       }
       if ([...devices.options].some((o) => o.value === old)) devices.value = old
@@ -520,7 +526,12 @@ export function createUsbSettingsPanel(
         p = list.find((p) => usbDeviceKey(p) === b?.device)
       o.value =
         p && b
-          ? t('usb.value', { value: b.kind === 'axis' ? normalizeUsbAxis(p.axes[b.index] ?? NaN, b).toFixed(3) : (p.buttons[b.index]?.value ?? 0) })
+          ? t('usb.value', {
+              value:
+                b.kind === 'axis'
+                  ? normalizeUsbAxis(p.axes[b.index] ?? NaN, b).toFixed(3)
+                  : (p.buttons[b.index]?.value ?? 0),
+            })
           : t('usb.disconnected-sp')
     })
     if (hub.error) status.textContent = hub.error

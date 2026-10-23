@@ -36,7 +36,6 @@ export function walkFromStick(stick: TouchStick): { forward: number; right: numb
   return { forward: -stick.y || 0, right: stick.x || 0 }
 }
 
-
 /** Twin walking sticks ("setas"). Pointer capture always releases. */
 export class TouchWalk {
   readonly root = document.createElement('div')

@@ -65,7 +65,9 @@ describe('settings translations', () => {
   it('keeps no untranslated Spanish string literals in the settings UI', () => {
     const found: string[] = []
     for (const f of SETTINGS_SOURCES)
-      for (const m of code(read(f)).matchAll(/(['`])((?:(?!\1)[^\n\\])*[áéíóúñÁÉÍÓÚÑ¿¡](?:(?!\1)[^\n\\])*)\1/g))
+      for (const m of code(read(f)).matchAll(
+        /(['`])((?:(?!\1)[^\n\\])*[áéíóúñÁÉÍÓÚÑ¿¡](?:(?!\1)[^\n\\])*)\1/g,
+      ))
         found.push(`${f}: ${m[2]}`)
     expect(found).toEqual([])
   })

@@ -222,7 +222,14 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
   // Character inventory and aim: forwarded when bounded, the snapshot dropped otherwise.
   a.json({ type: 'snapshot', t: 7, seq: 6, avatar: { ...avatar, i: [[0, 99, 1]] } })
   a.json({ type: 'snapshot', t: 8, seq: 7, avatar: { ...avatar, v: [0, 5] } })
-  const kit = { i: [[1, 1, 1], [4, 5, -1]], h: [0, 1], v: [0.5, 0.3] }
+  const kit = {
+    i: [
+      [1, 1, 1],
+      [4, 5, -1],
+    ],
+    h: [0, 1],
+    v: [0.5, 0.3],
+  }
   a.json({ type: 'snapshot', t: 9, seq: 8, avatar: { ...avatar, ...kit } })
   const carried = await b.next('snapshot')
   assert.equal(carried.t, 9)
@@ -249,7 +256,13 @@ test('forwards on-foot avatar snapshots (alone or with a state) and drops malfor
 })
 
 test('combat: relay applies hits, broadcasts health/death/respawn, health in the join snapshot', async () => {
-  const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, respawnDelay: 0.4, respawnTick: 50 })
+  const relay = await startRelay({
+    port: 0,
+    host: '127.0.0.1',
+    log: () => {},
+    respawnDelay: 0.4,
+    respawnTick: 50,
+  })
   const a = await connect(relay.port)
   const b = await connect(relay.port)
   a.json({ type: 'join', version: 1, room: 'c', meta: {} })
@@ -302,7 +315,10 @@ test('combat: relay applies hits, broadcasts health/death/respawn, health in the
   const d = await connect(relay.port)
   d.json({ type: 'join', version: 1, room: 'c', meta: {} })
   assert.deepEqual((await d.next('welcome')).health, { [pb]: 100 })
-  const quiet = await Promise.race([b.next('event'), new Promise((r) => setTimeout(() => r(null), 150))])
+  const quiet = await Promise.race([
+    b.next('event'),
+    new Promise((r) => setTimeout(() => r(null), 150)),
+  ])
   assert.equal(quiet, null)
   for (const s of [a, b, c, d]) s.close()
   await relay.close()
@@ -321,12 +337,27 @@ test('shared entities: spawn, join list, claim by another peer, driver snapshots
   ev(a, 'entity.spawn', { i: 'bad id!', y: 'truck', p: [0, 0, 0], q: [0, 0, 0, 1] })
   ev(a, 'entity.spawn', { i: `${pa}.1`, y: 'truck', p: [0, 0, 0], q: [0, 0, 0, 1], x: [1, 2] })
   const truck = `${pa}.1`
-  ev(a, 'entity.spawn', { i: truck, y: 'truck', p: [1, 0, 2], q: [0, 0, 0, 1], d: 1, _color: '#ff0000' })
+  ev(a, 'entity.spawn', {
+    i: truck,
+    y: 'truck',
+    p: [1, 0, 2],
+    q: [0, 0, 0, 1],
+    d: 1,
+    _color: '#ff0000',
+  })
   for (const s of [a, b]) {
     const e = await s.next('event')
     assert.equal(e.peer, 'relay')
     assert.equal(e.kind, 'entity')
-    assert.deepEqual(e.data, { i: truck, y: 'truck', p: [1, 0, 2], q: [0, 0, 0, 1], o: pa, d: pa, _color: '#ff0000' })
+    assert.deepEqual(e.data, {
+      i: truck,
+      y: 'truck',
+      p: [1, 0, 2],
+      q: [0, 0, 0, 1],
+      o: pa,
+      d: pa,
+      _color: '#ff0000',
+    })
   }
   // A re-spawn of the same id is a claim attempt, never a second entity: denied while A drives.
   ev(b, 'entity.spawn', { i: truck, y: 'truck', p: [9, 0, 9], q: [0, 0, 0, 1], d: 1 })
@@ -386,7 +417,10 @@ test('shared entities: spawn, join list, claim by another peer, driver snapshots
   ev(a, 'entity.spawn', { i: 'w.pistol.0.0', y: 'item', p: [1, 0, 0], q: [0, 0, 0, 1] })
   do gone = await c.next('event')
   while (gone.kind !== 'entity.gone' || gone.data.i !== 'w.pistol.0.0')
-  const quiet = await Promise.race([c.next('event'), new Promise((r) => setTimeout(() => r(null), 150))])
+  const quiet = await Promise.race([
+    c.next('event'),
+    new Promise((r) => setTimeout(() => r(null), 150)),
+  ])
   assert.equal(quiet, null)
   for (const s of [a, c]) s.close()
   await relay.close()
@@ -416,6 +450,12 @@ test('actor meta: whitelisted, in the join snapshot and re-sent on change', asyn
   const c = await connect(relay.port)
   c.json({ type: 'join', version: 1, room: 'act', meta: {} })
   const welcomeC = await c.next('welcome')
-  assert.deepEqual(welcomeC.peers.map((p) => p.meta.actor).sort(), ['default:blue', undefined].sort())
-  a.close(); b.close(); c.close(); await relay.close()
+  assert.deepEqual(
+    welcomeC.peers.map((p) => p.meta.actor).sort(),
+    ['default:blue', undefined].sort(),
+  )
+  a.close()
+  b.close()
+  c.close()
+  await relay.close()
 })

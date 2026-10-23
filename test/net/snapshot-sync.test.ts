@@ -540,7 +540,9 @@ describe('SnapshotSync actor changes', () => {
         spawnRemote: () => null,
         despawnRemote: () => {},
         meta: { actor: 'default:white' },
-        localAvatar: walker ? () => ({ position: [2, 0, 0], yaw: 0, speed: 0, anim: 0 }) : () => null,
+        localAvatar: walker
+          ? () => ({ position: [2, 0, 0], yaw: 0, speed: 0, anim: 0 })
+          : () => null,
         remoteAvatar: (peer) => {
           const n = built.push(peer.meta.actor)
           return { update: () => shownBy.push(n), dispose: () => disposed++ }

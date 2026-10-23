@@ -63,7 +63,8 @@ export function encodeEntity(
 /** Tolerant decode; null when id, type or pose are missing or malformed. */
 export function decodeEntity(data: NetEventData): SharedEntityRecord | null {
   const { i, y, p, q, o, d } = data
-  if (typeof i !== 'string' || !ID.test(i) || typeof y !== 'string' || !y || y.length > 64) return null
+  if (typeof i !== 'string' || !ID.test(i) || typeof y !== 'string' || !y || y.length > 64)
+    return null
   if (!Array.isArray(p) || p.length !== 3 || !Array.isArray(q) || q.length !== 4) return null
   const params: EntityParams = {}
   for (const [key, value] of Object.entries(data))
@@ -272,7 +273,8 @@ export class SharedEntities {
         localId,
         pending: !localId,
         remote: new RemoteVehicle(localId, this.host, this.interpolation),
-        rested: localId && record.driver === this.self ? `${record.position}|${record.rotation}` : '',
+        rested:
+          localId && record.driver === this.self ? `${record.position}|${record.rotation}` : '',
         held: false,
         gone: false,
       }

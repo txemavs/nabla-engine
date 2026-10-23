@@ -289,9 +289,7 @@ export function quantizeAvatar(sample: AvatarSample): AvatarBlock {
     s: fix(Math.max(0, sample.speed), 2),
     a: Math.max(0, Math.min(63, Math.round(sample.anim))),
     ...(sample.weapon ? { w: Math.max(0, Math.min(63, Math.round(sample.weapon))) } : {}),
-    ...(sample.inventory
-      ? { i: sample.inventory.i.slice(0, 32), h: sample.inventory.h }
-      : {}),
+    ...(sample.inventory ? { i: sample.inventory.i.slice(0, 32), h: sample.inventory.h } : {}),
     ...(sample.aim
       ? {
           v: [
@@ -332,7 +330,12 @@ export function decodeAvatar(block: AvatarBlock): AvatarSample {
       ? {
           held: {
             position: [block.g[0], block.g[1], block.g[2]] as Vec3Tuple,
-            quaternion: [block.g[3], block.g[4], block.g[5], block.g[6]] as [number, number, number, number],
+            quaternion: [block.g[3], block.g[4], block.g[5], block.g[6]] as [
+              number,
+              number,
+              number,
+              number,
+            ],
           },
         }
       : {}),
@@ -353,7 +356,10 @@ export const snapshotSchema = z.object({
   avatar: avatarBlockSchema.optional(),
   extra: extra.optional(),
   /** Shared entity (see shared-entities.ts) that `state` drives; absent for the sender's own. */
-  e: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/).optional(),
+  e: z
+    .string()
+    .regex(/^[A-Za-z0-9_.:-]{1,64}$/)
+    .optional(),
   peer: peerId.optional(),
 })
 export type SnapshotMessage = z.infer<typeof snapshotSchema>

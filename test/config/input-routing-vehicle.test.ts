@@ -12,7 +12,18 @@ describe('vehicle input routing with a weapon owned', () => {
     })
     it(`no key resolves to a weapon action in ${mode}`, () => {
       const context = { mode, weapon: true, aiming: true }
-      for (const code of ['KeyR', 'KeyY', 'KeyT', 'KeyQ', 'KeyE', 'KeyG', 'KeyL', 'KeyB', 'KeyV', 'KeyF'])
+      for (const code of [
+        'KeyR',
+        'KeyY',
+        'KeyT',
+        'KeyQ',
+        'KeyE',
+        'KeyG',
+        'KeyL',
+        'KeyB',
+        'KeyV',
+        'KeyF',
+      ])
         expect(keyboardAction(code, context) ?? '').not.toMatch(/^weapon\./)
     })
   }

@@ -87,7 +87,15 @@ describe('R reset on the nearest road', () => {
     const sim = new Simulation(doc, { playerMode: 'hover' })
     sim.startInVehicle('car')
     body(sim).position.set(0, 1, 0)
-    const roads = [{ points: [{ x: -60, z: 25 }, { x: 60, z: 25 }], width: 6 }]
+    const roads = [
+      {
+        points: [
+          { x: -60, z: 25 },
+          { x: 60, z: 25 },
+        ],
+        width: 6,
+      },
+    ]
     expect(sim.recoverVehicle({ snapToRoad: true, roads })).toBe('En la vía más cercana')
     expect(body(sim).position.y).toBeCloseTo(3)
     body(sim).position.set(0, 1, 0)

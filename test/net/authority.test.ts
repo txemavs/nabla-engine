@@ -1,19 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { LocalAuthority, SwitchAuthority, type HealthChange, type ItemChange } from '../../src/net/authority.js'
+import {
+  LocalAuthority,
+  SwitchAuthority,
+  type HealthChange,
+  type ItemChange,
+} from '../../src/net/authority.js'
 import { parseAuthorityRequest } from '../../src/net/authority-schema.js'
 
 describe('authority schema', () => {
   it('rejects unbounded requests', () => {
     expect(parseAuthorityRequest({ type: 'hit', target: 'p1', damage: 1000 })).toBeNull()
     expect(parseAuthorityRequest({ type: 'pickup', item: 'bad id!' })).toBeNull()
-    expect(parseAuthorityRequest({ type: 'drop', item: 'pistol', count: 0, position: [0, 0, 0] })).toBeNull()
-    expect(parseAuthorityRequest({ type: 'claim', entity: 'p1.1' })).toEqual({ type: 'claim', entity: 'p1.1' })
+    expect(
+      parseAuthorityRequest({ type: 'drop', item: 'pistol', count: 0, position: [0, 0, 0] }),
+    ).toBeNull()
+    expect(parseAuthorityRequest({ type: 'claim', entity: 'p1.1' })).toEqual({
+      type: 'claim',
+      entity: 'p1.1',
+    })
   })
 })
 
 describe('LocalAuthority', () => {
   it('grants items once, tracks claims and runs health to respawn', () => {
-    const a = new LocalAuthority({ items: [{ id: 'w.pistol', item: 'pistol', count: 1, position: [0, 0, 0] }] })
+    const a = new LocalAuthority({
+      items: [{ id: 'w.pistol', item: 'pistol', count: 1, position: [0, 0, 0] }],
+    })
     const items: ItemChange[] = []
     a.onItems((c) => items.push(c))
     expect(a.request({ type: 'pickup', item: 'w.pistol' })).toBe(true)
@@ -37,7 +49,14 @@ describe('LocalAuthority items', () => {
     const a = new LocalAuthority()
     const items: ItemChange[] = []
     a.onItems((c) => items.push(c))
-    const drop = (id?: string) => a.request({ type: 'drop', item: 'pistol', count: 1, position: [0, 0, 0], ...(id ? { id } : {}) })
+    const drop = (id?: string) =>
+      a.request({
+        type: 'drop',
+        item: 'pistol',
+        count: 1,
+        position: [0, 0, 0],
+        ...(id ? { id } : {}),
+      })
     expect(drop('w.pistol.0.0')).toBe(true)
     expect(drop('w.pistol.0.0')).toBe(false)
     expect(drop()).toBe(true)
@@ -51,8 +70,12 @@ describe('LocalAuthority items', () => {
 
 describe('SwitchAuthority', () => {
   it('forwards to the current authority and swaps items on use()', () => {
-    const local = new LocalAuthority({ items: [{ id: 'l.1', item: 'pistol', count: 1, position: [0, 0, 0] }] })
-    const room = new LocalAuthority({ items: [{ id: 'r.1', item: 'magazine', count: 3, position: [1, 0, 0] }] })
+    const local = new LocalAuthority({
+      items: [{ id: 'l.1', item: 'pistol', count: 1, position: [0, 0, 0] }],
+    })
+    const room = new LocalAuthority({
+      items: [{ id: 'r.1', item: 'magazine', count: 3, position: [1, 0, 0] }],
+    })
     const s = new SwitchAuthority(local)
     const items: ItemChange[] = []
     s.onItems((c) => items.push(c))

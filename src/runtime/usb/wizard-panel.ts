@@ -80,9 +80,7 @@ export function createUsbWizardPanel(
     error.textContent = wizard?.message ?? ''
     heading.textContent = screen === 'home' ? t('usb.wizard.heading') : title()
     if (screen === 'home') {
-      text(
-        t('usb.wizard.intro'),
-      )
+      text(t('usb.wizard.intro'))
       for (const [type, label] of [
         ['wheel', t('usb.wizard.wheel')],
         ['joystick', t('usb.wizard.joystick')],
@@ -153,13 +151,8 @@ export function createUsbWizardPanel(
         l.append(c, ' ' + label)
         content.append(l)
       }
-      if (kind === 'radio')
-        text(
-          t('usb.wizard.radio-note'),
-        )
-      text(
-        t('usb.wizard.keep-note'),
-      )
+      if (kind === 'radio') text(t('usb.wizard.radio-note'))
+      text(t('usb.wizard.keep-note'))
       content.append(
         button(t('usb.wizard.start'), () => {
           wizard = new UsbWizard(kind, parts)

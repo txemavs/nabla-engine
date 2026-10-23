@@ -24,8 +24,16 @@ export const HOLD_MAX_YAW = 1.1
  * Web default hold: one-handed, arm stretched from the shoulder along the aim. `yaw` is the aim
  * relative to the body's facing (rad, positive turns left), `pitch` up positive.
  */
-export function defaultHeldPose(yaw: number, pitch: number, hand: 'left' | 'right' = 'right'): HeldPose {
-  const y = THREE.MathUtils.clamp(Math.atan2(Math.sin(yaw), Math.cos(yaw)), -HOLD_MAX_YAW, HOLD_MAX_YAW)
+export function defaultHeldPose(
+  yaw: number,
+  pitch: number,
+  hand: 'left' | 'right' = 'right',
+): HeldPose {
+  const y = THREE.MathUtils.clamp(
+    Math.atan2(Math.sin(yaw), Math.cos(yaw)),
+    -HOLD_MAX_YAW,
+    HOLD_MAX_YAW,
+  )
   const p = THREE.MathUtils.clamp(pitch, -1.3, 1.3)
   const side = hand === 'right' ? HOLD_SHOULDER.side : -HOLD_SHOULDER.side
   const r = HOLD_SHOULDER.reach

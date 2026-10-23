@@ -13,6 +13,8 @@ describe('simulated fire option', () => {
   })
   it('ignores a ?simFire URL parameter (config lives in code)', () => {
     expect(readBootConfig('?simFire=0', {}).simulatedFire).toBeUndefined()
-    expect(readBootConfig('', { NABLA_BOOT: { simulatedFire: false } } as never).simulatedFire).toBe(false)
+    expect(
+      readBootConfig('', { NABLA_BOOT: { simulatedFire: false } } as never).simulatedFire,
+    ).toBe(false)
   })
 })

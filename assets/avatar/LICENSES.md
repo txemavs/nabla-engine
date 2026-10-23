@@ -1,6 +1,7 @@
 # Licenses — Euskadi Online player avatar
 
 ## Animations (avatar.anims.glb) — CC0 1.0
+
 - **Universal Animation Library [Standard]** by **Quaternius** — CC0 1.0 Universal (public domain dedication).
   - Official page: https://quaternius.itch.io/universal-animation-library (Asset license: Creative Commons Zero v1.0 Universal)
   - Also: https://quaternius.com/packs/universalanimationlibrary.html
@@ -10,5 +11,6 @@
 - No Mixamo or other non-CC0 animation data is included.
 
 ## Base mesh (avatar.glb) — CC BY 4.0
+
 - "Low polygon human dodging right" by **Thanakorn Pinsanoe** (Sketchfab), CC BY 4.0 — attribution required.
   Modified (re-materialed as a mannequin, scaled to 1.70 m, bevel/smooth polish, HeadSocket added; its original animation removed).

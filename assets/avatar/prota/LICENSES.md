@@ -10,15 +10,15 @@ it was made with before any redistribution outside this project.
 Built with Gepeto's Blender pipeline (`build_v3.py`, `pipe_v3.sh`) from the prota FBX (19,772 tris,
 not decimated), with finger weight split. Sockets identical to v2 (0.0 mm difference).
 
-| File                                              | What                                                                                                    |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `prota.v3.low.glb`                                | **Default body.** 16,343 tris, 4 draw calls, solid materials with `extras.nabla_color_slot` (actor colours). |
-| `prota.v3.glb`                                    | Textured variant: one material `Prota_Tex`, 2048 px WebP base colour, 1 draw call. Shipped, not wired.  |
-| `prota.hands.v3.low.glb` / `prota.hands.v3.glb`   | First-person / AR hands (solid / textured). Shipped, not wired yet.                                     |
-| `prota.belt.v3.low.glb` / `prota.belt.v3.glb`     | Duty belt at `BeltSocket` (low is used).                                                                |
-| `prota.holster.v4.low.glb` / `prota.holster.v4.glb` | Holster at `HolsterSocket`; `HolsterGunSocket` seats the pistol (low is used).                        |
-| `prota.baton.v3.low.glb` / `prota.baton.v3.glb`   | Baton at `BatonSocket` (low is used).                                                                   |
-| `prota.holster-usp.glb`                           | Gepeto's USP Compact v6, reworked from the engine's own `library/weapons/hk-compact` model; unchanged.   |
+| File                                                | What                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `prota.v3.low.glb`                                  | **Default body.** 16,343 tris, 4 draw calls, solid materials with `extras.nabla_color_slot` (actor colours). |
+| `prota.v3.glb`                                      | Textured variant: one material `Prota_Tex`, 2048 px WebP base colour, 1 draw call. Shipped, not wired.       |
+| `prota.hands.v3.low.glb` / `prota.hands.v3.glb`     | First-person / AR hands (solid / textured). Shipped, not wired yet.                                          |
+| `prota.belt.v3.low.glb` / `prota.belt.v3.glb`       | Duty belt at `BeltSocket` (low is used).                                                                     |
+| `prota.holster.v4.low.glb` / `prota.holster.v4.glb` | Holster at `HolsterSocket`; `HolsterGunSocket` seats the pistol (low is used).                               |
+| `prota.baton.v3.low.glb` / `prota.baton.v3.glb`     | Baton at `BatonSocket` (low is used).                                                                        |
+| `prota.holster-usp.glb`                             | Gepeto's USP Compact v6, reworked from the engine's own `library/weapons/hk-compact` model; unchanged.       |
 
 ## v2 (previous, kept alongside)
 

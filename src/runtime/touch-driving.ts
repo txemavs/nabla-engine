@@ -87,7 +87,6 @@ function unitFromEvent(e: PointerEvent, el: HTMLElement, axis: 'x' | 'y') {
   return axis === 'x' ? clampUnit(r.x / (r.width / 2 || 1)) : clampUnit(r.y / (r.height / 2 || 1))
 }
 
-
 /** Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases. */
 export class TouchDriving {
   readonly root = document.createElement('div')

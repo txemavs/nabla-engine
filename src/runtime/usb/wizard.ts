@@ -169,17 +169,12 @@ export class UsbWizard {
     return b ? normalizeUsbAxis(this.value, b) : 0
   }
   get instruction(): string {
-    if (this.stage === 'review')
-      return t('usb.step.review')
+    if (this.stage === 'review') return t('usb.step.review')
     if (this.stage === 'rest')
-      return this.step.negative
-        ? t('usb.step.rest-centred')
-        : t('usb.step.rest-released')
+      return this.step.negative ? t('usb.step.rest-centred') : t('usb.step.rest-released')
     if (this.stage === 'positive') return this.step.positive
     if (this.stage === 'negative') return this.step.negative!
-    return this.step.negative
-      ? t('usb.step.return-centre')
-      : t('usb.step.return-release')
+    return this.step.negative ? t('usb.step.return-centre') : t('usb.step.return-release')
   }
   sample(pads: readonly UsbPad[]): void {
     this.pads = pads.filter((p) => p.connected)
@@ -187,8 +182,7 @@ export class UsbWizard {
     if (this.detected) {
       const p = this.device()
       if (!p) {
-        this.message =
-          t('usb.err.lost')
+        this.message = t('usb.err.lost')
         return
       }
       const v = this.value
@@ -245,10 +239,7 @@ export class UsbWizard {
     this.message = ''
     if (this.stage === 'review') return
     if (this.stage === 'rest') {
-      if (!this.pads.length)
-        throw new Error(
-          t('usb.err.no-devices'),
-        )
+      if (!this.pads.length) throw new Error(t('usb.err.no-devices'))
       this.baseline = this.pads.map((p) => ({
         key: usbDeviceKey(p),
         index: p.index,
@@ -258,8 +249,7 @@ export class UsbWizard {
       this.stage = 'positive'
       return
     }
-    if (!this.detected || !this.device())
-      throw new Error(t('usb.err.hold'))
+    if (!this.detected || !this.device()) throw new Error(t('usb.err.hold'))
     const d = this.detected
     if (this.stage === 'positive') {
       if (Math.abs(d.positive - d.rest) < 0.2)
@@ -287,9 +277,7 @@ export class UsbWizard {
           binding.mode === 'signed',
       )
     )
-      throw new Error(
-        t('usb.err.taken'),
-      )
+      throw new Error(t('usb.err.taken'))
     this.bindings.push(binding)
     this.advance()
   }

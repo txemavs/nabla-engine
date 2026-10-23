@@ -9,4 +9,10 @@ export * from './snapshot-sync.js'
 export * from './shared-entities.js'
 export * from './net-worker.js'
 export * from './net-worker-host.js'
-export { LocalAuthority, RelayAuthority, SwitchAuthority, type GameAuthority, type RelayLink } from './authority.js'
+export {
+  LocalAuthority,
+  RelayAuthority,
+  SwitchAuthority,
+  type GameAuthority,
+  type RelayLink,
+} from './authority.js'

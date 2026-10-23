@@ -185,8 +185,7 @@ export class UsbControllers {
       const raw = storage?.getItem(usbStorageKey)
       if (raw) this.settings = parseUsbSettings(JSON.parse(raw))
     } catch {
-      this.error =
-        t('usb.err.profile')
+      this.error = t('usb.err.profile')
     }
   }
   get snapshot(): UsbSettings {

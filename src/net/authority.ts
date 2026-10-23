@@ -94,7 +94,12 @@ export class LocalAuthority implements GameAuthority {
         return true
       case 'drop': {
         if (r.id && this.items.has(r.id)) return false
-        const item = { id: r.id ?? `${this.self}.${++this.next}`, item: r.item, count: r.count, position: r.position }
+        const item = {
+          id: r.id ?? `${this.self}.${++this.next}`,
+          item: r.item,
+          count: r.count,
+          position: r.position,
+        }
         this.items.set(item.id, item)
         this.itemsL.emit({ type: 'added', item })
         return true
@@ -114,7 +119,13 @@ export class LocalAuthority implements GameAuthority {
       case 'hit': {
         if (this.ledger.get(r.target).dead) return false
         const res = this.ledger.damage(r.target, r.damage, this.now)
-        this.healthL.emit({ type: 'health', target: r.target, health: res.health, shooter: this.self, zone: r.zone })
+        this.healthL.emit({
+          type: 'health',
+          target: r.target,
+          health: res.health,
+          shooter: this.self,
+          zone: r.zone,
+        })
         if (res.died) this.healthL.emit({ type: 'death', target: r.target, shooter: this.self })
         return true
       }
@@ -186,16 +197,30 @@ export class RelayAuthority implements GameAuthority {
       case 'drop':
         // Fresh `<peer>.<n>` ids for drops; a spawn item's area id dedupes at the relay.
         return (
-          this.shared.publish('item', { item: r.item, n: r.count }, { position: r.position, rotation: [0, 0, 0, 1] }, null, r.id ? { id: r.id } : {}) !== null
+          this.shared.publish(
+            'item',
+            { item: r.item, n: r.count },
+            { position: r.position, rotation: [0, 0, 0, 1] },
+            null,
+            r.id ? { id: r.id } : {},
+          ) !== null
         )
       case 'claim':
         return this.shared.claim(r.entity)
       case 'release':
         return this.shared.release(r.entity, r.pose)
       case 'hit':
-        return this.link.sendEvent('hit', encodeHit({ targetId: r.target, damage: r.damage, zone: r.zone, direction: r.direction }))
+        return this.link.sendEvent(
+          'hit',
+          encodeHit({ targetId: r.target, damage: r.damage, zone: r.zone, direction: r.direction }),
+        )
       case 'fire':
-        return this.link.sendEvent('fire', { w: r.slot, k: r.kind, o: [...r.origin], d: [...r.direction] })
+        return this.link.sendEvent('fire', {
+          w: r.slot,
+          k: r.kind,
+          o: [...r.origin],
+          d: [...r.direction],
+        })
       case 'reload':
         return this.link.sendEvent('reload', { w: r.slot })
     }
@@ -205,9 +230,23 @@ export class RelayAuthority implements GameAuthority {
     if (kind !== 'health' && kind !== 'death' && kind !== 'respawn') return
     const h = decodeHealthEvent(data)
     if (!h) return
-    if (kind === 'health') this.healthL.emit({ type: 'health', target: h.targetId, health: h.health, shooter: h.shooterId, zone: h.zone })
-    else if (kind === 'death') this.healthL.emit({ type: 'death', target: h.targetId, shooter: h.shooterId })
-    else this.healthL.emit({ type: 'respawn', target: h.targetId, health: h.health, position: h.position })
+    if (kind === 'health')
+      this.healthL.emit({
+        type: 'health',
+        target: h.targetId,
+        health: h.health,
+        shooter: h.shooterId,
+        zone: h.zone,
+      })
+    else if (kind === 'death')
+      this.healthL.emit({ type: 'death', target: h.targetId, shooter: h.shooterId })
+    else
+      this.healthL.emit({
+        type: 'respawn',
+        target: h.targetId,
+        health: h.health,
+        position: h.position,
+      })
   }
   /** Shared entity placed or changed (SharedEntityHooks `changed`). */
   entityChanged(record: SharedEntityRecord): void {
@@ -215,19 +254,26 @@ export class RelayAuthority implements GameAuthority {
       if (this.shown.has(record.id)) return
       this.shown.add(record.id)
       this.itemsL.emit({ type: 'added', item: itemOf(record) })
-    }
-    else this.claimsL.emit({ entity: record.id, driver: record.driver, pose: { position: record.position, rotation: record.rotation } })
+    } else
+      this.claimsL.emit({
+        entity: record.id,
+        driver: record.driver,
+        pose: { position: record.position, rotation: record.rotation },
+      })
   }
   /** Shared entity taken by `by` or gone (SharedEntityHooks `removed`, and `despawn` with null). */
   entityRemoved(record: SharedEntityRecord, by: string | null): void {
-    if (record.type === 'item' && this.shown.delete(record.id)) this.itemsL.emit({ type: 'removed', id: record.id, by })
+    if (record.type === 'item' && this.shown.delete(record.id))
+      this.itemsL.emit({ type: 'removed', id: record.id, by })
   }
   onItems(fn: (c: ItemChange) => void): Unsubscribe {
-    for (const r of this.shared.list()) if (this.shown.has(r.id)) fn({ type: 'added', item: itemOf(r) })
+    for (const r of this.shared.list())
+      if (this.shown.has(r.id)) fn({ type: 'added', item: itemOf(r) })
     return this.itemsL.add(fn)
   }
   onClaims(fn: (c: ClaimChange) => void): Unsubscribe {
-    for (const r of this.shared.list()) if (r.type !== 'item' && r.driver) fn({ entity: r.id, driver: r.driver })
+    for (const r of this.shared.list())
+      if (r.type !== 'item' && r.driver) fn({ entity: r.id, driver: r.driver })
     return this.claimsL.add(fn)
   }
   onHealth(fn: (c: HealthChange) => void): Unsubscribe {
@@ -309,5 +355,10 @@ export class SwitchAuthority implements GameAuthority {
 }
 
 function itemOf(r: SharedEntityRecord): AuthorityItem {
-  return { id: r.id, item: String(r.params.item ?? ''), count: Number(r.params.n ?? 1), position: r.position }
+  return {
+    id: r.id,
+    item: String(r.params.item ?? ''),
+    count: Number(r.params.n ?? 1),
+    position: r.position,
+  }
 }

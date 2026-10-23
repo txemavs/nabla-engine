@@ -24,7 +24,11 @@ it('worker scenery pole keeps the yaw it was created with', async () => {
   await send({
     id: 1,
     type: 'create',
-    scene: { version: 1, name: 'Yawed pole', entities: [createEntity('spawn', 'spawn', [20, 1, 20])] },
+    scene: {
+      version: 1,
+      name: 'Yawed pole',
+      entities: [createEntity('spawn', 'spawn', [20, 1, 20])],
+    },
     options: { playerMode: 'walk' },
     mirror: true,
   })

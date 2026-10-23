@@ -665,7 +665,8 @@ export class Body {
     if (shape instanceof Sphere) desc = api.ColliderDesc.ball(shape.radius)
     else if (shape instanceof Box)
       desc = api.ColliderDesc.cuboid(shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z)
-    else if (shape instanceof Capsule) desc = api.ColliderDesc.capsule(shape.halfHeight, shape.radius)
+    else if (shape instanceof Capsule)
+      desc = api.ColliderDesc.capsule(shape.halfHeight, shape.radius)
     else if (shape instanceof Trimesh) desc = trimeshDesc(shape)
     else if (shape instanceof Heightfield) {
       const columns = shape.data.length
@@ -1134,7 +1135,10 @@ export class World {
   /** Wireframe of every collider (Rapier debug render). Copies, so they survive the next step. */
   debugLines(): CollisionDebugLines {
     const buffers = this.raw.debugRender()
-    return { vertices: new Float32Array(buffers.vertices), colors: new Float32Array(buffers.colors) }
+    return {
+      vertices: new Float32Array(buffers.vertices),
+      colors: new Float32Array(buffers.colors),
+    }
   }
   step(dt: number) {
     this.raw.gravity = this.gravity

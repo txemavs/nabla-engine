@@ -36,7 +36,6 @@ export function flightFromMode2(pad: {
   }
 }
 
-
 /**
  * Agency-style Mode 2 fly rig for the 10x5 carrier: left yaw/throttle, right pitch/roll.
  * Car wheel/accel HUD stays in TouchDriving and is hidden while this is active.

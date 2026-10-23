@@ -39,7 +39,9 @@ export function wantsAutoResolution(search = pageSearch()): boolean {
 function scaleLabel(runtime: GameRuntime): string {
   const { mode, scale } = runtime.resolutionScaleState
   const percent = Math.round(scale * 100)
-  return t(mode === 'auto' ? 'settings.scale-auto-of-profile' : 'settings.scale-of-profile', { percent })
+  return t(mode === 'auto' ? 'settings.scale-auto-of-profile' : 'settings.scale-of-profile', {
+    percent,
+  })
 }
 
 /** Bind host controls; FPS/scale apply live, while a quality-profile change explicitly reloads. */

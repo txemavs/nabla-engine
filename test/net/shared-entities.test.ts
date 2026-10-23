@@ -110,7 +110,13 @@ describe('shared entities', () => {
 
   it('publishes with its own id and adopts the existing local object', () => {
     const { shared, sent, spawned } = setup()
-    const id = shared.publish('vehicle', { color: '#00ff00' }, { position: [0, 0, 0], rotation: [0, 0, 0, 1] }, 'car', { drive: true })
+    const id = shared.publish(
+      'vehicle',
+      { color: '#00ff00' },
+      { position: [0, 0, 0], rotation: [0, 0, 0, 1] },
+      'car',
+      { drive: true },
+    )
     expect(id).toBe('me.1')
     expect(sent[0][0]).toBe(ENTITY_SPAWN)
     expect(sent[0][1]).toMatchObject({ i: 'me.1', d: 1, _color: '#00ff00' })

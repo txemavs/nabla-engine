@@ -183,7 +183,8 @@ export class SnapshotSync {
         for (const [localId, extra] of this.shared.extras()) {
           const key = localId + JSON.stringify(extra)
           if (this.appliedExtra.get(localId) === key) continue
-          if (this.options.applyExtra(localId, extra, '') !== false) this.appliedExtra.set(localId, key)
+          if (this.options.applyExtra(localId, extra, '') !== false)
+            this.appliedExtra.set(localId, key)
         }
     }
     for (const [peer, remote] of this.remotes) {

@@ -2575,9 +2575,7 @@ export class Simulation {
    * fallen through the map, the highest loaded surface.
    */
   private restGround(x: number, z: number, y: number): number | null {
-    return (
-      this.groundUnder(x, z, y, true, y + RECOVER_CEILING) ?? this.groundUnder(x, z, y, true)
-    )
+    return this.groundUnder(x, z, y, true, y + RECOVER_CEILING) ?? this.groundUnder(x, z, y, true)
   }
   /**
    * Highest static, upward-facing surface at (x, z) within ±600 m of `nearY` (and not above

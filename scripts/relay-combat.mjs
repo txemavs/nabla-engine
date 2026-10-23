@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url'
 const from = fileURLToPath(new URL('../dist/simulation/combat/damage.js', import.meta.url))
 const to = fileURLToPath(new URL('../services/relay/combat.mjs', import.meta.url))
 const source = readFileSync(from, 'utf8').replace(/\n\/\/# sourceMappingURL=.*$/m, '')
-if (/^\s*import\s/m.test(source)) throw new Error('combat rules must stay import-free for the relay')
+if (/^\s*import\s/m.test(source))
+  throw new Error('combat rules must stay import-free for the relay')
 writeFileSync(
   to,
   `// Copied by scripts/relay-combat.mjs from the engine build of src/simulation/combat/damage.ts. Do not edit.\n${source}`,

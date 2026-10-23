@@ -7,12 +7,24 @@
     <link rel="icon" type="image/svg+xml" href="/brand/source.svg" />
     <!-- Critical CSS: nothing unstyled (or the error overlay) shows before ui-styles.ts runs. -->
     <style id="nabla-critical">
-      html { background: #121212; color-scheme: dark; }
+      html {
+        background: #121212;
+        color-scheme: dark;
+      }
       /* The page box before ui-styles.ts (base.css) lands: no body margin, no overflow, so the
          black first paint never shows a scrollbar. */
-      html.nabla-game, html.nabla-game body { margin: 0; height: 100%; overflow: hidden; }
-      html:not(.nabla-styles-ready) body { visibility: hidden; }
-      #error-message:not(.visible) { display: none; }
+      html.nabla-game,
+      html.nabla-game body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      html:not(.nabla-styles-ready) body {
+        visibility: hidden;
+      }
+      #error-message:not(.visible) {
+        display: none;
+      }
     </style>
     <script type="module" src="./ui-styles.ts"></script>
   </head>
@@ -83,7 +95,9 @@
           ><input id="display-scale-auto" type="checkbox" /> Escala automática (50–100%)</label
         >
         <p data-i18n="settings.performance-note">FPS y escala se aplican durante la partida.</p>
-        <button data-i18n="settings.quality-apply" id="display-apply-quality" type="button">Aplicar calidad y reiniciar demo</button>
+        <button data-i18n="settings.quality-apply" id="display-apply-quality" type="button">
+          Aplicar calidad y reiniciar demo
+        </button>
         <p data-i18n="settings.vsync-note">Sincronización: automática del navegador.</p>
       </fieldset>
       <div id="menu-sections"></div>

@@ -9,9 +9,22 @@ import { FIRE_EVENT, HIT_EVENT } from './protocol.js'
 
 const finite = z.number().finite()
 export const AUTHORITY_ID = z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/)
-const vec3 = z.tuple([finite.min(-1e6).max(1e6), finite.min(-1e6).max(1e6), finite.min(-1e6).max(1e6)])
-const quat = z.tuple([finite.min(-1).max(1), finite.min(-1).max(1), finite.min(-1).max(1), finite.min(-1).max(1)])
-const unit = z.tuple([finite.min(-1.001).max(1.001), finite.min(-1.001).max(1.001), finite.min(-1.001).max(1.001)])
+const vec3 = z.tuple([
+  finite.min(-1e6).max(1e6),
+  finite.min(-1e6).max(1e6),
+  finite.min(-1e6).max(1e6),
+])
+const quat = z.tuple([
+  finite.min(-1).max(1),
+  finite.min(-1).max(1),
+  finite.min(-1).max(1),
+  finite.min(-1).max(1),
+])
+const unit = z.tuple([
+  finite.min(-1.001).max(1.001),
+  finite.min(-1.001).max(1.001),
+  finite.min(-1.001).max(1.001),
+])
 const pose = z.object({ position: vec3, rotation: quat })
 
 /** Relay event kind of each request (pickup/drop reuse the shared entity protocol). */

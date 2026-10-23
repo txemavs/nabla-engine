@@ -8,7 +8,12 @@ const defs: InventoryDefs = {
     { id: 'holster.right', accepts: ['gun'] },
     { id: 'back', accepts: ['bow', 'arrow'] },
   ],
-  items: [{ type: 'gun' }, { type: 'ammo', stack: 4 }, { type: 'bow' }, { type: 'arrow', stack: Infinity }],
+  items: [
+    { type: 'gun' },
+    { type: 'ammo', stack: 4 },
+    { type: 'bow' },
+    { type: 'arrow', stack: Infinity },
+  ],
 }
 
 describe('CharacterInventory', () => {
@@ -37,7 +42,13 @@ describe('CharacterInventory', () => {
     expect(inv.stored('back')!.count).toBe(Infinity)
     inv.draw('pouch', 'left')
     const wire = inv.toWire()
-    expect(wire).toEqual({ i: [[0, 2, 3], [3, 4, -1]], h: [2, 4] })
+    expect(wire).toEqual({
+      i: [
+        [0, 2, 3],
+        [3, 4, -1],
+      ],
+      h: [2, 4],
+    })
     const copy = new CharacterInventory('remote', defs)
     copy.applyWire(wire)
     expect(copy.stored('back')).toEqual({ type: 'arrow', count: Infinity })

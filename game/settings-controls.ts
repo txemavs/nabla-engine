@@ -55,8 +55,7 @@ export function createControlsSection(doc: Document): HTMLElement {
   table.append(thead, body)
   const info = doc.createElement('p')
   info.className = 'settings-note'
-  info.textContent =
-    t('settings.keys.note')
+  info.textContent = t('settings.keys.note')
   const empty = doc.createElement('p')
   empty.textContent = t('settings.keys.no-matches')
   empty.hidden = true

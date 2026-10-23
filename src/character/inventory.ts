@@ -182,9 +182,11 @@ export class CharacterInventory {
   private addTo(slot: string, item: ItemStack): ActionResult {
     const def = this.defs.slots.find((s) => s.id === slot)
     if (!def) return { ok: false, reason: `no slot ${slot}` }
-    if (!def.accepts.includes(item.type)) return { ok: false, reason: `${slot} does not take ${item.type}` }
+    if (!def.accepts.includes(item.type))
+      return { ok: false, reason: `${slot} does not take ${item.type}` }
     const stack = this.slots.get(slot)
-    if (stack && stack.type !== item.type) return { ok: false, reason: `${slot} holds ${stack.type}` }
+    if (stack && stack.type !== item.type)
+      return { ok: false, reason: `${slot} holds ${stack.type}` }
     const size = this.stackSize(item.type)
     const count = Math.min(size, (stack?.count ?? 0) + item.count)
     if (stack && stack.count >= size) return { ok: false, reason: `${slot} is full` }

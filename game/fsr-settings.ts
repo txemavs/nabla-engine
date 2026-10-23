@@ -57,8 +57,7 @@ export function appendFsrControls(parent: HTMLElement, runtime: GameRuntime): vo
   value.htmlFor = sharp.id
   sharpLabel.append(sharp, value)
   const hint = doc.createElement('small')
-  hint.textContent =
-    t('settings.fsr-hint')
+  hint.textContent = t('settings.fsr-hint')
   const sync = () => {
     const settings = runtime.fsrSettings
     select.value = settings.mode
