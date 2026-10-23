@@ -41,6 +41,7 @@ import {
 import { mountSettingsHud } from './settings-hud.js'
 import { osmRoadsRequested } from './layers-ui.js'
 import { bindFlipCinematicToggle, resolveFlipCinematicEnabled } from './flip-cinematic-ui.js'
+import { bindSimulatedFireToggle, resolveSimulatedFireEnabled } from './simulated-fire-ui.js'
 import { bindRecoverToRoadToggle, resolveRecoverToRoadEnabled } from './recover-road-ui.js'
 import { bindGravityScaleSlider, resolveGravityScale } from './gravity-ui.js'
 import {
@@ -248,6 +249,7 @@ try {
     performanceLog: new URLSearchParams(location.search).get('perfLog') === '1',
     locale: 'es',
     flipCinematic: resolveFlipCinematicEnabled(boot.flipCinematic),
+    simulatedFire: resolveSimulatedFireEnabled(boot.simulatedFire),
     recoverToRoad: resolveRecoverToRoadEnabled(boot.recoverToRoad),
     gravityScale: resolveGravityScale(),
     // «Volante»: host defaults from &wheel= / VITE_NABLA_STEERING_WHEEL; the player's choice is saved.
@@ -376,6 +378,7 @@ try {
   attachSceneControls(runtime)
   bindDisplaySettings(runtime)
   bindFlipCinematicToggle(runtime)
+  bindSimulatedFireToggle(runtime)
   bindRecoverToRoadToggle(runtime)
   bindGravityScaleSlider(runtime)
   bindShadowBiasControl(runtime, boot.shadowBias)

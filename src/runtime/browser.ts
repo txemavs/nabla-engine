@@ -455,6 +455,8 @@ export interface GameRuntimeOptions {
    * Default on; hosts and the in-game menu can turn it off.
    */
   flipCinematic?: boolean
+  /** Simulated fire: lingering fuel-driven fire and trees catching fire (default on). */
+  simulatedFire?: boolean
   /**
    * R reset puts the vehicle on the nearest road/vía (scene roads + streamed OSM roads)
    * instead of uprighting it in place. Default on; hosts and the in-game menu can turn it off.
@@ -995,6 +997,7 @@ export class GameRuntime {
       mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
       startLights: options.startLights ?? 'auto',
     })
+    this.view.destruction.simulatedFire = this.options.simulatedFire !== false
     this.scene.add(this.view.root)
     this.headlamp = new Headlamp(this.view.vehicleLights.pedestrianLight)
     this.weaponLight = new THREE.SpotLight(0xfff4de, 0, 45, Math.PI / 9, 0.65, 1.5)
@@ -3879,6 +3882,15 @@ export class GameRuntime {
   setFlipCinematicEnabled(enabled: boolean): void {
     this.assertAlive()
     this.flipCinematic.enabled = enabled
+  }
+  /** Simulated fire: lingering fire lifecycle and tree ignition/char/removal (default on). */
+  get simulatedFireEnabled(): boolean {
+    return this.view.destruction.simulatedFire
+  }
+  /** Toggle simulated fire at runtime; off puts out burning trees and restores #287 fire. */
+  setSimulatedFireEnabled(enabled: boolean): void {
+    this.assertAlive()
+    this.view.destruction.simulatedFire = enabled
   }
   /** World gravity multiplier (1 = 9.81 m/s²). */
   get gravityScale(): number {
