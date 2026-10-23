@@ -480,7 +480,6 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.side-tilt': 'Side tilt',
   'settings.sign-shadows': 'Sign shadows',
   'settings.signage-collisions-and-impacts': 'Signage collisions and impacts',
-  'settings.signage-physics': 'Signage physics',
   'settings.sky': 'Sky',
   'settings.smoke-amount': 'Smoke amount (%)',
   'settings.smoke-exhausts-and-shots': 'Smoke (exhausts and shots)',

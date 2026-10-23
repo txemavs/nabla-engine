@@ -485,7 +485,6 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.side-tilt': 'Inclinación lateral',
   'settings.sign-shadows': 'Sombras de señales',
   'settings.signage-collisions-and-impacts': 'Colisiones e impactos de señalización',
-  'settings.signage-physics': 'Física de señalización',
   'settings.sky': 'Cielo',
   'settings.smoke-amount': 'Cantidad de humo (%)',
   'settings.smoke-exhausts-and-shots': 'Humo (escapes y disparos)',

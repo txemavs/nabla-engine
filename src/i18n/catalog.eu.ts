@@ -488,7 +488,6 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.side-tilt': 'Alboko okerdura',
   'settings.sign-shadows': 'Seinaleen itzalak',
   'settings.signage-collisions-and-impacts': 'Seinaleen talkak eta inpaktuak',
-  'settings.signage-physics': 'Seinaleen fisika',
   'settings.sky': 'Zerua',
   'settings.smoke-amount': 'Ke kopurua (%)',
   'settings.smoke-exhausts-and-shots': 'Kea (ihesbideak eta tiroak)',
