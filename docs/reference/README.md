@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **629 modules; 8023 executable function definitions**.
+Coverage: **630 modules; 8037 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -442,6 +442,7 @@ Coverage: **629 modules; 8023 executable function definitions**.
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
 | [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
+| [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
 | [src/runtime/core.ts](src/runtime/core.ts.md) | 0 |

@@ -18,6 +18,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       const methods = [Storage.prototype.getItem, Storage.prototype.setItem, localStorage.getItem]
       localStorage.setItem('nabla.cameraFov', '12')
       localStorage.setItem('nabla.smokePercent', '65')
+      localStorage.setItem('nabla.actionCam', 'true')
+      localStorage.setItem('nabla.bodycam', 'true')
+      localStorage.setItem('nabla.actionCamSettings', JSON.stringify({ strideMetres: 2 }))
       localStorage.setItem('nabla.xr.quality.v1', JSON.stringify({ scale: 0.9 }))
       const make = (namespace: string) => {
         const parent = document.createElement('div')
@@ -46,6 +49,17 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       let c: any
       try {
         const initial = [a.cameraFovOffset, b.cameraFovOffset, a.smokePercent, b.smokePercent]
+        const initialCamera = [
+          a.actionCamEnabled,
+          b.actionCamEnabled,
+          a.bodycamEnabled,
+          b.bodycamEnabled,
+          a.actionCamSettings.strideMetres,
+          b.actionCamSettings.strideMetres,
+        ]
+        a.setActionCamEnabled(false)
+        a.setBodycamEnabled(false)
+        a.setActionCamSettings({ strideMetres: 3 })
         a.setCameraFovOffset(25)
         a.setSmokePercent(20)
         a.setHiddenLayers(['road'])
@@ -96,6 +110,15 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         c = make('left')
         return {
           initial,
+          initialCamera,
+          cameraPreferences: [
+            b.actionCamEnabled,
+            b.bodycamEnabled,
+            b.actionCamSettings.strideMetres,
+            c.actionCamEnabled,
+            c.bodycamEnabled,
+            c.actionCamSettings.strideMetres,
+          ],
           beforeDispose,
           entryModes,
           survivor: [b.cameraFovOffset, b.smokePercent, b.asphaltContrast],
@@ -128,6 +151,8 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
     modes: ['pc', 'pc'],
     uniforms: [0.2, 0.8],
   })
+  expect(result.initialCamera).toEqual([true, true, true, true, 2, 2])
+  expect(result.cameraPreferences).toEqual([true, true, 2, false, false, 3])
   expect(result.entryModes).toEqual(['pc', 'headset-pc', 'pc'])
   expect(result.survivor).toEqual([7, 80, 0.5])
   expect(result.restored).toEqual([25, 20])

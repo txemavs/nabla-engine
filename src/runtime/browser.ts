@@ -74,7 +74,7 @@ import {
 } from './vehicle-preferences.js'
 import { assetQualityForDevice, type AssetQuality } from '../render/entity/asset-quality.js'
 import { normalizeWeaponWheel, stepWeaponWheel } from './weapon-wheel.js'
-import { normalViewTuning, smokeTuning, actionCamTuning } from '../config/gameplay-tuning.js'
+import { normalViewTuning, smokeTuning } from '../config/gameplay-tuning.js'
 import { trailerPlatformTuning } from '../config/gameplay-tuning.js'
 import { presetVehicle } from '../catalog/vehicles/library.js'
 import { randomRoadVehicle } from './random-vehicle.js'
@@ -200,14 +200,8 @@ import { createEntity } from '../entity/schema.js'
 import { showLoadingBadge } from './loading-badge.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
-import {
-  cameraFovFor,
-  cameraFovRange,
-  nextCameraFovOffset,
-  readCameraFovOffset,
-  writeCameraFovOffset,
-  type CameraFovBase,
-} from './camera-fov.js'
+import { cameraFovRange, nextCameraFovOffset } from './camera-fov.js'
+import { RuntimeCameraPreferences } from './camera-preferences.js'
 import {
   defaultSteeringWheelOffset,
   describeSteeringWheelOffset,
@@ -834,7 +828,10 @@ export class GameRuntime {
   private weaponLightOn = false
   private readonly bodycam = new BodycamAim()
   private readonly actionCam = new ActionCam()
-  private actionCamOn = actionCamTuning.enabled
+  private readonly cameraPreferences = new RuntimeCameraPreferences(
+    this.cameraState,
+    this.actionCam,
+  )
   private safetyClickHeld = false
   private weaponLight: THREE.SpotLight | null = null
   private casingMotion: CasingMotion | null = null
@@ -911,8 +908,6 @@ export class GameRuntime {
   private readonly hud: GameHud | null
   private readonly wheelDebug = new WheelDebugOverlay()
   private readonly text: ReturnType<typeof createRuntimeText>
-  private fovBase: CameraFovBase = { firstPersonFov: 70, chaseFov: 48 }
-  private fovOffset = 0
   private weaponTuning: ReturnType<typeof readSidearmTuning>
   private sidearmAimPreview = false
   private weaponPosePreview: WeaponPose | null = null
@@ -1010,8 +1005,7 @@ export class GameRuntime {
     )
     try {
       this.smokeOn = this.settings?.getItem('nabla.smoke') !== '0'
-      this.actionCamOn =
-        (this.settings?.getItem('nabla.actionCam') ?? String(actionCamTuning.enabled)) === 'true'
+      this.cameraPreferences.restoreActionCamEnabled(this.settings)
       this.visuals.setSmokePercent(
         Number(this.settings?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
       )
@@ -1019,13 +1013,7 @@ export class GameRuntime {
       /* Keep the default if storage is disabled. */
     }
     this.startCameras = resolveStartCameras(options.startCameras)
-    try {
-      this.actionCam.setSettings(
-        JSON.parse(this.settings?.getItem('nabla.actionCamSettings') ?? '{}'),
-      )
-    } catch {
-      /* Keep defaults when storage is unavailable or invalid. */
-    }
+    this.cameraPreferences.restoreActionCamSettings(this.settings)
     this.flipCinematic.enabled = options.flipCinematic !== false
     this.visuals.setAsphaltContrast(options.asphaltContrast ?? 1)
     // Reject malformed JavaScript callers before allocating browser resources.
@@ -1038,10 +1026,9 @@ export class GameRuntime {
     this.game.recover.pavedAreas = () => this.world?.pavedAreas ?? []
     this.toolbar = new GameToolbar(
       options.canvas.parentElement!,
-      () => this.fovOffset,
+      () => this.cameraPreferences.fovOffset,
       (value) => {
-        this.applyCameraFov(value)
-        writeCameraFovOffset(this.settings, this.fovOffset)
+        this.cameraPreferences.setFovOffset(value, this.settings)
       },
       {
         read: () => this.resolutionScaleState.scale,
@@ -1094,13 +1081,7 @@ export class GameRuntime {
     })
     this.adaptive.setTargetFrameMs(this.display.maxFps ? 1000 / this.display.maxFps : null)
     Object.assign(this.cameraState, createGameCameraState(options.camera))
-    this.cameraState.bodycam =
-      (this.settings?.getItem('nabla.bodycam') ?? String(normalViewTuning.enabled)) === 'true'
-    this.fovBase = {
-      firstPersonFov: this.cameraState.settings.firstPersonFov,
-      chaseFov: this.cameraState.settings.chaseFov,
-    }
-    this.applyCameraFov(readCameraFovOffset(this.settings))
+    this.cameraPreferences.restoreView(this.settings)
     this.camera.near = this.cameraState.settings.nearClip
     this.camera.far = this.cameraState.settings.farClip
     const profile = options.performance?.preset
@@ -2536,12 +2517,12 @@ export class GameRuntime {
     const targetEyes = isFirstPersonView(this.cameraState, !!sim.player.vehicleId)
     if (targetEyes && !sim.player.vehicleId && !sim.playerEjection && !sim.playerBikeRecovery) {
       this.cameraState.walkingMotion = this.actionCam.step(dt, {
-        speed: this.actionCamOn
+        speed: this.cameraPreferences.actionCamEnabled
           ? sim.player.speed * Math.min(1, Math.hypot(input.forward, input.right))
           : 0,
         // The geographic demo's hover walker is supported without foot contacts.
         grounded: sim.player.grounded || sim.options.playerMode === 'hover',
-        right: this.actionCamOn ? input.right : 0,
+        right: this.cameraPreferences.actionCamEnabled ? input.right : 0,
         yaw: this.cameraState.yaw,
         aim: this.sidearm?.aimTransition ?? 0,
       })
@@ -3499,13 +3480,6 @@ export class GameRuntime {
       sea: this.planet.sea,
     }
   }
-  /** Cockpit and chase FOV with the player's J-menu offset; read live by the camera each frame. */
-  private applyCameraFov(offset: number): void {
-    const fov = cameraFovFor(this.fovBase, offset)
-    this.fovOffset = fov.chaseFov - this.fovBase.chaseFov
-    this.cameraState.settings.firstPersonFov = fov.firstPersonFov
-    this.cameraState.settings.chaseFov = fov.chaseFov
-  }
   private rememberPlanetVisual(): void {
     writeSavedPlanetVisual(this.settings, {
       sky: this.planet.sky,
@@ -3977,13 +3951,11 @@ export class GameRuntime {
   }
   /** Player FOV offset in degrees (also in the J menu), saved as `nabla.cameraFov`. */
   get cameraFovOffset(): number {
-    return this.fovOffset
+    return this.cameraPreferences.fovOffset
   }
   setCameraFovOffset(offset: number): number {
     this.assertAlive()
-    this.applyCameraFov(offset)
-    writeCameraFovOffset(this.settings, this.fovOffset)
-    return this.fovOffset
+    return this.cameraPreferences.setFovOffset(offset, this.settings)
   }
   /** Put the aiming weapon wheel back to its default and forget the saved one. */
   resetWeaponWheel(): void {
@@ -4903,39 +4875,23 @@ export class GameRuntime {
       hit?.normal ?? up.toArray(),
     )
   }
-  /** Live quality preference shared by exhaust and gun smoke. */
   get bodycamEnabled(): boolean {
-    return !!this.cameraState.bodycam
+    return this.cameraPreferences.bodycamEnabled
   }
   get actionCamEnabled(): boolean {
-    return this.actionCamOn
+    return this.cameraPreferences.actionCamEnabled
   }
   get actionCamSettings(): ActionCamSettings {
-    return this.actionCam.settings
+    return this.cameraPreferences.actionCamSettings
   }
   setActionCamSettings(settings: Partial<ActionCamSettings>): void {
-    this.actionCam.setSettings(settings)
-    try {
-      this.settings?.setItem('nabla.actionCamSettings', JSON.stringify(this.actionCam.settings))
-    } catch {
-      /* Session settings still work. */
-    }
+    this.cameraPreferences.setActionCamSettings(settings, this.settings)
   }
   resetActionCamSettings(): void {
-    this.actionCam.resetSettings()
-    try {
-      this.settings?.setItem('nabla.actionCamSettings', JSON.stringify(this.actionCam.settings))
-    } catch {
-      /* Session settings still work. */
-    }
+    this.cameraPreferences.resetActionCamSettings(this.settings)
   }
   setActionCamEnabled(enabled: boolean): void {
-    this.actionCamOn = enabled
-    try {
-      this.settings?.setItem('nabla.actionCam', String(enabled))
-    } catch {
-      /* Keep the session preference. */
-    }
+    this.cameraPreferences.setActionCamEnabled(enabled, this.settings)
   }
   private tunnelOverride: boolean | null | undefined
   get tunnelEnabled(): boolean {
@@ -4961,13 +4917,7 @@ export class GameRuntime {
     }
   }
   setBodycamEnabled(enabled: boolean): void {
-    this.cameraState.bodycam = enabled
-    this.bodycam.reset()
-    try {
-      this.settings?.setItem('nabla.bodycam', String(enabled))
-    } catch {
-      /* Session preference still applies. */
-    }
+    this.cameraPreferences.setBodycamEnabled(enabled, this.settings, () => this.bodycam.reset())
   }
   get smokePercent(): number {
     return this.visuals.smokePercent
@@ -7339,8 +7289,10 @@ export class GameRuntime {
               this.session.simulation?.setEngineMode(entityId, mode) ??
               t('game.this-vehicle-has-a-single-engine-mode'),
             (step) => {
-              this.applyCameraFov(nextCameraFovOffset(this.fovOffset, step))
-              writeCameraFovOffset(this.settings, this.fovOffset)
+              this.cameraPreferences.setFovOffset(
+                nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
+                this.settings,
+              )
               const { firstPersonFov, chaseFov } = this.cameraState.settings
               return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
             },

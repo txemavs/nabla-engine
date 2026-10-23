@@ -91,6 +91,17 @@ render helpers keep their legacy defaults; use runtime methods to adjust a runni
 runtime. Shared asset caches, page UI and backend-selection globals are separate
 concerns: this change does not establish arbitrary mixed-backend embedding support.
 
+[RuntimeCameraPreferences](../../src/runtime/camera-preferences.ts) handles each runtime's
+FOV offset and ActionCam/bodycam preferences. It uses the existing camera state and
+ActionCam settings rather than duplicating live state. Camera options establish the base
+FOV before the saved offset is applied; startup reads do not write preferences. The HUD,
+menu and public setter share the same FOV normalization and persistence path. Existing
+`nabla.cameraFov`, `nabla.actionCam`, `nabla.actionCamSettings` and `nabla.bodycam`
+keys still go through the runtime's settings store, including legacy profile fallback.
+Motion, bodycam reset, camera transitions and XR remain under their existing owners.
+Regression coverage: `test/runtime/camera-preferences.test.ts` and
+`test/browser/e2e/runtime-settings.spec.ts`.
+
 Internally, [RuntimeVisualSettings](../../src/runtime/visual-settings.ts) owns the
 terrain visual state, beam settings and shared smoke-density object for one runtime.
 Current and later-created views receive the same objects. `GameRuntime` retains
