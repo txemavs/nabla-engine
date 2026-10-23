@@ -1214,7 +1214,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         input.min = key === 'intensity' ? '0' : '-200'
         input.max = key === 'intensity' ? '300' : '200'
         input.step = key === 'intensity' ? '1' : '0.1'
-        input.setAttribute('aria-label', text + (input === number ? ' valor' : ''))
+        input.setAttribute(
+          'aria-label',
+          input === number ? t('settings.value-suffix', { name: text }) : text,
+        )
         input.addEventListener('input', () => {
           if (!Number.isFinite(input.valueAsNumber)) return
           runtime.setMuzzleFlashTuning({ [key]: input.valueAsNumber })
