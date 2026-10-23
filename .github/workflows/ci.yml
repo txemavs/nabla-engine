@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
+      # Full history: the effects parity e2e builds a worktree at its base commit.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
