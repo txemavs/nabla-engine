@@ -223,29 +223,33 @@ ignite(key: string, ref: TreeRef, base: THREE.Vector3, width: number, height: nu
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `[0.08, 0.4, 0.68].map`
+- `Math.random`
+- `[0.08, 0.45, 0.62, 0.78].map`
 - `this.burning.set`
 - `this.exposure.delete`
 - `this.makeSmoke`
 - `this.originalColors.add`
 
-## TreeFires.ignite.callback@222
+## TreeFires.ignite.callback@226
 
-[Implementation, line 222](../../../../../src/render/entity/tree-fire.ts#L222)
+[Implementation, line 226](../../../../../src/render/entity/tree-fire.ts#L226)
 
 ```ts
-callback@222(at, k): inferred by TypeScript; see implementation
+callback@226(at, k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `Math.cos`
+- `Math.min`
 - `Math.random`
+- `Math.sin`
 - `ref.mesh.add`
 - `this.makeFlames`
 
 ## TreeFires.advance
 
-[Implementation, line 233](../../../../../src/render/entity/tree-fire.ts#L233)
+[Implementation, line 248](../../../../../src/render/entity/tree-fire.ts#L248)
 
 ```ts
 advance(key: string, fire: TreeFire, dt: number): void
@@ -279,7 +283,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TreeFires.finish
 
-[Implementation, line 285](../../../../../src/render/entity/tree-fire.ts#L285)
+[Implementation, line 300](../../../../../src/render/entity/tree-fire.ts#L300)
 
 ```ts
 finish(fire: TreeFire): void
@@ -293,7 +297,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TreeFires.clear
 
-[Implementation, line 294](../../../../../src/render/entity/tree-fire.ts#L294)
+[Implementation, line 309](../../../../../src/render/entity/tree-fire.ts#L309)
 
 Put every tree back (session reset).
 
@@ -315,7 +319,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TreeFires.dispose
 
-[Implementation, line 316](../../../../../src/render/entity/tree-fire.ts#L316)
+[Implementation, line 331](../../../../../src/render/entity/tree-fire.ts#L331)
 
 ```ts
 dispose(): void
