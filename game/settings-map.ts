@@ -23,19 +23,19 @@ export function tileMapLayout(tiles: readonly TileDiagnostic[]) {
   }))
 }
 const labels: Record<TileDiagnostic['state'], string> = {
-  visible: 'Visible',
+  visible: t('map.visible'),
   resident: t('map.in-memory'),
-  downloading: 'Pedida',
+  downloading: t('map.requested'),
   installing: t('map.preparing'),
   planned: t('map.waiting'),
-  retry: 'Reintento',
+  retry: t('map.retry'),
 }
 export function createMapSection(doc: Document, runtime: Pick<GameRuntime, 'terrainTiles'>) {
   const root = doc.createElement('fieldset')
   root.id = 'settings-map'
   root.className = 'menu-section'
   const legend = doc.createElement('legend')
-  legend.textContent = 'Mapa'
+  legend.textContent = t('settings.map')
   const note = doc.createElement('p')
   note.className = 'settings-note'
   note.textContent = t('map.live-streaming-states-tile-textures-come-in-the')

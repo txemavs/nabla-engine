@@ -176,8 +176,8 @@ export function formatMetres(metres: number): string {
 /** Spanish text for the sea status line. */
 export function seaStatus(sea: { level: number; state: string }, manual: boolean): string {
   return manual
-    ? `Nivel fijo: ${formatMetres(sea.level)}`
-    : `Marea automática: ${formatMetres(sea.level)} (${sea.state})`
+    ? t('settings.sea-fixed-level', { level: formatMetres(sea.level) })
+    : t('settings.sea-auto-tide', { level: formatMetres(sea.level), state: String(sea.state) })
 }
 
 /** The URL with `time`, `timeSpeed` and `sea` set to the current choice (or removed), other parameters kept. */
@@ -280,7 +280,7 @@ export function bindSceneControls(
   }) => {
     if (options.rememberInUrl !== false) rememberInUrl(state)
   }
-  const planet = menuSection('scene-planet', 'Planeta')
+  const planet = menuSection('scene-planet', t('settings.planet'))
 
   const timeNow = document.createElement('p')
   timeNow.id = 'time-now'
@@ -345,7 +345,7 @@ export function bindSceneControls(
   const seaTide = button('sea-tide', t('scene.automatic-tide'))
   seaTide.title = t('scene.back-to-the-simplified-tide-1-m')
 
-  const clouds = check('planet-clouds', 'Nubes')
+  const clouds = check('planet-clouds', t('settings.clouds'))
   const artistic = check('planet-clouds-artistic', t('scene.artistic-clouds'))
   const cloudAmount = field(
     'planet-cloud-amount',
@@ -360,22 +360,22 @@ export function bindSceneControls(
   cloudAmountRow.append(t('scene.cloud-amount') + ' ', cloudAmountLabel, cloudAmount)
 
   planet.append(
-    group('Hora', 'scene-time', timeNow, timeRow, timeSpeedRow, timeLive),
-    group('Cielo', 'scene-sky', sky.label),
-    group('Sol', 'scene-sun', sun.label),
-    group('Mar', 'scene-sea', seaNow, seaEnabled.label, seaRow, seaTide),
-    group('Nubes', 'scene-clouds', clouds.label, artistic.label, cloudAmountRow),
+    group(t('settings.time-of-day'), 'scene-time', timeNow, timeRow, timeSpeedRow, timeLive),
+    group(t('settings.sky'), 'scene-sky', sky.label),
+    group(t('settings.sun'), 'scene-sun', sun.label),
+    group(t('settings.sea'), 'scene-sea', seaNow, seaEnabled.label, seaRow, seaTide),
+    group(t('settings.clouds'), 'scene-clouds', clouds.label, artistic.label, cloudAmountRow),
   )
 
-  const vehicles = menuSection('scene-vehicles', 'Vehículos')
+  const vehicles = menuSection('scene-vehicles', t('settings.vehicles'))
   const choice = document.createElement('select')
   choice.id = 'vehicle-choice'
   choice.setAttribute('aria-label', t('scene.vehicle-to-add'))
   const vehicleGroup = document.createElement('optgroup')
-  vehicleGroup.label = 'Vehículos'
+  vehicleGroup.label = t('settings.vehicles')
   for (const item of vehicleChoices()) vehicleGroup.append(new Option(item.label, item.id))
   const objectGroup = document.createElement('optgroup')
-  objectGroup.label = 'Objetos'
+  objectGroup.label = t('settings.objects')
   for (const item of objectChoices()) objectGroup.append(new Option(item.label, item.id))
   choice.append(vehicleGroup, objectGroup)
   const choiceRow = document.createElement('label')
@@ -605,7 +605,7 @@ export function bindSceneControls(
         item.dataset.placedId = placed.id
         const name = document.createElement('span')
         name.textContent = placed.name
-        const remove = button(`placed-remove-${placed.id}`, 'Quitar')
+        const remove = button(`placed-remove-${placed.id}`, t('settings.remove'))
         remove.addEventListener('click', () => {
           try {
             runtime.removePlaced(placed.id)

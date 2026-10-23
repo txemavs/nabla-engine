@@ -1,3 +1,4 @@
+import { t } from '@nabla/engine/i18n'
 import { pageSearch } from './page-query.js'
 import { keyboardAction } from '@nabla/engine/config/controls'
 /** Where the player is, as latitude/longitude, and a way to go to any coordinates (menu section "Posición"). */
@@ -16,14 +17,11 @@ export interface Jump {
 
 /** The URL for starting over the position written in `text`, keeping the rest of `search`. */
 export function jumpToPosition(search: string, text: string): Jump {
-  if (!text.trim())
-    return { error: 'Escribe una posición: latitud, longitud (por ejemplo 43.3386, -1.7899).' }
+  if (!text.trim()) return { error: t('settings.position-empty') }
   const point = parseLatLon(text)
   if (!point)
     return {
-      error:
-        'No entiendo esa posición. Pega «latitud, longitud» en grados (por ejemplo 43.3386, -1.7899, ' +
-        'como lo copia Google Maps); la latitud va de −85,05 a 85,05 y la longitud de −180 a 180.',
+      error: t('settings.position-invalid'),
     }
   const params = new URLSearchParams(search)
   for (const key of POSITION_KEYS) params.delete(key)
@@ -72,7 +70,7 @@ export function showLocation(location: LatLon | null | undefined): void {
   if (el) {
     el.textContent = currentPositionText()
     if (!el.title) {
-      el.title = 'Latitud, longitud actuales. Clic para copiar.'
+      el.title = t('settings.position-title')
       el.addEventListener('click', () => void copyText(currentPositionText()))
     }
   }
@@ -88,16 +86,16 @@ export function bindPosition(
   search: string = pageSearch(),
   navigate: (next: string) => void = (next) => location.assign(location.pathname + next),
 ): void {
-  const section = menuSection('terrain-position', 'Posición')
+  const section = menuSection('terrain-position', t('settings.position'))
   const now = document.createElement('p')
   now.id = 'position-now'
   now.setAttribute('role', 'status')
   const copy = document.createElement('button')
   copy.type = 'button'
   copy.id = 'position-copy'
-  copy.textContent = 'Copiar posición'
+  copy.textContent = t('settings.copy-position')
   const label = document.createElement('label')
-  label.textContent = 'Ir a latitud, longitud'
+  label.textContent = t('settings.go-to-lat-lon')
   const input = document.createElement('input')
   input.type = 'text'
   input.id = 'position-input'
@@ -108,14 +106,16 @@ export function bindPosition(
   const go = document.createElement('button')
   go.type = 'button'
   go.id = 'position-go'
-  go.textContent = 'Ir'
+  go.textContent = t('settings.go')
   const message = document.createElement('p')
   message.id = 'position-message'
   message.setAttribute('role', 'status')
   section.append(now, copy, label, go, message)
 
   const update = (position: LatLon | null) => {
-    now.textContent = position ? `Ahora: ${formatLatLon(position)}` : 'Ahora: sin posición todavía'
+    now.textContent = position
+      ? t('settings.position-now', { position: formatLatLon(position) })
+      : t('settings.position-none')
     copy.disabled = !position
   }
   listeners.add(update)
@@ -123,8 +123,8 @@ export function bindPosition(
 
   copy.addEventListener('click', async () => {
     message.textContent = (await copyText(currentPositionText()))
-      ? 'Posición copiada.'
-      : 'No se pudo copiar: selecciona el texto de arriba.'
+      ? t('settings.position-copied')
+      : t('settings.copy-failed-select')
   })
   const submit = () => {
     const jump = jumpToPosition(search, input.value)
@@ -132,7 +132,7 @@ export function bindPosition(
       message.textContent = jump.error
       return
     }
-    message.textContent = 'Yendo…'
+    message.textContent = t('settings.going')
     navigate(jump.search!)
   }
   go.addEventListener('click', submit)

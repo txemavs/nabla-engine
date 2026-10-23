@@ -1,3 +1,4 @@
+import { t } from '@nabla/engine/i18n'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
 
@@ -18,7 +19,7 @@ export function bindExhaustControls(
     | 'setVehiclePreferences'
   >,
 ): void {
-  const group = menuSection('settings-truck-exhaust', 'Vehículo · escape y humo')
+  const group = menuSection('settings-truck-exhaust', t('settings.truck-exhaust'))
   // Saved per vehicle model (runtime.setVehiclePreferences), like the lights: entering another
   // model loads its own offset and quantity.
   let model: string | null | undefined
@@ -46,7 +47,7 @@ export function bindExhaustControls(
     refresh()
   })
   amountLabel.dataset.exhaustGroup = 'amount'
-  amountLabel.append('Cantidad ', amountSlider, ' ', amountOutput)
+  amountLabel.append(t('settings.exhaust.amount'), amountSlider, ' ', amountOutput)
   group.append(amountLabel)
   const rows: { slider: HTMLInputElement; output: HTMLOutputElement }[] = []
   const refresh = () => {
@@ -58,9 +59,9 @@ export function bindExhaustControls(
     })
   }
   for (const [i, title] of [
-    'Horizontal · derecha',
-    'Altura · arriba',
-    'Profundidad · atrás',
+    t('settings.exhaust.right'),
+    t('settings.exhaust.up'),
+    t('settings.exhaust.back'),
   ].entries()) {
     const label = document.createElement('label')
     const slider = document.createElement('input')
@@ -85,7 +86,7 @@ export function bindExhaustControls(
   }
   const reset = document.createElement('button')
   reset.type = 'button'
-  reset.textContent = 'Restablecer'
+  reset.textContent = t('settings.reset')
   reset.addEventListener('click', () => {
     runtime.setTruckExhaustOffset([0, 0, 0])
     runtime.setTruckExhaustAmount(1)

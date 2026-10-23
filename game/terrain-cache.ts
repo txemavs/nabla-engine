@@ -79,7 +79,7 @@ export function bindTerrainCache(
   // Only the terrain games have a «Terreno» source section; the cache gets its own «Caché» section
   // (Ajustes → Rendimiento).
   if (!document.getElementById('terrain-source')) return
-  const section = menuSection('terrain-cache', 'Caché')
+  const section = menuSection('terrain-cache', t('settings.cache'))
   const settings = currentCacheSettings(search, storage)
   void applyCacheSettings(runtime, settings).catch(() => {})
   const live = runtime.streaming
@@ -121,7 +121,7 @@ export function bindTerrainCache(
   const retry = document.createElement('button')
   retry.type = 'button'
   retry.id = 'terrain-missing-retry'
-  retry.textContent = 'Recargar'
+  retry.textContent = t('settings.reload')
   retry.title = t('cache.request-the-missing-cells-from-the-server-again')
   const list = document.createElement('pre')
   list.id = 'terrain-missing-list'

@@ -1,3 +1,4 @@
+import { t } from '@nabla/engine/i18n'
 import { menuSubtitle } from './menu.js'
 import { driverPoseRange, type DriverPoseAdjustment } from '@nabla/engine/config/driver-pose'
 
@@ -11,7 +12,7 @@ export function driverPoseControls() {
   root.id = 'scene-driver-pose'
   root.className = 'planet-group'
   const status = document.createElement('p')
-  status.textContent = 'Entra en el Ferrari para colocar la cabeza.'
+  status.textContent = t('settings.driver.enter-ferrari')
   const inputs: {
     group: 'head' | 'view'
     axis: number
@@ -19,10 +20,10 @@ export function driverPoseControls() {
     input: HTMLInputElement
     output: HTMLOutputElement
   }[] = []
-  root.append(menuSubtitle('Cabeza y vista'), status)
+  root.append(menuSubtitle(t('settings.driver.head-and-view')), status)
   for (const [group, title] of [
-    ['head', 'Cabeza del conductor'],
-    ['view', 'Vista respecto a la cabeza'],
+    ['head', t('settings.driver.head')],
+    ['view', t('settings.driver.view')],
   ] as const) {
     const details = document.createElement('details')
     details.open = group === 'head'
@@ -30,9 +31,9 @@ export function driverPoseControls() {
     summary.textContent = title
     details.append(summary)
     for (const [axis, label, sign] of [
-      [0, 'Lateral (+ derecha)', 1],
-      [1, 'Altura', 1],
-      [2, 'Adelante / atrás (+ adelante)', -1],
+      [0, t('settings.driver.lateral'), 1],
+      [1, t('settings.driver.height'), 1],
+      [2, t('settings.driver.forward'), -1],
     ] as const) {
       const row = document.createElement('label')
       const output = document.createElement('output')
@@ -56,14 +57,14 @@ export function driverPoseControls() {
   values.readOnly = true
   values.rows = 4
   values.hidden = true
-  values.setAttribute('aria-label', 'Valores de cabeza y vista para copiar')
+  values.setAttribute('aria-label', t('settings.driver.values-label'))
   const reset = document.createElement('button')
   reset.type = 'button'
-  reset.textContent = 'Restablecer cabeza y vista'
+  reset.textContent = t('settings.driver.reset')
   reset.disabled = true
   const copy = document.createElement('button')
   copy.type = 'button'
-  copy.textContent = 'Copiar valores'
+  copy.textContent = t('settings.copy-values')
   copy.disabled = true
   root.append(reset, copy, values)
   for (const control of [...inputs.map((i) => i.input), reset, copy, values])
@@ -83,9 +84,7 @@ export function driverPoseControls() {
       const pose = runtime.driverPose
       for (const input of inputs) input.input.disabled = !pose
       reset.disabled = copy.disabled = !pose
-      status.textContent = pose
-        ? `Ajustando ${pose.name}`
-        : 'Entra en el Ferrari para colocar la cabeza.'
+      status.textContent = pose ? `Ajustando ${pose.name}` : t('settings.driver.enter-ferrari')
       if (!pose) {
         model = undefined
         values.hidden = true
@@ -111,12 +110,12 @@ export function driverPoseControls() {
     copy.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(values.value)
-        status.textContent = 'Valores copiados'
+        status.textContent = t('settings.values-copied')
       } catch {
         values.hidden = false
         values.focus()
         values.select()
-        status.textContent = 'Seleccionados: pulsa Ctrl+C para copiarlos'
+        status.textContent = t('settings.selected-press-ctrl-c')
       }
     })
     refresh()

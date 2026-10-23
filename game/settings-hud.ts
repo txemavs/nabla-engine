@@ -676,7 +676,11 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // hosts leave it out (`data-settings-hidden="settings-actor"`).
   if (typeof runtime.setActor === 'function' && runtime.actorSelectable) {
     const section = fieldset('settings-actor', t('settings.actor'))
-    const choice = (id: string, label: string, values: ReadonlyArray<readonly [string, string]>) => {
+    const choice = (
+      id: string,
+      label: string,
+      values: ReadonlyArray<readonly [string, string]>,
+    ) => {
       const row = doc.createElement('label')
       const select = doc.createElement('select')
       select.id = id
@@ -890,7 +894,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
 
   if (doc.documentElement.dataset.irunSigns === 'true') {
-    const physicsSection = fieldset('settings-sign-physics', t('settings.signage-physics'))
+    // Signage physics is part of «Traffic signs»: a plain group inside it, not a section of its own.
+    const physicsSection = doc.createElement('div')
+    physicsSection.id = 'settings-sign-physics'
     const physicsInput = doc.createElement('input')
     physicsInput.type = 'checkbox'
     physicsInput.checked = runtime.sceneryPhysics.enabled
@@ -1340,7 +1346,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         input.min = position ? '-500' : '-180'
         input.max = position ? '500' : '180'
         input.step = '0.1'
-        input.setAttribute('aria-label', input === number ? t('settings.value-suffix', { name: title }) : title)
+        input.setAttribute(
+          'aria-label',
+          input === number ? t('settings.value-suffix', { name: title }) : title,
+        )
         input.addEventListener('input', () => {
           if (!Number.isFinite(input.valueAsNumber)) return
           const values = runtime.weaponPoseTuning
@@ -1709,7 +1718,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         const target = present.find((el) => el.id === keep)!
         for (const id of ids)
           for (const twin of present.filter((el) => el.id === id && el !== target)) {
-            for (const child of [...twin.children]) if (child.tagName !== 'LEGEND') target.append(child)
+            for (const child of [...twin.children])
+              if (child.tagName !== 'LEGEND') target.append(child)
             twin.remove()
           }
       }

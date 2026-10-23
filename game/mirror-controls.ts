@@ -111,10 +111,18 @@ export function mirrorControls(): {
   status.id = 'mirror-status'
   status.setAttribute('role', 'status')
   status.textContent = t('mirror.get-into-a-vehicle-with-mirrors-to-adjust-them')
-  const rows = MIRROR_SIDES.map(({ side, label }) => {
-    const yaw = slider(`mirror-${side}-yaw`, `Espejo ${label}: giro`, MIRROR_RANGE.yaw)
+  const rows = MIRROR_SIDES.map(({ side }) => {
+    const yaw = slider(
+      `mirror-${side}-yaw`,
+      t('mirror.slider-yaw', { side: t(`mirror.side-${side}`) }),
+      MIRROR_RANGE.yaw,
+    )
     yaw.row.title = t('mirror.turns-it-outwards-more-of-the-outside-inwards-mo')
-    const tilt = slider(`mirror-${side}-tilt`, `Espejo ${label}: inclinación`, MIRROR_RANGE.tilt)
+    const tilt = slider(
+      `mirror-${side}-tilt`,
+      t('mirror.slider-tilt', { side: t(`mirror.side-${side}`) }),
+      MIRROR_RANGE.tilt,
+    )
     tilt.row.title = t('mirror.tilts-it-up-down')
     return { side, yaw, tilt }
   })
@@ -127,7 +135,7 @@ export function mirrorControls(): {
   values.className = 'planet-settings-config'
   values.hidden = true
   root.append(
-    menuSubtitle('Espejos'),
+    menuSubtitle(t('settings.mirrors')),
     status,
     ...rows.flatMap((r) => [r.yaw.row, r.tilt.row]),
     reset,

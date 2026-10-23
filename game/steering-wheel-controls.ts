@@ -4,6 +4,7 @@
  * of the pose baked into its GLB. The engine applies, clamps and saves the choice per steering
  * model (`GameRuntime.setSteeringWheelOffset`); this file only shows it, in centimetres.
  */
+import { t } from '@nabla/engine/i18n'
 import { menuSubtitle } from './menu.js'
 
 /** Metres, as in the engine (`SteeringWheelOffset`). */
@@ -77,20 +78,20 @@ export function steeringWheelControls(): {
   const status = document.createElement('p')
   status.id = 'steering-wheel-status'
   status.setAttribute('role', 'status')
-  status.textContent = 'Entra en un coche para ajustar su volante.'
-  const distance = slider('steering-wheel-distance', 'Volante: distancia')
-  distance.row.title = '+ lo aleja de ti, hacia el cuadro de instrumentos; − lo acerca'
-  const height = slider('steering-wheel-height', 'Volante: altura')
-  height.row.title = '+ lo sube; − lo baja'
+  status.textContent = t('settings.wheel.enter-car')
+  const distance = slider('steering-wheel-distance', t('settings.wheel.distance'))
+  distance.row.title = t('settings.wheel.distance-hint')
+  const height = slider('steering-wheel-height', t('settings.wheel.height'))
+  height.row.title = t('settings.wheel.height-hint')
   const reset = document.createElement('button')
   reset.type = 'button'
   reset.id = 'steering-wheel-reset'
-  reset.textContent = 'Restablecer volante'
+  reset.textContent = t('settings.wheel.reset')
   const values = document.createElement('p')
   values.id = 'steering-wheel-values'
   values.className = 'planet-settings-config'
   values.hidden = true
-  root.append(menuSubtitle('Volante'), status, distance.row, height.row, reset, values)
+  root.append(menuSubtitle(t('settings.wheel')), status, distance.row, height.row, reset, values)
   // Arrow keys move the slider, not the car.
   for (const input of [distance.input, height.input, reset])
     input.addEventListener('keydown', (event) => event.stopPropagation())
@@ -116,7 +117,7 @@ export function steeringWheelControls(): {
       for (const control of controls) control.disabled = !wheel
       if (!wheel) {
         model = null
-        status.textContent = 'Entra en un coche para ajustar su volante.'
+        status.textContent = t('settings.wheel.enter-car')
         values.hidden = true
         return
       }

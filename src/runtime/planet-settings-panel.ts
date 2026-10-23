@@ -6,6 +6,7 @@
  * one look. Mount `root` under the HUD overlay now; a ship monitor can append
  * the same root later — do not mount on a monitor in this change.
  */
+import { t } from '../i18n/index.js'
 import { installVehicleMonitorStyles, vehicleMonitorStyleText } from './vehicle-monitor-styles.js'
 
 /** Snapshot of visual knobs for host/demo config paste. */
@@ -36,9 +37,9 @@ export interface PlanetSettingsRuntime {
 }
 
 export const CLOUD_PRESSURE_PRESETS = [
-  { id: 'calm', label: 'Calma', value: 0 },
-  { id: 'fair', label: 'Estable', value: 0.12 },
-  { id: 'stormy', label: 'Tormenta', value: 0.55 },
+  { id: 'calm', label: t('settings.cloud-pressure.calm'), value: 0 },
+  { id: 'fair', label: t('settings.cloud-pressure.fair'), value: 0.12 },
+  { id: 'stormy', label: t('settings.cloud-pressure.stormy'), value: 0.55 },
 ] as const
 
 export function formatPlanetVisualConfig(config: PlanetVisualConfig): string {
@@ -146,7 +147,7 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   for (const preset of CLOUD_PRESSURE_PRESETS) {
     pressureMode.add(new Option(preset.label, preset.id))
   }
-  pressureMode.add(new Option('Personalizado', 'custom'))
+  pressureMode.add(new Option(t('settings.cloud-pressure.custom'), 'custom'))
 
   const pressure = doc.createElement('input')
   pressure.type = 'range'
@@ -176,17 +177,17 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   const copyBtn = doc.createElement('button')
   copyBtn.type = 'button'
   copyBtn.id = 'ps-copy-config'
-  copyBtn.textContent = 'Copiar config'
+  copyBtn.textContent = t('settings.copy-config')
 
   // On/off switches share one compact block (a grid in the HUD); sliders follow, one row each.
   const toggles = doc.createElement('div')
   toggles.className = 'planet-settings-toggles'
   toggles.append(
-    row('Cielo', sky),
-    row('Sol y destello', sun),
-    row('Mar', sea),
-    row('Nubes', clouds),
-    row('Nubes artísticas', artistic),
+    row(t('settings.sky'), sky),
+    row(t('settings.sun-and-flare'), sun),
+    row(t('settings.sea'), sea),
+    row(t('settings.clouds'), clouds),
+    row(t('settings.artistic-clouds'), artistic),
   )
   const config = doc.createElement('div')
   config.className = 'planet-settings-config-block'
@@ -194,10 +195,10 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
 
   root.append(
     toggles,
-    row('Cantidad de nubes', amount, amountVal),
-    row('Modo de presión de nubes', pressureMode),
-    row('Presión de nubes', pressure, pressureVal),
-    row('Destello del sol', flare, flareVal),
+    row(t('settings.cloud-amount'), amount, amountVal),
+    row(t('settings.cloud-pressure-mode'), pressureMode),
+    row(t('settings.cloud-pressure'), pressure, pressureVal),
+    row(t('settings.sun-flare'), flare, flareVal),
     config,
   )
 
@@ -278,12 +279,12 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     const text = configOut.textContent ?? ''
     try {
       await navigator.clipboard.writeText(text)
-      copyBtn.textContent = 'Copiado'
+      copyBtn.textContent = t('settings.copied')
       setTimeout(() => {
-        copyBtn.textContent = 'Copiar config'
+        copyBtn.textContent = t('settings.copy-config')
       }, 1200)
     } catch {
-      copyBtn.textContent = 'Error al copiar'
+      copyBtn.textContent = t('settings.copy-error')
     }
   })
 

@@ -42,7 +42,7 @@ export function bindTerrainSelector(
 ): void {
   const active = parseTerrainSource(search) ?? { kind: 'flat' as TerrainSourceKind }
   const stored = loadTerrainSource(storage, SOURCE_STORAGE_KEY)
-  const section = menuSection('terrain-source', 'Terreno')
+  const section = menuSection('terrain-source', t('settings.terrain'))
   const radios = new Map<TerrainSourceKind, HTMLInputElement>()
   for (const entry of TERRAIN_SOURCES) {
     const label = document.createElement('label')
@@ -58,7 +58,7 @@ export function bindTerrainSelector(
     section.append(label)
   }
   const tilesLabel = document.createElement('label')
-  tilesLabel.textContent = 'URL base de las teselas'
+  tilesLabel.textContent = t('settings.tiles-base-url')
   const tiles = document.createElement('input')
   tiles.type = 'url'
   tiles.id = 'terrain-tiles-url'
@@ -71,11 +71,11 @@ export function bindTerrainSelector(
   lidar.type = 'checkbox'
   lidar.id = 'terrain-lidar'
   lidar.checked = active.kind === 'packages' && active.relief === 'lidar'
-  lidarLabel.append(lidar, ' Relieve LiDAR (solo visual)')
+  lidarLabel.append(lidar, t('settings.lidar-relief'))
   const apply = document.createElement('button')
   apply.type = 'button'
   apply.id = 'terrain-apply'
-  apply.textContent = 'Aplicar y recargar'
+  apply.textContent = t('settings.apply-and-reload')
   const message = document.createElement('p')
   message.id = 'terrain-message'
   message.setAttribute('role', 'status')
