@@ -373,7 +373,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.canFire
 
-[Implementation, line 213](../../../../src/character/weapon-loadout.ts#L213)
+[Implementation, line 220](../../../../src/character/weapon-loadout.ts#L220)
 
 Whether a shot may leave the drawn weapon now (no side effects).
 
@@ -387,12 +387,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.weaponFor`
 - `this.weapons.some`
 
-## WeaponLoadout.canFire.callback@216
+## WeaponLoadout.canFire.callback@223
 
-[Implementation, line 216](../../../../src/character/weapon-loadout.ts#L216)
+[Implementation, line 223](../../../../src/character/weapon-loadout.ts#L223)
 
 ```ts
-callback@216(w): inferred by TypeScript; see implementation
+callback@223(w): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -401,7 +401,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.fire
 
-[Implementation, line 229](../../../../src/character/weapon-loadout.ts#L229)
+[Implementation, line 236](../../../../src/character/weapon-loadout.ts#L236)
 
 Fire once: the loadout's checks decide; the shot is then announced to the authority (fire is
 presentation there, so an unjoined relay never blocks a shot). Spends a round.
@@ -423,7 +423,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.reload
 
-[Implementation, line 248](../../../../src/character/weapon-loadout.ts#L248)
+[Implementation, line 255](../../../../src/character/weapon-loadout.ts#L255)
 
 R: refill the drawn weapon's magazine (one ammo item spent when it uses one).
 
@@ -444,17 +444,33 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.roundsOf`
 - `this.weaponFor`
 
-## WeaponLoadout.reload.callback@255
+## WeaponLoadout.reload.callback@262
 
-[Implementation, line 255](../../../../src/character/weapon-loadout.ts#L255)
+[Implementation, line 262](../../../../src/character/weapon-loadout.ts#L262)
 
 ```ts
-callback@255([, stack]): inferred by TypeScript; see implementation
+callback@262([, stack]): inferred by TypeScript; see implementation
 ```
+
+## WeaponLoadout.collect
+
+[Implementation, line 282](../../../../src/character/weapon-loadout.ts#L282)
+
+A weapon the host collected outside the authority's ground (the runtime's own world pickup):
+it goes into the kit and, like a claimed ground item, to its hand when nothing is drawn.
+
+```ts
+collect(item: ItemStack): LoadoutResult
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.drawPicked`
+- `this.grant`
 
 ## WeaponLoadout.grant
 
-[Implementation, line 272](../../../../src/character/weapon-loadout.ts#L272)
+[Implementation, line 291](../../../../src/character/weapon-loadout.ts#L291)
 
 Put an item straight into the kit (spawn loadout), not through the ground.
 
@@ -470,7 +486,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.dispose
 
-[Implementation, line 280](../../../../src/character/weapon-loadout.ts#L280)
+[Implementation, line 299](../../../../src/character/weapon-loadout.ts#L299)
 
 ```ts
 dispose(): void
@@ -484,7 +500,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.applyItem
 
-[Implementation, line 288](../../../../src/character/weapon-loadout.ts#L288)
+[Implementation, line 307](../../../../src/character/weapon-loadout.ts#L307)
 
 ```ts
 applyItem(change: ItemChange): void
@@ -498,7 +514,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.applyHealth
 
-[Implementation, line 294](../../../../src/character/weapon-loadout.ts#L294)
+[Implementation, line 313](../../../../src/character/weapon-loadout.ts#L313)
 
 ```ts
 applyHealth(change: HealthChange): void
@@ -510,7 +526,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.taken
 
-[Implementation, line 304](../../../../src/character/weapon-loadout.ts#L304)
+[Implementation, line 324](../../../../src/character/weapon-loadout.ts#L324)
 
 Item `id` left the ground, into `by`'s kit (null: removed).
 
@@ -524,17 +540,31 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.armed`
 - `this.authority.request`
 - `this.changed`
-- `this.draw`
+- `this.drawPicked`
 - `this.groundItems.delete`
 - `this.groundItems.get`
-- `this.inventory.inHand`
 - `this.inventory.pickup`
 - `this.pending.delete`
+
+## WeaponLoadout.drawPicked
+
+[Implementation, line 347](../../../../src/character/weapon-loadout.ts#L347)
+
+A picked-up weapon goes to its hand at once when nothing else is drawn.
+
+```ts
+drawPicked(type: string): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.draw`
+- `this.inventory.inHand`
 - `this.weaponFor`
 
 ## WeaponLoadout.armed
 
-[Implementation, line 324](../../../../src/character/weapon-loadout.ts#L324)
+[Implementation, line 353](../../../../src/character/weapon-loadout.ts#L353)
 
 A weapon newly owned starts with a full magazine.
 
@@ -550,7 +580,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.refuse
 
-[Implementation, line 329](../../../../src/character/weapon-loadout.ts#L329)
+[Implementation, line 358](../../../../src/character/weapon-loadout.ts#L358)
 
 ```ts
 refuse(reason: FireRefusal): FireVerdict
@@ -562,7 +592,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WeaponLoadout.changed
 
-[Implementation, line 335](../../../../src/character/weapon-loadout.ts#L335)
+[Implementation, line 364](../../../../src/character/weapon-loadout.ts#L364)
 
 ```ts
 changed(): void

@@ -200,7 +200,14 @@ export class WeaponLoadout {
     this.inventory.release(hand)
     if (drawn) this.drawnType = null
     this.changed()
-    if (!this.authority.request({ type: 'drop', item: stack.type, count: stack.count, position: [...at] })) {
+    if (
+      !this.authority.request({
+        type: 'drop',
+        item: stack.type,
+        count: stack.count,
+        position: [...at],
+      })
+    ) {
       // Not accepted: keep it rather than lose it.
       this.inventory.pickup(stack)
       this.changed()
@@ -268,6 +275,18 @@ export class WeaponLoadout {
     return { ok: true }
   }
 
+  /**
+   * A weapon the host collected outside the authority's ground (the runtime's own world pickup):
+   * it goes into the kit and, like a claimed ground item, to its hand when nothing is drawn.
+   */
+  collect(item: ItemStack): LoadoutResult {
+    if (this.isDead) return { ok: false, reason: 'dead' }
+    const result = this.grant(item)
+    if (!result.ok) return result
+    this.drawPicked(item.type)
+    return { ok: true }
+  }
+
   /** Put an item straight into the kit (spawn loadout), not through the ground. */
   grant(item: ItemStack, slot?: string): LoadoutResult {
     const result = this.inventory.pickup(item, slot)
@@ -294,7 +313,8 @@ export class WeaponLoadout {
   private applyHealth(change: HealthChange): void {
     const self = this.authority.self
     if (!self || change.target !== self) return
-    const dead = change.type === 'death' ? true : change.type === 'respawn' ? false : change.health <= 0
+    const dead =
+      change.type === 'death' ? true : change.type === 'respawn' ? false : change.health <= 0
     if (dead === this.isDead) return
     this.isDead = dead
     this.changed()
@@ -310,14 +330,23 @@ export class WeaponLoadout {
     const result = this.inventory.pickup({ type: item.item, count: item.count })
     if (!result.ok) {
       console.info(`[weapon] cannot keep ${item.item}: ${result.reason}; back to the ground`)
-      this.authority.request({ type: 'drop', item: item.item, count: item.count, position: [...item.position] })
+      this.authority.request({
+        type: 'drop',
+        item: item.item,
+        count: item.count,
+        position: [...item.position],
+      })
       return
     }
     this.armed(item.item)
-    // A picked-up weapon goes to its hand at once when nothing else is drawn.
-    const def = this.weaponFor(item.item)
-    if (def && !this.drawnType && !this.inventory.inHand(def.hand)) this.draw(def.type)
+    this.drawPicked(item.item)
     this.changed()
+  }
+
+  /** A picked-up weapon goes to its hand at once when nothing else is drawn. */
+  private drawPicked(type: string): void {
+    const def = this.weaponFor(type)
+    if (def && !this.drawnType && !this.inventory.inHand(def.hand)) this.draw(def.type)
   }
 
   /** A weapon newly owned starts with a full magazine. */

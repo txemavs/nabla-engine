@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { bodySlotDefs } from '../../src/character/body-slots.js'
 import type { InventoryDefs } from '../../src/character/inventory.js'
-import type { AuthorityItem, GameAuthority, HealthChange, ItemChange } from '../../src/net/authority.js'
+import type {
+  AuthorityItem,
+  GameAuthority,
+  HealthChange,
+  ItemChange,
+} from '../../src/net/authority.js'
 import { LocalAuthority, type AuthorityRequest } from '../../src/net/authority.js'
 import { WeaponLoadout, type WeaponDef } from '../../src/character/weapon-loadout.js'
 
@@ -15,8 +20,14 @@ const WEAPONS: WeaponDef[] = [
 ]
 const O: [number, number, number] = [0, 0, 0]
 const F: [number, number, number] = [0, 0, -1]
-const make = (authority: GameAuthority) => new WeaponLoadout({ inventory: DEFS, weapons: WEAPONS, authority })
-const place = (authority: LocalAuthority, item: string, count: number, position: [number, number, number]) => {
+const make = (authority: GameAuthority) =>
+  new WeaponLoadout({ inventory: DEFS, weapons: WEAPONS, authority })
+const place = (
+  authority: LocalAuthority,
+  item: string,
+  count: number,
+  position: [number, number, number],
+) => {
   authority.request({ type: 'drop', item, count, position })
   return lastItem(authority)
 }
@@ -29,7 +40,10 @@ const lastItem = (authority: LocalAuthority) => {
 /** Two players in one room: one shared ground, the first pickup request wins (as the relay). */
 class Room {
   readonly items = new Map<string, AuthorityItem>()
-  private readonly seats = new Set<{ items: (c: ItemChange) => void; health: (c: HealthChange) => void }>()
+  private readonly seats = new Set<{
+    items: (c: ItemChange) => void
+    health: (c: HealthChange) => void
+  }>()
   private next = 0
   join(self: string): GameAuthority {
     const room = this
@@ -42,7 +56,12 @@ class Room {
           if (!room.items.delete(r.item)) return true // sent; the relay just never grants it
           room.emit({ type: 'removed', id: r.item, by: self })
         } else if (r.type === 'drop') {
-          const item = { id: `${self}.${++room.next}`, item: r.item, count: r.count, position: r.position }
+          const item = {
+            id: `${self}.${++room.next}`,
+            item: r.item,
+            count: r.count,
+            position: r.position,
+          }
           room.items.set(item.id, item)
           room.emit({ type: 'added', item })
         }
@@ -139,5 +158,20 @@ describe('WeaponLoadout', () => {
     expect(me.fire(O, F)).toEqual({ ok: false, reason: 'dead' })
     room.health({ type: 'respawn', target: 'p1', health: 100 })
     expect(me.fire(O, F).ok).toBe(true)
+  })
+
+  it('a pistol collected from a world pickup is drawn and fires (home game ground pistol)', () => {
+    const me = make(new LocalAuthority())
+    expect(me.canFire()).toEqual({ ok: false, reason: 'unarmed' })
+    expect(me.collect({ type: 'pistol', count: 1 })).toEqual({ ok: true })
+    expect(me.drawn).toBe('pistol')
+    expect(me.fire(O, F)).toEqual({ ok: true, weapon: 'pistol' })
+  })
+  it('collecting while another weapon is drawn keeps that one in hand', () => {
+    const me = make(new LocalAuthority())
+    me.collect({ type: 'bow', count: 1 })
+    me.collect({ type: 'pistol', count: 1 })
+    expect(me.drawn).toBe('bow')
+    expect(me.carries(1)).toBe(true)
   })
 })

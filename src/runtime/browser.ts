@@ -5803,6 +5803,11 @@ export class GameRuntime {
   private loadout: WeaponLoadout | null = null
   private detachLoadout: (() => void) | null = null
   private lastFireRefusal: string | null = null
+  /** The loadout weapon type a world pickup preset becomes: the one on the preset's number key. */
+  private loadoutWeaponFor(presetId: string): string | undefined {
+    const slot = weaponPresets().find((preset) => preset.id === presetId)?.slot
+    return slot === undefined ? undefined : this.loadout?.weaponAt(slot)?.type
+  }
   private loadoutCarriesAny(): boolean {
     return !!this.loadout && weaponSlots().some((entry) => this.loadout!.carries(entry.slot))
   }
@@ -6725,8 +6730,12 @@ export class GameRuntime {
     }
     if (action === 'interact') {
       const nearby = this.nearbyPickup(sim)
+      // With a loadout the weapon must land in it (it decides what may fire); a world pickup it
+      // cannot keep stays on the ground.
+      const kept = nearby && this.loadout ? this.loadoutWeaponFor(nearby.itemId) : undefined
       const item =
         nearby &&
+        (!this.loadout || kept) &&
         this.inventory.take(nearby.id, sim.renderPlayerPosition, (pickup) =>
           this.pickupVisible(sim, pickup),
         )
@@ -6738,6 +6747,14 @@ export class GameRuntime {
           this.pickupModels.delete(item.id)
         }
         this.ownedWeaponId = item.itemId
+        if (this.loadout && kept) {
+          const result = this.loadout.collect({ type: kept, count: 1 })
+          if (!result.ok) console.info(`[weapon] cannot keep ${item.itemId}: ${result.reason}`)
+          this.options.onMessage?.(
+            this.text('Picked up {0}', item.name) + ' · ' + controlsHint(context, ['holster']),
+          )
+          return
+        }
         if (this.sidearm?.preset?.id !== item.itemId) {
           this.sidearm?.dispose()
           this.sidearm = this.createSidearm(
