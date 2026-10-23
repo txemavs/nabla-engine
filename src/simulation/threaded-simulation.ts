@@ -160,6 +160,8 @@ export class ThreadedSimulation {
     private readonly terminate: () => void,
   ) {
     worker.onState = (reply) => {
+      // A step answered while dispose() waits for the worker: the query world is already freed.
+      if (this.disposed) return
       if (reply.query) this.query.apply(reply.query)
       if (reply.reads) {
         this.reads = reply.reads

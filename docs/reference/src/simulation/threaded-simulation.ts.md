@@ -160,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.start
 
-[Implementation, line 177](../../../../src/simulation/threaded-simulation.ts#L177)
+[Implementation, line 179](../../../../src/simulation/threaded-simulation.ts#L179)
 
 ```ts
 start(scene: SceneDocument, options: SimulationOptions = {}, port?: SimulationPort & { terminate?: () => void }): Promise<Simulation>
@@ -181,12 +181,12 @@ Explicit throws in this body:
 
 - `error`
 
-## ThreadedSimulation.start.callback@183
+## ThreadedSimulation.start.callback@185
 
-[Implementation, line 183](../../../../src/simulation/threaded-simulation.ts#L183)
+[Implementation, line 185](../../../../src/simulation/threaded-simulation.ts#L185)
 
 ```ts
-callback@183(): inferred by TypeScript; see implementation
+callback@185(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -195,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.start.terminate
 
-[Implementation, line 186](../../../../src/simulation/threaded-simulation.ts#L186)
+[Implementation, line 188](../../../../src/simulation/threaded-simulation.ts#L188)
 
 ```ts
 terminate(): inferred by TypeScript; see implementation
@@ -205,24 +205,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `(worker.port as { terminate?: () => void }).terminate`
 
-## ThreadedSimulation.start.callback@190
+## ThreadedSimulation.start.callback@192
 
-[Implementation, line 190](../../../../src/simulation/threaded-simulation.ts#L190)
+[Implementation, line 192](../../../../src/simulation/threaded-simulation.ts#L192)
 
 ```ts
-callback@190(_, reject): inferred by TypeScript; see implementation
+callback@192(_, reject): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `target.addEventListener`
 
-## ThreadedSimulation.start.callback@190.callback@193
+## ThreadedSimulation.start.callback@192.callback@195
 
-[Implementation, line 193](../../../../src/simulation/threaded-simulation.ts#L193)
+[Implementation, line 195](../../../../src/simulation/threaded-simulation.ts#L195)
 
 ```ts
-callback@193(event): inferred by TypeScript; see implementation
+callback@195(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -232,7 +232,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.facade
 
-[Implementation, line 210](../../../../src/simulation/threaded-simulation.ts#L210)
+[Implementation, line 212](../../../../src/simulation/threaded-simulation.ts#L212)
 
 Wrap in a Proxy so every other Simulation method becomes a forwarded command.
 
@@ -246,7 +246,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.facade.get
 
-[Implementation, line 212](../../../../src/simulation/threaded-simulation.ts#L212)
+[Implementation, line 214](../../../../src/simulation/threaded-simulation.ts#L214)
 
 ```ts
 get(target, key, receiver): inferred by TypeScript; see implementation
@@ -258,12 +258,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Reflect.get`
 - `target.state`
 
-## ThreadedSimulation.facade.get.callback@216
+## ThreadedSimulation.facade.get.callback@218
 
-[Implementation, line 216](../../../../src/simulation/threaded-simulation.ts#L216)
+[Implementation, line 218](../../../../src/simulation/threaded-simulation.ts#L218)
 
 ```ts
-callback@216(...args: unknown[]): inferred by TypeScript; see implementation
+callback@218(...args: unknown[]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -272,7 +272,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.facade.set
 
-[Implementation, line 219](../../../../src/simulation/threaded-simulation.ts#L219)
+[Implementation, line 221](../../../../src/simulation/threaded-simulation.ts#L221)
 
 ```ts
 set(target, key, value): inferred by TypeScript; see implementation
@@ -285,7 +285,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.state
 
-[Implementation, line 227](../../../../src/simulation/threaded-simulation.ts#L227)
+[Implementation, line 229](../../../../src/simulation/threaded-simulation.ts#L229)
 
 ```ts
 state(): SimulationReads
@@ -301,7 +301,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.forward
 
-[Implementation, line 232](../../../../src/simulation/threaded-simulation.ts#L232)
+[Implementation, line 234](../../../../src/simulation/threaded-simulation.ts#L234)
 
 ```ts
 forward(message: Parameters<WorkerSimulation['request']>[0]): Promise<unknown>
@@ -312,12 +312,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sent.catch`
 - `this.worker.request`
 
-## ThreadedSimulation.forward.callback@234
+## ThreadedSimulation.forward.callback@236
 
-[Implementation, line 234](../../../../src/simulation/threaded-simulation.ts#L234)
+[Implementation, line 236](../../../../src/simulation/threaded-simulation.ts#L236)
 
 ```ts
-callback@234(error: unknown): inferred by TypeScript; see implementation
+callback@236(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -328,7 +328,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.settlePending
 
-[Implementation, line 248](../../../../src/simulation/threaded-simulation.ts#L248)
+[Implementation, line 250](../../../../src/simulation/threaded-simulation.ts#L250)
 
 ```ts
 settlePending(entities: Record<string, unknown>): void
@@ -340,12 +340,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pending.keys`
 - `this.waiters.filter`
 
-## ThreadedSimulation.settlePending.callback@251
+## ThreadedSimulation.settlePending.callback@253
 
-[Implementation, line 251](../../../../src/simulation/threaded-simulation.ts#L251)
+[Implementation, line 253](../../../../src/simulation/threaded-simulation.ts#L253)
 
 ```ts
-callback@251(waiter): inferred by TypeScript; see implementation
+callback@253(waiter): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -353,12 +353,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `waiter.ids.some`
 - `waiter.resolve`
 
-## ThreadedSimulation.settlePending.callback@251.callback@252
+## ThreadedSimulation.settlePending.callback@253.callback@254
 
-[Implementation, line 252](../../../../src/simulation/threaded-simulation.ts#L252)
+[Implementation, line 254](../../../../src/simulation/threaded-simulation.ts#L254)
 
 ```ts
-callback@252(id): inferred by TypeScript; see implementation
+callback@254(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -367,7 +367,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.whenEntities
 
-[Implementation, line 263](../../../../src/simulation/threaded-simulation.ts#L263)
+[Implementation, line 265](../../../../src/simulation/threaded-simulation.ts#L265)
 
 Resolves once the worker's snapshot holds `ids` (added with addVehicles/addPlaced), so a host
 can register views that read vehicle state. Gives up after `timeoutMs` (reads then fall back
@@ -383,24 +383,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Promise.resolve`
 - `ids.filter`
 
-## ThreadedSimulation.whenEntities.callback@264
+## ThreadedSimulation.whenEntities.callback@266
 
-[Implementation, line 264](../../../../src/simulation/threaded-simulation.ts#L264)
+[Implementation, line 266](../../../../src/simulation/threaded-simulation.ts#L266)
 
 ```ts
-callback@264(id): inferred by TypeScript; see implementation
+callback@266(id): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.pending.has`
 
-## ThreadedSimulation.whenEntities.callback@266
+## ThreadedSimulation.whenEntities.callback@268
 
-[Implementation, line 266](../../../../src/simulation/threaded-simulation.ts#L266)
+[Implementation, line 268](../../../../src/simulation/threaded-simulation.ts#L268)
 
 ```ts
-callback@266(resolve): inferred by TypeScript; see implementation
+callback@268(resolve): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -408,12 +408,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `this.waiters.push`
 
-## ThreadedSimulation.whenEntities.callback@266.callback@269
+## ThreadedSimulation.whenEntities.callback@268.callback@271
 
-[Implementation, line 269](../../../../src/simulation/threaded-simulation.ts#L269)
+[Implementation, line 271](../../../../src/simulation/threaded-simulation.ts#L271)
 
 ```ts
-callback@269(): inferred by TypeScript; see implementation
+callback@271(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -424,17 +424,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.waiters.includes`
 - `waiting.join`
 
-## ThreadedSimulation.whenEntities.callback@266.callback@269.callback@271
+## ThreadedSimulation.whenEntities.callback@268.callback@271.callback@273
 
-[Implementation, line 271](../../../../src/simulation/threaded-simulation.ts#L271)
+[Implementation, line 273](../../../../src/simulation/threaded-simulation.ts#L273)
 
 ```ts
-callback@271(w): inferred by TypeScript; see implementation
+callback@273(w): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.pendingTransform
 
-[Implementation, line 279](../../../../src/simulation/threaded-simulation.ts#L279)
+[Implementation, line 281](../../../../src/simulation/threaded-simulation.ts#L281)
 
 Authored world transform of a pending entity (parent chain composed).
 
@@ -452,7 +452,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.hasEntity
 
-[Implementation, line 298](../../../../src/simulation/threaded-simulation.ts#L298)
+[Implementation, line 300](../../../../src/simulation/threaded-simulation.ts#L300)
 
 ```ts
 hasEntity(id: string): boolean
@@ -464,7 +464,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.command
 
-[Implementation, line 302](../../../../src/simulation/threaded-simulation.ts#L302)
+[Implementation, line 304](../../../../src/simulation/threaded-simulation.ts#L304)
 
 ```ts
 command(method: string, args: unknown[]): unknown
@@ -483,17 +483,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.pending.delete`
 - `this.pending.set`
 
-## ThreadedSimulation.command.callback@307
+## ThreadedSimulation.command.callback@309
 
-[Implementation, line 307](../../../../src/simulation/threaded-simulation.ts#L307)
+[Implementation, line 309](../../../../src/simulation/threaded-simulation.ts#L309)
 
 ```ts
-callback@307(item, i): inferred by TypeScript; see implementation
+callback@309(item, i): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.message
 
-[Implementation, line 326](../../../../src/simulation/threaded-simulation.ts#L326)
+[Implementation, line 328](../../../../src/simulation/threaded-simulation.ts#L328)
 
 ```ts
 message(method: string, args: unknown[], orElse?: string): string
@@ -504,29 +504,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.forward`
 - `this.forward({ type: 'call', method, args, orElse }).then`
 
-## ThreadedSimulation.message.callback@329
+## ThreadedSimulation.message.callback@331
 
-[Implementation, line 329](../../../../src/simulation/threaded-simulation.ts#L329)
+[Implementation, line 331](../../../../src/simulation/threaded-simulation.ts#L331)
 
 ```ts
-callback@329(value): inferred by TypeScript; see implementation
+callback@331(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.onMessage`
 
-## ThreadedSimulation.message.callback@332
+## ThreadedSimulation.message.callback@334
 
-[Implementation, line 332](../../../../src/simulation/threaded-simulation.ts#L332)
+[Implementation, line 334](../../../../src/simulation/threaded-simulation.ts#L334)
 
 ```ts
-callback@332(): inferred by TypeScript; see implementation
+callback@334(): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.collisionDebug
 
-[Implementation, line 338](../../../../src/simulation/threaded-simulation.ts#L338)
+[Implementation, line 340](../../../../src/simulation/threaded-simulation.ts#L340)
 
 Forward and answer with the worker's previous reply for the same call (`initial` before).
 
@@ -542,7 +542,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.laggedCall
 
-[Implementation, line 346](../../../../src/simulation/threaded-simulation.ts#L346)
+[Implementation, line 348](../../../../src/simulation/threaded-simulation.ts#L348)
 
 ```ts
 laggedCall(method: string, args: unknown[], initial: T): T
@@ -557,25 +557,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.laggedInFlight.add`
 - `this.laggedInFlight.has`
 
-## ThreadedSimulation.laggedCall.callback@352
+## ThreadedSimulation.laggedCall.callback@354
 
-[Implementation, line 352](../../../../src/simulation/threaded-simulation.ts#L352)
+[Implementation, line 354](../../../../src/simulation/threaded-simulation.ts#L354)
 
 ```ts
-callback@352(value): inferred by TypeScript; see implementation
+callback@354(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.lagged.set`
-
-## ThreadedSimulation.laggedCall.callback@353
-
-[Implementation, line 353](../../../../src/simulation/threaded-simulation.ts#L353)
-
-```ts
-callback@353(): inferred by TypeScript; see implementation
-```
 
 ## ThreadedSimulation.laggedCall.callback@355
 
@@ -585,13 +577,21 @@ callback@353(): inferred by TypeScript; see implementation
 callback@355(): inferred by TypeScript; see implementation
 ```
 
+## ThreadedSimulation.laggedCall.callback@357
+
+[Implementation, line 357](../../../../src/simulation/threaded-simulation.ts#L357)
+
+```ts
+callback@357(): inferred by TypeScript; see implementation
+```
+
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.laggedInFlight.delete`
 
 ## ThreadedSimulation.vehicleReads
 
-[Implementation, line 359](../../../../src/simulation/threaded-simulation.ts#L359)
+[Implementation, line 361](../../../../src/simulation/threaded-simulation.ts#L361)
 
 ```ts
 vehicleReads(id: string | null | undefined): inferred by TypeScript; see implementation
@@ -599,7 +599,7 @@ vehicleReads(id: string | null | undefined): inferred by TypeScript; see impleme
 
 ## ThreadedSimulation.onTimeline
 
-[Implementation, line 368](../../../../src/simulation/threaded-simulation.ts#L368)
+[Implementation, line 370](../../../../src/simulation/threaded-simulation.ts#L370)
 
 A worker-sampled read at the render time: blended between the two replies the timeline is
 showing (pipelined), else the newest. Cameras, rigs and wheels then share one timeline.
@@ -618,7 +618,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.refresh
 
-[Implementation, line 382](../../../../src/simulation/threaded-simulation.ts#L382)
+[Implementation, line 384](../../../../src/simulation/threaded-simulation.ts#L384)
 
 Wait for every forwarded command and mirror the resulting state.
 
@@ -633,7 +633,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.throwFailure
 
-[Implementation, line 386](../../../../src/simulation/threaded-simulation.ts#L386)
+[Implementation, line 388](../../../../src/simulation/threaded-simulation.ts#L388)
 
 ```ts
 throwFailure(): void
@@ -645,7 +645,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.step
 
-[Implementation, line 393](../../../../src/simulation/threaded-simulation.ts#L393)
+[Implementation, line 395](../../../../src/simulation/threaded-simulation.ts#L395)
 
 Advance the worker simulation; resolves once its state is mirrored here.
 
@@ -660,7 +660,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.advance
 
-[Implementation, line 411](../../../../src/simulation/threaded-simulation.ts#L411)
+[Implementation, line 413](../../../../src/simulation/threaded-simulation.ts#L413)
 
 Pipelined frame step: never waits. Moves the render clock by `elapsed` (interpolated reads
 blend the last two worker snapshots there) and hands the worker the time to simulate: at
@@ -680,7 +680,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.pump
 
-[Implementation, line 419](../../../../src/simulation/threaded-simulation.ts#L419)
+[Implementation, line 421](../../../../src/simulation/threaded-simulation.ts#L421)
 
 ```ts
 pump(): void
@@ -691,29 +691,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worker.step`
 - `this.worker.step(elapsed).then`
 
-## ThreadedSimulation.pump.callback@425
+## ThreadedSimulation.pump.callback@427
 
-[Implementation, line 425](../../../../src/simulation/threaded-simulation.ts#L425)
+[Implementation, line 427](../../../../src/simulation/threaded-simulation.ts#L427)
 
 ```ts
-callback@425(ms): inferred by TypeScript; see implementation
+callback@427(ms): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.pump`
 
-## ThreadedSimulation.pump.callback@430
+## ThreadedSimulation.pump.callback@432
 
-[Implementation, line 430](../../../../src/simulation/threaded-simulation.ts#L430)
+[Implementation, line 432](../../../../src/simulation/threaded-simulation.ts#L432)
 
 ```ts
-callback@430(error: unknown): inferred by TypeScript; see implementation
+callback@432(error: unknown): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.settleGround
 
-[Implementation, line 437](../../../../src/simulation/threaded-simulation.ts#L437)
+[Implementation, line 439](../../../../src/simulation/threaded-simulation.ts#L439)
 
 ```ts
 settleGround(force = false): boolean
@@ -725,7 +725,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.preparePlanetCollisions
 
-[Implementation, line 440](../../../../src/simulation/threaded-simulation.ts#L440)
+[Implementation, line 442](../../../../src/simulation/threaded-simulation.ts#L442)
 
 ```ts
 preparePlanetCollisions(): boolean
@@ -737,7 +737,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.vehicleSunOccluded
 
-[Implementation, line 443](../../../../src/simulation/threaded-simulation.ts#L443)
+[Implementation, line 445](../../../../src/simulation/threaded-simulation.ts#L445)
 
 ```ts
 vehicleSunOccluded(id: string, direction: Vec3Tuple, range = 200): boolean
@@ -749,7 +749,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.entityCollisionParts
 
-[Implementation, line 449](../../../../src/simulation/threaded-simulation.ts#L449)
+[Implementation, line 451](../../../../src/simulation/threaded-simulation.ts#L451)
 
 ```ts
 entityCollisionParts(id: string): ReturnType<Simulation['entityCollisionParts']>
@@ -761,7 +761,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.engineMode
 
-[Implementation, line 454](../../../../src/simulation/threaded-simulation.ts#L454)
+[Implementation, line 456](../../../../src/simulation/threaded-simulation.ts#L456)
 
 ```ts
 engineMode(id: string): ReturnType<Simulation['engineMode']>
@@ -773,7 +773,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.twoWheeledPose
 
-[Implementation, line 457](../../../../src/simulation/threaded-simulation.ts#L457)
+[Implementation, line 459](../../../../src/simulation/threaded-simulation.ts#L459)
 
 ```ts
 twoWheeledPose(id: string): ReturnType<Simulation['twoWheeledPose']>
@@ -783,17 +783,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.onTimeline`
 
-## ThreadedSimulation.twoWheeledPose.callback@458
+## ThreadedSimulation.twoWheeledPose.callback@460
 
-[Implementation, line 458](../../../../src/simulation/threaded-simulation.ts#L458)
+[Implementation, line 460](../../../../src/simulation/threaded-simulation.ts#L460)
 
 ```ts
-callback@458(r): inferred by TypeScript; see implementation
+callback@460(r): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.forkliftPose
 
-[Implementation, line 460](../../../../src/simulation/threaded-simulation.ts#L460)
+[Implementation, line 462](../../../../src/simulation/threaded-simulation.ts#L462)
 
 ```ts
 forkliftPose(id: string): ReturnType<Simulation['forkliftPose']>
@@ -803,17 +803,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.onTimeline`
 
-## ThreadedSimulation.forkliftPose.callback@461
+## ThreadedSimulation.forkliftPose.callback@463
 
-[Implementation, line 461](../../../../src/simulation/threaded-simulation.ts#L461)
+[Implementation, line 463](../../../../src/simulation/threaded-simulation.ts#L463)
 
 ```ts
-callback@461(r): inferred by TypeScript; see implementation
+callback@463(r): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.wheelVisualState
 
-[Implementation, line 463](../../../../src/simulation/threaded-simulation.ts#L463)
+[Implementation, line 465](../../../../src/simulation/threaded-simulation.ts#L465)
 
 ```ts
 wheelVisualState(id: string): ReturnType<Simulation['wheelVisualState']>
@@ -823,17 +823,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.onTimeline`
 
-## ThreadedSimulation.wheelVisualState.callback@464
+## ThreadedSimulation.wheelVisualState.callback@466
 
-[Implementation, line 464](../../../../src/simulation/threaded-simulation.ts#L464)
+[Implementation, line 466](../../../../src/simulation/threaded-simulation.ts#L466)
 
 ```ts
-callback@464(r): inferred by TypeScript; see implementation
+callback@466(r): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.entityAngularVelocity
 
-[Implementation, line 466](../../../../src/simulation/threaded-simulation.ts#L466)
+[Implementation, line 468](../../../../src/simulation/threaded-simulation.ts#L468)
 
 ```ts
 entityAngularVelocity(id: string): Vec3Tuple
@@ -843,17 +843,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.onTimeline`
 
-## ThreadedSimulation.entityAngularVelocity.callback@467
+## ThreadedSimulation.entityAngularVelocity.callback@469
 
-[Implementation, line 467](../../../../src/simulation/threaded-simulation.ts#L467)
+[Implementation, line 469](../../../../src/simulation/threaded-simulation.ts#L469)
 
 ```ts
-callback@467(r): inferred by TypeScript; see implementation
+callback@469(r): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.hitchCandidate
 
-[Implementation, line 469](../../../../src/simulation/threaded-simulation.ts#L469)
+[Implementation, line 471](../../../../src/simulation/threaded-simulation.ts#L471)
 
 ```ts
 hitchCandidate(tractorId = this.player.vehicleId): string | null
@@ -865,7 +865,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.dockingCandidate
 
-[Implementation, line 472](../../../../src/simulation/threaded-simulation.ts#L472)
+[Implementation, line 474](../../../../src/simulation/threaded-simulation.ts#L474)
 
 ```ts
 dockingCandidate(id = this.player.vehicleId): string | null
@@ -877,7 +877,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.sceneryActors
 
-[Implementation, line 475](../../../../src/simulation/threaded-simulation.ts#L475)
+[Implementation, line 477](../../../../src/simulation/threaded-simulation.ts#L477)
 
 ```ts
 sceneryActors(): Vec3Tuple[]
@@ -885,7 +885,7 @@ sceneryActors(): Vec3Tuple[]
 
 ## ThreadedSimulation.interact
 
-[Implementation, line 480](../../../../src/simulation/threaded-simulation.ts#L480)
+[Implementation, line 482](../../../../src/simulation/threaded-simulation.ts#L482)
 
 ```ts
 interact(...args: Parameters<Simulation['interact']>): string
@@ -897,7 +897,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.toggleFlight
 
-[Implementation, line 483](../../../../src/simulation/threaded-simulation.ts#L483)
+[Implementation, line 485](../../../../src/simulation/threaded-simulation.ts#L485)
 
 ```ts
 toggleFlight(): string
@@ -909,7 +909,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.toggleDock
 
-[Implementation, line 486](../../../../src/simulation/threaded-simulation.ts#L486)
+[Implementation, line 488](../../../../src/simulation/threaded-simulation.ts#L488)
 
 ```ts
 toggleDock(): string
@@ -921,7 +921,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.toggleHitch
 
-[Implementation, line 493](../../../../src/simulation/threaded-simulation.ts#L493)
+[Implementation, line 495](../../../../src/simulation/threaded-simulation.ts#L495)
 
 Null (nothing to hitch) only on foot, as inline. Seated, the worker tries the hitch and falls
 back to `toggleDock` itself, so `toggleHitch() ?? toggleDock()` never runs both.
@@ -936,7 +936,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.cycleHelmMode
 
-[Implementation, line 497](../../../../src/simulation/threaded-simulation.ts#L497)
+[Implementation, line 499](../../../../src/simulation/threaded-simulation.ts#L499)
 
 ```ts
 cycleHelmMode(): string
@@ -948,7 +948,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setHelmMode
 
-[Implementation, line 500](../../../../src/simulation/threaded-simulation.ts#L500)
+[Implementation, line 502](../../../../src/simulation/threaded-simulation.ts#L502)
 
 ```ts
 setHelmMode(...args: Parameters<Simulation['setHelmMode']>): string
@@ -960,7 +960,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.automaticTransmission
 
-[Implementation, line 503](../../../../src/simulation/threaded-simulation.ts#L503)
+[Implementation, line 505](../../../../src/simulation/threaded-simulation.ts#L505)
 
 ```ts
 automaticTransmission(): string
@@ -972,7 +972,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.shiftVehicle
 
-[Implementation, line 506](../../../../src/simulation/threaded-simulation.ts#L506)
+[Implementation, line 508](../../../../src/simulation/threaded-simulation.ts#L508)
 
 ```ts
 shiftVehicle(direction: -1 | 1): string
@@ -984,7 +984,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.transferControls
 
-[Implementation, line 509](../../../../src/simulation/threaded-simulation.ts#L509)
+[Implementation, line 511](../../../../src/simulation/threaded-simulation.ts#L511)
 
 ```ts
 transferControls(): string
@@ -996,7 +996,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.recoverVehicle
 
-[Implementation, line 512](../../../../src/simulation/threaded-simulation.ts#L512)
+[Implementation, line 514](../../../../src/simulation/threaded-simulation.ts#L514)
 
 ```ts
 recoverVehicle(...args: Parameters<Simulation['recoverVehicle']>): string
@@ -1008,7 +1008,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.relocatePlayer
 
-[Implementation, line 515](../../../../src/simulation/threaded-simulation.ts#L515)
+[Implementation, line 517](../../../../src/simulation/threaded-simulation.ts#L517)
 
 ```ts
 relocatePlayer(...args: Parameters<Simulation['relocatePlayer']>): void
@@ -1020,7 +1020,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.relocateVehicle
 
-[Implementation, line 518](../../../../src/simulation/threaded-simulation.ts#L518)
+[Implementation, line 520](../../../../src/simulation/threaded-simulation.ts#L520)
 
 ```ts
 relocateVehicle(...args: Parameters<Simulation['relocateVehicle']>): string
@@ -1032,7 +1032,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setEngineMode
 
-[Implementation, line 521](../../../../src/simulation/threaded-simulation.ts#L521)
+[Implementation, line 523](../../../../src/simulation/threaded-simulation.ts#L523)
 
 ```ts
 setEngineMode(...args: Parameters<Simulation['setEngineMode']>): string
@@ -1044,7 +1044,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setGarageDoor
 
-[Implementation, line 524](../../../../src/simulation/threaded-simulation.ts#L524)
+[Implementation, line 526](../../../../src/simulation/threaded-simulation.ts#L526)
 
 ```ts
 setGarageDoor(...args: Parameters<Simulation['setGarageDoor']>): string
@@ -1056,7 +1056,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setTrailerPlatform
 
-[Implementation, line 527](../../../../src/simulation/threaded-simulation.ts#L527)
+[Implementation, line 529](../../../../src/simulation/threaded-simulation.ts#L529)
 
 ```ts
 setTrailerPlatform(...args: Parameters<Simulation['setTrailerPlatform']>): string
@@ -1068,7 +1068,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.adjustTrailerRamp
 
-[Implementation, line 530](../../../../src/simulation/threaded-simulation.ts#L530)
+[Implementation, line 532](../../../../src/simulation/threaded-simulation.ts#L532)
 
 ```ts
 adjustTrailerRamp(...args: Parameters<Simulation['adjustTrailerRamp']>): string
@@ -1080,7 +1080,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.hitchTrailer
 
-[Implementation, line 533](../../../../src/simulation/threaded-simulation.ts#L533)
+[Implementation, line 535](../../../../src/simulation/threaded-simulation.ts#L535)
 
 ```ts
 hitchTrailer(...args: Parameters<Simulation['hitchTrailer']>): string
@@ -1092,7 +1092,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.configurePortal
 
-[Implementation, line 536](../../../../src/simulation/threaded-simulation.ts#L536)
+[Implementation, line 538](../../../../src/simulation/threaded-simulation.ts#L538)
 
 ```ts
 configurePortal(...args: Parameters<Simulation['configurePortal']>): string
@@ -1104,7 +1104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.unhitchTrailer
 
-[Implementation, line 540](../../../../src/simulation/threaded-simulation.ts#L540)
+[Implementation, line 542](../../../../src/simulation/threaded-simulation.ts#L542)
 
 Ids released in the worker are not known yet: answers the trailers it is about to drop.
 
@@ -1118,7 +1118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.liftNearbyBike
 
-[Implementation, line 546](../../../../src/simulation/threaded-simulation.ts#L546)
+[Implementation, line 548](../../../../src/simulation/threaded-simulation.ts#L548)
 
 ```ts
 liftNearbyBike(): boolean
@@ -1132,7 +1132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.holdEngine
 
-[Implementation, line 557](../../../../src/simulation/threaded-simulation.ts#L557)
+[Implementation, line 559](../../../../src/simulation/threaded-simulation.ts#L559)
 
 ```ts
 holdEngine(): boolean
@@ -1144,7 +1144,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.startEngine
 
-[Implementation, line 561](../../../../src/simulation/threaded-simulation.ts#L561)
+[Implementation, line 563](../../../../src/simulation/threaded-simulation.ts#L563)
 
 ```ts
 startEngine(): boolean
@@ -1156,7 +1156,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setEntityKinematic
 
-[Implementation, line 565](../../../../src/simulation/threaded-simulation.ts#L565)
+[Implementation, line 567](../../../../src/simulation/threaded-simulation.ts#L567)
 
 ```ts
 setEntityKinematic(...args: Parameters<Simulation['setEntityKinematic']>): boolean
@@ -1169,7 +1169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setWheelVisualState
 
-[Implementation, line 569](../../../../src/simulation/threaded-simulation.ts#L569)
+[Implementation, line 571](../../../../src/simulation/threaded-simulation.ts#L571)
 
 ```ts
 setWheelVisualState(...args: Parameters<Simulation['setWheelVisualState']>): boolean
@@ -1182,7 +1182,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.moveKinematicEntity
 
-[Implementation, line 573](../../../../src/simulation/threaded-simulation.ts#L573)
+[Implementation, line 575](../../../../src/simulation/threaded-simulation.ts#L575)
 
 ```ts
 moveKinematicEntity(...args: Parameters<Simulation['moveKinematicEntity']>): boolean
@@ -1195,7 +1195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setFlightSpeedMode
 
-[Implementation, line 577](../../../../src/simulation/threaded-simulation.ts#L577)
+[Implementation, line 579](../../../../src/simulation/threaded-simulation.ts#L579)
 
 ```ts
 setFlightSpeedMode(...args: Parameters<Simulation['setFlightSpeedMode']>): boolean
@@ -1208,7 +1208,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.setPlanetTiles
 
-[Implementation, line 586](../../../../src/simulation/threaded-simulation.ts#L586)
+[Implementation, line 588](../../../../src/simulation/threaded-simulation.ts#L588)
 
 Called every frame with the resident collision tiles (megabytes of triangles). Only tiles
 the worker has not been sent cross the thread; an unchanged list sends nothing at all.
@@ -1226,20 +1226,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `tiles.filter`
 - `tiles.map`
 
-## ThreadedSimulation.setPlanetTiles.callback@588
+## ThreadedSimulation.setPlanetTiles.callback@590
 
-[Implementation, line 588](../../../../src/simulation/threaded-simulation.ts#L588)
+[Implementation, line 590](../../../../src/simulation/threaded-simulation.ts#L590)
 
 ```ts
-callback@588(tile): inferred by TypeScript; see implementation
+callback@590(tile): inferred by TypeScript; see implementation
 ```
 
-## ThreadedSimulation.setPlanetTiles.callback@589
+## ThreadedSimulation.setPlanetTiles.callback@591
 
-[Implementation, line 589](../../../../src/simulation/threaded-simulation.ts#L589)
+[Implementation, line 591](../../../../src/simulation/threaded-simulation.ts#L591)
 
 ```ts
-callback@589(tile): inferred by TypeScript; see implementation
+callback@591(tile): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1248,7 +1248,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.preparePlanetReplacement
 
-[Implementation, line 601](../../../../src/simulation/threaded-simulation.ts#L601)
+[Implementation, line 603](../../../../src/simulation/threaded-simulation.ts#L603)
 
 Undefined until the worker has prepared this replacement (the caller polls per frame).
 
@@ -1264,37 +1264,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.laggedInFlight.add`
 - `this.laggedInFlight.has`
 
-## ThreadedSimulation.preparePlanetReplacement.callback@607
+## ThreadedSimulation.preparePlanetReplacement.callback@609
 
-[Implementation, line 607](../../../../src/simulation/threaded-simulation.ts#L607)
+[Implementation, line 609](../../../../src/simulation/threaded-simulation.ts#L609)
 
 ```ts
-callback@607(): inferred by TypeScript; see implementation
+callback@609(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.forward`
 
-## ThreadedSimulation.preparePlanetReplacement.callback@613
+## ThreadedSimulation.preparePlanetReplacement.callback@615
 
-[Implementation, line 613](../../../../src/simulation/threaded-simulation.ts#L613)
+[Implementation, line 615](../../../../src/simulation/threaded-simulation.ts#L615)
 
 ```ts
-callback@613(ready): inferred by TypeScript; see implementation
+callback@615(ready): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.lagged.set`
-
-## ThreadedSimulation.preparePlanetReplacement.callback@614
-
-[Implementation, line 614](../../../../src/simulation/threaded-simulation.ts#L614)
-
-```ts
-callback@614(): inferred by TypeScript; see implementation
-```
 
 ## ThreadedSimulation.preparePlanetReplacement.callback@616
 
@@ -1304,13 +1296,21 @@ callback@614(): inferred by TypeScript; see implementation
 callback@616(): inferred by TypeScript; see implementation
 ```
 
+## ThreadedSimulation.preparePlanetReplacement.callback@618
+
+[Implementation, line 618](../../../../src/simulation/threaded-simulation.ts#L618)
+
+```ts
+callback@618(): inferred by TypeScript; see implementation
+```
+
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.laggedInFlight.delete`
 
 ## ThreadedSimulation.capturePlanetSupport
 
-[Implementation, line 621](../../../../src/simulation/threaded-simulation.ts#L621)
+[Implementation, line 623](../../../../src/simulation/threaded-simulation.ts#L623)
 
 Samples the render ground under each actor here; the worker keeps them on it.
 
@@ -1326,12 +1326,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.forward`
 - `this.worker.entityTransform`
 
-## ThreadedSimulation.capturePlanetSupport.callback@633
+## ThreadedSimulation.capturePlanetSupport.callback@635
 
-[Implementation, line 633](../../../../src/simulation/threaded-simulation.ts#L633)
+[Implementation, line 635](../../../../src/simulation/threaded-simulation.ts#L635)
 
 ```ts
-callback@633(): inferred by TypeScript; see implementation
+callback@635(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -1340,7 +1340,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.queryState
 
-[Implementation, line 637](../../../../src/simulation/threaded-simulation.ts#L637)
+[Implementation, line 639](../../../../src/simulation/threaded-simulation.ts#L639)
 
 ```ts
 queryState(): ReturnType<Simulation['queryState']>
@@ -1356,7 +1356,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.queryExclusions
 
-[Implementation, line 640](../../../../src/simulation/threaded-simulation.ts#L640)
+[Implementation, line 642](../../../../src/simulation/threaded-simulation.ts#L642)
 
 ```ts
 queryExclusions(): ReturnType<Simulation['queryExclusions']>
@@ -1372,7 +1372,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.setGravityScale
 
-[Implementation, line 645](../../../../src/simulation/threaded-simulation.ts#L645)
+[Implementation, line 647](../../../../src/simulation/threaded-simulation.ts#L647)
 
 Clamped here (same rule as Simulation) so callers get the value used without a round trip.
 
@@ -1389,7 +1389,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.gravityScale
 
-[Implementation, line 651](../../../../src/simulation/threaded-simulation.ts#L651)
+[Implementation, line 653](../../../../src/simulation/threaded-simulation.ts#L653)
 
 ```ts
 gravityScale(): number
@@ -1397,7 +1397,7 @@ gravityScale(): number
 
 ## ThreadedSimulation.setInput
 
-[Implementation, line 654](../../../../src/simulation/threaded-simulation.ts#L654)
+[Implementation, line 656](../../../../src/simulation/threaded-simulation.ts#L656)
 
 ```ts
 setInput(input: PlayerInput): void
@@ -1415,7 +1415,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.player
 
-[Implementation, line 665](../../../../src/simulation/threaded-simulation.ts#L665)
+[Implementation, line 667](../../../../src/simulation/threaded-simulation.ts#L667)
 
 ```ts
 player(): Simulation['player']
@@ -1423,7 +1423,7 @@ player(): Simulation['player']
 
 ## ThreadedSimulation.stats
 
-[Implementation, line 668](../../../../src/simulation/threaded-simulation.ts#L668)
+[Implementation, line 670](../../../../src/simulation/threaded-simulation.ts#L670)
 
 ```ts
 stats(): Simulation['stats']
@@ -1431,7 +1431,7 @@ stats(): Simulation['stats']
 
 ## ThreadedSimulation.renderPlayerPosition
 
-[Implementation, line 671](../../../../src/simulation/threaded-simulation.ts#L671)
+[Implementation, line 673](../../../../src/simulation/threaded-simulation.ts#L673)
 
 ```ts
 renderPlayerPosition(): Vec3Tuple
@@ -1439,7 +1439,7 @@ renderPlayerPosition(): Vec3Tuple
 
 ## ThreadedSimulation.playerFrame
 
-[Implementation, line 674](../../../../src/simulation/threaded-simulation.ts#L674)
+[Implementation, line 676](../../../../src/simulation/threaded-simulation.ts#L676)
 
 ```ts
 playerFrame(): Transform | null
@@ -1447,7 +1447,7 @@ playerFrame(): Transform | null
 
 ## ThreadedSimulation.entityTransform
 
-[Implementation, line 677](../../../../src/simulation/threaded-simulation.ts#L677)
+[Implementation, line 679](../../../../src/simulation/threaded-simulation.ts#L679)
 
 ```ts
 entityTransform(id: string, interpolated = false): Transform
@@ -1460,7 +1460,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.wheelTransforms
 
-[Implementation, line 684](../../../../src/simulation/threaded-simulation.ts#L684)
+[Implementation, line 686](../../../../src/simulation/threaded-simulation.ts#L686)
 
 ```ts
 wheelTransforms(id: string, interpolated = false): Transform[]
@@ -1472,7 +1472,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.entityIds
 
-[Implementation, line 687](../../../../src/simulation/threaded-simulation.ts#L687)
+[Implementation, line 689](../../../../src/simulation/threaded-simulation.ts#L689)
 
 ```ts
 entityIds(): string[]
@@ -1487,7 +1487,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.portalEvent
 
-[Implementation, line 692](../../../../src/simulation/threaded-simulation.ts#L692)
+[Implementation, line 694](../../../../src/simulation/threaded-simulation.ts#L694)
 
 ```ts
 portalEvent(): Simulation['portalEvent']
@@ -1499,7 +1499,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.playerEjection
 
-[Implementation, line 695](../../../../src/simulation/threaded-simulation.ts#L695)
+[Implementation, line 697](../../../../src/simulation/threaded-simulation.ts#L697)
 
 ```ts
 playerEjection(): Simulation['playerEjection']
@@ -1511,7 +1511,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.playerBikeRecovery
 
-[Implementation, line 698](../../../../src/simulation/threaded-simulation.ts#L698)
+[Implementation, line 700](../../../../src/simulation/threaded-simulation.ts#L700)
 
 ```ts
 playerBikeRecovery(): Simulation['playerBikeRecovery']
@@ -1523,7 +1523,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.stance
 
-[Implementation, line 701](../../../../src/simulation/threaded-simulation.ts#L701)
+[Implementation, line 703](../../../../src/simulation/threaded-simulation.ts#L703)
 
 ```ts
 stance(): Simulation['stance']
@@ -1535,7 +1535,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.eyeOffset
 
-[Implementation, line 704](../../../../src/simulation/threaded-simulation.ts#L704)
+[Implementation, line 706](../../../../src/simulation/threaded-simulation.ts#L706)
 
 ```ts
 eyeOffset(): number
@@ -1547,7 +1547,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.terrainSupportPaused
 
-[Implementation, line 707](../../../../src/simulation/threaded-simulation.ts#L707)
+[Implementation, line 709](../../../../src/simulation/threaded-simulation.ts#L709)
 
 ```ts
 terrainSupportPaused(): boolean
@@ -1559,7 +1559,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.terrainSupportPaused
 
-[Implementation, line 710](../../../../src/simulation/threaded-simulation.ts#L710)
+[Implementation, line 712](../../../../src/simulation/threaded-simulation.ts#L712)
 
 ```ts
 terrainSupportPaused(value: boolean): inferred by TypeScript; see implementation
@@ -1571,7 +1571,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.nearestVehicle
 
-[Implementation, line 713](../../../../src/simulation/threaded-simulation.ts#L713)
+[Implementation, line 715](../../../../src/simulation/threaded-simulation.ts#L715)
 
 ```ts
 nearestVehicle(): string | null
@@ -1583,7 +1583,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.vehicleList
 
-[Implementation, line 716](../../../../src/simulation/threaded-simulation.ts#L716)
+[Implementation, line 718](../../../../src/simulation/threaded-simulation.ts#L718)
 
 ```ts
 vehicleList(): ReturnType<Simulation['vehicleList']>
@@ -1595,7 +1595,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.catchDisk
 
-[Implementation, line 719](../../../../src/simulation/threaded-simulation.ts#L719)
+[Implementation, line 721](../../../../src/simulation/threaded-simulation.ts#L721)
 
 ```ts
 catchDisk(): Transform | null
@@ -1607,7 +1607,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.consumeExplosions
 
-[Implementation, line 722](../../../../src/simulation/threaded-simulation.ts#L722)
+[Implementation, line 724](../../../../src/simulation/threaded-simulation.ts#L724)
 
 ```ts
 consumeExplosions(): ReturnType<Simulation['consumeExplosions']>
@@ -1619,7 +1619,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.portalIds
 
-[Implementation, line 725](../../../../src/simulation/threaded-simulation.ts#L725)
+[Implementation, line 727](../../../../src/simulation/threaded-simulation.ts#L727)
 
 ```ts
 portalIds(): string[]
@@ -1634,7 +1634,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.portalState
 
-[Implementation, line 730](../../../../src/simulation/threaded-simulation.ts#L730)
+[Implementation, line 732](../../../../src/simulation/threaded-simulation.ts#L732)
 
 ```ts
 portalState(id: string): ReturnType<Simulation['portalState']>
@@ -1652,7 +1652,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.entityVelocity
 
-[Implementation, line 736](../../../../src/simulation/threaded-simulation.ts#L736)
+[Implementation, line 738](../../../../src/simulation/threaded-simulation.ts#L738)
 
 ```ts
 entityVelocity(id: string): Vec3Tuple
@@ -1663,17 +1663,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.onTimeline`
 - `this.state`
 
-## ThreadedSimulation.entityVelocity.callback@738
+## ThreadedSimulation.entityVelocity.callback@740
 
-[Implementation, line 738](../../../../src/simulation/threaded-simulation.ts#L738)
+[Implementation, line 740](../../../../src/simulation/threaded-simulation.ts#L740)
 
 ```ts
-callback@738(r): inferred by TypeScript; see implementation
+callback@740(r): inferred by TypeScript; see implementation
 ```
 
 ## ThreadedSimulation.vehicleInfo
 
-[Implementation, line 740](../../../../src/simulation/threaded-simulation.ts#L740)
+[Implementation, line 742](../../../../src/simulation/threaded-simulation.ts#L742)
 
 ```ts
 vehicleInfo(id: string, interpolated = false): ReturnType<Simulation['vehicleInfo']>
@@ -1693,7 +1693,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.onRenderTimeline
 
-[Implementation, line 751](../../../../src/simulation/threaded-simulation.ts#L751)
+[Implementation, line 753](../../../../src/simulation/threaded-simulation.ts#L753)
 
 `driver` and `up` are world values on the worker's own blend of the newest reply; move them
 onto the render timeline's pose of the vehicle so a camera on the seat follows the body.
@@ -1709,7 +1709,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.wheelContactInfo
 
-[Implementation, line 780](../../../../src/simulation/threaded-simulation.ts#L780)
+[Implementation, line 782](../../../../src/simulation/threaded-simulation.ts#L782)
 
 ```ts
 wheelContactInfo(id: string): ReturnType<Simulation['wheelContactInfo']>
@@ -1721,7 +1721,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.vehicleSpec
 
-[Implementation, line 783](../../../../src/simulation/threaded-simulation.ts#L783)
+[Implementation, line 785](../../../../src/simulation/threaded-simulation.ts#L785)
 
 ```ts
 vehicleSpec(id: string): ReturnType<Simulation['vehicleSpec']>
@@ -1733,7 +1733,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.vehicleFeedback
 
-[Implementation, line 786](../../../../src/simulation/threaded-simulation.ts#L786)
+[Implementation, line 788](../../../../src/simulation/threaded-simulation.ts#L788)
 
 ```ts
 vehicleFeedback(id: string): ReturnType<Simulation['vehicleFeedback']>
@@ -1745,7 +1745,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.vehicleDamage
 
-[Implementation, line 789](../../../../src/simulation/threaded-simulation.ts#L789)
+[Implementation, line 791](../../../../src/simulation/threaded-simulation.ts#L791)
 
 ```ts
 vehicleDamage(id: string): ReturnType<Simulation['vehicleDamage']>
@@ -1757,7 +1757,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.cargoCount
 
-[Implementation, line 792](../../../../src/simulation/threaded-simulation.ts#L792)
+[Implementation, line 794](../../../../src/simulation/threaded-simulation.ts#L794)
 
 ```ts
 cargoCount(id: string): number
@@ -1769,7 +1769,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.cargoTrailer
 
-[Implementation, line 795](../../../../src/simulation/threaded-simulation.ts#L795)
+[Implementation, line 797](../../../../src/simulation/threaded-simulation.ts#L797)
 
 ```ts
 cargoTrailer(id: string): string | null
@@ -1781,7 +1781,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.shoot
 
-[Implementation, line 800](../../../../src/simulation/threaded-simulation.ts#L800)
+[Implementation, line 802](../../../../src/simulation/threaded-simulation.ts#L802)
 
 ```ts
 shoot(origin: Vec3Tuple, direction: Vec3Tuple, range = 150, impulse = 12, excludeEntityId?: string): ReturnType<Simulation['shoot']>
@@ -1795,7 +1795,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.cameraPosition
 
-[Implementation, line 814](../../../../src/simulation/threaded-simulation.ts#L814)
+[Implementation, line 816](../../../../src/simulation/threaded-simulation.ts#L816)
 
 ```ts
 cameraPosition(target: Vec3Tuple, desired: Vec3Tuple): Vec3Tuple
@@ -1807,7 +1807,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.createSceneryPole
 
-[Implementation, line 819](../../../../src/simulation/threaded-simulation.ts#L819)
+[Implementation, line 821](../../../../src/simulation/threaded-simulation.ts#L821)
 
 Scenery poles: the body lives in the worker, the handle here refers to it by number.
 
@@ -1830,7 +1830,7 @@ Explicit throws in this body:
 
 ## ThreadedSimulation.createSceneryPole.impact
 
-[Implementation, line 842](../../../../src/simulation/threaded-simulation.ts#L842)
+[Implementation, line 844](../../../../src/simulation/threaded-simulation.ts#L844)
 
 ```ts
 impact(point, direction, impulse): inferred by TypeScript; see implementation
@@ -1842,7 +1842,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.createSceneryPole.pose
 
-[Implementation, line 844](../../../../src/simulation/threaded-simulation.ts#L844)
+[Implementation, line 846](../../../../src/simulation/threaded-simulation.ts#L846)
 
 ```ts
 pose(): inferred by TypeScript; see implementation
@@ -1850,7 +1850,7 @@ pose(): inferred by TypeScript; see implementation
 
 ## ThreadedSimulation.createSceneryPole.restore
 
-[Implementation, line 845](../../../../src/simulation/threaded-simulation.ts#L845)
+[Implementation, line 847](../../../../src/simulation/threaded-simulation.ts#L847)
 
 ```ts
 restore(position, rotation): inferred by TypeScript; see implementation
@@ -1862,7 +1862,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.createSceneryPole.dispose
 
-[Implementation, line 849](../../../../src/simulation/threaded-simulation.ts#L849)
+[Implementation, line 851](../../../../src/simulation/threaded-simulation.ts#L851)
 
 ```ts
 dispose(): inferred by TypeScript; see implementation
@@ -1874,7 +1874,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## ThreadedSimulation.dispose
 
-[Implementation, line 853](../../../../src/simulation/threaded-simulation.ts#L853)
+[Implementation, line 855](../../../../src/simulation/threaded-simulation.ts#L855)
 
 ```ts
 dispose(): void
@@ -1888,24 +1888,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.worker.dispose().then`
 - `waiter.resolve`
 
-## ThreadedSimulation.dispose.callback@858
+## ThreadedSimulation.dispose.callback@860
 
-[Implementation, line 858](../../../../src/simulation/threaded-simulation.ts#L858)
+[Implementation, line 860](../../../../src/simulation/threaded-simulation.ts#L860)
 
 ```ts
-callback@858(): inferred by TypeScript; see implementation
+callback@860(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `this.terminate`
 
-## ThreadedSimulation.dispose.callback@859
+## ThreadedSimulation.dispose.callback@861
 
-[Implementation, line 859](../../../../src/simulation/threaded-simulation.ts#L859)
+[Implementation, line 861](../../../../src/simulation/threaded-simulation.ts#L861)
 
 ```ts
-callback@859(): inferred by TypeScript; see implementation
+callback@861(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
