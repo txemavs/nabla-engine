@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **623 modules; 7923 executable function definitions**.
+Coverage: **623 modules; 7929 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -309,7 +309,7 @@ Coverage: **623 modules; 7923 executable function definitions**.
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/muzzle-flash.ts](src/render/entity/muzzle-flash.ts.md) | 3 |
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 14 |
-| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 18 |
+| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 24 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 31 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
