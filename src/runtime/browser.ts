@@ -377,7 +377,7 @@ import {
 import { AccidentReplacement, replacementRoadSpot } from './accident-replacement.js'
 import { GameHud } from './hud.js'
 import { FlipCinematic } from './flip-cinematic.js'
-import { navigationRoads, NavigationPlaceLookup } from '../render/entity/navigation-places.js'
+import { navigationRoads } from '../render/entity/navigation-places.js'
 import { WheelDebugOverlay } from '../diagnostics/wheel-debug.js'
 import { createRuntimeText, type RuntimeLocale } from './messages.js'
 import { t } from '../i18n/index.js'
@@ -914,7 +914,6 @@ export class GameRuntime {
   private readonly originalTabIndex: string | null
   private disposed = false
   private readonly fieldLightTiles: MapTile[] = []
-  private readonly placeLookup = new NavigationPlaceLookup()
   private readonly toolbar: GameToolbar
   private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
@@ -1721,7 +1720,6 @@ export class GameRuntime {
   /** Cancel loading and reset gameplay/presentation for replay while retaining reusable renderer resources. */
   stop(): void {
     this.toolbar?.setVisible(false)
-    this.placeLookup.reset()
     if (this.disposed) return
     this.terrainLoad?.abort()
     this.terrainLoad = null
@@ -2691,9 +2689,6 @@ export class GameRuntime {
       this.wheelDebug.update(sim, player.vehicleId, this.origin)
     }
     {
-      this.placeLookup.request(player.position, (city, street) =>
-        this.touchDriving?.setPlace(city, street),
-      )
       const vid = player.vehicleId
       const sim = this.session.simulation
       if (vid && sim) {

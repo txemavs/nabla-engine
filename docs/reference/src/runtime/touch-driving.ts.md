@@ -640,9 +640,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.setPlace
 
-[Implementation, line 425](../../../../src/runtime/touch-driving.ts#L425)
+[Implementation, line 428](../../../../src/runtime/touch-driving.ts#L428)
 
-City (large) + street under it, to the right of the accelerator.
+City (large) + street under it, to the right of the accelerator. The engine leaves it empty; a host
+that wants a place label fills it (e.g. from `NavigationPlaceLookup`).
 
 ```ts
 setPlace(city: string, street: string = ''): void
@@ -650,7 +651,7 @@ setPlace(city: string, street: string = ''): void
 
 ## TouchDriving.dispose
 
-[Implementation, line 432](../../../../src/runtime/touch-driving.ts#L432)
+[Implementation, line 435](../../../../src/runtime/touch-driving.ts#L435)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 
@@ -667,7 +668,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## TouchDriving.input
 
-[Implementation, line 441](../../../../src/runtime/touch-driving.ts#L441)
+[Implementation, line 444](../../../../src/runtime/touch-driving.ts#L444)
 
 Analog Studio drive rig: wheel, accelerator, red handbrake. Pointer capture always releases.
 

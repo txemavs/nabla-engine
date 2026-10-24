@@ -309,7 +309,7 @@ Coverage: **623 modules; 7929 executable function definitions**.
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/muzzle-flash.ts](src/render/entity/muzzle-flash.ts.md) | 3 |
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 14 |
-| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 24 |
+| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 25 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 31 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
@@ -435,7 +435,7 @@ Coverage: **623 modules; 7929 executable function definitions**.
 | [src/runtime/ar/vehicles.ts](src/runtime/ar/vehicles.ts.md) | 57 |
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 571 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 570 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
 | [src/runtime/control-profiles.ts](src/runtime/control-profiles.ts.md) | 12 |
