@@ -421,7 +421,10 @@ export class TouchDriving {
     }
   }
 
-  /** City (large) + street under it, to the right of the accelerator. */
+  /**
+   * City (large) + street under it, to the right of the accelerator. The engine leaves it empty; a host
+   * that wants a place label fills it (e.g. from `NavigationPlaceLookup`).
+   */
   setPlace(city: string, street: string = ''): void {
     if (this.disposed) return
     this.placeCity.textContent = city

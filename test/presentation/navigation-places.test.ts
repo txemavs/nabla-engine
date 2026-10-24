@@ -54,3 +54,21 @@ it('prefers the named street under the car and falls back to the city', () => {
   setNavigationRoads(() => [])
   setNavigationPlaces(() => [])
 })
+
+it('names the town at Zaisa (43.3423, -1.7595), not the closer village across the border', () => {
+  // Atlas z15 places around Zaisa, in metres from it (+X east, +Z south): Irun's point
+  // (node/27552575, town) is 2.4 km west, Biriatou's (node/1872278803, village) 1.6 km east.
+  setNavigationPlaces(() => [
+    { id: 'node/27552575', text: 'Irun', category: 'town', position: new Vector3(-2373, 41, 443) },
+    {
+      id: 'node/1872278803',
+      text: 'Biriatou',
+      category: 'village',
+      position: new Vector3(1321, 73, 978),
+    },
+  ])
+  expect(nearestLocality([0, 0, 0])).toBe('Irun')
+  // In Biriatou itself the village still wins.
+  expect(nearestLocality([1300, 0, 950])).toBe('Biriatou')
+  setNavigationPlaces(() => [])
+})

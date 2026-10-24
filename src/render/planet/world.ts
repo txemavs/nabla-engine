@@ -605,6 +605,7 @@ export class PlanetWorld {
         yield {
           id: place.id,
           text: place.text,
+          category: place.category,
           position: new THREE.Vector3(...place.position)
             .add(new THREE.Vector3(0, 100, 0))
             .applyMatrix4(r.group.matrix),
