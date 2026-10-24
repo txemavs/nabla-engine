@@ -9,11 +9,11 @@ test('real worker startup cannot publish after cancellation during initial snaps
   await page.goto('/session-startup-check')
   const results = await page.evaluate(
     async (root) => {
-      const { PlaySession } = await import(`/@fs/${root}/src/runtime/session.ts`)
+      const { PlaySession } = await import(`/@fs${root}/src/runtime/session.ts`)
       const { ThreadedSimulation } = await import(
-        `/@fs/${root}/src/simulation/threaded-simulation.ts`
+        `/@fs${root}/src/simulation/threaded-simulation.ts`
       )
-      const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
+      const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
       const originalRefresh = ThreadedSimulation.prototype.refresh
       const results = []
       for (const action of ['stop', 'dispose', 'replace']) {
