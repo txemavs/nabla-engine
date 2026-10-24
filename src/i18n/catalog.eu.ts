@@ -1,5 +1,6 @@
 /** Basque UI text of the engine (same keys as catalog.en.ts). */
 export const engineEu: Readonly<Record<string, string>> = {
+  'settings.help': 'Laguntza',
   'motion.camera': 'Kameraren mugimendua',
   'motion.auto-center': 'Zentratze automatikoa',
   'motion.delay': 'Zentratzeko itxaronaldia (s)',
@@ -591,6 +592,15 @@ export const engineEu: Readonly<Record<string, string>> = {
   'settings.weapon-pose-position-and-angles': 'Arma · jarreren posizioa eta angeluak',
   'settings.weapon-wheel': 'Armen gurpila',
   'settings.weapons': 'Armak',
+  'settings.real-weather': 'Benetako eguraldia',
+  'settings.real-weather-help':
+    'Jokalariaren kokapeneko eguraldia; Bilbo proba-pistan edo koordenaturik gabeko eszenetan. 15 minuturo eguneratzen da. Desaktibatu eskuzko eguraldia berreskuratzeko.',
+  'settings.real-weather-loading': 'Eguraldia kontsultatzen…',
+  'settings.real-weather-error':
+    'Konexiorik ez; azken eguraldia mantenduko da. Minutu batean berriro saiatuko da.',
+  'settings.rain-linked': 'Euria hodeiekin lotu',
+  'settings.rain-linked-help':
+    'Rain gehieneko intentsitatea da. Zeru garbiak edo ekaitzik gabeko hodeiek euria murrizten dute; Off aukerak beti itzaltzen du.',
   'settings.rain': 'Euria',
   'settings.weather': 'Eguraldia',
   'settings.world': 'Mundua',

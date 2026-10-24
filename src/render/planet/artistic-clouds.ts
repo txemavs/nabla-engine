@@ -10,7 +10,7 @@ import {
   type Texture,
 } from 'three'
 
-const NOISE = `
+export const CLOUD_NOISE = `
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
@@ -43,13 +43,13 @@ float cumulus(vec2 xz, float hours, float thresh) {
   return edge * mix(0.8, 1.0, grain);
 }
 float alto(vec2 xz, float hours, float thresh) {
-  vec2 p = xz + vec2(hours * 62000.0, hours * -20000.0);
+  vec2 p = xz + vec2(hours * 28800.0, hours * 9000.0);
   p = mat2(0.9, 0.44, -0.44, 0.9) * p * vec2(0.000048, 0.000015);
   float sheet = noise(p) * 0.78 + noise(p * 2.05 + vec2(2.0, 7.0)) * 0.22;
   return smoothstep(thresh - 0.1, thresh + 0.22, sheet);
 }
 float cirrus(vec2 xz, float hours, float thresh) {
-  vec2 p = xz + vec2(hours * 140000.0, hours * 32000.0);
+  vec2 p = xz + vec2(hours * 28800.0, hours * 9000.0);
   p = mat2(0.62, 0.78, -0.78, 0.62) * p * vec2(0.00012, 0.00001);
   float streak = noise(p) * 0.72 + noise(p * vec2(2.6, 1.05) + vec2(8.0, 3.0)) * 0.28;
   return smoothstep(thresh + 0.05, thresh + 0.46, streak);
@@ -90,7 +90,7 @@ const skyFragment = `
   #if defined( USE_LOGDEPTHBUF ) || defined( USE_LOGARITHMIC_DEPTH_BUFFER )
     uniform float logDepthBufFC;
   #endif
-  ${NOISE}
+  ${CLOUD_NOISE}
   vec2 march(vec3 ro, vec3 rd, float y0, float y1, float kind, float thresh) {
     float dy = rd.y;
     float t0;
@@ -157,7 +157,7 @@ const skyFragment = `
     float night = 1.0 - smoothstep(0.0, 0.4, day);
     color = mix(color, color * 0.05, night);
     alpha *= mix(1.0, 0.22, night);
-    if (ro.y < cumBase - 40.0) alpha *= 1.0 - smoothstep(0.997, 0.9995, mu);
+    if (ro.y < cumBase - 40.0) alpha *= mix(1.0 - smoothstep(0.997, 0.9995, mu), 1.0, storm);
     if (alpha < 0.02) discard;
     float tHit = 1e20;
     if (a0 > 0.02 && cum.y > 0.0) tHit = cum.y;
@@ -235,7 +235,7 @@ function writeDecks(shared: Shared) {
 
 /** Shared with the ground so driving sees the same clouds that are overhead. */
 export const groundCloudShade = `
-${NOISE}
+${CLOUD_NOISE}
 uniform vec3 nablaCloudSun;
 uniform float nablaCloudHours;
 uniform float nablaCloudDay;
@@ -302,7 +302,7 @@ export function patchGroundCloudShadow(shader: {
       uniform float nablaCloudBase;
       uniform float nablaCloudCover;
       varying vec3 nablaCloudWorld;
-      ${NOISE}`,
+      ${CLOUD_NOISE}`,
     )
     .replace(
       'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',
@@ -422,7 +422,7 @@ const globeFragment = `
   #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
     uniform float logDepthBufFC;
   #endif
-  ${NOISE}
+  ${CLOUD_NOISE}
   void main() {
     vec2 uv = vec2(atan(vLocal.z, vLocal.x), vLocal.y) * 4.2;
     float wind = dayHours * 0.12;
@@ -509,7 +509,7 @@ export function shadeEarthWithClouds(
         uniform float nablaCloudAmount;
         uniform mat4 modelMatrix;
         varying vec3 cloudLocal;
-        ${NOISE}`,
+        ${CLOUD_NOISE}`,
       )
       .replace(
         'vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + totalEmissiveRadiance;',

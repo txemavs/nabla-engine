@@ -24,7 +24,11 @@ function initialSettings(storage: SettingsStorage): { enabled: boolean; radius: 
   let radius = Number(data?.signPhysicsRadius)
   if (!Number.isFinite(radius) || !data?.signPhysicsRadius) {
     // Otherwise the host's traffic-signs settings, which hold the radius the HUD last saved.
-    const key = trafficSignsStorageKey()
+    const key =
+      'trafficSignsStorageKey' in storage
+        ? (storage as SettingsStorage & { trafficSignsStorageKey: string | null })
+            .trafficSignsStorageKey
+        : trafficSignsStorageKey()
     try {
       radius = key ? Number(JSON.parse(storage.getItem(key) ?? '{}')?.physicsRadius) : NaN
     } catch {

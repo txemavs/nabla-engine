@@ -261,6 +261,7 @@ try {
     '02 Escena y runtime',
   )
   runtime = new GameRuntime({
+    weatherLocation: flat ? { latitude: 43.263, longitude: -2.935 } : undefined,
     backend,
     xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),

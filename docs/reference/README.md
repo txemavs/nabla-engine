@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **655 modules; 8472 executable function definitions**.
+Coverage: **658 modules; 8493 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -277,6 +277,7 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/render/effects/effect-nodes.ts](src/render/effects/effect-nodes.ts.md) | 37 |
 | [src/render/effects/fsr1-shaders.ts](src/render/effects/fsr1-shaders.ts.md) | 0 |
 | [src/render/effects/fsr1.ts](src/render/effects/fsr1.ts.md) | 15 |
+| [src/render/effects/rain-curtains.ts](src/render/effects/rain-curtains.ts.md) | 3 |
 | [src/render/effects/rain.ts](src/render/effects/rain.ts.md) | 3 |
 | [src/render/entity/aircraft.ts](src/render/entity/aircraft.ts.md) | 4 |
 | [src/render/entity/asset-pack.ts](src/render/entity/asset-pack.ts.md) | 7 |
@@ -402,6 +403,7 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/render/planet/water-material.ts](src/render/planet/water-material.ts.md) | 8 |
 | [src/render/planet/water-worker.ts](src/render/planet/water-worker.ts.md) | 5 |
 | [src/render/planet/water.ts](src/render/planet/water.ts.md) | 24 |
+| [src/render/planet/weather.ts](src/render/planet/weather.ts.md) | 2 |
 | [src/render/planet/worker.ts](src/render/planet/worker.ts.md) | 31 |
 | [src/render/planet/world-environment.ts](src/render/planet/world-environment.ts.md) | 7 |
 | [src/render/planet/world.ts](src/render/planet/world.ts.md) | 171 |
@@ -447,7 +449,7 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 713 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 719 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-motion-preferences.ts](src/runtime/camera-motion-preferences.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
@@ -480,6 +482,7 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/runtime/input.ts](src/runtime/input.ts.md) | 13 |
 | [src/runtime/light-tuning.ts](src/runtime/light-tuning.ts.md) | 3 |
 | [src/runtime/lighting-preferences.ts](src/runtime/lighting-preferences.ts.md) | 6 |
+| [src/runtime/live-weather.ts](src/runtime/live-weather.ts.md) | 6 |
 | [src/runtime/loading-badge.ts](src/runtime/loading-badge.ts.md) | 5 |
 | [src/runtime/main-menu.ts](src/runtime/main-menu.ts.md) | 47 |
 | [src/runtime/map-inspector.ts](src/runtime/map-inspector.ts.md) | 5 |
@@ -493,8 +496,8 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/runtime/performance-settings.ts](src/runtime/performance-settings.ts.md) | 7 |
 | [src/runtime/performance.ts](src/runtime/performance.ts.md) | 0 |
 | [src/runtime/placement.ts](src/runtime/placement.ts.md) | 1 |
-| [src/runtime/planet-preferences.ts](src/runtime/planet-preferences.ts.md) | 12 |
-| [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 27 |
+| [src/runtime/planet-preferences.ts](src/runtime/planet-preferences.ts.md) | 13 |
+| [src/runtime/planet-settings-panel.ts](src/runtime/planet-settings-panel.ts.md) | 30 |
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/player-presentation.ts](src/runtime/player-presentation.ts.md) | 23 |
 | [src/runtime/pointer-capture.ts](src/runtime/pointer-capture.ts.md) | 7 |

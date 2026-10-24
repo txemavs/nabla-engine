@@ -265,7 +265,7 @@ export function artisticCloudDeck(base: THREE.ShaderMaterial) {
       color.assign(mix(color, color.mul(0.05), night))
       alpha.mulAssign(mix(1, 0.22, night))
       If(ro.y.lessThan(v.cumBase.sub(40)), () => {
-        alpha.mulAssign(smoothstep(0.997, 0.9995, mu).oneMinus())
+        alpha.mulAssign(mix(smoothstep(0.997, 0.9995, mu).oneMinus(), 1, v.storm))
       })
       If(alpha.lessThan(0.02), () => {
         Discard()

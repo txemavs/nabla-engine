@@ -16,6 +16,7 @@ type SkyPort = Pick<
 /** Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles. */
 export class RuntimePlanetPreferences {
   readonly state: Required<PlanetVisualSettings> = {
+    rainLinked: false,
     rainAmount: 0,
     moon: true,
     stars: true,
@@ -98,6 +99,11 @@ export class RuntimePlanetPreferences {
     this.remember(storage)
   }
 
+  setRainLinked(linked: boolean, storage: StoragePort): void {
+    this.state.rainLinked = linked
+    this.remember(storage)
+  }
+
   setRainAmount(amount: number, storage: StoragePort): void {
     if (!Number.isFinite(amount) || amount < 0 || amount > 1)
       throw new Error('Rain amount must be between 0 and 1')
@@ -118,6 +124,7 @@ export class RuntimePlanetPreferences {
       this.state
     return {
       rain: this.state.rainAmount,
+      rainLinked: this.state.rainLinked,
       cloudStyle,
       cloudAmount,
       cloudPressure,

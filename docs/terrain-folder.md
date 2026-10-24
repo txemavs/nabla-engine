@@ -117,8 +117,9 @@ the tile is a **hole**: an empty gap in the map, not an error, and loading does 
 **Tile hosts need CORS.** A page on another origin can only read a manifest if the host answers with
 `Access-Control-Allow-Origin`; without it the browser reports a network error (also for the 403 of an absent
 tile, so absent tiles cannot be told apart from a blocked host). `https://atlas.chained.world/euskadi/terraform`
-currently sends no CORS headers (checked with `Origin: http://100.100.10.1:8703`), so it only works from a page
-served from that host or through a same-origin mount.
+supports direct browser access: a published manifest returned `Access-Control-Allow-Origin: *`
+and allowed GET/HEAD on 2026-10-24 with `Origin: http://localhost:8707`. A same-origin mount
+is optional. Diagnose the actual failing response rather than assuming CORS is disabled.
 
 ## Choosing the terrain at runtime
 

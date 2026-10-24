@@ -1,3 +1,4 @@
+import { createEngineHelp } from './settings-help.js'
 import { createSystemInfo } from './system-info.js'
 import { mountGameToolbar } from './hud-layout.js'
 import { pageSearch } from './page-query.js'
@@ -14,7 +15,6 @@ import {
   setGameMenuNote,
 } from '../src/runtime/main-menu.js'
 import { addCornerButton } from '../src/runtime/corner-buttons.js'
-import { trafficSignsStorageKey } from '../src/runtime/traffic-signs-host.js'
 import { createMotionShadowSections } from './motion-shadow-preferences-ui.js'
 import { createInputPreferencesSection } from './input-preferences-ui.js'
 import { createControlsSection } from './settings-controls.js'
@@ -188,6 +188,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     btn.id = `settings-tab-${tab.id}`
     btn.dataset.tab = tab.id
     btn.setAttribute('role', 'tab')
+    btn.setAttribute('aria-controls', `settings-pane-${tab.id}`)
     btn.setAttribute('aria-selected', tab.id === DEFAULT_TAB ? 'true' : 'false')
     btn.textContent = tab.label
     tabBar.append(btn)
@@ -197,6 +198,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     pane.id = `settings-pane-${tab.id}`
     pane.dataset.pane = tab.id
     pane.setAttribute('role', 'tabpanel')
+    pane.setAttribute('aria-labelledby', btn.id)
     pane.hidden = tab.id !== DEFAULT_TAB
     panes.append(pane)
     paneEls.set(tab.id, pane)
@@ -403,7 +405,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const air = fieldset('settings-planet-air', t('settings.air'))
   air.append(
     ...rows(
+      rowOf('ps-real-weather'),
+      byId('ps-weather-info'),
       rowOf('ps-rain'),
+      rowOf('ps-rain-linked'),
       cloudsRow,
       artisticRow,
       subtitle(t('settings.sky')),
@@ -891,7 +896,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(section)
   }
 
-  const trafficSignsKey = trafficSignsStorageKey()
+  const trafficSignsKey = runtime.settings.trafficSignsStorageKey
   if (doc.documentElement.dataset.irunSigns === 'true' && trafficSignsKey) {
     // Signage physics is part of «Traffic signs»: a plain group inside it, not a section of its own.
     const physicsSection = doc.createElement('div')
@@ -1513,6 +1518,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const lightShadows = fieldset('settings-light-shadows', t('settings.shadows'))
   place(lightShadows)
 
+  place(createEngineHelp(doc))
+
   // A tab with nothing to show (e.g. Audio on a host without the mixer) is hidden.
   const syncTabs = () => {
     for (const tab of TABS) {
@@ -1611,6 +1618,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         'display-fsr',
         'display-fsr-sharpness',
       ]
+      const anisotropySection = rowOf('anisotropy')?.closest('.menu-section')
       const ordered = ids.map(rowOf).filter((row): row is HTMLLabelElement => !!row)
       // Insert backwards after the legend so late host controls use the same order.
       let next = quality.querySelector(':scope > legend')?.nextSibling ?? quality.firstChild
@@ -1618,6 +1626,13 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         if (row === next) next = row.nextSibling
         else quality.insertBefore(row, next)
       }
+      // Moving its only control must not leave a blank screen in the navigation.
+      if (
+        anisotropySection &&
+        anisotropySection !== quality &&
+        [...anisotropySection.children].every((child) => child.tagName === 'LEGEND')
+      )
+        anisotropySection.remove()
     }
     for (const id of ['light-shadows', 'light-shadowIntensity']) {
       const row = rowOf(id)
@@ -1717,7 +1732,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       for (const section of ordered)
         section.toggleAttribute(
           'data-section-hidden',
-          hidden.has(section.id) || section.hasAttribute('data-flat-empty'),
+          hidden.has(section.id) ||
+            section.hasAttribute('data-flat-empty') ||
+            [...section.children].every((child) => child.tagName === 'LEGEND'),
         )
       const shown = ordered.filter((section) => !section.hasAttribute('data-section-hidden'))
       const items: HTMLElement[] = []
@@ -1920,15 +1937,17 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const intent = menuNavigationKey(event.code)
     if (!intent || intent === 'focus') return
     event.preventDefault()
-    const current = TABS.findIndex((tab) => tab.id === activeTab)
+    const visibleTabs = TABS.filter((tab) => !doc.getElementById(`settings-tab-${tab.id}`)?.hidden)
+    if (!visibleTabs.length) return
+    const current = visibleTabs.findIndex((tab) => tab.id === activeTab)
     const index =
       intent === 'first'
         ? 0
         : intent === 'last'
-          ? TABS.length - 1
-          : (current + (intent === 'next' ? 1 : -1) + TABS.length) % TABS.length
-    selectTab(TABS[index].id)
-    doc.getElementById(`settings-tab-${TABS[index].id}`)?.focus()
+          ? visibleTabs.length - 1
+          : (current + (intent === 'next' ? 1 : -1) + visibleTabs.length) % visibleTabs.length
+    selectTab(visibleTabs[index].id)
+    doc.getElementById(`settings-tab-${visibleTabs[index].id}`)?.focus()
   })
   /**
    * Every per-vehicle option lives in one group of the Principal tab, titled with the occupied

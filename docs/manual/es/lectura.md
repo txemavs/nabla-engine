@@ -45,7 +45,7 @@ La definición física de un coche pertenece al contenido compatible con el moto
 
 ## Elegir un punto de entrada
 
-Para una primera prueba en navegador, utiliza `/?example=flat`. Para simular sin renderer, utiliza `PlaySession`. Si quieres controlar directamente el mundo físico y sus pasos, existe `@nabla/engine/vehicles/wheeled`. Son niveles de integración distintos: cuanto más bajo sea el nivel, mayor responsabilidad asumes sobre composición, reloj y liberación de recursos.
+Para una primera prueba en navegador, utiliza `/?example=flat`. Para simular sin dibujar la escena, utiliza `PlaySession` desde `@nabla/engine/simulation`. Para crear el mundo físico y avanzar sus pasos directamente, utiliza `@nabla/engine/physics`. Añade `@nabla/engine/simulation/vehicles/wheeled` cuando necesites dinámica de vehículos con ruedas. Son niveles de integración distintos: cuanto más bajo sea el nivel, mayor responsabilidad asumes sobre composición, reloj y liberación de recursos.
 
 El adaptador `experimental/betaflight` es experimental. WebGPU es una opción explícita con mecanismo de retorno a WebGL. La autoridad de red resuelve determinadas decisiones compartidas, pero no constituye una simulación física completa ejecutada en un servidor. La compatibilidad con las publicaciones de terreno necesita las comprobaciones del capítulo 10.
 
@@ -112,7 +112,7 @@ El programa es propietario del reloj; la sesión es propietaria de la simulació
 
 ## Montar el runtime de navegador
 
-`examples/manual/browser.ts` exporta `mountManualGame(canvas)`. Se utiliza desde una aplicación TypeScript con empaquetador para navegador. Importa `GameRuntime` desde `@nabla/engine/runtime/browser`, proporciona la escena, activa el HUD e inicia la partida. Devuelve una función de limpieza que la aplicación debe invocar al desmontar la vista o cambiar de ruta.
+`examples/manual/browser.ts` exporta `mountManualGame(canvas)`. Se utiliza desde una aplicación TypeScript con empaquetador para navegador. Importa `BrowserGameRuntime` desde `@nabla/engine/runtime/browser`, proporciona la escena, activa el HUD e inicia la partida. Devuelve una función de limpieza que la aplicación debe invocar al desmontar la vista o cambiar de ruta.
 
 La escena incluye un anclaje geográfico sin imágenes en línea porque el runtime de navegador exige `geography`, incluso con un suelo local. No se proporciona `tiles`, por lo que ese anclaje no solicita terreno geográfico.
 
@@ -139,15 +139,25 @@ npm pack
 
 Ejecuta esos comandos en el repositorio del motor. Desde el proyecto consumidor, instala la ruta del archivo que muestre npm. No codifiques una versión fija en automatizaciones: utiliza el nombre realmente generado. `npm pack --dry-run` permite inspeccionar el contenido sin crear el archivo.
 
-| Nivel                  | Importación pública              | Lo que aporta la aplicación                    |
-| ---------------------- | -------------------------------- | ---------------------------------------------- |
-| Datos validados        | `@nabla/engine/scene`            | Datos y persistencia.                          |
-| Sesión sin renderer    | `@nabla/engine/runtime/session`  | Reloj y entrada lógica.                        |
-| Coordinador de juego   | `@nabla/engine/runtime/core`     | Renderizado, planificación y dispositivos.     |
-| Runtime completo       | `@nabla/engine/runtime/browser`  | Canvas, escena, opciones e interfaz propia.    |
-| Vehículo independiente | `@nabla/engine/vehicles/wheeled` | Mundo físico compartido y pasos de simulación. |
+| Nivel                | Importación pública                         | Lo que aporta la aplicación                    |
+| -------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Datos validados      | `@nabla/engine/scene`                       | Datos y persistencia.                          |
+| Sesión sin renderer  | `@nabla/engine/simulation`                  | Reloj y entrada lógica.                        |
+| Coordinador de juego | `@nabla/engine/runtime/core`                | Renderizado, planificación y dispositivos.     |
+| Runtime completo     | `@nabla/engine/runtime/browser`             | Canvas, escena, opciones e interfaz propia.    |
+| Mundo físico         | `@nabla/engine/physics`                     | Cuerpos, pasos manuales y liberación.          |
+| Dinámica de vehículo | `@nabla/engine/simulation/vehicles/wheeled` | Mundo físico compartido y pasos de simulación. |
 
-Hay dos clases exportadas con el nombre `GameRuntime`. `runtime/core` reexporta el coordinador de `runtime/game.ts`; `runtime/browser` implementa la composición completa de navegador. Sus constructores y responsabilidades son diferentes. Conserva siempre la ruta de importación al copiar un ejemplo.
+Los nombres públicos distinguen las responsabilidades: GameplayCoordinator, desde
+@nabla/engine/runtime/core, coordina sesión, entrada, cámara y portales; la aplicación
+aporta renderizado y planificación. BrowserGameRuntime, desde
+@nabla/engine/runtime/browser, integra canvas, DOM, renderizado, audio y XR.
+
+GameRuntime sigue siendo un alias compatible de cada clase en su ruta anterior.
+Los alias apuntan a los mismos constructores: conservan instanceof y acceso al
+prototipo. BrowserGameRuntimeOptions es un alias de la interfaz original
+GameRuntimeOptions, que sigue disponible. constructor.name refleja el nuevo nombre;
+no debe usarse como identificador de persistencia.
 
 ## Publicar los recursos
 
@@ -162,6 +172,25 @@ Una aplicación también puede utilizar `game/` desde una revisión fijada del m
 Mantén coordenadas regionales, identidad visual, selección de sala y presentación de apertura en el anfitrión. Consulta `docs/game-runtime.md` para el flujo concreto.
 
 **Fuentes:** `package.json`, `src/runtime/game.ts`, `game/terrain-host.ts`, `game/drive-host.ts` y `docs/asset-packs.md`.
+
+## Rutas de simulación y alias compatibles
+
+La entrada @nabla/engine/simulation reúne Simulation, PlaySession, initPhysics,
+FIXED_STEP, idleInput y los tipos de entrada y sesión. No crea un renderer ni un reloj.
+PlaySession crea y libera su simulación; la aplicación entrega tiempo e instrucciones.
+
+| Ruta recomendada                | Responsabilidad                                   |
+| ------------------------------- | ------------------------------------------------- |
+| simulation/vehicles/wheeled     | Dinámica de vehículos con ruedas.                 |
+| simulation/vehicles/two-wheeled | Dinámica y equilibrio de vehículos de dos ruedas. |
+| simulation/vehicles/boat        | Dinámica de embarcaciones.                        |
+| simulation/vehicles/flight      | Dinámica de vuelo.                                |
+
+Todas estas rutas llevan el prefijo @nabla/engine/. Las anteriores vehicles/wheeled,
+vehicles/two-wheeled, vehicles/boat y vehicles/flight siguen siendo alias de los mismos
+módulos y declaraciones. runtime/session sigue exportando PlaySession; Simulation
+sigue disponible en la raíz. No hay que migrar escenas, partidas ni preferencias.
+vehicles sin sufijo es el catálogo de vehículos, no el módulo de simulación.
 
 # 5. Arquitectura y responsabilidad de los módulos
 
@@ -218,6 +247,12 @@ El anfitrión resuelve la fuente del mundo, crea documento y runtime, espera sue
 Con `clock: 'automatic'`, el runtime es propietario de la planificación. Si integras un reloj manual, inspecciona el contrato vigente y conserva un único propietario del avance. No avances por separado la sesión y su simulación.
 
 **Fuentes:** `src/runtime/session.ts`, `src/simulation/threaded-simulation.ts`, `src/runtime/browser.ts`, `game/loading.ts` y `docs/game-runtime.md`.
+
+## Arranque, cancelación y construcción segura
+
+PlaySession descarta respuestas tardías tras stop, dispose o un nuevo play. Una simulación creada por un arranque cancelado se libera; no puede instalarse en la sesión posterior. Cancelar la continuación del motor no cancela por sí solo cualquier promesa del anfitrión.
+
+BrowserGameRuntime valida escena, geografía, canvas y configuración antes de crear recursos. Si la construcción falla durante la adquisición, libera lo que ya posee. La liberación terminal continúa aunque un propietario lance una excepción y comunica el primer error al terminar. stop conserva recursos reutilizables para volver a jugar; dispose termina su vida.
 
 # 7. Escenas, entidades y datos de autoría
 
@@ -332,7 +367,7 @@ Conserva el prefijo `z/` y sigue el puntero exacto del manifiesto, sin adivinar 
 
 ## Proxy y tratamiento de errores
 
-Según `AGENTS.md`, Atlas no envía cabeceras CORS. El navegador debe utilizar `/tiles` en el mismo origen. Vite elimina ese prefijo y reenvía al servidor configurado. Producción necesita un proxy equivalente. Compila con `VITE_NABLA_TILES_URL=/tiles` cuando esa sea la ruta publicada.
+Atlas permite acceso directo desde el navegador mediante CORS. El 24 de octubre de 2026, un manifiesto publicado respondió con `Access-Control-Allow-Origin: *` y métodos GET/HEAD. No hace falta un proxy para ese acceso. `/tiles` sigue siendo una opción del anfitrión: Vite elimina el prefijo y reenvía al servidor configurado. Utiliza `VITE_NABLA_TILES_URL=/tiles` solo cuando el anfitrión publique esa ruta; en ese caso, producción necesita la correspondencia equivalente.
 
 El proveedor estático genérico interpreta `[404]` como ausencia por defecto y acepta `missingStatuses`. PlanetWorld pasa `[403, 404]` para las entradas. Un paquete ausente al que apunta una entrada existente es un error de publicación, no un hueco silencioso. No reinterpretar universalmente los 403 de cualquier servicio. Distingue objeto ausente, fallo de red/CORS, tiempo agotado, JSON inválido, incompatibilidad de esquema y fallo de tamaño o hash.
 
@@ -532,6 +567,12 @@ Compara backends con la misma escena y calidad. Registra backend real, resoluci�
 
 **Fuentes:** `src/render/backend.ts`, `src/runtime/render-pipeline.ts`, `src/render/planet/world-environment.ts`, `src/render/effects/fsr1.ts` y `src/presentation/scene-view.ts`.
 
+## Lluvia y límites de la versión publicada
+
+La tanda publicada de lluvia utiliza una única llamada de dibujo instanciado para estelas en WebGL de escritorio. El efecto conserva continuidad con el origen flotante y se oculta con la profundidad de la escena. Su niebla temporal se restaura después del renderizado. Off evita el dibujo y la modificación de niebla; cada runtime posee su cantidad y recursos.
+
+El control está en World / Environment / Weather. La preferencia guardada se conserva; un parámetro rain permite una previsualización y una elección explícita en el menú retira ese parámetro para que no reaparezca al recargar. Esta entrega no certifica lluvia en XR o WebGPU, cobertura de tejados, impactos ni superficies mojadas. El trabajo de tormentas que sigue en desarrollo no forma parte de esta edición validada.
+
 # 18. Cámaras y controles
 
 Los dispositivos alimentan acciones lógicas. El runtime selecciona contexto: caminar, conducir, volar, manejar menús o interactuar en XR. Centraliza los bindings para mantener coherencia entre ayudas, controles táctiles y comportamiento real.
@@ -613,6 +654,45 @@ Reutiliza tokens y estilos compartidos. La hoja generada tiene generador y compr
 
 **Fuentes:** `src/runtime/messages.ts`, `src/i18n/index.ts`, `src/runtime/settings-scope.ts`, `src/render/monitors/menu.ts`, `src/ui/theme.ts`, `src/ui/styles/index.css` y `docs/ui-ux-pattern.md`.
 
+## Organización actual del menú
+
+Los nombres siguientes usan las etiquetas inglesas de la interfaz; los catálogos proporcionan las traducciones.
+
+| Pestaña     | Contenido                                                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Main        | Escenarios, Info, acceso VR/AR y controles del vehículo ocupado.                                                                    |
+| World       | Mapa, situación y fecha; Terrain con Source, Buildings e Infrastructures; Environment con atmósfera, astros, tiempo y mar; objetos. |
+| Settings    | Video, Controls, Player, Weapons, Simulation y Data and preferences.                                                                |
+| Development | Colisiones y diagnósticos.                                                                                                          |
+
+Video / Options reúne cámara general, FOV y recuperación; Quality agrupa perfil, nitidez, anisotropía, FSR y resolución; Bodycam es el nombre visible de la antigua ActionCam, cuya API y claves se conservan. Effects reúne fuego y humo. Shadows reúne sombras solares, de luces, señales y linterna. Light conserva iluminación. Distances contiene radio de carga y celdas en memoria; Cache conserva presupuesto de disco y limpieza. Audio está dentro de Simulation y armas dentro de Settings.
+
+La búsqueda encuentra secciones por títulos y etiquetas, ignorando mayúsculas y acentos. Muestra la ruta del resultado; las flechas y Enter permiten abrirlo. Buscar no cambia ajustes. Los resultados largos se parten en líneas y no deben producir desplazamiento horizontal. Los sliders mantienen el recorrido completo sin el relleno lateral de los campos de texto.
+
+## Controles y preferencias por instancia
+
+Mouse and gamepad ofrece sensibilidad de 0,1 a 4 veces (1 por defecto), inversión vertical y zona muerta de 0 a 50 % (12 % por defecto). Se guardan en nabla.input. USB, controles táctiles y mandos XR conservan sus calibraciones propias.
+
+Keyboard steering añade constantes de respuesta y liberación de 0,01 a 2 segundos; sus valores iniciales son 0,4 y 0,12. Son constantes exponenciales, no el tiempo exacto hasta el giro máximo. El filtro actúa antes del envío a física tanto con worker como sin él. El volante analógico no recibe ese filtro.
+
+Camera recovery permite activar autocentrado, esperar entre 0 y 30 segundos, recuperar entre 0 y 5 segundos y realizar transiciones ordinarias entre 0 y 3 segundos. Cero hace instantánea la transición. Se guarda en nabla.cameraMotion y no sustituye las animaciones de entrada o las restricciones de colisión.
+
+Sun shadows permite seguir el perfil o elegir un nivel guardado y aplicarlo al recargar. El nivel histórico llamado 4096 usa cuatro cascadas de 2048 píxeles; la interfaz muestra la configuración real. La ampliación lunar en el horizonte parte de 5 veces y el destello solar de 50 %, respetando preferencias existentes. Sol, luna y estrellas tienen controles de visibilidad independientes.
+
+## Info y copias restaurables
+
+Info muestra backend, ejecución física, modo de sesión y preferencias, calidad, tamaño real del canvas, escala, límite configurado de FPS, FSR, terreno y capacidades declaradas por el navegador. La memoria es aproximada; el límite de FPS no mide el rendimiento. La presencia de WebXR no garantiza una sesión disponible. Copiar el informe no copia posiciones, tokens ni preferencias.
+
+Settings / Data and preferences / Settings management es el destino para exportar, previsualizar e importar una copia JSON nabla-settings versión 1, o restablecer valores. El antiguo Export de Development ya no existe. Las copias excluyen escenas, cachés y credenciales. Seleccionar un archivo no aplica cambios; la importación permite mezclar o reemplazar. Reset conserva calibraciones USB/XR salvo elección explícita. Los anfitriones con URL fija deben usar mergePagePreferences para preservar los parámetros permitidos tras una importación.
+
+## Contrato del anfitrión
+
+registerPreferenceKey, exportada por @nabla/engine/runtime/settings-backup, incorpora claves del anfitrión a copia, importación y reset. Exige namespace.nombre y reserva nabla. para el motor. El registro es una lista de claves permitidas, no un almacén de valores.
+
+Para señales, settings.trafficSignsStorageKey selecciona una clave por runtime; null desactiva esa selección. Si se omite, el almacén captura el valor legado de setTrafficSignsStorageKey al construirse. Cambiar después el valor por defecto no modifica instancias existentes. Así Euskadi conserva euskadi.irun-signs sin que Engine conozca esa cadena. El HUD y la física leen la misma selección capturada. El registro general de claves permitidas sigue siendo compartido por el módulo.
+
+La localidad del HUD corresponde ahora al anfitrión: puede usar NavigationPlaceLookup y TouchDriving.setPlace. El motor no solicita automáticamente la etiqueta cada frame. La selección pondera distancia por alcance de ciudad, villa o pueblo; no representa límites municipales legales.
+
 # 21. Realidad virtual y aumentada
 
 Los adaptadores XR conectan presentación y entrada inmersivas al comportamiento del motor. Las entradas públicas incluyen `/xr`, `/xr/ui`, `/ar` y adaptadores específicos de arco, canasta, colocación y armas. Importar AR no crea por sí solo una demo. Las capacidades se comprueban durante la ejecución.
@@ -673,7 +753,7 @@ Prueba dos clientes, reclamaciones, disputa por objetos, muerte/reaparición, de
 
 **Parte V. Ampliación, calidad y operación**
 
-Elige el punto de extensión por responsabilidad. Una receta nueva, un adaptador, un comportamiento físico y un escenario particular son cambios distintos; no deben acabar todos dentro de `GameRuntime`.
+Elige el punto de extensión por responsabilidad. Una receta nueva, un adaptador, un comportamiento físico y un escenario particular son cambios distintos; no deben acabar todos dentro de `BrowserGameRuntime`.
 
 | Cambio deseado              | Punto de partida                                    |
 | --------------------------- | --------------------------------------------------- |
@@ -785,9 +865,9 @@ $env:VITE_NABLA_TILES_URL = '/tiles'
 npm run build:game
 ```
 
-Esto fija la ruta durante la compilación. No crea el proxy ni resuelve la discrepancia Atlas del capítulo 10. Sirve `game-dist/` preservando rutas, tipos de contenido y origen HTTPS.
+Esto fija la ruta durante la compilación. No crea el proxy. Atlas admite acceso directo con CORS; si eliges su URL pública, no necesitas publicar `/tiles`. Sirve `game-dist/` preservando rutas, tipos de contenido y origen HTTPS.
 
-## Proxy de producción
+## Proxy de producción opcional
 
 La correspondencia debe conservar el sufijo tras `/tiles/`. Un fragmento nginx ilustrativo es:
 
@@ -819,7 +899,7 @@ Prueba carga inicial, acceso directo a cada página, URL de recursos, workers, w
 
 Este inventario se obtiene del mapa `exports` de `package.json` al generar el PDF. Enumera puntos de entrada, no todos los símbolos internos ni una promesa de estabilidad de cualquier archivo vecino. Las declaraciones TypeScript se producen mediante `npm run build`.
 
-La entrada raíz reúne utilidades de escena, física y presentación y tiene un grafo amplio de dependencias. Prefiere una entrada específica cuando sea adecuada. Recuerda que `runtime/core` y `runtime/browser` exportan clases distintas llamadas `GameRuntime`.
+La entrada raíz reúne utilidades de escena, física y presentación y tiene un grafo amplio de dependencias. Prefiere una entrada específica cuando sea adecuada. Usa GameplayCoordinator para coordinar el juego y BrowserGameRuntime para la integración completa con el navegador. Los nombres antiguos GameRuntime siguen disponibles como alias en sus respectivas rutas.
 
 En la tabla se muestra el sufijo que se añade a `@nabla/engine`; «raíz» significa la importación `@nabla/engine` sin sufijo. La segunda columna indica el archivo fuente que permite seguir sus exportaciones.
 
@@ -870,7 +950,7 @@ Los cinco primeros campos pertenecen a `simulationDefaults`. El ejemplo de contr
 
 `hud`, `audio`, `locale`, `messages`, `touchControls` y `acceptsInput` integran experiencia e interfaz. `onProgress`, `onFrame`, `onDiagnostics`, `onMessage` y `onError` permiten observar el runtime desde el anfitrión.
 
-`clock` selecciona planificación automática o manual. `display` controla frames y resolución. `assetQuality` requiere un runtime nuevo. `backend` recibe un renderer preparado. `music`, `startCameras` y `startLights` configuran presentación. Consulta `GameRuntimeOptions` para tipos completos y duración de cada opción.
+`clock` selecciona planificación automática o manual. `display` controla frames y resolución. `assetQuality` requiere un runtime nuevo. `backend` recibe un renderer preparado. `music`, `startCameras` y `startLights` configuran presentación. Consulta `BrowserGameRuntimeOptions` para tipos completos y duración de cada opción.
 
 ## Entorno y parámetros de diagnóstico
 
@@ -988,7 +1068,7 @@ El anfitrión aporta un canvas dimensionado y llama a la función de limpieza al
 | Atlas devuelve 403                    | Ruta exacta, `z/` y nombre publicado.                 | En este origen, un objeto ausente produce 403.         |
 | Se solicita `manifest.json`           | Ruta predeterminada del cargador.                     | Discrepancia conocida con publicación hash.            |
 | Una celda devuelve HTML               | Proxy y fallback de SPA.                              | No interpretes la página de aplicación como metadatos. |
-| Error CORS                            | Origen y proxy `/tiles`.                              | En esta integración Atlas necesita mismo origen.       |
+| Error CORS                            | Origen y proxy `/tiles`.                              | Atlas admite acceso directo; comprueba la respuesta real.       |
 | Terreno visible sin colisión          | Instalación física, marco y versión.                  | Presentación lista no significa física lista.          |
 | Asfalto duplicado                     | Versión de celda y suelo unificado.                   | Evita superponer capas antiguas.                       |
 | Contador de carga detenido            | Fase de preparación y revelación.                     | Puede estar trabajando la GPU.                         |
@@ -1099,3 +1179,15 @@ No se realizaron para esa tarea una sesión renderizada de navegador, pruebas de
 ## Alcance de las comprobaciones
 
 El verificador técnico comprueba enlaces locales, anclas, capítulos e inventario de exportaciones, pero no ejecuta comandos de la prosa ni verifica servicios remotos. La exactitud semántica requiere lectura de fuentes. La edición PDF añade comprobación de contenido extraído, navegación y revisión visual de maquetación; eso tampoco vuelve a validar por sí solo el comportamiento del motor.
+
+## Actualización de lectura del 24 de octubre de 2026
+
+Se incorporan la reorganización del menú, controles por instancia, lluvia publicada, arranque y liberación seguros, preferencias del anfitrión y corrección de sliders. La referencia de partida es main 8decd592 con la corrección 189e342a y el aislamiento de señales de esta revisión. Los cambios paralelos de tormentas no están certificados por esta edición. La revisión inglesa y el código siguen siendo las fuentes técnicas de mantenimiento.
+
+## Revisión de nombres públicos
+
+Esta edición incorpora las rutas de simulation del commit a3cfe8fd y los nombres
+GameplayCoordinator y BrowserGameRuntime del commit c204aff9. Los ejemplos y el
+inventario de API se generan con esas revisiones publicadas. Se conserva la descripción
+de lluvia de la entrega anterior; las tormentas y la meteorología en desarrollo no se
+incorporan a esta revisión. Las PR correspondientes pueden seguir pendientes de fusión.

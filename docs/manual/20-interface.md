@@ -466,3 +466,21 @@ keep their prior behavior.
 World → Environment → Weather → Rain ranges from Off to 100%. The choice is saved with the planet preferences. Both game entries accept `?rain=0.8` (0–1) as a startup override; omit the parameter to restore the saved setting.
 
 The first version targets desktop WebGL, with up to 6,000 instanced streaks in one draw and analytic GPU movement. Off skips the rain draw and haze. World depth occludes drops; floating-origin changes preserve their positions. Rain is composited before FSR/depth of field. The WebGPU control is disabled; immersive XR, mirrors, roof coverage, impacts and wet-surface reflections are not part of this version.
+
+### Registering host preferences
+
+Host keys are included in backups only after explicit registration with
+`registerPreferenceKey` from `@nabla/engine/runtime/settings-backup`.
+Use a host namespace such as `my-host.preferences`; engine `nabla.` keys are reserved.
+Registration does not change storage ownership or migrate saved data.
+
+Traffic-sign hosts additionally select their unchanged storage key before runtime/HUD
+creation through the internal `setTrafficSignsStorageKey` adapter. The registration allowlist is module-global. The selected sign key is captured per
+SettingsStore: pass settings.trafficSignsStorageKey explicitly (null disables it), or
+omit it to capture the legacy page default. Later default changes do not alter existing
+runtimes. See the
+[host contract](../host-settings-compatibility.md#host-preferences-contract-2026-10-24)
+for the source-overlay API, visibility condition and coexistence limitation.
+
+Place labels are also host-owned: Engine provides `NavigationPlaceLookup` and
+`TouchDriving.setPlace`, but GameRuntime no longer automatically fills the HUD locality.

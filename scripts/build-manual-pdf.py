@@ -119,7 +119,7 @@ class Cover(Flowable):
         c.drawString(0, 151, '26 capítulos  ·  6 apéndices  ·  ejemplos prácticos')
         c.setFont('Book', 10.5)
         c.setFillColor(colors.HexColor('#B9CED7'))
-        c.drawString(0, 119, 'Edición en español · 23 de octubre de 2026')
+        c.drawString(0, 119, 'Edición en español · 24 de octubre de 2026')
         c.drawString(0, 98, f'Base técnica revisada: @nabla/engine {self.version}')
         c.setFont('Book', 9)
         c.drawString(0, 43, 'Para desarrolladores, creadores de contenido y agentes.')
@@ -152,7 +152,7 @@ class ManualDoc(BaseDocTemplate):
         canvas.line(LEFT, PAGE_H - 41, PAGE_W - RIGHT, PAGE_H - 41)
         canvas.line(LEFT, 39, PAGE_W - RIGHT, 39)
         canvas.setFont('Book', 8)
-        canvas.drawString(LEFT, 25, 'Edición de lectura · 23/10/2026')
+        canvas.drawString(LEFT, 25, 'Edición de lectura · 24/10/2026')
         canvas.drawRightString(PAGE_W - RIGHT, 25, str(doc.page))
         canvas.restoreState()
 
@@ -252,6 +252,8 @@ while i < len(lines):
                 story.append(PageBreak())
             first_h1 = False
         paragraph = Paragraph(inline(heading[2]), styles['h1' if level == 0 else 'h2'])
+        if heading[2] == 'Organización actual del menú':
+            story.append(PageBreak())
         heading_counter += 1
         paragraph.bookmark = f'section-{heading_counter}'
         paragraph.level = level

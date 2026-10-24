@@ -32,7 +32,7 @@ export interface NablaPwaOptions {
   /** Optional PNG favicon file name in `iconsDir`. */
   favicon?: string
   /** Offline page texts and colours; the app name is the manifest name. */
-  offline: Omit<OfflinePageOptions, 'appName' | 'iconUrl'> & { icon?: string }
+  offline: Omit<OfflinePageOptions, 'appName'> & { icon?: string }
   /** Pages that get the head tags. Default the root document (`/` and `/index.html`). */
   pages?: (path: string) => boolean
   /** Cache name prefix of the service worker. Default `nabla-pwa-`. */
@@ -83,7 +83,7 @@ export function pwaFiles(options: NablaPwaOptions): Map<string, PwaFile> {
     body: offlinePageHtml({
       ...offline,
       appName: options.manifest.name,
-      iconUrl: icon ? route + icon : undefined,
+      iconUrl: offline.iconUrl ?? (icon ? route + icon : undefined),
     }),
   })
   const shell = [...files.keys()].sort()

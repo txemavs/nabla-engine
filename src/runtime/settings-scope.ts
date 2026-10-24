@@ -10,6 +10,9 @@
  * The page entry selects its default scope; runtimes own independent stores. Hosts can seed
  * per-mode defaults with `window.NABLA_SETTINGS_DEFAULTS = { headset: { 'nabla.quality': … } }`.
  */
+import { registerPreferenceKey } from './settings-backup.js'
+import { trafficSignsStorageKey } from './traffic-signs-host.js'
+
 export type PlayMode = 'pc' | 'headset' | 'headset-pc'
 export type VRPlayMode = Exclude<PlayMode, 'pc'>
 
@@ -69,6 +72,8 @@ export interface SettingsStorage {
 }
 export type SettingsDefaults = Partial<Record<VRPlayMode, Record<string, string>>>
 export interface SettingsStoreOptions {
+  /** Host signs key captured for this owner; null disables signs, omission uses the legacy page default. */
+  trafficSignsStorageKey?: string | null
   mode?: PlayMode
   /** Omit for browser storage; null disables persistence. */
   storage?: SettingsStorage | null
@@ -92,6 +97,7 @@ function hostDefaults(): SettingsDefaults | undefined {
 
 /** A runtime-owned view: never patches Storage, and keeps working when persistence fails. */
 export class SettingsStore implements Storage {
+  readonly trafficSignsStorageKey: string | null
   private currentMode: PlayMode
   private readonly defaults: SettingsDefaults | undefined
   get mode(): PlayMode {
@@ -104,6 +110,12 @@ export class SettingsStore implements Storage {
   private enumerated = false
   private readonly namespace?: string
   constructor(options: SettingsStoreOptions = {}) {
+    const signsKey =
+      options.trafficSignsStorageKey === undefined
+        ? (trafficSignsStorageKey() ?? null)
+        : options.trafficSignsStorageKey
+    if (signsKey !== null) registerPreferenceKey(signsKey)
+    this.trafficSignsStorageKey = signsKey
     this.currentMode = options.mode ?? activePlayMode()
     this.defaults = options.hostDefaults ?? hostDefaults()
     this.backend = options.storage === undefined ? browserStorage() : options.storage

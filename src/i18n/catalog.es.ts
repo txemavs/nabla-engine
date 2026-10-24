@@ -1,5 +1,6 @@
 /** Spanish UI text of the engine (same keys as catalog.en.ts). */
 export const engineEs: Readonly<Record<string, string>> = {
+  'settings.help': 'Ayuda',
   'motion.camera': 'Movimiento de cámara',
   'motion.auto-center': 'Centrado automático',
   'motion.delay': 'Espera antes de centrar (s)',
@@ -589,6 +590,14 @@ export const engineEs: Readonly<Record<string, string>> = {
   'settings.weapon-pose-position-and-angles': 'Arma · posición y ángulos de las posturas',
   'settings.weapon-wheel': 'Rueda de armas',
   'settings.weapons': 'Armas',
+  'settings.real-weather': 'Clima real',
+  'settings.real-weather-help':
+    'Clima en la posición del jugador; Bilbao en la pista de pruebas o escenas sin coordenadas. Actualiza cada 15 min. Desactívalo para recuperar el clima manual.',
+  'settings.real-weather-loading': 'Consultando el clima…',
+  'settings.real-weather-error': 'Sin conexión; se conserva el último clima. Reintento en 1 min.',
+  'settings.rain-linked': 'Vincular lluvia a las nubes',
+  'settings.rain-linked-help':
+    'Rain es la intensidad máxima. Los claros y las nubes sin tormenta reducen la precipitación; Off siempre la apaga.',
   'settings.rain': 'Lluvia',
   'settings.weather': 'Climatología',
   'settings.world': 'Mundo',

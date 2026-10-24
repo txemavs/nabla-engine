@@ -1,5 +1,6 @@
 /** English UI text of the engine: the source of every key. */
 export const engineEn: Readonly<Record<string, string>> = {
+  'settings.help': 'Help',
   'motion.camera': 'Camera motion',
   'motion.auto-center': 'Automatic centering',
   'motion.delay': 'Centering delay (s)',
@@ -583,6 +584,14 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.weapon-pose-position-and-angles': 'Weapon · pose position and angles',
   'settings.weapon-wheel': 'Weapon wheel',
   'settings.weapons': 'Weapons',
+  'settings.real-weather': 'Real weather',
+  'settings.real-weather-help':
+    'Weather at the player location; Bilbao for the test track or scenes without coordinates. Updates every 15 min. Disable to restore manual weather.',
+  'settings.real-weather-loading': 'Fetching weather…',
+  'settings.real-weather-error': 'Connection failed; keeping the last weather. Retrying in 1 min.',
+  'settings.rain-linked': 'Link rain to clouds',
+  'settings.rain-linked-help':
+    'Rain is the maximum intensity. Clear skies or calm clouds reduce precipitation; Off always stops it.',
   'settings.rain': 'Rain',
   'settings.weather': 'Weather',
   'settings.world': 'World',
@@ -628,11 +637,11 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.fsr.performance': 'Performance · 50%',
   'settings.fsr-sharpness': 'FSR sharpness',
   'settings.fsr-hint':
-    'QLTY sets the output; FSR lowers the internal resolution. Menus stay at full resolution. Not applied to the headset. The first activation may prepare shaders.',
+    'Quality sets the output resolution; FSR lowers the internal resolution. Menus stay at full resolution. Not applied to the headset. The first activation may prepare shaders.',
   'settings.scale-of-profile': '{percent}% of the profile',
   'settings.scale-auto-of-profile': 'Auto · {percent}% of the profile',
   'settings.fps-invalid': 'Use 0 or a value between 30 and 360.',
-  'settings.shadows.reload': 'Sun shadows: reload the page to update the engine',
+  'settings.shadows.reload': 'Sun shadows: reload the page to apply this setting',
   'settings.shadows.off-by-profile': 'Sun shadows: off in this quality profile',
   'settings.shadows.on': 'Sun shadows: on · {px} px',
   'settings.shadows.off': 'Sun shadows: off',
@@ -650,7 +659,7 @@ export const engineEn: Readonly<Record<string, string>> = {
   'settings.cells': '{n}×{n} cells',
   'settings.terrain-draw-distance': 'Terrain draw distance',
   'settings.distances-note':
-    'Each quality profile brings its own distances; what you choose here is remembered for that profile. More distance costs more frames. Values apply immediately.',
+    'Each quality profile brings its own distances; what you choose here is remembered for that profile. Longer distances increase rendering cost. Values apply immediately.',
   'settings.anisotropy': 'Anisotropic filtering',
   'settings.ground-detail-distance': 'Ground detail distance',
   'settings.action-cam.stride': 'Cycle length · higher = slower',

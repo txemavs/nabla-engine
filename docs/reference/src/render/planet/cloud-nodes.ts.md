@@ -545,6 +545,7 @@ callback@267(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `alpha.mulAssign`
+- `mix`
 - `smoothstep`
 - `smoothstep(0.997, 0.9995, mu).oneMinus`
 

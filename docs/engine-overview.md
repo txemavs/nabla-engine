@@ -59,8 +59,8 @@ manifest, and the engine streams the cells near the player.
   `https://atlas.chained.world/euskadi/terraform/z/` (the cell path is `…/z/15/<x>/<y>/`).
   Locally, `NABLA_TERRAIN_DIR` serves a folder at `/terrain` and a host may pass
   `tiles` to `GameRuntime` (see `PlanetSourceOptions` in `src/render/planet/world.ts`).
-  A browser cannot fetch the S3 origin from `localhost` (no CORS): use the local proxy/Atlas
-  folder when developing.
+  Atlas supports direct browser access with CORS, including from `localhost`. A local proxy
+  or Atlas folder remains optional for development.
 - **Manifest and `cellVersion`.** Each cell has a `manifest.json`. Its `cellVersion` declares
   how the cell is built (absent means 1; the package's own `cellVersion` must agree).
   The set the engine renders is `PLANET_CELL_VERSIONS` in `src/planet/contract.ts`; any other

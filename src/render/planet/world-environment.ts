@@ -79,6 +79,8 @@ export class WorldEnvironment {
           ? 3.2 * air.day
           : 0
     this.sun.color.set(useMoon ? '#d5def2' : air.day > 0.05 ? '#fff0d8' : '#b8ccff')
+    this.sun.intensity *= 1 - (geography.weatherStorm ?? 0) * 0.82
+    this.ambient.intensity *= 1 - (geography.weatherStorm ?? 0) * 0.22
     this.ocean.setLight(direction, this.sun.intensity, this.sun.color, this.ambient.intensity)
     this.ocean.followFog(this.scene.fog)
     return direction

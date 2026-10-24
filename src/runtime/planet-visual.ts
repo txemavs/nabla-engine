@@ -4,6 +4,7 @@ export const planetVisualStorageKey = 'nabla.planetVisual'
 
 export interface PlanetVisualSettings {
   /** Rain intensity, 0 (off)..1. */
+  rainLinked?: boolean
   rainAmount?: number
   /** Independent celestial visibility; absent legacy values inherit sky. */
   moon?: boolean
@@ -31,6 +32,7 @@ export interface PlanetVisualSettings {
  * previous engine defaults (cheap clouds, 35% cover, stable pressure, 50% flare).
  */
 export const highPlanetVisual: PlanetVisualSettings = Object.freeze({
+  rainLinked: false,
   rainAmount: 0,
   moon: true,
   stars: true,
@@ -80,6 +82,7 @@ export function readSavedPlanetVisual(
     )
       return undefined
     return {
+      rainLinked: value.rainLinked === true,
       rainAmount: finite01(value.rainAmount) ?? 0,
       moon: typeof value.moon === 'boolean' ? value.moon : value.sky,
       stars: typeof value.stars === 'boolean' ? value.stars : value.sky,
@@ -94,7 +97,7 @@ export function readSavedPlanetVisual(
       sun: value.sun,
       sea: value.sea,
       clouds: value.clouds,
-      cloudStyle: value.cloudStyle,
+      cloudStyle: value.rainLinked === true ? 'artistic' : value.cloudStyle,
       cloudAmount,
       cloudPressure,
       lensFlareAmount,

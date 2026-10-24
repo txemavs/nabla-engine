@@ -321,7 +321,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     }
   }, process.cwd())
 
-  const visible = ['Main', 'World', 'Settings', 'Development']
+  const visible = ['Main', 'World', 'Settings', 'Development', 'Help']
   expect(result.before).toEqual(visible)
   expect(result.actionCam).toBe(false)
   expect(result.rollRadians).toBeCloseTo((2 * Math.PI) / 180, 8)
@@ -514,6 +514,51 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   ]) {
     await expect(page.locator('#settings-video-shadows #' + id)).toBeVisible()
   }
+  // All screens remain reachable, including the read-only Help, at desktop and mobile widths.
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 960 })
+    for (const name of ['Main', 'World', 'Settings', 'Development', 'Help']) {
+      const tab = page.getByRole('tab', { name, exact: true })
+      await tab.click()
+      await expect(tab).toHaveAttribute('aria-selected', 'true')
+      await expect(page.getByRole('tabpanel')).toHaveCount(1)
+      await openNavGroups(page)
+      const sections = page
+        .getByRole('tabpanel')
+        .locator('.settings-sections button[data-section]:not([hidden])')
+      const ids = await sections.evaluateAll((nodes) =>
+        nodes.map((node) => (node as HTMLElement).dataset.section!),
+      )
+      for (const id of ids) {
+        await openNavGroups(page)
+        const toggle = page.getByRole('tabpanel').locator('.settings-sections-toggle')
+        if (
+          width === 390 &&
+          (await toggle.isVisible()) &&
+          (await toggle.getAttribute('aria-expanded')) !== 'true'
+        )
+          await toggle.click()
+        const entry = page.getByRole('tabpanel').locator(`button[data-section="${id}"]`)
+        await entry.evaluate((el) => {
+          const group = el.closest('details')
+          if (group) group.open = true
+        })
+        // Contextual vehicle groups may hide their whole branch, not just individual buttons.
+        if (!(await entry.isVisible())) continue
+        if (!(await page.locator(`#${id}`).isVisible())) await entry.click({ timeout: 3000 })
+        await expect(page.locator(`#${id}`)).toBeVisible()
+      }
+    }
+    await expect(page.locator('#settings-help')).toContainText(
+      'Nabla Engine is a browser-based 3D engine',
+    )
+    expect(
+      await page.locator('#settings-help').evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+    ).toBe(true)
+  }
+  await page.screenshot({ path: 'tmp/help-mobile.png' })
+  await page.setViewportSize({ width: 1440, height: 960 })
+  await page.screenshot({ path: 'tmp/help-desktop.png' })
   await page.getByRole('tab', { name: 'Settings', exact: true }).click()
   const branch = page.locator('#settings-pane-options details[data-nav-group="weapons"]')
   await branch.locator('summary').click()

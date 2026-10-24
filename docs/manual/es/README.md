@@ -40,3 +40,29 @@ La revisión de mantenimiento del mismo día actualizó el contrato de terreno y
 registro de correcciones. Se regeneraron las 46 páginas, se comprobaron límites de
 texto y navegación y se revisaron visualmente la maquetación y las páginas modificadas.
 El hash del PDF revisado queda en el registro `.validation.json`.
+
+## Actualización del 24 de octubre de 2026
+
+La edición actual añade menú reorganizado, controles por instancia, lluvia publicada,
+arranque/cancelación y limpieza, registro de preferencias y aislamiento de la clave de
+señales. Tiene 49 páginas y 26 capítulos. No incorpora como contrato validado los
+cambios paralelos de tormentas aún en desarrollo.
+
+También incorpora las rutas `simulation` y `simulation/vehicles/*` de la revisión
+`a3cfe8fd`, y los nombres `GameplayCoordinator` y `BrowserGameRuntime` de `c204aff9`.
+Explica los alias compatibles y distingue física, sesiones, coordinación del juego
+e integración de navegador. Los ejemplos y el inventario de 72 entradas públicas
+se generaron desde una copia aislada de esas revisiones, sin los cambios pendientes
+de lluvia. Para reproducir esta edición, ambas revisiones deben estar incorporadas
+en las fuentes usadas por el generador; una rama anterior puede producir otro
+inventario. El registro de procedencia identifica las revisiones y sus fuentes.
+
+Se comprobaron el texto y los límites de las 49 páginas y se revisó visualmente
+la edición renderizada, con detalle de las tablas de integración y los ejemplos.
+
+La traducción sigue siendo mantenida manualmente. El código y el manual inglés son
+la referencia técnica; regenerar el PDF no traduce automáticamente futuros cambios.
+
+La corrección de CORS del 24 de octubre confirma acceso directo a Atlas con
+`Access-Control-Allow-Origin: *`: el proxy `/tiles` es opcional. Se revisaron
+de nuevo las páginas 15, 33 y 45 y se actualizó la procedencia de la edición.

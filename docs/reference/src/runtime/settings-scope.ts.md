@@ -17,10 +17,12 @@ per-mode defaults with `window.NABLA_SETTINGS_DEFAULTS = { headset: { 'nabla.qua
 
 ## Module dependencies
 
+- `./settings-backup.js`
+- `./traffic-signs-host.js`
 
 ## playModeFromSearch
 
-[Implementation, line 23](../../../../src/runtime/settings-scope.ts#L23)
+[Implementation, line 26](../../../../src/runtime/settings-scope.ts#L26)
 
 Mode chosen by the address (`?vr=headset` / `?vr=pc`), else PC.
 
@@ -35,7 +37,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isVRMode
 
-[Implementation, line 31](../../../../src/runtime/settings-scope.ts#L31)
+[Implementation, line 34](../../../../src/runtime/settings-scope.ts#L34)
 
 ```ts
 isVRMode(mode: PlayMode): mode is VRPlayMode
@@ -43,7 +45,7 @@ isVRMode(mode: PlayMode): mode is VRPlayMode
 
 ## scopedKey
 
-[Implementation, line 57](../../../../src/runtime/settings-scope.ts#L57)
+[Implementation, line 60](../../../../src/runtime/settings-scope.ts#L60)
 
 Storage key used for `key` in `mode` (unchanged for PC and for non-`nabla.` keys).
 
@@ -58,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## browserStorage
 
-[Implementation, line 82](../../../../src/runtime/settings-scope.ts#L82)
+[Implementation, line 87](../../../../src/runtime/settings-scope.ts#L87)
 
 ```ts
 browserStorage(): SettingsStorage | undefined
@@ -66,7 +68,7 @@ browserStorage(): SettingsStorage | undefined
 
 ## hostDefaults
 
-[Implementation, line 89](../../../../src/runtime/settings-scope.ts#L89)
+[Implementation, line 94](../../../../src/runtime/settings-scope.ts#L94)
 
 ```ts
 hostDefaults(): SettingsDefaults | undefined
@@ -74,7 +76,7 @@ hostDefaults(): SettingsDefaults | undefined
 
 ## SettingsStore.mode
 
-[Implementation, line 97](../../../../src/runtime/settings-scope.ts#L97)
+[Implementation, line 103](../../../../src/runtime/settings-scope.ts#L103)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -84,7 +86,7 @@ mode(): PlayMode
 
 ## SettingsStore.constructor
 
-[Implementation, line 106](../../../../src/runtime/settings-scope.ts#L106)
+[Implementation, line 112](../../../../src/runtime/settings-scope.ts#L112)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -97,11 +99,13 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `activePlayMode`
 - `browserStorage`
 - `hostDefaults`
+- `registerPreferenceKey`
 - `this.capture`
+- `trafficSignsStorageKey`
 
 ## SettingsStore.switchMode
 
-[Implementation, line 115](../../../../src/runtime/settings-scope.ts#L115)
+[Implementation, line 127](../../../../src/runtime/settings-scope.ts#L127)
 
 Explicitly change only this owner's profile (for PC → headset entry).
 
@@ -117,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.capture
 
-[Implementation, line 123](../../../../src/runtime/settings-scope.ts#L123)
+[Implementation, line 135](../../../../src/runtime/settings-scope.ts#L135)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -136,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.physical
 
-[Implementation, line 147](../../../../src/runtime/settings-scope.ts#L147)
+[Implementation, line 159](../../../../src/runtime/settings-scope.ts#L159)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -151,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.readPhysical
 
-[Implementation, line 153](../../../../src/runtime/settings-scope.ts#L153)
+[Implementation, line 165](../../../../src/runtime/settings-scope.ts#L165)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -166,7 +170,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.getItem
 
-[Implementation, line 161](../../../../src/runtime/settings-scope.ts#L161)
+[Implementation, line 173](../../../../src/runtime/settings-scope.ts#L173)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -186,7 +190,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.setItem
 
-[Implementation, line 172](../../../../src/runtime/settings-scope.ts#L172)
+[Implementation, line 184](../../../../src/runtime/settings-scope.ts#L184)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -205,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.removeItem
 
-[Implementation, line 184](../../../../src/runtime/settings-scope.ts#L184)
+[Implementation, line 196](../../../../src/runtime/settings-scope.ts#L196)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -224,7 +228,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.keys
 
-[Implementation, line 195](../../../../src/runtime/settings-scope.ts#L195)
+[Implementation, line 207](../../../../src/runtime/settings-scope.ts#L207)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -245,12 +249,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.captured.keys`
 - `this.values.keys`
 
-## SettingsStore.keys.callback@223
+## SettingsStore.keys.callback@235
 
-[Implementation, line 223](../../../../src/runtime/settings-scope.ts#L223)
+[Implementation, line 235](../../../../src/runtime/settings-scope.ts#L235)
 
 ```ts
-callback@223(key): inferred by TypeScript; see implementation
+callback@235(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -259,7 +263,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.length
 
-[Implementation, line 225](../../../../src/runtime/settings-scope.ts#L225)
+[Implementation, line 237](../../../../src/runtime/settings-scope.ts#L237)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -273,7 +277,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.key
 
-[Implementation, line 228](../../../../src/runtime/settings-scope.ts#L228)
+[Implementation, line 240](../../../../src/runtime/settings-scope.ts#L240)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -287,7 +291,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SettingsStore.clear
 
-[Implementation, line 231](../../../../src/runtime/settings-scope.ts#L231)
+[Implementation, line 243](../../../../src/runtime/settings-scope.ts#L243)
 
 A runtime-owned view: never patches Storage, and keeps working when persistence fails.
 
@@ -303,7 +307,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createSettingsStore
 
-[Implementation, line 236](../../../../src/runtime/settings-scope.ts#L236)
+[Implementation, line 248](../../../../src/runtime/settings-scope.ts#L248)
 
 ```ts
 createSettingsStore(options: SettingsStoreOptions = {}): SettingsStore
@@ -315,7 +319,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## activePlayMode
 
-[Implementation, line 245](../../../../src/runtime/settings-scope.ts#L245)
+[Implementation, line 257](../../../../src/runtime/settings-scope.ts#L257)
 
 Mode of the single-page compatibility host; existing runtime stores never follow it.
 
@@ -329,7 +333,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## pageSettingsStorage
 
-[Implementation, line 249](../../../../src/runtime/settings-scope.ts#L249)
+[Implementation, line 261](../../../../src/runtime/settings-scope.ts#L261)
 
 Compatibility default for host helpers. Prefer runtime.settings when a runtime is available.
 
@@ -345,7 +349,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installSettingsScope
 
-[Implementation, line 258](../../../../src/runtime/settings-scope.ts#L258)
+[Implementation, line 270](../../../../src/runtime/settings-scope.ts#L270)
 
 Select the page's default profile without patching Storage methods. Existing stores stay fixed.
 

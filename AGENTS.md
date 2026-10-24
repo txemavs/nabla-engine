@@ -14,7 +14,7 @@
 - S3 answers **403 AccessDenied, not 404, for missing objects** because public listing is
   disabled. A 403 on a tile means the cell (or file) does not exist; it is not a permission
   problem. There is no auth, request signing or IP rule to fix.
-- `atlas.chained.world` sends no CORS headers, so browsers must fetch tiles through a same-origin
-  proxy: `/tiles` via the Vite dev server proxy in development, nginx in production. Build with
-  `VITE_NABLA_TILES_URL=/tiles`.
+- `atlas.chained.world` supports direct browser requests with CORS (`Access-Control-Allow-Origin: *`,
+  GET/HEAD; verified 2026-10-24). A same-origin `/tiles` proxy is optional. Use
+  `VITE_NABLA_TILES_URL=/tiles` only when the host intentionally provides that route.
 - Example cells that exist: `z/15/16223/11999/`, `z/15/16224/11999/`.

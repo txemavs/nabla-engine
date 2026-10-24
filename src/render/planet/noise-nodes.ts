@@ -51,7 +51,7 @@ export function noiseNodes(tsl: NodeKit['tsl']) {
     return edge.mul(mix(0.8, 1, grain))
   }
   const alto = (xz: V2, hours: F, thresh: F): F => {
-    const p0 = xz.add(vec2(hours.mul(62000), hours.mul(-20000)))
+    const p0 = xz.add(vec2(hours.mul(28800), hours.mul(9000)))
     const p = rotate(p0, 0.9, 0.44, -0.44, 0.9).mul(vec2(0.000048, 0.000015))
     const sheet = noise(p)
       .mul(0.78)
@@ -59,7 +59,7 @@ export function noiseNodes(tsl: NodeKit['tsl']) {
     return smoothstep(thresh.sub(0.1), thresh.add(0.22), sheet)
   }
   const cirrus = (xz: V2, hours: F, thresh: F): F => {
-    const p0 = xz.add(vec2(hours.mul(140000), hours.mul(32000)))
+    const p0 = xz.add(vec2(hours.mul(28800), hours.mul(9000)))
     const p = rotate(p0, 0.62, 0.78, -0.78, 0.62).mul(vec2(0.00012, 0.00001))
     const streak = noise(p)
       .mul(0.72)

@@ -128,3 +128,22 @@ protection. The network integration test waits for a received snapshot rather th
 a fixed 30 ms delay. Relay tests: 27 passing. Four Chromium tests pass in each of
 Engine and Euskadi, covering all saved profiles and simultaneous runtime isolation.
 See [the host audit](../host-settings-compatibility.md) for release coordination.
+
+## Menu and host-contract reconciliation — 2026-10-24
+
+Reviewed against Engine main `8decd592` plus the scroll/slider correction `189e342a`.
+Corrected the stale menu guide (old Export, Camera, Audio and cache placement), expanded
+the host preference registration and place-label ownership contracts, and linked input
+and rain behavior from their subject chapters. Regenerated the public export inventory.
+The Spanish reading edition is updated separately from the English source. See its
+README for the subsequent PDF refresh and validation.
+
+The subsequent isolation fix captures the selected traffic-sign key in SettingsStore.
+The legacy setter remains a default for future stores; explicit per-runtime options
+and null selection are supported. The registration allowlist remains shared, while
+HUD and scenery physics use the captured owner key.
+
+Validation for this documentation pass: manual links/export inventory, generated source
+reference check and formatting of changed Markdown. The earlier code validation for
+`189e342a` passed the full check (2,288 tests, 14 skipped) and settings HUD browser test;
+those results are historical evidence, not tests rerun for this prose-only update.
