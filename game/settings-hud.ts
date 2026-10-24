@@ -14,7 +14,6 @@ import {
   setGameMenuNote,
 } from '../src/runtime/main-menu.js'
 import { addCornerButton } from '../src/runtime/corner-buttons.js'
-import { trafficSignsStorageKey } from '../src/runtime/traffic-signs-host.js'
 import { createMotionShadowSections } from './motion-shadow-preferences-ui.js'
 import { createInputPreferencesSection } from './input-preferences-ui.js'
 import { createControlsSection } from './settings-controls.js'
@@ -891,7 +890,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(section)
   }
 
-  const trafficSignsKey = trafficSignsStorageKey()
+  const trafficSignsKey = runtime.settings.trafficSignsStorageKey
   if (doc.documentElement.dataset.irunSigns === 'true' && trafficSignsKey) {
     // Signage physics is part of «Traffic signs»: a plain group inside it, not a section of its own.
     const physicsSection = doc.createElement('div')

@@ -90,7 +90,7 @@ Parts a host may switch off by setting the token to `none`: `--nabla-place-displ
 
 There is one main menu on every page: the ☰ button top-left opens the side menu
 (`mountGameMenu`, `src/runtime/main-menu.ts`). Its sections are the settings tabs (World,
-Settings, Objects, Development) and Virtual reality (enter, headset page). ☰ closes the
+Settings, Development) and Virtual reality (enter, headset page). ☰ closes the
 settings window when it is open. Hosts only configure it: call `mountGameMenu(document, t,
 { sections: (defaults) => [...] })` to relabel or add sections (Euskadi adds augmented reality
 and scenarios). Pages add their own entries with `addGameMenuEntries('vr', [...])`.
@@ -148,3 +148,15 @@ Every game page carries a small inline `<style id="nabla-critical">` before `ui-
 (`html.nabla-game`) the page box base.css sets later (`margin: 0; height: 100%; overflow: hidden`
 on `html` and `body`), so the black first paint never shows a scrollbar. So nothing unstyled (no white page, no
 "Error" overlay) flashes before the stylesheet is in. New pages copy that block.
+
+## Settings layout regression checks
+
+Settings result buttons use full available width without additional inline margins;
+long labels wrap. Keep vertical scrolling for long result lists without introducing
+horizontal overflow. Range controls explicitly reset inherited panel padding and borders;
+do not apply generic text-input padding to sliders.
+
+After editing CSS, regenerate `styles.generated.ts` with
+`node scripts/gen-ui-styles.mjs`. Run `test/ui/styles.test.ts` and the
+`settings-hud.spec.ts` browser test: the latter checks result overflow and real clicks
+at both slider endpoints at 390px and 1440px viewport widths.

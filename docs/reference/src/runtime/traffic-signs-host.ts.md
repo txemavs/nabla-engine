@@ -10,12 +10,13 @@
 
 ## setTrafficSignsStorageKey
 
-[Implementation, line 11](../../../../src/runtime/traffic-signs-host.ts#L11)
+[Implementation, line 12](../../../../src/runtime/traffic-signs-host.ts#L12)
 
 Names the host's storage key for its traffic-signs settings (`{ enabled, limit, radius,
 physicsRadius }` as JSON). The «Traffic signs» settings section saves there, scenery physics
 reads its starting radius from it, and the key joins settings export, import and reset.
-Call before the runtime and the settings HUD are created.
+Legacy page default, captured when each SettingsStore is constructed. Later calls do not
+change existing runtimes. New hosts can pass settings.trafficSignsStorageKey per runtime.
 
 ```ts
 setTrafficSignsStorageKey(key: string): void
@@ -27,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## trafficSignsStorageKey
 
-[Implementation, line 17](../../../../src/runtime/traffic-signs-host.ts#L17)
+[Implementation, line 18](../../../../src/runtime/traffic-signs-host.ts#L18)
 
 ```ts
 trafficSignsStorageKey(): string | undefined

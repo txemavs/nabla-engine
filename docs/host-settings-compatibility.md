@@ -85,3 +85,44 @@ Validation for the rename: Engine checks and PC/HeadSet browser compatibility te
 an isolated overlay of the adjacent Euskadi host also passes its HeadSet configuration
 check and Vite production build with the new game-page module. The host checkout and
 its pinned Engine revision are not modified.
+
+## Host preferences contract (2026-10-24)
+
+The earlier migration/release sections are historical evidence. Engine PR #315 and
+Euskadi PR #51 supersede the hardcoded municipal-sign key: the engine no longer knows
+`euskadi.irun-signs`. Euskadi registers that unchanged key before runtime creation
+from both terrain and drive host entry modules, preserving existing saved values.
+
+For ordinary host preferences, use the public package entry:
+
+```ts
+import { registerPreferenceKey } from '@nabla/engine/runtime/settings-backup'
+registerPreferenceKey('my-host.preferences')
+```
+
+This adds a key to backup/import/reset eligibility; it does not create a storage adapter
+or namespace. Keys must match the validated `<namespace>.<name>` form; `nabla.` is
+reserved and invalid keys throw `RangeError`. Repeated registration is harmless.
+
+Traffic-sign integration uses `setTrafficSignsStorageKey(key)` from
+`src/runtime/traffic-signs-host.ts` (internal source module, not a public package
+subpath). It registers the key and selects it for the settings section and initial
+scenery physics radius. The legacy default is captured when the runtime settings store is constructed. The section also
+requires `data-irun-signs="true"`. Euskadi's source overlay imports this module directly.
+
+New hosts should pass `settings: { trafficSignsStorageKey: 'my-host.signs' }` to
+GameRuntime, or null to disable the selection. Each SettingsStore captures its own
+readonly key, used by both the HUD and scenery physics. Omission captures the legacy
+page default at construction; later default changes do not affect existing runtimes.
+Saved keys are not renamed. The host-key allowlist remains module-global; registering
+backup eligibility does not grant another runtime ownership of live values.
+
+Engine PR #311 also moves place-label ownership to the host. The runtime no longer
+requests `NavigationPlaceLookup` every frame. Hosts may use that exported helper and
+`TouchDriving.setPlace`; the engine otherwise leaves the place label empty. Lookup
+weights distance by settlement reach (city 6 km, town 3 km, village 1.5 km, unclassified
+2 km), not administrative boundary polygons.
+
+Regression evidence: `test/runtime/settings-backup.test.ts`,
+`test/runtime/traffic-signs-host.test.ts`,
+`test/presentation/navigation-places.test.ts` and the settings HUD browser test.

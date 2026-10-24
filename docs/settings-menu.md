@@ -1,47 +1,49 @@
 # Full-screen game menu
 
-The Euskadi Online clock opens the HTML monitor defined in `game/settings-hud.ts`. While it is
-open, the same button shows a down arrow that folds the monitor away. It is the only close
-button; Escape closes too. Both return focus to the game. The style is `src/ui/styles/settings.css`, built on the engine UI tokens
-([UI theme](ui-theme.md)). This is the
-desktop interface: it does not change the XR/AR monitor menus or any simulation parameter.
-UI labels come from the engine catalogs (`src/i18n/catalog.{en,es,eu}.ts`, `t()`); the tab and
-section names below are the Spanish ones.
+The reference-game settings window is implemented in `game/settings-hud.ts` and styled
+by `src/ui/styles/settings.css` ([UI theme](ui-theme.md)). The clock toggle,
+main menu and `openGameSettings(tab, section)` open the same window. Escape closes
+it and returns focus to the game. Hosts may hide the explicit close button with
+`--nabla-settings-close-display`. These HTML controls do not reorganize XR monitors.
 
 ## Navigation
 
-The top tabs are Principal, Mundo, Ajustes and Desarrollo (`MENU_TABS` in
-`game/menu-layout.ts`; see [UI/UX pattern](ui-ux-pattern.md)). The whole layout (which section
-goes in which tab, in which left-navigation group, in which order) is pure data in
-`game/menu-layout.ts` (`MENU_LAYOUT`, `MENU_FLAT_SECTIONS`); `game/settings-hud.ts` only applies
-it, moving each control by its id. A product (Euskadi) configures it by mounting sections under
-those ids, not by changing the layout code. Each tab has a left navigation and a single visible
-section on the right. The last section chosen in each tab is kept.
+The stable tabs are Main, World, Settings and Development. Labels are translated by
+`src/i18n/catalog.{en,es,eu}.ts`; English names below match the English UI.
+`MENU_LAYOUT` and `MENU_FLAT_SECTIONS` in `game/menu-layout.ts` are the placement
+source of truth. Hosts contribute sections; unavailable and contextual sections are
+hidden. The last section selected in each tab is remembered during the menu lifetime.
 
-| Tab        | Groups and sections                                                                                                                                                                                                        |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Principal  | Escenarios (on the scenario page, the scenario list itself); Información (with engine and scenario status lines); VR; AR; terrain cache; Vehículo actual (driver, beams, sound, exhaust, rear lights; hidden on foot)      |
-| Mundo      | Mapa; Situación (Fecha, Ubicación); terrain source; Ver (Tierra, Atmósfera, Opciones); Vehículos (add, placed objects, layout); Armas (weapon wheel, combat)                                                               |
-| Ajustes    | Simulación (Tiempo: day/night cycle and gravity; distances; sun shadows; driving); Controles (keys, USB); Cámara (options, field of view, Action Cam); Vídeo (quality, sharpness, light); Audio; Gestión de ajustes; Actor |
-| Desarrollo | Armas (sidearm, poses, muzzle flash); Exportar (planet config); Colisiones; diagnostics                                                                                                                                    |
+| Tab         | Groups and sections                                                                                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Main        | Scenarios, Info, VR/AR when available, current vehicle controls (driver, beams, sound, exhaust, rear lights).                                                                                    |
+| World       | Map; Situation (date/location); Terrain (Source, Buildings, Infrastructures, traffic signs, streetlights, place names); Environment (Atmosphere, Celestial bodies, Weather, Sea level); Objects. |
+| Settings    | Video (Options, Quality, Bodycam, Effects, Shadows, Light, Distances); Controls; Player; Weapons; Simulation (time/gravity, driving, audio); Data and preferences (Cache, Settings management).  |
+| Development | Collisions and diagnostics.                                                                                                                                                                      |
 
-Mundo › Ver › Opciones is a flat section: road style, lens flare, air and sea, traffic signs and
-sign shadows, street lights and experimental light shadows, headlamp, smoke and simulated fire,
-place names, shown as one list without their own titles (`.settings-flat-section`). The
-Actor section is kept at the end of Ajustes; it is not part of the menu spec.
+Video → Options combines general camera controls, FOV and camera recovery/transitions.
+Quality groups profile, sharpness, anisotropy, FSR, FPS cap and resolution controls.
+Bodycam is the UI name; existing ActionCam API identifiers and saved keys remain compatible.
+Effects combines smoke and fire; Shadows combines sun, local lights, signs and flashlight
+shadow controls. Terrain loading radius and memory cells belong to Distances; disk cache
+management remains in Cache. Moving controls does not rename their persistence keys.
 
-Información shows two status lines: the engine (WebGPU or WebGL, physics in a worker or on the
-main thread; `GameRuntime.physicsThread`) and the current scenario (set by the product with
-`setGameMenuNote(GAME_MENU_SCENARIO_ID, …)`). Gravity (Ajustes › Simulación › Tiempo) is set in
-m/s² and stored as the existing multiplier of g (`game/gravity-ui.ts`).
+Search matches translated section/control labels without case or accent sensitivity.
+Results show their navigation path; arrow keys select and Enter opens a result. Search
+never applies a setting. Long result labels wrap within the available width; only vertical
+scrolling is needed for a long result list. Native range inputs have no inherited panel
+padding, so their minimum and maximum reach the track ends.
 
-The FPS limit and resolution scale live in Calidad (Vídeo), with anisotropy. The scene rows (time, sky, sun, sea,
-clouds) are built in a hidden holder (`scene-controls-staging`) and moved into Mundo by the HUD.
+Main → Info adds actual renderer, physics execution, session/settings mode, quality,
+canvas dimensions, resolution scale, configured FPS cap, FSR, terrain counts and browser
+capabilities through `game/system-info.ts`. Copy report copies the displayed diagnostics,
+not a settings backup. Reported memory is approximate; FPS cap is not measured FPS;
+WebXR API presence does not guarantee headset/session support.
 
-The field of view (Cámara) is the same offset as the J menu, saved as `nabla.cameraFov`. The
-occupied vehicle's exhaust offset and quantity and its reversing-alarm switch are saved per
-vehicle model (`nabla.vehicle-preferences/1:<model>`, `src/runtime/vehicle-preferences.ts`),
-like the lights (`nabla.vehicle-lights/1`); the older global keys are read as defaults.
+The FOV offset is saved as `nabla.cameraFov`. Vehicle exhaust and reversing-alarm
+preferences remain per model (`nabla.vehicle-preferences/1:<model>`); the vehicle
+light owner retains its existing keys and migration readers. See
+[the interface manual](manual/20-interface.md) for instance ownership and detailed ranges.
 
 The original controls are moved inside the same document. They are not cloned or rebound:
 they keep their events, runtime methods, storage and the references of the modules that update
@@ -85,7 +87,7 @@ screen. Do not use that configuration change to test the menu; it is not a navig
 
 ## Settings management and backups
 
-Configuración → Gestión saves a JSON, imports with a preview and resets to defaults. There is no
+Settings → Data and preferences → Settings management saves a JSON, imports with a preview and resets to defaults. There is no
 global delete button in the menu footer. Reset opens a confirmation and requires ticking that
 the change is understood before the final action is enabled. By default it keeps the USB
 controller and headset calibrations; an explicit checkbox includes them. Reset also removes the
@@ -105,6 +107,10 @@ module reads its configuration with its own validation.
 Tests: `settings-backup.test.ts`, `settings-management.spec.ts` and `settings-hud.spec.ts` check
 file limits, exclusion of foreign data, rollback of failed writes, confirmation, kept
 calibrations, navigation and preserved listeners on the original controls.
+
+There is no Development → Export planet snapshot entry. The restorable settings backup
+is the supported settings export. Host-specific keys must be registered explicitly; see
+[host compatibility](host-settings-compatibility.md#host-preferences-contract-2026-10-24).
 
 ## Future ideas
 

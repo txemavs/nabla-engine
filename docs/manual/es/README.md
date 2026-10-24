@@ -40,3 +40,13 @@ La revisión de mantenimiento del mismo día actualizó el contrato de terreno y
 registro de correcciones. Se regeneraron las 46 páginas, se comprobaron límites de
 texto y navegación y se revisaron visualmente la maquetación y las páginas modificadas.
 El hash del PDF revisado queda en el registro `.validation.json`.
+
+## Actualización del 24 de octubre de 2026
+
+La edición actual añade menú reorganizado, controles por instancia, lluvia publicada,
+arranque/cancelación y limpieza, registro de preferencias y aislamiento de la clave de
+señales. Tiene 48 páginas y 26 capítulos. No incorpora como contrato validado los
+cambios paralelos de tormentas aún en desarrollo.
+
+La traducción sigue siendo mantenida manualmente. El código y el manual inglés son
+la referencia técnica; regenerar el PDF no traduce automáticamente futuros cambios.

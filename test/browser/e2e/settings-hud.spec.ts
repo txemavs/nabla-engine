@@ -24,14 +24,15 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   )
   await page.goto('/settings-hud')
   const result = await page.evaluate(async (root) => {
-    const { UsbControllers } = await import(`/@fs/${root}/src/runtime/usb/controllers.ts`)
-    const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
-    const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+    const moduleRoot = `/@fs/${root.replace(/^\/+/, '')}`
+    const { UsbControllers } = await import(`${moduleRoot}/src/runtime/usb/controllers.ts`)
+    const { menuSection } = await import(`${moduleRoot}/game/menu.ts`)
+    const { mountSettingsHud } = await import(`${moduleRoot}/game/settings-hud.ts`)
     const { normalizeActionCamSettings } = await import(
-      `/@fs/${root}/src/runtime/action-cam-settings.ts`
+      `${moduleRoot}/src/runtime/action-cam-settings.ts`
     )
     const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
-      `/@fs/${root}/src/config/gameplay-tuning.ts`
+      `${moduleRoot}/src/config/gameplay-tuning.ts`
     )
     const check = (section: HTMLElement, id: string) => {
       const label = document.createElement('label')
@@ -229,12 +230,12 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
     const { setTrafficSignsStorageKey } = await import(
-      `/@fs${root}/src/runtime/traffic-signs-host.ts`
+      `${moduleRoot}/src/runtime/traffic-signs-host.ts`
     )
     setTrafficSignsStorageKey('demo-host.signs')
     localStorage.setItem('demo-host.signs', JSON.stringify({ enabled: false }))
     // The HUD persists through runtime.settings (GameRuntime's SettingsStore), as a real runtime does.
-    const { SettingsStore } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
+    const { SettingsStore } = await import(`${moduleRoot}/src/runtime/settings-scope.ts`)
     Object.assign(runtime, { settings: new SettingsStore({ mode: 'pc', storage: localStorage }) })
     ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)

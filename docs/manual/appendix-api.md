@@ -44,6 +44,7 @@ documented in [chapter 6](06-lifecycle.md), and integration levels in
 | `@nabla/engine/config/vehicle-appearance`     | [`src/config/vehicle-appearance.ts`](../../src/config/vehicle-appearance.ts)                         | `./dist/config/vehicle-appearance.d.ts`             |
 | `@nabla/engine/runtime/browser`               | [`src/runtime/browser.ts`](../../src/runtime/browser.ts)                                             | `./dist/runtime/browser.d.ts`                       |
 | `@nabla/engine/runtime/splash`                | [`src/runtime/splash.ts`](../../src/runtime/splash.ts)                                               | `./dist/runtime/splash.d.ts`                        |
+| `@nabla/engine/runtime/settings-backup`       | [`src/runtime/settings-backup.ts`](../../src/runtime/settings-backup.ts)                             | `./dist/runtime/settings-backup.d.ts`               |
 | `@nabla/engine/runtime/settings-scope`        | [`src/runtime/settings-scope.ts`](../../src/runtime/settings-scope.ts)                               | `./dist/runtime/settings-scope.d.ts`                |
 | `@nabla/engine/i18n`                          | [`src/i18n/index.ts`](../../src/i18n/index.ts)                                                       | `./dist/i18n/index.d.ts`                            |
 | `@nabla/engine/pwa`                           | [`src/pwa/index.ts`](../../src/pwa/index.ts)                                                         | `./dist/pwa/index.d.ts`                             |
