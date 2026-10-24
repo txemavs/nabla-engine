@@ -9,11 +9,11 @@ test('construction validates before allocation and rolls back failed owners with
   await page.goto('/construction-check?loadingWorkers=0')
   const result = await page.evaluate(
     async (root) => {
-      const { GameRuntime } = await import(`/@fs/${root}/src/runtime/browser.ts`)
-      const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
-      const navigation = await import(`/@fs/${root}/src/render/entity/navigation-places.ts`)
-      const { GameToolbar } = await import(`/@fs/${root}/src/runtime/game-toolbar.ts`)
-      const { VehicleMonitors } = await import(`/@fs/${root}/src/runtime/vehicle-monitors.ts`)
+      const { GameRuntime } = await import(`/@fs${root}/src/runtime/browser.ts`)
+      const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
+      const navigation = await import(`/@fs${root}/src/render/entity/navigation-places.ts`)
+      const { GameToolbar } = await import(`/@fs${root}/src/runtime/game-toolbar.ts`)
+      const { VehicleMonitors } = await import(`/@fs${root}/src/runtime/vehicle-monitors.ts`)
       const scene = {
         version: 1,
         name: 'Construction',
