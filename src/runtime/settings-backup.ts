@@ -1,6 +1,16 @@
 import { parseUsbSettings } from './usb/controllers.js'
 /** Explicit preference catalog: never export scenes, credentials, terrain caches or reports. */
 export const preferenceKeys = new Set([
+  'nabla.input',
+  'nabla.cameraMotion',
+  'nabla.sunShadowQuality',
+  'nabla.quality',
+  'nabla.quality.session',
+  'nabla.fsr1',
+  'nabla.gravityScale',
+  'nabla.actor',
+  'nabla.headlamp-shadows-v2',
+  'euskadi.irun-signs',
   'nabla.anisotropy',
   'nabla.groundDetailCells',
   'nabla.visibility',
@@ -41,6 +51,9 @@ export const preferenceKeys = new Set([
   'nabla.xr.calibration.v5',
 ])
 export const preferenceQueryKeys = new Set([
+  'rain',
+  'fsr',
+  'fsrSharpness',
   'quality',
   'fps',
   'scale',
@@ -64,6 +77,7 @@ export const preferenceQueryKeys = new Set([
 ])
 export const isPreferenceKey = (key: string): boolean =>
   preferenceKeys.has(key) ||
+  /^nabla\.field-light-limit-v2:[a-z][a-z0-9-]{0,31}$/.test(key) ||
   key.startsWith('nabla.mirrors:') ||
   key.startsWith('nabla.weaponPoses.') ||
   key.startsWith('nabla.vehicle-lights.') ||
@@ -160,6 +174,8 @@ function transaction(
   change: () => void,
 ): void {
   const before = [snapshot(local), snapshot(session)]
+  const seeded = local.getItem('nabla.modeSeeded')
+  if (seeded !== null) before[0]['nabla.modeSeeded'] = seeded
   try {
     change()
   } catch (error) {
@@ -210,6 +226,8 @@ export function restoreSettingsDefaults(
     for (const storage of [local, session])
       for (const key of Object.keys(snapshot(storage)))
         if (includeCalibrations || !isCalibrationKey(key)) storage.removeItem(key)
+    // Allow the selected VR mode to seed its engine/host defaults on the next boot.
+    local.removeItem('nabla.modeSeeded')
   })
   const params = new URLSearchParams(search)
   for (const key of preferenceQueryKeys) params.delete(key)

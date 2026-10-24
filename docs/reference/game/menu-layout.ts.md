@@ -14,7 +14,7 @@ own `nabla-menu-section-<id>` side-menu sections) and `data-settings-hidden` on 
 
 ## layoutSectionTabs
 
-[Implementation, line 150](../../../game/menu-layout.ts#L150)
+[Implementation, line 178](../../../game/menu-layout.ts#L178)
 
 Every placed section with its tab, in navigation order (flat members after their section).
 
@@ -27,17 +27,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `flat.find`
 - `out.push`
 
-## layoutSectionTabs.callback@159
+## layoutSectionTabs.callback@187
 
-[Implementation, line 159](../../../game/menu-layout.ts#L159)
+[Implementation, line 187](../../../game/menu-layout.ts#L187)
 
 ```ts
-callback@159(section): inferred by TypeScript; see implementation
+callback@187(section): inferred by TypeScript; see implementation
 ```
 
 ## layoutGroups
 
-[Implementation, line 166](../../../game/menu-layout.ts#L166)
+[Implementation, line 194](../../../game/menu-layout.ts#L194)
 
 The groups of a layout, with their tab.
 
@@ -49,26 +49,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `MENU_TABS.flatMap`
 
-## layoutGroups.callback@169
+## layoutGroups.callback@197
 
-[Implementation, line 169](../../../game/menu-layout.ts#L169)
+[Implementation, line 197](../../../game/menu-layout.ts#L197)
 
 ```ts
-callback@169({ id: tab }): inferred by TypeScript; see implementation
+callback@197({ id: tab }): inferred by TypeScript; see implementation
 ```
 
-## layoutGroups.callback@169.callback@171
+## layoutGroups.callback@197.callback@199
 
-[Implementation, line 171](../../../game/menu-layout.ts#L171)
+[Implementation, line 199](../../../game/menu-layout.ts#L199)
 
 ```ts
-callback@171(item): item is MenuGroup
+callback@199(item): item is MenuGroup
 ```
 
-## layoutGroups.callback@169.callback@172
+## layoutGroups.callback@197.callback@200
 
-[Implementation, line 172](../../../game/menu-layout.ts#L172)
+[Implementation, line 200](../../../game/menu-layout.ts#L200)
 
 ```ts
-callback@172(group): inferred by TypeScript; see implementation
+callback@200(group): inferred by TypeScript; see implementation
 ```

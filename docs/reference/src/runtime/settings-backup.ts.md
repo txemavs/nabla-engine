@@ -10,7 +10,7 @@
 
 ## isPreferenceKey
 
-[Implementation, line 65](../../../../src/runtime/settings-backup.ts#L65)
+[Implementation, line 78](../../../../src/runtime/settings-backup.ts#L78)
 
 ```ts
 isPreferenceKey(key: string): boolean
@@ -18,12 +18,13 @@ isPreferenceKey(key: string): boolean
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `/^nabla\.field-light-limit-v2:[a-z][a-z0-9-]{0,31}$/.test`
 - `key.startsWith`
 - `preferenceKeys.has`
 
 ## isCalibrationKey
 
-[Implementation, line 72](../../../../src/runtime/settings-backup.ts#L72)
+[Implementation, line 86](../../../../src/runtime/settings-backup.ts#L86)
 
 ```ts
 isCalibrationKey(key: string): boolean
@@ -35,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## snapshot
 
-[Implementation, line 91](../../../../src/runtime/settings-backup.ts#L91)
+[Implementation, line 105](../../../../src/runtime/settings-backup.ts#L105)
 
 ```ts
 snapshot(storage: PreferenceStorage): Record<string, string>
@@ -49,7 +50,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## exportSettingsBackup
 
-[Implementation, line 102](../../../../src/runtime/settings-backup.ts#L102)
+[Implementation, line 116](../../../../src/runtime/settings-backup.ts#L116)
 
 ```ts
 exportSettingsBackup(local: PreferenceStorage, session: PreferenceStorage, search: string): SettingsBackup
@@ -65,7 +66,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## parseSettingsBackup
 
-[Implementation, line 119](../../../../src/runtime/settings-backup.ts#L119)
+[Implementation, line 133](../../../../src/runtime/settings-backup.ts#L133)
 
 ```ts
 parseSettingsBackup(text: string): SettingsBackup
@@ -93,12 +94,12 @@ Explicit throws in this body:
 - `new Error('Lista de ajustes inválida.')`
 - `new Error(\`Ajuste no admitido: ${key}\`)`
 
-## parseSettingsBackup.callback@131
+## parseSettingsBackup.callback@145
 
-[Implementation, line 131](../../../../src/runtime/settings-backup.ts#L131)
+[Implementation, line 145](../../../../src/runtime/settings-backup.ts#L145)
 
 ```ts
-callback@131(k): inferred by TypeScript; see implementation
+callback@145(k): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -107,7 +108,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## transaction
 
-[Implementation, line 157](../../../../src/runtime/settings-backup.ts#L157)
+[Implementation, line 171](../../../../src/runtime/settings-backup.ts#L171)
 
 Both stores are rolled back if any write fails. Browser storage has no native transaction.
 
@@ -122,6 +123,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.keys`
 - `[local, session].entries`
 - `change`
+- `local.getItem`
 - `snapshot`
 - `storage.getItem`
 - `storage.removeItem`
@@ -134,7 +136,7 @@ Explicit throws in this body:
 
 ## applySettingsBackup
 
-[Implementation, line 181](../../../../src/runtime/settings-backup.ts#L181)
+[Implementation, line 197](../../../../src/runtime/settings-backup.ts#L197)
 
 ```ts
 applySettingsBackup(backup: SettingsBackup, local: PreferenceStorage, session: PreferenceStorage, search: string, replace = false): string
@@ -151,12 +153,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parseSettingsBackup`
 - `transaction`
 
-## applySettingsBackup.callback@189
+## applySettingsBackup.callback@205
 
-[Implementation, line 189](../../../../src/runtime/settings-backup.ts#L189)
+[Implementation, line 205](../../../../src/runtime/settings-backup.ts#L205)
 
 ```ts
-callback@189(): inferred by TypeScript; see implementation
+callback@205(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -170,7 +172,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## restoreSettingsDefaults
 
-[Implementation, line 203](../../../../src/runtime/settings-backup.ts#L203)
+[Implementation, line 219](../../../../src/runtime/settings-backup.ts#L219)
 
 ```ts
 restoreSettingsDefaults(local: PreferenceStorage, session: PreferenceStorage, search: string, includeCalibrations = false): string
@@ -183,17 +185,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `params.toString`
 - `transaction`
 
-## restoreSettingsDefaults.callback@209
+## restoreSettingsDefaults.callback@225
 
-[Implementation, line 209](../../../../src/runtime/settings-backup.ts#L209)
+[Implementation, line 225](../../../../src/runtime/settings-backup.ts#L225)
 
 ```ts
-callback@209(): inferred by TypeScript; see implementation
+callback@225(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Object.keys`
 - `isCalibrationKey`
+- `local.removeItem`
 - `snapshot`
 - `storage.removeItem`

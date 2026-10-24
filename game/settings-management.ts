@@ -10,7 +10,12 @@ import { t } from '@nabla/engine/i18n'
 /** File operations are staged. Selecting a file or opening reset never changes preferences. */
 export function createSettingsManagement(
   doc: Document,
-  options: { reload(search: string): void; search(): string; local(): Storage; session(): Storage },
+  options: {
+    reload(search: string): void
+    search(): string
+    local(): Storage
+    session(): Storage
+  },
 ): HTMLElement {
   const root = doc.createElement('fieldset')
   root.id = 'settings-management'
@@ -42,7 +47,7 @@ export function createSettingsManagement(
     )
     const a = doc.createElement('a')
     a.href = url
-    a.download = `nabla-ajustes-${backup.createdAt.slice(0, 10)}.json`
+    a.download = `nabla-settings-${backup.createdAt.slice(0, 10)}.json`
     doc.body.append(a)
     a.click()
     a.remove()
@@ -89,6 +94,7 @@ export function createSettingsManagement(
     const current = ++generation
     pending = null
     preview.hidden = true
+    resetGroup.hidden = true
     const selected = file.files?.[0]
     if (!selected) return
     try {
@@ -97,7 +103,11 @@ export function createSettingsManagement(
       if (current !== generation) return
       pending = data
       replace.checked = false
-      summary.textContent = `Copia del ${new Date(data.createdAt).toLocaleString()} · ${Object.keys(data.local).length + Object.keys(data.session).length} preferencias y ${Object.keys(data.query).length} opciones de pantalla. Incluye mandos USB: ${Object.hasOwn(data.local, 'nabla.usb.controllers.v1') ? 'sí' : 'no'}.`
+      summary.textContent = t('manage.backup-summary', {
+        date: new Date(data.createdAt).toLocaleString(),
+        preferences: Object.keys(data.local).length + Object.keys(data.session).length,
+        query: Object.keys(data.query).length,
+      })
       preview.hidden = false
       status.textContent = t('manage.file-checked-review-the-backup-before-applying-i')
     } catch (e) {
@@ -153,6 +163,10 @@ export function createSettingsManagement(
     preview,
     doc.createElement('hr'),
     button(t('manage.reset-to-defaults'), () => {
+      generation++
+      pending = null
+      preview.hidden = true
+      file.value = ''
       resetGroup.hidden = false
       include.checked = false
       understood.checked = false

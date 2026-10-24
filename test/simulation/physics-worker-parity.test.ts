@@ -1,3 +1,4 @@
+import { KeyboardSteering } from '../../src/simulation/vehicles/keyboard-steering.js'
 import { describe, expect, it } from 'vitest'
 import { Simulation, idleInput, type PlayerInput } from '../../src/simulation/simulation.js'
 import {
@@ -60,6 +61,36 @@ async function compare(
 }
 
 describe('physics worker parity', () => {
+  it('preserves tuned keyboard steering through the worker boundary', async () => {
+    const filter = new KeyboardSteering()
+    const tuning = { steeringRiseSeconds: 0.08, steeringReleaseSeconds: 0.03 }
+    const inputs = Array.from({ length: 80 }, (_, frame) => ({
+      ...idleInput(),
+      forward: 1,
+      right: filter.update(
+        'car',
+        frame < 20 ? 1 : frame < 40 ? -1 : 0,
+        [1 / 60, 1 / 144, 1 / 30, 0.1][frame % 4],
+        tuning,
+      ),
+    }))
+    const result = await compare(
+      scene([createEntity('car', 'vehicle', [0, 1, 0])]),
+      inputs.length,
+      (frame) => inputs[frame],
+      (sim) => sim.startInVehicle('car'),
+      (proxy) => proxy.call('startInVehicle', 'car'),
+    )
+    try {
+      expect(result.proxy.wheelTransforms('car', true)).toEqual(
+        result.inline.wheelTransforms('car', true),
+      )
+    } finally {
+      result.inline.dispose()
+      await result.proxy.dispose()
+      result.close()
+    }
+  })
   it('drops a dynamic body identically', async () => {
     const crate = createEntity('crate', 'box', [2, 6, 0])
     crate.size = [1, 1, 1]

@@ -1,3 +1,4 @@
+import { preferenceQueryKeys } from '../src/runtime/settings-backup.js'
 /**
  * The page's effective query and the address the game writes back. A host may set both before
  * the game modules run (an earlier module script calls setPageQuery), e.g. a closed demo that
@@ -26,4 +27,12 @@ export function pageSearch(): string {
 /** The address to write for `value`: the host's, else `value` itself. */
 export function pageAddress(value: string): string {
   return (globalThis as Holder)[QUERY]?.address?.(value) ?? value
+}
+
+/** Overlay only portable preferences on a host's fixed scene query; never import a new world. */
+export function mergePagePreferences(base: string, overrides: string): string {
+  const result = new URLSearchParams(base)
+  for (const [key, value] of new URLSearchParams(overrides))
+    if (preferenceQueryKeys.has(key)) result.set(key, value)
+  return result.size ? '?' + result.toString() : ''
 }

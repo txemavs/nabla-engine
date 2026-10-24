@@ -24,6 +24,26 @@ application action rather than mutating arbitrary renderer objects.
 
 ## Settings ownership
 
+The full-screen menu keeps four stable tabs and places each control by purpose:
+
+| Tab         | Contents                                                                                                                                                                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main        | Scenarios, application information, XR entry and the occupied vehicle's contextual controls.                                                                                                                                                                      |
+| World       | Map and location/time; terrain and street furniture; atmosphere, celestial bodies, weather and sea; placed vehicles and objects.                                                                                                                                  |
+| Settings    | Video options (general camera and FOV), quality (profile, sharpness, anisotropy and FSR), lighting, unified shadows, Bodycam, effects (smoke and fire) and distances; input; player and weapons; simulation (including audio); cached data and saved preferences. |
+| Development | Collisions and diagnostics.                                                                                                                                                                                                                                       |
+
+Each topic keeps its own heading instead of joining unrelated controls into a long
+Options list. `game/menu-layout.ts` is the placement source of truth; controls keep
+their DOM nodes, handlers and persistence keys when moved. Host-hidden and contextual
+sections remain excluded when unavailable.
+
+The search field finds sections by their translated headings and control labels,
+ignoring case and accents. Results show their tab/group path and open the existing
+section on desktop or mobile. Arrow keys traverse results and Enter opens the first
+match from the search field. Tab opens a closed menu and navigates controls once open;
+Escape closes the menu. Search is navigation only and never changes settings.
+
 Settings can come from authored scene data, engine defaults, runtime options,
 host defaults, and saved user choices. There is no single universal precedence
 rule for every field: inspect its resolver and storage reader. Some changes apply
@@ -245,9 +265,24 @@ return copies. Rendering lifecycles, the sky clock and physical water remain sep
 Regression coverage: `test/runtime/planet-preferences.test.ts` and the two-runtime
 browser test in `test/browser/e2e/runtime-settings.spec.ts`.
 
+World → Environment separates **Atmosphere**, **Weather** (clouds and rain) and **Celestial bodies**
+(Sun and its flare, Moon and its horizon magnification, stars and visible planets).
+The Moon's horizon magnification ranges from 1× (physical size) to 16×, default 5×.
+It fades as the Moon rises and disappears in space; it does not change its orbit.
+`moonHorizonScale` / `setMoonHorizonScale()` and the `moon` / `stars` flags in
+`planetLayers` expose the same controls to hosts. Turning off the atmosphere no
+longer hides those independently selected celestial layers.
+
+These values share the existing `nabla.planetVisual` record. Old records without
+Moon or star flags inherit their saved `sky` value, preserving their initial look;
+missing or invalid magnification uses 5× without discarding saved weather settings.
+The menu disables the magnification slider while the Moon is hidden and keeps its
+saved value. `test/browser/e2e/celestial-settings.spec.ts` covers live visibility,
+horizon/overhead/space scale, persistence and isolation between runtimes.
+
 [RuntimeCameraPreferences](../../src/runtime/camera-preferences.ts) handles each runtime's
-FOV offset and ActionCam/bodycam preferences. It uses the existing camera state and
-ActionCam settings rather than duplicating live state. Camera options establish the base
+FOV offset and Bodycam preferences. It uses the existing camera state and
+the existing ActionCam API settings rather than duplicating live state. Camera options establish the base
 FOV before the saved offset is applied; startup reads do not write preferences. The HUD,
 menu and public setter share the same FOV normalization and persistence path. Existing
 `nabla.cameraFov`, `nabla.actionCam`, `nabla.actionCamSettings` and `nabla.bodycam`
@@ -365,3 +400,69 @@ unit tests; browser teardown, preparation, player-presentation and frame-coordin
 Pending desktop/XR physics continuations are invalidated on pause/stop. Their late success or
 failure cannot resume an old frame, clear a new pending step or report errors into the next
 session. This fixes stale continuation across replay without changing active-frame ordering.
+
+### Settings backup
+
+Settings → Data and preferences → Settings management is the single place to export, preview/import and reset preferences. JSON files keep the existing `nabla-settings` version 1 format. The catalog includes quality, FSR, gravity, actor, flashlight shadows, per-profile streetlight limits and host sign preferences, alongside camera, planet, audio, vehicle, weapon and USB/XR settings. Cache data, scenes, multiplayer identities and credentials are excluded. Reset retains USB/XR calibrations unless explicitly selected.
+
+The former Development → Export entry and developer planet snapshot have been removed from the game menu. Settings management exports only the restorable JSON backup.
+
+Closed-query hosts must preserve the allowlisted preference query parameters and merge them over host defaults with `mergePagePreferences`. Euskadi now does so: imported FPS, resolution scale and FSR survive reload, while scene/room parameters cannot be imported from a settings file.
+
+### Mouse and gamepad preferences
+
+Settings → Controls → Mouse and gamepad adjusts mouse sensitivity (0.1–4×), vertical
+inversion and standard-gamepad dead zone (0–50%). Defaults preserve the previous
+response: 1× means 0.003 radians per pixel, inversion off and dead zone 12%.
+Cockpit, normal mouse look, Bodycam aiming and inspection use the mouse settings;
+standard gamepad input uses the dead zone in desktop and XR frames. USB device
+calibration, touch controls and tracked XR controllers retain their own settings.
+
+Each GameRuntime owns its settings through inputPreferences (a copy) and
+setInputPreferences(partial). The runtime SettingsStore saves nabla.input, respecting
+mode and namespace. Existing profiles without this key use defaults. Invalid fields
+are ignored and finite numbers are clamped. Settings export/import/reset includes
+this key. Runtimes never mutate shared control defaults.
+
+Terrain load radius and cells in memory are in Video → Distances; disk cache
+management remains in Cache. Existing nabla.terrain.cache data and URL overrides
+remain valid because the existing controls and listeners are moved intact.
+
+The default Sun lens flare is 50% across quality profiles. Saved flare values take precedence.
+
+### Camera recovery, keyboard steering and sun shadows
+
+Video → Options exposes automatic centering, delay (0–30 s), recovery ramp
+(0–5 s) and ordinary view-transition duration (0–3 s; zero is instantaneous).
+Absent saved preferences, authored camera defaults remain unchanged (normally
+10 s delay, 0.5 s recovery and 0.7 s transitions). Disabling centering keeps the
+chosen delay for re-enabling. Scripted entrances, cinematic motion and collision
+safety keep their existing behavior. GameRuntime exposes cameraMotionPreferences
+and setCameraMotionPreferences(partial), saved under nabla.cameraMotion.
+
+Controls → Keyboard steering exposes steeringRiseSeconds and
+steeringReleaseSeconds through inputPreferences/setInputPreferences. Each ranges
+from 0.01 to 2 seconds; defaults are 0.4 and 0.12. These are exponential time
+constants, not time to reach full lock. Only road-car keyboard steering uses the
+filter, before physics dispatch; worker and inline modes receive the same input.
+Walking, flight and analog device calibration are unchanged.
+
+Video → Shadows offers profile default or explicit sun-shadow tiers. Labels show
+actual pixel dimensions and cascade counts. Tier 4096 uses four 2048 px maps;
+tier 2048 uses three. Choosing a tier changes GPU allocation and shader topology,
+so Apply and reload saves nabla.sunShadowQuality and creates a fresh runtime.
+The active resolution does not change until reload. Explicit saved choices win
+after XR's default shadow promotion; profile default retains normal host/profile
+and XR policy. Flashlight and local-light shadows keep their separate controls.
+The runtime API is sunShadowQualityOverride and saveSunShadowQuality(value),
+where null restores profile policy for the next runtime.
+
+All three preferences respect settings modes and namespaces and are included in
+Settings management export/import/reset. Existing settings without the new fields
+keep their prior behavior.
+
+### GPU rain
+
+World → Environment → Weather → Rain ranges from Off to 100%. The choice is saved with the planet preferences. Both game entries accept `?rain=0.8` (0–1) as a startup override; omit the parameter to restore the saved setting.
+
+The first version targets desktop WebGL, with up to 6,000 instanced streaks in one draw and analytic GPU movement. Off skips the rain draw and haze. World depth occludes drops; floating-origin changes preserve their positions. Rain is composited before FSR/depth of field. The WebGPU control is disabled; immersive XR, mirrors, roof coverage, impacts and wet-surface reflections are not part of this version.

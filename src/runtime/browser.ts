@@ -172,6 +172,11 @@ import { createEntity } from '../entity/schema.js'
 import { readAudioMix, writeAudioMix, type AudioMixLevels } from '../audio/mixer.js'
 import type { MusicTrack } from '../audio/music.js'
 import { cameraFovRange, nextCameraFovOffset } from './camera-fov.js'
+import { RuntimeInputPreferences, type InputPreferences } from './input-preferences.js'
+import {
+  RuntimeCameraMotionPreferences,
+  type CameraMotionPreferences,
+} from './camera-motion-preferences.js'
 import { RuntimeCameraPreferences } from './camera-preferences.js'
 import {
   defaultSteeringWheelOffset,
@@ -440,6 +445,8 @@ export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 export interface GameRuntimeOptions {
   /** Per-instance preferences. Existing PC/VR keys are retained; namespace isolates persistent profiles. */
   settings?: SettingsStoreOptions
+  /** Initial rain intensity, 0..1; omitted restores the saved Weather setting. */
+  rain?: number
   /**
    * Renderer prepared by {@link createRenderBackend} on `canvas` (e.g. WebGPU for `?renderer=webgpu`).
    * Omit for the default WebGL renderer, created here exactly as before.
@@ -750,6 +757,8 @@ export class GameRuntime {
   private weaponLightOn = false
   private readonly bodycam = new BodycamAim()
   private readonly actionCam = new ActionCam()
+  private readonly cameraMotion: RuntimeCameraMotionPreferences
+  private readonly controlPreferences = new RuntimeInputPreferences()
   private readonly cameraPreferences = new RuntimeCameraPreferences(
     this.cameraState,
     this.actionCam,
@@ -985,6 +994,7 @@ export class GameRuntime {
       construction.defer(() => this.preparation.dispose())
       this.visuals.bindScene(this.scene)
       this.settings = createSettingsStore(options.settings)
+      this.controlPreferences.restore(this.settings)
       this.vehicleSettings = new RuntimeVehiclePreferences(this.settings)
       // An opted-in model-settings section uses the same owner; explicit stores/null retain their contract.
       options = this.options = {
@@ -1113,6 +1123,8 @@ export class GameRuntime {
       this.scene.add(this.wheelDebug.root)
 
       Object.assign(this.cameraState, cameraState)
+      this.cameraMotion = new RuntimeCameraMotionPreferences(this.cameraState)
+      this.cameraMotion.restore(this.settings)
       this.cameraPreferences.restoreView(this.settings)
       this.camera.near = this.cameraState.settings.nearClip
       this.camera.far = this.cameraState.settings.farClip
@@ -1334,6 +1346,8 @@ export class GameRuntime {
       this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
       construction.defer(() => this.environment.dispose())
       this.planetPreferences.initializeView(this.sky, this.options.sea !== false)
+      // Host/query overrides affect this session; only explicit menu edits persist.
+      if (options.rain !== undefined) this.planetPreferences.setRainAmount(options.rain, undefined)
       this.effects = new VehicleEffects(this.scene, undefined, this.visuals.smokeDensity)
       construction.defer(() => this.effects.dispose())
       this.effects.audio.mixer.set(readAudioMix(this.settings) ?? {})
@@ -1384,6 +1398,7 @@ export class GameRuntime {
       construction.defer(() => this.touchWalk?.dispose())
       if (readXRQuality(this.settings).shadows && this.quality.shadows === 0)
         this.performanceSettings.enableXRShadows()
+      this.performanceSettings.restoreShadowQuality(this.settings)
       // XR preferences can promote a shadowless tier after renderer creation.
       // Keep the renderer in sync with the final tier before any materials compile.
       this.renderer.shadowMap.enabled = this.quality.shadows > 0
@@ -2216,6 +2231,8 @@ export class GameRuntime {
     this.keys.expire(performance.now())
     const pad = this.pollGamepad()
     const input = this.game.readInput(dt, {
+      gamepadDeadzone: this.controlPreferences.settings.gamepadDeadzone,
+      keyboardSteering: this.controlPreferences.settings,
       keys: this.hasInput() ? this.keys.values : new Set(),
       yaw: this.cameraState.yaw + (sim.player.vehicleId ? 0 : xr.headYaw),
       pad,
@@ -2551,6 +2568,8 @@ export class GameRuntime {
       )
     }
     const input = this.game.readInput(dt, {
+      gamepadDeadzone: this.controlPreferences.settings.gamepadDeadzone,
+      keyboardSteering: this.controlPreferences.settings,
       keys: this.keys.values,
       yaw: this.cameraState.yaw,
       pad,
@@ -3005,6 +3024,7 @@ export class GameRuntime {
         sky: this.sky,
         clock: this.document.sky ?? { mode: 'live' },
         skyVisible: this.planet.sky,
+        rainAmount: this.planet.rainAmount,
         origin: this.origin,
         eye,
         ambient: this.ambient,
@@ -3310,6 +3330,7 @@ export class GameRuntime {
         sky: this.sky,
         clock: this.document.sky ?? { mode: 'live' },
         skyVisible: this.planet.sky,
+        rainAmount: this.planet.rainAmount,
         origin: this.origin,
         eye,
         ambient: this.ambient,
@@ -3485,16 +3506,38 @@ export class GameRuntime {
   setSkyClock(clock: SkyClock): void {
     this.worldControls.setSkyClock(clock)
   }
-  /** Visible planetary layers (sky, sun, clouds, sea). */
-  get planetLayers(): { sky: boolean; sun: boolean; clouds: boolean; sea: boolean } {
+  /** Independent atmosphere, celestial bodies, cloud and sea visibility. */
+  get planetLayers(): {
+    sky: boolean
+    sun: boolean
+    moon: boolean
+    stars: boolean
+    clouds: boolean
+    sea: boolean
+  } {
     return this.planetPreferences.layers
   }
   /** Show or hide planetary layers; wires `GeographicView.setLayers` and the sea sheet. */
   setPlanetLayers(
-    layers: Partial<{ sky: boolean; sun: boolean; clouds: boolean; sea: boolean }>,
+    layers: Partial<{
+      sky: boolean
+      sun: boolean
+      moon: boolean
+      stars: boolean
+      clouds: boolean
+      sea: boolean
+    }>,
   ): void {
     this.assertAlive()
     this.planetPreferences.setLayers(layers, this.sky, this.settings)
+  }
+  get moonHorizonScale(): number {
+    return this.planet.moonHorizonScale
+  }
+  /** Horizon-only Moon magnification, 1..16 (5 by default); no effect high in the sky or in space. */
+  setMoonHorizonScale(scale: number): void {
+    this.assertAlive()
+    this.planetPreferences.setMoonHorizonScale(scale, this.sky, this.settings)
   }
   get cloudStyle(): 'low' | 'artistic' {
     return this.planet.cloudStyle
@@ -3506,6 +3549,17 @@ export class GameRuntime {
   }
   get cloudAmount(): number {
     return this.planet.cloudAmount
+  }
+  get rainSupported(): boolean {
+    return this.backend === 'webgl'
+  }
+  get rainAmount(): number {
+    return this.planet.rainAmount
+  }
+  /** Weather / Rain, zero disables both the draw and rain haze. */
+  setRainAmount(amount: number): void {
+    this.assertAlive()
+    this.planetPreferences.setRainAmount(amount, this.settings)
   }
   /**
    * Cloud coverage 0–1 (`GeographicView.setCloudWeather`).
@@ -6480,7 +6534,12 @@ export class GameRuntime {
     if (!this.hasInput()) return
     if (this.inspector) {
       if (this.pointer.locked || event.buttons & 1)
-        this.inspector.look(event.movementX, event.movementY)
+        this.inspector.look(
+          event.movementX * this.inputPreferences.mouseSensitivity,
+          event.movementY *
+            this.inputPreferences.mouseSensitivity *
+            (this.inputPreferences.invertMouseY ? -1 : 1),
+        )
       return
     }
     const state = this.cameraState
@@ -6491,16 +6550,17 @@ export class GameRuntime {
       if (!dragging || (event.pointerType === 'mouse' && !this.pointer.unsupported)) return
     }
     state.lastLookTime = performance.now()
+    const delta = this.controlPreferences.mouseDelta(event.movementX, event.movementY)
     if (state.mode === 'cockpit' && seated) {
-      state.headYaw -= event.movementX * controlDefaults.mouseSensitivity
+      state.headYaw += delta.yaw
       state.headPitch = THREE.MathUtils.clamp(
-        state.headPitch + event.movementY * controlDefaults.mouseSensitivity,
+        state.headPitch + delta.pitch,
         -controlDefaults.pitchLimit,
         controlDefaults.pitchLimit,
       )
     } else {
-      let yaw = -event.movementX * controlDefaults.mouseSensitivity,
-        pitch = event.movementY * controlDefaults.mouseSensitivity
+      let yaw = delta.yaw,
+        pitch = delta.pitch
       if (
         !!this.cameraState.bodycam &&
         this.weaponDrawn &&
@@ -6518,6 +6578,29 @@ export class GameRuntime {
         controlDefaults.pitchLimit,
       )
     }
+  }
+
+  get cameraMotionPreferences(): CameraMotionPreferences {
+    return this.cameraMotion.settings
+  }
+  setCameraMotionPreferences(patch: Partial<CameraMotionPreferences>): CameraMotionPreferences {
+    const settings = this.cameraMotion.set(patch, this.settings)
+    if (settings.modeTransitionMs === 0) this.cameraState.transition = null
+    return settings
+  }
+  get sunShadowQualityOverride(): number | null {
+    return this.performanceSettings.sunShadowQualityOverride
+  }
+  /** Persist a sun-shadow tier for the next runtime; the active renderer is unchanged. */
+  saveSunShadowQuality(value: number | null): void {
+    this.performanceSettings.saveShadowQuality(value, this.settings)
+  }
+
+  get inputPreferences(): InputPreferences {
+    return this.controlPreferences.settings
+  }
+  setInputPreferences(patch: Partial<InputPreferences>): InputPreferences {
+    return this.controlPreferences.set(patch, this.settings)
   }
 
   private assertAlive(): void {

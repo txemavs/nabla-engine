@@ -13,7 +13,7 @@
 
 ## RuntimePlanetPreferences.restore
 
-[Implementation, line 29](../../../../src/runtime/planet-preferences.ts#L29)
+[Implementation, line 33](../../../../src/runtime/planet-preferences.ts#L33)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.initializeView
 
-[Implementation, line 36](../../../../src/runtime/planet-preferences.ts#L36)
+[Implementation, line 40](../../../../src/runtime/planet-preferences.ts#L40)
 
 Preserve the host sea option's final startup precedence, without saving it.
 
@@ -43,22 +43,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.layers
 
-[Implementation, line 41](../../../../src/runtime/planet-preferences.ts#L41)
+[Implementation, line 45](../../../../src/runtime/planet-preferences.ts#L45)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
 ```ts
-layers(): Pick<PlanetVisualSettings, 'sky' | 'sun' | 'clouds' | 'sea'>
+layers(): Pick<
+    Required<PlanetVisualSettings>,
+    'sky' | 'sun' | 'moon' | 'stars' | 'clouds' | 'sea'
+  >
 ```
 
 ## RuntimePlanetPreferences.setLayers
 
-[Implementation, line 46](../../../../src/runtime/planet-preferences.ts#L46)
+[Implementation, line 53](../../../../src/runtime/planet-preferences.ts#L53)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
 ```ts
-setLayers(layers: Partial<Pick<PlanetVisualSettings, 'sky' | 'sun' | 'clouds' | 'sea'>>, sky: SkyPort, storage: StoragePort): void
+setLayers(layers: Partial< Pick<PlanetVisualSettings, 'sky' | 'sun' | 'moon' | 'stars' | 'clouds' | 'sea'> >, sky: SkyPort, storage: StoragePort): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -68,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.setCloudStyle
 
-[Implementation, line 59](../../../../src/runtime/planet-preferences.ts#L59)
+[Implementation, line 70](../../../../src/runtime/planet-preferences.ts#L70)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -83,7 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.setCloudWeather
 
-[Implementation, line 65](../../../../src/runtime/planet-preferences.ts#L65)
+[Implementation, line 76](../../../../src/runtime/planet-preferences.ts#L76)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -105,7 +108,7 @@ Explicit throws in this body:
 
 ## RuntimePlanetPreferences.setLensFlareAmount
 
-[Implementation, line 82](../../../../src/runtime/planet-preferences.ts#L82)
+[Implementation, line 93](../../../../src/runtime/planet-preferences.ts#L93)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -124,9 +127,50 @@ Explicit throws in this body:
 
 - `new Error('Lens flare amount must be between 0 and 1')`
 
+## RuntimePlanetPreferences.setRainAmount
+
+[Implementation, line 101](../../../../src/runtime/planet-preferences.ts#L101)
+
+Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
+
+```ts
+setRainAmount(amount: number, storage: StoragePort): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Number.isFinite`
+- `this.remember`
+
+Explicit throws in this body:
+
+- `new Error('Rain amount must be between 0 and 1')`
+
+## RuntimePlanetPreferences.setMoonHorizonScale
+
+[Implementation, line 108](../../../../src/runtime/planet-preferences.ts#L108)
+
+Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
+
+```ts
+setMoonHorizonScale(scale: number, sky: SkyPort, storage: StoragePort): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Number.isFinite`
+- `sky.setMoonSize`
+- `this.remember`
+
+Explicit throws in this body:
+
+- `new Error('Moon horizon scale must be between 1 and 16')`
+
 ## RuntimePlanetPreferences.config
 
-[Implementation, line 90](../../../../src/runtime/planet-preferences.ts#L90)
+[Implementation, line 116](../../../../src/runtime/planet-preferences.ts#L116)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -136,7 +180,7 @@ config(): inferred by TypeScript; see implementation
 
 ## RuntimePlanetPreferences.remember
 
-[Implementation, line 105](../../../../src/runtime/planet-preferences.ts#L105)
+[Implementation, line 135](../../../../src/runtime/planet-preferences.ts#L135)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -150,7 +194,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.sync
 
-[Implementation, line 109](../../../../src/runtime/planet-preferences.ts#L109)
+[Implementation, line 139](../../../../src/runtime/planet-preferences.ts#L139)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -164,3 +208,4 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `sky.setCloudWeather`
 - `sky.setLayers`
 - `sky.setLensFlareAmount`
+- `sky.setMoonSize`

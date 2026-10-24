@@ -10,12 +10,16 @@ import {
 type StoragePort = Pick<Storage, 'getItem' | 'setItem'> | null | undefined
 type SkyPort = Pick<
   GeographicView,
-  'setLayers' | 'setCloudStyle' | 'setCloudWeather' | 'setLensFlareAmount'
+  'setLayers' | 'setCloudStyle' | 'setCloudWeather' | 'setLensFlareAmount' | 'setMoonSize'
 >
 
 /** Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles. */
 export class RuntimePlanetPreferences {
-  readonly state: PlanetVisualSettings = {
+  readonly state: Required<PlanetVisualSettings> = {
+    rainAmount: 0,
+    moon: true,
+    stars: true,
+    moonHorizonScale: 5,
     sky: PLANET_DEFAULTS.sky,
     sun: PLANET_DEFAULTS.sun,
     clouds: PLANET_DEFAULTS.clouds,
@@ -23,7 +27,7 @@ export class RuntimePlanetPreferences {
     cloudStyle: 'low',
     cloudAmount: PLANET_DEFAULTS.cloudAmount,
     cloudPressure: 0.12,
-    lensFlareAmount: 1,
+    lensFlareAmount: 0.5,
   }
 
   restore(storage: StoragePort, preset: string): void {
@@ -38,17 +42,24 @@ export class RuntimePlanetPreferences {
     this.sync(sky)
   }
 
-  get layers(): Pick<PlanetVisualSettings, 'sky' | 'sun' | 'clouds' | 'sea'> {
-    const { sky, sun, clouds, sea } = this.state
-    return { sky, sun, clouds, sea }
+  get layers(): Pick<
+    Required<PlanetVisualSettings>,
+    'sky' | 'sun' | 'moon' | 'stars' | 'clouds' | 'sea'
+  > {
+    const { sky, sun, moon, stars, clouds, sea } = this.state
+    return { sky, sun, moon, stars, clouds, sea }
   }
 
   setLayers(
-    layers: Partial<Pick<PlanetVisualSettings, 'sky' | 'sun' | 'clouds' | 'sea'>>,
+    layers: Partial<
+      Pick<PlanetVisualSettings, 'sky' | 'sun' | 'moon' | 'stars' | 'clouds' | 'sea'>
+    >,
     sky: SkyPort,
     storage: StoragePort,
   ): void {
     if (layers.sky !== undefined) this.state.sky = layers.sky
+    if (layers.moon !== undefined) this.state.moon = layers.moon
+    if (layers.stars !== undefined) this.state.stars = layers.stars
     if (layers.sun !== undefined) this.state.sun = layers.sun
     if (layers.clouds !== undefined) this.state.clouds = layers.clouds
     if (layers.sea !== undefined) this.state.sea = layers.sea
@@ -87,14 +98,33 @@ export class RuntimePlanetPreferences {
     this.remember(storage)
   }
 
+  setRainAmount(amount: number, storage: StoragePort): void {
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1)
+      throw new Error('Rain amount must be between 0 and 1')
+    this.state.rainAmount = amount
+    this.remember(storage)
+  }
+
+  setMoonHorizonScale(scale: number, sky: SkyPort, storage: StoragePort): void {
+    if (!Number.isFinite(scale) || scale < 1 || scale > 16)
+      throw new Error('Moon horizon scale must be between 1 and 16')
+    this.state.moonHorizonScale = scale
+    sky.setMoonSize(scale)
+    this.remember(storage)
+  }
+
   config() {
     const { cloudStyle, cloudAmount, cloudPressure, lensFlareAmount, sky, sun, clouds, sea } =
       this.state
     return {
+      rain: this.state.rainAmount,
       cloudStyle,
       cloudAmount,
       cloudPressure,
       lensFlare: lensFlareAmount,
+      moon: this.state.moon,
+      stars: this.state.stars,
+      moonHorizonScale: this.state.moonHorizonScale,
       sky,
       sun,
       clouds,
@@ -111,9 +141,11 @@ export class RuntimePlanetPreferences {
       sky: this.state.sky,
       planets: this.state.sky,
       sun: this.state.sun,
-      moon: this.state.sky,
+      moon: this.state.moon,
+      stars: this.state.stars,
       clouds: this.state.clouds,
     })
+    sky.setMoonSize(this.state.moonHorizonScale)
     sky.setCloudStyle(this.state.cloudStyle)
     sky.setCloudWeather(this.state.cloudAmount, this.state.cloudPressure)
     sky.setLensFlareAmount(this.state.lensFlareAmount)

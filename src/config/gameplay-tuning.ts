@@ -15,6 +15,7 @@ export const randomVehicleTuning = [
 ] as const
 
 export const gameCameraDefaults: Readonly<GameCameraSettings> = Object.freeze({
+  autoCenterEnabled: true,
   autoCenterDelayMs: 10_000,
   autoCenterBlendMs: 500,
   chasePitch: 0.24,

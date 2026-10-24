@@ -11,6 +11,7 @@ import { portalEnvironment } from '../render/portal/environment.js'
 import type { VehicleMonitors } from './vehicle-monitors.js'
 import type { GpuTimingBackend } from '../diagnostics/gpu-timing.js'
 import { isWebGPU } from '../render/backend.js'
+import { GpuRain } from '../render/effects/rain.js'
 
 export interface GameRenderFrame {
   renderer: THREE.WebGLRenderer
@@ -33,6 +34,7 @@ export interface GameRenderFrame {
   depthOfField?: boolean
   tunnelFocus?: number
   skyVisible?: boolean
+  rainAmount?: number
   externalViews?: Map<string, ExternalPortalView>
   /** World-space culling for each auxiliary view and the main view. */
   cull: (eye: THREE.Vector3) => void
@@ -61,6 +63,8 @@ export class GameRenderPipeline {
   }
   readonly fsr = new Fsr1()
   readonly depthOfField = new DepthOfField()
+  private rain?: GpuRain
+  private readonly rainFog = new THREE.Fog('#8999a4', 20, 450)
   private readonly flareScene = new THREE.Scene()
   /** True once the shadow maps were cleared to «no shadow» for the shadows-off switch. */
   private shadowMapsBlank = false
@@ -68,6 +72,7 @@ export class GameRenderPipeline {
   gpuTiming: GpuTimingBackend | null = null
   /** Release owned postprocessing resources; scene, renderer and monitors remain host-owned. */
   dispose(): void {
+    this.rain?.dispose()
     this.depthOfField.dispose()
     this.fsr.dispose()
     this.gpuTiming?.dispose()
@@ -182,9 +187,19 @@ export class GameRenderPipeline {
       const flare = sky.lensFlare
       const flareVisible = flare?.visible ?? false
       if (focus && flare) flare.visible = false
+      const dryFog = scene.fog
+      const rainAmount = frame.rainAmount ?? 0
+      if (rainAmount > 0) {
+        this.rainFog.color.copy(dryFog?.color ?? new THREE.Color('#8999a4'))
+        this.rainFog.near = 20
+        this.rainFog.far = 1200 - rainAmount * 850
+        if (dryFog instanceof THREE.Fog) this.rainFog.far = Math.min(dryFog.far, this.rainFog.far)
+        scene.fog = this.rainFog
+      }
       try {
         renderer.render(scene, camera)
       } finally {
+        scene.fog = dryFog
         if (flare) flare.visible = flareVisible
       }
       this.gpuTiming?.endPass('main')
@@ -196,6 +211,18 @@ export class GameRenderPipeline {
       this.gpuTiming?.beginPass('post')
       if (allocate && !missingShadowMap(frame.lights)) this.blankShadowMaps(frame)
       if (sky.enabled) sky.renderClouds(renderer, camera)
+      if (rainAmount > 0) {
+        this.rain ??= new GpuRain()
+        this.rain.update(
+          frame.time / 1000,
+          eye,
+          origin,
+          rainAmount,
+          sky.enabled ? sky.atmosphere.day : 1,
+        )
+        renderer.autoClear = false
+        renderer.render(this.rain.scene, camera)
+      }
       monitors.finish()
       if (focus) {
         this.depthOfField.present(renderer, camera, upscale ? this.fsr.input : null)

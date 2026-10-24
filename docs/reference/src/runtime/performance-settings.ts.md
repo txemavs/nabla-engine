@@ -7,10 +7,11 @@
 ## Module dependencies
 
 - `./performance.js`
+- `../config/shadows.js`
 
 ## RuntimePerformanceSettings.constructor
 
-[Implementation, line 18](../../../../src/runtime/performance-settings.ts#L18)
+[Implementation, line 21](../../../../src/runtime/performance-settings.ts#L21)
 
 Instance quality policy; terrain residency and simulation updates remain with their owners.
 
@@ -23,9 +24,47 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.hasOwn`
 - `normalizePerformance`
 
+## RuntimePerformanceSettings.restoreShadowQuality
+
+[Implementation, line 30](../../../../src/runtime/performance-settings.ts#L30)
+
+Instance quality policy; terrain residency and simulation updates remain with their owners.
+
+```ts
+restoreShadowQuality(storage: PreferenceStorage): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `JSON.parse`
+- `Object.hasOwn`
+- `storage.getItem`
+
+## RuntimePerformanceSettings.saveShadowQuality
+
+[Implementation, line 42](../../../../src/runtime/performance-settings.ts#L42)
+
+Saves for the next runtime; rebuilding cascade topology requires a new scene.
+
+```ts
+saveShadowQuality(value: number | null, storage: PreferenceStorage): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `JSON.stringify`
+- `Number.isFinite`
+- `Object.hasOwn`
+- `storage.setItem`
+
+Explicit throws in this body:
+
+- `new Error('Unsupported sun shadow quality')`
+
 ## RuntimePerformanceSettings.enableXRShadows
 
-[Implementation, line 27](../../../../src/runtime/performance-settings.ts#L27)
+[Implementation, line 49](../../../../src/runtime/performance-settings.ts#L49)
 
 Instance quality policy; terrain residency and simulation updates remain with their owners.
 
@@ -35,7 +74,7 @@ enableXRShadows(): void
 
 ## RuntimePerformanceSettings.setStreaming
 
-[Implementation, line 31](../../../../src/runtime/performance-settings.ts#L31)
+[Implementation, line 53](../../../../src/runtime/performance-settings.ts#L53)
 
 Instance quality policy; terrain residency and simulation updates remain with their owners.
 
@@ -57,7 +96,7 @@ Explicit throws in this body:
 
 ## RuntimePerformanceSettings.setVisibility
 
-[Implementation, line 45](../../../../src/runtime/performance-settings.ts#L45)
+[Implementation, line 67](../../../../src/runtime/performance-settings.ts#L67)
 
 Instance quality policy; terrain residency and simulation updates remain with their owners.
 
@@ -77,7 +116,7 @@ Explicit throws in this body:
 
 ## RuntimePerformanceSettings.setGroundDetail
 
-[Implementation, line 58](../../../../src/runtime/performance-settings.ts#L58)
+[Implementation, line 80](../../../../src/runtime/performance-settings.ts#L80)
 
 Instance quality policy; terrain residency and simulation updates remain with their owners.
 

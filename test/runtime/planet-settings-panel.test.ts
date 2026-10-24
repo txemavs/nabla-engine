@@ -64,12 +64,16 @@ describe('planet visual config text', () => {
       }),
     ).toBe(
       [
+        'rain=0',
         'cloudStyle=artistic',
         'cloudAmount=0.35',
         'cloudPressure=0.12',
         'lensFlare=1',
         'sky=1',
         'sun=1',
+        'moon=1',
+        'stars=1',
+        'moonHorizonScale=5',
         'clouds=1',
         'sea=0',
       ].join('\n'),
@@ -81,10 +85,14 @@ describe('planet visual config text', () => {
     runtime.setCloudWeather(0.8, 0.55)
     runtime.setLensFlareAmount(0.25)
     expect(planetVisualConfigFromRuntime(runtime)).toEqual({
+      rainAmount: 0,
       cloudStyle: 'artistic',
       cloudAmount: 0.8,
       cloudPressure: 0.55,
       lensFlareAmount: 0.25,
+      moon: true,
+      stars: true,
+      moonHorizonScale: 5,
       sky: true,
       sun: true,
       clouds: true,

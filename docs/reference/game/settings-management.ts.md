@@ -16,7 +16,7 @@
 File operations are staged. Selecting a file or opening reset never changes preferences.
 
 ```ts
-createSettingsManagement(doc: Document, options: { reload(search: string): void; search(): string; local(): Storage; session(): Storage }): HTMLElement
+createSettingsManagement(doc: Document, options: { reload(search: string): void search(): string local(): Storage session(): Storage }): HTMLElement
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -35,7 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createSettingsManagement.button
 
-[Implementation, line 23](../../../game/settings-management.ts#L23)
+[Implementation, line 28](../../../game/settings-management.ts#L28)
 
 ```ts
 button(text: string, run: () => void): inferred by TypeScript; see implementation
@@ -45,12 +45,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `doc.createElement`
 
-## createSettingsManagement.button.callback@27
+## createSettingsManagement.button.callback@32
 
-[Implementation, line 27](../../../game/settings-management.ts#L27)
+[Implementation, line 32](../../../game/settings-management.ts#L32)
 
 ```ts
-callback@27(): inferred by TypeScript; see implementation
+callback@32(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -60,7 +60,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createSettingsManagement.download
 
-[Implementation, line 38](../../../game/settings-management.ts#L38)
+[Implementation, line 43](../../../game/settings-management.ts#L43)
 
 ```ts
 download(): inferred by TypeScript; see implementation
@@ -83,24 +83,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.session`
 - `t`
 
-## createSettingsManagement.download.callback@49
+## createSettingsManagement.download.callback@54
 
-[Implementation, line 49](../../../game/settings-management.ts#L49)
+[Implementation, line 54](../../../game/settings-management.ts#L54)
 
 ```ts
-callback@49(): inferred by TypeScript; see implementation
+callback@54(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `URL.revokeObjectURL`
 
-## createSettingsManagement.callback@65
+## createSettingsManagement.callback@70
 
-[Implementation, line 65](../../../game/settings-management.ts#L65)
+[Implementation, line 70](../../../game/settings-management.ts#L70)
 
 ```ts
-callback@65(): inferred by TypeScript; see implementation
+callback@70(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -111,31 +111,30 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.search`
 - `options.session`
 
-## createSettingsManagement.callback@80
+## createSettingsManagement.callback@85
 
-[Implementation, line 80](../../../game/settings-management.ts#L80)
+[Implementation, line 85](../../../game/settings-management.ts#L85)
 
 ```ts
-callback@80(): inferred by TypeScript; see implementation
+callback@85(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `t`
 
-## createSettingsManagement.callback@88
+## createSettingsManagement.callback@93
 
-[Implementation, line 88](../../../game/settings-management.ts#L88)
+[Implementation, line 93](../../../game/settings-management.ts#L93)
 
 ```ts
-callback@88(): inferred by TypeScript; see implementation
+callback@93(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Date`
 - `Error`
-- `Object.hasOwn`
 - `Object.keys`
 - `String`
 - `new Date(data.createdAt).toLocaleString`
@@ -147,12 +146,12 @@ Explicit throws in this body:
 
 - `new Error(t('manage.the-file-is-larger-than-2-mb'))`
 
-## createSettingsManagement.callback@121
+## createSettingsManagement.callback@131
 
-[Implementation, line 121](../../../game/settings-management.ts#L121)
+[Implementation, line 131](../../../game/settings-management.ts#L131)
 
 ```ts
-callback@121(): inferred by TypeScript; see implementation
+callback@131(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -163,26 +162,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `options.session`
 - `restoreSettingsDefaults`
 
-## createSettingsManagement.callback@133
+## createSettingsManagement.callback@143
 
-[Implementation, line 133](../../../game/settings-management.ts#L133)
+[Implementation, line 143](../../../game/settings-management.ts#L143)
 
 ```ts
-callback@133(): inferred by TypeScript; see implementation
+callback@143(): inferred by TypeScript; see implementation
 ```
 
-## createSettingsManagement.callback@142
+## createSettingsManagement.callback@152
 
-[Implementation, line 142](../../../game/settings-management.ts#L142)
+[Implementation, line 152](../../../game/settings-management.ts#L152)
 
 ```ts
-callback@142(): inferred by TypeScript; see implementation
+callback@152(): inferred by TypeScript; see implementation
 ```
 
-## createSettingsManagement.callback@155
+## createSettingsManagement.callback@165
 
-[Implementation, line 155](../../../game/settings-management.ts#L155)
+[Implementation, line 165](../../../game/settings-management.ts#L165)
 
 ```ts
-callback@155(): inferred by TypeScript; see implementation
+callback@165(): inferred by TypeScript; see implementation
 ```

@@ -8,6 +8,26 @@ const sky = () => ({
   setCloudStyle: vi.fn(),
   setCloudWeather: vi.fn(),
   setLensFlareAmount: vi.fn(),
+  setMoonSize: vi.fn(),
+})
+
+it('applies a rain preview without replacing the saved Weather choice', () => {
+  let saved = JSON.stringify({ ...highPlanetVisual, rainAmount: 0.25 })
+  const storage = {
+    getItem: () => saved,
+    setItem: (_key: string, value: string) => {
+      saved = value
+    },
+  }
+  const preferences = new RuntimePlanetPreferences()
+  preferences.restore(storage, 'high')
+  preferences.setRainAmount(0.8, undefined)
+  expect(preferences.state.rainAmount).toBe(0.8)
+  expect(JSON.parse(saved).rainAmount).toBe(0.25)
+  preferences.setRainAmount(0, storage)
+  const restored = new RuntimePlanetPreferences()
+  restored.restore(storage, 'high')
+  expect(restored.state.rainAmount).toBe(0)
 })
 
 it('restores legacy preferences without writes, preserving quality and host sea precedence', () => {
@@ -56,6 +76,12 @@ it('isolates state, render updates and saved namespaces including restored insta
   a.setCloudStyle('low', av, left)
   a.setCloudWeather(0.2, undefined, av, left)
   a.setLensFlareAmount(0.1, av, left)
+  a.setRainAmount(0.65, left)
+  expect(b.state.rainAmount).toBe(0)
+  a.setMoonHorizonScale(4.5, av, left)
+  a.setLayers({ moon: false, stars: false }, av, left)
+  expect(av.setMoonSize).toHaveBeenLastCalledWith(4.5)
+  expect(bv.setMoonSize).toHaveBeenLastCalledWith(5)
   expect(a.state.cloudPressure).toBe(0.8)
   expect(b.state).toEqual(highPlanetVisual)
   expect(bv.setLayers).toHaveBeenCalledTimes(1)
@@ -63,6 +89,7 @@ it('isolates state, render updates and saved namespaces including restored insta
     sky: false,
     planets: false,
     moon: false,
+    stars: false,
     sun: true,
     clouds: true,
   })
@@ -92,7 +119,11 @@ it('rejects invalid values atomically and keeps live changes when persistence fa
     expect(() => a.setCloudWeather(bad, 0.5, view, storage)).toThrow('Cloud amount')
     expect(() => a.setCloudWeather(0.5, bad, view, storage)).toThrow('Cloud pressure')
     expect(() => a.setLensFlareAmount(bad, view, storage)).toThrow('Lens flare')
+    expect(() => a.setRainAmount(bad, storage)).toThrow('Rain amount')
   }
+  expect(a.state).toEqual(before)
+  for (const bad of [NaN, Infinity, 0, 16.5])
+    expect(() => a.setMoonHorizonScale(bad, view, storage)).toThrow('Moon horizon scale')
   expect(a.state).toEqual(before)
   expect(view.setCloudWeather).not.toHaveBeenCalled()
   a.setCloudWeather(0.5, 0.3, view, storage)

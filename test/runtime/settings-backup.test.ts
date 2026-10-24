@@ -103,3 +103,48 @@ it('validates the whole file before writes and rolls back both stores on failed 
   ).toThrow()
   expect(() => parseSettingsBackup(JSON.stringify({ ...backup, version: 2 }))).toThrow()
 })
+
+it('round-trips current graphics and host preferences and resets only the selected runtime scope', async () => {
+  const { SettingsStore } = await import('../../src/runtime/settings-scope.js')
+  const backend = new Memory({
+    token: 'keep',
+    'nabla-world:session': 'keep',
+    'euskadi-start-vehicle:world': 'keep',
+  })
+  const pc = new SettingsStore({ storage: backend, mode: 'pc' })
+  const xr = new SettingsStore({ storage: backend, mode: 'headset' })
+  const values = {
+    'nabla.quality': 'high',
+    'nabla.fsr1': '{"mode":"quality","sharpness":0.5}',
+    'nabla.gravityScale': '1.5',
+    'nabla.actor': 'helmet',
+    'nabla.headlamp-shadows-v2': 'true',
+    'nabla.field-light-limit-v2:high': '8',
+    'nabla.planetVisual': '{"moonHorizonScale":4}',
+    'euskadi.irun-signs': '{"enabled":false}',
+  }
+  for (const [key, value] of Object.entries(values)) pc.setItem(key, value)
+  xr.setItem('nabla.fsr1', 'xr-unchanged')
+  const backup = exportSettingsBackup(pc, new Memory(), '?fsr=quality&fsrSharpness=50&room=private')
+  expect(backup.local).toEqual(values)
+  const target = new Memory()
+  applySettingsBackup(parseSettingsBackup(JSON.stringify(backup)), target, new Memory(), '')
+  expect(Object.fromEntries(target.data)).toEqual(values)
+  restoreSettingsDefaults(pc, new Memory(), '')
+  expect(pc.getItem('nabla.fsr1')).toBeNull()
+  expect(xr.getItem('nabla.fsr1')).toBe('xr-unchanged')
+  expect(backend.getItem('nabla-world:session')).toBe('keep')
+  expect(backend.getItem('euskadi-start-vehicle:world')).toBe('keep')
+  expect(backup.query).toEqual({ fsr: 'quality', fsrSharpness: '50' })
+})
+
+it('reseeds the selected VR defaults after reset instead of falling back to desktop quality', async () => {
+  const { SettingsStore } = await import('../../src/runtime/settings-scope.js')
+  const backend = new Memory({ 'nabla.quality': 'ultra' })
+  const xr = new SettingsStore({ storage: backend, mode: 'headset' })
+  xr.setItem('nabla.quality', 'high')
+  restoreSettingsDefaults(xr, new Memory(), '')
+  const next = new SettingsStore({ storage: backend, mode: 'headset' })
+  expect(next.getItem('nabla.quality')).toBe('minimal')
+  expect(backend.getItem('nabla.quality')).toBe('ultra')
+})

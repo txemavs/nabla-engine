@@ -38,25 +38,31 @@ export const CURRENT_VEHICLE_GROUP = 'current-vehicle'
 
 export const WORLD_OPTIONS_SECTION = 'settings-world-options'
 
-/** Mundo › Ver › Opciones: the world switches as one list, sea once (the panel switch). */
+/** Related shadow controls share one destination while retaining their controls and storage. */
 export const MENU_FLAT_SECTIONS: readonly MenuFlatSection[] = [
   {
-    id: WORLD_OPTIONS_SECTION,
-    tab: 'planet',
+    id: 'settings-video-options',
+    tab: 'options',
     labelKey: 'settings.options',
+    members: ['camera-extras', 'settings-camera-fov', 'settings-camera-motion'],
+  },
+  {
+    id: 'settings-video-effects',
+    tab: 'options',
+    labelKey: 'settings.effects',
+    members: ['settings-effects', 'settings-simulated-fire'],
+  },
+  {
+    id: 'settings-video-shadows',
+    tab: 'options',
+    labelKey: 'settings.shadows',
     members: [
-      'road-style',
-      'settings-lens-flare',
-      'settings-planet-air',
-      'settings-planet-sea',
-      'settings-traffic-signs',
+      'quality-shadows',
+      'settings-shadow-quality',
       'settings-sign-shadows',
-      'settings-streetlights',
       'settings-experimental-light-shadows',
+      'settings-light-shadows',
       'settings-headlamp',
-      'settings-effects',
-      'settings-simulated-fire',
-      'settings-options-labels',
     ],
   },
 ]
@@ -67,7 +73,6 @@ export const MENU_LAYOUT: Readonly<Record<MenuTabId, readonly MenuItem[]>> = {
     'nabla-menu-section-info',
     'nabla-menu-section-vr',
     'nabla-menu-section-ar',
-    'terrain-cache',
     {
       id: CURRENT_VEHICLE_GROUP,
       labelKey: 'settings.current-vehicle',
@@ -87,63 +92,86 @@ export const MENU_LAYOUT: Readonly<Record<MenuTabId, readonly MenuItem[]>> = {
       labelKey: 'settings.situation',
       sections: ['settings-planet-time', 'terrain-position'],
     },
-    'terrain-source',
     {
-      id: 'view',
-      labelKey: 'settings.view',
-      sections: ['terrain-layers', 'settings-layer-air', WORLD_OPTIONS_SECTION],
+      id: 'terrain',
+      labelKey: 'settings.terrain',
+      sections: [
+        'terrain-source',
+        'terrain-layers',
+        'road-style',
+        'settings-traffic-signs',
+        'settings-streetlights',
+        'settings-options-labels',
+      ],
     },
     {
-      id: 'vehicles',
-      labelKey: 'settings.vehicles',
+      id: 'environment',
+      labelKey: 'settings.environment',
+      sections: [
+        'settings-layer-air',
+        'settings-layer-celestial',
+        'settings-planet-air',
+        'settings-planet-sea',
+      ],
+    },
+    {
+      id: 'objects',
+      labelKey: 'settings.objects',
       sections: ['scene-vehicles', 'settings-placed-objects', 'settings-object-layout'],
-    },
-    {
-      id: 'weapon',
-      labelKey: 'settings.weapons',
-      sections: ['settings-weapon', 'settings-combat'],
     },
   ],
   options: [
     {
-      id: 'simulation',
-      labelKey: 'settings.simulation',
+      id: 'video',
+      labelKey: 'settings.video',
       sections: [
-        'settings-simulation-time',
+        'settings-video-options',
+        'display-quality-section',
+        'settings-action-cam',
+        'settings-video-effects',
+        'settings-video-shadows',
+        'settings-light',
         'settings-distances',
-        'quality-shadows',
-        'driving-extras',
       ],
     },
     {
       id: 'controls',
       labelKey: 'settings.controls',
-      sections: ['settings-controls', 'settings-usb'],
+      sections: [
+        'settings-input',
+        'settings-keyboard-response',
+        'settings-controls',
+        'settings-usb',
+      ],
     },
     {
-      id: 'cameras',
-      labelKey: 'settings.camera',
-      sections: ['camera-extras', 'settings-camera-fov', 'settings-action-cam'],
+      id: 'player',
+      labelKey: 'settings.player',
+      sections: ['settings-actor'],
     },
-    {
-      id: 'video',
-      labelKey: 'settings.video',
-      sections: ['display-quality-section', 'settings-sharpness', 'settings-light'],
-    },
-    { id: 'audio', labelKey: 'settings.audio', sections: ['settings-sound'] },
-    'settings-management',
-    'settings-actor',
-  ],
-  dev: [
     {
       id: 'weapons',
       labelKey: 'settings.weapons',
-      sections: ['settings-options-sidearm', 'settings-weapon-poses', 'settings-muzzle-flash'],
+      sections: [
+        'settings-weapon',
+        'settings-options-sidearm',
+        'settings-weapon-poses',
+        'settings-muzzle-flash',
+        'settings-combat',
+      ],
     },
-    'settings-config-planet',
-    'settings-collision-debug',
-    'settings-diagnostics',
+    {
+      id: 'simulation',
+      labelKey: 'settings.simulation',
+      sections: ['settings-simulation-time', 'driving-extras', 'settings-sound'],
+    },
+    {
+      id: 'data',
+      labelKey: 'settings.data-and-preferences',
+      sections: ['terrain-cache', 'settings-management'],
+    },
   ],
+  dev: ['settings-collision-debug', 'settings-diagnostics'],
 }
 
 /** Every placed section with its tab, in navigation order (flat members after their section). */

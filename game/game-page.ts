@@ -311,6 +311,9 @@ try {
         }
       : undefined,
     depthOfField: new URLSearchParams(pageSearch()).has('dof') ? true : undefined,
+    rain: new URLSearchParams(pageSearch()).has('rain')
+      ? Math.max(0, Math.min(1, Number(new URLSearchParams(pageSearch()).get('rain')) || 0))
+      : undefined,
     performance: { preset: readQualityPreset() },
     tiles: noTerrainTest
       ? undefined
