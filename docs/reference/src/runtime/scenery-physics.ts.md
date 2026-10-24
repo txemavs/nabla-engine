@@ -7,6 +7,7 @@
 ## Module dependencies
 
 - `./settings-scope.js`
+- `./traffic-signs-host.js`
 - `three`
 - `../config/scenery-physics.js`
 - `../config/impact-sounds.js`
@@ -14,7 +15,7 @@
 
 ## clampRadius
 
-[Implementation, line 14](../../../../src/runtime/scenery-physics.ts#L14)
+[Implementation, line 15](../../../../src/runtime/scenery-physics.ts#L15)
 
 ```ts
 clampRadius(value: number): number
@@ -28,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## initialSettings
 
-[Implementation, line 23](../../../../src/runtime/scenery-physics.ts#L23)
+[Implementation, line 21](../../../../src/runtime/scenery-physics.ts#L21)
 
 ```ts
 initialSettings(storage: SettingsStorage): { enabled: boolean; radius: number }
@@ -41,6 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `clampRadius`
 - `storage.getItem`
+- `trafficSignsStorageKey`
 
 ## SceneryPhysics.constructor
 

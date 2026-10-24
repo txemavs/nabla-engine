@@ -1,4 +1,5 @@
 import { pageSettingsStorage, type SettingsStorage } from './settings-scope.js'
+import { trafficSignsStorageKey } from './traffic-signs-host.js'
 import * as THREE from 'three'
 import { sceneryPhysicsDefaults } from '../config/scenery-physics.js'
 import type { ImpactSurface } from '../config/impact-sounds.js'
@@ -17,16 +18,15 @@ const clampRadius = (value: number): number =>
     Math.min(sceneryPhysicsDefaults.radiusMax, Math.round(value)),
   )
 
-/** Legacy host storage that held the physics radius before it became an engine setting. */
-const legacyStorageKey = 'euskadi.irun-signs'
-
 function initialSettings(storage: SettingsStorage): { enabled: boolean; radius: number } {
   // Hosts used to publish these two values as data attributes; honour them if present.
   const data = typeof document === 'undefined' ? undefined : document.documentElement.dataset
   let radius = Number(data?.signPhysicsRadius)
   if (!Number.isFinite(radius) || !data?.signPhysicsRadius) {
+    // Otherwise the host's traffic-signs settings, which hold the radius the HUD last saved.
+    const key = trafficSignsStorageKey()
     try {
-      radius = Number(JSON.parse(storage.getItem(legacyStorageKey) ?? '{}')?.physicsRadius)
+      radius = key ? Number(JSON.parse(storage.getItem(key) ?? '{}')?.physicsRadius) : NaN
     } catch {
       radius = NaN
     }

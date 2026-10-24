@@ -228,7 +228,11 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.appName = 'EUSKADI.ONLINE'
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
-    localStorage.setItem('euskadi.irun-signs', JSON.stringify({ enabled: false }))
+    const { setTrafficSignsStorageKey } = await import(
+      `/@fs${root}/src/runtime/traffic-signs-host.ts`
+    )
+    setTrafficSignsStorageKey('demo-host.signs')
+    localStorage.setItem('demo-host.signs', JSON.stringify({ enabled: false }))
     // The HUD persists through runtime.settings (GameRuntime's SettingsStore), as a real runtime does.
     const { SettingsStore } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
     Object.assign(runtime, { settings: new SettingsStore({ mode: 'pc', storage: localStorage }) })
@@ -624,7 +628,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   await page.getByRole('spinbutton', { name: 'Physics distance (m) value', exact: true }).fill('20')
   await page.getByText('Signage collisions and impacts', { exact: true }).click()
   expect(
-    await page.evaluate(() => JSON.parse(localStorage.getItem('euskadi.irun-signs')!)),
+    await page.evaluate(() => JSON.parse(localStorage.getItem('demo-host.signs')!)),
   ).toMatchObject({ limit: 75, radius: 120, physicsRadius: 20 })
   expect(await page.evaluate(() => document.documentElement.dataset.signPhysicsRadius)).toBe('20')
   // Main › current vehicle (titled with its name) holds the occupied vehicle's sections.
