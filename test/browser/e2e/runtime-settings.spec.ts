@@ -259,6 +259,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       cloudPressure: 0.12,
       lensFlare: 1,
       rain: 0,
+      rainLinked: false,
     },
     {
       sky: false,
@@ -273,6 +274,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       cloudPressure: 0.7,
       lensFlare: 0.3,
       rain: 0.65,
+      rainLinked: false,
     },
   ])
   expect(result.savedPlanet).toMatchObject({

@@ -15,107 +15,112 @@ test('distances section gathers existing and new controls and applies them live'
     }),
   )
   await page.goto('/distances')
-  const result = await page.evaluate(async (root) => {
-    const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
-    const { bindDistances } = await import(`/@fs/${root}/game/distances-ui.ts`)
-    const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
-    const { UsbControllers } = await import(`/@fs/${root}/src/runtime/usb/controllers.ts`)
-    const { normalizeActionCamSettings } = await import(
-      `/@fs/${root}/src/runtime/action-cam-settings.ts`
-    )
-    const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
-      `/@fs/${root}/src/config/gameplay-tuning.ts`
-    )
-    // Existing controls that move into the section: terrain draw distance and ground detail.
-    const cache = menuSection('terrain-cache', 'Caché')
-    const radius = document.createElement('label')
-    radius.append('Radio de carga ')
-    const radiusSelect = document.createElement('select')
-    radiusSelect.id = 'terrain-cache-distance'
-    radiusSelect.add(new Option('4 km', '4000'))
-    radius.append(radiusSelect)
-    cache.append(radius)
-    const road = menuSection('road-style', 'Asfalto')
-    const detail = document.createElement('label')
-    detail.append('Distancia de detalle del suelo ')
-    const detailSelect = document.createElement('select')
-    detailSelect.id = 'ground-detail'
-    detailSelect.add(new Option('1 (~1 km)', '1'))
-    detail.append(detailSelect)
-    road.append(detail)
-    const visibility = {
-      preset: 'custom',
-      fog: 4000,
-      roads: 1000,
-      buildings: 1,
-      collisions: 400,
-      relief: 2,
-    }
-    const calls: object[] = []
-    const stored = new Map<string, string>()
-    const runtime = {
-      visibility,
-      setVisibility: (patch: object) => {
-        calls.push(patch)
-        Object.assign(visibility, patch)
-      },
-      usbControllers: new UsbControllers(null),
-      getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
-      vehicleLightAdjustment: null,
-      setVehicleBeamCutoff: () => {},
-      terrainTiles: [],
-      actionCamEnabled: true,
-      actionCamSettings: normalizeActionCamSettings({}),
-      muzzleFlashTuning: { x: 0, y: 0, z: -72, intensity: 100 },
-      tunnelEnabled: true,
-      weaponPoseTuning: structuredClone(weaponPoseDefaults),
-      weaponPoseDefaults: structuredClone(weaponPoseDefaults),
-      weaponPoseTarget: { id: null, name: 'Pistola', rig: null },
-      smokePercent: 50,
-      smokeEnabled: true,
-      sidearmTuning: { ...sidearmTuningDefaults },
-      setSidearmAimPreview: () => {},
-      planetLayers: { sky: true, sun: true, clouds: true, sea: true },
-      cloudStyle: 'low',
-      cloudAmount: 0.35,
-      cloudPressure: 0.12,
-      lensFlareAmount: 1,
-      sceneryPhysics: { enabled: true },
-    }
-    bindDistances(runtime as never, {
-      getItem: (key: string) => stored.get(key) ?? null,
-      setItem: (key: string, value: string) => void stored.set(key, value),
-    })
-    const untouched = calls.length
-    mountSettingsHud(runtime as never)
-    document.getElementById('settings-tab-options')!.click()
-    ;(
-      document.querySelector(
-        '#settings-pane-options button[data-section="settings-distances"]',
-      ) as HTMLElement
-    ).click()
-    const section = document.getElementById('settings-distances')!
-    const fog = document.getElementById('distance-fog') as HTMLSelectElement
-    fog.value = '8000'
-    fog.dispatchEvent(new Event('change', { bubbles: true }))
-    const roads = document.getElementById('distance-roads') as HTMLSelectElement
-    return {
-      untouched,
-      hidden: section.hidden,
-      group: section.closest('.menu-section') === section,
-      // Distances lives in Settings → Video next to the fixture's quality section, so Video is a folder.
-      navGroup: document
-        .querySelector('#settings-pane-options button[data-section="settings-distances"]')!
-        .closest('.settings-nav-group')
-        ?.querySelector('summary')?.textContent,
-      labels: [...section.querySelectorAll('label')].map((l) => l.textContent?.trim()),
-      adopted: [radiusSelect, detailSelect].every((el) => section.contains(el)),
-      roadOptions: [...roads.options].map((o) => o.textContent),
-      fogOptions: [...fog.options].map((o) => o.textContent),
-      calls,
-      stored: [...stored.entries()],
-    }
-  }, process.cwd())
+  const result = await page.evaluate(
+    async (root) => {
+      const { SettingsStore } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
+      const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
+      const { bindDistances } = await import(`/@fs/${root}/game/distances-ui.ts`)
+      const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+      const { UsbControllers } = await import(`/@fs/${root}/src/runtime/usb/controllers.ts`)
+      const { normalizeActionCamSettings } = await import(
+        `/@fs/${root}/src/runtime/action-cam-settings.ts`
+      )
+      const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
+        `/@fs/${root}/src/config/gameplay-tuning.ts`
+      )
+      // Existing controls that move into the section: terrain draw distance and ground detail.
+      const cache = menuSection('terrain-cache', 'Caché')
+      const radius = document.createElement('label')
+      radius.append('Radio de carga ')
+      const radiusSelect = document.createElement('select')
+      radiusSelect.id = 'terrain-cache-distance'
+      radiusSelect.add(new Option('4 km', '4000'))
+      radius.append(radiusSelect)
+      cache.append(radius)
+      const road = menuSection('road-style', 'Asfalto')
+      const detail = document.createElement('label')
+      detail.append('Distancia de detalle del suelo ')
+      const detailSelect = document.createElement('select')
+      detailSelect.id = 'ground-detail'
+      detailSelect.add(new Option('1 (~1 km)', '1'))
+      detail.append(detailSelect)
+      road.append(detail)
+      const visibility = {
+        preset: 'custom',
+        fog: 4000,
+        roads: 1000,
+        buildings: 1,
+        collisions: 400,
+        relief: 2,
+      }
+      const calls: object[] = []
+      const stored = new Map<string, string>()
+      const runtime = {
+        settings: new SettingsStore({ mode: 'pc', storage: localStorage }),
+        visibility,
+        setVisibility: (patch: object) => {
+          calls.push(patch)
+          Object.assign(visibility, patch)
+        },
+        usbControllers: new UsbControllers(null),
+        getVehicleBeamCutoff: () => ({ low: 0, high: 1 }),
+        vehicleLightAdjustment: null,
+        setVehicleBeamCutoff: () => {},
+        terrainTiles: [],
+        actionCamEnabled: true,
+        actionCamSettings: normalizeActionCamSettings({}),
+        muzzleFlashTuning: { x: 0, y: 0, z: -72, intensity: 100 },
+        tunnelEnabled: true,
+        weaponPoseTuning: structuredClone(weaponPoseDefaults),
+        weaponPoseDefaults: structuredClone(weaponPoseDefaults),
+        weaponPoseTarget: { id: null, name: 'Pistola', rig: null },
+        smokePercent: 50,
+        smokeEnabled: true,
+        sidearmTuning: { ...sidearmTuningDefaults },
+        setSidearmAimPreview: () => {},
+        planetLayers: { sky: true, sun: true, clouds: true, sea: true },
+        cloudStyle: 'low',
+        cloudAmount: 0.35,
+        cloudPressure: 0.12,
+        lensFlareAmount: 1,
+        sceneryPhysics: { enabled: true },
+      }
+      bindDistances(runtime as never, {
+        getItem: (key: string) => stored.get(key) ?? null,
+        setItem: (key: string, value: string) => void stored.set(key, value),
+      })
+      const untouched = calls.length
+      mountSettingsHud(runtime as never)
+      document.getElementById('settings-tab-options')!.click()
+      ;(
+        document.querySelector(
+          '#settings-pane-options button[data-section="settings-distances"]',
+        ) as HTMLElement
+      ).click()
+      const section = document.getElementById('settings-distances')!
+      const fog = document.getElementById('distance-fog') as HTMLSelectElement
+      fog.value = '8000'
+      fog.dispatchEvent(new Event('change', { bubbles: true }))
+      const roads = document.getElementById('distance-roads') as HTMLSelectElement
+      return {
+        untouched,
+        hidden: section.hidden,
+        group: section.closest('.menu-section') === section,
+        // Distances lives in Settings → Video next to the fixture's quality section, so Video is a folder.
+        navGroup: document
+          .querySelector('#settings-pane-options button[data-section="settings-distances"]')!
+          .closest('.settings-nav-group')
+          ?.querySelector('summary')?.textContent,
+        labels: [...section.querySelectorAll('label')].map((l) => l.textContent?.trim()),
+        adopted: [radiusSelect, detailSelect].every((el) => section.contains(el)),
+        roadOptions: [...roads.options].map((o) => o.textContent),
+        fogOptions: [...fog.options].map((o) => o.textContent),
+        calls,
+        stored: [...stored.entries()],
+      }
+    },
+    process.cwd().replace(/\\/g, '/'),
+  )
   expect(result.untouched).toBe(0)
   expect(result.hidden).toBe(false)
   expect(result.navGroup).toBe('Video')
