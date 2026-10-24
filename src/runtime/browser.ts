@@ -623,6 +623,12 @@ export interface GameRuntimeOptions {
    * publishes the share as `canvas.dataset.health` (0–100, absent with no body) for a host readout.
    */
   healthDisplay?: HealthDisplay
+  /**
+   * Large place label on the touch driving HUD: 'city' (default) is the nearest settlement with the
+   * street under it; 'street' shows the street under the car there instead (empty off-road) and no
+   * second line, for a host whose settlement data cannot name the municipality reliably.
+   */
+  placeLabel?: 'city' | 'street'
   depthOfField?: boolean
   performance?: Partial<PerformanceSettings>
   /** Explicit opt-in; omit to keep offline games independent of external light data. */
@@ -2766,7 +2772,9 @@ export class GameRuntime {
     }
     {
       this.placeLookup.request(player.position, (city, street) =>
-        this.touchDriving?.setPlace(city, street),
+        this.options.placeLabel === 'street'
+          ? this.touchDriving?.setPlace(street)
+          : this.touchDriving?.setPlace(city, street),
       )
       const vid = player.vehicleId
       const sim = this.session.simulation
