@@ -1059,26 +1059,26 @@ El host aporta un canvas dimensionado y llama a la función de limpieza al desmo
 
 # Apéndice E. Resolución de problemas
 
-| Síntoma                               | Primera comprobación                                  | Interpretación                                         |
-| ------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
-| Puerto 5174 ocupado                   | Proceso y configuración HTTPS existentes.             | Vite usa puerto estricto; conserva el origen previsto. |
-| Escena local exige coordenadas        | `scene.geography`.                                    | El runtime de navegador la requiere sin `tiles`.       |
-| Coche visible que no conduce          | Definición, encendido, aparcamiento, entrada y pasos. | Visibilidad no demuestra estado físico válido.         |
-| Importación rechazada                 | Versión, IDs, spawn, cuaternión y padres.             | Sintaxis JSON no basta.                                |
-| Atlas devuelve 403                    | Ruta exacta, `z/` y nombre publicado.                 | En este origen, un objeto ausente produce 403.         |
-| Se solicita `manifest.json`           | Ruta predeterminada del cargador.                     | Discrepancia conocida con publicación hash.            |
-| Una celda devuelve HTML               | Proxy y fallback de SPA.                              | No interpretes la página de aplicación como metadatos. |
-| Error CORS                            | Origen y proxy `/tiles`.                              | Atlas admite acceso directo; comprueba la respuesta real.       |
-| Terreno visible sin colisión          | Instalación física, marco y versión.                  | Presentación lista no significa física lista.          |
-| Asfalto duplicado                     | Versión de celda y suelo unificado.                   | Evita superponer capas antiguas.                       |
-| Contador de carga detenido            | Fase de preparación y presentación inicial.           | Puede estar trabajando la GPU.                         |
-| WebGPU vuelve a WebGL                 | Backend real y `fallbackReason`.                      | El retorno está implementado.                          |
-| Audio silencioso                      | Gesto, activación, mezcla y URL.                      | Separa contexto de fuente.                             |
-| Visor sin conexión                    | Hostname, HTTPS fiable y modo.                        | Su localhost no es tu ordenador.                       |
-| HTTPS no entra en sala                | `wss://` y salud del relay.                           | Comprueba transporte seguro.                           |
-| Objeto concedido dos veces            | Mutación local y evento de autoridad.                 | Usa una única ruta de resultados.                      |
-| Sonidos duplicados al volver          | Limpieza de runtime y suscripciones.                  | Revisa propiedad de recursos.                          |
-| Importación solo funciona en checkout | Exports, declaraciones y paquete.                     | Los aliases pueden ocultar una API ausente.            |
+| Síntoma                               | Primera comprobación                                  | Interpretación                                            |
+| ------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| Puerto 5174 ocupado                   | Proceso y configuración HTTPS existentes.             | Vite usa puerto estricto; conserva el origen previsto.    |
+| Escena local exige coordenadas        | `scene.geography`.                                    | El runtime de navegador la requiere sin `tiles`.          |
+| Coche visible que no conduce          | Definición, encendido, aparcamiento, entrada y pasos. | Visibilidad no demuestra estado físico válido.            |
+| Importación rechazada                 | Versión, IDs, spawn, cuaternión y padres.             | Sintaxis JSON no basta.                                   |
+| Atlas devuelve 403                    | Ruta exacta, `z/` y nombre publicado.                 | En este origen, un objeto ausente produce 403.            |
+| Se solicita `manifest.json`           | Ruta predeterminada del cargador.                     | Discrepancia conocida con publicación hash.               |
+| Una celda devuelve HTML               | Proxy y fallback de SPA.                              | No interpretes la página de aplicación como metadatos.    |
+| Error CORS                            | Origen y proxy `/tiles`.                              | Atlas admite acceso directo; comprueba la respuesta real. |
+| Terreno visible sin colisión          | Instalación física, marco y versión.                  | Presentación lista no significa física lista.             |
+| Asfalto duplicado                     | Versión de celda y suelo unificado.                   | Evita superponer capas antiguas.                          |
+| Contador de carga detenido            | Fase de preparación y presentación inicial.           | Puede estar trabajando la GPU.                            |
+| WebGPU vuelve a WebGL                 | Backend real y `fallbackReason`.                      | El retorno está implementado.                             |
+| Audio silencioso                      | Gesto, activación, mezcla y URL.                      | Separa contexto de fuente.                                |
+| Visor sin conexión                    | Hostname, HTTPS fiable y modo.                        | Su localhost no es tu ordenador.                          |
+| HTTPS no entra en sala                | `wss://` y salud del relay.                           | Comprueba transporte seguro.                              |
+| Objeto concedido dos veces            | Mutación local y evento de autoridad.                 | Usa una única ruta de resultados.                         |
+| Sonidos duplicados al volver          | Limpieza de runtime y suscripciones.                  | Revisa propiedad de recursos.                             |
+| Importación solo funciona en checkout | Exports, declaraciones y paquete.                     | Los aliases pueden ocultar una API ausente.               |
 
 ## Informar de una incidencia
 

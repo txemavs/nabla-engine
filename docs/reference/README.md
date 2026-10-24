@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **658 modules; 8493 executable function definitions**.
+Coverage: **661 modules; 8497 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -60,7 +60,8 @@ Coverage: **658 modules; 8493 executable function definitions**.
 | [game/reset-settings.ts](game/reset-settings.ts.md) | 2 |
 | [game/scene-controls.ts](game/scene-controls.ts.md) | 71 |
 | [game/settings-controls.ts](game/settings-controls.ts.md) | 9 |
-| [game/settings-hud.ts](game/settings-hud.ts.md) | 157 |
+| [game/settings-help.ts](game/settings-help.ts.md) | 1 |
+| [game/settings-hud.ts](game/settings-hud.ts.md) | 160 |
 | [game/settings-management.ts](game/settings-management.ts.md) | 12 |
 | [game/settings-map.ts](game/settings-map.ts.md) | 13 |
 | [game/settings-nav.ts](game/settings-nav.ts.md) | 2 |
@@ -609,6 +610,7 @@ Coverage: **658 modules; 8493 executable function definitions**.
 | [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
 | [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
 | [src/simulation/forklift.ts](src/simulation/forklift.ts.md) | 7 |
+| [src/simulation/index.ts](src/simulation/index.ts.md) | 0 |
 | [src/simulation/items/pickups.ts](src/simulation/items/pickups.ts.md) | 11 |
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |
@@ -660,6 +662,7 @@ Coverage: **658 modules; 8493 executable function definitions**.
 | [src/simulation/weapons/recoil.ts](src/simulation/weapons/recoil.ts.md) | 7 |
 | [src/simulation/weapons/weapon-thermal.ts](src/simulation/weapons/weapon-thermal.ts.md) | 6 |
 | [src/simulation/wheel-surface.ts](src/simulation/wheel-surface.ts.md) | 4 |
+| [src/ui/boot-styles.ts](src/ui/boot-styles.ts.md) | 0 |
 | [src/ui/combat-hud.ts](src/ui/combat-hud.ts.md) | 7 |
 | [src/ui/styles.generated.ts](src/ui/styles.generated.ts.md) | 0 |
 | [src/ui/styles.ts](src/ui/styles.ts.md) | 1 |

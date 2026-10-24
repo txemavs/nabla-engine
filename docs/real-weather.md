@@ -29,7 +29,7 @@ or disposing the runtime cancels in-flight results. Provider error bodies and UR
 returned to the browser.
 
 Rain uses a bounded logarithmic visual mapping of `precip_mm`, not a literal simulation of
-millimetres. Wind converts the meteorological direction *from* into local +X east / +Z south
+millimetres. Wind converts the meteorological direction _from_ into local +X east / +Z south
 advection. Thunder condition codes darken storm lighting; no lightning bolts are simulated.
 Snow and ice condition codes do not produce rain because frozen precipitation is not yet
 rendered. This version exposes the switch on the WebGL desktop renderer.

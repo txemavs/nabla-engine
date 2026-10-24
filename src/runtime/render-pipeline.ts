@@ -192,7 +192,8 @@ export class GameRenderPipeline {
       const dryFog = scene.fog
       const rainAmount = frame.rainAmount ?? 0
       const weather = frame.rainWeather ?? { linked: false, clouds: false, amount: 0, storm: 0 }
-      const haze = rainAmount * (weather.linked ? (weather.clouds ? weather.amount * weather.storm : 0) : 1)
+      const haze =
+        rainAmount * (weather.linked ? (weather.clouds ? weather.amount * weather.storm : 0) : 1)
       if (haze > 0) {
         this.rainFog.color.copy(dryFog?.color ?? new THREE.Color('#8999a4'))
         this.rainFog.near = 20

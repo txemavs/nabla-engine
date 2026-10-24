@@ -1,16 +1,27 @@
 import { expect, it, vi } from 'vitest'
-import { AmbientLight, Color, DirectionalLight, Scene, Vector3, TextureLoader, Texture } from 'three'
+import {
+  AmbientLight,
+  Color,
+  DirectionalLight,
+  Scene,
+  Vector3,
+  TextureLoader,
+  Texture,
+} from 'three'
 import { WorldEnvironment } from '../../src/render/planet/world-environment.js'
 import type { GeographicView } from '../../src/render/planet/sky.js'
 import { stormStrength, weatherHours } from '../../src/render/planet/weather.js'
 
 it('dims direct storm light more than the ambient fill, and restores clear light without accumulating', () => {
-  const sun = new DirectionalLight(), ambient = new AmbientLight()
+  const sun = new DirectionalLight(),
+    ambient = new AmbientLight()
   const textureLoader = vi.spyOn(TextureLoader.prototype, 'load').mockReturnValue(new Texture())
   const environment = new WorldEnvironment(new Scene(), sun, ambient)
   const sky = {
     atmosphere: { day: 1, space: 0, fog: false, color: new Color('white') },
-    sunDirection: new Vector3(0, 1, 0), moonDirection: new Vector3(0, -1, 0), weatherStorm: 0,
+    sunDirection: new Vector3(0, 1, 0),
+    moonDirection: new Vector3(0, -1, 0),
+    weatherStorm: 0,
   } as unknown as GeographicView
   environment.applyLighting(sky)
   const clear = { sun: sun.intensity, ambient: ambient.intensity }

@@ -4,20 +4,14 @@
 
 [Source](../../../../src/pwa/index.ts)
 
-Installable web app (PWA) building blocks. Pure functions that return the web app manifest,
-the service worker source, the offline page and the `<head>` tags; hosts configure them and
-serve the results (see `scripts/vite-pwa.ts` for the Vite plugin that does it).
-
-The service worker only ever caches the app shell it is given (offline page, manifest,
-icons). Navigations go to the network first and fall back to the offline page; every other
-request, terrain tiles and game bundles included, is left to the browser and its HTTP cache.
-
 ## Module dependencies
 
+- `../ui/boot-styles.js`
+- `../runtime/splash.js`
 
 ## webAppManifest
 
-[Implementation, line 43](../../../../src/pwa/index.ts#L43)
+[Implementation, line 45](../../../../src/pwa/index.ts#L45)
 
 Web app manifest (serve as `application/manifest+json`).
 
@@ -29,17 +23,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `options.icons.map`
 
-## webAppManifest.callback@60
+## webAppManifest.callback@62
 
-[Implementation, line 60](../../../../src/pwa/index.ts#L60)
+[Implementation, line 62](../../../../src/pwa/index.ts#L62)
 
 ```ts
-callback@60(icon): inferred by TypeScript; see implementation
+callback@62(icon): inferred by TypeScript; see implementation
 ```
 
 ## serviceWorkerSource
 
-[Implementation, line 88](../../../../src/pwa/index.ts#L88)
+[Implementation, line 90](../../../../src/pwa/index.ts#L90)
 
 Service worker source. Only GET requests to the worker's own origin are looked at: navigations
 (network first, offline page on failure) and the shell URLs. Cross-origin requests (tile CDN)
@@ -61,7 +55,7 @@ Explicit throws in this body:
 
 ## pwaHeadTags
 
-[Implementation, line 159](../../../../src/pwa/index.ts#L159)
+[Implementation, line 161](../../../../src/pwa/index.ts#L161)
 
 `<head>` tags: manifest link, theme colour, iOS home screen tags, the service worker
 registration and the early `beforeinstallprompt` capture. The event is kept as
@@ -79,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## pwaHeadTags.attr
 
-[Implementation, line 160](../../../../src/pwa/index.ts#L160)
+[Implementation, line 162](../../../../src/pwa/index.ts#L162)
 
 ```ts
 attr(value: string): inferred by TypeScript; see implementation
@@ -93,7 +87,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## offlinePageHtml
 
-[Implementation, line 203](../../../../src/pwa/index.ts#L203)
+[Implementation, line 205](../../../../src/pwa/index.ts#L205)
 
 Self-contained offline page (no external CSS or scripts). The language follows `?locale=` or
 the browser language, English otherwise; «Retry» reloads the start address.
@@ -110,7 +104,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## offlinePageHtml.escape
 
-[Implementation, line 204](../../../../src/pwa/index.ts#L204)
+[Implementation, line 206](../../../../src/pwa/index.ts#L206)
 
 ```ts
 escape(value: string): inferred by TypeScript; see implementation

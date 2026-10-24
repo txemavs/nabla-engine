@@ -11,7 +11,7 @@
 | Atlas request returns 403                       | Exact object path, `z/` prefix, publication filename     | On this Atlas deployment, missing objects return 403                           |
 | Loader requests `manifest.json`                 | Default static-loader path                               | Known mismatch with the described hash-only Atlas publication                  |
 | Tile returns HTML                               | Proxy and SPA fallback configuration                     | Preserve resource status/content type; do not parse an app shell as a manifest |
-| Browser reports terrain CORS failure            | Request origin and `/tiles` proxy                        | Atlas supports direct CORS access; inspect the actual response                  |
+| Browser reports terrain CORS failure            | Request origin and `/tiles` proxy                        | Atlas supports direct CORS access; inspect the actual response                 |
 | Terrain is visible but collision fails          | Collision installation, frame, layer/version             | Rendering readiness is not collision readiness                                 |
 | Roads appear duplicated                         | Cell version and unified ground behavior                 | Do not overlay legacy asphalt on ground that already contains it               |
 | Loading tile count stops changing               | Current preparation phase and reveal gates               | GPU/asset work may continue without additional tile progress                   |
