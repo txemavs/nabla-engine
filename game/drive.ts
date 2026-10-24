@@ -282,6 +282,7 @@ try {
     startCameras: boot.startCameras,
     healthDisplay: boot.healthDisplay,
     music: boot.music,
+    placeLabel: boot.placeLabel,
     hud: true,
     touchControls:
       new URLSearchParams(pageSearch()).has('xr') || location.pathname === '/xr.html'

@@ -170,6 +170,7 @@ try {
     asphaltContrast: resolveAsphaltContrast(boot.asphaltContrast),
     startCameras: boot.startCameras,
     healthDisplay: boot.healthDisplay,
+    placeLabel: boot.placeLabel,
     music: boot.music,
     hud: true,
     touchControls:

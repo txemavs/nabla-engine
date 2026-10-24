@@ -77,6 +77,8 @@ export interface HostBootConfig {
   startCameras?: StartCameraSequence
   /** Local player's health: 'bar' (default) or 'readout' (`canvas.dataset.health`, 0–100, for a host HUD). */
   healthDisplay?: 'bar' | 'readout'
+  /** GameRuntimeOptions.placeLabel: 'street' puts the street in the large touch HUD place slot. */
+  placeLabel?: 'city' | 'street'
   /**
    * Looping background music: encodings in preference order, e.g.
    * `{ sources: [{ url: '/music/x.ogg', type: 'audio/ogg; codecs=opus' }, { url: '/music/x.m4a', type: 'audio/mp4' }] }`.
