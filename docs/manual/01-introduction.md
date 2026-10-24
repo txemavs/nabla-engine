@@ -33,8 +33,9 @@ opening credits belong with its host.
 ## Choosing a starting point
 
 Use `/?example=flat` for a first local browser run. Use `PlaySession` for simulation
-without a renderer. Use `@nabla/engine/vehicles/wheeled` when you intentionally own
-the physics world and stepping yourself. These are distinct integration levels:
+without a renderer, imported from `@nabla/engine/simulation`. Use
+`@nabla/engine/physics` to create a physics world and advance its steps directly.
+Add `@nabla/engine/simulation/vehicles/wheeled` when that world needs wheeled-vehicle dynamics. These are distinct integration levels:
 the lower level gives you more responsibility for lifecycle and composition.
 
 The drone adapter under `experimental/betaflight` is explicitly experimental.

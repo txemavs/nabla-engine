@@ -32,7 +32,7 @@ See [phase-3 adapter guide](../../docs/architecture/vehicle-equipment.md).
 
 The [wheeled runtime example](wheeled-runtime.mjs) goes one level below the existing
 headless Simulation example: it defines a new car with primitive colliders and
-uses only public `/physics` and `/vehicles/wheeled` imports. Run after building:
+uses only public `/physics` and `/simulation/vehicles/wheeled` imports. Run after building:
 
 ```sh
 node examples/modularity/wheeled-runtime.mjs

@@ -1,7 +1,10 @@
 import { createEntity, vehicleDefinition, type Entity } from '@nabla/engine'
-import { createWheeledVehicle, type WheeledDefinition } from '@nabla/engine/vehicles/wheeled'
-import { createBoat, type BoatWater } from '@nabla/engine/vehicles/boat'
-import { createFlight, type FlightEnvironment } from '@nabla/engine/vehicles/flight'
+import {
+  createWheeledVehicle,
+  type WheeledDefinition,
+} from '@nabla/engine/simulation/vehicles/wheeled'
+import { createBoat, type BoatWater } from '@nabla/engine/simulation/vehicles/boat'
+import { createFlight, type FlightEnvironment } from '@nabla/engine/simulation/vehicles/flight'
 import { Body, Vec3, Quaternion } from '@nabla/engine/physics'
 import { type MonitorDefinition } from '@nabla/engine/monitors'
 import { type VehiclePresentationAdapter } from '@nabla/engine/vehicle-presentation'
@@ -26,3 +29,18 @@ const adapter: VehiclePresentationAdapter = {
   },
 }
 void [water, environment, monitor, adapter]
+
+import {
+  PlaySession,
+  Simulation,
+  type PlayerInput,
+  type SessionState,
+} from '@nabla/engine/simulation'
+import { PlaySession as LegacySession } from '@nabla/engine/runtime/session'
+import { createWheeledVehicle as legacyWheeled } from '@nabla/engine/vehicles/wheeled'
+const compatibleSession: typeof LegacySession = PlaySession
+const compatibleWheeled: typeof legacyWheeled = createWheeledVehicle
+const inputType = (input: PlayerInput, state: SessionState): void => {
+  void [input, state]
+}
+void [compatibleSession, compatibleWheeled, inputType, Simulation]

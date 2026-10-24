@@ -1,6 +1,7 @@
 /** Current PUBLIC APIs, no Studio, DOM, WebGL or audio context. Run after npm run build. */
 import assert from 'node:assert/strict'
-import { initPhysics, Simulation, createEntity, idleInput } from '@nabla/engine'
+import { createEntity } from '@nabla/engine'
+import { initPhysics, Simulation, idleInput } from '@nabla/engine/simulation'
 import { presetVehicle } from '@nabla/engine/vehicles'
 await initPhysics()
 const floor = createEntity('floor', 'box', [0, -0.5, 0])

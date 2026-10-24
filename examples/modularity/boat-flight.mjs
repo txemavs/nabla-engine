@@ -1,8 +1,8 @@
 /** One host-owned world; no entities, car definitions or renderer. */
 import assert from 'node:assert/strict'
 import { initPhysics, World, Body, Box, Vec3, Quaternion } from '@nabla/engine/physics'
-import { createBoat, stepBoatInWater } from '@nabla/engine/vehicles/boat'
-import { createFlight, stepFlight } from '@nabla/engine/vehicles/flight'
+import { createBoat, stepBoatInWater } from '@nabla/engine/simulation/vehicles/boat'
+import { createFlight, stepFlight } from '@nabla/engine/simulation/vehicles/flight'
 await initPhysics()
 const world = new World()
 const hull = new Body({

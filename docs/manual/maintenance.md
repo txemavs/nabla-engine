@@ -147,3 +147,18 @@ Validation for this documentation pass: manual links/export inventory, generated
 reference check and formatting of changed Markdown. The earlier code validation for
 `189e342a` passed the full check (2,288 tests, 14 skipped) and settings HUD browser test;
 those results are historical evidence, not tests rerun for this prose-only update.
+
+## Simulation API organization
+
+The simulation entry and four simulation/vehicles subpaths separate scene/session
+execution from physics primitives and vehicle catalog imports. Existing paths remain
+aliases. The Spanish introduction no longer describes wheeled dynamics as the general
+physics API; host, runtime and resource ownership are explained in concrete terms.
+The two GameRuntime classes remain a compatibility constraint, with explicit import
+paths documented rather than silently renamed.
+
+Validation: full repository check passes (2,288 tests, 14 skipped). The installed
+package check passes all 72 public entries, Node examples, old/new export identity
+checks and TypeScript contracts. The manual session example and browser example
+typecheck also pass. This changes public entry points and documentation only; no
+vehicle dynamics or renderer behavior is changed.
