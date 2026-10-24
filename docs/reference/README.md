@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **655 modules; 8472 executable function definitions**.
+Coverage: **656 modules; 8472 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -606,6 +606,7 @@ Coverage: **655 modules; 8472 executable function definitions**.
 | [src/simulation/contracts.ts](src/simulation/contracts.ts.md) | 1 |
 | [src/simulation/entity-body.ts](src/simulation/entity-body.ts.md) | 5 |
 | [src/simulation/forklift.ts](src/simulation/forklift.ts.md) | 7 |
+| [src/simulation/index.ts](src/simulation/index.ts.md) | 0 |
 | [src/simulation/items/pickups.ts](src/simulation/items/pickups.ts.md) | 11 |
 | [src/simulation/landing-gear.ts](src/simulation/landing-gear.ts.md) | 8 |
 | [src/simulation/map-collisions.ts](src/simulation/map-collisions.ts.md) | 10 |

@@ -128,3 +128,18 @@ protection. The network integration test waits for a received snapshot rather th
 a fixed 30 ms delay. Relay tests: 27 passing. Four Chromium tests pass in each of
 Engine and Euskadi, covering all saved profiles and simultaneous runtime isolation.
 See [the host audit](../host-settings-compatibility.md) for release coordination.
+
+## Simulation API organization
+
+The simulation entry and four simulation/vehicles subpaths separate scene/session
+execution from physics primitives and vehicle catalog imports. Existing paths remain
+aliases. The Spanish introduction no longer describes wheeled dynamics as the general
+physics API; host, runtime and resource ownership are explained in concrete terms.
+The two GameRuntime classes remain a compatibility constraint, with explicit import
+paths documented rather than silently renamed.
+
+Validation: full repository check passes (2,288 tests, 14 skipped). The installed
+package check passes all 72 public entries, Node examples, old/new export identity
+checks and TypeScript contracts. The manual session example and browser example
+typecheck also pass. This changes public entry points and documentation only; no
+vehicle dynamics or renderer behavior is changed.

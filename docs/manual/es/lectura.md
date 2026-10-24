@@ -26,7 +26,7 @@ La primera parte introduce el motor y permite empezar a utilizarlo. La segunda d
 
 **Parte I. Conocer y empezar a utilizar el motor**
 
-Nabla Engine es una base en TypeScript para aplicaciones 3D interactivas. Sus componentes principales son los datos de escena validados, la física con Rapier, la presentación con Three.js, la carga progresiva de terreno geográfico y la composición de un runtime de navegador. Una aplicación puede utilizar el runtime completo o seleccionar módulos públicos independientes.
+Nabla Engine es una base en TypeScript para aplicaciones 3D interactivas. Sus componentes principales son los datos de escena validados, la física con Rapier, la presentación con Three.js, la carga progresiva de terreno geográfico y la coordinación del juego en el navegador. Una aplicación puede utilizar el runtime completo o seleccionar módulos públicos independientes.
 
 El motor puede representar un suelo de pruebas local, una escena anclada geográficamente o un mundo que carga contenido alrededor del jugador. Incluye desplazamiento a pie, interacción con vehículos, vehículos de ruedas y de dos ruedas, barcos y vuelo, equipamiento y monitores, armas, portales, audio espacial, adaptadores XR y componentes de multijugador. La madurez y los requisitos de integración varían entre estos sistemas. Su existencia no implica que haya un servicio de producción listo ni una tasa de imágenes garantizada.
 
@@ -35,17 +35,17 @@ El motor puede representar un suelo de pruebas local, una escena anclada geográ
 | Componente                   | Responsabilidad                                                                 |
 | ---------------------------- | ------------------------------------------------------------------------------- |
 | Engine, `src/`               | Contratos reutilizables, simulación, presentación y runtime.                    |
-| Juego de referencia, `game/` | Entradas de navegador, selección del mundo, menús y enlaces con el anfitrión.   |
+| Juego de referencia, `game/` | Entradas de navegador, selección del mundo, menús y enlaces con el host.        |
 | Atlas                        | Generación y publicación del terreno que consume el motor.                      |
 | Studio                       | Aplicación editora independiente que utiliza los módulos del motor.             |
 | Euskadi Online               | Aplicación independiente con contenido, identidad visual e integración propios. |
 | `services/`                  | Implementaciones auxiliares de caché, generación, pasarela y relay.             |
 
-La definición física de un coche pertenece al contenido compatible con el motor. Decidir que ese coche está aparcado en una calle concreta de Euskadi pertenece al anfitrión. Un ajuste reutilizable pertenece a la configuración del motor; los créditos de apertura de un producto pertenecen a su aplicación.
+La definición física de un coche pertenece al contenido compatible con el motor. Decidir que ese coche está aparcado en una calle concreta de Euskadi pertenece al host. Un ajuste reutilizable pertenece a la configuración del motor; los créditos de apertura de un producto pertenecen a su aplicación.
 
 ## Elegir un punto de entrada
 
-Para una primera prueba en navegador, utiliza `/?example=flat`. Para simular sin renderer, utiliza `PlaySession`. Si quieres controlar directamente el mundo físico y sus pasos, existe `@nabla/engine/vehicles/wheeled`. Son niveles de integración distintos: cuanto más bajo sea el nivel, mayor responsabilidad asumes sobre composición, reloj y liberación de recursos.
+Para una primera prueba en navegador, utiliza `/?example=flat`. Para simular sin dibujar la escena, utiliza `PlaySession` desde `@nabla/engine/simulation`. Para crear el mundo físico y avanzar sus pasos directamente, utiliza `@nabla/engine/physics`. Añade `@nabla/engine/simulation/vehicles/wheeled` si necesitas dinámica de vehículos con ruedas. Son niveles de integración distintos: cuanto más bajo sea el nivel, mayor responsabilidad asumes sobre composición, reloj y liberación de recursos.
 
 El adaptador `experimental/betaflight` es experimental. WebGPU es una opción explícita con mecanismo de retorno a WebGL. La autoridad de red resuelve determinadas decisiones compartidas, pero no constituye una simulación física completa ejecutada en un servidor. La compatibilidad con las publicaciones de terreno necesita las comprobaciones del capítulo 10.
 
@@ -108,7 +108,7 @@ node examples/manual/session.mjs
 
 El programa crea una `PlaySession`, llama a `play` con `physicsWorker: false`, deja asentarse el coche, entra en él, aplica avance y ejecuta intervalos de tiempo fijos. Comprueba que se mueve, que la pausa y la reanudación funcionan y que la simulación no ha modificado el documento original. Un bloque `finally` libera la sesión.
 
-El programa es propietario del reloj; la sesión es propietaria de la simulación. No debes liberar por separado la simulación que devuelve la sesión ni ejecutar un segundo reloj sobre ella. La selección de física en el hilo principal sirve para este ejemplo en Node; no es una recomendación para desactivar workers en el juego.
+El programa decide cuándo avanzar; la sesión crea y libera la simulación. No debes liberar por separado la simulación que devuelve la sesión ni ejecutar un segundo reloj sobre ella. La selección de física en el hilo principal sirve para este ejemplo en Node; no es una recomendación para desactivar workers en el juego.
 
 ## Montar el runtime de navegador
 
@@ -139,19 +139,19 @@ npm pack
 
 Ejecuta esos comandos en el repositorio del motor. Desde el proyecto consumidor, instala la ruta del archivo que muestre npm. No codifiques una versión fija en automatizaciones: utiliza el nombre realmente generado. `npm pack --dry-run` permite inspeccionar el contenido sin crear el archivo.
 
-| Nivel                  | Importación pública              | Lo que aporta la aplicación                    |
-| ---------------------- | -------------------------------- | ---------------------------------------------- |
-| Datos validados        | `@nabla/engine/scene`            | Datos y persistencia.                          |
-| Sesión sin renderer    | `@nabla/engine/runtime/session`  | Reloj y entrada lógica.                        |
-| Coordinador de juego   | `@nabla/engine/runtime/core`     | Renderizado, planificación y dispositivos.     |
-| Runtime completo       | `@nabla/engine/runtime/browser`  | Canvas, escena, opciones e interfaz propia.    |
-| Vehículo independiente | `@nabla/engine/vehicles/wheeled` | Mundo físico compartido y pasos de simulación. |
+| Nivel                  | Importación pública                         | Lo que aporta la aplicación                    |
+| ---------------------- | ------------------------------------------- | ---------------------------------------------- |
+| Datos validados        | `@nabla/engine/scene`                       | Datos y persistencia.                          |
+| Sesión sin renderer    | `@nabla/engine/simulation`                  | Reloj y entrada lógica.                        |
+| Coordinador de juego   | `@nabla/engine/runtime/core`                | Renderizado, planificación y dispositivos.     |
+| Runtime completo       | `@nabla/engine/runtime/browser`             | Canvas, escena, opciones e interfaz propia.    |
+| Vehículo independiente | `@nabla/engine/simulation/vehicles/wheeled` | Mundo físico compartido y pasos de simulación. |
 
 Hay dos clases exportadas con el nombre `GameRuntime`. `runtime/core` reexporta el coordinador de `runtime/game.ts`; `runtime/browser` implementa la composición completa de navegador. Sus constructores y responsabilidades son diferentes. Conserva siempre la ruta de importación al copiar un ejemplo.
 
 ## Publicar los recursos
 
-Instalar JavaScript no publica automáticamente modelos, texturas, sonidos ni las URL de workers. El anfitrión Vite de referencia utiliza `assets/` como directorio público. Otro anfitrión debe ofrecer rutas equivalentes o configurar las recetas correspondientes. Antes de investigar shaders o modelos, revisa las solicitudes fallidas en la pestaña de red.
+Instalar JavaScript no publica automáticamente modelos, texturas, sonidos ni las URL de workers. El host Vite de referencia utiliza `assets/` como directorio público. Otro host debe ofrecer rutas equivalentes o configurar las recetas correspondientes. Antes de investigar shaders o modelos, revisa las solicitudes fallidas en la pestaña de red.
 
 Comprueba también la compilación de producción y sus workers. Que Vite resuelva módulos durante desarrollo no demuestra que el paquete distribuido funcione. `scripts/check-package.mjs` ejecuta ejemplos contra un paquete instalado y ayuda a detectar importaciones que solo funcionan dentro del repositorio.
 
@@ -159,7 +159,7 @@ Comprueba también la compilación de producción y sus workers. Que Vite resuel
 
 Una aplicación también puede utilizar `game/` desde una revisión fijada del motor. Los puntos inspeccionados incluyen `setTerrainHost` y `setDriveHost`, que deben registrarse antes de ejecutar la entrada de página. Esto es composición a partir de fuentes, no una garantía del mapa de exportaciones npm.
 
-Mantén coordenadas regionales, identidad visual, selección de sala y presentación de apertura en el anfitrión. Consulta `docs/game-runtime.md` para el flujo concreto.
+Mantén coordenadas regionales, identidad visual, selección de sala y presentación de apertura en el host. Consulta `docs/game-runtime.md` para el flujo concreto.
 
 **Fuentes:** `package.json`, `src/runtime/game.ts`, `game/terrain-host.ts`, `game/drive-host.ts` y `docs/asset-packs.md`.
 
@@ -171,15 +171,15 @@ La separación principal está entre datos de autoría, simulación autoritativa
 
 El flujo conceptual es: aplicación anfitriona, runtime de navegador, sesión, simulación y estados de ejecución. La presentación consume esos estados y dibuja con Three.js. El terreno alimenta tanto la presentación como la instalación de colisiones. Ambas deben compartir datos espaciales compatibles, aunque tengan presupuestos y momentos de trabajo diferentes.
 
-| Propietario                | Responsabilidad principal                                        |
-| -------------------------- | ---------------------------------------------------------------- |
-| `entity/`, `scene/`        | Esquemas, validación, transformaciones y transacciones.          |
-| `simulation/`              | Física, controladores, consultas y estado transitorio.           |
-| `planet/`                  | Matemática geográfica, contratos y adaptación del terreno.       |
-| `render/`, `presentation/` | Objetos visibles, recursos, efectos y vistas de terreno.         |
-| `runtime/`                 | Composición de sesión, entrada, cámara, audio y navegador.       |
-| `catalog/`                 | Definiciones concretas y selección de presentación.              |
-| `game/`                    | Aplicación de referencia y conexiones específicas del anfitrión. |
+| Propietario                | Responsabilidad principal                                   |
+| -------------------------- | ----------------------------------------------------------- |
+| `entity/`, `scene/`        | Esquemas, validación, transformaciones y transacciones.     |
+| `simulation/`              | Física, controladores, consultas y estado transitorio.      |
+| `planet/`                  | Matemática geográfica, contratos y adaptación del terreno.  |
+| `render/`, `presentation/` | Objetos visibles, recursos, efectos y vistas de terreno.    |
+| `runtime/`                 | Composición de sesión, entrada, cámara, audio y navegador.  |
+| `catalog/`                 | Definiciones concretas y selección de presentación.         |
+| `game/`                    | Aplicación de referencia y conexiones específicas del host. |
 
 ## Fronteras importantes
 
@@ -207,11 +207,11 @@ Cuando se solicita física en worker, intenta crear `ThreadedSimulation`. Si fal
 
 `pause()` limpia los comandos de movimiento y suspende el avance. El tiempo pausado no se acumula para una recuperación posterior. `resume()` reanuda una sesión pausada. `stop()` cancela inicialización y libera física, pero permite volver a jugar. `dispose()` es terminal y puede repetirse sin duplicar la liberación.
 
-Una promesa rechazada por `play()` es un fallo real. Si abandonas el montaje, libera también los recursos creados por el anfitrión. El ejemplo de sesión del apéndice D demuestra las transiciones sin planificación de navegador.
+Una promesa rechazada por `play()` es un fallo real. Si abandonas el montaje, libera también los recursos creados por el host. El ejemplo de sesión del apéndice D demuestra las transiciones sin planificación de navegador.
 
 ## Arranque en navegador
 
-El anfitrión resuelve la fuente del mundo, crea documento y runtime, espera suelo utilizable cuando corresponde, inicia física, prepara presentación y revela el juego. La preparación puede incluir vehículos, audio, terreno, shaders, texturas y vistas iniciales de cámara. Unos créditos o un botón de entrada pueden retrasar deliberadamente la revelación.
+El host resuelve la fuente del mundo, crea documento y runtime, espera suelo utilizable cuando corresponde, inicia física, prepara los recursos visuales y muestra el juego. La preparación puede incluir vehículos, audio, terreno, shaders, texturas y vistas iniciales de cámara. Unos créditos o un botón de entrada pueden retrasar deliberadamente la presentación inicial.
 
 `onProgress(status, loadedTiles)` informa de trabajos distintos. Si no hay lista de celdas, el mensaje de estado no debe sustituirse por un contador antiguo. Los hitos representan fases conocidas, no un porcentaje universal de descarga ni una estimación fiable del tiempo restante.
 
@@ -237,7 +237,7 @@ Utiliza IDs para referencias y nombres para etiquetas. Cambiar un nombre no debe
 
 `SceneGraph` resuelve transformaciones de autoría. `SceneEditor` proporciona edición validada e historial. Una transacción fallida debe dejar utilizable el documento anterior. Durante la partida, las posiciones mutables pertenecen a la simulación. Guarda el documento de autoría salvo que la aplicación implemente expresamente una captura del estado de ejecución.
 
-Para añadir una caja al ejemplo, crea una entidad `box`, establece `motion: 'dynamic'`, elige masa y tamaño, colócala sobre el suelo e inclúyela antes de `parseScene`. Serializa el documento devuelto mediante `JSON.stringify` dentro del flujo de almacenamiento o exportación del anfitrión.
+Para añadir una caja al ejemplo, crea una entidad `box`, establece `motion: 'dynamic'`, elige masa y tamaño, colócala sobre el suelo e inclúyela antes de `parseScene`. Serializa el documento devuelto mediante `JSON.stringify` dentro del flujo de almacenamiento o exportación del host.
 
 La importación externa, la sustitución de mapas en streaming y la edición interactiva utilizan rutas internas diferentes. No reutilices una transacción optimizada de mapas como si fuera un importador externo sin validación.
 
@@ -407,7 +407,7 @@ Los ajustes incluyen supuestos de jugabilidad. Una motocicleta convincente visua
 
 La presentación transforma telemetría física en luces, instrumentos, espejos, piezas móviles, postura, escape y efectos. `visual.presentation` selecciona un adaptador de forma explícita. Si falta ese ID, no debe adivinarse equipamiento a partir del nombre de archivo.
 
-El renderer genérico y el presentador estándar tienen funciones de composición diferentes. `SceneView` incorpora presentación de vehículos de carretera e instrumentos predeterminados. Un anfitrión puede sustituirlos. Prefiere adaptadores y anclajes declarados a condiciones por cada ID dentro del renderer.
+El renderer genérico y el presentador estándar tienen funciones de composición diferentes. `SceneView` incorpora presentación de vehículos de carretera e instrumentos predeterminados. Un host puede sustituirlos. Prefiere adaptadores y anclajes declarados a condiciones por cada ID dentro del renderer.
 
 ## Preparar un modelo
 
@@ -448,7 +448,7 @@ Para un objeto recogible, define su tipo, representación y reglas de inventario
 
 Si añades un dispositivo de control, invoca la acción lógica existente en lugar de mutar campos internos. Teclado, gesto XR, pantalla táctil y actor dirigido por un agente deben obedecer las mismas reglas. Al cambiar ranuras corporales, revisa inventario y anclajes visibles para que el objeto se muestre en el lugar correcto.
 
-Comprueba interacción a pie, sentado, en pausa y tras liberación o reconexión. Los rechazos dependientes del estado necesitan una razón que el anfitrión pueda mostrar. Reintentar una acción no disponible no debe duplicar objetos ni escuchadores.
+Comprueba interacción a pie, sentado, en pausa y tras liberación o reconexión. Los rechazos dependientes del estado necesitan una razón que el host pueda mostrar. Reintentar una acción no disponible no debe duplicar objetos ni escuchadores.
 
 **Fuentes:** `src/character/index.ts`, `src/character/inventory.ts`, `src/character/body-slots.ts`, `src/character/weapon-loadout.ts`, `src/simulation/simulation.ts` y `src/render/entity/avatar.ts`.
 
@@ -492,11 +492,11 @@ Una boca puede ser raíz o estar alojada directamente en un vehículo conforme a
 
 El esquema establece forma, parentesco y reciprocidad. El paquete raíz exporta `createPortal`, `createPortalPair` y `createCarrierPortal`. Lee sus firmas antes de construir datos; no deduzcas campos a partir de una captura de pantalla.
 
-El tránsito transforma posición, orientación y velocidad relativa pertinente. Si la boca está en un vehículo móvil, debe contemplarse el movimiento del anfitrión. Ocupación y espacio libre limitan los cruces y cambios de conexión. Tras teletransportar, la presentación debe reiniciar la interpolación para no barrer visualmente la distancia entre bocas.
+El tránsito transforma posición, orientación y velocidad relativa pertinente. Si la boca está en un vehículo móvil, debe contemplarse el movimiento del host. Ocupación y espacio libre limitan los cruces y cambios de conexión. Tras teletransportar, la presentación debe reiniciar la interpolación para no barrer visualmente la distancia entre bocas.
 
 ## Pruebas prácticas
 
-Empieza con las fábricas existentes y una escena estática sencilla. Valida una pareja recíproca con `parseScene` y atraviesa en ambos sentidos a pie. Repite con un vehículo tras comprobar que cabe en la abertura. Para bocas alojadas, prueba con el anfitrión en movimiento y con el jugador dentro.
+Empieza con las fábricas existentes y una escena estática sencilla. Valida una pareja recíproca con `parseScene` y atraviesa en ambos sentidos a pie. Repite con un vehículo tras comprobar que cabe en la abertura. Para bocas alojadas, prueba con el host en movimiento y con el jugador dentro.
 
 ```sh
 npx vitest run test/simulation/placed-portals.test.ts
@@ -510,13 +510,13 @@ Al modificar mapeo o interiores móviles, revisa también la familia completa de
 
 **Parte IV. Presentación y experiencia de usuario**
 
-Three.js proporciona la infraestructura gráfica. El motor presenta entidades, terreno, cielo, agua, luces, sombras, equipo y efectos. El runtime de navegador compone estos servicios. Un anfitrión propio puede trabajar a menor nivel si asume renderizado y liberación de recursos.
+Three.js proporciona la infraestructura gráfica. El motor presenta entidades, terreno, cielo, agua, luces, sombras, equipo y efectos. El runtime de navegador compone estos servicios. Un host propio puede trabajar a menor nivel si asume renderizado y liberación de recursos.
 
 ## Selección de backend
 
 WebGL es el valor predeterminado revisado. `createRenderBackend` acepta `webgl`, `webgpu` o `auto`. WebGPU se carga bajo demanda y vuelve a WebGL si no hay adaptador o falla la inicialización. El resultado registra `requested`, el `kind` real y, cuando procede, `fallbackReason`.
 
-El anfitrión de referencia acepta `?renderer=webgpu` o `?renderer=auto`. Una solicitud no demuestra el backend utilizado. Compruébalo al medir y al informar de compatibilidad. Existen adaptadores y sustituciones de materiales; no supongas que un GLSL propio pasa sin cambios a WebGPU.
+El host de referencia acepta `?renderer=webgpu` o `?renderer=auto`. Una solicitud no demuestra el backend utilizado. Compruébalo al medir y al informar de compatibilidad. Existen adaptadores y sustituciones de materiales; no supongas que un GLSL propio pasa sin cambios a WebGPU.
 
 ## Entorno y calidad
 
@@ -554,7 +554,7 @@ npm run controls:list
 
 Prueba el contexto deseado y uno potencialmente conflictivo. Una tecla de arma a pie puede controlar otra función dentro de un vehículo. Codificar una tecla nueva directamente en un manejador aislado evita el contrato compartido.
 
-En volantes y joysticks, calibra sentido, zona muerta y recorrido antes de ajustar fuerzas del vehículo. Prueba desconexión y pérdida de foco para no dejar entrada retenida. El anfitrión puede aportar `acceptsInput` cuando un editor o menú posee el foco.
+En volantes y joysticks, calibra sentido, zona muerta y recorrido antes de ajustar fuerzas del vehículo. Prueba desconexión y pérdida de foco para no dejar entrada retenida. El host puede aportar `acceptsInput` cuando un editor o menú posee el foco.
 
 En el HUD local de Euskadi, el botón de cámara se llama `CAM`, lleva icono de ojo y se alinea a la izquierda de FOV y Quality en el mismo bloque horizontal. El ajuste FOV muestra solo el número, conservando un nombre accesible descriptivo. Son instrucciones explícitas del repositorio.
 
@@ -568,7 +568,7 @@ El mezclador posee buses de ganancia por contexto. `AudioMixLevels` contiene `ma
 
 ## Integración con navegador
 
-La reproducción depende de interacción del usuario y estado del contexto. El runtime admite una preferencia inicial `audio`, `setAudioEnabled` y controles de mezcla. La música es una configuración del anfitrión y arranca mediante la ruta preparada para gestos del usuario.
+La reproducción depende de interacción del usuario y estado del contexto. El runtime admite una preferencia inicial `audio`, `setAudioEnabled` y controles de mezcla. La música es una configuración del host y arranca mediante la ruta preparada para gestos del usuario.
 
 Primero valida escena y controles con audio desactivado. Actívalo desde una acción deliberada y comprueba niveles. Si suena el motor pero no la música, revisa URL, silencio y ciclo de vida de la pista antes de modificar el contexto completo.
 
@@ -584,7 +584,7 @@ Los valores revisados son master 1, engine 1, music 0,3 y música sin silenciar.
 
 # 20. Interfaz, ajustes e idiomas
 
-La interfaz combina HUD del navegador, paneles del juego de referencia y monitores dentro del mundo. El motor aporta composición y mensajes compartidos; el anfitrión aporta contenido y maquetación propios del producto.
+La interfaz combina HUD del navegador, paneles del juego de referencia y monitores dentro del mundo. El motor aporta composición y mensajes compartidos; el host aporta contenido y maquetación propios del producto.
 
 ## Menús y monitores
 
@@ -595,11 +595,11 @@ npm run build
 node examples/modularity/menu-only.mjs
 ```
 
-La acción de menú describe intención; el anfitrión la aplica al propietario de estado apropiado. Los monitores por capas y HTML cubren distintos contextos. La telemetría debe leerse; los cambios del usuario pasan por acciones del runtime o aplicación, no por mutaciones arbitrarias del renderer.
+La acción de menú describe intención; el host la aplica al propietario de estado apropiado. Los monitores por capas y HTML cubren distintos contextos. La telemetría debe leerse; los cambios del usuario pasan por acciones del runtime o aplicación, no por mutaciones arbitrarias del renderer.
 
 ## Propiedad y persistencia de ajustes
 
-Un ajuste puede proceder de escena, valores predeterminados, opciones del runtime, anfitrión o preferencias guardadas. No hay una precedencia universal: inspecciona su resolución y lectura de almacenamiento. Algunos se aplican en vivo; otros, como calidad de recursos, requieren crear otro runtime.
+Un ajuste puede proceder de escena, valores predeterminados, opciones del runtime, host o preferencias guardadas. No hay una precedencia universal: inspecciona su resolución y lectura de almacenamiento. Algunos se aplican en vivo; otros, como calidad de recursos, requieren crear otro runtime.
 
 PC, visor autónomo y visor conectado a PC separan preferencias. `installSettingsScope` selecciona el perfil por defecto para nuevas instancias sin modificar `localStorage`. Cada runtime conserva su propio `runtime.settings`; los controles deben usar ese almacén. Un `namespace` permite guardar preferencias independientes por instancia. Las claves PC `nabla.*` permanecen; los modos de visor usan `nabla.settings.<mode>.*`, evitando que un perfil sobrescriba otro.
 
@@ -682,12 +682,12 @@ Elige el punto de extensión por responsabilidad. Una receta nueva, un adaptador
 | Comportamiento físico       | Simulación o runtime independiente de familia.      |
 | Efecto visible              | Presentación y vida útil de recursos.               |
 | Acción de dispositivo       | Binding lógico y perfil de control.                 |
-| Contenido regional o marca  | Conexiones del anfitrión.                           |
+| Contenido regional o marca  | Conexiones del host.                                |
 | Módulo público nuevo        | Exportación, declaraciones y ejemplo independiente. |
 
 ## Secuencia de implementación
 
-Identifica al propietario existente y lee sus pruebas. Describe una acción concreta y un resultado observable. Define el contrato mínimo, con unidades y limpieza. Implementa en la capa adecuada y conecta después anfitrión o presentación.
+Identifica al propietario existente y lee sus pruebas. Describe una acción concreta y un resultado observable. Define el contrato mínimo, con unidades y limpieza. Implementa en la capa adecuada y conecta después host o presentación.
 
 Para una API pública, añade un ejemplo que solo importe rutas exportadas. Compila y ejecútalo contra el paquete construido. Antes de publicar, utiliza también el comprobador del paquete instalado. Un alias de Vite que funciona en el repositorio no demuestra que lo puedan usar los consumidores.
 
@@ -709,7 +709,7 @@ Define una carga antes de optimizar. Registra mundo, número de vehículos, modo
 
 ## Arranque y ejecución estable
 
-El arranque incluye módulos, terreno, decodificación, física, recursos, instalación, shaders, texturas y condiciones de revelación del anfitrión. Que el contador de celdas se detenga durante preparación GPU no demuestra bloqueo de red. Corregir una etiqueta de progreso tampoco prueba que el arranque sea más rápido.
+El arranque incluye módulos, terreno, decodificación, física, recursos, instalación, shaders, texturas y condiciones de presentación inicial del host. Que el contador de celdas se detenga durante preparación GPU no demuestra bloqueo de red. Corregir una etiqueta de progreso tampoco prueba que el arranque sea más rápido.
 
 En ejecución hay costes de física, hilo principal, llamadas de dibujado, pasadas GPU, espejos, sombras, efectos y nuevo contenido. Bajar resolución ayuda a ciertas cargas GPU, pero no elimina JavaScript costoso ni creación de colisionadores. Los workers desplazan trabajo e introducen sincronización; no lo hacen gratuito.
 
@@ -722,7 +722,7 @@ En ejecución hay costes de física, hilo principal, llamadas de dibujado, pasad
 5. Cambia una variable, por ejemplo `physicsWorker=0` o `loadingWorkers=0`, conservando el resto.
 6. Repite la carga original tras el cambio y comunica mediciones comparables.
 
-El diagnóstico puede exponer `window.nablaRuntime` en el anfitrión de referencia. No diseñes integración de producción alrededor de ese global. `onDiagnostics` es un punto explícito de observación del runtime. El tiempo GPU depende de soporte de backend y dispositivo: ausencia de medición no significa coste cero.
+El diagnóstico puede exponer `window.nablaRuntime` en el host de referencia. No diseñes integración de producción alrededor de ese global. `onDiagnostics` es un punto explícito de observación del runtime. El tiempo GPU depende de soporte de backend y dispositivo: ausencia de medición no significa coste cero.
 
 ## Presupuestos y corrección
 
@@ -868,7 +868,7 @@ Los cinco primeros campos pertenecen a `simulationDefaults`. El ejemplo de contr
 
 `canvas` y `scene` son obligatorios. La escena requiere geografía incluso sin conexión. `tiles` activa carga geográfica; `geography` por sí sola no. `startupTerrain` permite `spawn`, `nearby` o `area`.
 
-`hud`, `audio`, `locale`, `messages`, `touchControls` y `acceptsInput` integran experiencia e interfaz. `onProgress`, `onFrame`, `onDiagnostics`, `onMessage` y `onError` permiten observar el runtime desde el anfitrión.
+`hud`, `audio`, `locale`, `messages`, `touchControls` y `acceptsInput` integran experiencia e interfaz. `onProgress`, `onFrame`, `onDiagnostics`, `onMessage` y `onError` permiten observar el runtime desde el host.
 
 `clock` selecciona planificación automática o manual. `display` controla frames y resolución. `assetQuality` requiere un runtime nuevo. `backend` recibe un renderer preparado. `music`, `startCameras` y `startLights` configuran presentación. Consulta `GameRuntimeOptions` para tipos completos y duración de cada opción.
 
@@ -880,7 +880,7 @@ Los cinco primeros campos pertenecen a `simulationDefaults`. El ejemplo de contr
 | `NABLA_TILES_UPSTREAM`                           | Origen del proxy de terreno en desarrollo.            |
 | `NABLA_STUDIO_UPSTREAM`, `NABLA_CACHE_UPSTREAM`  | Proxies opcionales de servicios.                      |
 | `VITE_NABLA_TILES_URL`                           | Ruta de terreno predeterminada en la compilación.     |
-| `renderer=webgl/webgpu/auto`                     | Solicitud de backend del anfitrión.                   |
+| `renderer=webgl/webgpu/auto`                     | Solicitud de backend del host.                        |
 | `physicsWorker=0`                                | Comparación diagnóstica con física en hilo principal. |
 | `loadingWorkers=0`                               | Comparación diagnóstica de carga.                     |
 | `diagnostics=1`, `perfLog=1`, `performanceLog=1` | Rutas diferentes de instrumentación.                  |
@@ -973,7 +973,7 @@ Este programa comprueba errores de esquema, lectura geográfica, parámetros doc
 
 ## Integración de navegador
 
-El anfitrión aporta un canvas dimensionado y llama a la función de limpieza al desmontar. Si falla el arranque, se libera el runtime antes de propagar el error.
+El host aporta un canvas dimensionado y llama a la función de limpieza al desmontar. Si falla el arranque, se libera el runtime antes de propagar el error.
 
 {{EXAMPLE_BROWSER}}
 
@@ -991,7 +991,7 @@ El anfitrión aporta un canvas dimensionado y llama a la función de limpieza al
 | Error CORS                            | Origen y proxy `/tiles`.                              | En esta integración Atlas necesita mismo origen.       |
 | Terreno visible sin colisión          | Instalación física, marco y versión.                  | Presentación lista no significa física lista.          |
 | Asfalto duplicado                     | Versión de celda y suelo unificado.                   | Evita superponer capas antiguas.                       |
-| Contador de carga detenido            | Fase de preparación y revelación.                     | Puede estar trabajando la GPU.                         |
+| Contador de carga detenido            | Fase de preparación y presentación inicial.           | Puede estar trabajando la GPU.                         |
 | WebGPU vuelve a WebGL                 | Backend real y `fallbackReason`.                      | El retorno está implementado.                          |
 | Audio silencioso                      | Gesto, activación, mezcla y URL.                      | Separa contexto de fuente.                             |
 | Visor sin conexión                    | Hostname, HTTPS fiable y modo.                        | Su localhost no es tu ordenador.                       |
@@ -1099,3 +1099,21 @@ No se realizaron para esa tarea una sesión renderizada de navegador, pruebas de
 ## Alcance de las comprobaciones
 
 El verificador técnico comprueba enlaces locales, anclas, capítulos e inventario de exportaciones, pero no ejecuta comandos de la prosa ni verifica servicios remotos. La exactitud semántica requiere lectura de fuentes. La edición PDF añade comprobación de contenido extraído, navegación y revisión visual de maquetación; eso tampoco vuelve a validar por sí solo el comportamiento del motor.
+
+## Nombres de API y niveles de integración
+
+Host significa la aplicación que integra el motor, por ejemplo Euskadi Online. Renderer
+es el componente que dibuja la escena; runtime es el conjunto de servicios que mantienen
+el juego en ejecución. Ser propietario de un recurso significa crearlo, mantenerlo y
+liberarlo, no necesariamente controlarlo desde una única clase.
+
+La entrada simulation reúne Simulation, PlaySession, initPhysics, FIXED_STEP e idleInput.
+physics contiene los cuerpos y el mundo físico. simulation/vehicles/wheeled,
+simulation/vehicles/two-wheeled, simulation/vehicles/boat y simulation/vehicles/flight
+agrupan las dinámicas específicas. vehicles sin sufijo sigue siendo el catálogo.
+Las rutas anteriores vehicles/* y runtime/session siguen funcionando y comparten
+las mismas implementaciones; no hay que migrar partidas ni preferencias.
+
+Hay dos clases llamadas GameRuntime: runtime/core expone el coordinador y runtime/browser
+el juego completo de navegador. Esta reorganización no las renombra; los ejemplos
+conservan siempre la ruta explícita para evitar confundir sus constructores.
