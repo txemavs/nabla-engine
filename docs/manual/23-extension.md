@@ -4,7 +4,7 @@
 
 Choose an extension point by responsibility before writing code. A new vehicle
 recipe, a presentation adapter, a simulation behavior, and a host-specific scenario
-are different changes and should not all be implemented inside `GameRuntime`.
+are different changes and should not all be implemented inside `BrowserGameRuntime`.
 
 | Intended change              | Start here                                        |
 | ---------------------------- | ------------------------------------------------- |

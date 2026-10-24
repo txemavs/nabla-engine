@@ -33,7 +33,7 @@ insufficient for newer hooks, translations, inventory and scenarios.
 ## Startup sequence
 
 1. game/main.ts resolves the terrain source through entry.ts; explicit sources win over a remembered choice.
-2. game-page.ts or terrain-main.ts creates the document and GameRuntime, mounts optional host hooks and starts the boot phase.
+2. game-page.ts or terrain-main.ts creates the document and BrowserGameRuntime, mounts optional host hooks and starts the boot phase.
 3. play() streams usable ground before starting the simulation. The terrain page requests the four nearby startup cells; the wider radius opens after reveal.
 4. PlaySession starts physics, normally in a worker, and waits for its initial state.
 5. prepareReveal loads audio, vehicles and weapons, runs beforeReveal tasks, prepares terrain presentation, compiles GPU programs, uploads textures and warms camera views.
@@ -46,7 +46,7 @@ cell counters during GPU preparation, are not sufficient evidence of a streaming
 ## Threads and GPU work
 
 Physics uses ThreadedSimulation by default; unavailable worker initialization falls back inline.
-Use ?physicsWorker=0 for a diagnostic comparison. GameRuntime.physicsThread reports the actual
+Use ?physicsWorker=0 for a diagnostic comparison. BrowserGameRuntime.physicsThread reports the actual
 mode after play. Render frames use pipelined worker snapshots; hosts must not add another physics
 loop or await every worker step in the animation loop.
 
@@ -119,7 +119,7 @@ warmEffectPresentation accepts the actual output color space. The browser runtim
 
 The maintained game pages both call `startGame` in `game/boot.ts`. It starts attract and the
 advisory machine probe, runs optional local-world preparation, then awaits the public
-`GameRuntime.play()` lifecycle. The probe stays parallel; the runtime owns the remaining wait.
+`BrowserGameRuntime.play()` lifecycle. The probe stays parallel; the runtime owns the remaining wait.
 There is no separate Euskadi physics/GPU startup. Euskadi imports the same game entry through
 `vite.game.config.ts` and registers configuration and hooks before that entry runs.
 
@@ -127,7 +127,7 @@ To create another branded game, reuse these pages and configure `window.NABLA_BO
 music, start cameras, preloaded vehicles), `setPageQuery`, and `setTerrainHost`/`setDriveHost`.
 Register runtime hooks before launch. Preparation/reveal gates and `beforeReveal` can pace an
 intro or install content without replacing the common worker, GPU or collision preparation.
-A custom application consuming only the package calls the public `GameRuntime.play()` directly;
+A custom application consuming only the package calls the public `BrowserGameRuntime.play()` directly;
 `game/boot.ts` is the reference game composition, not a published package export.
 
 Console descriptions describe operations independently of the translated or branded splash.
@@ -154,7 +154,7 @@ English; branded hosts retain their locale catalogs and presentation hooks.
 
 The settings extraction is complete for independent runtime-owned preference state.
 Small public delegates to existing audio, calibration, XR and world owners should remain
-small delegates. `GameRuntime` remains the public facade and composition root.
+small delegates. `BrowserGameRuntime` remains the public facade and composition root.
 See [interface ownership](manual/20-interface.md) for current settings owners.
 
 Each row below is one implementation topic and one independently validated commit, in
@@ -189,7 +189,7 @@ selected commits are validated. Preserve Relay's integrated history and local ho
 
 `RuntimeInputEvents` now owns DOM events, focus/visibility handling and ordered control
 release. Listeners retain the existing runtime abort lifetime and registration order.
-`GameRuntime` provides narrow callbacks for game-specific wheel, key and look behavior;
+`BrowserGameRuntime` provides narrow callbacks for game-specific wheel, key and look behavior;
 vehicle menus and action execution deliberately remain for topic 2. The public facade
 and preference keys are unchanged. Browser coverage exercises two owners, repeated bind,
 abort cleanup, secondary mouse buttons, pointer recapture, Shift synchronization,
@@ -290,8 +290,16 @@ its registrations, restoring the most recently registered live provider. Legacy 
 still replace all providers. Lookup remains global/last-provider-wins; this is disposal isolation,
 not a redesign of per-runtime navigation lookup. Unit and browser coverage checks both release
 orders, listener removal, pending loads/gates/frames, repeated lifetimes, surviving runtimes,
-disposer failures and canvas restoration. Public GameRuntime signatures and preferences are unchanged.
+disposer failures and canvas restoration. Public BrowserGameRuntime signatures and preferences are unchanged.
 
 Pending desktop/XR physics continuations are invalidated on pause/stop. Their late success or
 failure cannot resume an old frame, clear a new pending step or report errors into the next
 session. This fixes stale continuation across replay without changing active-frame ordering.
+
+## Public names and compatibility
+
+Use BrowserGameRuntime from @nabla/engine/runtime/browser for the full browser game.
+GameplayCoordinator from @nabla/engine/runtime/core owns shared session/input/camera
+coordination while its host supplies rendering and scheduling. The legacy GameRuntime
+export remains an exact alias in each original module, including runtime/core through
+runtime. No constructor signature or saved preference changes.

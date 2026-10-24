@@ -51,7 +51,7 @@ experience integration. `onProgress`, `onFrame`, `onDiagnostics`, `onMessage`, a
 `clock` selects automatic/manual scheduling. `display` controls frame/resolution
 policy. `assetQuality` requires a new runtime. `backend` supplies a prepared renderer.
 `music`, `startCameras`, and `startLights` configure presentation. Consult
-[GameRuntimeOptions](../../src/runtime/browser.ts) for full types and individual
+[BrowserGameRuntimeOptions](../../src/runtime/browser.ts) for full types and individual
 lifetimes; this table is not a substitute for its declarations.
 
 ## Environment and diagnostic parameters

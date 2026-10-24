@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { GameRuntime } from '../../src/runtime/game.js'
+import { GameplayCoordinator, GameRuntime } from '../../src/runtime/game.js'
 import { createEntity } from '../../src/entity/schema.js'
 import { presetVehicle } from '../../src/catalog/vehicles/library.js'
 import { idleInput } from '../../src/simulation/simulation.js'
@@ -201,4 +201,11 @@ it('consumes jump on a physics tick and clears pending input when focus is relea
   } finally {
     game.dispose()
   }
+})
+
+it('retains the exact legacy coordinator constructor', () => {
+  expect(GameRuntime).toBe(GameplayCoordinator)
+  const coordinator = new GameplayCoordinator()
+  expect(coordinator).toBeInstanceOf(GameRuntime)
+  coordinator.dispose()
 })

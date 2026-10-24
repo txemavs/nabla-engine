@@ -50,3 +50,8 @@ It shares one Rapier world and owns all stepping and teardown. See
 
 After building, `node scripts/check-package.mjs` runs all Node examples against
 an actual installed tarball in a temporary independent project.
+
+The `runtime-names.mjs` example checks canonical runtime names and legacy constructor
+identity from the installed public entries. Use GameplayCoordinator from runtime/core
+when supplying rendering/scheduling, and BrowserGameRuntime from runtime/browser
+for complete browser integration.

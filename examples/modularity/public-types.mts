@@ -26,3 +26,19 @@ const adapter: VehiclePresentationAdapter = {
   },
 }
 void [water, environment, monitor, adapter]
+
+import { GameplayCoordinator, GameRuntime as LegacyCoordinator } from '@nabla/engine/runtime/core'
+import {
+  BrowserGameRuntime,
+  GameRuntime as LegacyBrowser,
+  type BrowserGameRuntimeOptions,
+  type GameRuntimeOptions,
+} from '@nabla/engine/runtime/browser'
+const coordinatorConstructor: typeof LegacyCoordinator = GameplayCoordinator
+const browserConstructor: typeof LegacyBrowser = BrowserGameRuntime
+const optionsAlias = (options: GameRuntimeOptions): BrowserGameRuntimeOptions => options
+const instanceAliases = (
+  coordinator: GameplayCoordinator,
+  browser: BrowserGameRuntime,
+): [LegacyCoordinator, LegacyBrowser] => [coordinator, browser]
+void [coordinatorConstructor, browserConstructor, optionsAlias, instanceAliases]

@@ -112,7 +112,7 @@ El programa es propietario del reloj; la sesión es propietaria de la simulació
 
 ## Montar el runtime de navegador
 
-`examples/manual/browser.ts` exporta `mountManualGame(canvas)`. Se utiliza desde una aplicación TypeScript con empaquetador para navegador. Importa `GameRuntime` desde `@nabla/engine/runtime/browser`, proporciona la escena, activa el HUD e inicia la partida. Devuelve una función de limpieza que la aplicación debe invocar al desmontar la vista o cambiar de ruta.
+`examples/manual/browser.ts` exporta `mountManualGame(canvas)`. Se utiliza desde una aplicación TypeScript con empaquetador para navegador. Importa `BrowserGameRuntime` desde `@nabla/engine/runtime/browser`, proporciona la escena, activa el HUD e inicia la partida. Devuelve una función de limpieza que la aplicación debe invocar al desmontar la vista o cambiar de ruta.
 
 La escena incluye un anclaje geográfico sin imágenes en línea porque el runtime de navegador exige `geography`, incluso con un suelo local. No se proporciona `tiles`, por lo que ese anclaje no solicita terreno geográfico.
 
@@ -147,7 +147,14 @@ Ejecuta esos comandos en el repositorio del motor. Desde el proyecto consumidor,
 | Runtime completo       | `@nabla/engine/runtime/browser`  | Canvas, escena, opciones e interfaz propia.    |
 | Vehículo independiente | `@nabla/engine/vehicles/wheeled` | Mundo físico compartido y pasos de simulación. |
 
-Hay dos clases exportadas con el nombre `GameRuntime`. `runtime/core` reexporta el coordinador de `runtime/game.ts`; `runtime/browser` implementa la composición completa de navegador. Sus constructores y responsabilidades son diferentes. Conserva siempre la ruta de importación al copiar un ejemplo.
+Los nombres distinguen ahora las responsabilidades: `GameplayCoordinator`, desde
+`@nabla/engine/runtime/core`, coordina sesión, entrada, cámara y portales; la aplicación
+aporta renderizado y planificación. `BrowserGameRuntime`, desde
+`@nabla/engine/runtime/browser`, integra canvas, DOM, renderizado, audio y XR.
+`GameRuntime` sigue siendo un alias compatible de cada clase en su ruta anterior;
+`GameRuntimeOptions` conserva el tipo `BrowserGameRuntimeOptions`. Los alias son los
+mismos constructores, no wrappers. El nombre visible en constructor.name cambia;
+no debe usarse como identificador de persistencia.
 
 ## Publicar los recursos
 
@@ -673,7 +680,7 @@ Prueba dos clientes, reclamaciones, disputa por objetos, muerte/reaparición, de
 
 **Parte V. Ampliación, calidad y operación**
 
-Elige el punto de extensión por responsabilidad. Una receta nueva, un adaptador, un comportamiento físico y un escenario particular son cambios distintos; no deben acabar todos dentro de `GameRuntime`.
+Elige el punto de extensión por responsabilidad. Una receta nueva, un adaptador, un comportamiento físico y un escenario particular son cambios distintos; no deben acabar todos dentro de `BrowserGameRuntime`.
 
 | Cambio deseado              | Punto de partida                                    |
 | --------------------------- | --------------------------------------------------- |
@@ -819,7 +826,7 @@ Prueba carga inicial, acceso directo a cada página, URL de recursos, workers, w
 
 Este inventario se obtiene del mapa `exports` de `package.json` al generar el PDF. Enumera puntos de entrada, no todos los símbolos internos ni una promesa de estabilidad de cualquier archivo vecino. Las declaraciones TypeScript se producen mediante `npm run build`.
 
-La entrada raíz reúne utilidades de escena, física y presentación y tiene un grafo amplio de dependencias. Prefiere una entrada específica cuando sea adecuada. Recuerda que `runtime/core` y `runtime/browser` exportan clases distintas llamadas `GameRuntime`.
+La entrada raíz reúne utilidades de escena, física y presentación y tiene un grafo amplio de dependencias. Prefiere una entrada específica cuando sea adecuada. Usa GameplayCoordinator para coordinación y BrowserGameRuntime para el juego completo de navegador. Los antiguos nombres GameRuntime se conservan como alias en sus respectivas rutas.
 
 En la tabla se muestra el sufijo que se añade a `@nabla/engine`; «raíz» significa la importación `@nabla/engine` sin sufijo. La segunda columna indica el archivo fuente que permite seguir sus exportaciones.
 
@@ -870,7 +877,7 @@ Los cinco primeros campos pertenecen a `simulationDefaults`. El ejemplo de contr
 
 `hud`, `audio`, `locale`, `messages`, `touchControls` y `acceptsInput` integran experiencia e interfaz. `onProgress`, `onFrame`, `onDiagnostics`, `onMessage` y `onError` permiten observar el runtime desde el anfitrión.
 
-`clock` selecciona planificación automática o manual. `display` controla frames y resolución. `assetQuality` requiere un runtime nuevo. `backend` recibe un renderer preparado. `music`, `startCameras` y `startLights` configuran presentación. Consulta `GameRuntimeOptions` para tipos completos y duración de cada opción.
+`clock` selecciona planificación automática o manual. `display` controla frames y resolución. `assetQuality` requiere un runtime nuevo. `backend` recibe un renderer preparado. `music`, `startCameras` y `startLights` configuran presentación. Consulta `BrowserGameRuntimeOptions` para tipos completos y duración de cada opción.
 
 ## Entorno y parámetros de diagnóstico
 

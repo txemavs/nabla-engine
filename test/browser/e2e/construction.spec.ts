@@ -9,11 +9,14 @@ test('construction validates before allocation and rolls back failed owners with
   await page.goto('/construction-check?loadingWorkers=0')
   const result = await page.evaluate(
     async (root) => {
-      const { GameRuntime } = await import(`/@fs${root}/src/runtime/browser.ts`)
-      const { createEntity } = await import(`/@fs${root}/src/entity/schema.ts`)
-      const navigation = await import(`/@fs${root}/src/render/entity/navigation-places.ts`)
-      const { GameToolbar } = await import(`/@fs${root}/src/runtime/game-toolbar.ts`)
-      const { VehicleMonitors } = await import(`/@fs${root}/src/runtime/vehicle-monitors.ts`)
+      const moduleRoot = `/@fs/${root.replace(/^\/+/, '')}`
+      const { BrowserGameRuntime, GameRuntime } = await import(
+        `${moduleRoot}/src/runtime/browser.ts`
+      )
+      const { createEntity } = await import(`${moduleRoot}/src/entity/schema.ts`)
+      const navigation = await import(`${moduleRoot}/src/render/entity/navigation-places.ts`)
+      const { GameToolbar } = await import(`${moduleRoot}/src/runtime/game-toolbar.ts`)
+      const { VehicleMonitors } = await import(`${moduleRoot}/src/runtime/vehicle-monitors.ts`)
       const scene = {
         version: 1,
         name: 'Construction',
@@ -33,8 +36,10 @@ test('construction validates before allocation and rolls back failed owners with
           options: { canvas, scene, audio: false, sea: false, hud: true, clock: 'manual' },
         }
       }
+      if (BrowserGameRuntime !== GameRuntime)
+        throw new Error('Browser compatibility alias diverged')
       const live = make(),
-        survivor = new GameRuntime(live.options)
+        survivor = new BrowserGameRuntime(live.options)
       await survivor.setPlayerBody(null)
       await survivor.play({ physicsWorker: false })
       const releasePlaces = navigation.registerNavigationPlaces(() => [

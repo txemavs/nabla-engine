@@ -26,10 +26,19 @@ inspects contents without creating the archive.
 | Complete browser runtime   | `@nabla/engine/runtime/browser`  | Canvas, scene, options, host UI           |
 | Standalone vehicle runtime | `@nabla/engine/vehicles/wheeled` | Shared physics world and stepping         |
 
-Two modules export a class named `GameRuntime`: `runtime/core` re-exports the
-coordinator in `runtime/game.ts`, while `runtime/browser` implements the complete
-browser composition. They have different constructors and responsibilities. Preserve
-the full import path when copying an example.
+Use `GameplayCoordinator` from `@nabla/engine/runtime/core` for session, input,
+camera transitions and portal coordination when the host supplies rendering and
+scheduling. Use `BrowserGameRuntime` from `@nabla/engine/runtime/browser` for the
+complete canvas/DOM/rendering/audio/XR integration. Its options are named
+`BrowserGameRuntimeOptions`.
+
+For compatibility, `GameRuntime` from `runtime/core` (and `runtime`) is an alias
+of GameplayCoordinator; `GameRuntime` from `runtime/browser` is an alias of
+BrowserGameRuntime. `BrowserGameRuntimeOptions` aliases the original GameRuntimeOptions interface. These
+are the same constructors and types, not subclasses or wrappers: existing imports,
+prototype patches and instanceof checks continue to work. Constructor.name now
+reflects each canonical class name; do not use class-name strings as identifiers.
+The import paths and persisted settings are unchanged.
 
 ## Serve resources explicitly
 
