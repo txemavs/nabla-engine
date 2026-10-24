@@ -183,6 +183,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
     localStorage.setItem('euskadi.irun-signs', JSON.stringify({ enabled: false }))
+    // The HUD persists through runtime.settings (GameRuntime's SettingsStore), as a real runtime does.
+    const { SettingsStore } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
+    Object.assign(runtime, { settings: new SettingsStore({ mode: 'pc', storage: localStorage }) })
     ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
