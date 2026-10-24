@@ -99,6 +99,10 @@
       "types": "./dist/runtime/splash.d.ts",
       "import": "./dist/runtime/splash.js"
     },
+    "./runtime/settings-backup": {
+      "types": "./dist/runtime/settings-backup.d.ts",
+      "import": "./dist/runtime/settings-backup.js"
+    },
     "./runtime/settings-scope": {
       "types": "./dist/runtime/settings-scope.d.ts",
       "import": "./dist/runtime/settings-scope.js"

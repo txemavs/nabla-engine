@@ -10,7 +10,6 @@ export const preferenceKeys = new Set([
   'nabla.gravityScale',
   'nabla.actor',
   'nabla.headlamp-shadows-v2',
-  'euskadi.irun-signs',
   'nabla.anisotropy',
   'nabla.groundDetailCells',
   'nabla.visibility',
@@ -75,8 +74,23 @@ export const preferenceQueryKeys = new Set([
   'mirrors',
   'engineMode',
 ])
+/** Preference keys a host adds for its own settings; see registerPreferenceKey. */
+const hostPreferenceKeys = new Set<string>()
+/** Host key shape: `<namespace>.<name>`, never an engine `nabla.` key. */
+const hostPreferenceKey = /^(?!nabla\.)[a-z][a-z0-9-]{0,31}\.[a-z][a-z0-9.-]{0,63}$/
+
+/**
+ * Let a host's own preference join settings export, import and reset like an engine one.
+ * Call it from a host module before the settings UI is used; repeated calls are harmless.
+ */
+export function registerPreferenceKey(key: string): void {
+  if (!hostPreferenceKey.test(key)) throw new RangeError(`Invalid host preference key: ${key}`)
+  hostPreferenceKeys.add(key)
+}
+
 export const isPreferenceKey = (key: string): boolean =>
   preferenceKeys.has(key) ||
+  hostPreferenceKeys.has(key) ||
   /^nabla\.field-light-limit-v2:[a-z][a-z0-9-]{0,31}$/.test(key) ||
   key.startsWith('nabla.mirrors:') ||
   key.startsWith('nabla.weaponPoses.') ||

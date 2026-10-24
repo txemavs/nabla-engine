@@ -3,6 +3,7 @@ import {
   applySettingsBackup,
   exportSettingsBackup,
   parseSettingsBackup,
+  registerPreferenceKey,
   restoreSettingsDefaults,
   type PreferenceStorage,
 } from '../../src/runtime/settings-backup.js'
@@ -121,8 +122,9 @@ it('round-trips current graphics and host preferences and resets only the select
     'nabla.headlamp-shadows-v2': 'true',
     'nabla.field-light-limit-v2:high': '8',
     'nabla.planetVisual': '{"moonHorizonScale":4}',
-    'euskadi.irun-signs': '{"enabled":false}',
+    'demo-host.signs': '{"enabled":false}',
   }
+  registerPreferenceKey('demo-host.signs')
   for (const [key, value] of Object.entries(values)) pc.setItem(key, value)
   xr.setItem('nabla.fsr1', 'xr-unchanged')
   const backup = exportSettingsBackup(pc, new Memory(), '?fsr=quality&fsrSharpness=50&room=private')
@@ -147,4 +149,19 @@ it('reseeds the selected VR defaults after reset instead of falling back to desk
   const next = new SettingsStore({ storage: backend, mode: 'headset' })
   expect(next.getItem('nabla.quality')).toBe('minimal')
   expect(backend.getItem('nabla.quality')).toBe('ultra')
+})
+
+it('keeps host preferences out of backups until the host registers their keys', () => {
+  const local = new Memory({ 'other-host.radio': '{"on":true}', 'nabla.quality': 'high' })
+  expect(exportSettingsBackup(local, new Memory(), '').local).toEqual({ 'nabla.quality': 'high' })
+  registerPreferenceKey('other-host.radio')
+  registerPreferenceKey('other-host.radio')
+  expect(exportSettingsBackup(local, new Memory(), '').local).toEqual({
+    'other-host.radio': '{"on":true}',
+    'nabla.quality': 'high',
+  })
+  restoreSettingsDefaults(local, new Memory(), '')
+  expect(local.getItem('other-host.radio')).toBeNull()
+  for (const key of ['nabla.anything', 'token', 'Host.Key', 'host.'])
+    expect(() => registerPreferenceKey(key)).toThrow(RangeError)
 })
