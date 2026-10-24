@@ -1,6 +1,9 @@
 import { expect, it, vi } from 'vitest'
 import {
   DirectionalLight,
+  Fog,
+  Mesh,
+  ShaderMaterial,
   Scene,
   PerspectiveCamera,
   Vector3,
@@ -22,7 +25,9 @@ function fixture() {
       current = value
     },
     clearDepth: () => events.push('depth'),
-    render: vi.fn(() => events.push('main')),
+    render: vi.fn((_scene?: Scene) => {
+      events.push('main')
+    }),
   }
   const frame = {
     renderer,
@@ -208,4 +213,64 @@ it('upscales after mirrors and focus, preserving the low-resolution focus destin
   pipeline.dispose()
   target.dispose()
   input.dispose()
+})
+
+it('composites rain before postprocessing, removes its haze at Off, and releases its resources', () => {
+  const { frame, renderer, pipeline, target, events } = fixture()
+  Object.assign(frame.sky, { atmosphere: { day: 1 } })
+  const dryFog = new Fog('#123456', 10, 2000)
+  frame.scene.fog = dryFog
+  frame.rainAmount = 0.5
+  frame.time = 12000
+  frame.depthOfField = true
+  vi.spyOn(pipeline.depthOfField, 'begin').mockImplementation(() => {})
+  vi.spyOn(pipeline.depthOfField, 'present').mockImplementation(() => events.push('post'))
+  let rainMesh: Mesh | undefined
+  renderer.render.mockImplementation((scene?: Scene) => {
+    if (scene === frame.scene) {
+      expect(scene.fog).not.toBe(dryFog)
+      events.push('world')
+    } else {
+      rainMesh = scene?.children[0] as Mesh
+      expect(rainMesh.name).toBe('GPU rain')
+      events.push('rain')
+    }
+  })
+  pipeline.render(frame)
+  expect(events.indexOf('world')).toBeLessThan(events.indexOf('rain'))
+  expect(events.indexOf('rain')).toBeLessThan(events.indexOf('post'))
+  expect(frame.scene.fog).toBe(dryFog)
+  expect((rainMesh!.material as ShaderMaterial).uniforms.time.value).toBe(12)
+  const geometryDisposed = vi.fn(),
+    materialDisposed = vi.fn()
+  rainMesh!.geometry.addEventListener('dispose', geometryDisposed)
+  ;(rainMesh!.material as ShaderMaterial).addEventListener('dispose', materialDisposed)
+  frame.rainAmount = 0
+  renderer.render.mockImplementation((scene?: Scene) => {
+    expect(scene).toBe(frame.scene)
+    expect(scene!.fog).toBe(dryFog)
+  })
+  renderer.render.mockClear()
+  pipeline.render(frame)
+  expect(renderer.render).toHaveBeenCalledTimes(1)
+  pipeline.dispose()
+  target.dispose()
+  expect(geometryDisposed).toHaveBeenCalledTimes(1)
+  expect(materialDisposed).toHaveBeenCalledTimes(1)
+})
+
+it('restores fog and renderer state if the rainy world pass throws', () => {
+  const { frame, renderer, pipeline, target } = fixture()
+  const dryFog = new Fog('#123456', 5, 1000)
+  frame.scene.fog = dryFog
+  frame.rainAmount = 1
+  renderer.render.mockImplementation(() => {
+    throw Error('rainy render failed')
+  })
+  expect(() => pipeline.render(frame)).toThrow('rainy render failed')
+  expect(frame.scene.fog).toBe(dryFog)
+  expect(renderer.autoClear).toBe(false)
+  expect(renderer.getRenderTarget()).toBe(target)
+  pipeline.dispose()
+  target.dispose()
 })

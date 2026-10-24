@@ -273,18 +273,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `view.vehicleCameraOffset`
 - `view.vehicleHeadOffset`
 
-## updateGameCamera.callback@489
+## updateGameCamera.callback@490
 
-[Implementation, line 489](../../../../src/runtime/game-camera.ts#L489)
+[Implementation, line 490](../../../../src/runtime/game-camera.ts#L490)
 
 ```ts
-callback@489(entity): inferred by TypeScript; see implementation
+callback@490(entity): inferred by TypeScript; see implementation
 ```
 
-## updateGameCamera.callback@579
+## updateGameCamera.callback@580
 
-[Implementation, line 579](../../../../src/runtime/game-camera.ts#L579)
+[Implementation, line 580](../../../../src/runtime/game-camera.ts#L580)
 
 ```ts
-callback@579(entity): inferred by TypeScript; see implementation
+callback@580(entity): inferred by TypeScript; see implementation
 ```

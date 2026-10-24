@@ -1,5 +1,9 @@
 /** Turn keyboard taps into a gradual steering demand; analog controls bypass this filter. */
 import { controlDefaults } from '../../config/controls.js'
+export interface KeyboardSteeringSettings {
+  steeringRiseSeconds: number
+  steeringReleaseSeconds: number
+}
 export class KeyboardSteering {
   private value = 0
   private vehicle: string | null = null
@@ -7,7 +11,12 @@ export class KeyboardSteering {
     this.value = 0
     this.vehicle = null
   }
-  update(vehicle: string | null, demand: number, elapsed: number): number {
+  update(
+    vehicle: string | null,
+    demand: number,
+    elapsed: number,
+    settings: KeyboardSteeringSettings = controlDefaults,
+  ): number {
     if (vehicle !== this.vehicle) {
       this.value = 0
       this.vehicle = vehicle
@@ -23,9 +32,14 @@ export class KeyboardSteering {
     // Build steering gently; release/countersteer promptly so the filter never feels stuck.
     const tau =
       demand === 0 || demand * this.value < 0
-        ? controlDefaults.steeringReleaseSeconds
-        : controlDefaults.steeringRiseSeconds
-    this.value += (demand - this.value) * (1 - Math.exp(-dt / tau))
+        ? settings.steeringReleaseSeconds
+        : settings.steeringRiseSeconds
+    this.value +=
+      (demand - this.value) *
+      (1 -
+        Math.exp(
+          -dt / (Number.isFinite(tau) ? Math.max(0.01, tau) : controlDefaults.steeringRiseSeconds),
+        ))
     if (Math.abs(this.value) < controlDefaults.steeringSnapThreshold) this.value = 0
     return this.value
   }

@@ -75,6 +75,19 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
           a.actionCamSettings.strideMetres,
           b.actionCamSettings.strideMetres,
         ]
+        a.setInputPreferences({
+          mouseSensitivity: 2,
+          invertMouseY: true,
+          steeringRiseSeconds: 0.4,
+          steeringReleaseSeconds: 0.12,
+          gamepadDeadzone: 0.25,
+        })
+        a.setCameraMotionPreferences({
+          autoCenter: false,
+          autoCenterDelayMs: 2500,
+          modeTransitionMs: 0,
+        })
+        a.saveSunShadowQuality(0)
         a.setActionCamEnabled(false)
         a.setBodycamEnabled(false)
         a.setActionCamSettings({ strideMetres: 3 })
@@ -88,6 +101,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         a.setCloudStyle('artistic')
         a.setCloudWeather(0.2, 0.7)
         a.setLensFlareAmount(0.3)
+        a.setRainAmount(0.65)
         a.setCameraFovOffset(25)
         a.setSmokePercent(20)
         a.setSmokeEnabled(false)
@@ -141,8 +155,17 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
         a.dispose()
         b.setCameraFovOffset(7)
         b.tick(performance.now() + 32)
+        b.setCameraMotionPreferences({ autoCenterBlendMs: 750 })
         c = make('left')
         return {
+          motion: [b.cameraMotionPreferences, c.cameraMotionPreferences],
+          liveCameraBlend: (b as any).cameraState.settings.autoCenterBlendMs,
+          shadowOverrides: [
+            b.sunShadowQualityOverride,
+            c.sunShadowQualityOverride,
+            c.sunShadowResolution,
+          ],
+          inputPreferences: [b.inputPreferences, c.inputPreferences],
           initial,
           effects: [b.smokeEnabled, b.tunnelEnabled, c.smokeEnabled, c.tunnelEnabled],
           lighting: [b.lightTuning, c.lightTuning],
@@ -183,6 +206,34 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
     },
     process.cwd().replaceAll('\\', '/'),
   )
+  expect(result.motion[0]).toMatchObject({
+    autoCenter: true,
+    autoCenterDelayMs: 10000,
+    modeTransitionMs: 700,
+  })
+  expect(result.motion[1]).toMatchObject({
+    autoCenter: false,
+    autoCenterDelayMs: 2500,
+    modeTransitionMs: 0,
+  })
+  expect(result.liveCameraBlend).toBe(750)
+  expect(result.shadowOverrides).toEqual([null, 0, 0])
+  expect(result.inputPreferences).toEqual([
+    {
+      mouseSensitivity: 1,
+      invertMouseY: false,
+      steeringRiseSeconds: 0.4,
+      steeringReleaseSeconds: 0.12,
+      gamepadDeadzone: 0.12,
+    },
+    {
+      mouseSensitivity: 2,
+      invertMouseY: true,
+      steeringRiseSeconds: 0.4,
+      steeringReleaseSeconds: 0.12,
+      gamepadDeadzone: 0.25,
+    },
+  ])
   expect(result.initial).toEqual([12, 12, 65, 65])
   expect(result.beforeDispose).toEqual({
     fov: [25, 12],
@@ -196,6 +247,9 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
   })
   expect(result.planetPreferences).toEqual([
     {
+      moon: true,
+      stars: true,
+      moonHorizonScale: 5,
       sky: true,
       sun: true,
       clouds: true,
@@ -204,9 +258,13 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       cloudAmount: 0.35,
       cloudPressure: 0.12,
       lensFlare: 1,
+      rain: 0,
     },
     {
       sky: false,
+      moon: true,
+      stars: true,
+      moonHorizonScale: 5,
       sun: false,
       clouds: false,
       sea: false,
@@ -214,6 +272,7 @@ test('two real runtimes retain separate preferences, live uniforms and deferred 
       cloudAmount: 0.2,
       cloudPressure: 0.7,
       lensFlare: 0.3,
+      rain: 0.65,
     },
   ])
   expect(result.savedPlanet).toMatchObject({

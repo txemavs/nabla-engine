@@ -11,10 +11,14 @@ import { installVehicleMonitorStyles, vehicleMonitorStyleText } from './vehicle-
 
 /** Snapshot of visual knobs for host/demo config paste. */
 export type PlanetVisualConfig = {
+  rainAmount?: number
   cloudStyle: 'low' | 'artistic'
   cloudAmount: number
   cloudPressure: number
   lensFlareAmount: number
+  moon?: boolean
+  stars?: boolean
+  moonHorizonScale?: number
   sky: boolean
   sun: boolean
   clouds: boolean
@@ -23,10 +27,29 @@ export type PlanetVisualConfig = {
 
 /** Runtime surface the panel needs (GameRuntime or a test fake). */
 export interface PlanetSettingsRuntime {
-  readonly planetLayers: { sky: boolean; sun: boolean; clouds: boolean; sea: boolean }
+  readonly rainSupported?: boolean
+  readonly rainAmount?: number
+  setRainAmount?(amount: number): void
+  readonly planetLayers: {
+    sky: boolean
+    sun: boolean
+    moon?: boolean
+    stars?: boolean
+    clouds: boolean
+    sea: boolean
+  }
   setPlanetLayers(
-    layers: Partial<{ sky: boolean; sun: boolean; clouds: boolean; sea: boolean }>,
+    layers: Partial<{
+      sky: boolean
+      sun: boolean
+      moon: boolean
+      stars: boolean
+      clouds: boolean
+      sea: boolean
+    }>,
   ): void
+  readonly moonHorizonScale?: number
+  setMoonHorizonScale?(scale: number): void
   readonly cloudStyle: 'low' | 'artistic'
   setCloudStyle(style: 'low' | 'artistic'): void
   readonly cloudAmount: number
@@ -44,12 +67,16 @@ export const CLOUD_PRESSURE_PRESETS = [
 
 export function formatPlanetVisualConfig(config: PlanetVisualConfig): string {
   const lines = [
+    `rain=${round3(config.rainAmount ?? 0)}`,
     `cloudStyle=${config.cloudStyle}`,
     `cloudAmount=${round3(config.cloudAmount)}`,
     `cloudPressure=${round3(config.cloudPressure)}`,
     `lensFlare=${round3(config.lensFlareAmount)}`,
     `sky=${config.sky ? 1 : 0}`,
     `sun=${config.sun ? 1 : 0}`,
+    `moon=${(config.moon ?? config.sky) ? 1 : 0}`,
+    `stars=${(config.stars ?? config.sky) ? 1 : 0}`,
+    `moonHorizonScale=${config.moonHorizonScale ?? 5}`,
     `clouds=${config.clouds ? 1 : 0}`,
     `sea=${config.sea ? 1 : 0}`,
   ]
@@ -58,12 +85,16 @@ export function formatPlanetVisualConfig(config: PlanetVisualConfig): string {
 
 export function planetVisualConfigFromRuntime(runtime: PlanetSettingsRuntime): PlanetVisualConfig {
   return {
+    rainAmount: runtime.rainAmount ?? 0,
     cloudStyle: runtime.cloudStyle,
     cloudAmount: runtime.cloudAmount,
     cloudPressure: runtime.cloudPressure,
     lensFlareAmount: runtime.lensFlareAmount,
     sky: runtime.planetLayers.sky,
     sun: runtime.planetLayers.sun,
+    moon: runtime.planetLayers.moon ?? runtime.planetLayers.sky,
+    stars: runtime.planetLayers.stars ?? runtime.planetLayers.sky,
+    moonHorizonScale: runtime.moonHorizonScale ?? 5,
     clouds: runtime.planetLayers.clouds,
     sea: runtime.planetLayers.sea,
   }
@@ -121,6 +152,22 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   const sun = doc.createElement('input')
   sun.type = 'checkbox'
   sun.id = 'ps-sun'
+  const moon = doc.createElement('input')
+  moon.type = 'checkbox'
+  moon.id = 'ps-moon'
+  const stars = doc.createElement('input')
+  stars.type = 'checkbox'
+  stars.id = 'ps-stars'
+  const moonScale = doc.createElement('input')
+  moonScale.type = 'range'
+  moonScale.id = 'ps-moon-horizon-scale'
+  moonScale.min = '1'
+  moonScale.max = '16'
+  moonScale.step = '0.5'
+  moonScale.title = t('settings.moon-horizon-help')
+  const moonScaleVal = doc.createElement('output')
+  moonScaleVal.id = 'ps-moon-horizon-scale-val'
+  moonScaleVal.htmlFor = moonScale.id
   const clouds = doc.createElement('input')
   clouds.type = 'checkbox'
   clouds.id = 'ps-clouds'
@@ -133,6 +180,16 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   artistic.id = 'ps-artistic'
 
   const amount = doc.createElement('input')
+  const rain = doc.createElement('input')
+  rain.type = 'range'
+  rain.id = 'ps-rain'
+  rain.setAttribute('aria-label', t('settings.rain'))
+  rain.min = '0'
+  rain.max = '100'
+  rain.step = '1'
+  const rainVal = doc.createElement('output')
+  rainVal.id = 'ps-rain-val'
+  rainVal.htmlFor = rain.id
   amount.type = 'range'
   amount.id = 'ps-cloud-amount'
   amount.min = '0'
@@ -185,6 +242,8 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   toggles.append(
     row(t('settings.sky'), sky),
     row(t('settings.sun-and-flare'), sun),
+    row(t('settings.moon'), moon),
+    row(t('settings.stars-and-planets'), stars),
     row(t('settings.sea'), sea),
     row(t('settings.clouds'), clouds),
     row(t('settings.artistic-clouds'), artistic),
@@ -195,10 +254,12 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
 
   root.append(
     toggles,
+    row(t('settings.rain'), rain, rainVal),
     row(t('settings.cloud-amount'), amount, amountVal),
     row(t('settings.cloud-pressure-mode'), pressureMode),
     row(t('settings.cloud-pressure'), pressure, pressureVal),
     row(t('settings.sun-flare'), flare, flareVal),
+    row(t('settings.moon-horizon-scale'), moonScale, moonScaleVal),
     config,
   )
 
@@ -212,8 +273,19 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   const refresh = () => {
     if (!runtime) return
     const layers = runtime.planetLayers
+    rain.value = String(Math.round((runtime.rainAmount ?? 0) * 100))
+    rainVal.textContent = Number(rain.value) === 0 ? 'Off' : `${rain.value}%`
+    rain.setAttribute('aria-valuetext', rainVal.textContent)
+    rain.disabled = !runtime.setRainAmount || runtime.rainSupported === false
     sky.checked = layers.sky
     sun.checked = layers.sun
+    moon.checked = layers.moon ?? layers.sky
+    stars.checked = layers.stars ?? layers.sky
+    moon.disabled = layers.moon === undefined
+    stars.disabled = layers.stars === undefined
+    moonScale.value = String(runtime.moonHorizonScale ?? 5)
+    moonScaleVal.textContent = `${runtime.moonHorizonScale ?? 5}×`
+    moonScale.disabled = !moon.checked || !runtime.setMoonHorizonScale
     sea.checked = layers.sea
     clouds.checked = layers.clouds
     artistic.checked = runtime.cloudStyle === 'artistic'
@@ -251,6 +323,18 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     runtime?.setPlanetLayers({ sun: sun.checked })
     refresh()
   })
+  moon.addEventListener('change', () => {
+    runtime?.setPlanetLayers({ moon: moon.checked })
+    refresh()
+  })
+  stars.addEventListener('change', () => {
+    runtime?.setPlanetLayers({ stars: stars.checked })
+    refresh()
+  })
+  moonScale.addEventListener('input', () => {
+    runtime?.setMoonHorizonScale?.(Number(moonScale.value))
+    refresh()
+  })
   sea.addEventListener('change', () => {
     runtime?.setPlanetLayers({ sea: sea.checked })
     refresh()
@@ -264,6 +348,10 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     refresh()
   })
   amount.addEventListener('input', applyWeather)
+  rain.addEventListener('input', () => {
+    runtime?.setRainAmount?.(Number(rain.value) / 100)
+    refresh()
+  })
   pressure.addEventListener('input', applyWeather)
   pressureMode.addEventListener('change', () => {
     const preset = CLOUD_PRESSURE_PRESETS.find((p) => p.id === pressureMode.value)

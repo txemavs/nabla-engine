@@ -1,3 +1,4 @@
+import { createSystemInfo } from './system-info.js'
 import { mountGameToolbar } from './hud-layout.js'
 import { pageSearch } from './page-query.js'
 import { readQualityPreset } from '@nabla/engine/runtime/quality-preset'
@@ -13,6 +14,8 @@ import {
   setGameMenuNote,
 } from '../src/runtime/main-menu.js'
 import { addCornerButton } from '../src/runtime/corner-buttons.js'
+import { createMotionShadowSections } from './motion-shadow-preferences-ui.js'
+import { createInputPreferencesSection } from './input-preferences-ui.js'
 import { createControlsSection } from './settings-controls.js'
 import { createMapSection } from './settings-map.js'
 import { nudgeRearLight, rearLightJson } from '../src/render/vehicle-presentation/light-tuning.js'
@@ -46,6 +49,7 @@ import {
 } from '../src/runtime/planet-settings-panel.js'
 import { t } from '@nabla/engine/i18n'
 import { sectionMerges } from './settings-nav.js'
+import { createSettingsSearch } from './settings-search.js'
 import {
   CURRENT_VEHICLE_GROUP,
   MENU_FLAT_SECTIONS,
@@ -80,14 +84,14 @@ export function sectionTab(id: string): TabId | undefined {
 
 /** Section titles in the Ajustes window; the sections keep their ids, listeners and storage. */
 const SECTION_TITLES: Readonly<Record<string, string>> = {
-  'terrain-layers': t('settings.land'),
+  'terrain-layers': t('settings.buildings'),
   'settings-layer-air': t('settings.atmosphere'),
+  'settings-layer-celestial': t('settings.celestial-bodies'),
   'settings-planet-time': t('settings.date'),
   'terrain-position': t('settings.location'),
   'settings-simulation-time': t('settings.time'),
   'settings-collision-debug': t('settings.collisions'),
-  'settings-config-planet': t('settings.export'),
-  'road-style': t('settings.asphalt-contrast'),
+  'road-style': t('settings.infrastructures'),
   'scene-vehicles': t('settings.add'),
   'settings-car-beams': t('settings.lights'),
   'settings-rear-light-nudge': t('settings.rear-light-fine-tuning'),
@@ -109,8 +113,8 @@ const SECTION_TITLES: Readonly<Record<string, string>> = {
   'settings-actor': t('settings.actor'),
   'settings-options-sidearm': t('settings.aiming'),
   'settings-muzzle-flash': t('settings.muzzle-flash'),
-  'terrain-source': t('settings.terrain'),
-  'settings-light': t('settings.light-fine-tuning'),
+  'terrain-source': t('settings.source'),
+  'settings-light': t('settings.light'),
   'settings-weapon-poses': t('settings.poses-and-animations'),
 }
 
@@ -244,7 +248,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const index = order(section.id)
     return index < 0 ? 999 : index
   }
-  // Flat sections (Mundo › Ver › Opciones): their member sections are blocks inside them, untitled.
+  // Combined sections: their member controls retain their IDs, listeners and storage.
   const flatBoxes = new Map<string, HTMLElement>()
   const flatOf = (id: string) => MENU_FLAT_SECTIONS.find((flat) => flat.members.includes(id))
   const placeInFlat = (el: HTMLElement): boolean => {
@@ -284,7 +288,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       for (const [id, text] of Object.entries(LAYER_LABELS))
         relabel(el.querySelector(`input[data-layer="${id}"]`)?.closest('label'), text)
       moveOptionLayers(el)
-      if (seaRow && !el.contains(seaRow)) el.append(seaRow)
     }
   }
 
@@ -318,11 +321,6 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     place(section)
   }
 
-  // Desarrollo: the planet config text and «Copiar config».
-  const configGroup = fieldset('settings-config-planet', t('settings.planet-values'))
-  configGroup.append(planetPanel.config)
-  place(configGroup)
-
   // Planeta: the planet panel rows and the legacy Hora / Mar groups, one titled section each.
   const panelRoot = planetPanel.root
   // The window joins the document only at the end of the mount: look in it and in the
@@ -349,24 +347,22 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const sunRow = rowOf('ps-sun')
   const seaRow = rowOf('ps-sea')
   const cloudsRow = rowOf('ps-clouds')
+  // A preview URL must not undo the player's saved Weather choice on reload.
+  byId('ps-rain')?.addEventListener('input', () => {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('rain')) return
+    url.searchParams.delete('rain')
+    history.replaceState(history.state, '', url)
+  })
   const artisticRow = rowOf('ps-artistic')
-  relabel(skyRow, t('settings.stars-and-planets'))
+  relabel(skyRow, t('settings.atmosphere'))
   relabel(sunRow, t('settings.sun'))
   relabel(seaRow, t('settings.sea'))
-  relabel(artisticRow, t('settings.enable-weather'))
+  relabel(artisticRow, t('settings.artistic-clouds'))
   relabel(rowOf('ps-cloud-amount'), t('settings.cloud-cover'))
   relabel(rowOf('ps-cloud-pressure-mode'), t('settings.pressure'))
   relabel(rowOf('ps-cloud-pressure'), t('settings.pressure-value'))
   relabel(rowOf('ps-lens-flare'), t('settings.lens-flare'))
-  {
-    // Lens flare is a world option of its own (Ver › Opciones), not part of Atmósfera.
-    const flare = rowOf('ps-lens-flare')
-    if (flare) {
-      const section = fieldset('settings-lens-flare', t('settings.lens-flare'))
-      section.append(flare)
-      place(section)
-    }
-  }
 
   if (timeGroup) {
     const time = fieldset('settings-planet-time', t('settings.date-and-time'))
@@ -406,6 +402,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const air = fieldset('settings-planet-air', t('settings.air'))
   air.append(
     ...rows(
+      rowOf('ps-rain'),
+      cloudsRow,
       artisticRow,
       subtitle(t('settings.sky')),
       rowOf('ps-cloud-amount'),
@@ -416,8 +414,19 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   place(air)
 
   const sky = fieldset('settings-layer-air', t('settings.atmosphere'))
-  sky.append(...rows(sunRow, skyRow, cloudsRow))
+  sky.append(...rows(skyRow))
   place(sky)
+  const celestial = fieldset('settings-layer-celestial', t('settings.celestial-bodies'))
+  celestial.append(
+    ...rows(
+      sunRow,
+      rowOf('ps-lens-flare'),
+      rowOf('ps-moon'),
+      rowOf('ps-moon-horizon-scale'),
+      rowOf('ps-stars'),
+    ),
+  )
+  place(celestial)
 
   const menu = doc.getElementById('menu-sections')
   const legacySections = () =>
@@ -1434,7 +1443,15 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const management = createSettingsManagement(doc, {
     local: () => runtime.settings,
     session: () => sessionStorage,
-    search: () => pageSearch(),
+    search: () => {
+      const query = new URLSearchParams(pageSearch())
+      if (runtime.displaySettings) query.set('fps', String(runtime.displaySettings.maxFps))
+      if (runtime.resolutionScaleState) {
+        const state = runtime.resolutionScaleState
+        query.set('scale', state.mode === 'auto' ? 'auto' : String(state.scale))
+      }
+      return query.toString()
+    },
     reload: (search) => {
       const url = new URL(location.href)
       url.search = search
@@ -1444,8 +1461,10 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     },
   })
   place(management)
+  for (const section of createMotionShadowSections(doc, runtime)) place(section)
   const controlsSection = createControlsSection(doc)
   place(controlsSection)
+  if (runtime.inputPreferences) place(createInputPreferencesSection(doc, runtime))
   const usbPanel = createUsbSettingsPanel(runtime.usbControllers, runtime.usbFeedback, doc)
   place(usbPanel.root)
   const mapSection = createMapSection(doc, runtime)
@@ -1455,6 +1474,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     const section = fieldset('settings-action-cam', t('settings.action-cam'))
     ;(actionCam as HTMLDetailsElement).open = true
     actionCam.querySelector('summary')?.setAttribute('hidden', '')
+    const enabled = rowOf('camera-action-cam')
+    if (enabled) section.append(enabled)
     section.append(actionCam)
     place(section)
   }
@@ -1486,7 +1507,9 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       sharpness.append(row)
     }
   }
-  if (sharpness.querySelector('input')) place(sharpness)
+  if (quality) quality.append(...[...sharpness.children].filter((el) => el.tagName !== 'LEGEND'))
+  const lightShadows = fieldset('settings-light-shadows', t('settings.shadows'))
+  place(lightShadows)
 
   // A tab with nothing to show (e.g. Audio on a host without the mixer) is hidden.
   const syncTabs = () => {
@@ -1577,12 +1600,53 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   // The anisotropy row (bound by the game after or before the HUD) belongs in Vídeo › Calidad.
   const moveAnisotropy = () => {
     const quality = byId('display-quality-section')
-    const row = rowOf('anisotropy')
-    if (!quality || !row || quality.contains(row)) return
-    quality.insertBefore(row, [...quality.children].find((el) => el.matches('button, p')) ?? null)
+    if (quality) {
+      const ids = [
+        'display-quality',
+        'display-scale',
+        'display-scale-auto',
+        'anisotropy',
+        'display-fsr',
+        'display-fsr-sharpness',
+      ]
+      const ordered = ids.map(rowOf).filter((row): row is HTMLLabelElement => !!row)
+      // Insert backwards after the legend so late host controls use the same order.
+      let next = quality.querySelector(':scope > legend')?.nextSibling ?? quality.firstChild
+      for (const row of ordered) {
+        if (row === next) next = row.nextSibling
+        else quality.insertBefore(row, next)
+      }
+    }
+    for (const id of ['light-shadows', 'light-shadowIntensity']) {
+      const row = rowOf(id)
+      if (row && row.parentElement !== lightShadows) lightShadows.append(row)
+    }
   }
   const foldSections = () => {
     moveAnisotropy()
+    const distances = byId('settings-distances')
+    if (distances)
+      for (const id of ['terrain-cache-distance', 'terrain-cache-memory']) {
+        const row = byId(id)?.closest('label')
+        if (row && row.parentElement !== distances) distances.append(row)
+      }
+    const layers = byId('terrain-layers')
+    if (layers) {
+      for (const [layer, destination] of [
+        ['road', 'road-style'],
+        ['photo', 'terrain-source'],
+        ['places', 'settings-options-labels'],
+      ]) {
+        const row = layers.querySelector('input[data-layer="' + layer + '"]')?.closest('label')
+        if (!row) continue
+        let target = byId(destination)
+        if (!target) {
+          target = fieldset(destination, SECTION_TITLES[destination])
+          place(target)
+        }
+        target.insertBefore(row, target.querySelector(':scope > legend')?.nextSibling ?? null)
+      }
+    }
     const hiddenIds = hostHidden()
     for (const [id, box] of flatBoxes) {
       // Host sections added straight to a pane join their flat section first.
@@ -1756,6 +1820,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   planetPanel.bind(runtime)
 
   const selectTab = (id: TabId) => {
+    search.reset()
     activeTab = id
     if (id !== 'dev') runtime.setSidearmAimPreview?.(false)
     for (const tab of TABS) {
@@ -1768,6 +1833,47 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     }
     planetPanel?.refresh()
   }
+
+  const search = createSettingsSearch(
+    doc,
+    () => {
+      const entries = []
+      for (const [tab, layout] of sections) {
+        for (const section of layout.body.querySelectorAll<HTMLElement>(':scope > .menu-section')) {
+          if (section.hasAttribute('data-section-hidden')) continue
+          const group = navigationGroups.find(
+            (group) => group.tab === tab && group.sections.includes(section.id),
+          )
+          entries.push({
+            id: section.id,
+            title: section.dataset.sectionTitle ?? section.id,
+            path: [TABS.find((item) => item.id === tab)!.label, group?.label]
+              .filter(Boolean)
+              .join(' → '),
+            text: [...section.querySelectorAll('label, button, legend, .menu-subtitle')]
+              .filter((node) => !node.closest('[data-section-hidden]'))
+              .map((node) => node.textContent ?? '')
+              .join(' '),
+          })
+        }
+      }
+      return entries
+    },
+    (id) => {
+      const entry = [...sections].find(([, layout]) =>
+        layout.body.querySelector(`#${CSS.escape(id)}:not([data-section-hidden])`),
+      )
+      if (!entry) return
+      const [tab, layout] = entry
+      selectTab(tab)
+      layout.picked = true
+      chooseSection(tab, id)
+      layout.nav
+        .querySelector<HTMLButtonElement>(`button[data-section="${CSS.escape(id)}"]`)
+        ?.focus()
+    },
+  )
+  console.insertBefore(search.root, panes)
 
   const open = () => {
     refreshSidearm()
@@ -1785,6 +1891,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     planetPanel?.refresh()
   }
   const close = () => {
+    search.reset()
     runtime.setSidearmAimPreview?.(false)
     win.hidden = true
     if (legacy) legacy.open = false
@@ -1861,11 +1968,23 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
         ? show.exhaustAmount
         : show.exhaustPosition)
   }
+  const systemInfo = createSystemInfo(doc, runtime)
+  const refreshSystemInfo = () => {
+    const info = doc.getElementById('nabla-menu-section-info')
+    if (info && !info.contains(systemInfo.root)) info.append(systemInfo.root)
+    if (
+      !win.hidden &&
+      activeTab === 'app' &&
+      sections.get('app')?.active === 'nabla-menu-section-info'
+    )
+      systemInfo.refresh()
+  }
   const engineStatus = () => {
     // GameRuntime.physicsThread (src/runtime/browser.ts); read loosely while the package types lag.
     const physics = (runtime as { physicsThread?: 'worker' | 'inline' | null }).physicsThread
     return t('menu.engine-status', {
-      renderer: runtime.backend === 'webgpu' ? 'WebGPU' : 'WebGL',
+      renderer:
+        runtime.backend === 'webgpu' ? 'WebGPU' : runtime.backend === 'webgl' ? 'WebGL' : '–',
       physics:
         physics === 'worker'
           ? t('menu.physics-worker')
@@ -1876,6 +1995,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   }
   const updateClock = () => {
     setGameMenuNote(GAME_MENU_ENGINE_ID, engineStatus())
+    refreshSystemInfo()
     refreshVehicleGroup()
     refreshVehicleLights()
     refreshRearNudge()
@@ -1903,6 +2023,7 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
   const onKeyDown = (event: KeyboardEvent) => {
     if (
       menuNavigationKey(event.code) === 'focus' &&
+      win.hidden &&
       !event.ctrlKey &&
       !event.altKey &&
       !event.metaKey
@@ -1910,15 +2031,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
       event.preventDefault()
       event.stopImmediatePropagation()
       if (event.repeat) return
-      if (win.hidden) {
-        doc.exitPointerLock?.()
-        open()
-      } else {
-        close()
-        const canvas = doc.getElementById('game-canvas')
-        const lock = canvas?.requestPointerLock?.()
-        if (lock instanceof Promise) void lock.catch(() => undefined)
-      }
+      doc.exitPointerLock?.()
+      open()
       return
     }
     if (win.hidden) return
@@ -1966,6 +2080,8 @@ export function mountSettingsHud(runtime: GameRuntime): SettingsHud {
     },
     menuPane: paneEls.get('app'),
   })
+
+  refreshSystemInfo()
 
   return {
     open,

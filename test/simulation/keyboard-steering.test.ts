@@ -25,3 +25,17 @@ it('recovers from non-finite demand or frame time instead of freezing at NaN', (
   for (let i = 0; i < 20; i++) value = steering.update('car', 0, 0.05)
   expect(value).toBe(0)
 })
+
+it('uses independent keyboard response settings and bypasses the filter on foot', () => {
+  const fast = new KeyboardSteering(),
+    slow = new KeyboardSteering()
+  const quick = { steeringRiseSeconds: 0.05, steeringReleaseSeconds: 0.02 }
+  const gradual = { steeringRiseSeconds: 1, steeringReleaseSeconds: 0.8 }
+  const f = fast.update('car', 1, 0.05, quick),
+    s = slow.update('car', 1, 0.05, gradual)
+  expect(f).toBeGreaterThan(s * 5)
+  expect(fast.update('car', 0, 0.05, quick) / f).toBeLessThan(
+    slow.update('car', 0, 0.05, gradual) / s,
+  )
+  expect(fast.update(null, 1, 0.05, gradual)).toBe(1)
+})

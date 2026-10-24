@@ -4,17 +4,13 @@
 
 [Source](../../../game/page-query.ts)
 
-The page's effective query and the address the game writes back. A host may set both before
-the game modules run (an earlier module script calls setPageQuery), e.g. a closed demo that
-plays a fixed query while the address bar stays bare. Otherwise the real location is used.
-Kept on a global symbol so every module copy sees the same host.
-
 ## Module dependencies
 
+- `../src/runtime/settings-backup.js`
 
 ## setPageQuery
 
-[Implementation, line 17](../../../game/page-query.ts#L17)
+[Implementation, line 18](../../../game/page-query.ts#L18)
 
 ```ts
 setPageQuery(query: PageQuery): void
@@ -22,7 +18,7 @@ setPageQuery(query: PageQuery): void
 
 ## pageSearch
 
-[Implementation, line 22](../../../game/page-query.ts#L22)
+[Implementation, line 23](../../../game/page-query.ts#L23)
 
 The query the game reads: the host's, else `location.search` ('' outside a browser).
 
@@ -36,7 +32,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## pageAddress
 
-[Implementation, line 27](../../../game/page-query.ts#L27)
+[Implementation, line 28](../../../game/page-query.ts#L28)
 
 The address to write for `value`: the host's, else `value` itself.
 
@@ -47,3 +43,20 @@ pageAddress(value: string): string
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `(globalThis as Holder)[QUERY]?.address`
+
+## mergePagePreferences
+
+[Implementation, line 33](../../../game/page-query.ts#L33)
+
+Overlay only portable preferences on a host's fixed scene query; never import a new world.
+
+```ts
+mergePagePreferences(base: string, overrides: string): string
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `URLSearchParams`
+- `preferenceQueryKeys.has`
+- `result.set`
+- `result.toString`

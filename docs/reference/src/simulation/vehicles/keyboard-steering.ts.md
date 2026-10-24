@@ -12,7 +12,7 @@ Turn keyboard taps into a gradual steering demand; analog controls bypass this f
 
 ## KeyboardSteering.reset
 
-[Implementation, line 6](../../../../../src/simulation/vehicles/keyboard-steering.ts#L6)
+[Implementation, line 10](../../../../../src/simulation/vehicles/keyboard-steering.ts#L10)
 
 ```ts
 reset(): void
@@ -20,10 +20,10 @@ reset(): void
 
 ## KeyboardSteering.update
 
-[Implementation, line 10](../../../../../src/simulation/vehicles/keyboard-steering.ts#L10)
+[Implementation, line 14](../../../../../src/simulation/vehicles/keyboard-steering.ts#L14)
 
 ```ts
-update(vehicle: string | null, demand: number, elapsed: number): number
+update(vehicle: string | null, demand: number, elapsed: number, settings: KeyboardSteeringSettings = controlDefaults): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

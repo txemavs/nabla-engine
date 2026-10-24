@@ -421,6 +421,7 @@ export function updateGameCamera(
   } else if (
     info &&
     p.speed > tuning.flightMinSpeed &&
+    state.settings.autoCenterEnabled !== false &&
     now - lastLookTime > state.settings.autoCenterDelayMs &&
     !cockpit
   ) {
@@ -606,6 +607,7 @@ export function updateGameCamera(
             tuning.altitudeDistanceEnd,
           ))
     const travelPitch =
+      state.settings.autoCenterEnabled !== false &&
       now - lastLookTime > state.settings.autoCenterDelayMs
         ? Math.max(
             pitch,

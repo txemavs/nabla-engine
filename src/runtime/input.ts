@@ -7,7 +7,10 @@ import {
   type InputContext,
 } from '../config/input-bindings.js'
 import { controlDefaults } from '../config/controls.js'
-import { KeyboardSteering } from '../simulation/vehicles/keyboard-steering.js'
+import {
+  KeyboardSteering,
+  type KeyboardSteeringSettings,
+} from '../simulation/vehicles/keyboard-steering.js'
 import { idleInput, type PlayerInput, type Simulation } from '../simulation/simulation.js'
 import type { SceneDocument } from '../scene/document.js'
 import { isRoadTouchDriving } from './touch-driving.js'
@@ -33,19 +36,20 @@ export function availableGamepads(): (Gamepad | null)[] {
 }
 
 /** Remove the configured dead band and rescale the remaining signed range; non-finite input becomes zero. */
-export function deadzone(value: number): number {
-  if (!Number.isFinite(value) || Math.abs(value) <= controlDefaults.gamepadDeadzone) return 0
-  return (
-    Math.sign(value) *
-    Math.min(
-      1,
-      (Math.abs(value) - controlDefaults.gamepadDeadzone) / (1 - controlDefaults.gamepadDeadzone),
-    )
-  )
+export function deadzone(value: number, amount: number = controlDefaults.gamepadDeadzone): number {
+  amount = Number.isFinite(amount)
+    ? Math.max(0, Math.min(0.5, amount))
+    : controlDefaults.gamepadDeadzone
+  if (!Number.isFinite(value) || Math.abs(value) <= amount) return 0
+  return Math.sign(value) * Math.min(1, (Math.abs(value) - amount) / (1 - amount))
 }
 /** Map standard gamepad controls; flight uses mode 2 sticks, road driving uses trigger throttle. */
-export function gamepadAxes(pad: Pick<Gamepad, 'axes' | 'buttons'>, flight: boolean) {
-  const axis = (i: number) => deadzone(pad.axes[i] ?? 0)
+export function gamepadAxes(
+  pad: Pick<Gamepad, 'axes' | 'buttons'>,
+  flight: boolean,
+  amount: number = controlDefaults.gamepadDeadzone,
+) {
+  const axis = (i: number) => deadzone(pad.axes[i] ?? 0, amount)
   return {
     forward: flight ? -axis(3) : (pad.buttons[7]?.value ?? 0) - (pad.buttons[6]?.value ?? 0),
     right: flight ? axis(2) : axis(0),
@@ -58,6 +62,8 @@ export function gamepadAxes(pad: Pick<Gamepad, 'axes' | 'buttons'>, flight: bool
 export interface GameInputSources {
   keys: ReadonlySet<string>
   yaw: number
+  gamepadDeadzone?: number
+  keyboardSteering?: KeyboardSteeringSettings
   usb?: UsbFrame
   pad?: Pick<Gamepad, 'axes' | 'buttons'> | null
   touch?: { forward: number; right: number; lift: number; turn: number; brake: boolean }
@@ -125,7 +131,7 @@ export class GameInput {
     const info = id && sim ? sim.vehicleInfo(id) : null
     const flight = Boolean(info?.flightMode)
     const analog = pad
-      ? gamepadAxes(pad, flight)
+      ? gamepadAxes(pad, flight, sources.gamepadDeadzone)
       : { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
     const touch = sources.touch ?? { forward: 0, right: 0, lift: 0, turn: 0, brake: false }
     const driving = sources.driving ?? { forward: 0, right: 0, brake: false }
@@ -168,7 +174,12 @@ export class GameInput {
         flight ? (usb.axes.pitch ?? 0) : (usb.axes.throttle ?? 0) - (usb.axes.reverse ?? 0),
       ),
       right: strongest(
-        this.steering.update(roadCar ? id : null, keyboardRight, elapsed) +
+        this.steering.update(
+          roadCar ? id : null,
+          keyboardRight,
+          elapsed,
+          sources.keyboardSteering,
+        ) +
           analog.right +
           touch.right +
           driving.right,

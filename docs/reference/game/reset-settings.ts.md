@@ -20,7 +20,19 @@ resetGameSettings(storage: Storage): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Object.keys`
+- `Array.from`
 - `isCalibrationKey`
 - `isPreferenceKey`
 - `storage.removeItem`
+
+## resetGameSettings.callback@4
+
+[Implementation, line 4](../../../game/reset-settings.ts#L4)
+
+```ts
+callback@4(_, i): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `storage.key`

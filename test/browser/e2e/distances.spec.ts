@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-/** Distances: one section in Settings → Simulation with every draw/fog/road/collision distance in km (English UI). */
+/** Distances: one section in Settings → Video with every draw/fog/road/collision distance in km (English UI). */
 test('distances section gathers existing and new controls and applies them live', async ({
   page,
 }) => {
@@ -103,10 +103,11 @@ test('distances section gathers existing and new controls and applies them live'
       untouched,
       hidden: section.hidden,
       group: section.closest('.menu-section') === section,
-      // The fixture has no other Simulation section, so the group shows as one entry with its name.
-      navGroup: document.querySelector(
-        '#settings-pane-options button[data-section="settings-distances"]',
-      )!.textContent,
+      // Distances lives in Settings → Video next to the fixture's quality section, so Video is a folder.
+      navGroup: document
+        .querySelector('#settings-pane-options button[data-section="settings-distances"]')!
+        .closest('.settings-nav-group')
+        ?.querySelector('summary')?.textContent,
       labels: [...section.querySelectorAll('label')].map((l) => l.textContent?.trim()),
       adopted: [radiusSelect, detailSelect].every((el) => section.contains(el)),
       roadOptions: [...roads.options].map((o) => o.textContent),
@@ -117,7 +118,7 @@ test('distances section gathers existing and new controls and applies them live'
   }, process.cwd())
   expect(result.untouched).toBe(0)
   expect(result.hidden).toBe(false)
-  expect(result.navGroup).toBe('Simulation')
+  expect(result.navGroup).toBe('Video')
   expect(result.adopted).toBe(true)
   expect(result.labels[0]).toContain('Terrain draw distance')
   expect(result.labels.some((label) => label?.startsWith('Fog'))).toBe(true)

@@ -8,12 +8,15 @@ import {
   type VisibilitySettings,
 } from './performance.js'
 
+import { shadowTiers } from '../config/shadows.js'
+type PreferenceStorage = Pick<Storage, 'getItem' | 'setItem'>
 type StreamingWorld = { setDistance(value: number): void; setMaxTiles(value: number): void }
 
 /** Instance quality policy; terrain residency and simulation updates remain with their owners. */
 export class RuntimePerformanceSettings {
   state: PerformanceSettings
   groundDetail = 1
+  sunShadowQualityOverride: number | null = null
 
   constructor(options?: Partial<PerformanceSettings>) {
     const profile = options?.preset
@@ -22,6 +25,25 @@ export class RuntimePerformanceSettings {
         ? performancePresets[profile as keyof typeof performancePresets].settings
         : {}
     this.state = normalizePerformance({ ...browserPerformanceDefaults, ...preset, ...options })
+  }
+
+  restoreShadowQuality(storage: PreferenceStorage): void {
+    try {
+      const value: unknown = JSON.parse(storage.getItem('nabla.sunShadowQuality') ?? 'null')
+      if (typeof value === 'number' && Object.hasOwn(shadowTiers, value)) {
+        this.sunShadowQualityOverride = value
+        this.state = { ...this.state, shadows: value }
+      }
+    } catch {
+      /* Keep the host/profile default. */
+    }
+  }
+  /** Saves for the next runtime; rebuilding cascade topology requires a new scene. */
+  saveShadowQuality(value: number | null, storage: PreferenceStorage): void {
+    if (value !== null && (!Number.isFinite(value) || !Object.hasOwn(shadowTiers, value)))
+      throw new Error('Unsupported sun shadow quality')
+    storage.setItem('nabla.sunShadowQuality', JSON.stringify(value))
+    this.sunShadowQualityOverride = value
   }
 
   enableXRShadows(): void {

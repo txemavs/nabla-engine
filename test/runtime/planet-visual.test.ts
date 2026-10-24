@@ -25,6 +25,28 @@ function memory(): Storage {
 }
 
 describe('high planet visual', () => {
+  it('migrates legacy sky visibility without resetting weather and tolerates invalid new fields', () => {
+    const storage = memory()
+    const { moon, stars, moonHorizonScale, ...legacy } = highPlanetVisual
+    storage.setItem('nabla.planetVisual', JSON.stringify({ ...legacy, sky: false }))
+    expect(readSavedPlanetVisual(storage)).toMatchObject({
+      ...legacy,
+      sky: false,
+      moon: false,
+      stars: false,
+      moonHorizonScale: 5,
+    })
+    storage.setItem(
+      'nabla.planetVisual',
+      JSON.stringify({ ...legacy, moon: true, stars: false, moonHorizonScale: 100 }),
+    )
+    expect(readSavedPlanetVisual(storage)).toMatchObject({
+      moon: true,
+      stars: false,
+      moonHorizonScale: 5,
+      cloudAmount: 0.4,
+    })
+  })
   it('is the Alto and Ultra Planeta default, with pressure outside the named modes', () => {
     expect(isHighQualityPreset('high')).toBe(true)
     expect(isHighQualityPreset('ultra')).toBe(true)
@@ -37,7 +59,7 @@ describe('high planet visual', () => {
       cloudStyle: 'artistic',
       cloudAmount: 0.4,
       cloudPressure: 0.8,
-      lensFlareAmount: 0.8,
+      lensFlareAmount: 0.5,
     })
     for (const named of [0, 0.12, 0.55]) expect(highPlanetVisual.cloudPressure).not.toBe(named)
   })

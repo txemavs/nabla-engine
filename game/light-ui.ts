@@ -63,7 +63,7 @@ export function bindLightControls(
   shadows.type = 'checkbox'
   shadows.id = 'light-shadows'
   shadows.addEventListener('change', () => runtime.setLightTuning({ shadows: shadows.checked }))
-  shadowLabel.append(shadows, ' Sombras')
+  shadowLabel.append(shadows, ' ' + t('settings.shadows'))
   group.append(shadowLabel)
   const status = document.createElement('output')
   const copy = document.createElement('button')

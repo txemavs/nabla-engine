@@ -49,7 +49,24 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     check(menuSection('driving-extras', 'Driving'), 'recover-to-road')
     check(menuSection('road-style', 'Asfalto'), 'asphalt')
     check(menuSection('quality-shadows', 'Sombras'), 'shadows')
+    check(
+      menuSection('settings-experimental-light-shadows', 'Experimental shadows'),
+      'lamp-shadows',
+    )
     check(menuSection('scene-vehicles', 'Vehicles'), 'vehicles')
+    const lightSection = menuSection('settings-light', 'Light')
+    check(lightSection, 'light-shadows')
+    check(lightSection, 'light-shadowIntensity')
+    const qualitySection = document.getElementById('display-quality-section')!
+    for (const id of [
+      'display-quality',
+      'display-scale',
+      'display-scale-auto',
+      'display-fsr',
+      'display-fsr-sharpness',
+    ])
+      check(qualitySection, id)
+    check(menuSection('anisotropy-test', 'Anisotropy'), 'anisotropy')
     // Bound by exhaust-ui.ts in the game; rows carry data-exhaust-group.
     const exhaust = menuSection('settings-truck-exhaust', 'Vehicle · exhaust and smoke')
     const exhaustRow = document.createElement('label')
@@ -60,6 +77,30 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     let sidearm = { ...sidearmTuningDefaults },
       preview = false
     const runtime = {
+      cameraMotionPreferences: {
+        autoCenter: true,
+        autoCenterDelayMs: 10000,
+        autoCenterBlendMs: 500,
+        modeTransitionMs: 700,
+      },
+      setCameraMotionPreferences(patch: object) {
+        Object.assign(this.cameraMotionPreferences, patch)
+        return { ...this.cameraMotionPreferences }
+      },
+      sunShadowQualityOverride: null,
+      saveSunShadowQuality() {},
+      inputPreferences: {
+        mouseSensitivity: 1,
+        invertMouseY: false,
+        steeringRiseSeconds: 0.4,
+        steeringReleaseSeconds: 0.12,
+        gamepadDeadzone: 0.12,
+      },
+      setInputPreferences(patch: object) {
+        Object.assign(this.inputPreferences, patch)
+        return { ...this.inputPreferences }
+      },
+      settings: localStorage,
       skyClock: { mode: 'fixed', at: new Date(2026, 9, 16, 12, 30).toISOString() } as {
         mode: 'fixed'
         at: string
@@ -164,6 +205,11 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       setPlanetLayers: () => {},
       cloudStyle: 'low',
       setCloudStyle: () => {},
+      rainAmount: 0,
+      rainSupported: true,
+      setRainAmount(value: number) {
+        this.rainAmount = value
+      },
       cloudAmount: 0.35,
       cloudPressure: 0.12,
       setCloudWeather: () => {},
@@ -188,6 +234,12 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     Object.assign(runtime, { settings: new SettingsStore({ mode: 'pc', storage: localStorage }) })
     ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)
+    // Host streaming controls can arrive after the HUD is mounted.
+    menuSection('settings-distances', 'Distances')
+    const cache = menuSection('terrain-cache', 'Cache')
+    check(cache, 'terrain-cache-distance')
+    check(cache, 'terrain-cache-memory')
+    check(cache, 'terrain-cache-disk')
     const roll = document.getElementById('action-cam-stepRollRadians') as HTMLInputElement
     roll.value = '2'
     roll.dispatchEvent(new Event('input', { bubbles: true }))
@@ -249,6 +301,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       places: pane('layer-places'),
       placesGroup: document.getElementById('layer-places')?.closest('fieldset')?.id,
       road: pane('layer-road'),
+      roadGroup: document.getElementById('layer-road')?.closest('fieldset')?.id,
+      groundGroup: document.getElementById('layer-photo')?.closest('fieldset')?.id,
+      sourceTitle: document.querySelector('#terrain-source > legend')?.textContent,
       layersTitle: document.querySelector('#terrain-layers > legend')?.textContent,
       asphaltTitle: document.querySelector('#road-style > legend')?.textContent,
       copy: pane('ps-copy-config'),
@@ -268,9 +323,9 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(result.softStride).toBe(2.8)
   expect(result.resetStride).toBe(2.8)
   expect(result.actionCamPane).toBe('settings-pane-options')
-  expect(result.cameraControls).toEqual(['camera-extras', 'camera-extras', 'camera-extras'])
+  expect(result.cameraControls).toEqual(['camera-extras', 'settings-action-cam', 'camera-extras'])
   expect(result.smoke).toBe(false)
-  expect(result.smokePane).toBe('settings-pane-planet')
+  expect(result.smokePane).toBe('settings-pane-options')
   expect(result.sidearm).toEqual({ height: -0.055, angle: -0.5 })
   expect(result.preview).toBe(true)
   expect(result.weaponOutputs).toEqual(['-33.00 mm', '0.70°'])
@@ -293,40 +348,149 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
       'driving-extras',
       'settings-controls',
       'display-quality-section',
-      // Rendering quality lives in Settings › Simulation; the effects switches in World › View › Options.
+      // All shadow controls share Settings > Video > Shadows.
       'quality-shadows',
     ]),
   )
-  expect(result.planet).toEqual(expect.arrayContaining(['settings-effects', 'terrain-source']))
+  expect(result.options).toContain('settings-effects')
+  expect(result.planet).toContain('terrain-source')
   expect(result.planet).not.toContain('quality-shadows')
-  expect(result.options).not.toContain('settings-muzzle-flash')
-  expect(result.dev).toEqual(
+  expect(result.options).toContain('settings-muzzle-flash')
+  expect(result.options).toEqual(
     expect.arrayContaining([
-      'settings-config-planet',
       'settings-options-sidearm',
       'settings-weapon-poses',
       'settings-muzzle-flash',
     ]),
   )
   expect(result.places).toBe('settings-pane-planet')
-  expect(result.placesGroup).toBe('terrain-layers')
+  expect(result.placesGroup).toBe('settings-options-labels')
   expect(result.road).toBe('settings-pane-planet')
-  expect(result.layersTitle).toBe('Land')
-  expect(result.asphaltTitle).toBe('Asphalt contrast')
-  expect(result.copy).toBe('settings-pane-dev')
-  expect(result.configText).toContain('cloudAmount=0.35')
+  expect(result.roadGroup).toBe('road-style')
+  expect(result.groundGroup).toBe('terrain-source')
+  expect(result.sourceTitle).toBe('Source')
+  expect(result.layersTitle).toBe('Buildings')
+  expect(result.asphaltTitle).toBe('Infrastructures')
+  expect(result.copy).toBeUndefined()
+  expect(result.configText).toBeUndefined()
   expect(result.planetHasCopy).toBe(false)
   expect(result.sky).toBe('settings-pane-planet')
-  expect(result.clouds).toBe('settings-layer-air')
-  expect(result.flare).toBe('settings-lens-flare')
+  expect(result.clouds).toBe('settings-planet-air')
+  expect(result.flare).toBe('settings-layer-celestial')
   expect(result.vehicles).toBe('settings-pane-planet')
   await page.locator('#settings-toggle').click()
   await expect(page.locator('.settings-header strong')).toHaveText('EUSKADI.ONLINE')
   await expect(page.locator('#settings-toggle')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Back to the game' })).toBeVisible()
-  await page.getByRole('tab', { name: 'Development' }).click()
-  const branch = page.locator('#settings-pane-dev .settings-nav-group')
-  await expect(branch).toHaveAttribute('open', '')
+  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await expect(page.locator('#settings-system-info')).toBeVisible()
+  await expect(page.locator('#settings-system-info')).toContainText('Active renderer')
+  await expect(page.locator('#settings-system-info')).toContainText('Not reported')
+  await expect(page.locator('#settings-system-info')).toContainText('FPS limit (not measured FPS)')
+  await page.setViewportSize({ width: 390, height: 740 })
+  await expect(page.locator('#settings-system-info')).toBeVisible()
+  expect(
+    await page.locator('#settings-system-info').evaluate((el) => el.scrollWidth <= el.clientWidth),
+  ).toBe(true)
+  await page.screenshot({ path: 'tmp/system-info-mobile.png' })
+  await page.setViewportSize({ width: 1440, height: 960 })
+  const search = page.getByRole('searchbox', { name: 'Search settings' })
+  await search.fill('Mouse sensitivity')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Mouse and gamepad/ })
+    .click()
+  await page.locator('#input-mouseSensitivity').fill('2')
+  await page.locator('#input-invertMouseY').check()
+  await page.locator('#input-gamepadDeadzone').fill('0.25')
+  expect(await page.evaluate(() => (window as any).__rt.inputPreferences)).toEqual({
+    mouseSensitivity: 2,
+    invertMouseY: true,
+    steeringRiseSeconds: 0.4,
+    steeringReleaseSeconds: 0.12,
+    gamepadDeadzone: 0.25,
+  })
+  await expect(page.locator('#settings-distances #terrain-cache-distance')).toHaveCount(1)
+  await expect(page.locator('#settings-distances #terrain-cache-memory')).toHaveCount(1)
+  await expect(page.locator('#terrain-cache #terrain-cache-disk')).toHaveCount(1)
+  await search.fill('View transition')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Video.*Options/ })
+    .click()
+  await page.locator('#camera-transition').fill('0')
+  await page.locator('#camera-transition').press('Tab')
+  await page.locator('#camera-auto-center').uncheck()
+  await expect(page.locator('#camera-auto-center-delay')).toBeDisabled()
+  await search.fill('Steering response')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Keyboard steering/ })
+    .click()
+  await page.locator('#keyboard-rise').fill('0.2')
+  await page.locator('#keyboard-rise').press('Tab')
+  expect(await page.evaluate(() => (window as any).__rt.inputPreferences.steeringRiseSeconds)).toBe(
+    0.2,
+  )
+  await search.fill('Sun shadow maps')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Shadows/ })
+    .click()
+  await expect(page.locator('#sun-shadow-quality')).toHaveValue('profile')
+  await expect(page.locator('#sun-shadow-quality option[value="4096"]')).toHaveText(
+    '2048 px × 4 cascades',
+  )
+  await search.fill('Rain')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Weather/ })
+    .click()
+  await expect(page.locator('#ps-rain')).toBeEnabled()
+  await page.evaluate(() => history.replaceState(null, '', '?rain=0.8&keep=1'))
+  await page.locator('#ps-rain').fill('65')
+  expect(new URL(page.url()).searchParams.has('rain')).toBe(false)
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('1')
+  await expect(page.locator('#ps-rain-val')).toHaveText('65%')
+  await page.locator('#ps-rain').fill('0')
+  await expect(page.locator('#ps-rain-val')).toHaveText('Off')
+  expect(await page.evaluate(() => (window as any).__rt.rainAmount)).toBe(0)
+  await search.fill('horizon')
+  await page.keyboard.press('ArrowDown')
+  await expect(
+    page
+      .locator('#settings-search-results')
+      .getByRole('button', { name: /World.*Environment.*Celestial bodies/ }),
+  ).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('#ps-moon-horizon-scale')).toBeVisible()
+  await search.focus()
+  await page.keyboard.press('Tab')
+  await expect(page.locator('#settings-window')).toBeVisible()
+  await search.fill('no-such-setting-123')
+  await expect(page.locator('#settings-search-results').getByRole('status')).toHaveText(
+    'No matching settings',
+  )
+  await page.getByRole('button', { name: 'Clear search' }).click()
+  await expect(search).toHaveValue('')
+  await search.fill('shadows')
+  await page
+    .locator('#settings-search-results')
+    .getByRole('button', { name: /Settings.*Video.*Shadows/ })
+    .click()
+  await expect(page.locator('#settings-video-shadows')).toBeVisible()
+  for (const id of [
+    'quality-shadows',
+    'settings-sign-shadows',
+    'settings-experimental-light-shadows',
+    'settings-light-shadows',
+    'settings-headlamp',
+  ]) {
+    await expect(page.locator('#settings-video-shadows #' + id)).toBeVisible()
+  }
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click()
+  const branch = page.locator('#settings-pane-options details[data-nav-group="weapons"]')
+  await branch.locator('summary').click()
   const indent = await branch
     .getByRole('button', { name: 'Aiming', exact: true })
     .evaluate((el) => getComputedStyle(el).marginLeft)
@@ -338,20 +502,45 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   await page.getByRole('tab', { name: 'Settings', exact: true }).click()
   await expect(page.locator('.settings-footer button')).toHaveCount(0)
   await expect(page.locator('#settings-defaults')).toHaveCount(0)
-  // Settings › Camera is a group: open it to reach its Action Cam section.
+  // Settings › Video contains Bodycam.
   await page
     .locator('#settings-pane-options .settings-nav-group', {
-      has: page.locator('summary', { hasText: /^Camera$/ }),
+      has: page.locator('summary', { hasText: /^Video$/ }),
     })
     .evaluate((group) => ((group as HTMLDetailsElement).open = true))
-  await page.getByRole('button', { name: 'Action Cam', exact: true }).click()
+  await page.getByRole('button', { name: 'Quality', exact: true }).click()
+  expect(
+    await page
+      .locator('#display-quality-section input')
+      .evaluateAll((els) => els.map((el) => el.id)),
+  ).toEqual([
+    'display-quality',
+    'display-scale',
+    'display-scale-auto',
+    'anisotropy',
+    'display-fsr',
+    'display-fsr-sharpness',
+  ])
+  await page.getByRole('button', { name: 'Bodycam', exact: true }).click()
   await page.locator('#camera-action-cam-settings').getByText('Angles', { exact: true }).click()
   await expect(page.locator('#action-cam-stepRollRadians')).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 740 })
+  const bodycamHeaders = page.locator('#camera-action-cam-settings > details > summary')
+  for (const header of await bodycamHeaders.all()) {
+    expect(await header.evaluate((el) => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(
+      36,
+    )
+    expect(await header.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  }
+  await page.locator('#camera-action-cam-settings').getByText('Angles', { exact: true }).click()
+  await page.screenshot({ path: 'tmp/bodycam-mobile.png' })
+  await page.setViewportSize({ width: 1440, height: 960 })
   await expect(
     page.locator(
       '#settings-pane-options .settings-sections button[data-section="settings-action-cam"]',
     ),
   ).toHaveCount(1)
+  await openNavGroups(page)
   await page.getByRole('button', { name: 'Settings management', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Save all settings as JSON', exact: true }),
@@ -390,16 +579,20 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   expect(
     await page.locator('#settings-map').evaluate((el) => getComputedStyle(el, '::before').display),
   ).toBe('none')
-  // World › View › Atmosphere (the sky layer section).
+  // World > Environment > Atmosphere (the sky layer section).
   await page
     .locator('#settings-pane-planet .settings-nav-group', {
-      has: page.locator('summary', { hasText: /^View$/ }),
+      has: page.locator('summary', { hasText: /^Environment$/ }),
     })
     .evaluate((group) => ((group as HTMLDetailsElement).open = true))
   await page.getByRole('button', { name: 'Atmosphere', exact: true }).click()
   expect(
     await mobileBody.evaluate((el) => el.previousElementSibling?.getAttribute('data-section')),
   ).toBe('settings-layer-air')
+  await page.getByRole('button', { name: 'Celestial bodies', exact: true }).click()
+  await expect(page.locator('#ps-moon')).toBeVisible()
+  await expect(page.locator('#ps-moon-horizon-scale')).toBeVisible()
+  await expect(page.locator('#ps-stars')).toBeVisible()
   const row = page.locator('#ps-sun').locator('xpath=ancestor::label')
   const nameBox = await row.locator('.settings-row-name').boundingBox()
   const valueBox = await row.locator('.settings-row-value').boundingBox()
@@ -413,10 +606,13 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     .poll(() => mobileBody.evaluate((el) => el.parentElement?.id))
     .toBe('settings-pane-planet')
   await expect(page.locator('#ps-sun')).toBeVisible()
-  // Traffic signs is a member of the flat World › View › Options section.
+  // Traffic signs has its own section under World > Terrain.
+  await page.locator('#settings-pane-planet details[data-nav-group="terrain"]').evaluate((el) => {
+    ;(el as HTMLDetailsElement).open = true
+  })
   await page
     .locator('#settings-pane-planet')
-    .getByRole('button', { name: 'Options', exact: true })
+    .getByRole('button', { name: 'Traffic signs', exact: true })
     .click()
   const count = page.getByRole('spinbutton', { name: 'Maximum count value', exact: true })
   await expect(count).toBeEnabled()
@@ -440,13 +636,14 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     name: 'Rear light: up / down (m)',
     exact: true,
   })
-  // World › Weapons resets the weapon wheel.
-  await page.getByRole('tab', { name: 'World', exact: true }).click()
-  await openNavGroups(page)
-  // With no combat section on this page the Weapons group is a single button.
+  // Settings > Weapons includes the weapon wheel preferences.
+  await page.getByRole('tab', { name: 'Settings', exact: true }).click()
+  await page.locator('#settings-pane-options details[data-nav-group="weapons"]').evaluate((el) => {
+    ;(el as HTMLDetailsElement).open = true
+  })
   await page
-    .locator('#settings-pane-planet')
-    .getByRole('button', { name: 'Weapons', exact: true })
+    .locator('#settings-pane-options')
+    .getByRole('button', { name: 'Weapon wheel', exact: true })
     .click()
   await page.getByRole('button', { name: 'Reset weapon wheel' }).click()
   expect(
@@ -456,8 +653,10 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   ).toBe(1)
   // Settings › Camera › field of view.
   await page.getByRole('tab', { name: 'Settings', exact: true }).click()
-  await openNavGroups(page)
-  await page.getByRole('button', { name: 'Field of view', exact: true }).click()
+  await page.locator('#settings-pane-options details[data-nav-group="video"]').evaluate((el) => {
+    ;(el as HTMLDetailsElement).open = true
+  })
+  await page.getByRole('button', { name: 'Options', exact: true }).click()
   await page.getByRole('slider', { name: 'Field of view (°)' }).fill('6')
   expect(
     await page.evaluate(
@@ -535,5 +734,7 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   await page.keyboard.press('Tab')
   await expect(page.locator('#settings-window')).toBeVisible()
   await page.keyboard.press('Tab')
+  await expect(page.locator('#settings-window')).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.locator('#settings-window')).toBeHidden()
 })

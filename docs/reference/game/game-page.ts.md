@@ -171,24 +171,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `mapTileAt`
 
-## callback@335
+## callback@338
 
-[Implementation, line 335](../../../game/game-page.ts#L335)
+[Implementation, line 338](../../../game/game-page.ts#L338)
 
 ```ts
-callback@335(): inferred by TypeScript; see implementation
+callback@338(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `document.getElementById`
 
-## callback@337
+## callback@340
 
-[Implementation, line 337](../../../game/game-page.ts#L337)
+[Implementation, line 340](../../../game/game-page.ts#L340)
 
 ```ts
-callback@337(sample): inferred by TypeScript; see implementation
+callback@340(sample): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -197,7 +197,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onProgress
 
-[Implementation, line 343](../../../game/game-page.ts#L343)
+[Implementation, line 346](../../../game/game-page.ts#L346)
 
 ```ts
 onProgress(status, tiles): inferred by TypeScript; see implementation
@@ -212,7 +212,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onFrame
 
-[Implementation, line 349](../../../game/game-page.ts#L349)
+[Implementation, line 352](../../../game/game-page.ts#L352)
 
 ```ts
 onFrame(frame): inferred by TypeScript; see implementation
@@ -225,7 +225,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onError
 
-[Implementation, line 353](../../../game/game-page.ts#L353)
+[Implementation, line 356](../../../game/game-page.ts#L356)
 
 ```ts
 onError(error): inferred by TypeScript; see implementation
@@ -238,7 +238,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## onMessage
 
-[Implementation, line 356](../../../game/game-page.ts#L356)
+[Implementation, line 359](../../../game/game-page.ts#L359)
 
 ```ts
 onMessage(message): inferred by TypeScript; see implementation
@@ -248,24 +248,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `document.getElementById`
 
-## callback@363
+## callback@366
 
-[Implementation, line 363](../../../game/game-page.ts#L363)
+[Implementation, line 366](../../../game/game-page.ts#L366)
 
 ```ts
-callback@363(): inferred by TypeScript; see implementation
+callback@366(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `runtime?.dispose`
 
-## callback@375
+## callback@378
 
-[Implementation, line 375](../../../game/game-page.ts#L375)
+[Implementation, line 378](../../../game/game-page.ts#L378)
 
 ```ts
-callback@375(): inferred by TypeScript; see implementation
+callback@378(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -276,12 +276,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `runtime!.beforeReveal`
 - `startBootPhase`
 
-## callback@375.callback@386
+## callback@378.callback@389
 
-[Implementation, line 386](../../../game/game-page.ts#L386)
+[Implementation, line 389](../../../game/game-page.ts#L389)
 
 ```ts
-callback@386(): inferred by TypeScript; see implementation
+callback@389(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

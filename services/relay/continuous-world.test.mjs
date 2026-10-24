@@ -382,3 +382,25 @@ test(
     assert.ok(!a.inbox.some((m) => m.kind === 'death' && m.data.t === a.welcome.peer))
   },
 )
+
+test('reloading a personal start vehicle reuses its stable identity and saved pose', async (t) => {
+  const relay = await setup(t)
+  const first = await join(relay)
+  const car = { i: 'start.reload-test', y: 'vehicle', p: [7, 0, 3], q: [0, 0, 0, 1] }
+  event(first, 'entity.spawn', car)
+  await until(() => first.objects.has(car.i))
+  const resume = first.welcome.resume
+  first.close()
+  await once(first, 'close')
+  for (let reload = 0; reload < 3; reload++) {
+    const next = await join(relay, [0, 0, 0], { resume })
+    assert.equal(next.objects.size, 1)
+    // The new page's provisional spawn must not replace the parked car's pose.
+    event(next, 'entity.spawn', { ...car, p: [0, 0, 0] })
+    const response = await next.next('event', (m) => m.kind === 'entity' && m.data.i === car.i)
+    assert.deepEqual(response.data.p, car.p)
+    assert.equal(next.objects.size, 1)
+    next.close()
+    await once(next, 'close')
+  }
+})

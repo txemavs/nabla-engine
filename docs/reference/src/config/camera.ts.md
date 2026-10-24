@@ -12,7 +12,7 @@ Shared camera recovery settings. Durations carry explicit Ms/Seconds names.
 
 ## resolveGameCameraSettings
 
-[Implementation, line 189](../../../../src/config/camera.ts#L189)
+[Implementation, line 191](../../../../src/config/camera.ts#L191)
 
 Copy overrides and validate finite values and ordered camera ranges before use.
 
@@ -25,9 +25,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `Object.entries`
 - `RangeError`
+- `TypeError`
 
 Explicit throws in this body:
 
+- `new TypeError('autoCenterEnabled must be boolean')`
 - `new RangeError(\`${name} must be finite and non-negative\`)`
 - `new RangeError(\`${key} must be positive\`)`
 - `new RangeError(\`${high} must exceed ${low}\`)`
@@ -37,7 +39,7 @@ Explicit throws in this body:
 
 ## cameraRecovery
 
-[Implementation, line 227](../../../../src/config/camera.ts#L227)
+[Implementation, line 233](../../../../src/config/camera.ts#L233)
 
 Return recovery strength after the manual-look grace period, including zero-duration ramps.
 

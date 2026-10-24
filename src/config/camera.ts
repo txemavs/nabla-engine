@@ -1,5 +1,7 @@
 /** Shared camera recovery settings. Durations carry explicit Ms/Seconds names. */
 export interface GameCameraSettings {
+  /** Disable automatic heading/framing recovery without changing manual look or collision safety. */
+  autoCenterEnabled?: boolean
   /** Time without manual look before automatic heading and framing can resume. */
   autoCenterDelayMs: number
   /** Smooth recovery ramp after the delay; zero resumes immediately. */
@@ -191,7 +193,11 @@ export function resolveGameCameraSettings(
 ): GameCameraSettings {
   const settings = { ...gameCameraDefaults, ...overrides }
   for (const [name, value] of Object.entries(settings)) {
-    if (!Number.isFinite(value) || value < 0)
+    if (name === 'autoCenterEnabled') {
+      if (typeof value !== 'boolean') throw new TypeError('autoCenterEnabled must be boolean')
+      continue
+    }
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0)
       throw new RangeError(`${name} must be finite and non-negative`)
   }
   for (const key of [
@@ -228,6 +234,7 @@ export function cameraRecovery(
   sinceLookMs: number,
   settings: Readonly<GameCameraSettings>,
 ): number {
+  if (settings.autoCenterEnabled === false) return 0
   if (sinceLookMs <= settings.autoCenterDelayMs) return 0
   if (settings.autoCenterBlendMs === 0) return 1
   const t = Math.min(1, (sinceLookMs - settings.autoCenterDelayMs) / settings.autoCenterBlendMs)

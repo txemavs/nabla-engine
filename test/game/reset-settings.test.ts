@@ -17,6 +17,8 @@ it('clears game preferences and per-model settings without clearing terrain or u
       delete storage[key]
     },
   })
+  Object.defineProperty(storage, 'length', { get: () => Object.keys(storage).length })
+  Object.defineProperty(storage, 'key', { value: (i: number) => Object.keys(storage)[i] ?? null })
   resetGameSettings(storage)
   expect(Object.keys(storage)).toEqual(['nabla.terrain.cache', 'other.app'])
 })

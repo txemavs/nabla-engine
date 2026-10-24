@@ -18,7 +18,7 @@ the same root later — do not mount on a monitor in this change.
 
 ## formatPlanetVisualConfig
 
-[Implementation, line 45](../../../../src/runtime/planet-settings-panel.ts#L45)
+[Implementation, line 68](../../../../src/runtime/planet-settings-panel.ts#L68)
 
 ```ts
 formatPlanetVisualConfig(config: PlanetVisualConfig): string
@@ -31,7 +31,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## planetVisualConfigFromRuntime
 
-[Implementation, line 59](../../../../src/runtime/planet-settings-panel.ts#L59)
+[Implementation, line 86](../../../../src/runtime/planet-settings-panel.ts#L86)
 
 ```ts
 planetVisualConfigFromRuntime(runtime: PlanetSettingsRuntime): PlanetVisualConfig
@@ -39,7 +39,7 @@ planetVisualConfigFromRuntime(runtime: PlanetSettingsRuntime): PlanetVisualConfi
 
 ## round3
 
-[Implementation, line 72](../../../../src/runtime/planet-settings-panel.ts#L72)
+[Implementation, line 103](../../../../src/runtime/planet-settings-panel.ts#L103)
 
 ```ts
 round3(n: number): string
@@ -52,7 +52,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## pct
 
-[Implementation, line 76](../../../../src/runtime/planet-settings-panel.ts#L76)
+[Implementation, line 107](../../../../src/runtime/planet-settings-panel.ts#L107)
 
 ```ts
 pct(n: number): string
@@ -64,7 +64,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel
 
-[Implementation, line 99](../../../../src/runtime/planet-settings-panel.ts#L99)
+[Implementation, line 130](../../../../src/runtime/planet-settings-panel.ts#L130)
 
 Build the compact Planeta form. Call `installVehicleMonitorStyles` on the
 document (or CSS3D layer) before showing so classes resolve.
@@ -85,20 +85,25 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `doc.createElement`
 - `flare.addEventListener`
 - `installVehicleMonitorStyles`
+- `moon.addEventListener`
+- `moonScale.addEventListener`
 - `pressure.addEventListener`
 - `pressureMode.add`
 - `pressureMode.addEventListener`
+- `rain.addEventListener`
+- `rain.setAttribute`
 - `root.append`
 - `row`
 - `sea.addEventListener`
 - `sky.addEventListener`
+- `stars.addEventListener`
 - `sun.addEventListener`
 - `t`
 - `toggles.append`
 
 ## createPlanetSettingsPanel.row
 
-[Implementation, line 106](../../../../src/runtime/planet-settings-panel.ts#L106)
+[Implementation, line 137](../../../../src/runtime/planet-settings-panel.ts#L137)
 
 ```ts
 row(labelText: string, control: HTMLElement, valueEl?: HTMLElement): HTMLLabelElement
@@ -111,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel.pressureModeFor
 
-[Implementation, line 207](../../../../src/runtime/planet-settings-panel.ts#L207)
+[Implementation, line 268](../../../../src/runtime/planet-settings-panel.ts#L268)
 
 ```ts
 pressureModeFor(value: number): string
@@ -121,12 +126,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `CLOUD_PRESSURE_PRESETS.find`
 
-## createPlanetSettingsPanel.pressureModeFor.callback@208
+## createPlanetSettingsPanel.pressureModeFor.callback@269
 
-[Implementation, line 208](../../../../src/runtime/planet-settings-panel.ts#L208)
+[Implementation, line 269](../../../../src/runtime/planet-settings-panel.ts#L269)
 
 ```ts
-callback@208(p): inferred by TypeScript; see implementation
+callback@269(p): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -135,7 +140,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel.refresh
 
-[Implementation, line 212](../../../../src/runtime/planet-settings-panel.ts#L212)
+[Implementation, line 273](../../../../src/runtime/planet-settings-panel.ts#L273)
 
 ```ts
 refresh(): inferred by TypeScript; see implementation
@@ -144,15 +149,17 @@ refresh(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.round`
+- `Number`
 - `String`
 - `formatPlanetVisualConfig`
 - `pct`
 - `planetVisualConfigFromRuntime`
 - `pressureModeFor`
+- `rain.setAttribute`
 
 ## createPlanetSettingsPanel.applyWeather
 
-[Implementation, line 235](../../../../src/runtime/planet-settings-panel.ts#L235)
+[Implementation, line 307](../../../../src/runtime/planet-settings-panel.ts#L307)
 
 ```ts
 applyWeather(): inferred by TypeScript; see implementation
@@ -166,7 +173,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel.bind
 
-[Implementation, line 241](../../../../src/runtime/planet-settings-panel.ts#L241)
+[Implementation, line 313](../../../../src/runtime/planet-settings-panel.ts#L313)
 
 ```ts
 bind(next: PlanetSettingsRuntime): inferred by TypeScript; see implementation
@@ -176,12 +183,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `refresh`
 
-## createPlanetSettingsPanel.callback@246
+## createPlanetSettingsPanel.callback@318
 
-[Implementation, line 246](../../../../src/runtime/planet-settings-panel.ts#L246)
+[Implementation, line 318](../../../../src/runtime/planet-settings-panel.ts#L318)
 
 ```ts
-callback@246(): inferred by TypeScript; see implementation
+callback@318(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -189,12 +196,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setPlanetLayers`
 
-## createPlanetSettingsPanel.callback@250
+## createPlanetSettingsPanel.callback@322
 
-[Implementation, line 250](../../../../src/runtime/planet-settings-panel.ts#L250)
+[Implementation, line 322](../../../../src/runtime/planet-settings-panel.ts#L322)
 
 ```ts
-callback@250(): inferred by TypeScript; see implementation
+callback@322(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -202,12 +209,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setPlanetLayers`
 
-## createPlanetSettingsPanel.callback@254
+## createPlanetSettingsPanel.callback@326
 
-[Implementation, line 254](../../../../src/runtime/planet-settings-panel.ts#L254)
+[Implementation, line 326](../../../../src/runtime/planet-settings-panel.ts#L326)
 
 ```ts
-callback@254(): inferred by TypeScript; see implementation
+callback@326(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -215,12 +222,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setPlanetLayers`
 
-## createPlanetSettingsPanel.callback@258
+## createPlanetSettingsPanel.callback@330
 
-[Implementation, line 258](../../../../src/runtime/planet-settings-panel.ts#L258)
+[Implementation, line 330](../../../../src/runtime/planet-settings-panel.ts#L330)
 
 ```ts
-callback@258(): inferred by TypeScript; see implementation
+callback@330(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -228,12 +235,52 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setPlanetLayers`
 
-## createPlanetSettingsPanel.callback@262
+## createPlanetSettingsPanel.callback@334
 
-[Implementation, line 262](../../../../src/runtime/planet-settings-panel.ts#L262)
+[Implementation, line 334](../../../../src/runtime/planet-settings-panel.ts#L334)
 
 ```ts
-callback@262(): inferred by TypeScript; see implementation
+callback@334(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `refresh`
+- `runtime?.setMoonHorizonScale`
+
+## createPlanetSettingsPanel.callback@338
+
+[Implementation, line 338](../../../../src/runtime/planet-settings-panel.ts#L338)
+
+```ts
+callback@338(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `refresh`
+- `runtime?.setPlanetLayers`
+
+## createPlanetSettingsPanel.callback@342
+
+[Implementation, line 342](../../../../src/runtime/planet-settings-panel.ts#L342)
+
+```ts
+callback@342(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `refresh`
+- `runtime?.setPlanetLayers`
+
+## createPlanetSettingsPanel.callback@346
+
+[Implementation, line 346](../../../../src/runtime/planet-settings-panel.ts#L346)
+
+```ts
+callback@346(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -241,12 +288,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setCloudStyle`
 
-## createPlanetSettingsPanel.callback@268
+## createPlanetSettingsPanel.callback@351
 
-[Implementation, line 268](../../../../src/runtime/planet-settings-panel.ts#L268)
+[Implementation, line 351](../../../../src/runtime/planet-settings-panel.ts#L351)
 
 ```ts
-callback@268(): inferred by TypeScript; see implementation
+callback@351(): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Number`
+- `refresh`
+- `runtime?.setRainAmount`
+
+## createPlanetSettingsPanel.callback@356
+
+[Implementation, line 356](../../../../src/runtime/planet-settings-panel.ts#L356)
+
+```ts
+callback@356(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -256,20 +317,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `String`
 - `applyWeather`
 
-## createPlanetSettingsPanel.callback@268.callback@269
+## createPlanetSettingsPanel.callback@356.callback@357
 
-[Implementation, line 269](../../../../src/runtime/planet-settings-panel.ts#L269)
+[Implementation, line 357](../../../../src/runtime/planet-settings-panel.ts#L357)
 
 ```ts
-callback@269(p): inferred by TypeScript; see implementation
+callback@357(p): inferred by TypeScript; see implementation
 ```
 
-## createPlanetSettingsPanel.callback@274
+## createPlanetSettingsPanel.callback@362
 
-[Implementation, line 274](../../../../src/runtime/planet-settings-panel.ts#L274)
+[Implementation, line 362](../../../../src/runtime/planet-settings-panel.ts#L362)
 
 ```ts
-callback@274(): inferred by TypeScript; see implementation
+callback@362(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -278,12 +339,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `refresh`
 - `runtime?.setLensFlareAmount`
 
-## createPlanetSettingsPanel.callback@278
+## createPlanetSettingsPanel.callback@366
 
-[Implementation, line 278](../../../../src/runtime/planet-settings-panel.ts#L278)
+[Implementation, line 366](../../../../src/runtime/planet-settings-panel.ts#L366)
 
 ```ts
-callback@278(): inferred by TypeScript; see implementation
+callback@366(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -292,12 +353,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `setTimeout`
 - `t`
 
-## createPlanetSettingsPanel.callback@278.callback@283
+## createPlanetSettingsPanel.callback@366.callback@371
 
-[Implementation, line 283](../../../../src/runtime/planet-settings-panel.ts#L283)
+[Implementation, line 371](../../../../src/runtime/planet-settings-panel.ts#L371)
 
 ```ts
-callback@283(): inferred by TypeScript; see implementation
+callback@371(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -306,7 +367,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel.snapshot
 
-[Implementation, line 296](../../../../src/runtime/planet-settings-panel.ts#L296)
+[Implementation, line 384](../../../../src/runtime/planet-settings-panel.ts#L384)
 
 ```ts
 snapshot(): inferred by TypeScript; see implementation
@@ -318,7 +379,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## createPlanetSettingsPanel.destroy
 
-[Implementation, line 297](../../../../src/runtime/planet-settings-panel.ts#L297)
+[Implementation, line 385](../../../../src/runtime/planet-settings-panel.ts#L385)
 
 ```ts
 destroy(): inferred by TypeScript; see implementation

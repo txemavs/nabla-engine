@@ -11,7 +11,7 @@ Planeta visual defaults and the player's saved override.
 
 ## isHighQualityPreset
 
-[Implementation, line 37](../../../../src/runtime/planet-visual.ts#L37)
+[Implementation, line 48](../../../../src/runtime/planet-visual.ts#L48)
 
 ```ts
 isHighQualityPreset(preset: string): boolean
@@ -19,7 +19,7 @@ isHighQualityPreset(preset: string): boolean
 
 ## finite01
 
-[Implementation, line 43](../../../../src/runtime/planet-visual.ts#L43)
+[Implementation, line 54](../../../../src/runtime/planet-visual.ts#L54)
 
 ```ts
 finite01(value: unknown): number | undefined
@@ -31,23 +31,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readSavedPlanetVisual
 
-[Implementation, line 50](../../../../src/runtime/planet-visual.ts#L50)
+[Implementation, line 61](../../../../src/runtime/planet-visual.ts#L61)
 
 The player's saved Planeta knobs, or undefined when nothing usable is stored.
 
 ```ts
-readSavedPlanetVisual(storage: PlanetStorage | null | undefined): PlanetVisualSettings | undefined
+readSavedPlanetVisual(storage: PlanetStorage | null | undefined): Required<PlanetVisualSettings> | undefined
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `JSON.parse`
+- `Number.isFinite`
 - `finite01`
 - `storage?.getItem`
 
 ## writeSavedPlanetVisual
 
-[Implementation, line 87](../../../../src/runtime/planet-visual.ts#L87)
+[Implementation, line 108](../../../../src/runtime/planet-visual.ts#L108)
 
 Remember the player's Planeta knobs. Storage errors are ignored.
 

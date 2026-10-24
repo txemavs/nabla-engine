@@ -159,7 +159,7 @@ export class GeographicView {
   private readonly globe: ReturnType<typeof createGlobeClouds>
   private readonly air: THREE.Mesh
   private readonly cloudPass = new THREE.Scene()
-  private moonSize = 9
+  private moonSize = 5
   private webgpuPass?: WebGPUSkyPass
   private cloudStyle: 'low' | 'artistic' = 'artistic'
   private cloudsWanted = true
@@ -244,6 +244,7 @@ export class GeographicView {
     )
     this.air = createAirGlow(this.sunDirection, earthRadius + 0.14)
     this.flare = createLensFlare(this.sunDirection)
+    this.flare.intensity.value = 0.5
     // No bright sun disc/flare while the planet is still the black placeholder.
     this.sunDisc.value.set('#000000')
     this.flare.mesh.visible = false
@@ -554,6 +555,7 @@ export class GeographicView {
     planets: boolean
     sun: boolean
     moon?: boolean
+    stars?: boolean
     clouds?: boolean
   }) {
     this.backdrop.visible = layers.sky
@@ -561,8 +563,8 @@ export class GeographicView {
     this.syncClouds()
     this.earth.visible = layers.planets
     this.air.visible = layers.sky
-    this.moon.visible = layers.planets && layers.moon !== false
-    this.night.root.visible = layers.planets
+    this.moon.visible = layers.moon ?? layers.planets
+    this.night.root.visible = layers.stars ?? layers.planets
     this.sunWanted = layers.sun
     this.syncSunPresentation()
   }

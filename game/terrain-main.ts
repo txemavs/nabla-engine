@@ -146,6 +146,9 @@ try {
   )
   runtime = new GameRuntime({
     backend,
+    rain: new URLSearchParams(pageSearch()).has('rain')
+      ? Math.max(0, Math.min(1, Number(new URLSearchParams(pageSearch()).get('rain')) || 0))
+      : undefined,
     xrSplashUrl: boot.splash?.logoUrl,
     fsr: readFsrSettings(),
     performanceLog: new URLSearchParams(pageSearch()).get('perfLog') === '1',

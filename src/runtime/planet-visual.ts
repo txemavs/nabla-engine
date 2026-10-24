@@ -3,6 +3,13 @@
 export const planetVisualStorageKey = 'nabla.planetVisual'
 
 export interface PlanetVisualSettings {
+  /** Rain intensity, 0 (off)..1. */
+  rainAmount?: number
+  /** Independent celestial visibility; absent legacy values inherit sky. */
+  moon?: boolean
+  stars?: boolean
+  /** Horizon-only magnification, 1..16; default is 5. */
+  moonHorizonScale?: number
   sky: boolean
   sun: boolean
   sea: boolean
@@ -15,15 +22,19 @@ export interface PlanetVisualSettings {
    * shows Personalizado.
    */
   cloudPressure: number
-  /** Sun flare, 0..1. 0.8 is "Destello del sol" at 80%. */
+  /** Sun flare, 0..1. 0.5 is the default 50%. */
   lensFlareAmount: number
 }
 
 /**
  * Planeta defaults when graphics quality is Alto or Ultra. Lower tiers keep the
- * previous engine defaults (cheap clouds, 35% cover, stable pressure, full flare).
+ * previous engine defaults (cheap clouds, 35% cover, stable pressure, 50% flare).
  */
 export const highPlanetVisual: PlanetVisualSettings = Object.freeze({
+  rainAmount: 0,
+  moon: true,
+  stars: true,
+  moonHorizonScale: 5,
   sky: true,
   sun: true,
   sea: true,
@@ -31,7 +42,7 @@ export const highPlanetVisual: PlanetVisualSettings = Object.freeze({
   cloudStyle: 'artistic',
   cloudAmount: 0.4,
   cloudPressure: 0.8,
-  lensFlareAmount: 0.8,
+  lensFlareAmount: 0.5,
 })
 
 export function isHighQualityPreset(preset: string): boolean {
@@ -49,7 +60,7 @@ function finite01(value: unknown): number | undefined {
 /** The player's saved Planeta knobs, or undefined when nothing usable is stored. */
 export function readSavedPlanetVisual(
   storage: PlanetStorage | null | undefined,
-): PlanetVisualSettings | undefined {
+): Required<PlanetVisualSettings> | undefined {
   try {
     const raw = storage?.getItem(planetVisualStorageKey)
     if (!raw) return undefined
@@ -69,6 +80,16 @@ export function readSavedPlanetVisual(
     )
       return undefined
     return {
+      rainAmount: finite01(value.rainAmount) ?? 0,
+      moon: typeof value.moon === 'boolean' ? value.moon : value.sky,
+      stars: typeof value.stars === 'boolean' ? value.stars : value.sky,
+      moonHorizonScale:
+        typeof value.moonHorizonScale === 'number' &&
+        Number.isFinite(value.moonHorizonScale) &&
+        value.moonHorizonScale >= 1 &&
+        value.moonHorizonScale <= 16
+          ? value.moonHorizonScale
+          : 5,
       sky: value.sky,
       sun: value.sun,
       sea: value.sea,
