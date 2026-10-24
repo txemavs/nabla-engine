@@ -24,14 +24,15 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
   )
   await page.goto('/settings-hud')
   const result = await page.evaluate(async (root) => {
-    const { UsbControllers } = await import(`/@fs/${root}/src/runtime/usb/controllers.ts`)
-    const { menuSection } = await import(`/@fs/${root}/game/menu.ts`)
-    const { mountSettingsHud } = await import(`/@fs/${root}/game/settings-hud.ts`)
+    const moduleRoot = `/@fs/${root.replace(/^\/+/, '')}`
+    const { UsbControllers } = await import(`${moduleRoot}/src/runtime/usb/controllers.ts`)
+    const { menuSection } = await import(`${moduleRoot}/game/menu.ts`)
+    const { mountSettingsHud } = await import(`${moduleRoot}/game/settings-hud.ts`)
     const { normalizeActionCamSettings } = await import(
-      `/@fs/${root}/src/runtime/action-cam-settings.ts`
+      `${moduleRoot}/src/runtime/action-cam-settings.ts`
     )
     const { weaponPoseDefaults, sidearmTuningDefaults } = await import(
-      `/@fs/${root}/src/config/gameplay-tuning.ts`
+      `${moduleRoot}/src/config/gameplay-tuning.ts`
     )
     const check = (section: HTMLElement, id: string) => {
       const label = document.createElement('label')
@@ -229,12 +230,12 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     document.documentElement.dataset.irunSigns = 'true'
     document.documentElement.dataset.signPhysics = 'true'
     const { setTrafficSignsStorageKey } = await import(
-      `/@fs${root}/src/runtime/traffic-signs-host.ts`
+      `${moduleRoot}/src/runtime/traffic-signs-host.ts`
     )
     setTrafficSignsStorageKey('demo-host.signs')
     localStorage.setItem('demo-host.signs', JSON.stringify({ enabled: false }))
     // The HUD persists through runtime.settings (GameRuntime's SettingsStore), as a real runtime does.
-    const { SettingsStore } = await import(`/@fs/${root}/src/runtime/settings-scope.ts`)
+    const { SettingsStore } = await import(`${moduleRoot}/src/runtime/settings-scope.ts`)
     Object.assign(runtime, { settings: new SettingsStore({ mode: 'pc', storage: localStorage }) })
     ;(window as never as { __rt: unknown }).__rt = runtime
     mountSettingsHud(runtime as never)
@@ -446,11 +447,32 @@ test('full-screen settings preserves controls, keyboard catalog and late terrain
     '2048 px × 4 cascades',
   )
   await search.fill('Rain')
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 960 })
+    expect(
+      await page
+        .locator('#settings-search-results')
+        .evaluate((el) => el.scrollWidth <= el.clientWidth),
+    ).toBe(true)
+  }
   await page
     .locator('#settings-search-results')
     .getByRole('button', { name: /Weather/ })
     .click()
   await expect(page.locator('#ps-rain')).toBeEnabled()
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 960 })
+    const rain = page.locator('#ps-rain')
+    await rain.scrollIntoViewIfNeeded()
+    await expect(rain).toHaveCSS('padding', '0px')
+    let box = (await rain.boundingBox())!
+    await page.mouse.click(box.x + box.width - 1, box.y + box.height / 2)
+    await expect(rain).toHaveValue('100')
+    box = (await rain.boundingBox())!
+    await page.mouse.click(box.x + 1, box.y + box.height / 2)
+    await expect(rain).toHaveValue('0')
+  }
+  await page.screenshot({ path: 'tmp/settings-slider-endpoints.png' })
   await page.evaluate(() => history.replaceState(null, '', '?rain=0.8&keep=1'))
   await page.locator('#ps-rain').fill('65')
   expect(new URL(page.url()).searchParams.has('rain')).toBe(false)
