@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **654 modules; 8469 executable function definitions**.
+Coverage: **655 modules; 8472 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -508,7 +508,7 @@ Coverage: **654 modules; 8469 executable function definitions**.
 | [src/runtime/resolution-scale.ts](src/runtime/resolution-scale.ts.md) | 16 |
 | [src/runtime/scenery-physics.ts](src/runtime/scenery-physics.ts.md) | 27 |
 | [src/runtime/session.ts](src/runtime/session.ts.md) | 9 |
-| [src/runtime/settings-backup.ts](src/runtime/settings-backup.ts.md) | 11 |
+| [src/runtime/settings-backup.ts](src/runtime/settings-backup.ts.md) | 12 |
 | [src/runtime/settings-scope.ts](src/runtime/settings-scope.ts.md) | 23 |
 | [src/runtime/shader-diagnostics.ts](src/runtime/shader-diagnostics.ts.md) | 4 |
 | [src/runtime/shooting.ts](src/runtime/shooting.ts.md) | 6 |
@@ -525,6 +525,7 @@ Coverage: **654 modules; 8469 executable function definitions**.
 | [src/runtime/touch-flight.ts](src/runtime/touch-flight.ts.md) | 21 |
 | [src/runtime/touch-icons.ts](src/runtime/touch-icons.ts.md) | 1 |
 | [src/runtime/touch-walk.ts](src/runtime/touch-walk.ts.md) | 18 |
+| [src/runtime/traffic-signs-host.ts](src/runtime/traffic-signs-host.ts.md) | 2 |
 | [src/runtime/usb/controllers.ts](src/runtime/usb/controllers.ts.md) | 25 |
 | [src/runtime/usb/feedback.ts](src/runtime/usb/feedback.ts.md) | 22 |
 | [src/runtime/usb/settings-panel.ts](src/runtime/usb/settings-panel.ts.md) | 56 |

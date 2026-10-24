@@ -20,7 +20,7 @@ for (const [mode, query, prefix, fov, quality] of [
           'nabla.settings.headset.quality': 'low',
           'nabla.settings.headset-pc.cameraFov': '23',
           'nabla.settings.headset-pc.quality': 'balanced',
-          'euskadi.irun-signs': JSON.stringify({ enabled: false, radius: 140 }),
+          'demo-host.signs': JSON.stringify({ enabled: false, radius: 140 }),
           token: 'unrelated',
         }
         saved[prefix + 'modeSeeded'] = '1'
