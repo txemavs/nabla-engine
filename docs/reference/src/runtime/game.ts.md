@@ -21,7 +21,7 @@
 - `./held-keys.js`
 - `./game-camera.js`
 
-## GameRuntime.constructor
+## GameplayCoordinator.constructor
 
 [Implementation, line 61](../../../../src/runtime/game.ts#L61)
 
@@ -36,7 +36,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.assign`
 - `createGameCameraState`
 
-## GameRuntime.simulation
+## GameplayCoordinator.simulation
 
 [Implementation, line 66](../../../../src/runtime/game.ts#L66)
 
@@ -46,7 +46,7 @@ Expose the session-owned simulation for presentation, or null outside a live ses
 simulation(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.state
+## GameplayCoordinator.state
 
 [Implementation, line 70](../../../../src/runtime/game.ts#L70)
 
@@ -56,7 +56,7 @@ Read the session phase; this accessor has no lifecycle side effects.
 state(): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.play
+## GameplayCoordinator.play
 
 [Implementation, line 75](../../../../src/runtime/game.ts#L75)
 
@@ -80,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.session.play`
 - `this.streaming.reset`
 
-## GameRuntime.play.callback@81
+## GameplayCoordinator.play.callback@81
 
 [Implementation, line 81](../../../../src/runtime/game.ts#L81)
 
@@ -88,7 +88,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@81(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.releaseInput
+## GameplayCoordinator.releaseInput
 
 [Implementation, line 93](../../../../src/runtime/game.ts#L93)
 
@@ -105,7 +105,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.keys.clear`
 - `this.simulation?.setInput`
 
-## GameRuntime.pause
+## GameplayCoordinator.pause
 
 [Implementation, line 100](../../../../src/runtime/game.ts#L100)
 
@@ -120,7 +120,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.releaseInput`
 - `this.session.pause`
 
-## GameRuntime.resume
+## GameplayCoordinator.resume
 
 [Implementation, line 105](../../../../src/runtime/game.ts#L105)
 
@@ -134,7 +134,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.session.resume`
 
-## GameRuntime.stop
+## GameplayCoordinator.stop
 
 [Implementation, line 109](../../../../src/runtime/game.ts#L109)
 
@@ -150,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.session.stop`
 - `this.streaming.reset`
 
-## GameRuntime.dispose
+## GameplayCoordinator.dispose
 
 [Implementation, line 116](../../../../src/runtime/game.ts#L116)
 
@@ -165,7 +165,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.session.dispose`
 - `this.stop`
 
-## GameRuntime.addVehicles
+## GameplayCoordinator.addVehicles
 
 [Implementation, line 122](../../../../src/runtime/game.ts#L122)
 
@@ -180,7 +180,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `structuredClone`
 - `this.scene?.entities.push`
 
-## GameRuntime.addPlaced
+## GameplayCoordinator.addPlaced
 
 [Implementation, line 126](../../../../src/runtime/game.ts#L126)
 
@@ -195,7 +195,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `structuredClone`
 - `this.scene?.entities.push`
 
-## GameRuntime.removePlaced
+## GameplayCoordinator.removePlaced
 
 [Implementation, line 130](../../../../src/runtime/game.ts#L130)
 
@@ -209,7 +209,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.scene.entities.filter`
 
-## GameRuntime.removePlaced.callback@131
+## GameplayCoordinator.removePlaced.callback@131
 
 [Implementation, line 131](../../../../src/runtime/game.ts#L131)
 
@@ -221,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `ids.includes`
 
-## GameRuntime.removeVehicle
+## GameplayCoordinator.removeVehicle
 
 [Implementation, line 134](../../../../src/runtime/game.ts#L134)
 
@@ -235,7 +235,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.scene.entities.filter`
 
-## GameRuntime.removeVehicle.callback@137
+## GameplayCoordinator.removeVehicle.callback@137
 
 [Implementation, line 137](../../../../src/runtime/game.ts#L137)
 
@@ -243,7 +243,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@137(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.readInput
+## GameplayCoordinator.readInput
 
 [Implementation, line 142](../../../../src/runtime/game.ts#L142)
 
@@ -257,7 +257,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.input.read`
 
-## GameRuntime.step
+## GameplayCoordinator.step
 
 [Implementation, line 166](../../../../src/runtime/game.ts#L166)
 
@@ -281,7 +281,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.recover.roads`
 - `this.session.step`
 
-## GameRuntime.step.callback@185
+## GameplayCoordinator.step.callback@185
 
 [Implementation, line 185](../../../../src/runtime/game.ts#L185)
 
@@ -293,14 +293,14 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.afterStep`
 
-## GameRuntime.afterStep
+## GameplayCoordinator.afterStep
 
 [Implementation, line 189](../../../../src/runtime/game.ts#L189)
 
 Boarding and portal bookkeeping once the step has run.
 
 ```ts
-afterStep(sim: NonNullable<GameRuntime['simulation']>, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
+afterStep(sim: NonNullable<GameplayCoordinator['simulation']>, elapsed: number, now: number, document: SceneDocument): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -310,7 +310,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `last.quaternion.clone`
 - `this.cameraState.telemetry.update`
 
-## GameRuntime.afterStep.callback@213
+## GameplayCoordinator.afterStep.callback@213
 
 [Implementation, line 213](../../../../src/runtime/game.ts#L213)
 
@@ -318,7 +318,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 callback@213(e): inferred by TypeScript; see implementation
 ```
 
-## GameRuntime.updateCamera
+## GameplayCoordinator.updateCamera
 
 [Implementation, line 244](../../../../src/runtime/game.ts#L244)
 
@@ -337,7 +337,7 @@ Explicit throws in this body:
 
 - `new Error('Camera requires a running game')`
 
-## GameRuntime.action
+## GameplayCoordinator.action
 
 [Implementation, line 255](../../../../src/runtime/game.ts#L255)
 
@@ -352,7 +352,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `legacyInputAction`
 - `this.dispatch`
 
-## GameRuntime.dispatch
+## GameplayCoordinator.dispatch
 
 [Implementation, line 262](../../../../src/runtime/game.ts#L262)
 

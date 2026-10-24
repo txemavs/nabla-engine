@@ -44,7 +44,7 @@ Node execution; that is not a recommendation to disable workers in the game.
 
 ## Browser startup
 
-`GameRuntime` validates the scene, planetary coordinates, canvas parent, backend
+`BrowserGameRuntime` validates the scene, planetary coordinates, canvas parent, backend
 canvas identity, tile base, cloneable world content and camera/display/FSR options
 before acquiring render resources or installing instance listeners. Invalid options
 throw synchronously; the host does not receive an instance to dispose.

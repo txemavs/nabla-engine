@@ -304,7 +304,7 @@ import {
 import { descentWarmHeights, type StartCameraSequence } from './start-cameras.js'
 import { RuntimeStartCameraController, START_DESCENT_DAMPING } from './start-camera-controller.js'
 export type { StartCameraName, StartCameraSequence, StartCameraStep } from './start-cameras.js'
-import { GameRuntime as SharedGameRuntime } from './game.js'
+import { GameplayCoordinator } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
@@ -365,7 +365,7 @@ export interface AttractOptions {
    */
   clock?: SkyClock
 }
-/** The steering wheel of the vehicle the player drives (see `GameRuntime.steeringWheel`). */
+/** The steering wheel of the vehicle the player drives (see `BrowserGameRuntime.steeringWheel`). */
 export interface SteeringWheelState {
   vehicleId: string
   /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
@@ -379,7 +379,7 @@ export interface SteeringWheelState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
-/** The mirrors of the vehicle the player drives (see `GameRuntime.mirrors`). */
+/** The mirrors of the vehicle the player drives (see `BrowserGameRuntime.mirrors`). */
 export interface MirrorState {
   vehicleId: string
   /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
@@ -395,7 +395,7 @@ export interface MirrorState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
-/** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
+/** One vehicle's place in the world, from `BrowserGameRuntime.vehiclePlacements`. */
 export interface VehiclePlacement {
   id: string
   name: string
@@ -415,7 +415,7 @@ export interface VehiclePlacement {
   player: boolean
 }
 
-/** A shot fired by the local player, as reported to `GameRuntime.addShotListener`. */
+/** A shot fired by the local player, as reported to `BrowserGameRuntime.addShotListener`. */
 export interface ShotReport {
   /** Weapon position, simulation world. */
   origin: Vec3Tuple
@@ -426,7 +426,7 @@ export interface ShotReport {
 }
 
 /**
- * A shot or arrow the local player fired, as reported to `GameRuntime.addFireListener`: where it
+ * A shot or arrow the local player fired, as reported to `BrowserGameRuntime.addFireListener`: where it
  * left the weapon (muzzle, arrow rest) and where it went, simulation world.
  */
 export interface FireReport {
@@ -441,7 +441,7 @@ export interface FireReport {
   speed?: number
 }
 
-/** `GameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
+/** `BrowserGameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
 export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 
 export interface GameRuntimeOptions {
@@ -592,18 +592,18 @@ export interface GameRuntimeOptions {
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
 
-type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
+type StepResult = Exclude<ReturnType<GameplayCoordinator['step']>, Promise<unknown>>
 
-/** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
+/** A weapon shown on another player's body: see {@link BrowserGameRuntime.createWeaponProp}. */
 export type { WeaponProp } from './player-presentation.js'
 
-/** Host side of the body-slot keys ({@link GameRuntime.setBodySlotHost}). */
+/** Host side of the body-slot keys ({@link BrowserGameRuntime.setBodySlotHost}). */
 export interface BodySlotHost {
   select(slot: BodySlot): boolean
   drop(): void
 }
 
-export class GameRuntime {
+export class BrowserGameRuntime {
   readonly settings: SettingsStore
   private readonly visuals = new RuntimeVisualSettings()
   private readonly versionLabel: HTMLElement | null
@@ -637,7 +637,7 @@ export class GameRuntime {
   private get xrQuality() {
     return this.xrSystem?.quality ?? readXRQuality(this.settings)
   }
-  readonly game = new SharedGameRuntime()
+  readonly game = new GameplayCoordinator()
   readonly session = this.game.session
   /** The one scenery-physics service: sign and traffic-light poles register layers here. */
   readonly sceneryPhysics: SceneryPhysics
@@ -944,7 +944,7 @@ export class GameRuntime {
   private readonly planetPreferences = new RuntimePlanetPreferences()
   private readonly planet = this.planetPreferences.state
 
-  constructor(private readonly options: GameRuntimeOptions) {
+  constructor(private readonly options: BrowserGameRuntimeOptions) {
     if (
       !options?.canvas ||
       typeof options.canvas.getContext !== 'function' ||
@@ -2134,7 +2134,7 @@ export class GameRuntime {
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
   private xrDebug: XRDebugPanel | null = null
   private frameXR(time: number): void {
-    this.frames.drive(GameRuntime.prototype.frameXRSteps.call(this, time))
+    this.frames.drive(BrowserGameRuntime.prototype.frameXRSteps.call(this, time))
   }
   private *frameXRSteps(time: number): FrameSteps {
     const xr = this.xrSystem!
@@ -2515,7 +2515,7 @@ export class GameRuntime {
   /** Run one desktop frame; with the physics worker it pauses at the step until the state arrives. */
   private frame(time: number): void {
     // Called through the prototype so hosts and tests may invoke it on a partial runtime.
-    this.frames.drive(GameRuntime.prototype.frameSteps.call(this, time))
+    this.frames.drive(BrowserGameRuntime.prototype.frameSteps.call(this, time))
   }
   private *frameSteps(time: number): FrameSteps {
     const sim = this.session.simulation
@@ -6702,3 +6702,7 @@ export class GameRuntime {
     if (this.disposed) throw new Error('Game runtime disposed')
   }
 }
+
+/** Compatibility aliases; constructor and option shape remain identical. */
+export { BrowserGameRuntime as GameRuntime }
+export type BrowserGameRuntimeOptions = GameRuntimeOptions

@@ -162,3 +162,18 @@ package check passes all 72 public entries, Node examples, old/new export identi
 checks and TypeScript contracts. The manual session example and browser example
 typecheck also pass. This changes public entry points and documentation only; no
 vehicle dynamics or renderer behavior is changed.
+
+## Runtime class names
+
+GameplayCoordinator names the shared gameplay coordinator; BrowserGameRuntime names
+the full browser integration. Original GameRuntime exports remain exact constructor
+aliases in their original modules; GameRuntimeOptions remains its original interface; BrowserGameRuntimeOptions aliases it.
+Documentation uses the canonical names. No settings keys or lifecycle semantics change.
+The observable constructor.name changes; consumers must not use class-name strings
+as serialized identifiers. Package identity/type checks and the browser construction
+regression cover old and new names together.
+
+Validation: npm run check passes (2,289 tests, 14 skipped). The installed-tarball
+consumer passes 67 public entries, Node examples and type contracts, including exact
+constructor identity for both legacy aliases. The browser construction regression
+passes with the new constructor and legacy prototype access.

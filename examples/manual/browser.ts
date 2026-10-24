@@ -1,9 +1,9 @@
 /** Integrate in a browser bundler; the host owns canvas layout and unmount. */
-import { GameRuntime } from '@nabla/engine/runtime/browser'
+import { BrowserGameRuntime } from '@nabla/engine/runtime/browser'
 import { createManualScene } from './scene.mjs'
 
 export async function mountManualGame(canvas: HTMLCanvasElement): Promise<() => void> {
-  const runtime = new GameRuntime({
+  const runtime = new BrowserGameRuntime({
     canvas,
     scene: createManualScene(),
     hud: true,
