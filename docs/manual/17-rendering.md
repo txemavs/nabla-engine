@@ -51,3 +51,12 @@ actual backend, resolution, and device with any screenshot comparison.
 - [World environment](../../src/render/planet/world-environment.ts).
 - [FSR implementation](../../src/render/effects/fsr1.ts).
 - [Stock scene presentation](../../src/presentation/scene-view.ts).
+
+## GPU rain
+
+Desktop WebGL rain is an instanced streak effect owned by the runtime render pipeline.
+The Weather slider controls the per-instance amount; Off skips rain drawing and its fog
+adjustment. It is not a precipitation/roof simulation: XR, WebGPU, roof coverage, impacts
+and wet reflections are not supported by this first implementation. See
+[the interface chapter](20-interface.md) for saved weather preferences and
+[the effect implementation](../../src/render/effects/rain.ts).

@@ -65,6 +65,7 @@ describe('planet visual config text', () => {
     ).toBe(
       [
         'rain=0',
+        'rainLinked=0',
         'cloudStyle=artistic',
         'cloudAmount=0.35',
         'cloudPressure=0.12',
@@ -86,6 +87,7 @@ describe('planet visual config text', () => {
     runtime.setLensFlareAmount(0.25)
     expect(planetVisualConfigFromRuntime(runtime)).toEqual({
       rainAmount: 0,
+      rainLinked: false,
       cloudStyle: 'artistic',
       cloudAmount: 0.8,
       cloudPressure: 0.55,

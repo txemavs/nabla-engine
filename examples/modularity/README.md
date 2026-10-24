@@ -32,7 +32,7 @@ See [phase-3 adapter guide](../../docs/architecture/vehicle-equipment.md).
 
 The [wheeled runtime example](wheeled-runtime.mjs) goes one level below the existing
 headless Simulation example: it defines a new car with primitive colliders and
-uses only public `/physics` and `/vehicles/wheeled` imports. Run after building:
+uses only public `/physics` and `/simulation/vehicles/wheeled` imports. Run after building:
 
 ```sh
 node examples/modularity/wheeled-runtime.mjs
@@ -50,3 +50,8 @@ It shares one Rapier world and owns all stepping and teardown. See
 
 After building, `node scripts/check-package.mjs` runs all Node examples against
 an actual installed tarball in a temporary independent project.
+
+The `runtime-names.mjs` example checks canonical runtime names and legacy constructor
+identity from the installed public entries. Use GameplayCoordinator from runtime/core
+when supplying rendering/scheduling, and BrowserGameRuntime from runtime/browser
+for complete browser integration.

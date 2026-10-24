@@ -13,7 +13,7 @@
 
 ## RuntimePlanetPreferences.restore
 
-[Implementation, line 33](../../../../src/runtime/planet-preferences.ts#L33)
+[Implementation, line 34](../../../../src/runtime/planet-preferences.ts#L34)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -29,7 +29,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.initializeView
 
-[Implementation, line 40](../../../../src/runtime/planet-preferences.ts#L40)
+[Implementation, line 41](../../../../src/runtime/planet-preferences.ts#L41)
 
 Preserve the host sea option's final startup precedence, without saving it.
 
@@ -43,7 +43,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.layers
 
-[Implementation, line 45](../../../../src/runtime/planet-preferences.ts#L45)
+[Implementation, line 46](../../../../src/runtime/planet-preferences.ts#L46)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -56,7 +56,7 @@ layers(): Pick<
 
 ## RuntimePlanetPreferences.setLayers
 
-[Implementation, line 53](../../../../src/runtime/planet-preferences.ts#L53)
+[Implementation, line 54](../../../../src/runtime/planet-preferences.ts#L54)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -71,7 +71,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.setCloudStyle
 
-[Implementation, line 70](../../../../src/runtime/planet-preferences.ts#L70)
+[Implementation, line 71](../../../../src/runtime/planet-preferences.ts#L71)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -86,7 +86,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.setCloudWeather
 
-[Implementation, line 76](../../../../src/runtime/planet-preferences.ts#L76)
+[Implementation, line 77](../../../../src/runtime/planet-preferences.ts#L77)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -108,7 +108,7 @@ Explicit throws in this body:
 
 ## RuntimePlanetPreferences.setLensFlareAmount
 
-[Implementation, line 93](../../../../src/runtime/planet-preferences.ts#L93)
+[Implementation, line 94](../../../../src/runtime/planet-preferences.ts#L94)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -127,9 +127,23 @@ Explicit throws in this body:
 
 - `new Error('Lens flare amount must be between 0 and 1')`
 
+## RuntimePlanetPreferences.setRainLinked
+
+[Implementation, line 102](../../../../src/runtime/planet-preferences.ts#L102)
+
+Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
+
+```ts
+setRainLinked(linked: boolean, storage: StoragePort): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.remember`
+
 ## RuntimePlanetPreferences.setRainAmount
 
-[Implementation, line 101](../../../../src/runtime/planet-preferences.ts#L101)
+[Implementation, line 107](../../../../src/runtime/planet-preferences.ts#L107)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -149,7 +163,7 @@ Explicit throws in this body:
 
 ## RuntimePlanetPreferences.setMoonHorizonScale
 
-[Implementation, line 108](../../../../src/runtime/planet-preferences.ts#L108)
+[Implementation, line 114](../../../../src/runtime/planet-preferences.ts#L114)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -170,7 +184,7 @@ Explicit throws in this body:
 
 ## RuntimePlanetPreferences.config
 
-[Implementation, line 116](../../../../src/runtime/planet-preferences.ts#L116)
+[Implementation, line 122](../../../../src/runtime/planet-preferences.ts#L122)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -180,7 +194,7 @@ config(): inferred by TypeScript; see implementation
 
 ## RuntimePlanetPreferences.remember
 
-[Implementation, line 135](../../../../src/runtime/planet-preferences.ts#L135)
+[Implementation, line 142](../../../../src/runtime/planet-preferences.ts#L142)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 
@@ -194,7 +208,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePlanetPreferences.sync
 
-[Implementation, line 139](../../../../src/runtime/planet-preferences.ts#L139)
+[Implementation, line 146](../../../../src/runtime/planet-preferences.ts#L146)
 
 Instance-owned visual preferences; the sky renderer and physical world keep their own lifecycles.
 

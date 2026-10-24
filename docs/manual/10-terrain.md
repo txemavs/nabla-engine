@@ -32,12 +32,13 @@ Plain engine manifests and the separate Z16 publication path remain supported.
 This check covers metadata loading and adaptation, not a visual certification of
 all published terrain assets.
 
-## Proxy and errors
+## Direct access, optional proxy, and errors
 
-The Atlas origin sends no CORS headers according to `AGENTS.md`. Browser requests
-must use the same-origin `/tiles` proxy. Vite removes `/tiles` and forwards to the
-configured upstream; production needs the equivalent proxy. Build the reference
-game with `VITE_NABLA_TILES_URL=/tiles` when that is the deployed route.
+Atlas supports direct browser requests: on 2026-10-24 a published cell manifest
+returned `Access-Control-Allow-Origin: *` and allowed GET/HEAD. No proxy is required
+for that access. A host may still provide `/tiles`: Vite removes that prefix and
+forwards to its configured upstream. Use `VITE_NABLA_TILES_URL=/tiles` only when
+that route is provided by the host; production then needs the corresponding mapping.
 
 The generic static provider defaults to `[404]` as missing statuses and accepts
 an explicit `missingStatuses` list. Account for Atlas's 403 behavior at the provider

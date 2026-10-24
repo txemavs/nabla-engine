@@ -33,3 +33,36 @@ it('reads the physics radius only from the storage key the host names, and backs
   })
   expect(() => setTrafficSignsStorageKey('nabla.signs')).toThrow(RangeError)
 })
+
+it('captures the legacy key and isolates explicit hosts, disabled hosts and recreation', async () => {
+  const { SettingsStore } = await import('../../src/runtime/settings-scope.js')
+  const storage = memory({
+    'first.signs': '{"physicsRadius":20}',
+    'second.signs': '{"physicsRadius":30}',
+  })
+  setTrafficSignsStorageKey('first.signs')
+  const first = new SettingsStore({ storage })
+  const second = new SettingsStore({ storage, trafficSignsStorageKey: 'second.signs' })
+  const disabled = new SettingsStore({ storage, trafficSignsStorageKey: null })
+  setTrafficSignsStorageKey('second.signs')
+  expect(first.trafficSignsStorageKey).toBe('first.signs')
+  expect(second.trafficSignsStorageKey).toBe('second.signs')
+  expect(disabled.trafficSignsStorageKey).toBeNull()
+  expect(new SceneryPhysics(() => null, first).radius).toBe(20)
+  expect(new SceneryPhysics(() => null, second).radius).toBe(30)
+  expect(new SceneryPhysics(() => null, disabled).radius).toBe(sceneryPhysicsDefaults.radius)
+  first.setItem(first.trafficSignsStorageKey!, '{"physicsRadius":25}')
+  expect(second.getItem('second.signs')).toBe('{"physicsRadius":30}')
+  first.switchMode('headset')
+  expect(first.trafficSignsStorageKey).toBe('first.signs')
+  expect(new SettingsStore({ storage }).trafficSignsStorageKey).toBe('second.signs')
+  expect(
+    new SceneryPhysics(
+      () => null,
+      new SettingsStore({ storage, trafficSignsStorageKey: 'first.signs' }),
+    ).radius,
+  ).toBe(25)
+  expect(() => new SettingsStore({ storage, trafficSignsStorageKey: 'nabla.signs' })).toThrow(
+    RangeError,
+  )
+})

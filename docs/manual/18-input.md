@@ -53,3 +53,12 @@ retaining a descriptive accessible name. These are explicit repository instructi
 - [Control profiles](../../src/runtime/control-profiles.ts).
 - [Camera state](../../src/runtime/game-camera.ts).
 - [USB guide](../usb-controllers.md) and [bridge](../../tools/usb-ffb-bridge/README.md).
+
+## Saved input preferences
+
+Mouse sensitivity/inversion, standard-gamepad dead zone and keyboard steering response
+are per-instance preferences, separate from USB calibration and authored vehicle tuning.
+See [mouse and gamepad preferences](20-interface.md#mouse-and-gamepad-preferences) and
+[camera, keyboard and shadows](20-interface.md#camera-recovery-keyboard-steering-and-sun-shadows)
+for ranges, defaults, persistence and worker/inline behavior. The keys table remains a
+reference, not a key-rebinding editor.

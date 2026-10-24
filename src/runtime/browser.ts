@@ -130,6 +130,8 @@ import { streamBudget, type PerformanceSettings, type VisibilitySettings } from 
 import { RuntimePlanetPreferences } from './planet-preferences.js'
 import type { MissingTile } from '../planet/missing-tiles.js'
 import { GameRenderPipeline } from './render-pipeline.js'
+import { LiveWeather, weatherVisuals } from './live-weather.js'
+import { stormStrength, weatherWind } from '../render/planet/weather.js'
 import {
   createGpuTiming,
   WebGPUGpuTiming,
@@ -302,7 +304,7 @@ import {
 import { descentWarmHeights, type StartCameraSequence } from './start-cameras.js'
 import { RuntimeStartCameraController, START_DESCENT_DAMPING } from './start-camera-controller.js'
 export type { StartCameraName, StartCameraSequence, StartCameraStep } from './start-cameras.js'
-import { GameRuntime as SharedGameRuntime } from './game.js'
+import { GameplayCoordinator } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
@@ -363,7 +365,7 @@ export interface AttractOptions {
    */
   clock?: SkyClock
 }
-/** The steering wheel of the vehicle the player drives (see `GameRuntime.steeringWheel`). */
+/** The steering wheel of the vehicle the player drives (see `BrowserGameRuntime.steeringWheel`). */
 export interface SteeringWheelState {
   vehicleId: string
   /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
@@ -377,7 +379,7 @@ export interface SteeringWheelState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
-/** The mirrors of the vehicle the player drives (see `GameRuntime.mirrors`). */
+/** The mirrors of the vehicle the player drives (see `BrowserGameRuntime.mirrors`). */
 export interface MirrorState {
   vehicleId: string
   /** Vehicle name for menus, e.g. "S3 Nabla · 400 CV DSG". */
@@ -393,7 +395,7 @@ export interface MirrorState {
   /** True when the player's own choice is saved for this model. */
   saved: boolean
 }
-/** One vehicle's place in the world, from `GameRuntime.vehiclePlacements`. */
+/** One vehicle's place in the world, from `BrowserGameRuntime.vehiclePlacements`. */
 export interface VehiclePlacement {
   id: string
   name: string
@@ -413,7 +415,7 @@ export interface VehiclePlacement {
   player: boolean
 }
 
-/** A shot fired by the local player, as reported to `GameRuntime.addShotListener`. */
+/** A shot fired by the local player, as reported to `BrowserGameRuntime.addShotListener`. */
 export interface ShotReport {
   /** Weapon position, simulation world. */
   origin: Vec3Tuple
@@ -424,7 +426,7 @@ export interface ShotReport {
 }
 
 /**
- * A shot or arrow the local player fired, as reported to `GameRuntime.addFireListener`: where it
+ * A shot or arrow the local player fired, as reported to `BrowserGameRuntime.addFireListener`: where it
  * left the weapon (muzzle, arrow rest) and where it went, simulation world.
  */
 export interface FireReport {
@@ -439,10 +441,12 @@ export interface FireReport {
   speed?: number
 }
 
-/** `GameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
+/** `BrowserGameRuntime.vehicleLightState`: switch positions plus live lamp inputs. */
 export type VehicleLightState = VehicleLightSwitches & VehicleLampState
 
 export interface GameRuntimeOptions {
+  /** Weather location override for synthetic scenes; otherwise follows geographic player position. */
+  weatherLocation?: { latitude: number; longitude: number }
   /** Per-instance preferences. Existing PC/VR keys are retained; namespace isolates persistent profiles. */
   settings?: SettingsStoreOptions
   /** Initial rain intensity, 0..1; omitted restores the saved Weather setting. */
@@ -588,18 +592,18 @@ export interface GameRuntimeOptions {
  * Owns its renderer and listeners; the caller owns the canvas and surrounding UI.
  */
 
-type StepResult = Exclude<ReturnType<SharedGameRuntime['step']>, Promise<unknown>>
+type StepResult = Exclude<ReturnType<GameplayCoordinator['step']>, Promise<unknown>>
 
-/** A weapon shown on another player's body: see {@link GameRuntime.createWeaponProp}. */
+/** A weapon shown on another player's body: see {@link BrowserGameRuntime.createWeaponProp}. */
 export type { WeaponProp } from './player-presentation.js'
 
-/** Host side of the body-slot keys ({@link GameRuntime.setBodySlotHost}). */
+/** Host side of the body-slot keys ({@link BrowserGameRuntime.setBodySlotHost}). */
 export interface BodySlotHost {
   select(slot: BodySlot): boolean
   drop(): void
 }
 
-export class GameRuntime {
+export class BrowserGameRuntime {
   readonly settings: SettingsStore
   private readonly visuals = new RuntimeVisualSettings()
   private readonly versionLabel: HTMLElement | null
@@ -633,7 +637,7 @@ export class GameRuntime {
   private get xrQuality() {
     return this.xrSystem?.quality ?? readXRQuality(this.settings)
   }
-  readonly game = new SharedGameRuntime()
+  readonly game = new GameplayCoordinator()
   readonly session = this.game.session
   /** The one scenery-physics service: sign and traffic-light poles register layers here. */
   readonly sceneryPhysics: SceneryPhysics
@@ -909,10 +913,38 @@ export class GameRuntime {
   private readonly weaponPreferences: RuntimeWeaponPreferences
   private sidearmAimPreview = false
   private weaponPosePreview: WeaponPose | null = null
+  private readonly liveWeather = new LiveWeather()
+  private liveWeatherApplied: object | null = null
+  private weatherFrameTime = 0
+  private readonly weatherOffset = { x: 0, z: 0 }
+  private liveVisuals: ReturnType<typeof weatherVisuals> | null = null
+  get realWeather(): boolean {
+    return this.liveWeather.enabled
+  }
+  get realWeatherStatus(): string {
+    const data = this.liveWeather.observation
+    const status = this.liveWeather.error
+      ? t('settings.real-weather-error')
+      : this.liveWeather.loading
+        ? t('settings.real-weather-loading')
+        : ''
+    if (!data) return status || t('settings.real-weather-help')
+    return `${status ? status + ' · ' : ''}${data.location} · ${data.condition} · ${data.temperature} °C · ${data.windKph} km/h · ${data.precipitation} mm · ${new Date(data.observedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  }
+  setRealWeather(enabled: boolean): void {
+    this.assertAlive()
+    this.liveWeather.setEnabled(enabled)
+    this.liveVisuals = null
+    this.liveWeatherApplied = null
+    this.weatherOffset.x = this.weatherOffset.z = 0
+    this.sky.weatherOffset.set(0, 0, 0)
+    this.planetPreferences.initializeView(this.sky, this.planet.sea)
+    if (enabled) this.updateWeather(performance.now())
+  }
   private readonly planetPreferences = new RuntimePlanetPreferences()
   private readonly planet = this.planetPreferences.state
 
-  constructor(private readonly options: GameRuntimeOptions) {
+  constructor(private readonly options: BrowserGameRuntimeOptions) {
     if (
       !options?.canvas ||
       typeof options.canvas.getContext !== 'function' ||
@@ -2095,13 +2127,14 @@ export class GameRuntime {
   }
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
+    this.liveWeather.dispose()
     this.teardown.dispose()
   }
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */
   private xrDebug: XRDebugPanel | null = null
   private frameXR(time: number): void {
-    this.frames.drive(GameRuntime.prototype.frameXRSteps.call(this, time))
+    this.frames.drive(BrowserGameRuntime.prototype.frameXRSteps.call(this, time))
   }
   private *frameXRSteps(time: number): FrameSteps {
     const xr = this.xrSystem!
@@ -2482,7 +2515,7 @@ export class GameRuntime {
   /** Run one desktop frame; with the physics worker it pauses at the step until the state arrives. */
   private frame(time: number): void {
     // Called through the prototype so hosts and tests may invoke it on a partial runtime.
-    this.frames.drive(GameRuntime.prototype.frameSteps.call(this, time))
+    this.frames.drive(BrowserGameRuntime.prototype.frameSteps.call(this, time))
   }
   private *frameSteps(time: number): FrameSteps {
     const sim = this.session.simulation
@@ -2917,6 +2950,7 @@ export class GameRuntime {
     this.effects.updateAudio(sim, this.document, eye)
     const audioMs = performance.now() - audioStarted
     this.effects.updateTires(sim, dt, this.origin)
+    this.updateWeather(time)
     this.environment.updateSea(
       this.document.geography,
       eye,
@@ -3019,7 +3053,15 @@ export class GameRuntime {
         sky: this.sky,
         clock: this.document.sky ?? { mode: 'live' },
         skyVisible: this.planet.sky,
-        rainAmount: this.planet.rainAmount,
+        rainAmount: this.rainAmount,
+        rainWeather: {
+          linked: this.rainLinked,
+          clouds: this.liveVisuals ? true : this.planet.clouds,
+          amount: this.cloudAmount,
+          storm: this.cloudPressure,
+          wind: this.liveVisuals?.wind,
+          offset: this.weatherOffset,
+        },
         origin: this.origin,
         eye,
         ambient: this.ambient,
@@ -3240,6 +3282,7 @@ export class GameRuntime {
     const originPosition = inspector ? inspector.position : new THREE.Vector3(...player.position)
     if (originPosition.length() > streamingDefaults.floatingOriginDistance)
       this.origin.copy(originPosition)
+    this.updateWeather(time)
     this.environment.updateSea(
       this.document.geography,
       eye,
@@ -3325,7 +3368,15 @@ export class GameRuntime {
         sky: this.sky,
         clock: this.document.sky ?? { mode: 'live' },
         skyVisible: this.planet.sky,
-        rainAmount: this.planet.rainAmount,
+        rainAmount: this.rainAmount,
+        rainWeather: {
+          linked: this.rainLinked,
+          clouds: this.liveVisuals ? true : this.planet.clouds,
+          amount: this.cloudAmount,
+          storm: this.cloudPressure,
+          wind: this.liveVisuals?.wind,
+          offset: this.weatherOffset,
+        },
         origin: this.origin,
         eye,
         ambient: this.ambient,
@@ -3535,21 +3586,70 @@ export class GameRuntime {
     this.planetPreferences.setMoonHorizonScale(scale, this.sky, this.settings)
   }
   get cloudStyle(): 'low' | 'artistic' {
-    return this.planet.cloudStyle
+    return this.liveVisuals ? 'artistic' : this.planet.cloudStyle
   }
   /** Artistic sheets or the simpler globe layer (`GeographicView.setCloudStyle`). */
   setCloudStyle(style: 'low' | 'artistic'): void {
     this.assertAlive()
+    if (style === 'low' && this.planet.rainLinked) this.setRainLinked(false)
     this.planetPreferences.setCloudStyle(style, this.sky, this.settings)
   }
   get cloudAmount(): number {
-    return this.planet.cloudAmount
+    return this.liveVisuals?.cloud ?? this.planet.cloudAmount
   }
   get rainSupported(): boolean {
     return this.backend === 'webgl'
   }
+  get rainLinked(): boolean {
+    return this.liveVisuals ? false : this.planet.rainLinked
+  }
+  setRainLinked(linked: boolean): void {
+    this.assertAlive()
+    if (linked && this.planet.cloudStyle !== 'artistic')
+      this.planetPreferences.setCloudStyle('artistic', this.sky, this.settings)
+    this.planetPreferences.setRainLinked(linked, this.settings)
+  }
+  private updateWeather(time: number): void {
+    if (this.liveWeather.needsUpdate) {
+      const geography = this.document.geography
+      const position = this.session.simulation?.player.position ?? [0, 0, 0]
+      const here =
+        this.options.weatherLocation ??
+        (geography ? localToGeo(geography, position) : { latitude: 43.263, longitude: -2.935 })
+      void this.liveWeather.update(here.latitude, here.longitude)
+    }
+    const data = this.liveWeather.observation
+    if (data && data !== this.liveWeatherApplied) {
+      this.liveWeatherApplied = data
+      this.liveVisuals = weatherVisuals(data)
+      this.sky.setLayers({
+        sky: this.planet.sky,
+        planets: this.planet.sky,
+        sun: this.planet.sun,
+        moon: this.planet.moon,
+        stars: this.planet.stars,
+        clouds: true,
+      })
+      this.sky.setCloudStyle('artistic')
+      this.sky.setCloudWeather(this.liveVisuals.cloud, this.liveVisuals.storm)
+    }
+    const dt = Math.max(0, Math.min(1, (time - this.weatherFrameTime) / 1000))
+    this.weatherFrameTime = time
+    if (this.liveVisuals) {
+      this.weatherOffset.x += (weatherWind.x - this.liveVisuals.wind.x) * dt
+      this.weatherOffset.z += (weatherWind.z - this.liveVisuals.wind.z) * dt
+    }
+    this.sky.weatherOffset.set(this.weatherOffset.x, 0, this.weatherOffset.z)
+    this.sky.weatherSeconds = time / 1000
+    this.sky.weatherStorm = stormStrength(this.rainAmount, {
+      linked: this.rainLinked,
+      clouds: this.liveVisuals ? true : this.planet.clouds,
+      amount: this.cloudAmount,
+      storm: this.cloudPressure,
+    })
+  }
   get rainAmount(): number {
-    return this.planet.rainAmount
+    return this.liveVisuals?.rain ?? this.planet.rainAmount
   }
   /** Weather / Rain, zero disables both the draw and rain haze. */
   setRainAmount(amount: number): void {
@@ -3565,7 +3665,7 @@ export class GameRuntime {
     this.planetPreferences.setCloudWeather(amount, storm, this.sky, this.settings)
   }
   get cloudPressure(): number {
-    return this.planet.cloudPressure
+    return this.liveVisuals?.storm ?? this.planet.cloudPressure
   }
   get lensFlareAmount(): number {
     return this.planet.lensFlareAmount
@@ -6602,3 +6702,7 @@ export class GameRuntime {
     if (this.disposed) throw new Error('Game runtime disposed')
   }
 }
+
+/** Compatibility aliases; constructor and option shape remain identical. */
+export { BrowserGameRuntime as GameRuntime }
+export type BrowserGameRuntimeOptions = GameRuntimeOptions

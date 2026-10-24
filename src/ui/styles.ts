@@ -6,6 +6,7 @@
  */
 import {
   base,
+  boot,
   buttons,
   combat,
   hud,
@@ -24,6 +25,7 @@ export const engineStyleSheets = {
   tokens,
   base,
   buttons,
+  boot,
   hud,
   touch,
   menu,

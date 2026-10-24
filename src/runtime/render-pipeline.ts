@@ -12,6 +12,7 @@ import type { VehicleMonitors } from './vehicle-monitors.js'
 import type { GpuTimingBackend } from '../diagnostics/gpu-timing.js'
 import { isWebGPU } from '../render/backend.js'
 import { GpuRain } from '../render/effects/rain.js'
+import type { RainWeather } from '../render/planet/weather.js'
 
 export interface GameRenderFrame {
   renderer: THREE.WebGLRenderer
@@ -35,6 +36,7 @@ export interface GameRenderFrame {
   tunnelFocus?: number
   skyVisible?: boolean
   rainAmount?: number
+  rainWeather?: RainWeather
   externalViews?: Map<string, ExternalPortalView>
   /** World-space culling for each auxiliary view and the main view. */
   cull: (eye: THREE.Vector3) => void
@@ -189,10 +191,13 @@ export class GameRenderPipeline {
       if (focus && flare) flare.visible = false
       const dryFog = scene.fog
       const rainAmount = frame.rainAmount ?? 0
-      if (rainAmount > 0) {
+      const weather = frame.rainWeather ?? { linked: false, clouds: false, amount: 0, storm: 0 }
+      const haze =
+        rainAmount * (weather.linked ? (weather.clouds ? weather.amount * weather.storm : 0) : 1)
+      if (haze > 0) {
         this.rainFog.color.copy(dryFog?.color ?? new THREE.Color('#8999a4'))
         this.rainFog.near = 20
-        this.rainFog.far = 1200 - rainAmount * 850
+        this.rainFog.far = 1200 - haze * 850
         if (dryFog instanceof THREE.Fog) this.rainFog.far = Math.min(dryFog.far, this.rainFog.far)
         scene.fog = this.rainFog
       }
@@ -219,6 +224,7 @@ export class GameRenderPipeline {
           origin,
           rainAmount,
           sky.enabled ? sky.atmosphere.day : 1,
+          weather,
         )
         renderer.autoClear = false
         renderer.render(this.rain.scene, camera)

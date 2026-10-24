@@ -1,3 +1,5 @@
+import { bootStyleText } from '../ui/boot-styles.js'
+import { nablaMarkUrl } from '../runtime/splash.js'
 /**
  * Installable web app (PWA) building blocks. Pure functions that return the web app manifest,
  * the service worker source, the offline page and the `<head>` tags; hosts configure them and
@@ -206,26 +208,24 @@ export function offlinePageHtml(options: OfflinePageOptions): string {
   const en = options.texts.en
   const texts = JSON.stringify(options.texts).replace(/</g, '\\u003c')
   return `<!doctype html>
-<html lang="en">
+<html lang="en" class="nabla-game">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="${escape(options.background ?? '#000000')}">
 <title>${escape(options.appName)}</title>
 <style>
-html,body{height:100%;margin:0}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;background:${escape(options.background ?? '#000000')};color:${escape(options.color ?? '#ffffff')};font:16px/1.4 Arial,sans-serif;text-align:center}
-img{width:72px;height:72px}
-h1{margin:0;font-size:20px;letter-spacing:.08em}
-p{margin:0;max-width:32em;opacity:.78}
-button{font:inherit;letter-spacing:.3em;padding:.6em 1.4em .6em 1.7em;color:inherit;background:none;border:1px solid currentColor;border-radius:2px;cursor:pointer}
+${bootStyleText}
+:root { --splash-bg: ${escape(options.background ?? '#000000')}; --splash-fg: ${escape(options.color ?? '#eeeeee')}; }
 </style>
 </head>
 <body>
-${options.iconUrl ? `<img src="${escape(options.iconUrl)}" alt="">` : ''}
-<h1 id="title">${escape(en.title)}</h1>
-<p id="message">${escape(en.message)}</p>
-<button id="retry" type="button">${escape(en.retry)}</button>
+<main class="nabla-boot-screen" aria-labelledby="title">
+<img class="nabla-boot-mark" src="${escape(options.iconUrl ?? nablaMarkUrl)}" alt="">
+<h1 id="title" class="nabla-boot-message">${escape(en.title)}</h1>
+<p id="message" class="nabla-boot-detail">${escape(en.message)}</p>
+<button id="retry" class="nabla-btn nabla-boot-action" type="button">${escape(en.retry)}</button>
+</main>
 <script>
 (() => {
   const texts = ${texts};
@@ -234,8 +234,9 @@ ${options.iconUrl ? `<img src="${escape(options.iconUrl)}" alt="">` : ''}
   const text = texts[locale];
   document.documentElement.lang = locale;
   for (const key of ['title', 'message', 'retry']) document.getElementById(key).textContent = text[key];
-  document.getElementById('retry').addEventListener('click', () => location.reload());
-  addEventListener('online', () => location.reload());
+  const retry = () => location.pathname === '/offline.html' ? location.replace('/') : location.reload();
+  document.getElementById('retry').addEventListener('click', retry);
+  addEventListener('online', retry);
 })();
 </script>
 </body>

@@ -231,7 +231,7 @@ it('composites rain before postprocessing, removes its haze at Off, and releases
       expect(scene.fog).not.toBe(dryFog)
       events.push('world')
     } else {
-      rainMesh = scene?.children[0] as Mesh
+      rainMesh = scene?.getObjectByName('GPU rain') as Mesh
       expect(rainMesh.name).toBe('GPU rain')
       events.push('rain')
     }

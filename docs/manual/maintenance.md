@@ -128,3 +128,52 @@ protection. The network integration test waits for a received snapshot rather th
 a fixed 30 ms delay. Relay tests: 27 passing. Four Chromium tests pass in each of
 Engine and Euskadi, covering all saved profiles and simultaneous runtime isolation.
 See [the host audit](../host-settings-compatibility.md) for release coordination.
+
+## Menu and host-contract reconciliation — 2026-10-24
+
+Reviewed against Engine main `8decd592` plus the scroll/slider correction `189e342a`.
+Corrected the stale menu guide (old Export, Camera, Audio and cache placement), expanded
+the host preference registration and place-label ownership contracts, and linked input
+and rain behavior from their subject chapters. Regenerated the public export inventory.
+The Spanish reading edition is updated separately from the English source. See its
+README for the subsequent PDF refresh and validation.
+
+The subsequent isolation fix captures the selected traffic-sign key in SettingsStore.
+The legacy setter remains a default for future stores; explicit per-runtime options
+and null selection are supported. The registration allowlist remains shared, while
+HUD and scenery physics use the captured owner key.
+
+Validation for this documentation pass: manual links/export inventory, generated source
+reference check and formatting of changed Markdown. The earlier code validation for
+`189e342a` passed the full check (2,288 tests, 14 skipped) and settings HUD browser test;
+those results are historical evidence, not tests rerun for this prose-only update.
+
+## Simulation API organization
+
+The simulation entry and four simulation/vehicles subpaths separate scene/session
+execution from physics primitives and vehicle catalog imports. Existing paths remain
+aliases. The Spanish introduction no longer describes wheeled dynamics as the general
+physics API; host, runtime and resource ownership are explained in concrete terms.
+The two GameRuntime classes remain a compatibility constraint, with explicit import
+paths documented rather than silently renamed.
+
+Validation: full repository check passes (2,288 tests, 14 skipped). The installed
+package check passes all 72 public entries, Node examples, old/new export identity
+checks and TypeScript contracts. The manual session example and browser example
+typecheck also pass. This changes public entry points and documentation only; no
+vehicle dynamics or renderer behavior is changed.
+
+## Runtime class names
+
+GameplayCoordinator names the shared gameplay coordinator; BrowserGameRuntime names
+the full browser integration. Original GameRuntime exports remain exact constructor
+aliases in their original modules; GameRuntimeOptions remains its original interface; BrowserGameRuntimeOptions aliases it.
+Documentation uses the canonical names. No settings keys or lifecycle semantics change.
+The observable constructor.name changes; consumers must not use class-name strings
+as serialized identifiers. Package identity/type checks and the browser construction
+regression cover old and new names together.
+
+Validation: npm run check passes (2,289 tests, 14 skipped). The installed-tarball
+consumer passes 67 public entries, Node examples and type contracts, including exact
+constructor identity for both legacy aliases. The browser construction regression
+passes with the new constructor and legacy prototype access.

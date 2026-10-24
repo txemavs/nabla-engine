@@ -97,7 +97,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## WorldEnvironment.dispose
 
-[Implementation, line 86](../../../../../src/render/planet/world-environment.ts#L86)
+[Implementation, line 88](../../../../../src/render/planet/world-environment.ts#L88)
 
 Shared Studio/embedded-view environment. World content and streaming remain host-owned.
 

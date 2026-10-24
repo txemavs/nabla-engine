@@ -274,6 +274,26 @@
     "./combat": {
       "types": "./dist/simulation/combat/damage.d.ts",
       "import": "./dist/simulation/combat/damage.js"
+    },
+    "./simulation": {
+      "types": "./dist/simulation/index.d.ts",
+      "import": "./dist/simulation/index.js"
+    },
+    "./simulation/vehicles/wheeled": {
+      "types": "./dist/simulation/vehicles/wheeled/index.d.ts",
+      "import": "./dist/simulation/vehicles/wheeled/index.js"
+    },
+    "./simulation/vehicles/two-wheeled": {
+      "types": "./dist/simulation/vehicles/two-wheeled/index.d.ts",
+      "import": "./dist/simulation/vehicles/two-wheeled/index.js"
+    },
+    "./simulation/vehicles/boat": {
+      "types": "./dist/simulation/vehicles/boat.d.ts",
+      "import": "./dist/simulation/vehicles/boat.js"
+    },
+    "./simulation/vehicles/flight": {
+      "types": "./dist/simulation/vehicles/flight.d.ts",
+      "import": "./dist/simulation/vehicles/flight.js"
     }
   },
   "imports": {

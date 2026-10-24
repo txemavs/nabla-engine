@@ -1,6 +1,7 @@
 import { createArtisticClouds, createGlobeClouds, shadeEarthWithClouds } from './artistic-clouds.js'
 import { NightSky } from './night-sky.js'
 import { cloudHours, createCloudLayer } from './clouds.js'
+import { weatherHours } from './weather.js'
 import { addSunDisc } from './sun-disc.js'
 import { airGlow, earthGlobe, moonDisc, sunDiscDome, WebGPUSkyPass } from './sky-nodes.js'
 import { webgpuNodeKit } from '../backend.js'
@@ -161,6 +162,10 @@ export class GeographicView {
   private readonly cloudPass = new THREE.Scene()
   private moonSize = 5
   private webgpuPass?: WebGPUSkyPass
+  readonly weatherOffset = new THREE.Vector3()
+  weatherSeconds?: number
+  weatherStorm = 0
+  private flareWanted = 0.5
   private cloudStyle: 'low' | 'artistic' = 'artistic'
   private cloudsWanted = true
   private readonly flare: ReturnType<typeof createLensFlare>
@@ -381,14 +386,19 @@ export class GeographicView {
     lunarMaterial.uniforms.daylight.value = air.day * (1 - air.space)
     lunarMaterial.uniforms.skyTint.value.copy(air.color)
     if (this.hasTerrain) Object.assign(air, mapFogRange(this.viewDistance))
+    air.color.multiplyScalar(1 - this.weatherStorm * 0.32)
     this.backdrop.material.color.copy(air.color)
+    this.syncSunPresentation()
+    this.sunDisc.value.multiplyScalar(1 - this.weatherStorm * 0.94)
+    this.flare.intensity.value = this.flareWanted * (1 - this.weatherStorm * 0.97)
     this.space.background = null
     // Same fog in local metres and planetary units prevents the remote globe forming a second horizon.
     this.space.fog = air.fog
       ? reuseFog(this.space.fog, air.color, air.near * SCALE, air.far * SCALE)
       : null
     this.night.opacity = air.stars
-    const hours = cloudHours(at)
+    const hours =
+      this.weatherSeconds === undefined ? cloudHours(at) : weatherHours(this.weatherSeconds)
     const sunElev = this.sunDirection.dot(radial)
     const golden =
       (1 - THREE.MathUtils.smoothstep(sunElev, 0.05, 0.42)) *
@@ -399,7 +409,7 @@ export class GeographicView {
     this.artistic.golden.value = golden
     this.artistic.day.value = air.day
     this.artistic.coverage.value = 1 - air.space
-    this.artistic.cloudOrigin.value.copy(renderOrigin)
+    this.artistic.cloudOrigin.value.copy(renderOrigin).add(this.weatherOffset)
     this.globe.dayHours.value = hours
     this.globe.coverage.value = this.artistic.deck.visible ? air.space : 0
     this.applyMoonScale()
@@ -617,11 +627,12 @@ export class GeographicView {
     return this.flare.mesh
   }
   get lensFlareAmount() {
-    return this.flare.intensity.value
+    return this.flareWanted
   }
   /** 0-1 multiplier on the additive sun flare pass. */
   setLensFlareAmount(amount: number) {
-    this.flare.intensity.value = Math.min(1, Math.max(0, amount))
+    this.flareWanted = Math.min(1, Math.max(0, amount))
+    this.flare.intensity.value = this.flareWanted * (1 - this.weatherStorm * 0.97)
   }
   setViewAspect(aspect: number) {
     this.flare.aspect.value = aspect

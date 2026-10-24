@@ -15,7 +15,7 @@ CSS consumers can link `styles/index.css` (with `data-nabla-ui`) instead.
 
 ## installEngineStyles
 
-[Implementation, line 51](../../../../src/ui/styles.ts#L51)
+[Implementation, line 53](../../../../src/ui/styles.ts#L53)
 
 Add the engine stylesheet once per document. A page that links `styles/index.css` (marked
 `data-nabla-ui`) already has it, so nothing is added. Returns true when it is in place.

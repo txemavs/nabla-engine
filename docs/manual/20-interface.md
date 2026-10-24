@@ -49,7 +49,7 @@ host defaults, and saved user choices. There is no single universal precedence
 rule for every field: inspect its resolver and storage reader. Some changes apply
 live; others, such as an asset-quality selection, require a new runtime.
 
-Each browser `GameRuntime` owns `runtime.settings`. It snapshots existing browser
+Each browser `BrowserGameRuntime` owns `runtime.settings`. It snapshots existing browser
 preferences when constructed; subsequent writes update only that runtime's view
 and its persistence target. Deferred XR readers, calibration, USB bindings, actor,
 audio, weapon and camera preferences use that same owner. Terrain layers, asphalt
@@ -57,12 +57,12 @@ uniforms, ground-photo filtering, smoke density and beam masks are also owned by
 the runtime, including tiles and effects created later.
 
 ```ts
-const left = new GameRuntime({
+const left = new BrowserGameRuntime({
   canvas: leftCanvas,
   scene,
   settings: { mode: 'pc', namespace: 'left' },
 })
-const right = new GameRuntime({
+const right = new BrowserGameRuntime({
   canvas: rightCanvas,
   scene,
   settings: { mode: 'headset-pc', namespace: 'right' },
@@ -146,7 +146,7 @@ failure remains a separate regression task; it is not covered by a passing runti
 focus handling and ordered release of held controls. Binding is idempotent and every
 listener uses the runtime's lifetime abort signal. Gesture capture, secondary mouse-button
 events, Shift resynchronization and non-passive wheel handling preserve their existing
-order. Gesture-specific wheel, keyboard and look handlers remain in `GameRuntime`;
+order. Gesture-specific wheel, keyboard and look handlers remain in `BrowserGameRuntime`;
 semantic action execution delegates to `RuntimeActionDispatch`. The input owner receives
 explicit callbacks, never the whole runtime. Release order remains beams, USB, weapons, touch, monitors, gameplay,
 gamepad edges, then pointer ownership. No storage keys or public methods change.
@@ -293,12 +293,12 @@ Regression coverage: `test/runtime/camera-preferences.test.ts` and
 
 Internally, [RuntimeVisualSettings](../../src/runtime/visual-settings.ts) owns the
 terrain visual state, beam settings and shared smoke-density object for one runtime.
-Current and later-created views receive the same objects. `GameRuntime` retains
+Current and later-created views receive the same objects. `BrowserGameRuntime` retains
 its public methods, lifecycle checks, terrain refreshes and startup preference
 precedence. Only explicit smoke edits persist through the supplied runtime store;
 boot and quality overrides do not write preferences. The component creates no
 listeners or GPU resources of its own; existing scene/view owners still dispose
-their textures and effects. It has no dependency on the whole `GameRuntime`.
+their textures and effects. It has no dependency on the whole `BrowserGameRuntime`.
 
 Regression evidence: [store contracts](../../test/settings-scope.test.ts),
 [two browser runtimes](../../test/browser/e2e/runtime-settings.spec.ts), and
@@ -335,7 +335,7 @@ See the [host compatibility audit](../host-settings-compatibility.md) for the Eu
 
 [RuntimeWorldControls](../../src/runtime/world-controls.ts) owns the per-instance pending
 gravity value and coordinates recovery policy, sky time and water through narrow scene,
-simulation and recovery dependencies. `GameRuntime` retains `gravityScale`, `setGravityScale`,
+simulation and recovery dependencies. `BrowserGameRuntime` retains `gravityScale`, `setGravityScale`,
 `recoverToRoadEnabled`, `setRecoverToRoadEnabled`, `skyClock`, `setSkyClock`, `waterSettings`,
 `sea` and `setWater`. Hosts need no migration and saved preferences retain their existing keys.
 
@@ -418,7 +418,7 @@ Cockpit, normal mouse look, Bodycam aiming and inspection use the mouse settings
 standard gamepad input uses the dead zone in desktop and XR frames. USB device
 calibration, touch controls and tracked XR controllers retain their own settings.
 
-Each GameRuntime owns its settings through inputPreferences (a copy) and
+Each BrowserGameRuntime owns its settings through inputPreferences (a copy) and
 setInputPreferences(partial). The runtime SettingsStore saves nabla.input, respecting
 mode and namespace. Existing profiles without this key use defaults. Invalid fields
 are ignored and finite numbers are clamped. Settings export/import/reset includes
@@ -437,7 +437,7 @@ Video → Options exposes automatic centering, delay (0–30 s), recovery ramp
 Absent saved preferences, authored camera defaults remain unchanged (normally
 10 s delay, 0.5 s recovery and 0.7 s transitions). Disabling centering keeps the
 chosen delay for re-enabling. Scripted entrances, cinematic motion and collision
-safety keep their existing behavior. GameRuntime exposes cameraMotionPreferences
+safety keep their existing behavior. BrowserGameRuntime exposes cameraMotionPreferences
 and setCameraMotionPreferences(partial), saved under nabla.cameraMotion.
 
 Controls → Keyboard steering exposes steeringRiseSeconds and
@@ -466,3 +466,21 @@ keep their prior behavior.
 World → Environment → Weather → Rain ranges from Off to 100%. The choice is saved with the planet preferences. Both game entries accept `?rain=0.8` (0–1) as a startup override; omit the parameter to restore the saved setting.
 
 The first version targets desktop WebGL, with up to 6,000 instanced streaks in one draw and analytic GPU movement. Off skips the rain draw and haze. World depth occludes drops; floating-origin changes preserve their positions. Rain is composited before FSR/depth of field. The WebGPU control is disabled; immersive XR, mirrors, roof coverage, impacts and wet-surface reflections are not part of this version.
+
+### Registering host preferences
+
+Host keys are included in backups only after explicit registration with
+`registerPreferenceKey` from `@nabla/engine/runtime/settings-backup`.
+Use a host namespace such as `my-host.preferences`; engine `nabla.` keys are reserved.
+Registration does not change storage ownership or migrate saved data.
+
+Traffic-sign hosts additionally select their unchanged storage key before runtime/HUD
+creation through the internal `setTrafficSignsStorageKey` adapter. The registration allowlist is module-global. The selected sign key is captured per
+SettingsStore: pass settings.trafficSignsStorageKey explicitly (null disables it), or
+omit it to capture the legacy page default. Later default changes do not alter existing
+runtimes. See the
+[host contract](../host-settings-compatibility.md#host-preferences-contract-2026-10-24)
+for the source-overlay API, visibility condition and coexistence limitation.
+
+Place labels are also host-owned: Engine provides `NavigationPlaceLookup` and
+`TouchDriving.setPlace`, but GameRuntime no longer automatically fills the HUD locality.

@@ -10,7 +10,7 @@ import {
   shiftWheeledVehicle,
   automaticWheeledTransmission,
   enterWheeledVehicle,
-} from '@nabla/engine/vehicles/wheeled'
+} from '@nabla/engine/simulation/vehicles/wheeled'
 
 await initPhysics()
 const world = new World()

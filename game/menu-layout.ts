@@ -11,6 +11,7 @@ export const MENU_TABS = [
   { id: 'planet', labelKey: 'settings.world' },
   { id: 'options', labelKey: 'settings.settings' },
   { id: 'dev', labelKey: 'settings.development' },
+  { id: 'help', labelKey: 'settings.help' },
 ] as const
 
 export type MenuTabId = (typeof MENU_TABS)[number]['id']
@@ -172,6 +173,7 @@ export const MENU_LAYOUT: Readonly<Record<MenuTabId, readonly MenuItem[]>> = {
     },
   ],
   dev: ['settings-collision-debug', 'settings-diagnostics'],
+  help: ['settings-help'],
 }
 
 /** Every placed section with its tab, in navigation order (flat members after their section). */

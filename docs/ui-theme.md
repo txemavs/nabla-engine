@@ -90,7 +90,7 @@ Parts a host may switch off by setting the token to `none`: `--nabla-place-displ
 
 There is one main menu on every page: the ☰ button top-left opens the side menu
 (`mountGameMenu`, `src/runtime/main-menu.ts`). Its sections are the settings tabs (World,
-Settings, Objects, Development) and Virtual reality (enter, headset page). ☰ closes the
+Settings, Development) and Virtual reality (enter, headset page). ☰ closes the
 settings window when it is open. Hosts only configure it: call `mountGameMenu(document, t,
 { sections: (defaults) => [...] })` to relabel or add sections (Euskadi adds augmented reality
 and scenarios). Pages add their own entries with `addGameMenuEntries('vr', [...])`.
@@ -148,3 +148,52 @@ Every game page carries a small inline `<style id="nabla-critical">` before `ui-
 (`html.nabla-game`) the page box base.css sets later (`margin: 0; height: 100%; overflow: hidden`
 on `html` and `body`), so the black first paint never shows a scrollbar. So nothing unstyled (no white page, no
 "Error" overlay) flashes before the stylesheet is in. New pages copy that block.
+
+## Settings layout regression checks
+
+Settings result buttons use full available width without additional inline margins;
+long labels wrap. Keep vertical scrolling for long result lists without introducing
+horizontal overflow. Range controls explicitly reset inherited panel padding and borders;
+do not apply generic text-input padding to sliders.
+
+After editing CSS, regenerate `styles.generated.ts` with
+`node scripts/gen-ui-styles.mjs`. Run `test/ui/styles.test.ts` and the
+`settings-hud.spec.ts` browser test: the latter checks result overflow and real clicks
+at both slider endpoints at 390px and 1440px viewport widths.
+
+## Settings CSS ownership and extension guide
+
+`settings.css` owns the full-screen menu. Read it from the outside in:
+window/console grid → header and tabs → search overlay → panes and section tree →
+control rows → responsive overrides → scoped component rules (such as Help).
+
+- The console fixes the screen layout; panes/content own vertical scrolling.
+  Child grids and flex items need `min-width: 0` to wrap without widening the screen.
+- The tab strip may scroll horizontally on narrow screens. Search results wrap and
+  scroll vertically; do not hide overflowing text to conceal a layout error.
+- Native range inputs must keep zero padding; general input padding moves their
+  visible endpoints. Scope new input rules by type or component.
+- Use `[hidden]` for visibility and preserve the existing hidden selectors. A new
+  `display: grid` or `flex` rule must not resurrect an inactive panel.
+- Use a component class such as `.settings-help`, not unscoped element selectors.
+  Keep mobile overrides next to that component and use existing spacing/type tokens.
+- Update the generated stylesheet with `node scripts/gen-ui-styles.mjs`, then run
+  the UI style tests and the settings HUD browser test. Do not edit generated CSS.
+
+## One shared loading and offline surface
+
+`boot.css` owns the centered startup/status layout: black splash background, Nabla
+mark, message, optional detail, progress or action. Loading hosts add the
+`nabla-boot-screen`, `nabla-boot-mark`, `nabla-boot-message`,
+`nabla-boot-progress` and `nabla-boot-progress-fill` classes rather than duplicating
+these rules. Retry uses the shared `nabla-btn` plus `nabla-boot-action` sizing.
+
+`bootStyleText` in `src/ui/boot-styles.ts` composes only tokens, base, buttons and
+boot CSS. The offline HTML embeds this exact subset so it needs no network access.
+The full interface loads those same sheets plus its other components. There is no
+second offline theme, remote font, card or copy of the loading CSS. `base.css`
+remains the page reset; it does not become a second component stylesheet.
+
+Hosts may supply a cached or inline `offline.iconUrl` to reuse their loading mark;
+`offline.icon` remains the compatible filename option. Keep status text readable
+and the retry action visible even when the normal loading phase hides its text.

@@ -31,7 +31,7 @@ const cameraNotice = {
 } as const
 
 /** Shared game coordination. Hosts supply rendering, device events and editor UI. */
-export class GameRuntime {
+export class GameplayCoordinator {
   /** Per-host text resolver; headless callers default to English. */
   text = createRuntimeText()
   readonly streaming = new GameplayStreaming()
@@ -187,7 +187,7 @@ export class GameRuntime {
   }
   /** Boarding and portal bookkeeping once the step has run. */
   private afterStep(
-    sim: NonNullable<GameRuntime['simulation']>,
+    sim: NonNullable<GameplayCoordinator['simulation']>,
     elapsed: number,
     now: number,
     document: SceneDocument,
@@ -311,3 +311,6 @@ export class GameRuntime {
     return undefined
   }
 }
+
+/** Compatibility alias for the original coordinator name. */
+export { GameplayCoordinator as GameRuntime }

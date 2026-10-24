@@ -14,7 +14,7 @@ own `nabla-menu-section-<id>` side-menu sections) and `data-settings-hidden` on 
 
 ## layoutSectionTabs
 
-[Implementation, line 178](../../../game/menu-layout.ts#L178)
+[Implementation, line 180](../../../game/menu-layout.ts#L180)
 
 Every placed section with its tab, in navigation order (flat members after their section).
 
@@ -27,17 +27,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `flat.find`
 - `out.push`
 
-## layoutSectionTabs.callback@187
+## layoutSectionTabs.callback@189
 
-[Implementation, line 187](../../../game/menu-layout.ts#L187)
+[Implementation, line 189](../../../game/menu-layout.ts#L189)
 
 ```ts
-callback@187(section): inferred by TypeScript; see implementation
+callback@189(section): inferred by TypeScript; see implementation
 ```
 
 ## layoutGroups
 
-[Implementation, line 194](../../../game/menu-layout.ts#L194)
+[Implementation, line 196](../../../game/menu-layout.ts#L196)
 
 The groups of a layout, with their tab.
 
@@ -49,26 +49,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `MENU_TABS.flatMap`
 
-## layoutGroups.callback@197
-
-[Implementation, line 197](../../../game/menu-layout.ts#L197)
-
-```ts
-callback@197({ id: tab }): inferred by TypeScript; see implementation
-```
-
-## layoutGroups.callback@197.callback@199
+## layoutGroups.callback@199
 
 [Implementation, line 199](../../../game/menu-layout.ts#L199)
 
 ```ts
-callback@199(item): item is MenuGroup
+callback@199({ id: tab }): inferred by TypeScript; see implementation
 ```
 
-## layoutGroups.callback@197.callback@200
+## layoutGroups.callback@199.callback@201
 
-[Implementation, line 200](../../../game/menu-layout.ts#L200)
+[Implementation, line 201](../../../game/menu-layout.ts#L201)
 
 ```ts
-callback@200(group): inferred by TypeScript; see implementation
+callback@201(item): item is MenuGroup
+```
+
+## layoutGroups.callback@199.callback@202
+
+[Implementation, line 202](../../../game/menu-layout.ts#L202)
+
+```ts
+callback@202(group): inferred by TypeScript; see implementation
 ```

@@ -1,7 +1,7 @@
 /** Run after npm run build: node examples/manual/session.mjs */
 import assert from 'node:assert/strict'
 import { idleInput } from '@nabla/engine'
-import { PlaySession } from '@nabla/engine/runtime/session'
+import { PlaySession } from '@nabla/engine/simulation'
 import { createManualScene } from './scene.mjs'
 
 const document = createManualScene()

@@ -16,12 +16,13 @@ $env:VITE_NABLA_TILES_URL = '/tiles'
 npm run build:game
 ```
 
-This selects the route at build time. It does not create the production proxy or
-resolve the Atlas manifest mismatch in chapter 10. Serve `game-dist/` through the
+This selects the route at build time; it does not create a production proxy.
+Atlas supports direct browser access with CORS, so `/tiles` is optional.
+Serve `game-dist/` through the
 application's web server, preserve resource paths and content types, and provide
 the HTTPS origin used by the application.
 
-## Production terrain proxy
+## Optional production terrain proxy
 
 The intended mapping preserves the suffix after `/tiles/`. A minimal nginx location
 illustrating that mapping is:

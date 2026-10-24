@@ -32,7 +32,7 @@ independently of its owner or run a second clock over it.
 
 [browser.ts](../../examples/manual/browser.ts) exports `mountManualGame(canvas)`.
 Call it from a TypeScript application using a browser bundler. It imports
-`GameRuntime` specifically from `@nabla/engine/runtime/browser`, supplies the same
+`BrowserGameRuntime` specifically from `@nabla/engine/runtime/browser`, supplies the same
 scene, enables the HUD, and starts play. It returns a cleanup function for the
 application's unmount or route-change handler.
 

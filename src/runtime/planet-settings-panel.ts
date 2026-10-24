@@ -11,6 +11,7 @@ import { installVehicleMonitorStyles, vehicleMonitorStyleText } from './vehicle-
 
 /** Snapshot of visual knobs for host/demo config paste. */
 export type PlanetVisualConfig = {
+  rainLinked?: boolean
   rainAmount?: number
   cloudStyle: 'low' | 'artistic'
   cloudAmount: number
@@ -27,6 +28,11 @@ export type PlanetVisualConfig = {
 
 /** Runtime surface the panel needs (GameRuntime or a test fake). */
 export interface PlanetSettingsRuntime {
+  readonly realWeather?: boolean
+  readonly realWeatherStatus?: string
+  setRealWeather?(enabled: boolean): void
+  readonly rainLinked?: boolean
+  setRainLinked?(linked: boolean): void
   readonly rainSupported?: boolean
   readonly rainAmount?: number
   setRainAmount?(amount: number): void
@@ -68,6 +74,7 @@ export const CLOUD_PRESSURE_PRESETS = [
 export function formatPlanetVisualConfig(config: PlanetVisualConfig): string {
   const lines = [
     `rain=${round3(config.rainAmount ?? 0)}`,
+    `rainLinked=${config.rainLinked ? 1 : 0}`,
     `cloudStyle=${config.cloudStyle}`,
     `cloudAmount=${round3(config.cloudAmount)}`,
     `cloudPressure=${round3(config.cloudPressure)}`,
@@ -86,6 +93,7 @@ export function formatPlanetVisualConfig(config: PlanetVisualConfig): string {
 export function planetVisualConfigFromRuntime(runtime: PlanetSettingsRuntime): PlanetVisualConfig {
   return {
     rainAmount: runtime.rainAmount ?? 0,
+    rainLinked: runtime.rainLinked ?? false,
     cloudStyle: runtime.cloudStyle,
     cloudAmount: runtime.cloudAmount,
     cloudPressure: runtime.cloudPressure,
@@ -180,6 +188,25 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   artistic.id = 'ps-artistic'
 
   const amount = doc.createElement('input')
+  const realWeather = doc.createElement('input')
+  realWeather.type = 'checkbox'
+  realWeather.id = 'ps-real-weather'
+  const weatherStatus = doc.createElement('small')
+  weatherStatus.id = 'ps-real-weather-status'
+  weatherStatus.setAttribute('role', 'status')
+  weatherStatus.style.cssText = 'display:block;max-width:340px;white-space:normal;line-height:1.5'
+  const weatherCredit = doc.createElement('a')
+  weatherCredit.href = 'https://www.weatherapi.com/'
+  weatherCredit.target = '_blank'
+  weatherCredit.rel = 'noopener noreferrer'
+  weatherCredit.textContent = 'WeatherAPI.com'
+  const weatherInfo = doc.createElement('div')
+  weatherInfo.id = 'ps-weather-info'
+  weatherInfo.append(weatherStatus, weatherCredit)
+  const rainLinked = doc.createElement('input')
+  rainLinked.type = 'checkbox'
+  rainLinked.id = 'ps-rain-linked'
+  rainLinked.title = t('settings.rain-linked-help')
   const rain = doc.createElement('input')
   rain.type = 'range'
   rain.id = 'ps-rain'
@@ -254,7 +281,10 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
 
   root.append(
     toggles,
+    row(t('settings.real-weather'), realWeather),
+    weatherInfo,
     row(t('settings.rain'), rain, rainVal),
+    row(t('settings.rain-linked'), rainLinked),
     row(t('settings.cloud-amount'), amount, amountVal),
     row(t('settings.cloud-pressure-mode'), pressureMode),
     row(t('settings.cloud-pressure'), pressure, pressureVal),
@@ -273,10 +303,16 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
   const refresh = () => {
     if (!runtime) return
     const layers = runtime.planetLayers
+    const live = runtime.realWeather ?? false
+    realWeather.checked = live
+    realWeather.disabled = !runtime.setRealWeather || runtime.rainSupported === false
+    weatherStatus.textContent = runtime.realWeatherStatus ?? t('settings.real-weather-help')
+    rainLinked.checked = runtime.rainLinked ?? false
+    rainLinked.disabled = live || !runtime.setRainLinked || runtime.rainSupported === false
     rain.value = String(Math.round((runtime.rainAmount ?? 0) * 100))
     rainVal.textContent = Number(rain.value) === 0 ? 'Off' : `${rain.value}%`
     rain.setAttribute('aria-valuetext', rainVal.textContent)
-    rain.disabled = !runtime.setRainAmount || runtime.rainSupported === false
+    rain.disabled = live || !runtime.setRainAmount || runtime.rainSupported === false
     sky.checked = layers.sky
     sun.checked = layers.sun
     moon.checked = layers.moon ?? layers.sky
@@ -287,12 +323,13 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     moonScaleVal.textContent = `${runtime.moonHorizonScale ?? 5}×`
     moonScale.disabled = !moon.checked || !runtime.setMoonHorizonScale
     sea.checked = layers.sea
-    clouds.checked = layers.clouds
+    clouds.disabled = live
+    clouds.checked = live || layers.clouds
     artistic.checked = runtime.cloudStyle === 'artistic'
-    artistic.disabled = !layers.clouds
-    amount.disabled = !layers.clouds
-    pressure.disabled = !layers.clouds
-    pressureMode.disabled = !layers.clouds
+    artistic.disabled = live || !layers.clouds || !!runtime.rainLinked
+    amount.disabled = live || !layers.clouds
+    pressure.disabled = live || !layers.clouds
+    pressureMode.disabled = live || !layers.clouds
     amount.value = String(Math.round(runtime.cloudAmount * 100))
     amountVal.textContent = pct(runtime.cloudAmount)
     pressure.value = String(Math.round(runtime.cloudPressure * 100))
@@ -347,7 +384,15 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     runtime?.setCloudStyle(artistic.checked ? 'artistic' : 'low')
     refresh()
   })
+  realWeather.addEventListener('change', () => {
+    runtime?.setRealWeather?.(realWeather.checked)
+    refresh()
+  })
   amount.addEventListener('input', applyWeather)
+  rainLinked.addEventListener('change', () => {
+    runtime?.setRainLinked?.(rainLinked.checked)
+    refresh()
+  })
   rain.addEventListener('input', () => {
     runtime?.setRainAmount?.(Number(rain.value) / 100)
     refresh()
@@ -376,6 +421,9 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     }
   })
 
+  const weatherRefresh = setInterval(() => {
+    if (runtime?.realWeather) refresh()
+  }, 1000)
   return {
     root,
     config,
@@ -383,6 +431,7 @@ export function createPlanetSettingsPanel(doc: Document = document): PlanetSetti
     refresh,
     snapshot: () => (runtime ? planetVisualConfigFromRuntime(runtime) : null),
     destroy: () => {
+      clearInterval(weatherRefresh)
       runtime = null
       root.remove()
       config.remove()

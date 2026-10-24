@@ -4,7 +4,7 @@
  * code out of a desktop bundle.
  */
 export { PlaySession, type PlayOptions, type SessionState } from './session.js'
-export { GameRuntime } from './game.js'
+export { GameplayCoordinator, GameplayCoordinator as GameRuntime } from './game.js'
 export { playGroundClearance } from './placement.js'
 export { FrameLoop } from './frame-loop.js'
 export {

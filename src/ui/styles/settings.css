@@ -62,16 +62,19 @@
   left: 0;
   right: 0;
   max-height: min(50dvh, 420px);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 8px var(--nabla-space-7);
   background: var(--nabla-color-surface);
   border-bottom: 1px solid var(--nabla-color-line);
 }
-.settings-search-results button {
+.settings-window .settings-search-results button {
   display: block;
   width: 100%;
+  margin-inline: 0;
   text-align: left;
   white-space: normal;
+  overflow-wrap: anywhere;
   min-height: 36px;
 }
 
@@ -321,6 +324,9 @@ body:has(.nabla-corner--tl) .settings-header {
   flex: 1;
   min-width: 80px;
   max-width: 380px;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
   accent-color: var(--nabla-color-accent);
 }
 .settings-window input[type='number'] {
@@ -696,5 +702,43 @@ body:has(.nabla-corner--tl) .settings-header {
   }
   .settings-system-info-list dd {
     margin-bottom: 8px;
+  }
+}
+
+/* Read-only Help content. Keep typography local: never style all fieldsets, dl or h3 globally.
+   The existing section-content container owns scrolling; Help only lays out its contents. */
+.settings-window .settings-help {
+  max-width: 76ch;
+  overflow-wrap: anywhere;
+}
+.settings-help .settings-help-intro {
+  color: var(--nabla-color-ink);
+  line-height: 1.6;
+}
+.settings-help h3 {
+  margin: var(--nabla-space-7) 0 var(--nabla-space-5);
+  font-size: var(--nabla-font-lg);
+}
+.settings-help dl {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 4fr);
+  gap: var(--nabla-space-5) var(--nabla-space-6);
+  margin: 0;
+}
+.settings-help dt {
+  font-weight: bold;
+}
+.settings-help dd {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--nabla-color-muted);
+}
+@media (max-width: 600px) {
+  .settings-help dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--nabla-space-2);
+  }
+  .settings-help dd {
+    margin-bottom: var(--nabla-space-5);
   }
 }

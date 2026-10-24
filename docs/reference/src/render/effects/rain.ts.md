@@ -7,10 +7,13 @@
 ## Module dependencies
 
 - `three`
+- `../planet/artistic-clouds.js`
+- `../planet/weather.js`
+- `./rain-curtains.js`
 
 ## GpuRain.constructor
 
-[Implementation, line 63](../../../../../src/render/effects/rain.ts#L63)
+[Implementation, line 85](../../../../../src/render/effects/rain.ts#L85)
 
 Analytic rain: immutable instance seeds, one draw, no per-drop CPU simulation.
 
@@ -35,25 +38,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## GpuRain.update
 
-[Implementation, line 82](../../../../../src/render/effects/rain.ts#L82)
+[Implementation, line 106](../../../../../src/render/effects/rain.ts#L106)
 
 Analytic rain: immutable instance seeds, one draw, no per-drop CPU simulation.
 
 ```ts
-update(timeSeconds: number, eye: THREE.Vector3, origin: THREE.Vector3, amount: number, day: number): void
+update(timeSeconds: number, eye: THREE.Vector3, origin: THREE.Vector3, amount: number, day: number, weather?: RainWeather): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Math.round`
 - `THREE.MathUtils.clamp`
+- `this.curtains.update`
 - `this.material.uniforms.eyeLocal.value.copy`
 - `this.material.uniforms.eyeLocal.value.copy(eye).sub`
 - `this.material.uniforms.eyePhase.value.set`
+- `this.material.uniforms.eyeWorld.value.copy`
+- `this.material.uniforms.wind.value.set`
+- `weatherHours`
 
 ## GpuRain.dispose
 
-[Implementation, line 97](../../../../../src/render/effects/rain.ts#L97)
+[Implementation, line 133](../../../../../src/render/effects/rain.ts#L133)
 
 Analytic rain: immutable instance seeds, one draw, no per-drop CPU simulation.
 
@@ -63,6 +70,7 @@ dispose(): void
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `this.curtains.dispose`
 - `this.geometry.dispose`
 - `this.material.dispose`
 - `this.scene.clear`

@@ -1,3 +1,4 @@
+import { bootStyleText } from '../../src/ui/boot-styles.js'
 import { describe, expect, it } from 'vitest'
 import {
   offlinePageHtml,
@@ -83,8 +84,10 @@ describe('offlinePageHtml', () => {
         es: { title: 'Sin conexión', message: 'No hay red', retry: 'Reintentar' },
       },
     })
+    expect(html).toContain(bootStyleText)
+    expect(html).toContain('class="nabla-boot-screen"')
     expect(html).toContain('<title>App &lt;1&gt;</title>')
-    expect(html).toContain('<h1 id="title">Offline</h1>')
+    expect(html).toContain('<h1 id="title" class="nabla-boot-message">Offline</h1>')
     expect(html).toContain('"es":{"title":"Sin conexión"')
     expect(html).not.toMatch(/<(link|script) [^>]*src=/)
   })
