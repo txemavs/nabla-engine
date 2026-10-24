@@ -93,8 +93,14 @@ export class PlaySession {
           undefined,
           '04 Física',
         )
-        await threadedSimulation(simulation)?.refresh()
-        syncDone()
+        try {
+          await threadedSimulation(simulation)?.refresh()
+        } finally {
+          syncDone()
+        }
+        // stop/dispose or a newer play may take ownership during the final worker wait.
+        // Reject inside this cleanup scope so the unpublished simulation is released once.
+        if (generation !== this.generation) throw new Error('Play session cancelled')
       } catch (error) {
         simulation.dispose()
         throw error

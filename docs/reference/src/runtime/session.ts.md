@@ -73,7 +73,7 @@ Explicit throws in this body:
 
 ## PlaySession.step
 
-[Implementation, line 116](../../../../src/runtime/session.ts#L116)
+[Implementation, line 122](../../../../src/runtime/session.ts#L122)
 
 Call once from the owning runtime's frame. Paused time is never accumulated.
 Inline physics steps synchronously; a worker-hosted simulation returns a promise the frame
@@ -102,7 +102,7 @@ Explicit throws in this body:
 
 ## PlaySession.pause
 
-[Implementation, line 130](../../../../src/runtime/session.ts#L130)
+[Implementation, line 136](../../../../src/runtime/session.ts#L136)
 
 Clear movement commands and suspend stepping; retain the simulation for resume.
 
@@ -118,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.resume
 
-[Implementation, line 138](../../../../src/runtime/session.ts#L138)
+[Implementation, line 144](../../../../src/runtime/session.ts#L144)
 
 Resume only a paused simulation; reject use after disposal.
 
@@ -132,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.stop
 
-[Implementation, line 144](../../../../src/runtime/session.ts#L144)
+[Implementation, line 150](../../../../src/runtime/session.ts#L150)
 
 Cancel pending initialization and release physics. Safe to repeat after disposal.
 
@@ -146,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.dispose
 
-[Implementation, line 153](../../../../src/runtime/session.ts#L153)
+[Implementation, line 159](../../../../src/runtime/session.ts#L159)
 
 Stop and permanently close the session. Repeated disposal is harmless.
 
@@ -160,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.assertAlive
 
-[Implementation, line 160](../../../../src/runtime/session.ts#L160)
+[Implementation, line 166](../../../../src/runtime/session.ts#L166)
 
 Enforce the terminal lifecycle state before operations that require a live owner.
 

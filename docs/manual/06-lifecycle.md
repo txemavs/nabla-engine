@@ -13,6 +13,17 @@ Failure falls back to inline simulation unless initialization has been cancelled
 before returning the owned simulation. A host should inspect actual mode rather
 than equating a requested option with successful worker use.
 
+The generation is checked again after the initial worker snapshot refresh, before
+publishing the simulation. If `stop()`, `dispose()` or a newer `play()` intervenes,
+a late successful reply rejects the old play with `Play session cancelled` and
+releases its unpublished simulation exactly once. A late failure retains its original
+error and cannot overwrite the newer session's state or trigger an inline fallback.
+This invalidates startup ownership; it does not force an unresolved worker request
+to settle immediately. Cleanup happens when that request settles.
+
+Regression coverage: `test/runtime/session-startup-cancellation.test.ts` and
+`test/browser/e2e/session-startup-cancellation.spec.ts` (real worker synchronization).
+
 ## Stepping and stopping
 
 `step(elapsed, input, waterLevel)` accepts elapsed **seconds**, rejects negative or
