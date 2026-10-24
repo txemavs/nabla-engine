@@ -209,8 +209,11 @@ import {
   type TileDiscoveryMode,
   type PlanetSourceOptions,
 } from '../render/planet/world.js'
-import { setPlanetCharts } from '../render/entity/helm-map.js'
-import { setNavigationPlaces, setNavigationRoads } from '../render/entity/navigation-places.js'
+import { registerPlanetCharts } from '../render/entity/helm-map.js'
+import {
+  registerNavigationPlaces,
+  registerNavigationRoads,
+} from '../render/entity/navigation-places.js'
 import type { LightTuning } from './light-tuning.js'
 import { RuntimeLightingPreferences } from './lighting-preferences.js'
 export {
@@ -298,6 +301,7 @@ import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
+import { RuntimeTeardown } from './teardown.js'
 import { FrameLoop } from './frame-loop.js'
 import {
   RuntimeFrameCoordinator,
@@ -790,6 +794,70 @@ export class GameRuntime {
   private readonly origin = new THREE.Vector3()
   private readonly loop: FrameLoop
   private readonly keys = this.game.keys
+  private releaseCharts?: () => void
+  private releasePlaces?: () => void
+  private releaseRoads?: () => void
+  private readonly teardown = new RuntimeTeardown([
+    // Stop reusable work before marking the facade terminal.
+    () => this.versionLabel?.remove(),
+    () => this.usbFeedback.dispose(),
+    () => this.usbControllers.reset(),
+    () => this.stopAttract(),
+    () => this.stop(),
+    () => (this.disposed = true),
+    // Quiesce callbacks and producers before releasing their consumers.
+    () => this.renderer.setAnimationLoop(null),
+    () => this.xrSystem?.dispose(),
+    () => this.lifetime.abort(),
+    () => this.preparation.dispose(),
+    () => this.observer.disconnect(),
+    () => this.game.dispose(),
+    () => this.world?.dispose(),
+    () => this.releaseCharts?.(),
+    () => this.releasePlaces?.(),
+    () => this.releaseRoads?.(),
+    // Presentation owners release their own GPU, audio and DOM resources.
+    () => this.xrGrab?.dispose(),
+    () => this.xrLoadout?.pistols[1]?.weapon.dispose(),
+    () => this.xrLoadout?.dispose(),
+    () => this.sidearm?.dispose(),
+    () => this.playerPresentation.dispose(),
+    () => this.clearPickups(),
+    () => this.casingMeshes?.dispose(),
+    () => this.magazineMeshes?.dispose(),
+    () => this.cartridgeMeshes?.dispose(),
+    () => this.weaponLight?.removeFromParent(),
+    () => this.weaponLight?.target.removeFromParent(),
+    () => this.weaponLight?.dispose(),
+    () => this.gallery.dispose(),
+    () => this.touchDriving?.dispose(),
+    () => this.fireModeBadge?.dispose(),
+    () => (this.fireModeBadge = null),
+    () => this.touchFlight?.dispose(),
+    () => this.touchWalk?.dispose(),
+    () => this.sceneryPhysics.dispose(),
+    () => this.monitors.dispose(),
+    () => this.view.dispose(),
+    () => this.vehiclePresentation.dispose(),
+    () => this.sky.dispose(),
+    () => this.environment.dispose(),
+    () => this.fieldLighting?.dispose(),
+    () => this.effects.dispose(),
+    () => this.pipeline.dispose(),
+    () => this.shadows.dispose(),
+    () => this.catchFloor.dispose(),
+    () => this.weaponControls.dispose(),
+    () => this.toolbar.dispose(),
+    () => this.hud?.dispose(),
+    () => this.wheelDebug.dispose(),
+    // Renderer and host canvas are the final releases.
+    () => this.renderer.dispose(),
+    () => this.renderer.forceContextLoss(),
+    () => {
+      if (this.originalTabIndex === null) this.options.canvas.removeAttribute('tabindex')
+      else this.options.canvas.setAttribute('tabindex', this.originalTabIndex)
+    },
+  ])
   private readonly lifetime = new AbortController()
   private readonly observer: ResizeObserver
   private readonly world: PlanetWorld | null
@@ -1320,9 +1388,9 @@ export class GameRuntime {
       this.world.setDistance(this.quality.distance)
       this.world.setRelief(this.quality.relief)
       this.scene.add(this.world.root)
-      setPlanetCharts(() => this.world!.chartTiles)
-      setNavigationPlaces(() => this.world!.iterateNavigationPlaces())
-      setNavigationRoads(() => this.world!.iterateNavigationRoads())
+      this.releaseCharts = registerPlanetCharts(() => this.world!.chartTiles)
+      this.releasePlaces = registerNavigationPlaces(() => this.world!.iterateNavigationPlaces())
+      this.releaseRoads = registerNavigationRoads(() => this.world!.iterateNavigationRoads())
     }
     this.loop = new FrameLoop((time) => {
       try {
@@ -1846,7 +1914,7 @@ export class GameRuntime {
     this.loop.stop()
     this.releaseInput()
     this.effects.audio.setSuspended(true)
-    this.frames.lastTime = null
+    this.frames.cancel()
   }
   /** Resume paused gameplay and automatic scheduling; manual-clock hosts still supply ticks. */
   resume(): void {
@@ -1903,7 +1971,7 @@ export class GameRuntime {
     this.view.setPlaying(false)
     this.effects.updateAudio(null, this.document, this.camera.position)
     this.effects.updateTires(null, 0, this.origin)
-    this.frames.lastTime = null
+    this.frames.cancel()
   }
   /** Host-owned scheduling is exclusive with the automatic loop. Time is in milliseconds. */
   tick(time: number): void {
@@ -1922,59 +1990,7 @@ export class GameRuntime {
   }
   /** Release GPU/audio/DOM listeners and restore canvas tab index. Idempotent and terminal. */
   dispose(): void {
-    this.versionLabel?.remove()
-    this.usbFeedback.dispose()
-    this.usbControllers.reset()
-    if (this.disposed) return
-    this.stopAttract()
-    this.stop()
-    this.disposed = true
-    this.renderer.setAnimationLoop(null)
-    this.xrSystem?.dispose()
-    this.lifetime.abort()
-    this.observer.disconnect()
-    this.game.dispose()
-    this.world?.dispose()
-    setPlanetCharts(() => [])
-    setNavigationPlaces(() => [])
-    setNavigationRoads(() => [])
-    this.xrGrab?.dispose()
-    this.xrLoadout?.pistols[1]?.weapon.dispose()
-    this.xrLoadout?.dispose()
-    this.sidearm?.dispose()
-    this.playerPresentation.dispose()
-    this.clearPickups()
-    this.casingMeshes?.dispose()
-    this.magazineMeshes?.dispose()
-    this.cartridgeMeshes?.dispose()
-    this.weaponLight?.removeFromParent()
-    this.weaponLight?.target.removeFromParent()
-    this.weaponLight?.dispose()
-    this.gallery.dispose()
-    this.touchDriving?.dispose()
-    this.fireModeBadge?.dispose()
-    this.fireModeBadge = null
-    this.touchFlight?.dispose()
-    this.touchWalk?.dispose()
-    this.sceneryPhysics.dispose()
-    this.monitors.dispose()
-    this.view.dispose()
-    this.vehiclePresentation.dispose()
-    this.sky.dispose()
-    this.environment.dispose()
-    this.fieldLighting?.dispose()
-    this.effects.dispose()
-    this.pipeline.dispose()
-    this.shadows.dispose()
-    this.catchFloor.dispose()
-    this.weaponControls.dispose()
-    this.toolbar.dispose()
-    this.hud?.dispose()
-    this.wheelDebug.dispose()
-    this.renderer.dispose()
-    this.renderer.forceContextLoss()
-    if (this.originalTabIndex === null) this.options.canvas.removeAttribute('tabindex')
-    else this.options.canvas.setAttribute('tabindex', this.originalTabIndex)
+    this.teardown.dispose()
   }
 
   /** Same simulation and streaming as desktop, with tracked eyes and no screen-space passes. */

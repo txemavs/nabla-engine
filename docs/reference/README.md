@@ -6,7 +6,7 @@ Every module and executable function is indexed, including private helpers, acce
 
 Regenerate with `node scripts/document-code.mjs`; verify with `node scripts/document-code.mjs --check`. Edit behavioral notes in source rather than generated pages. Source paths and line links are relative, so no workstation paths are embedded.
 
-Coverage: **644 modules; 8284 executable function definitions**.
+Coverage: **646 modules; 8348 executable function definitions**.
 
 | Module | Functions |
 | --- | ---: |
@@ -300,7 +300,7 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/render/entity/gpu-particles.ts](src/render/entity/gpu-particles.ts.md) | 10 |
 | [src/render/entity/headlamp.ts](src/render/entity/headlamp.ts.md) | 5 |
 | [src/render/entity/held-pose.ts](src/render/entity/held-pose.ts.md) | 3 |
-| [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 14 |
+| [src/render/entity/helm-map.ts](src/render/entity/helm-map.ts.md) | 15 |
 | [src/render/entity/hit-volumes.ts](src/render/entity/hit-volumes.ts.md) | 16 |
 | [src/render/entity/impact-marks.ts](src/render/entity/impact-marks.ts.md) | 24 |
 | [src/render/entity/laser-smoke.ts](src/render/entity/laser-smoke.ts.md) | 2 |
@@ -312,7 +312,8 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/render/entity/motorcycle-side-stand.ts](src/render/entity/motorcycle-side-stand.ts.md) | 3 |
 | [src/render/entity/muzzle-flash.ts](src/render/entity/muzzle-flash.ts.md) | 3 |
 | [src/render/entity/muzzle-smoke.ts](src/render/entity/muzzle-smoke.ts.md) | 15 |
-| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 24 |
+| [src/render/entity/navigation-places.ts](src/render/entity/navigation-places.ts.md) | 26 |
+| [src/render/entity/owned-provider.ts](src/render/entity/owned-provider.ts.md) | 5 |
 | [src/render/entity/particle-nodes.ts](src/render/entity/particle-nodes.ts.md) | 27 |
 | [src/render/entity/player-body.ts](src/render/entity/player-body.ts.md) | 31 |
 | [src/render/entity/propeller.ts](src/render/entity/propeller.ts.md) | 8 |
@@ -441,7 +442,7 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/runtime/bodycam-aim.ts](src/runtime/bodycam-aim.ts.md) | 3 |
 | [src/runtime/boot-trace.ts](src/runtime/boot-trace.ts.md) | 16 |
 | [src/runtime/bow-model.ts](src/runtime/bow-model.ts.md) | 6 |
-| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 615 |
+| [src/runtime/browser.ts](src/runtime/browser.ts.md) | 664 |
 | [src/runtime/camera-fov.ts](src/runtime/camera-fov.ts.md) | 5 |
 | [src/runtime/camera-preferences.ts](src/runtime/camera-preferences.ts.md) | 14 |
 | [src/runtime/combat.ts](src/runtime/combat.ts.md) | 24 |
@@ -453,7 +454,7 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/runtime/field-lighting.ts](src/runtime/field-lighting.ts.md) | 14 |
 | [src/runtime/fire-mode-badge.ts](src/runtime/fire-mode-badge.ts.md) | 3 |
 | [src/runtime/flip-cinematic.ts](src/runtime/flip-cinematic.ts.md) | 4 |
-| [src/runtime/frame-coordinator.ts](src/runtime/frame-coordinator.ts.md) | 12 |
+| [src/runtime/frame-coordinator.ts](src/runtime/frame-coordinator.ts.md) | 13 |
 | [src/runtime/frame-loop.ts](src/runtime/frame-loop.ts.md) | 7 |
 | [src/runtime/gallery.ts](src/runtime/gallery.ts.md) | 25 |
 | [src/runtime/game-camera.ts](src/runtime/game-camera.ts.md) | 13 |
@@ -489,7 +490,7 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/runtime/planet-visual.ts](src/runtime/planet-visual.ts.md) | 4 |
 | [src/runtime/player-presentation.ts](src/runtime/player-presentation.ts.md) | 23 |
 | [src/runtime/pointer-capture.ts](src/runtime/pointer-capture.ts.md) | 7 |
-| [src/runtime/preparation.ts](src/runtime/preparation.ts.md) | 15 |
+| [src/runtime/preparation.ts](src/runtime/preparation.ts.md) | 19 |
 | [src/runtime/presentation-warmup.ts](src/runtime/presentation-warmup.ts.md) | 7 |
 | [src/runtime/pwa-install.ts](src/runtime/pwa-install.ts.md) | 9 |
 | [src/runtime/quality-preset.ts](src/runtime/quality-preset.ts.md) | 9 |
@@ -510,6 +511,7 @@ Coverage: **644 modules; 8284 executable function definitions**.
 | [src/runtime/start-cameras.ts](src/runtime/start-cameras.ts.md) | 11 |
 | [src/runtime/steering-wheel-offsets.ts](src/runtime/steering-wheel-offsets.ts.md) | 7 |
 | [src/runtime/streaming.ts](src/runtime/streaming.ts.md) | 6 |
+| [src/runtime/teardown.ts](src/runtime/teardown.ts.md) | 2 |
 | [src/runtime/touch-coordinates.ts](src/runtime/touch-coordinates.ts.md) | 1 |
 | [src/runtime/touch-driving.ts](src/runtime/touch-driving.ts.md) | 45 |
 | [src/runtime/touch-flight.ts](src/runtime/touch-flight.ts.md) | 21 |

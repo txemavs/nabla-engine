@@ -10,7 +10,7 @@
 
 ## RuntimeFrameCoordinator.constructor
 
-[Implementation, line 20](../../../../src/runtime/frame-coordinator.ts#L20)
+[Implementation, line 21](../../../../src/runtime/frame-coordinator.ts#L21)
 
 Coordinates frame continuation and clocks, without scheduling or owning render resources.
 
@@ -18,9 +18,19 @@ Coordinates frame continuation and clocks, without scheduling or owning render r
 constructor(private readonly host: FrameCoordinatorHost): instance
 ```
 
+## RuntimeFrameCoordinator.cancel
+
+[Implementation, line 24](../../../../src/runtime/frame-coordinator.ts#L24)
+
+Invalidate pending continuations before replay or terminal resource release.
+
+```ts
+cancel(): void
+```
+
 ## RuntimeFrameCoordinator.frameBusy
 
-[Implementation, line 22](../../../../src/runtime/frame-coordinator.ts#L22)
+[Implementation, line 32](../../../../src/runtime/frame-coordinator.ts#L32)
 
 Coordinates frame continuation and clocks, without scheduling or owning render resources.
 
@@ -30,7 +40,7 @@ frameBusy(): boolean
 
 ## RuntimeFrameCoordinator.desktopTiming
 
-[Implementation, line 26](../../../../src/runtime/frame-coordinator.ts#L26)
+[Implementation, line 36](../../../../src/runtime/frame-coordinator.ts#L36)
 
 Coordinates frame continuation and clocks, without scheduling or owning render resources.
 
@@ -45,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeFrameCoordinator.xrTiming
 
-[Implementation, line 36](../../../../src/runtime/frame-coordinator.ts#L36)
+[Implementation, line 46](../../../../src/runtime/frame-coordinator.ts#L46)
 
 Coordinates frame continuation and clocks, without scheduling or owning render resources.
 
@@ -60,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeFrameCoordinator.drive
 
-[Implementation, line 46](../../../../src/runtime/frame-coordinator.ts#L46)
+[Implementation, line 56](../../../../src/runtime/frame-coordinator.ts#L56)
 
 Inline frames finish synchronously; waiting desktop frames exclude further submissions.
 
@@ -73,12 +83,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `steps.next`
 - `value.then`
 
-## RuntimeFrameCoordinator.drive.callback@53
+## RuntimeFrameCoordinator.drive.callback@64
 
-[Implementation, line 53](../../../../src/runtime/frame-coordinator.ts#L53)
+[Implementation, line 64](../../../../src/runtime/frame-coordinator.ts#L64)
 
 ```ts
-callback@53(result: unknown): inferred by TypeScript; see implementation
+callback@64(result: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -88,12 +98,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.host.disposed`
 - `this.host.playing`
 
-## RuntimeFrameCoordinator.drive.callback@62
+## RuntimeFrameCoordinator.drive.callback@74
 
-[Implementation, line 62](../../../../src/runtime/frame-coordinator.ts#L62)
+[Implementation, line 74](../../../../src/runtime/frame-coordinator.ts#L74)
 
 ```ts
-callback@62(error: unknown): inferred by TypeScript; see implementation
+callback@74(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -104,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeFrameCoordinator.stepXR
 
-[Implementation, line 75](../../../../src/runtime/frame-coordinator.ts#L75)
+[Implementation, line 88](../../../../src/runtime/frame-coordinator.ts#L88)
 
 XR must render inside its callback, so pending physics never suspends presentation.
 
@@ -118,20 +128,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `step`
 - `stepped.then`
 
-## RuntimeFrameCoordinator.stepXR.callback@81
+## RuntimeFrameCoordinator.stepXR.callback@95
 
-[Implementation, line 81](../../../../src/runtime/frame-coordinator.ts#L81)
+[Implementation, line 95](../../../../src/runtime/frame-coordinator.ts#L95)
 
 ```ts
-callback@81(): inferred by TypeScript; see implementation
+callback@95(): inferred by TypeScript; see implementation
 ```
 
-## RuntimeFrameCoordinator.stepXR.callback@84
+## RuntimeFrameCoordinator.stepXR.callback@99
 
-[Implementation, line 84](../../../../src/runtime/frame-coordinator.ts#L84)
+[Implementation, line 99](../../../../src/runtime/frame-coordinator.ts#L99)
 
 ```ts
-callback@84(error: unknown): inferred by TypeScript; see implementation
+callback@99(error: unknown): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -141,7 +151,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimeFrameCoordinator.fail
 
-[Implementation, line 94](../../../../src/runtime/frame-coordinator.ts#L94)
+[Implementation, line 110](../../../../src/runtime/frame-coordinator.ts#L110)
 
 Coordinates frame continuation and clocks, without scheduling or owning render resources.
 
@@ -156,7 +166,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## advanceAttractFrame
 
-[Implementation, line 101](../../../../src/runtime/frame-coordinator.ts#L101)
+[Implementation, line 117](../../../../src/runtime/frame-coordinator.ts#L117)
 
 Attract uses milliseconds and a separate clock so loading cannot fast-forward its orbit.
 

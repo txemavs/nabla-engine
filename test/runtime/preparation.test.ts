@@ -196,7 +196,7 @@ it('drains reveal gates added while holding and keeps two owners independent', a
   expect(done).toBe(true)
 })
 
-it('retains the final host-gate settlement contract after cancellation; caller guards reveal', async () => {
+it('rejects the final host gate on cancellation; caller never reveals', async () => {
   const f = fixture(),
     gate = deferred(),
     controller = new AbortController()
@@ -212,4 +212,73 @@ it('retains the final host-gate settlement contract after cancellation; caller g
   gate.resolve()
   await expect(run).rejects.toThrow('disposed')
   expect(revealed).toBe(false)
+})
+
+it.each([
+  'vehiclesReady',
+  'loadWeaponAssets',
+  'warmSidearm',
+  'prepareTerrain',
+  'placeInitialPickup',
+  'warmPresentation',
+] as const)(
+  'cancels promptly during %s without waiting for the asset and ignores late settlement',
+  async (stage) => {
+    const f = fixture(),
+      pending = deferred(),
+      controller = new AbortController()
+    let entered = false
+    Object.assign(f.hooks, {
+      [stage]: () => {
+        entered = true
+        return pending.promise
+      },
+    })
+    const run = f.owner.prepare(controller.signal)
+    await vi.waitFor(() => expect(entered).toBe(true))
+    controller.abort(new Error('cancelled'))
+    await expect(run).rejects.toThrow('cancelled')
+    const snapshot = JSON.stringify([f.canvas.dataset, f.log, f.published])
+    pending.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(JSON.stringify([f.canvas.dataset, f.log, f.published])).toBe(snapshot)
+  },
+)
+it('cancels final reveal gates promptly and clears queued tasks on terminal disposal', async () => {
+  const f = fixture(),
+    gate = deferred(),
+    controller = new AbortController()
+  f.owner.holdReveal(gate.promise)
+  const run = f.owner.prepare(controller.signal)
+  await vi.waitFor(() => expect(f.canvas.dataset.reveal).toBe('holding'))
+  controller.abort(new Error('disposed'))
+  await expect(run).rejects.toThrow('disposed')
+  const task = vi.fn(async () => {})
+  f.owner.beforeReveal(task)
+  f.owner.holdPreparation(new Promise(() => {}))
+  f.owner.holdReveal(new Promise(() => {}))
+  f.owner.dispose()
+  // The owner has no remaining gates or captured host tasks (the facade forbids replay after disposal).
+  await f.owner.prepare(new AbortController().signal)
+  expect(task).not.toHaveBeenCalled()
+  gate.resolve()
+})
+
+it('does not publish ready when cancellation races with a completed warmup', async () => {
+  const f = fixture(),
+    warm = deferred(),
+    controller = new AbortController()
+  let entered = false
+  f.hooks.warmPresentation = () => {
+    entered = true
+    return warm.promise
+  }
+  const run = f.owner.prepare(controller.signal)
+  await vi.waitFor(() => expect(entered).toBe(true))
+  void warm.promise.then(() => controller.abort(new Error('warmup cancelled')))
+  warm.resolve()
+  await expect(run).rejects.toThrow('warmup cancelled')
+  expect(f.canvas.dataset.revealStage).toBe('shaders')
+  expect(f.canvas.dataset.reveal).toBe('preparing')
 })

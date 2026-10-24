@@ -151,8 +151,8 @@ work, so later stages do not silently switch to another session.
 
 Rejected gates count as settled. Pre-reveal task promise rejections are logged and loading
 continues; tasks are consumed as a snapshot. Reveal gates are drained until no gates remain.
-Preparation gates are abortable; the final host reveal wait retains its settlement behavior
-on cancellation. `play()` still checks cancellation before publishing `data-reveal=play`,
+Preparation, asset and final host reveal waits are abortable. Cancellation rejects promptly
+even if a host gate never settles. `play()` still checks cancellation before publishing `data-reveal=play`,
 settles ground collisions and activates the scene clock, toolbar and loop in their original
 order. Loading detail events and the five-stage progress contract are unchanged. Tests:
 `test/runtime/preparation.test.ts`, terrain/start-camera tests and
@@ -333,7 +333,35 @@ browser composition root. There is no extra loop, renderer or simulation owner.
 Gameplay timestamp resets remain at the original lifecycle and visibility/XR transition sites.
 Desktop asynchronous failures pause/report only while playing; XR rejection retains its existing
 policy of reporting unless disposed. Synchronous errors still propagate to the caller's existing
-handler. This refactor does not introduce session-generation cancellation or change stop/restart
-semantics for pending physics. Such a behavioral change requires a separate review.
+handler. Terminal cleanup work in topic 8 adds generation invalidation on pause/stop: late physics
+results cannot resume a frame from an earlier session or clear the current session’s pending step.
 Tests: `test/runtime/frame-coordinator.test.ts`, frame-loop/map-inspector tests and browser
 frame-coordination, physics-worker-wiring, preparation, attract-stability and vehicle-warmup tests.
+
+### Cleanup and resource ownership
+
+[RuntimeTeardown](../../src/runtime/teardown.ts) is the single terminal release coordinator.
+The composition root declares callbacks in dependency order; resource owners still implement
+their own disposal. Repeated or reentrant `dispose()` calls do nothing after the first call.
+If a release throws, later releases still run and the first error is rethrown after cleanup.
+This prevents a presentation failure from leaking the renderer, context or host canvas state.
+
+| Lifetime          | Owner and release contract                                                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Play session      | `stop()` aborts terrain/loading, stops gameplay scheduling, clears reusable presentation/input and resets the session. It retains resources needed for replay.                                                                                                |
+| Runtime callbacks | XR animation loop/system, lifetime AbortSignal and resize observer are shut down before scene/render resources. Frame promises retain disposed checks; they do not schedule another render.                                                                   |
+| Preparation       | Active waits use the play AbortSignal. All host gates and awaited resource stages reject promptly on cancellation. Terminal cleanup clears queued callbacks/gates and finishes diagnostics.                                                                   |
+| Presentation      | Player/vehicle owners, SceneView, weapon props/pools, scenery, monitors, sky/environment, lighting/audio, pipeline/shadows and UI retain their existing resource boundaries and release order. Successfully returned remote weapon props remain caller-owned. |
+| Shared providers  | Owned chart/place/road registrations are released individually. Removing a newer registration restores the previous live provider; removing an older one leaves the newer one intact. Explicit legacy setters still override the complete provider stack.     |
+| Host surface      | Renderer disposal and context loss precede restoration of the original canvas tab index, including the absence of that attribute.                                                                                                                             |
+
+Cancellation stops runtime continuation; it cannot cancel arbitrary host promises or every
+underlying shared asset download. Resource owners must continue to reject stale installation
+and release unpublished models when such work finishes. Navigation/chart lookup remains global
+and selects the most recent provider; full per-runtime navigation is separate future work.
+Tests: teardown, owned-provider, preparation, player/vehicle presentation and frame-coordinator
+unit tests; browser teardown, preparation, player-presentation and frame-coordination checks.
+
+Pending desktop/XR physics continuations are invalidated on pause/stop. Their late success or
+failure cannot resume an old frame, clear a new pending step or report errors into the next
+session. This fixes stale continuation across replay without changing active-frame ordering.

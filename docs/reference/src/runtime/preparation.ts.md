@@ -97,9 +97,23 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `this.bootDetailDone`
 
+## RuntimePreparation.dispose
+
+[Implementation, line 50](../../../../src/runtime/preparation.ts#L50)
+
+Terminal cleanup of queued host work; active work is cancelled by its play signal.
+
+```ts
+dispose(): void
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.finishDetail`
+
 ## RuntimePreparation.stage
 
-[Implementation, line 49](../../../../src/runtime/preparation.ts#L49)
+[Implementation, line 57](../../../../src/runtime/preparation.ts#L57)
 
 ```ts
 stage(name: string, done: number): void
@@ -111,7 +125,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePreparation.reportLoadStep
 
-[Implementation, line 55](../../../../src/runtime/preparation.ts#L55)
+[Implementation, line 63](../../../../src/runtime/preparation.ts#L63)
 
 ```ts
 reportLoadStep(detail: string, description = detail, group?: import('./boot-trace.js').BootGroup): Promise<void>
@@ -136,7 +150,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## RuntimePreparation.prepare
 
-[Implementation, line 87](../../../../src/runtime/preparation.ts#L87)
+[Implementation, line 95](../../../../src/runtime/preparation.ts#L95)
 
 ```ts
 prepare(signal: AbortSignal): Promise<void>
@@ -144,7 +158,6 @@ prepare(signal: AbortSignal): Promise<void>
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Promise`
 - `Promise.all`
 - `gateDone`
 - `introDone`
@@ -165,31 +178,69 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.hooks.vehiclesReady`
 - `this.hooks.warmPresentation`
 - `this.hooks.warmSidearm`
+- `this.preparationGates.splice`
 - `this.reportLoadStep`
 - `this.revealGates.splice`
 - `this.revealTasks.splice`
 - `this.revealTasks.splice(0).entries`
 - `this.stage`
+- `wait`
 
-## RuntimePreparation.prepare.callback@96
+## RuntimePreparation.prepare.wait
 
-[Implementation, line 96](../../../../src/runtime/preparation.ts#L96)
+[Implementation, line 97](../../../../src/runtime/preparation.ts#L97)
 
 ```ts
-callback@96(resolve, reject): inferred by TypeScript; see implementation
+wait(work: Promise<T>): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `Promise.all`
-- `Promise.all(this.preparationGates.splice(0)).then`
+- `waitForPreparation`
+
+## RuntimePreparation.prepare.callback@172
+
+[Implementation, line 172](../../../../src/runtime/preparation.ts#L172)
+
+```ts
+callback@172(error): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `console.warn`
+
+## waitForPreparation
+
+[Implementation, line 226](../../../../src/runtime/preparation.ts#L226)
+
+Abort host gates and asset waits promptly; late settlement cannot resume preparation.
+
+```ts
+waitForPreparation(work: Promise<T>, signal: AbortSignal): Promise<T>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Promise`
+
+## waitForPreparation.callback@227
+
+[Implementation, line 227](../../../../src/runtime/preparation.ts#L227)
+
+```ts
+callback@227(resolve, reject): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
 - `abort`
 - `signal.addEventListener`
-- `this.preparationGates.splice`
+- `work.then`
 
-## RuntimePreparation.prepare.callback@96.abort
+## waitForPreparation.callback@227.abort
 
-[Implementation, line 97](../../../../src/runtime/preparation.ts#L97)
+[Implementation, line 228](../../../../src/runtime/preparation.ts#L228)
 
 ```ts
 abort(): inferred by TypeScript; see implementation
@@ -198,13 +249,14 @@ abort(): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `reject`
+- `signal.removeEventListener`
 
-## RuntimePreparation.prepare.callback@96.callback@99
+## waitForPreparation.callback@227.callback@234
 
-[Implementation, line 99](../../../../src/runtime/preparation.ts#L99)
+[Implementation, line 234](../../../../src/runtime/preparation.ts#L234)
 
 ```ts
-callback@99(): inferred by TypeScript; see implementation
+callback@234(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -212,14 +264,15 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `resolve`
 - `signal.removeEventListener`
 
-## RuntimePreparation.prepare.callback@153
+## waitForPreparation.callback@227.callback@238
 
-[Implementation, line 153](../../../../src/runtime/preparation.ts#L153)
+[Implementation, line 238](../../../../src/runtime/preparation.ts#L238)
 
 ```ts
-callback@153(error): inferred by TypeScript; see implementation
+callback@238(error): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
-- `console.warn`
+- `reject`
+- `signal.removeEventListener`

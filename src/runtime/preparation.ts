@@ -46,6 +46,14 @@ export class RuntimePreparation<Context> {
     this.bootDetailDone = undefined
   }
 
+  /** Terminal cleanup of queued host work; active work is cancelled by its play signal. */
+  dispose(): void {
+    this.finishDetail()
+    this.preparationGates.length = 0
+    this.revealGates.length = 0
+    this.revealTasks.length = 0
+  }
+
   stage(name: string, done: number): void {
     this.canvas.dataset.revealStage = name
     this.canvas.dataset.loadingStage = name
@@ -85,6 +93,8 @@ export class RuntimePreparation<Context> {
   }
 
   async prepare(signal: AbortSignal): Promise<void> {
+    signal.throwIfAborted()
+    const wait = <T>(work: Promise<T>) => waitForPreparation(work, signal)
     const canvas = this.canvas
     canvas.dataset.reveal = 'preparing'
     if (this.preparationGates.length) {
@@ -93,54 +103,63 @@ export class RuntimePreparation<Context> {
         undefined,
         '06 Esperas del host',
       )
-      await new Promise<void>((resolve, reject) => {
-        const abort = () => reject(signal.reason)
-        signal.addEventListener('abort', abort, { once: true })
-        Promise.all(this.preparationGates.splice(0)).then(() => {
-          signal.removeEventListener('abort', abort)
-          resolve()
-        })
-        if (signal.aborted) abort()
-      })
-      gateDone()
+      try {
+        await wait(Promise.all(this.preparationGates.splice(0)))
+        signal.throwIfAborted()
+      } finally {
+        gateDone()
+      }
     }
     signal.throwIfAborted()
-    await this.reportLoadStep(t('load.loading-audio'), 'Preparar contexto de audio y sonidos')
+    await wait(this.reportLoadStep(t('load.loading-audio'), 'Preparar contexto de audio y sonidos'))
+    signal.throwIfAborted()
     this.hooks.prepareAudio()
     // 1. Vehicle GLBs (the bike included) and 2. the sidearm models land in the asset cache.
     this.stage('vehicles', 0)
-    await this.reportLoadStep(
-      t('load.loading-vehicles'),
-      'Esperar modelos y recursos visuales de los vehículos iniciales',
+    await wait(
+      this.reportLoadStep(
+        t('load.loading-vehicles'),
+        'Esperar modelos y recursos visuales de los vehículos iniciales',
+      ),
     )
-    await this.hooks.vehiclesReady()
+    signal.throwIfAborted()
+    await wait(this.hooks.vehiclesReady())
     signal.throwIfAborted()
     this.stage('weapons', 1)
-    await this.reportLoadStep(
-      t('load.loading-weapons'),
-      'Descargar y decodificar modelos del arma inicial',
+    await wait(
+      this.reportLoadStep(
+        t('load.loading-weapons'),
+        'Descargar y decodificar modelos del arma inicial',
+      ),
     )
-    await this.hooks.loadWeaponAssets()
+    signal.throwIfAborted()
+    await wait(this.hooks.loadWeaponAssets())
     signal.throwIfAborted()
     // The viewmodel itself (HK model, magazine, flash, laser): built and compiled now, so the
     // first draw shows the pistol instead of the placeholder block while it loads.
     this.hooks.ensureSidearm()
-    await this.reportLoadStep(
-      t('load.preparing-magazines'),
-      'Preparar arma en primera persona, cargadores y shaders',
-      '05 GPU y presentación',
+    await wait(
+      this.reportLoadStep(
+        t('load.preparing-magazines'),
+        'Preparar arma en primera persona, cargadores y shaders',
+        '05 GPU y presentación',
+      ),
     )
-    await this.hooks.warmSidearm()
+    signal.throwIfAborted()
+    await wait(this.hooks.warmSidearm())
     signal.throwIfAborted()
     // Casing meshes join the scene before the shader stage, so the first shot compiles nothing.
     this.hooks.prepareWeaponPools()
     // 3. Terrain, photos, buildings and map meshes around the start: everything the descent
     // from high above shows, at the LODs the stream plans there.
     this.stage('terrain', 2)
-    await this.reportLoadStep(
-      t('load.preparing-scene'),
-      'Preparar escena y contenido previo a la presentación',
+    await wait(
+      this.reportLoadStep(
+        t('load.preparing-scene'),
+        'Preparar escena y contenido previo a la presentación',
+      ),
     )
+    signal.throwIfAborted()
     this.bootDetailDone?.()
     for (const [index, task] of this.revealTasks.splice(0).entries()) {
       signal.throwIfAborted()
@@ -150,32 +169,40 @@ export class RuntimePreparation<Context> {
         '03 Mundo y recursos',
       )
       try {
-        await task().catch((error) => console.warn('beforeReveal task failed', error))
+        await wait(task().catch((error) => console.warn('beforeReveal task failed', error)))
+        signal.throwIfAborted()
       } finally {
         taskDone()
       }
     }
     signal.throwIfAborted()
-    const context = await this.hooks.prepareTerrain(signal)
+    const context = await wait(this.hooks.prepareTerrain(signal))
     signal.throwIfAborted()
     // 4. Shader programs (chase, cockpit, mirrors, the new tiles) and texture uploads, on a copy
-    await this.hooks.placeInitialPickup(context)
+    await wait(this.hooks.placeInitialPickup(context))
     signal.throwIfAborted()
     // of the camera so the attract frames keep their own projection.
     // Heavy GPU preparation keeps the already-visible planet still, without delaying startup.
     this.hooks.freezeAttract()
     this.stage('shaders', 3)
-    await this.reportLoadStep(
-      t('load.preparing-poses-lights-and-materials'),
-      'Sincronizar poses, visibilidad y luces para el primer fotograma',
+    await wait(
+      this.reportLoadStep(
+        t('load.preparing-poses-lights-and-materials'),
+        'Sincronizar poses, visibilidad y luces para el primer fotograma',
+      ),
     )
-    await this.hooks.warmPresentation(context, signal)
+    signal.throwIfAborted()
+    await wait(this.hooks.warmPresentation(context, signal))
+    signal.throwIfAborted()
     this.stage('ready', REVEAL_STAGES)
     canvas.dataset.reveal = 'holding'
-    await this.reportLoadStep(
-      t('load.simulation-ready'),
-      'Presentación preparada; publicar estado listo',
+    await wait(
+      this.reportLoadStep(
+        t('load.simulation-ready'),
+        'Presentación preparada; publicar estado listo',
+      ),
     )
+    signal.throwIfAborted()
     this.bootDetailDone?.()
     if (this.revealGates.length) {
       const introDone = startBootPhase(
@@ -184,10 +211,35 @@ export class RuntimePreparation<Context> {
         '06 Esperas del host',
       )
       try {
-        while (this.revealGates.length) await Promise.all(this.revealGates.splice(0))
+        while (this.revealGates.length) {
+          await wait(Promise.all(this.revealGates.splice(0)))
+          signal.throwIfAborted()
+        }
       } finally {
         introDone()
       }
     }
   }
+}
+
+/** Abort host gates and asset waits promptly; late settlement cannot resume preparation. */
+function waitForPreparation<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => {
+      signal.removeEventListener('abort', abort)
+      reject(signal.reason)
+    }
+    signal.addEventListener('abort', abort, { once: true })
+    work.then(
+      (value) => {
+        signal.removeEventListener('abort', abort)
+        resolve(value)
+      },
+      (error) => {
+        signal.removeEventListener('abort', abort)
+        reject(error)
+      },
+    )
+    if (signal.aborted) abort()
+  })
 }

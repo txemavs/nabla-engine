@@ -13,11 +13,21 @@ export interface FrameCoordinatorHost {
 /** Coordinates frame continuation and clocks, without scheduling or owning render resources. */
 export class RuntimeFrameCoordinator {
   lastTime: number | null = null
+  private generation = 0
   private busy = false
   private xrStepPending: Promise<void> | null = null
   private xrStepCarry = 0
 
   constructor(private readonly host: FrameCoordinatorHost) {}
+
+  /** Invalidate pending continuations before replay or terminal resource release. */
+  cancel(): void {
+    ++this.generation
+    this.busy = false
+    this.xrStepPending = null
+    this.xrStepCarry = 0
+    this.lastTime = null
+  }
 
   get frameBusy(): boolean {
     return this.busy
@@ -48,9 +58,11 @@ export class RuntimeFrameCoordinator {
     for (let next = steps.next(sent); !next.done; next = steps.next(sent)) {
       const value = next.value
       if (value instanceof Promise) {
+        const generation = this.generation
         this.busy = true
         value.then(
           (result: unknown) => {
+            if (generation !== this.generation) return
             this.busy = false
             if (this.host.disposed() || !this.host.playing()) return
             try {
@@ -60,6 +72,7 @@ export class RuntimeFrameCoordinator {
             }
           },
           (error: unknown) => {
+            if (generation !== this.generation) return
             this.busy = false
             if (this.host.disposed() || !this.host.playing()) return
             this.fail(error)
@@ -77,11 +90,14 @@ export class RuntimeFrameCoordinator {
       const stepped = step(dt + this.xrStepCarry)
       this.xrStepCarry = 0
       if (stepped instanceof Promise) {
+        const generation = this.generation
         this.xrStepPending = stepped.then(
           () => {
+            if (generation !== this.generation) return
             this.xrStepPending = null
           },
           (error: unknown) => {
+            if (generation !== this.generation) return
             this.xrStepPending = null
             if (this.host.disposed()) return
             this.fail(error)

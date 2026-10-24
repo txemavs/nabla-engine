@@ -202,3 +202,43 @@ it('keeps attract orbit separate, capped and damped while reporting the full int
   advanceAttractFrame(state, 1050)
   expect(state.elapsed).toBe(elapsed)
 })
+
+it('does not resume old desktop work or clear a new wait after cancellation and restart', async () => {
+  const { frames } = fixture(),
+    old = deferred(),
+    current = deferred(),
+    events: string[] = []
+  frames.drive(stages(events, old.promise))
+  frames.cancel()
+  frames.drive(stages(events, current.promise))
+  old.resolve('obsolete')
+  await old.promise
+  expect(frames.frameBusy).toBe(true)
+  expect(events).toEqual(['input', 'input'])
+  current.resolve('current')
+  await current.promise
+  expect(events).not.toContain('physics:obsolete')
+  expect(events).toContain('physics:current')
+  expect(frames.frameBusy).toBe(false)
+})
+it('does not release or report an old XR step after cancellation and restart', async () => {
+  const f = fixture(),
+    old = deferred(),
+    current = deferred(),
+    step = vi.fn(() => current.promise)
+  f.frames.stepXR(0.01, () => old.promise)
+  f.frames.stepXR(0.04, step)
+  f.frames.cancel()
+  f.frames.stepXR(0.01, step)
+  expect(step).toHaveBeenCalledExactlyOnceWith(0.01)
+  old.reject(new Error('old session'))
+  await old.promise.catch(() => {})
+  f.frames.stepXR(0.02, step)
+  expect(step).toHaveBeenCalledOnce()
+  expect(f.onError).not.toHaveBeenCalled()
+  current.resolve(null)
+  await current.promise
+  const next = vi.fn()
+  f.frames.stepXR(0.01, next)
+  expect(next).toHaveBeenCalledExactlyOnceWith(0.03)
+})

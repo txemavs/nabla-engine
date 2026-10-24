@@ -215,8 +215,8 @@ simulation is passed through preparation stages. Public methods continue to asse
 lifetime; `play()` retains cancellation, ground settling and final reveal activation.
 Tests cover rejected gates, cancellation, missing-terrain failure and retry, task queue
 consumption, two independent owners and a real runtime stopped/retried/disposed before reveal.
-The final host gate still settles before cancellation is observed by `play()`; this extraction
-does not change that existing contract.
+Topic 8 subsequently made all pending preparation/reveal waits abortable, including the final
+host gate; successful reveal ordering remains unchanged.
 
 ### Topic 4 completion: player presentation lifecycle
 
@@ -269,3 +269,29 @@ animation loop. Tests cover synchronous/asynchronous order, late completion, fai
 clock transitions, independent coordinators and attract timing. Browser checks cover the real
 physics-to-render sequence, worker parity, preparation, attract stability and warmup. Public
 API and preference storage are unchanged; private test probes now read the coordinator's busy flag.
+
+### Topic 8 completion: terminal cleanup ownership
+
+`RuntimeTeardown` runs the runtime's ordered release actions once, including reentrant calls.
+Scheduling/loading stop first, then the facade becomes terminal; XR, lifetime listeners,
+preparation queues and the resize observer stop before scene, presentation and render owners
+are released. Renderer/context disposal and canvas tab-index restoration remain last. A failed
+release no longer strands later resources: cleanup continues and rethrows the first error.
+`stop()` still resets reusable play state; it does not destroy the renderer or lifetime listeners.
+
+Preparation asset/host waits now reject promptly on abort, including the final reveal gate;
+late settlement cannot advance the cancelled preparation. This intentionally fixes the old
+final-gate settlement delay while preserving successful startup order. Terminal cleanup also
+clears queued host tasks and gates. Existing player, pickup, vehicle and XR stale-load guards
+remain responsible for their own unpublished resources.
+
+Navigation/chart providers now have owned registrations. Disposing one runtime releases only
+its registrations, restoring the most recently registered live provider. Legacy explicit setters
+still replace all providers. Lookup remains global/last-provider-wins; this is disposal isolation,
+not a redesign of per-runtime navigation lookup. Unit and browser coverage checks both release
+orders, listener removal, pending loads/gates/frames, repeated lifetimes, surviving runtimes,
+disposer failures and canvas restoration. Public GameRuntime signatures and preferences are unchanged.
+
+Pending desktop/XR physics continuations are invalidated on pause/stop. Their late success or
+failure cannot resume an old frame, clear a new pending step or report errors into the next
+session. This fixes stale continuation across replay without changing active-frame ordering.
