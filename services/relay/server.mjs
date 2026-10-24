@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
  * Minimal WebSocket room relay for Nabla multiplayer (protocol: src/net/protocol.ts).
- * It keeps no game state: it assigns peer ids, announces joins and leaves, and forwards
- * snapshots to the other members of the same room with the sender's peer id stamped on them.
+ * It assigns peer ids, forwards nearby snapshots, and owns room membership, health,
+ * respawns and shared-entity claims in memory. Movement physics remain client-owned.
  *
  *   PORT=10003 node services/relay/server.mjs
  *
  * Each member gets a slot (0, 1, 2…; the lowest free one in its room) and the palette colour at
  * that slot, sent in `welcome` and `joined`; both are released when the member leaves.
  *
- * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 8 peers),
+ * Env: PORT (default 10003), HOST (default 0.0.0.0), MAX_ROOM (default 64 peers),
  * MAX_FRAME (default 4096 bytes), MAX_RATE (default 60 frames/s per peer),
  * PALETTE (comma-separated #rrggbb, default eight distinct car colours),
  * MAX_EVENTS (default 15 game events/s per peer; extra events are dropped),
@@ -24,6 +24,8 @@ import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { WebSocketServer } from 'ws'
 import { HealthLedger } from './combat.mjs'
+import { RelayConnection } from './connection.mjs'
+import { ContinuousWorlds } from './continuous-world.mjs'
 
 export const PROTOCOL_VERSION = 1
 const ROOM = /^[A-Za-z0-9_-]{1,64}$/
@@ -272,7 +274,35 @@ export function startRelay({
   respawnTick = Number(process.env.RESPAWN_TICK_MS ?? 250),
   maxEntities = Number(process.env.MAX_ENTITIES ?? 64),
   maxOwnEntities = Number(process.env.MAX_OWN_ENTITIES ?? 16),
+  heartbeatIntervalMs = Number(process.env.HEARTBEAT_INTERVAL_MS ?? 30_000),
+  outboundSoftLimit = Number(process.env.OUTBOUND_SOFT_LIMIT ?? 65_536),
+  outboundHardLimit = Number(process.env.OUTBOUND_HARD_LIMIT ?? 262_144),
+  slowClientTimeoutMs = Number(process.env.SLOW_CLIENT_TIMEOUT_MS ?? 10_000),
+  worldRadius = Number(process.env.WORLD_RADIUS ?? 250),
+  worldMaxPeers = Number(process.env.WORLD_MAX_PEERS ?? 64),
+  worldMaxPlayers = Number(process.env.WORLD_MAX_PLAYERS ?? 4096),
+  worldMaxSessions = Number(process.env.WORLD_MAX_SESSIONS ?? 8192),
+  worldSessionTtlMs = Number(process.env.WORLD_SESSION_TTL_MS ?? 120_000),
+  worldTickMs = Number(process.env.WORLD_TICK_MS ?? 200),
 } = {}) {
+  for (const [name, value] of Object.entries({
+    heartbeatIntervalMs,
+    outboundSoftLimit,
+    outboundHardLimit,
+    slowClientTimeoutMs,
+    worldRadius,
+    worldMaxPeers,
+    worldMaxPlayers,
+    worldMaxSessions,
+    worldSessionTtlMs,
+    worldTickMs,
+  })) {
+    if (!Number.isSafeInteger(value) || value <= 0 || value > 2_147_483_647)
+      throw new Error(`${name} must be a positive integer <= 2147483647`)
+  }
+  if (outboundSoftLimit >= outboundHardLimit)
+    throw new Error('outboundSoftLimit must be smaller than outboundHardLimit')
+  if (worldMaxPeers > 64) throw new Error('worldMaxPeers cannot exceed 64')
   /** room id -> Map<entity id, { id, type, params, p, q, owner, driver }>: shared entities. */
   const entities = new Map()
   /** room id -> ids of removed world entities (`w.` ids): they do not come back while the room lives. */
@@ -310,15 +340,49 @@ export function startRelay({
   const http = createServer((req, res) => {
     if (req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify({ ok: true, rooms: rooms.size }))
+      res.end(
+        JSON.stringify({
+          ok: true,
+          rooms: rooms.size,
+          worlds: continuous.worlds.size,
+          players: continuous.sockets.size,
+        }),
+      )
       return
     }
     res.writeHead(404).end()
   })
   const wss = new WebSocketServer({ server: http, maxPayload: maxFrame })
+  const connections = new Map()
+  const heartbeat = setInterval(() => {
+    for (const connection of connections.values()) connection.heartbeat()
+  }, heartbeatIntervalMs)
+  const queueCheck = setInterval(
+    () => {
+      for (const connection of connections.values()) connection.check()
+    },
+    Math.min(1000, slowClientTimeoutMs),
+  )
+  heartbeat.unref?.()
+  queueCheck.unref?.()
   const send = (socket, message) => {
-    if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message))
+    return connections.get(socket)?.send(message)
   }
+  const continuous = new ContinuousWorlds({
+    send,
+    validate: { cleanMeta, validSnapshot, validEventData, validReload, validFire, maxEvents },
+    palette,
+    radius: worldRadius,
+    maxPeers: worldMaxPeers,
+    maxPlayers: worldMaxPlayers,
+    maxSessions: worldMaxSessions,
+    sessionTtl: worldSessionTtlMs,
+    respawnDelay,
+    reloadInterval,
+    log,
+  })
+  const worldTick = setInterval(() => continuous.tick(), worldTickMs)
+  worldTick.unref?.()
   const broadcast = (room, from, message) => {
     for (const socket of rooms.get(room)?.keys() ?? []) if (socket !== from) send(socket, message)
   }
@@ -414,7 +478,17 @@ export function startRelay({
 
   wss.on('connection', (socket) => {
     socket.nabla = { room: null, windowStart: Date.now(), frames: 0, events: 0 }
+    const connection = new RelayConnection(socket, {
+      softLimit: outboundSoftLimit,
+      hardLimit: outboundHardLimit,
+      slowTimeout: slowClientTimeoutMs,
+      now: () => performance.now(),
+      onDisconnect: (reason) =>
+        log('disconnect', continuous.sockets.get(socket)?.world.id ?? socket.nabla.room, reason),
+    })
+    connections.set(socket, connection)
     socket.on('message', (data, binary) => {
+      if (connection.closed) return
       const state = socket.nabla
       const now = Date.now()
       if (now - state.windowStart >= 1000) {
@@ -430,6 +504,11 @@ export function startRelay({
         return
       }
       if (!message || typeof message !== 'object') return
+      if (continuous.has(socket)) return continuous.handle(socket, message)
+      if (message.type === 'join' && message.version === 2) {
+        leave(socket)
+        return continuous.join(socket, message)
+      }
       if (message.type === 'join') {
         if (message.version !== PROTOCOL_VERSION)
           return send(socket, { type: 'error', message: 'Unsupported protocol version' })
@@ -572,8 +651,15 @@ export function startRelay({
         broadcast(state.room, socket, { type: 'profile', peer: member.peer, meta: member.meta })
       } else if (message.type === 'leave') leave(socket)
     })
-    socket.on('close', () => leave(socket))
-    socket.on('error', () => leave(socket))
+    socket.on('close', () => {
+      connections.delete(socket)
+      continuous.disconnect(socket)
+      leave(socket)
+    })
+    socket.on('error', () => {
+      continuous.disconnect(socket)
+      leave(socket)
+    })
   })
 
   return new Promise((resolve) => {
@@ -585,6 +671,9 @@ export function startRelay({
         close: () =>
           new Promise((done) => {
             clearInterval(respawns)
+            clearInterval(heartbeat)
+            clearInterval(queueCheck)
+            clearInterval(worldTick)
             for (const client of wss.clients) client.terminate()
             wss.close(() => http.close(() => done()))
           }),

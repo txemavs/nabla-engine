@@ -85,3 +85,52 @@ export function writeVehiclePreferences(
   }
   return next
 }
+
+/** Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback. */
+export class RuntimeVehiclePreferences {
+  private readonly cache = new Map<string, VehiclePreferences>()
+  private amount = 1
+  private offset: [number, number, number] = [0, 0, 0]
+
+  constructor(private readonly storage?: VehiclePreferenceStorage) {}
+
+  read(model: string): VehiclePreferences {
+    let value = this.cache.get(model)
+    if (!value) this.cache.set(model, (value = readVehiclePreferences(this.storage, model)))
+    return value
+  }
+
+  update(model: string, patch: Partial<VehiclePreferences>): VehiclePreferences {
+    const next = writeVehiclePreferences(this.storage, model, patch)
+    this.cache.set(model, next)
+    return next
+  }
+
+  get exhaustAmount(): number {
+    return this.amount
+  }
+  get exhaustOffset(): [number, number, number] {
+    return [...this.offset]
+  }
+
+  setExhaustAmount(amount: number, apply: (amount: number) => void): number {
+    if (!Number.isFinite(amount)) throw new Error('Invalid exhaust amount')
+    this.amount = Math.max(0, Math.min(2, amount))
+    apply(this.amount)
+    return this.amount
+  }
+
+  setExhaustOffset(
+    offset: [number, number, number],
+    apply: (offset: [number, number, number]) => void,
+  ): [number, number, number] {
+    if (!offset.every(Number.isFinite)) throw new Error('Invalid exhaust offset')
+    this.offset = offset.map((value) => Math.max(-1, Math.min(1, value))) as [
+      number,
+      number,
+      number,
+    ]
+    apply(this.offset)
+    return this.exhaustOffset
+  }
+}

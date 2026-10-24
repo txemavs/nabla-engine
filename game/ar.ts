@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { mobileWeaponUI } from './ar-mobile-weapon.js'
 import { arMode } from './ar-mode.js'
 import { touchActionIcon } from '../src/runtime/touch-icons.js'
@@ -292,7 +293,7 @@ xr.enableExitButton()
 xr.enableCalibrationScreen()
 const screen = xr.calibrationScreen!
 try {
-  const savedScale = Number(localStorage.getItem('nabla.ar.map-scale'))
+  const savedScale = Number(pageSettingsStorage().getItem('nabla.ar.map-scale'))
   if ([100, 500, 1000].includes(savedScale)) model.setScale(savedScale)
 } catch {
   /* Preferences are optional. */
@@ -300,7 +301,7 @@ try {
 type CollisionMode = 'auto' | 'mesh' | 'planes' | 'map'
 let collisionMode: CollisionMode = 'auto'
 try {
-  const saved = localStorage.getItem('nabla.ar.collisions')
+  const saved = pageSettingsStorage().getItem('nabla.ar.collisions')
   if (['auto', 'mesh', 'planes', 'map'].includes(saved ?? ''))
     collisionMode = saved as CollisionMode
 } catch {}
@@ -327,7 +328,7 @@ const environmentOptions = () => [
       collisionMode = modes[(modes.indexOf(collisionMode) + 1) % modes.length]
       applyCollisionMode()
       try {
-        localStorage.setItem('nabla.ar.collisions', collisionMode)
+        pageSettingsStorage().setItem('nabla.ar.collisions', collisionMode)
       } catch {}
     },
   },
@@ -340,7 +341,7 @@ screen.optionsMenu = () => [
       const scale = scales[(scales.indexOf(model.scaleDenominator) + 1) % scales.length]
       model.setScale(scale)
       try {
-        localStorage.setItem('nabla.ar.map-scale', String(scale))
+        pageSettingsStorage().setItem('nabla.ar.map-scale', String(scale))
       } catch {}
       room.setMessage(`Mapa · escala 1:${scale}`)
     },

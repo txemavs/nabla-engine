@@ -1,3 +1,4 @@
+import { pageSettingsStorage, type SettingsStorage } from './settings-scope.js'
 import * as THREE from 'three'
 import { sceneryPhysicsDefaults } from '../config/scenery-physics.js'
 import type { ImpactSurface } from '../config/impact-sounds.js'
@@ -19,15 +20,13 @@ const clampRadius = (value: number): number =>
 /** Legacy host storage that held the physics radius before it became an engine setting. */
 const legacyStorageKey = 'euskadi.irun-signs'
 
-function initialSettings(): { enabled: boolean; radius: number } {
+function initialSettings(storage: SettingsStorage): { enabled: boolean; radius: number } {
   // Hosts used to publish these two values as data attributes; honour them if present.
   const data = typeof document === 'undefined' ? undefined : document.documentElement.dataset
   let radius = Number(data?.signPhysicsRadius)
   if (!Number.isFinite(radius) || !data?.signPhysicsRadius) {
     try {
-      radius = Number(
-        JSON.parse(globalThis.localStorage?.getItem(legacyStorageKey) ?? '{}')?.physicsRadius,
-      )
+      radius = Number(JSON.parse(storage.getItem(legacyStorageKey) ?? '{}')?.physicsRadius)
     } catch {
       radius = NaN
     }
@@ -81,8 +80,11 @@ export class SceneryPhysics {
   private reach: number
   private readonly layers = new Set<SceneryLayer>()
 
-  constructor(private readonly simulation: () => SceneryBodies | null | undefined) {
-    const initial = initialSettings()
+  constructor(
+    private readonly simulation: () => SceneryBodies | null | undefined,
+    storage: SettingsStorage = pageSettingsStorage(),
+  ) {
+    const initial = initialSettings(storage)
     this.on = initial.enabled
     this.reach = initial.radius
   }

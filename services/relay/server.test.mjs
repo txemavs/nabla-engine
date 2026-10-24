@@ -1,11 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { once } from 'node:events'
 import { WebSocket } from 'ws'
 import { startRelay } from './server.mjs'
 
-const connect = (port) =>
+const connect = (port, options) =>
   new Promise((resolve, reject) => {
-    const socket = new WebSocket(`ws://127.0.0.1:${port}`)
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`, options)
     const inbox = []
     const waiters = []
     socket.on('message', (data) => {
@@ -30,6 +31,85 @@ const state = {
   velocity: [0, 0, 0],
   angularVelocity: [0, 0, 0],
 }
+
+test(
+  'heartbeat removes a silent driver, frees its vehicle and keeps responsive peers',
+  { timeout: 5000 },
+  async (t) => {
+    const relay = await startRelay({
+      port: 0,
+      host: '127.0.0.1',
+      log: () => {},
+      heartbeatIntervalMs: 100,
+    })
+    t.after(() => relay.close())
+    const healthy = await connect(relay.port)
+    healthy.json({ type: 'join', version: 1, room: 'heartbeat' })
+    await healthy.next('welcome')
+    const silent = await connect(relay.port, { autoPong: false })
+    const closed = once(silent, 'close')
+    silent.json({ type: 'join', version: 1, room: 'heartbeat' })
+    const { peer } = await silent.next('welcome')
+    silent.json({
+      type: 'event',
+      kind: 'entity.spawn',
+      data: {
+        i: 'car',
+        y: 'car',
+        p: [0, 0, 0],
+        q: [0, 0, 0, 1],
+        d: true,
+      },
+    })
+    assert.equal((await healthy.next('event')).data.d, peer)
+    assert.equal((await healthy.next('event')).data.d, undefined)
+    assert.equal((await healthy.next('left')).peer, peer)
+    await closed
+    assert.equal(healthy.readyState, WebSocket.OPEN)
+    // It has survived the same heartbeat cycles while sending no movement.
+    healthy.json({ type: 'event', kind: 'entity.claim', data: { i: 'car' } })
+    assert.ok((await healthy.next('event')).data.d)
+  },
+)
+
+test(
+  'reliable output exceeding the hard cap disconnects instead of silently dropping',
+  { timeout: 5000 },
+  async (t) => {
+    const relay = await startRelay({
+      port: 0,
+      host: '127.0.0.1',
+      log: () => {},
+      outboundSoftLimit: 256,
+      outboundHardLimit: 700,
+    })
+    t.after(() => relay.close())
+    const a = await connect(relay.port)
+    const b = await connect(relay.port)
+    a.json({ type: 'join', version: 1, room: 'cap' })
+    await a.next('welcome')
+    b.json({ type: 'join', version: 1, room: 'cap' })
+    const { peer } = await b.next('welcome')
+    const closed = once(b, 'close')
+    const data = Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`k${i}`, 'x'.repeat(64)]))
+    a.json({ type: 'event', kind: 'large', data })
+    await closed
+    assert.equal((await a.next('left')).peer, peer)
+    assert.equal(a.readyState, WebSocket.OPEN)
+  },
+)
+
+test('rejects invalid connection limits before opening timers or sockets', () => {
+  for (const options of [
+    { heartbeatIntervalMs: 0 },
+    { heartbeatIntervalMs: NaN },
+    { slowClientTimeoutMs: -1 },
+    { outboundSoftLimit: 2.5 },
+    { outboundHardLimit: Infinity },
+    { outboundSoftLimit: 1000, outboundHardLimit: 1000 },
+  ])
+    assert.throws(() => startRelay(options))
+})
 
 test('drops game events above the per-peer rate limit', async () => {
   const relay = await startRelay({ port: 0, host: '127.0.0.1', log: () => {}, maxEvents: 3 })

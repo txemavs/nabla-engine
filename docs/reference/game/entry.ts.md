@@ -6,21 +6,26 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `./page-query.js`
 - `@nabla/engine/planet/terrain-source`
 - `./terrain.js`
 
 ## browserStorage
 
-[Implementation, line 26](../../../game/entry.ts#L26)
+[Implementation, line 27](../../../game/entry.ts#L27)
 
 ```ts
 browserStorage(): SourceStorage | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## configuredPackagesUrl
 
-[Implementation, line 40](../../../game/entry.ts#L40)
+[Implementation, line 41](../../../game/entry.ts#L41)
 
 URL parameters win (they keep every old link working). A URL that names no source uses the
 remembered choice; with none remembered, the package folder when it publishes the default start
@@ -34,7 +39,7 @@ configuredPackagesUrl(): string
 
 ## resolveEntry
 
-[Implementation, line 47](../../../game/entry.ts#L47)
+[Implementation, line 48](../../../game/entry.ts#L48)
 
 ```ts
 resolveEntry(search: string = pageSearch(), storage: SourceStorage | undefined = browserStorage(), probe: (base: string) => Promise<boolean> = probeTerrainFolder, packagesUrl: string = configuredPackagesUrl()): Promise<Entry>
@@ -62,12 +67,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `wantsTerrain`
 - `withTerrainSource`
 
-## resolveEntry.callback@74
+## resolveEntry.callback@77
 
-[Implementation, line 74](../../../game/entry.ts#L74)
+[Implementation, line 77](../../../game/entry.ts#L77)
 
 ```ts
-callback@74(key): inferred by TypeScript; see implementation
+callback@77(key): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

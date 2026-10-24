@@ -1,3 +1,4 @@
+import { createSettingsStore, type SettingsStorage } from './settings-scope.js'
 import { Euler, Matrix4, Quaternion, Vector3 } from 'three'
 
 /** Host-owned session lifecycle. Rendering uses one setAnimationLoop in both modes. */
@@ -24,7 +25,7 @@ export class XRSessionController {
     if (this.diagnosticEvents.length > 256) this.diagnosticEvents.shift()
     if (this.diagnosticsEnabled) {
       try {
-        localStorage.setItem('nabla.xr.tracking-report.v1', this.exportDiagnostics())
+        this.storage.setItem('nabla.xr.tracking-report.v1', this.exportDiagnostics())
       } catch {
         /* Memory copy stays available. */
       }
@@ -87,9 +88,10 @@ export class XRSessionController {
     },
     private readonly changed: (active: boolean) => void,
     private readonly report: (error: unknown) => void,
+    private readonly storage: SettingsStorage = createSettingsStore(),
   ) {
     try {
-      const saved = JSON.parse(localStorage.getItem('nabla.xr.tracking-report.v1') ?? '{}')
+      const saved = JSON.parse(this.storage.getItem('nabla.xr.tracking-report.v1') ?? '{}')
       if (Array.isArray(saved.events))
         this.diagnosticEvents = saved.events
           .filter(

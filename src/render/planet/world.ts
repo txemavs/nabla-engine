@@ -9,6 +9,7 @@ import {
 import { compressedTextureBytes, type CompressedTextureSupport } from './tile-compression.js'
 import type { PlanetCompressedTexture } from '../../planet/contract.js'
 import { Z16Updates } from './z16-updates.js'
+import { TileAvailability } from './tile-availability.js'
 import { startupTerrainTiles, deferZ15Parent } from './startup-tiles.js'
 import { streamingDefaults } from '../../config/streaming.js'
 import type { StreamDiagnostics, TileDiagnostic } from './debug.js'
@@ -43,6 +44,8 @@ const GPU_WAIT = Symbol('gpu-wait')
 
 export type TileDiscoveryMode = 'dynamic' | 'static'
 export interface PlanetSourceOptions {
+  /** Optional index.json discovery for static sources. Enabled by default. */
+  availabilityIndex?: boolean
   /** Manifest file names tried per static cell (see `fetchTileManifest`). Default `manifest.json`. */
   manifestFiles?: readonly string[]
   /**
@@ -112,6 +115,8 @@ import {
   ROADS_DRAPE_TINT,
   tileMeshSide,
   asphaltContrast,
+  createAsphaltUniforms,
+  asphaltUniforms,
   withAsphaltContrast,
   withMap,
 } from './ground-material.js'
@@ -146,12 +151,32 @@ import {
   photoFrameTransform,
   type DrapeGeometry,
 } from './drape.js'
-import { PLACE_LABEL_CATEGORY, tileMeshHidden } from './tile-layers.js'
+import { PLACE_LABEL_CATEGORY, tileMeshHidden, hiddenTileLayers } from './tile-layers.js'
 /** Satellite painted over the z15 GLB. Roofs, runways and pitches on by default. */
 export const projectedLayers = new Set(['roofs', 'runways', 'pitches'])
-/** A drape is drawn when it is projected and its layer (road, photo, ...) is not switched off. */
-const drapeShown = (id: unknown) =>
-  projectedLayers.has(String(id)) && !tileMeshHidden({ drape: id })
+/** Mutable presentation values owned by one runtime and all its streamed tiles. */
+export function createWorldVisualSettings() {
+  return {
+    hidden: new Set(hiddenTileLayers()),
+    projected: new Set(projectedLayers),
+    asphalt: createAsphaltUniforms(),
+    anisotropy: 8,
+    photos: new Set<THREE.Texture>(),
+  }
+}
+export type WorldVisualSettings = ReturnType<typeof createWorldVisualSettings>
+const legacyVisualSettings: WorldVisualSettings = {
+  ...createWorldVisualSettings(),
+  projected: projectedLayers,
+  asphalt: asphaltUniforms,
+  get hidden() {
+    return new Set(hiddenTileLayers())
+  },
+}
+const drapeShown = (id: unknown, settings?: WorldVisualSettings) =>
+  (settings?.projected ?? projectedLayers).has(String(id)) &&
+  !tileMeshHidden({ drape: id }, settings?.hidden)
+
 const drapeLayers = DRAPE_LAYERS
 /**
  * Show the tile photo (see `PlanetSourceOptions.imagery`) over the ground as well as over roofs: terrain,
@@ -195,6 +220,7 @@ export function dressSatelliteRoofs(
   prepared?: { drapes: DrapeGeometry[]; photo?: ImageBitmap; roofPhoto?: ImageBitmap },
   /** Where a package photo not prepared by the tile worker is fetched and decoded. */
   loading: TileLoading = mainThreadLoading,
+  visual: WorldVisualSettings = legacyVisualSettings,
 ) {
   const tile = manifest.tile
   if ((tile.z !== 15 && tile.z !== 16) || imagery === 'none') return
@@ -235,7 +261,7 @@ export function dressSatelliteRoofs(
           },
         ]
       }),
-      { width, layers: projectedLayers, baked },
+      { width, layers: visual.projected, baked },
     )
   if (!buckets.length) return
   const zoom = tile.z + 3
@@ -246,9 +272,9 @@ export function dressSatelliteRoofs(
   const ctx = canvas?.getContext('2d') ?? undefined
   const texture: THREE.Texture = canvas ? new THREE.CanvasTexture(canvas) : new THREE.Texture()
   texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = groundAnisotropy
-  groundPhotos.add(texture)
-  texture.addEventListener('dispose', () => groundPhotos.delete(texture))
+  texture.anisotropy = visual.anisotropy
+  visual.photos.add(texture)
+  texture.addEventListener('dispose', () => visual.photos.delete(texture))
   const roofTextureMap: THREE.Texture = packaged ? new THREE.Texture() : texture
   if (packaged) roofTextureMap.colorSpace = THREE.SRGBColorSpace
   // Roof photo frame is `cell+margin:0.125` (5120² = 4096 cell px + 512 px each side): map cell
@@ -287,8 +313,9 @@ export function dressSatelliteRoofs(
     })
     // Asphalt contrast (draw time) before shadow setup, which chains onBeforeCompile. The terrain
     // photo gets it only through its cell's OSM road mask (relief=lidar has no road meshes).
-    if (id === 'roads') withAsphaltContrast(material)
-    else if (id === 'terrain') withAsphaltContrast(material, { value: NO_ASPHALT_MASK })
+    if (id === 'roads') withAsphaltContrast(material, undefined, visual.asphalt)
+    else if (id === 'terrain')
+      withAsphaltContrast(material, { value: NO_ASPHALT_MASK }, visual.asphalt)
     const mesh = new THREE.Mesh(geometry, material)
     setupMaterial(mesh.material)
     mesh.name = 'Drape'
@@ -303,7 +330,7 @@ export function dressSatelliteRoofs(
   const show = () => {
     for (const mesh of draped) {
       mesh.userData.ready = true
-      mesh.visible = drapeShown(mesh.userData.drape)
+      mesh.visible = drapeShown(mesh.userData.drape, visual)
     }
     changed()
   }
@@ -311,7 +338,7 @@ export function dressSatelliteRoofs(
     texture.image = prepared.photo
     texture.flipY = false
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.anisotropy = groundAnisotropy
+    texture.anisotropy = visual.anisotropy
     texture.needsUpdate = true
     const roofBmp = prepared.roofPhoto ?? prepared.photo
     if (roofTextureMap !== texture) {
@@ -346,7 +373,7 @@ export function dressSatelliteRoofs(
         texture.image = bitmap
         texture.flipY = false
         texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
-        texture.anisotropy = groundAnisotropy
+        texture.anisotropy = visual.anisotropy
         texture.needsUpdate = true
         if (roofTextureMap !== texture) {
           useRoofImage(roofBmp ? manifest.roofPhoto?.frame : 'cell')
@@ -478,23 +505,21 @@ function describeStreamError(error: unknown): StreamError {
  * Anisotropic filtering of the ground photo drape, which carries the asphalt and its baked road
  * markings (single ground texture, v2+ cells). Default 8; the runtime clamps to the GPU maximum.
  */
-let groundAnisotropy = 8
-const groundPhotos = new Set<THREE.Texture>()
 
 /** Current ground photo anisotropy. */
-export function groundPhotoAnisotropy(): number {
-  return groundAnisotropy
+export function groundPhotoAnisotropy(visual = legacyVisualSettings): number {
+  return visual.anisotropy
 }
 
 /** Set the ground photo anisotropy for loaded and future cells (re-uploads loaded photos). */
-export function setGroundPhotoAnisotropy(value: number): number {
-  groundAnisotropy = Math.max(1, Math.round(value))
-  for (const texture of groundPhotos)
-    if (texture.anisotropy !== groundAnisotropy) {
-      texture.anisotropy = groundAnisotropy
+export function setGroundPhotoAnisotropy(value: number, visual = legacyVisualSettings): number {
+  visual.anisotropy = Math.max(1, Math.round(value))
+  for (const texture of visual.photos)
+    if (texture.anisotropy !== visual.anisotropy) {
+      texture.anisotropy = visual.anisotropy
       if (texture.image) texture.needsUpdate = true
     }
-  return groundAnisotropy
+  return visual.anisotropy
 }
 
 export class PlanetWorld {
@@ -502,6 +527,8 @@ export class PlanetWorld {
   status = 'Preparando baldosas del planeta…'
   private readonly pinned = new Map<string, MapTile>()
   private readonly tileBases = new Map<string, string>()
+  private readonly availability = new Map<string, TileAvailability>()
+  private checkingAvailability = false
   /** Retain an explicitly requested cell alongside the normal streaming cover. */
   pinTile(tile: MapTile, baseUrl?: string): void {
     const key = mapTileId(tile)
@@ -518,6 +545,12 @@ export class PlanetWorld {
   }
   private tileBase(tile: MapTile): string {
     return this.tileBases.get(mapTileId(tile)) ?? this.base
+  }
+  private knownMissing(tile: MapTile): boolean {
+    return (
+      this.missing.has(tile) ||
+      (!this.updates?.get(tile) && this.availability.get(this.tileBase(tile))?.has(tile) === false)
+    )
   }
   /** Fill caller-owned tile storage without allocating intermediate active-tile lists. */
   collectActiveMapTiles(output: MapTile[]): MapTile[] {
@@ -639,6 +672,7 @@ export class PlanetWorld {
     private api = import.meta.env.VITE_WORLD_PREPARE_API || '/prepare',
     private discoveryMode: TileDiscoveryMode = 'dynamic',
     private sourceOptions: PlanetSourceOptions = {},
+    private readonly visual: WorldVisualSettings = legacyVisualSettings,
   ) {
     this.missing = sourceOptions.missing ?? new MissingTiles()
     if (
@@ -795,11 +829,11 @@ export class PlanetWorld {
   missingTileAt(position: Vec3Tuple): MapTile | undefined {
     const gps = localToGeo(this.origin, position)
     const tile = mapTileAt(gps.latitude, gps.longitude, this.sourceOptions.meshMaxZoom ?? 15)
-    if (!this.missing.has(tile)) return undefined
+    if (!this.knownMissing(tile)) return undefined
     // A missing fine child is not a ground hole while its Z15 fallback can still arrive.
     if (tile.z === 16) {
       const parent = mapTileParent(tile)!
-      if (this.resident.has(mapTileId(parent)) || !this.missing.has(parent)) return undefined
+      if (this.resident.has(mapTileId(parent)) || !this.knownMissing(parent)) return undefined
     }
     return tile
   }
@@ -975,7 +1009,7 @@ export class PlanetWorld {
     this.root.traverse((node) => {
       const mesh = node as THREE.Mesh
       if (mesh.name === 'Drape' && mesh.userData.ready)
-        mesh.visible = drapeShown(mesh.userData.drape)
+        mesh.visible = drapeShown(mesh.userData.drape, this.visual)
     })
     this.changed()
   }
@@ -1010,7 +1044,7 @@ export class PlanetWorld {
             : [center]
     const advertisedZoom =
       this.sourceOptions.meshMinZoom ?? (this.discoveryMode === 'static' ? 15 : 13)
-    const minZoom = this.missing.has(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
+    const minZoom = this.knownMissing(mapTileAt(gps.latitude, gps.longitude, advertisedZoom))
       ? 15
       : advertisedZoom
     const flight = this.streamMode === 'flight'
@@ -1137,6 +1171,32 @@ export class PlanetWorld {
     return !!publication && manifest.atlasZ16?.revision !== publication.revision
   }
   private async discover() {
+    if (this.checkingAvailability || this.busy || Date.now() < this.next || this.disposed) return
+    this.checkingAvailability = true
+    try {
+      if (this.discoveryMode === 'static' && this.sourceOptions.availabilityIndex !== false) {
+        const bases = new Set([this.base, ...this.wanted.map((t) => this.tileBase(t))])
+        await Promise.all(
+          [...bases].map((base) => {
+            let index = this.availability.get(base)
+            if (!index) {
+              index = new TileAvailability(base, this.controller.signal, (tile) => {
+                if (this.tileBase(tile) !== base) return
+                this.missing.resolve(tile)
+                this.failedManifests.delete(mapTileId(tile))
+              })
+              this.availability.set(base, index)
+            }
+            return index.poll()
+          }),
+        )
+      }
+      await this.discoverAvailable()
+    } finally {
+      this.checkingAvailability = false
+    }
+  }
+  private async discoverAvailable() {
     void this.updates?.poll()
     if (this.busy || Date.now() < this.next || this.disposed) return
     const isStatic = this.discoveryMode === 'static'
@@ -1161,6 +1221,8 @@ export class PlanetWorld {
         // A cell the player has come close to is read again for the full-quality photo.
         const upgrade = this.ready.get(id)?.photo?.level === 'lo' && this.photoQuality(t) === 'full'
         const publication = this.updates?.get(t)
+        // A live publication is newer evidence than the optional coverage snapshot.
+        if (!publication && this.availability.get(this.tileBase(t))?.has(t) === false) return false
         const refresh =
           publication && this.ready.get(id)?.atlasZ16?.revision !== publication.revision
         return (
@@ -1322,7 +1384,7 @@ export class PlanetWorld {
         fineFirst &&
         deferZ15Parent(tile, wantedIds, (child) => {
           const id = mapTileId(child)
-          return this.missing.has(child) || this.failedManifests.has(id) || this.retry.has(id)
+          return this.knownMissing(child) || this.failedManifests.has(id) || this.retry.has(id)
         })
       )
         continue
@@ -1360,7 +1422,7 @@ export class PlanetWorld {
         osmRoads: this.sourceOptions.osmRoads === true,
         drape:
           imagery === 'package' && manifest.photo && (tile.z === 15 || tile.z === 16)
-            ? { layers: [...projectedLayers], width: planetTileFrame(tile).width }
+            ? { layers: [...this.visual.projected], width: planetTileFrame(tile).width }
             : undefined,
         directory: this.tileBase(tile).replace(/\/$/, '') + '/' + mapTilePath(tile) + '/',
       })
@@ -1447,7 +1509,8 @@ export class PlanetWorld {
             roughness: 1,
             side: tileMeshSide(data.side as THREE.Side, data.metadata, data.position, data.index),
           })
-      if (data.metadata.drape === 'roads') withAsphaltContrast(material)
+      if (data.metadata.drape === 'roads')
+        withAsphaltContrast(material, undefined, this.visual.asphalt)
       // v2+ terrain texture is the visible ground (no photo drape over it): the asphalt contrast
       // runs on it, weighted by the cell's OSM road mask (glTF UVs: north at v = 0).
       if (
@@ -1456,7 +1519,7 @@ export class PlanetWorld {
         photo &&
         !data.metadata.skirt
       ) {
-        withAsphaltContrast(material, { value: NO_ASPHALT_MASK })
+        withAsphaltContrast(material, { value: NO_ASPHALT_MASK }, this.visual.asphalt)
         material.userData.asphaltMaskNorthAtV0 = true
       }
       if (data.metadata.drape) {
@@ -1468,8 +1531,8 @@ export class PlanetWorld {
       const mesh = new THREE.Mesh(geometry, material)
       mesh.name = data.name
       mesh.visible = data.metadata.drape
-        ? drapeShown(data.metadata.drape)
-        : !tileMeshHidden(data.metadata)
+        ? drapeShown(data.metadata.drape, this.visual)
+        : !tileMeshHidden(data.metadata, this.visual.hidden)
       mesh.userData = data.metadata
       mesh.castShadow =
         !data.metadata.skirt && ['Terrain', 'Buildings'].includes(data.metadata.category)
@@ -1506,6 +1569,7 @@ export class PlanetWorld {
         roofPhoto: payload.drape.roofPhoto,
       },
       this.sourceOptions.loading,
+      this.visual,
     )
     if (payload.drape?.error) {
       console.warn('Foto del terreno no disponible · ' + payload.drape.error)
@@ -1523,7 +1587,7 @@ export class PlanetWorld {
       label.name = place.text
       // Layer `places`: hidden with the rest of the layer, live, through cover().
       label.userData.category = PLACE_LABEL_CATEGORY
-      label.visible = !tileMeshHidden(label.userData)
+      label.visible = !tileMeshHidden(label.userData, this.visual.hidden)
       const gps = localToGeo(manifest.anchor, place.position)
       // Cached label metadata is 20m above ground; display at 1000m AGL.
       label.position.fromArray(
@@ -1703,12 +1767,12 @@ export class PlanetWorld {
       r.group.visible = active.has(key)
       for (const child of r.group.children) {
         if (child.name === 'Drape') {
-          child.visible = !!child.userData.ready && drapeShown(child.userData.drape)
+          child.visible = !!child.userData.ready && drapeShown(child.userData.drape, this.visual)
           continue
         }
         child.visible =
           (this.buildings || child.userData.category !== 'Buildings') &&
-          !tileMeshHidden(child.userData)
+          !tileMeshHidden(child.userData, this.visual.hidden)
       }
     }
     const wanted = new Set(this.wanted.map(mapTileId))
@@ -1945,7 +2009,12 @@ export class PlanetWorld {
    * neutral and the cell's OSM roads are loaded; once per cell. See `asphalt-mask.ts`.
    */
   private paintAsphaltMask(resident: Resident) {
-    if (resident.asphaltMask || !resident.roads?.length || asphaltContrast() === 1) return
+    if (
+      resident.asphaltMask ||
+      !resident.roads?.length ||
+      asphaltContrast(this.visual.asphalt) === 1
+    )
+      return
     const drapes: THREE.Mesh[] = []
     resident.group.traverse((node) => {
       const mesh = node as THREE.Mesh

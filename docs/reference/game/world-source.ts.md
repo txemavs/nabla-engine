@@ -17,12 +17,17 @@ What the player stands on: geographic terrain tiles, the flat test ground, or on
 test.html and xr.html play on the flat ground; every other page on terrain.
 
 ```ts
-defaultWorldSource(pathname = globalThis.location?.pathname ?? '/'): WorldSource
+defaultWorldSource(pathname = globalThis.location?.pathname ?? '/', search = globalThis.location?.search ?? ''): WorldSource
 ```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `URLSearchParams`
+- `params.get`
 
 ## hasTerrain
 
-[Implementation, line 18](../../../game/world-source.ts#L18)
+[Implementation, line 24](../../../game/world-source.ts#L24)
 
 ```ts
 hasTerrain(world: WorldSource): boolean

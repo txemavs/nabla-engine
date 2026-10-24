@@ -6,9 +6,11 @@
 
 ## Terrain tiles (read before debugging a 403)
 
-- Tiles live at `https://atlas.chained.world/euskadi/terraform`. A cell is
-  `z/15/<x>/<y>/z15-<hash>.json` (the cell manifest) plus the files that manifest lists. Always
-  include the `z/` prefix; there is no `manifest.json`.
+- Tiles live at `https://atlas.chained.world/euskadi/terraform`. On 2026-10-23 both example
+  cells below returned `z/15/<x>/<y>/manifest.json` (`nabla-planet-tile-v1`), whose
+  `z15Package` points to `z15-<hash>.json` (`nabla-z15-package/1`). Follow that pointer;
+  always include `z/`. The earlier instruction claiming no `manifest.json` was stale.
+  Evidence and offline regression fixtures: `docs/terrain-publication-contract.md`.
 - S3 answers **403 AccessDenied, not 404, for missing objects** because public listing is
   disabled. A 403 on a tile means the cell (or file) does not exist; it is not a permission
   problem. There is no auth, request signing or IP rule to fix.

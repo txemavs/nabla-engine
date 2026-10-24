@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /**
  * Menu slider for the world gravity, shown in m/s² and stored as the existing multiplier
  * (0.5×–3×, 1× = standard gravity), applied live.
@@ -15,7 +16,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -55,7 +56,7 @@ function describe(scale: number): string {
 }
 
 /** Gravity slider in Ajustes → Simulación → Tiempo, in m/s². */
-export function bindGravityScaleSlider(runtime: GameRuntime, storage = browserStorage()): void {
+export function bindGravityScaleSlider(runtime: GameRuntime, storage = runtime.settings): void {
   const { min, max } = simulationDefaults.gravityScaleRange
   const group = menuSection('settings-simulation-time', t('settings.time'))
   const label = document.createElement('label')

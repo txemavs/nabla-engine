@@ -17,14 +17,14 @@ describe('startup flashlight shadow layout', () => {
     expect(runtime.setHeadlampShadows).toHaveBeenLastCalledWith(false)
   })
 
-  it.each(['terrain-main.ts', 'drive.ts'])(
+  it.each(['terrain-main.ts', 'game-page.ts'])(
     'restores before play and HUD mounting in %s',
     (file) => {
       const source = readFileSync(new URL(`../../game/${file}`, import.meta.url), 'utf8')
       const restore = source.indexOf('restoreStartupLightSettings(runtime)')
       expect(restore).toBeGreaterThan(0)
-      expect(restore).toBeLessThan(source.indexOf('await runtime.play('))
-      expect(source.indexOf('await runtime.play(')).toBeLessThan(
+      expect(restore).toBeLessThan(source.indexOf('await startGame('))
+      expect(source.indexOf('await startGame(')).toBeLessThan(
         source.indexOf('mountSettingsHud(runtime)'),
       )
     },

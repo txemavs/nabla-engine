@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /** Menu toggle for the vehicle reset (recover key): nearest road/vía (default on) vs upright in place. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
 import { menuSection } from './menu.js'
@@ -10,7 +11,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -39,7 +40,7 @@ export function saveRecoverToRoadEnabled(
 }
 
 /** Checkbox in Settings → Options → Driving (shares the section with gravity). */
-export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = browserStorage()): void {
+export function bindRecoverToRoadToggle(runtime: GameRuntime, storage = runtime.settings): void {
   const group = menuSection('driving-extras', t('settings.recovery-and-physics'))
   const label = document.createElement('label')
   const key = inputBindings.recover.keys.map(keyLabel).join(' / ')

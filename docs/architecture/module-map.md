@@ -52,6 +52,9 @@ This foundation has no backward-compatibility commitment. Scene JSON uses versio
 Studio projects use version 3 with an explicit planet ID. Project versions 1/2 are
 rejected, not converted. A scene is validated as authored: parsing never upgrades
 stock tuning, wheel/seat mounts, colors, buildings, placement or carrier portals.
+One narrow compatibility exception remains: `parseScene` migrates recognized stock
+asset URLs from `/studio/` to `/library/` through `scene/asset-urls.ts`. This does
+not migrate arbitrary schemas or change authored physics parameters.
 
 Stock road equipment requires an explicit `visual.presentation` ID. An omitted ID
 means a plain model; it does not trigger filename-based guessing. Unknown IDs warn

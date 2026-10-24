@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /**
  * Host defaults for the driver's steering-wheel adjustment («Volante» in the Vehículos menu).
  *
@@ -75,7 +76,7 @@ export function hostSteeringWheelsFromSearch(
 /** Where the player's choice is kept: `localStorage`, or nothing when the browser refuses it. */
 export function steeringWheelStorage(): SteeringWheelStorage | null {
   try {
-    return globalThis.localStorage ?? null
+    return pageSettingsStorage() ?? null
   } catch {
     return null
   }

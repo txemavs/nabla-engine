@@ -30,8 +30,8 @@ test('intro owns its camera and does not catch up after loading stalls or probe 
       camera,
       origin: new T.Vector3(),
       options: { canvas: document.createElement('canvas') },
-      display: { maxFps: 0 },
-      quality: { fog: true },
+      displayController: { settings: { maxFps: 0 } },
+      performanceSettings: { state: { fog: true } },
       renderer: { autoClear: false },
       environment: { updateSky() {} },
       sky: {

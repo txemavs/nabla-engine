@@ -517,6 +517,9 @@ export class ThreadedSimulation {
   relocatePlayer(...args: Parameters<Simulation['relocatePlayer']>): void {
     this.command('relocatePlayer', args)
   }
+  leaveVehicleAt(...args: Parameters<Simulation['leaveVehicleAt']>): void {
+    this.command('leaveVehicleAt', args)
+  }
   relocateVehicle(...args: Parameters<Simulation['relocateVehicle']>): string {
     return this.message('relocateVehicle', args)
   }

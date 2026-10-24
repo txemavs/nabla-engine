@@ -4,12 +4,9 @@
 
 [Source](../../../../src/runtime/session.ts)
 
-Own the simulation lifetime without owning a renderer or animation clock.
-Hosts pass elapsed seconds; cancellation generations prevent late initialization
-from reviving a stopped session. Authored scenes remain isolated from physics.
-
 ## Module dependencies
 
+- `./boot-trace.js`
 - `../config/simulation.js`
 - `../simulation/physics.js`
 - `../simulation/simulation.js`
@@ -18,7 +15,7 @@ from reviving a stopped session. Authored scenes remain isolated from physics.
 
 ## PlaySession.state
 
-[Implementation, line 33](../../../../src/runtime/session.ts#L33)
+[Implementation, line 34](../../../../src/runtime/session.ts#L34)
 
 Read the lifecycle phase without advancing initialization or physics.
 
@@ -28,7 +25,7 @@ state(): SessionState
 
 ## PlaySession.simulation
 
-[Implementation, line 37](../../../../src/runtime/session.ts#L37)
+[Implementation, line 38](../../../../src/runtime/session.ts#L38)
 
 Return the owned simulation, or null before initialization and after stop.
 
@@ -38,7 +35,7 @@ simulation(): Simulation | null
 
 ## PlaySession.play
 
-[Implementation, line 46](../../../../src/runtime/session.ts#L46)
+[Implementation, line 47](../../../../src/runtime/session.ts#L47)
 
 Replace the previous session with a simulation of a copied document.
 Reject if initialization is cancelled, physics fails or the session is disposed.
@@ -56,14 +53,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `console.warn`
 - `initPhysics`
 - `physicsWorkerEnabled`
+- `rapierDone`
 - `simulation.dispose`
 - `simulation.setCollisionDistance`
 - `simulation.startInVehicle`
+- `startBootPhase`
 - `structuredClone`
+- `syncDone`
 - `this.assertAlive`
 - `this.stop`
 - `threadedSimulation`
 - `threadedSimulation(simulation)?.refresh`
+- `workerDone`
 
 Explicit throws in this body:
 
@@ -72,7 +73,7 @@ Explicit throws in this body:
 
 ## PlaySession.step
 
-[Implementation, line 94](../../../../src/runtime/session.ts#L94)
+[Implementation, line 122](../../../../src/runtime/session.ts#L122)
 
 Call once from the owning runtime's frame. Paused time is never accumulated.
 Inline physics steps synchronously; a worker-hosted simulation returns a promise the frame
@@ -101,7 +102,7 @@ Explicit throws in this body:
 
 ## PlaySession.pause
 
-[Implementation, line 108](../../../../src/runtime/session.ts#L108)
+[Implementation, line 136](../../../../src/runtime/session.ts#L136)
 
 Clear movement commands and suspend stepping; retain the simulation for resume.
 
@@ -117,7 +118,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.resume
 
-[Implementation, line 116](../../../../src/runtime/session.ts#L116)
+[Implementation, line 144](../../../../src/runtime/session.ts#L144)
 
 Resume only a paused simulation; reject use after disposal.
 
@@ -131,7 +132,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.stop
 
-[Implementation, line 122](../../../../src/runtime/session.ts#L122)
+[Implementation, line 150](../../../../src/runtime/session.ts#L150)
 
 Cancel pending initialization and release physics. Safe to repeat after disposal.
 
@@ -145,7 +146,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.dispose
 
-[Implementation, line 131](../../../../src/runtime/session.ts#L131)
+[Implementation, line 159](../../../../src/runtime/session.ts#L159)
 
 Stop and permanently close the session. Repeated disposal is harmless.
 
@@ -159,7 +160,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## PlaySession.assertAlive
 
-[Implementation, line 138](../../../../src/runtime/session.ts#L138)
+[Implementation, line 166](../../../../src/runtime/session.ts#L166)
 
 Enforce the terminal lifecycle state before operations that require a live owner.
 

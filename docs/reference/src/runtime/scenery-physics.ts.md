@@ -6,6 +6,7 @@
 
 ## Module dependencies
 
+- `./settings-scope.js`
 - `three`
 - `../config/scenery-physics.js`
 - `../config/impact-sounds.js`
@@ -13,7 +14,7 @@
 
 ## clampRadius
 
-[Implementation, line 13](../../../../src/runtime/scenery-physics.ts#L13)
+[Implementation, line 14](../../../../src/runtime/scenery-physics.ts#L14)
 
 ```ts
 clampRadius(value: number): number
@@ -27,10 +28,10 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## initialSettings
 
-[Implementation, line 22](../../../../src/runtime/scenery-physics.ts#L22)
+[Implementation, line 23](../../../../src/runtime/scenery-physics.ts#L23)
 
 ```ts
-initialSettings(): { enabled: boolean; radius: number }
+initialSettings(storage: SettingsStorage): { enabled: boolean; radius: number }
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -39,11 +40,11 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number`
 - `Number.isFinite`
 - `clampRadius`
-- `globalThis.localStorage?.getItem`
+- `storage.getItem`
 
 ## SceneryPhysics.constructor
 
-[Implementation, line 84](../../../../src/runtime/scenery-physics.ts#L84)
+[Implementation, line 83](../../../../src/runtime/scenery-physics.ts#L83)
 
 The one scenery-physics service of a runtime. Hosts register a *layer* per kind of scenery
 and feed it the poles currently wanted around the player; the service decides, from the shared
@@ -53,16 +54,17 @@ region streams out and hands the current pose back for rendering.
 It owns physics only. Light budgets (`Streetlights`) and meshes stay with their renderers.
 
 ```ts
-constructor(private readonly simulation: () => SceneryBodies | null | undefined): instance
+constructor(private readonly simulation: () => SceneryBodies | null | undefined, storage: SettingsStorage = pageSettingsStorage()): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `initialSettings`
+- `pageSettingsStorage`
 
 ## SceneryPhysics.enabled
 
-[Implementation, line 91](../../../../src/runtime/scenery-physics.ts#L91)
+[Implementation, line 93](../../../../src/runtime/scenery-physics.ts#L93)
 
 Scenery responds to impacts and gets bodies near the player.
 
@@ -72,7 +74,7 @@ enabled(): boolean
 
 ## SceneryPhysics.radius
 
-[Implementation, line 95](../../../../src/runtime/scenery-physics.ts#L95)
+[Implementation, line 97](../../../../src/runtime/scenery-physics.ts#L97)
 
 Metres around the player inside which scenery gets a body.
 
@@ -82,7 +84,7 @@ radius(): number
 
 ## SceneryPhysics.setEnabled
 
-[Implementation, line 100](../../../../src/runtime/scenery-physics.ts#L100)
+[Implementation, line 102](../../../../src/runtime/scenery-physics.ts#L102)
 
 Turn scenery physics on or off; layers retire their bodies on their next `begin()`.
 
@@ -96,7 +98,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.setRadius
 
-[Implementation, line 105](../../../../src/runtime/scenery-physics.ts#L105)
+[Implementation, line 107](../../../../src/runtime/scenery-physics.ts#L107)
 
 Set the physics radius in metres, clamped to the editable range.
 
@@ -112,7 +114,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.layer
 
-[Implementation, line 112](../../../../src/runtime/scenery-physics.ts#L112)
+[Implementation, line 114](../../../../src/runtime/scenery-physics.ts#L114)
 
 Create a layer for one kind of scenery.
 
@@ -127,7 +129,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.diagnostics
 
-[Implementation, line 129](../../../../src/runtime/scenery-physics.ts#L129)
+[Implementation, line 131](../../../../src/runtime/scenery-physics.ts#L131)
 
 Live and remembered poles per layer.
 
@@ -139,12 +141,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `[...this.layers].map`
 
-## SceneryPhysics.diagnostics.callback@130
+## SceneryPhysics.diagnostics.callback@132
 
-[Implementation, line 130](../../../../src/runtime/scenery-physics.ts#L130)
+[Implementation, line 132](../../../../src/runtime/scenery-physics.ts#L132)
 
 ```ts
-callback@130(layer): inferred by TypeScript; see implementation
+callback@132(layer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -153,7 +155,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.dispose
 
-[Implementation, line 134](../../../../src/runtime/scenery-physics.ts#L134)
+[Implementation, line 136](../../../../src/runtime/scenery-physics.ts#L136)
 
 Release every layer's bodies.
 
@@ -167,7 +169,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.bodies
 
-[Implementation, line 139](../../../../src/runtime/scenery-physics.ts#L139)
+[Implementation, line 141](../../../../src/runtime/scenery-physics.ts#L141)
 
 The one scenery-physics service of a runtime. Hosts register a *layer* per kind of scenery
 and feed it the poles currently wanted around the player; the service decides, from the shared
@@ -186,7 +188,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.forget
 
-[Implementation, line 143](../../../../src/runtime/scenery-physics.ts#L143)
+[Implementation, line 145](../../../../src/runtime/scenery-physics.ts#L145)
 
 The one scenery-physics service of a runtime. Hosts register a *layer* per kind of scenery
 and feed it the poles currently wanted around the player; the service decides, from the shared
@@ -205,7 +207,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryPhysics.publish
 
-[Implementation, line 148](../../../../src/runtime/scenery-physics.ts#L148)
+[Implementation, line 150](../../../../src/runtime/scenery-physics.ts#L150)
 
 Mirror the settings to the data attributes older host code still reads.
 
@@ -219,7 +221,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.constructor
 
-[Implementation, line 165](../../../../src/runtime/scenery-physics.ts#L165)
+[Implementation, line 167](../../../../src/runtime/scenery-physics.ts#L167)
 
 One kind of scenery (for example sign posts) inside `SceneryPhysics`.
 
@@ -229,7 +231,7 @@ constructor(private readonly owner: SceneryPhysics, readonly name: string, priva
 
 ## SceneryLayer.begin
 
-[Implementation, line 172](../../../../src/runtime/scenery-physics.ts#L172)
+[Implementation, line 174](../../../../src/runtime/scenery-physics.ts#L174)
 
 Start a refresh: poles not re-added before `end()` are retired.
 
@@ -245,7 +247,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.available
 
-[Implementation, line 181](../../../../src/runtime/scenery-physics.ts#L181)
+[Implementation, line 183](../../../../src/runtime/scenery-physics.ts#L183)
 
 True while the simulation these bodies belong to is running.
 
@@ -259,7 +261,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.pending
 
-[Implementation, line 185](../../../../src/runtime/scenery-physics.ts#L185)
+[Implementation, line 187](../../../../src/runtime/scenery-physics.ts#L187)
 
 Poles of the last refresh that are wanted but not built yet (creation budget).
 
@@ -269,7 +271,7 @@ pending(): number
 
 ## SceneryLayer.actors
 
-[Implementation, line 189](../../../../src/runtime/scenery-physics.ts#L189)
+[Implementation, line 191](../../../../src/runtime/scenery-physics.ts#L191)
 
 Positions of the player and every vehicle, as the simulation reports them.
 
@@ -284,7 +286,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.add
 
-[Implementation, line 202](../../../../src/runtime/scenery-physics.ts#L202)
+[Implementation, line 204](../../../../src/runtime/scenery-physics.ts#L204)
 
 Ask for a body for the pole `key` standing on `ground` at (`x`, `z`). Ignored when physics is
 off, the pole is outside the radius, or the layer is full. `yaw` (radians, three.js Y
@@ -311,7 +313,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.within
 
-[Implementation, line 261](../../../../src/runtime/scenery-physics.ts#L261)
+[Implementation, line 263](../../../../src/runtime/scenery-physics.ts#L263)
 
 Distance from the box of a pole to the nearest actor is below `reach` (3D, like the trimesh set).
 
@@ -324,12 +326,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `this.actors`
 - `this.actors().some`
 
-## SceneryLayer.within.callback@263
+## SceneryLayer.within.callback@265
 
-[Implementation, line 263](../../../../src/runtime/scenery-physics.ts#L263)
+[Implementation, line 265](../../../../src/runtime/scenery-physics.ts#L265)
 
 ```ts
-callback@263(a): inferred by TypeScript; see implementation
+callback@265(a): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -339,7 +341,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.end
 
-[Implementation, line 273](../../../../src/runtime/scenery-physics.ts#L273)
+[Implementation, line 275](../../../../src/runtime/scenery-physics.ts#L275)
 
 Finish a refresh: retire poles that were not wanted, remembering knocked-down ones.
 
@@ -357,7 +359,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.impact
 
-[Implementation, line 284](../../../../src/runtime/scenery-physics.ts#L284)
+[Implementation, line 286](../../../../src/runtime/scenery-physics.ts#L286)
 
 Push the live pole `key` (a shot or a hit). No effect on fixed layers or retired poles.
 
@@ -372,7 +374,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.transform
 
-[Implementation, line 289](../../../../src/runtime/scenery-physics.ts#L289)
+[Implementation, line 291](../../../../src/runtime/scenery-physics.ts#L291)
 
 Premultiply `matrix` (the pole's rest transform) by its current physical pose.
 
@@ -391,7 +393,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## SceneryLayer.stats
 
-[Implementation, line 306](../../../../src/runtime/scenery-physics.ts#L306)
+[Implementation, line 308](../../../../src/runtime/scenery-physics.ts#L308)
 
 One kind of scenery (for example sign posts) inside `SceneryPhysics`.
 
@@ -401,7 +403,7 @@ stats(): { name: string; movable: boolean; active: number; fallen: number }
 
 ## SceneryLayer.dispose
 
-[Implementation, line 316](../../../../src/runtime/scenery-physics.ts#L316)
+[Implementation, line 318](../../../../src/runtime/scenery-physics.ts#L318)
 
 Release every body and forget fallen poses.
 

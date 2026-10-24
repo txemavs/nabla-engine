@@ -1,12 +1,13 @@
 /**
  * Wire protocol shared by the browser session and the room relay (services/relay).
- * Messages are JSON text frames. The relay only routes them; it stamps `peer` on forwarded
- * messages so a client cannot impersonate another peer.
+ * Messages are JSON text frames. The relay stamps sender identities and owns health/claims.
+ * Protocol 1 uses scene-space rooms; protocol 2 adds continuous local or planetary instances.
  */
 import { z } from 'zod'
 import type { QuatTuple, Vec3Tuple } from '../math/frame/vectors.js'
 
 export const PROTOCOL_VERSION = 1
+export const CONTINUOUS_PROTOCOL_VERSION = 2
 
 const finite = z.number().finite()
 const vec3 = z.tuple([finite, finite, finite])
@@ -226,6 +227,9 @@ export function decodeFire(data: unknown): FireSample | null {
  */
 export const avatarBlockSchema = z.object({
   p: vec3,
+  /** Protocol 2 planetary orientation and aim direction (ECEF). */
+  q: quat.optional(),
+  u: vec3.optional(),
   y: finite,
   s: finite.nonnegative(),
   a: z.number().int().min(0).max(63),
@@ -365,7 +369,23 @@ export const snapshotSchema = z.object({
 export type SnapshotMessage = z.infer<typeof snapshotSchema>
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('join'), version: z.literal(PROTOCOL_VERSION), room: roomId, meta }),
+  z.object({
+    type: z.literal('join'),
+    version: z.union([z.literal(1), z.literal(2)]),
+    room: roomId,
+    meta,
+    world: z
+      .object({
+        space: z.enum(['local', 'planet']),
+        content: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/),
+      })
+      .optional(),
+    position: vec3.optional(),
+    resume: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+  }),
   snapshotSchema,
   /** One-off game event (e.g. a shot), relayed to the room with the sender stamped. */
   z.object({ type: z.literal('event'), kind: eventKind, data: eventData }),
@@ -387,6 +407,11 @@ export type PeerInfo = z.infer<typeof peerInfo>
 export const serverMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('welcome'),
+    version: z.literal(2).optional(),
+    resume: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     peer: peerId,
     room: roomId,
     peers: z.array(peerInfo),
@@ -398,11 +423,13 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     entities: z.array(eventData).max(256).optional(),
   }),
   peerInfo.extend({ type: z.literal('joined') }),
+  peerInfo.extend({ type: z.literal('visible') }),
+  z.object({ type: z.literal('hidden'), peer: peerId }),
   z.object({ type: z.literal('left'), peer: peerId }),
   z.object({ type: z.literal('profile'), peer: peerId, meta }),
   z.object({ type: z.literal('event'), peer: peerId, kind: eventKind, data: eventData }),
   snapshotSchema.extend({ peer: peerId }),
-  z.object({ type: z.literal('error'), message: z.string() }),
+  z.object({ type: z.literal('error'), message: z.string(), code: z.string().optional() }),
 ])
 export type ServerMessage = z.infer<typeof serverMessageSchema>
 

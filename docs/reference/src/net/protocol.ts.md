@@ -5,8 +5,8 @@
 [Source](../../../../src/net/protocol.ts)
 
 Wire protocol shared by the browser session and the room relay (services/relay).
-Messages are JSON text frames. The relay only routes them; it stamps `peer` on forwarded
-messages so a client cannot impersonate another peer.
+Messages are JSON text frames. The relay stamps sender identities and owns health/claims.
+Protocol 1 uses scene-space rooms; protocol 2 adds continuous local or planetary instances.
 
 ## Module dependencies
 
@@ -15,7 +15,7 @@ messages so a client cannot impersonate another peer.
 
 ## round
 
-[Implementation, line 47](../../../../src/net/protocol.ts#L47)
+[Implementation, line 48](../../../../src/net/protocol.ts#L48)
 
 ```ts
 round(value: number, step: number): inferred by TypeScript; see implementation
@@ -27,7 +27,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeWheels
 
-[Implementation, line 52](../../../../src/net/protocol.ts#L52)
+[Implementation, line 53](../../../../src/net/protocol.ts#L53)
 
 Round wheel values to what the eye can tell apart (1 mrad steer, 1 mm suspension, 0.1 rad/s
 spin) so a four-wheel car adds roughly 80 bytes of JSON per snapshot.
@@ -42,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeWheels.fix
 
-[Implementation, line 53](../../../../src/net/protocol.ts#L53)
+[Implementation, line 54](../../../../src/net/protocol.ts#L54)
 
 ```ts
 fix(values: number[], step: number, digits: number): inferred by TypeScript; see implementation
@@ -52,12 +52,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `values.map`
 
-## quantizeWheels.fix.callback@54
+## quantizeWheels.fix.callback@55
 
-[Implementation, line 54](../../../../src/net/protocol.ts#L54)
+[Implementation, line 55](../../../../src/net/protocol.ts#L55)
 
 ```ts
-callback@54(v): inferred by TypeScript; see implementation
+callback@55(v): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -65,24 +65,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `round`
 - `round(v, step).toFixed`
 
-## callback@68
+## callback@69
 
-[Implementation, line 68](../../../../src/net/protocol.ts#L68)
+[Implementation, line 69](../../../../src/net/protocol.ts#L69)
 
 ```ts
-callback@68(value): inferred by TypeScript; see implementation
+callback@69(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `Object.keys`
 
-## callback@78
+## callback@79
 
-[Implementation, line 78](../../../../src/net/protocol.ts#L78)
+[Implementation, line 79](../../../../src/net/protocol.ts#L79)
 
 ```ts
-callback@78(value): inferred by TypeScript; see implementation
+callback@79(value): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -91,7 +91,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## v3
 
-[Implementation, line 96](../../../../src/net/protocol.ts#L96)
+[Implementation, line 97](../../../../src/net/protocol.ts#L97)
 
 ```ts
 v3(v: unknown): Vec3Tuple | undefined
@@ -102,12 +102,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `v.every`
 
-## v3.callback@97
+## v3.callback@98
 
-[Implementation, line 97](../../../../src/net/protocol.ts#L97)
+[Implementation, line 98](../../../../src/net/protocol.ts#L98)
 
 ```ts
-callback@97(n): inferred by TypeScript; see implementation
+callback@98(n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -116,7 +116,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## str
 
-[Implementation, line 100](../../../../src/net/protocol.ts#L100)
+[Implementation, line 101](../../../../src/net/protocol.ts#L101)
 
 ```ts
 str(v: unknown, max = 64): string | undefined
@@ -124,7 +124,7 @@ str(v: unknown, max = 64): string | undefined
 
 ## encodeHit
 
-[Implementation, line 111](../../../../src/net/protocol.ts#L111)
+[Implementation, line 112](../../../../src/net/protocol.ts#L112)
 
 ```ts
 encodeHit(hit: NetHit): NetEventData
@@ -139,7 +139,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## encodeHit.fix
 
-[Implementation, line 112](../../../../src/net/protocol.ts#L112)
+[Implementation, line 113](../../../../src/net/protocol.ts#L113)
 
 ```ts
 fix(v: Vec3Tuple, digits: number): inferred by TypeScript; see implementation
@@ -149,12 +149,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `v.map`
 
-## encodeHit.fix.callback@112
+## encodeHit.fix.callback@113
 
-[Implementation, line 112](../../../../src/net/protocol.ts#L112)
+[Implementation, line 113](../../../../src/net/protocol.ts#L113)
 
 ```ts
-callback@112(n): inferred by TypeScript; see implementation
+callback@113(n): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -163,7 +163,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeHit
 
-[Implementation, line 123](../../../../src/net/protocol.ts#L123)
+[Implementation, line 124](../../../../src/net/protocol.ts#L124)
 
 ```ts
 decodeHit(data: NetEventData): NetHit | null
@@ -176,7 +176,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeHealthEvent
 
-[Implementation, line 146](../../../../src/net/protocol.ts#L146)
+[Implementation, line 147](../../../../src/net/protocol.ts#L147)
 
 Decode a relay `health`, `death` or `respawn` event (null when malformed).
 
@@ -192,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeFire
 
-[Implementation, line 188](../../../../src/net/protocol.ts#L188)
+[Implementation, line 189](../../../../src/net/protocol.ts#L189)
 
 Wire form of a fire event: 1 cm origin, unit direction to 1/1000.
 
@@ -212,7 +212,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeFire.fix
 
-[Implementation, line 189](../../../../src/net/protocol.ts#L189)
+[Implementation, line 190](../../../../src/net/protocol.ts#L190)
 
 ```ts
 fix(v: number, digits: number): inferred by TypeScript; see implementation
@@ -221,18 +221,6 @@ fix(v: number, digits: number): inferred by TypeScript; see implementation
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `v.toFixed`
-
-## quantizeFire.callback@194
-
-[Implementation, line 194](../../../../src/net/protocol.ts#L194)
-
-```ts
-callback@194(v): inferred by TypeScript; see implementation
-```
-
-Direct call sites (syntactic references, not a purity or execution-order guarantee):
-
-- `fix`
 
 ## quantizeFire.callback@195
 
@@ -246,9 +234,21 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 - `fix`
 
+## quantizeFire.callback@196
+
+[Implementation, line 196](../../../../src/net/protocol.ts#L196)
+
+```ts
+callback@196(v): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `fix`
+
 ## decodeFire
 
-[Implementation, line 202](../../../../src/net/protocol.ts#L202)
+[Implementation, line 203](../../../../src/net/protocol.ts#L203)
 
 A received fire event, or null when it is not one (bad or out-of-range data).
 
@@ -263,7 +263,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## wrapAngle
 
-[Implementation, line 277](../../../../src/net/protocol.ts#L277)
+[Implementation, line 281](../../../../src/net/protocol.ts#L281)
 
 Angle wrapped to (−π, π].
 
@@ -277,7 +277,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeAvatar
 
-[Implementation, line 284](../../../../src/net/protocol.ts#L284)
+[Implementation, line 288](../../../../src/net/protocol.ts#L288)
 
 Wire form of an avatar sample: 1 cm position, 1 mrad yaw (wrapped), 1 cm/s speed.
 
@@ -297,7 +297,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeAvatar.fix
 
-[Implementation, line 285](../../../../src/net/protocol.ts#L285)
+[Implementation, line 289](../../../../src/net/protocol.ts#L289)
 
 ```ts
 fix(v: number, digits: number): inferred by TypeScript; see implementation
@@ -309,7 +309,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeHeld
 
-[Implementation, line 305](../../../../src/net/protocol.ts#L305)
+[Implementation, line 309](../../../../src/net/protocol.ts#L309)
 
 ```ts
 quantizeHeld(held: NonNullable<AvatarSample['held']>): AvatarBlock['g']
@@ -329,7 +329,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## quantizeHeld.c
 
-[Implementation, line 306](../../../../src/net/protocol.ts#L306)
+[Implementation, line 310](../../../../src/net/protocol.ts#L310)
 
 ```ts
 c(v: number, m: number): inferred by TypeScript; see implementation
@@ -342,7 +342,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeAvatar
 
-[Implementation, line 320](../../../../src/net/protocol.ts#L320)
+[Implementation, line 324](../../../../src/net/protocol.ts#L324)
 
 ```ts
 decodeAvatar(block: AvatarBlock): AvatarSample
@@ -350,7 +350,7 @@ decodeAvatar(block: AvatarBlock): AvatarSample
 
 ## encodeMessage
 
-[Implementation, line 409](../../../../src/net/protocol.ts#L409)
+[Implementation, line 436](../../../../src/net/protocol.ts#L436)
 
 ```ts
 encodeMessage(message: ClientMessage | ServerMessage): string
@@ -362,7 +362,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## decodeServerMessage
 
-[Implementation, line 414](../../../../src/net/protocol.ts#L414)
+[Implementation, line 441](../../../../src/net/protocol.ts#L441)
 
 Parse a relay frame; malformed or unknown frames return null instead of throwing.
 
@@ -377,7 +377,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## isValidRoom
 
-[Implementation, line 424](../../../../src/net/protocol.ts#L424)
+[Implementation, line 451](../../../../src/net/protocol.ts#L451)
 
 True when `room` is usable as a relay room id (letters, digits, `_` and `-`).
 

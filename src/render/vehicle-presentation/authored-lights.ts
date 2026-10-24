@@ -64,31 +64,40 @@ export function lampFromMaterialName(
 
 /** Per-vehicle data for the lamp path (from `vehicle.lights`). */
 export interface AuthoredLightOptions {
+  beams?: BeamSettings
   /** Emissive colour of the lens of each lamp channel while lit; others keep the asset colour. */
   lensEmissive?: Partial<Record<VehicleLightChannel, string>>
 }
 
-const beamCutoff = { low: 0, high: 1 }
-const beamMasks = new Map<DataTexture, boolean>()
+export const createBeamSettings = () => ({
+  cutoff: { low: 0, high: 1 },
+  masks: new Map<DataTexture, boolean>(),
+})
+export type BeamSettings = ReturnType<typeof createBeamSettings>
+const defaultBeams = createBeamSettings()
 
 /** Degrees above the authored cutoff. Updates textures without adding shader variants. */
-export function setVehicleBeamCutoff(kind: 'low' | 'high', degrees: number): void {
+export function setVehicleBeamCutoff(
+  kind: 'low' | 'high',
+  degrees: number,
+  settings = defaultBeams,
+): void {
   if (!Number.isFinite(degrees)) return
-  beamCutoff[kind] = Math.max(-5, Math.min(5, degrees))
-  for (const [texture, asymmetric] of beamMasks)
-    if (asymmetric === (kind === 'low')) paintBeamMask(texture, asymmetric)
+  settings.cutoff[kind] = Math.max(-5, Math.min(5, degrees))
+  for (const [texture, asymmetric] of settings.masks)
+    if (asymmetric === (kind === 'low')) paintBeamMask(texture, asymmetric, settings.cutoff[kind])
 }
-export function getVehicleBeamCutoff(kind: 'low' | 'high'): number {
-  return beamCutoff[kind]
+export function getVehicleBeamCutoff(kind: 'low' | 'high', settings = defaultBeams): number {
+  return settings.cutoff[kind]
 }
 
-export function lowBeamMask(asymmetric = true): DataTexture {
+export function lowBeamMask(asymmetric = true, settings = defaultBeams): DataTexture {
   const size = lightingDefaults.lowBeamMaskSize
   const texture = new DataTexture(new Uint8Array(size * size * 4), size, size)
   texture.minFilter = texture.magFilter = LinearFilter
-  beamMasks.set(texture, asymmetric)
-  texture.addEventListener('dispose', () => beamMasks.delete(texture))
-  paintBeamMask(texture, asymmetric)
+  settings.masks.set(texture, asymmetric)
+  texture.addEventListener('dispose', () => settings.masks.delete(texture))
+  paintBeamMask(texture, asymmetric, settings.cutoff[asymmetric ? 'low' : 'high'])
   return texture
 }
 
@@ -96,7 +105,7 @@ export function lowBeamMask(asymmetric = true): DataTexture {
 function paintBeamMask(
   texture: DataTexture,
   asymmetric: boolean,
-  degrees = beamCutoff[asymmetric ? 'low' : 'high'],
+  degrees = defaultBeams.cutoff[asymmetric ? 'low' : 'high'],
 ): void {
   const size = lightingDefaults.lowBeamMaskSize
   const data = texture.image.data as Uint8Array
@@ -230,7 +239,7 @@ export class AuthoredVehicleLights {
         if (lampChannel === 'high') node.angle = lightingDefaults.lowBeamOuterCone
       }
       if (node instanceof SpotLight && lampChannel === 'high')
-        node.map = this.highMask ??= lowBeamMask(false)
+        node.map = this.highMask ??= lowBeamMask(false, this.options.beams)
       this.lamps.push({
         light: node,
         intensity,
@@ -238,7 +247,7 @@ export class AuthoredVehicleLights {
         side: owner.userData.side === 'L' ? -1 : owner.userData.side === 'R' ? 1 : 0,
       })
       if (node instanceof SpotLight && owner.userData.beamPattern === 'low-beam')
-        node.map = this.mask ??= lowBeamMask()
+        node.map = this.mask ??= lowBeamMask(true, this.options.beams)
       node.intensity = 0
       node.visible = false
     })

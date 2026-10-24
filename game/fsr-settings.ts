@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { pageSearch } from './page-query.js'
 import { resolveFsr, type FsrSettings } from '../src/render/effects/fsr1.js'
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -8,7 +9,7 @@ const KEY = 'nabla.fsr1'
 export function readFsrSettings(search = pageSearch()): FsrSettings {
   let saved: Partial<FsrSettings> = {}
   try {
-    saved = JSON.parse(localStorage.getItem(KEY) ?? '{}')
+    saved = JSON.parse(pageSettingsStorage().getItem(KEY) ?? '{}')
   } catch {
     /* optional storage */
   }
@@ -72,7 +73,7 @@ export function appendFsrControls(parent: HTMLElement, runtime: GameRuntime): vo
     })
     sync()
     try {
-      localStorage.setItem(KEY, JSON.stringify(runtime.fsrSettings))
+      runtime.settings.setItem(KEY, JSON.stringify(runtime.fsrSettings))
     } catch {
       /* optional storage */
     }

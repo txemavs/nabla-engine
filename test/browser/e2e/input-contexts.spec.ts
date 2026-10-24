@@ -47,7 +47,7 @@ test('real keyboard routes forklift hydraulics, weapon priority and browser shor
         const frames = async (count: number) => {
           for (let i = 0; i < count; i++) {
             runtime.tick((now += 1000 / 60))
-            while (internal.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
+            while (internal.frames.frameBusy) await new Promise((resolve) => setTimeout(resolve, 0))
             await new Promise((resolve) => setTimeout(resolve, 1000 / 60))
           }
         }

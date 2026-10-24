@@ -1,3 +1,4 @@
+import { OwnedProvider } from './owned-provider.js'
 import { Vector3 } from 'three'
 import type { OsmChartRoad } from '../../planet/osm-snapshot.js'
 import { t } from '../../i18n/index.js'
@@ -12,20 +13,20 @@ export interface NavigationPlace {
 
 export type NavigationRoad = OsmChartRoad
 
-let places: () => Iterable<NavigationPlace> = () => []
-let roads: () => Iterable<NavigationRoad> = () => []
+const places = new OwnedProvider<() => Iterable<NavigationPlace>>(() => [])
+const roads = new OwnedProvider<() => Iterable<NavigationRoad>>(() => [])
 
 export function setNavigationPlaces(value: () => Iterable<NavigationPlace>) {
-  places = value
+  places.set(value)
 }
 export function navigationPlaces(): NavigationPlace[] {
-  return Array.from(places())
+  return Array.from(places.value())
 }
 export function setNavigationRoads(value: () => Iterable<NavigationRoad>) {
-  roads = value
+  roads.set(value)
 }
 export function navigationRoads(): NavigationRoad[] {
-  return Array.from(roads())
+  return Array.from(roads.value())
 }
 
 /**
@@ -42,7 +43,7 @@ function closestPlace(
 ): { place: NavigationPlace; ratio: number } | undefined {
   let best: NavigationPlace | undefined,
     ratio = 10
-  for (const place of places()) {
+  for (const place of places.value()) {
     const d = Math.hypot(place.position.x - position[0], place.position.z - position[2])
     const r = d / (place.category ? PLACE_REACH[place.category] : DEFAULT_REACH)
     if (r < ratio) {
@@ -101,7 +102,7 @@ export function nearestStreet(
   const x = position[0],
     z = position[2]
   let best: { name: string; dist: number; carriageway: boolean } | undefined
-  for (const road of [...roads(), ...extra]) {
+  for (const road of [...roads.value(), ...extra]) {
     if (!road.name) continue
     const pad = Math.max(road.width / 2 + 8, 16)
     if (x < road.minX - pad || x > road.maxX + pad || z < road.minZ - pad || z > road.maxZ + pad)
@@ -250,7 +251,7 @@ export class NavigationPlaceLookup {
       await yieldTask()
       if (generation !== this.generation) return
       const city = closestPlace(pose)?.place.text ?? t('place.unknown')
-      const list = Array.from(roads())
+      const list = Array.from(roads.value())
       if (!this.index || this.index.cell !== this.cellSize || !sameList(this.index.roads, list)) {
         await yieldTask()
         if (generation !== this.generation) return
@@ -283,4 +284,13 @@ export class NavigationPlaceLookup {
     this.last = undefined
     this.index = undefined
   }
+}
+
+/** Runtime-owned alternative to the legacy global setter. */
+export function registerNavigationPlaces(value: () => Iterable<NavigationPlace>): () => void {
+  return places.register(value)
+}
+/** Runtime-owned alternative to the legacy global setter. */
+export function registerNavigationRoads(value: () => Iterable<NavigationRoad>): () => void {
+  return roads.register(value)
 }

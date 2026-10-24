@@ -2,172 +2,105 @@
 
 # Nabla Engine
 
-An independent foundation for **editing a scene and playing in the same world**.
-The TypeScript engine owns scene data, physics, and rendering. Studio connects
-that to input, persistence, and the editor. Agency integration is a future consumer,
-not a dependency of the engine.
+TypeScript scene, simulation and browser runtime for Nabla applications. Three.js owns rendering;
+Rapier owns physics. The package is currently **0.3.9**; package.json is the version source of truth.
 
-**Documentation:** start with the [Engine overview](docs/engine-overview.md), the
-[UI/UX rule](docs/ui-ux-pattern.md) and the [docs index](docs/README.md).
-
-## Monitors and the S3
-
-Start with the [monitor editing guide](docs/monitors.md) for preview links, artwork,
-layer definitions, keyboard menus, refresh settings and future ship/portal integration.
+- **Engine**: reusable code in src/, published through the @nabla/engine package exports.
+- **Reference game**: the browser host in game/, used directly and extended by Euskadi Online.
+- **Euskadi Online**: a separate repository with its own demo setup, branding, assets and host hooks.
+- **Studio**: the editor in the separate [nabla-studio](https://github.com/txemavs/nabla-studio) repository.
 
 ## Run locally
 
-Requires **Node.js 22.12 or later** and npm.
+Requires **Node.js 22.12 or later** and npm. Run from this repository:
 
-```bash
+```sh
 npm ci
 npm run build
 npm run dev
 ```
 
-Open the [flat planetary driving example](http://localhost:5174/?example=flat).
-The [Engine VR integration](docs/quest-first-demo.md) adds `runtime.xr` to the shared
-browser runtime. `/xr.html` runs the test fleet; the same VR button is available
-in `test.html` and the Euskadi terrain host. The pointing/HK calibration demo
-remains at `/xr-demo.html`.
-Four bundled Z15 tiles surround `(0, 0)` at sea level. Models, Earth texture and
-branding are bundled. The editor now lives in
-[nabla-studio](https://github.com/txemavs/nabla-studio), which consumes Engine as a
-package and owns its own tests and CI.
+Open [the local plane](http://localhost:5174/?example=flat),
+[a local GLB](http://localhost:5174/?model=/examples/flat-world.glb), or
+[real Atlas terrain](http://localhost:5174/?terrain=/tiles&tile=16223/11997&relief=lidar).
+The first two use bundled resources; real terrain needs the Atlas server. The Vite config proxies
+/tiles to https://atlas.chained.world/euskadi/terraform. Production hosting needs the same proxy
+when using /tiles; publishing static files alone does not provide it.
 
-The Studio UI remains in Spanish. Documentation is in English; the
-[controls guide](docs/controls.md) includes the corresponding UI labels.
-
-## Current working tree: 0.2.0 baseline + Stargate prototype
-
-- Optional [private Docker cache](services/world-cache/README.md) for shared OSM/elevation data, with local-only installation settings.
-- Approximately 4 km visibility with coarse distant relief and nearby detailed terrain.
-- Anticipatory [real-world exploration](docs/real-world.md#implemented-neighborhood-streaming) around Irun Ventas, with cached OSM/Esri zones and incremental collisions.
-- [Editable building components](docs/solid-editor.md) with points, lines, faces, extrusion and independent clones.
-- Validated JSON scenes, rigid transform hierarchies, undo/redo and local saving.
-- Fixed and carrier-mounted Stargates with linked views, runtime destination controls and actor/vehicle traversal.
-- A shared physics world for hover exploration, walking, driving, obstacles and movable objects.
-- Carrier-local walking at altitude, with ground-portal departure and return.
-- PNG billboards and an optional 2.5D window shooting gallery with viewpoint parallax.
-- First-person monitor exploration with a third-person toggle and provisional hitscan sidearm.
-- Original A3 cabrio body, wheels and steering wheel, with interior camera.
-- A 5 × 10 m carrier: drive into its garage, latch the car, travel and release it.
-- Ground and assisted drone flight modes, altitude hold and mode 2 gamepad input.
-- A real-data starting district in Irun Ventas/Katea, with OSM buildings/streets and Esri elevation.
-- The original Madrid circuit remains available with an editable GPS origin and connected imagery.
-- Agency's circuit JPEG with 18 aligned building footprints beneath editable geometry, satellite/street imagery and a planetary view.
-- Earth, Sun and Moon, a selectable date/time or live clock, day/night lighting and a shared horizon haze.
-
-Select **Escena A3** to load the current example if an older scene is saved in your
-browser. Loading the example is undoable and does not overwrite the saved copy.
-**ESCENA + → Stargates** adds a linked pair to the current scene without replacing it.
-**Jugar** creates a fresh simulation; **Detener** restores the edited scene.
+The game supports English, Spanish and Basque. See [controls](docs/controls.md).
+[/headset.html](http://localhost:5174/headset.html) selects VR/AR pages. Remote headset access needs
+a secure origin; Vite accepts NABLA_HTTPS_CERT and NABLA_HTTPS_KEY together for local HTTPS.
 
 ## Repository layout
 
-| Path                       | Responsibility                                                  |
-| -------------------------- | --------------------------------------------------------------- |
-| `src/`                     | Engine. This is what stays in the nabla-engine repo             |
-| `test/`                    | Engine unit and physics tests                                   |
-| `game/`                    | Standalone browser game consuming public Engine exports         |
-| `test/browser/`            | Rendering regressions with a minimal browser host               |
-| `assets/`                  | Original vehicle models, ground/Earth images and official logo  |
-| `docs/`                    | Controls, architecture, asset conventions and integration guide |
-| `.github/workflows/ci.yml` | Checks, production builds and browser tests                     |
+| Path                           | Responsibility                                                          |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| src/entity/, src/scene/        | Entity schemas, scene documents, transforms and undo history            |
+| src/simulation/                | Physics, vehicles, characters, weapons and simulation workers           |
+| src/render/, src/presentation/ | Scene rendering, terrain, effects and vehicle presentation              |
+| src/runtime/                   | Session lifecycle, browser composition, input, audio and XR integration |
+| src/planet/                    | Geographic contracts and terrain processing                             |
+| src/catalog/, src/config/      | Presets and shared configuration                                        |
+| game/                          | Reference browser host, boot, menus and UI bindings                     |
+| assets/                        | Models, textures, rigs, bundled terrain and branding                    |
+| services/                      | Terrain cache/generation, development gateway and multiplayer relay     |
+| scripts/                       | Packaging, rigs, documentation and development tools                    |
+| test/                          | Unit, physics, architecture and browser regressions                     |
+| docs/                          | Architecture, integration and operating guides                          |
 
-`dist/`, `demo-dist/`, `test-results/` and `node_modules/` are generated and ignored.
+Generated outputs: dist/ is the library, game-dist/ is the static game. node_modules/, packs,
+and other generated artifacts are managed by the package scripts.
 
-## Documentation
+## Build and validate
 
-- [Code ownership and documentation guide](docs/code-guide.md)
-- [Complete module and function reference](docs/reference/README.md)
-
-- [Module map and public API](docs/architecture/module-map.md)
-- [Create a vehicle](docs/creating-a-vehicle.md) · [Define a vehicle (JSON, lights, mirrors, exhaust, sounds)](docs/vehicle-definition.md) · [Create a monitor](docs/creating-a-monitor.md)
-- [Vehicle modularity: modular architecture and acceptance evidence](docs/architecture/vehicle-modularity.md)
-
-Start with the [documentation index](docs/README.md).
-
-- [Controls and walkthrough](docs/controls.md)
-- [Architecture and invariants](docs/architecture.md)
-- [Vehicles and mobile garage](docs/vehicle-assets.md)
-- [Geography, horizon and sky clock](docs/geography.md)
-- [Agency integration boundary](docs/agency-integration.md)
-- [Asset provenance](assets/README.md)
-- [Contributing and validation](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-
-## Consume the engine
-
-Version **0.2 breaks the earlier extraction's API**. The package has not been
-published to npm or integrated into Agency as part of this baseline.
-
-```bash
-npm run build
-npm pack
-# From the consuming project:
-npm install /path/to/nabla-engine-0.2.0.tgz
+```sh
+npm run build          # Library and declarations
+npm run build:game     # Static desktop, test, HeadSet, VR and AR pages -> game-dist/
+npm run typecheck
+npm test
+npm run check          # Complete repository validation
 ```
 
-```ts
-import { SceneEditor, Simulation, createSampleScene, idleInput } from '@nabla/engine'
+For browser regressions, install Chromium with npx playwright install chromium, then run
+npm run test:e2e. See [CONTRIBUTING.md](CONTRIBUTING.md) for required checks.
 
-const editor = new SceneEditor(createSampleScene())
-const game = new Simulation(editor.document)
-game.setInput({ ...idleInput(), forward: 1, yaw: 0 })
-game.step(1 / 60)
+## Host integration
 
-const player = game.player
-const car = game.entityTransform('car-a')
-// Apply snapshots to the host's render objects.
-game.dispose()
-// editor.document still contains the authored scene.
+Build the package before using it locally. npm pack produces a tarball whose name/version are
+reported by npm; install that tarball from the consuming application. Public entry points include
+@nabla/engine/runtime/browser, @nabla/engine/scene, @nabla/engine/vehicles and @nabla/engine/render.
+Serve the packaged assets at the URLs your application configures.
+
+Euskadi currently composes the reference game from an engine checkout pinned by its ENGINE_REF.
+It overlays host modules and extends vite.game.config.ts; it does not maintain a second physics
+or terrain implementation. Game-specific geography and content belong in the host.
+
+[Game startup and host integration](docs/game-runtime.md) documents the active boot flow,
+worker defaults, loading UI, profiling and the Euskadi boundary.
+
+## Terrain generation and multiplayer
+
+For your own terrain cache and generator, use the Docker/WSL instructions in
+[Local development](docs/local-development.md). The stack starts with:
+
+```sh
+docker compose -f compose.dev.yaml up --build -d
 ```
 
-The host owns input, rendering, persistence, location permissions and map requests.
-Serve the packaged `assets/` directory at the application root to preserve the
-example's `/world/`, `/geography/` and `/brand/` URLs, or explicitly adapt those URLs.
+Open http://localhost:8080/?example=flat. This stack is optional for bundled examples or published
+Atlas tiles. Multiplayer uses the optional [relay](services/relay/README.md).
 
-## Validate
+## Further reading
 
-```bash
-npm run check
-npx playwright install --with-deps chromium
-npm run test:e2e
-npm pack --dry-run
-```
+- [The Nabla Engine Manual](docs/manual/README.md): architecture, usage, content,
+  deployment, executable examples, and maintenance guidance in English.
 
-The physics tests do not require WebGL. CI runs the same checks. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
-
-## Boundaries
-
-This is a working foundation, not a finished open-world game. Map imagery does not
-supply terrain elevation, physical buildings or road geometry. Drone flight is
-assisted, with an explicit accelerated travel mode, not orbital mechanics. General
-high-speed collision safety is not guaranteed by the discrete solver.
-
-The [Stargate prototype](docs/portals.md) supports fixed upright and carrier-mounted mouths, with runtime address selection.
-CSS interiors, orbit-to-road streaming and seamless partial-body crossing remain future work.
-There is no NPC navigation, multiplayer, skeletal animation, inherited
-scale or interactive GLB import yet. Dynamic physics bodies and the player spawn
-must be roots; visual children are supported. The character uses a box collider
-with an optional ground-following hover controller; the walking controller has no automatic stair climbing. Standard gamepads are supported, but custom
-radio calibration and touch gameplay controls are not implemented.
-
-The previous implementation remains in Git history. The portal design and remaining
-acceptance stages are recorded in [the portal guide](docs/portals.md).
+- [Documentation index](docs/README.md) and [Engine overview](docs/engine-overview.md)
+- [Module map and API boundaries](docs/architecture/module-map.md)
+- [Code guide](docs/code-guide.md) and [generated reference](docs/reference/README.md)
+- [Configuration](docs/configuration.md), [UI conventions](docs/ui-ux-pattern.md), [asset packs](docs/asset-packs.md)
+- [Vehicle definitions](docs/vehicle-definition.md), [weapons](docs/weapons.md), [networking](docs/net.md)
 
 ## License
 
-Source code: [MIT](LICENSE). See [asset provenance](assets/README.md) for bundled
-artwork and external map attribution; the code license does not grant rights to
-third-party trademarks or map imagery.
-
-## Run the complete local development stack
-
-Start the reference game, cache and native planetary GLB generation with Docker Compose.
-See [Local development](docs/local-development.md) for setup, activation, job
-inspection, storage, debugging and a guided tour of the implementation.
-
-See the [topic-based configuration guide](docs/configuration.md) for defaults, units and application overrides.
+Source: [MIT](LICENSE). See [asset provenance](assets/README.md) for artwork and map attribution.

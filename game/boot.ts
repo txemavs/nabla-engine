@@ -1,3 +1,4 @@
+import { startBootPhase } from '../src/runtime/boot-trace.js'
 /**
  * Standalone-game boot policy: host splash skin, optional attract (planet-from-orbit) view
  * and the short machine probe that picks the auto resolution start.
@@ -169,15 +170,43 @@ export async function runBootPhase(
 ): Promise<void> {
   const canvas = document.getElementById('game-canvas')
   if (config.attract) {
+    const attractDone = startBootPhase('Iniciar vista orbital de espera', undefined, 'Paralelo')
     runtime.startAttract(typeof config.attract === 'object' ? config.attract : {})
     loading.setPhase(0)
+    attractDone()
   }
-  if (config.probe === false || !wantsAutoResolution(search)) return
+  if (config.probe === false || !wantsAutoResolution(search)) {
+    console.info('[nabla-boot] Prueba automática de rendimiento: omitida por configuración')
+    return
+  }
+  const probeDone = startBootPhase(
+    'Prueba automática de rendimiento (paralela al suelo)',
+    undefined,
+    'Paralelo',
+  )
   try {
     const result = await runtime.probeMachine({ durationMs: config.probeMs })
     canvas?.dispatchEvent(new CustomEvent('nabla:probe', { detail: result }))
   } catch (error) {
     // The probe is advisory: a failure leaves auto mode at its 50% start.
     console.warn('Machine probe skipped:', error)
+  } finally {
+    probeDone()
   }
+}
+
+/** Shared game launch for plane, model and terrain pages, including branded hosts.
+ * Register host hooks first; optional world preparation overlaps the advisory probe.
+ * GameRuntime.play owns ground, physics workers, resources, GPU and reveal gates.
+ */
+export async function startGame(
+  runtime: GameRuntime,
+  loading: LoadingScreen,
+  config: HostBootConfig,
+  options: Parameters<GameRuntime['play']>[0],
+  prepare?: () => Promise<void>,
+): Promise<void> {
+  void runBootPhase(runtime, loading, config)
+  await prepare?.()
+  await runtime.play(options)
 }

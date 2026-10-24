@@ -30,7 +30,7 @@ Example:
 
 ## headingYaw
 
-[Implementation, line 74](../../../game/host-vehicles.ts#L74)
+[Implementation, line 76](../../../game/host-vehicles.ts#L76)
 
 Gameplay yaw (radians) for a compass heading in degrees clockwise from north.
 
@@ -40,7 +40,7 @@ headingYaw(headingDegrees: number): number
 
 ## headingRotation
 
-[Implementation, line 79](../../../game/host-vehicles.ts#L79)
+[Implementation, line 81](../../../game/host-vehicles.ts#L81)
 
 Unit quaternion [x, y, z, w] that faces `headingDegrees` (clockwise from north).
 
@@ -56,7 +56,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## finiteNumber
 
-[Implementation, line 84](../../../game/host-vehicles.ts#L84)
+[Implementation, line 86](../../../game/host-vehicles.ts#L86)
 
 ```ts
 finiteNumber(value: unknown, field: string): number
@@ -75,7 +75,7 @@ Explicit throws in this body:
 
 ## parseHostVehicle
 
-[Implementation, line 93](../../../game/host-vehicles.ts#L93)
+[Implementation, line 95](../../../game/host-vehicles.ts#L95)
 
 ```ts
 parseHostVehicle(value: unknown, index: number): HostVehicle
@@ -84,6 +84,7 @@ parseHostVehicle(value: unknown, index: number): HostVehicle
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `/^#[0-9a-fA-F]{6}$/.test`
+- `/^[A-Za-z0-9_.:-]{1,64}$/.test`
 - `Array.isArray`
 - `Error`
 - `finiteNumber`
@@ -98,6 +99,7 @@ Explicit throws in this body:
 - `new Error(\`Host vehicle ${index} must be an object\`)`
 - `new Error(\`Host vehicle ${index} needs a vehicle preset id\`)`
 - `new Error(\`Host vehicle ${index} lat/lon is out of range (lat ±85.05°, lon ±180°)\`)`
+- `new Error(\`Host vehicle ${index}.networkId is invalid\`)`
 - `new Error(\`Host vehicle ${index}.color must be #rrggbb\`)`
 - `new Error(\`Host vehicle ${index}.tow must be true or a tractor id\`)`
 - `new Error(\`Host vehicle ${index}.box is not a trailer box\`)`
@@ -105,7 +107,7 @@ Explicit throws in this body:
 
 ## parseHostVehicles
 
-[Implementation, line 128](../../../game/host-vehicles.ts#L128)
+[Implementation, line 135](../../../game/host-vehicles.ts#L135)
 
 ```ts
 parseHostVehicles(raw: string): HostVehicle[]
@@ -116,15 +118,26 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Array.isArray`
 - `Error`
 - `JSON.parse`
+- `Set`
 - `parsed.map`
+- `vehicles.map`
 
 Explicit throws in this body:
 
 - `new Error('Host vehicles must be a JSON array of {lat, lon, heading, vehicle}')`
+- `new Error('Duplicate host vehicle networkId')`
+
+## parseHostVehicles.callback@145
+
+[Implementation, line 145](../../../game/host-vehicles.ts#L145)
+
+```ts
+callback@145(v, i): inferred by TypeScript; see implementation
+```
 
 ## viteHostVehicles
 
-[Implementation, line 141](../../../game/host-vehicles.ts#L141)
+[Implementation, line 151](../../../game/host-vehicles.ts#L151)
 
 Build-time default from `VITE_NABLA_VEHICLES` (same JSON as `?vehicles=`).
 
@@ -139,7 +152,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehiclesFromSearch
 
-[Implementation, line 151](../../../game/host-vehicles.ts#L151)
+[Implementation, line 161](../../../game/host-vehicles.ts#L161)
 
 ```ts
 hostVehiclesFromSearch(search: string, fallback: readonly HostVehicle[] = []): HostVehicle[]
@@ -154,7 +167,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostVehicleLocalPose
 
-[Implementation, line 162](../../../game/host-vehicles.ts#L162)
+[Implementation, line 172](../../../game/host-vehicles.ts#L172)
 
 Convert one geographic entry to local metres relative to the scene origin.
 
@@ -169,7 +182,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## hostFootprint
 
-[Implementation, line 184](../../../game/host-vehicles.ts#L184)
+[Implementation, line 194](../../../game/host-vehicles.ts#L194)
 
 Rectangle of `size` ([width, height, length]) centred on `position`, turned by `yaw`.
 
@@ -179,7 +192,7 @@ hostFootprint(position: Vec3Tuple, yaw: number, size: readonly number[]): HostFo
 
 ## footprintsOverlap
 
-[Implementation, line 197](../../../game/host-vehicles.ts#L197)
+[Implementation, line 207](../../../game/host-vehicles.ts#L207)
 
 True when two footprints intersect by more than `slack` metres (separating-axis test).
 Vehicles placed inside each other are pushed apart by the physics on the first step,
@@ -194,12 +207,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[a.yaw, b.yaw].flatMap`
 - `axes.every`
 
-## footprintsOverlap.callback@198
+## footprintsOverlap.callback@208
 
-[Implementation, line 198](../../../game/host-vehicles.ts#L198)
+[Implementation, line 208](../../../game/host-vehicles.ts#L208)
 
 ```ts
-callback@198(yaw): inferred by TypeScript; see implementation
+callback@208(yaw): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -209,7 +222,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## footprintsOverlap.radius
 
-[Implementation, line 202](../../../game/host-vehicles.ts#L202)
+[Implementation, line 212](../../../game/host-vehicles.ts#L212)
 
 ```ts
 radius(f: HostFootprint, [ax, az]: number[]): inferred by TypeScript; see implementation
@@ -221,12 +234,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Math.cos`
 - `Math.sin`
 
-## footprintsOverlap.callback@205
+## footprintsOverlap.callback@215
 
-[Implementation, line 205](../../../game/host-vehicles.ts#L205)
+[Implementation, line 215](../../../game/host-vehicles.ts#L215)
 
 ```ts
-callback@205(axis): inferred by TypeScript; see implementation
+callback@215(axis): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -236,7 +249,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## towedPosition
 
-[Implementation, line 212](../../../game/host-vehicles.ts#L212)
+[Implementation, line 222](../../../game/host-vehicles.ts#L222)
 
 Where a hitched trailer ends up: the simulation moves its kingpin onto the tractor's hitch.
 
@@ -251,7 +264,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## installHostVehicles
 
-[Implementation, line 236](../../../game/host-vehicles.ts#L236)
+[Implementation, line 246](../../../game/host-vehicles.ts#L246)
 
 After `runtime.play()`, rest each extra vehicle on loaded ground at its
 geographic place. Validates presets first so a typo does not leave a partial fleet.
@@ -293,12 +306,12 @@ Explicit throws in this body:
 - `new Error(\`Unknown vehicle preset: ${spec.vehicle}\`)`
 - `new Error(\`Host vehicle ${index} tow needs a previous tractor with a hitch\`)`
 
-## installHostVehicles.callback@286
+## installHostVehicles.callback@297
 
-[Implementation, line 286](../../../game/host-vehicles.ts#L286)
+[Implementation, line 297](../../../game/host-vehicles.ts#L297)
 
 ```ts
-callback@286(other): inferred by TypeScript; see implementation
+callback@297(other): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

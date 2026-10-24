@@ -16,7 +16,26 @@ export const vehicleLightDefaults = {
   rearReach: 1,
 }
 export type VehicleLightTuning = typeof vehicleLightDefaults
+export type VehicleLightStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 const cache = new Map<string, VehicleLightTuning>()
+const owned = new WeakMap<
+  VehicleLightStorage,
+  Map<string, { raw: string | null; patch: Partial<VehicleLightTuning> }>
+>()
+function savedPatch(storage: VehicleLightStorage, model: string): Partial<VehicleLightTuning> {
+  let models = owned.get(storage)
+  if (!models) owned.set(storage, (models = new Map()))
+  try {
+    const raw = storage.getItem(key(model))
+    if (models.get(model)?.raw !== raw) {
+      const patch = JSON.parse(raw ?? '{}') ?? {}
+      models.set(model, { raw, patch })
+    }
+    return models.get(model)?.patch ?? {}
+  } catch {
+    return {}
+  }
+}
 const key = (model: string) => 'nabla.vehicle-lights.' + model
 export function normalizeVehicleLights(value: Partial<VehicleLightTuning>): VehicleLightTuning {
   const result = { ...vehicleLightDefaults }
@@ -59,7 +78,9 @@ export function rearLightJson(values: Partial<VehicleLightTuning>): string {
 export function readVehicleLights(
   model: string,
   defaults: Partial<VehicleLightTuning> = {},
+  storage?: VehicleLightStorage,
 ): VehicleLightTuning {
+  if (storage) return normalizeVehicleLights({ ...defaults, ...savedPatch(storage, model) })
   if (!cache.has(model)) {
     let value = {}
     try {
@@ -76,14 +97,15 @@ export function writeVehicleLights(
   model: string,
   patch?: Partial<VehicleLightTuning>,
   defaults: Partial<VehicleLightTuning> = {},
+  storage?: VehicleLightStorage,
 ): VehicleLightTuning {
   const value = patch
-    ? normalizeVehicleLights({ ...readVehicleLights(model, defaults), ...patch })
+    ? normalizeVehicleLights({ ...readVehicleLights(model, defaults, storage), ...patch })
     : normalizeVehicleLights({ ...vehicleLightDefaults, ...defaults })
-  cache.set(model, value)
+  if (!storage) cache.set(model, value)
   try {
-    if (patch) globalThis.localStorage?.setItem(key(model), JSON.stringify(value))
-    else globalThis.localStorage?.removeItem(key(model))
+    if (patch) (storage ?? globalThis.localStorage)?.setItem(key(model), JSON.stringify(value))
+    else (storage ?? globalThis.localStorage)?.removeItem(key(model))
   } catch {
     /* Live tuning still works without storage. */
   }

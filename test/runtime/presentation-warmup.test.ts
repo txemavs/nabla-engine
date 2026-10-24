@@ -119,3 +119,36 @@ it('reports preparation failure instead of silently declaring the views ready', 
   ).rejects.toThrow('GPU compilation failed')
   expect(camera.fov).toBe(48)
 })
+
+it.each(['srgb', 'srgb-linear'])(
+  'compiles and draws effects in the requested %s output variant',
+  async (colorSpace) => {
+    const previous = null
+    let active: any = null
+    const renderer = {
+      outputColorSpace: 'srgb',
+      shadowMap: { autoUpdate: true, needsUpdate: true },
+      getRenderTarget: () => active,
+      setRenderTarget: (target: any) => {
+        active = target
+      },
+      compileAsync: vi.fn(async () => {
+        expect(active.texture.colorSpace).toBe(colorSpace)
+      }),
+      render: vi.fn(() => {
+        expect(active.texture.colorSpace).toBe(colorSpace)
+      }),
+    }
+    await warmEffectPresentation(
+      renderer as unknown as WebGLRenderer,
+      new PerspectiveCamera(),
+      [new Group()],
+      new Scene(),
+      colorSpace,
+    )
+    expect(renderer.compileAsync).toHaveBeenCalledTimes(1)
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+    expect(active).toBe(previous)
+    expect(renderer.shadowMap).toEqual({ autoUpdate: true, needsUpdate: true })
+  },
+)

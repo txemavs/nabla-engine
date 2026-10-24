@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { pageSearch } from './page-query.js'
 /** Terrain layer selector (menu section "Capas"). Engine owns the layers and the drawing. */
 import {
@@ -16,7 +17,7 @@ export const ROAD_HIDDEN_HINT = 'Carretera oculta: no se ven asfalto ni puentes'
 
 function browserStorage(): LayerStorage | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -81,7 +82,7 @@ function mountRoadHiddenHint(onShow: () => void): (hidden: readonly string[]) =>
  */
 export function bindLayerSelector(
   runtime: GameRuntime,
-  storage = browserStorage(),
+  storage = runtime.settings,
   defaults: readonly string[] = [],
 ): void {
   const group = menuSection('terrain-layers', 'Capas')

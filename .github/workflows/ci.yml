@@ -21,6 +21,8 @@ jobs:
           cache: npm
       - run: docker compose -f compose.dev.yaml config --quiet
       - run: npm ci
+      - run: npm ci --prefix services/relay
+      - run: npm test --prefix services/relay
       - run: npm run check
       - name: Verify public API from an installed package
         run: node scripts/check-package.mjs

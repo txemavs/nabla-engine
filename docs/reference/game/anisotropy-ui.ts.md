@@ -6,20 +6,25 @@
 
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `@nabla/engine/i18n`
 - `@nabla/engine/runtime/browser`
 
 ## browserStorage
 
-[Implementation, line 11](../../../game/anisotropy-ui.ts#L11)
+[Implementation, line 12](../../../game/anisotropy-ui.ts#L12)
 
 ```ts
 browserStorage(): StorageLike | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## resolveAnisotropy
 
-[Implementation, line 20](../../../game/anisotropy-ui.ts#L20)
+[Implementation, line 21](../../../game/anisotropy-ui.ts#L21)
 
 Stored choice when it is one of the options, else the default (8).
 
@@ -36,19 +41,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindAnisotropySelect
 
-[Implementation, line 31](../../../game/anisotropy-ui.ts#L31)
+[Implementation, line 32](../../../game/anisotropy-ui.ts#L32)
 
 Select ×1/×2/×4/×8/×16 (above the GPU maximum disabled), applied live and stored.
 
 ```ts
-bindAnisotropySelect(runtime: GameRuntime, group: HTMLElement, storage: StorageLike | undefined = browserStorage()): HTMLSelectElement
+bindAnisotropySelect(runtime: GameRuntime, group: HTMLElement, storage: StorageLike | undefined = runtime.settings): HTMLSelectElement
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
 - `apply`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `label.append`
@@ -59,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindAnisotropySelect.apply
 
-[Implementation, line 46](../../../game/anisotropy-ui.ts#L46)
+[Implementation, line 47](../../../game/anisotropy-ui.ts#L47)
 
 ```ts
 apply(value: number): inferred by TypeScript; see implementation
@@ -72,20 +76,20 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `[...ANISOTROPY_OPTIONS].reverse().find`
 - `runtime.setAnisotropy`
 
-## bindAnisotropySelect.apply.callback@48
+## bindAnisotropySelect.apply.callback@49
 
-[Implementation, line 48](../../../game/anisotropy-ui.ts#L48)
+[Implementation, line 49](../../../game/anisotropy-ui.ts#L49)
 
 ```ts
-callback@48(option): inferred by TypeScript; see implementation
+callback@49(option): inferred by TypeScript; see implementation
 ```
 
-## bindAnisotropySelect.callback@50
+## bindAnisotropySelect.callback@51
 
-[Implementation, line 50](../../../game/anisotropy-ui.ts#L50)
+[Implementation, line 51](../../../game/anisotropy-ui.ts#L51)
 
 ```ts
-callback@50(): inferred by TypeScript; see implementation
+callback@51(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -96,7 +100,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## resolveGroundDetail
 
-[Implementation, line 73](../../../game/anisotropy-ui.ts#L73)
+[Implementation, line 74](../../../game/anisotropy-ui.ts#L74)
 
 Stored ground detail distance (1–3 cells), else 1.
 
@@ -113,19 +117,18 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindGroundDetailSelect
 
-[Implementation, line 87](../../../game/anisotropy-ui.ts#L87)
+[Implementation, line 88](../../../game/anisotropy-ui.ts#L88)
 
 «Distancia de detalle del suelo»: cells around the player that get the full-resolution ground
 photo (asphalt and road markings). Applied live and stored. More cells cost GPU memory (~85 MB each).
 
 ```ts
-bindGroundDetailSelect(runtime: GameRuntime, group: HTMLElement, storage: StorageLike | undefined = browserStorage()): HTMLSelectElement
+bindGroundDetailSelect(runtime: GameRuntime, group: HTMLElement, storage: StorageLike | undefined = runtime.settings): HTMLSelectElement
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `String`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `label.append`
@@ -135,12 +138,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `select.append`
 - `t`
 
-## bindGroundDetailSelect.callback@100
+## bindGroundDetailSelect.callback@101
 
-[Implementation, line 100](../../../game/anisotropy-ui.ts#L100)
+[Implementation, line 101](../../../game/anisotropy-ui.ts#L101)
 
 ```ts
-callback@100(): inferred by TypeScript; see implementation
+callback@101(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

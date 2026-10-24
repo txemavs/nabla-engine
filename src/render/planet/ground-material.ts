@@ -182,10 +182,11 @@ export const ASPHALT_CONTRAST_MAX = 2.5
 export const ASPHALT_CONTRAST_PIVOT = 0.7
 
 /** One set of uniforms for every roads drape: changing the contrast never recompiles. */
-const asphaltUniforms = {
+export const createAsphaltUniforms = () => ({
   asphaltContrast: { value: ASPHALT_CONTRAST_DEFAULT },
   asphaltPivot: { value: ASPHALT_CONTRAST_PIVOT },
-}
+})
+export const asphaltUniforms = createAsphaltUniforms()
 
 /** Clamp to `ASPHALT_CONTRAST_MIN`..`ASPHALT_CONTRAST_MAX`; non-finite input is a caller bug. */
 export function clampAsphaltContrast(value: number): number {
@@ -194,15 +195,15 @@ export function clampAsphaltContrast(value: number): number {
   return Math.min(ASPHALT_CONTRAST_MAX, Math.max(ASPHALT_CONTRAST_MIN, value))
 }
 
-/** Current asphalt contrast, shared by every roads drape in the page. */
-export function asphaltContrast(): number {
-  return asphaltUniforms.asphaltContrast.value
+/** Current contrast of the supplied owner, or the legacy standalone default. */
+export function asphaltContrast(uniforms = asphaltUniforms): number {
+  return uniforms.asphaltContrast.value
 }
 
 /** Set the asphalt contrast live for every roads drape; returns the clamped value applied. */
-export function setAsphaltContrast(value: number): number {
-  asphaltUniforms.asphaltContrast.value = clampAsphaltContrast(value)
-  return asphaltUniforms.asphaltContrast.value
+export function setAsphaltContrast(value: number, uniforms = asphaltUniforms): number {
+  uniforms.asphaltContrast.value = clampAsphaltContrast(value)
+  return uniforms.asphaltContrast.value
 }
 
 /** The shader's curve on one linear luminance (0..1); for tests and tooling. */
@@ -262,20 +263,21 @@ export function asphaltContrastShader(fragmentShader: string, masked = false): s
 export function withAsphaltContrast<T extends THREE.Material>(
   material: T,
   mask?: { value: THREE.Texture },
+  uniforms = asphaltUniforms,
 ): T {
   const previous = material.onBeforeCompile
   material.onBeforeCompile = (shader, renderer) => {
     previous.call(material, shader, renderer)
-    Object.assign(shader.uniforms, asphaltUniforms)
+    Object.assign(shader.uniforms, uniforms)
     if (mask) shader.uniforms.asphaltMask = mask
     shader.fragmentShader = asphaltContrastShader(shader.fragmentShader, !!mask)
   }
   const key = mask ? 'asphalt-mask:' : 'asphalt-contrast:'
   material.customProgramCacheKey = () => key + material.onBeforeCompile.toString()
   addWebGPUMaterialNodes(material, (kit, twin) =>
-    asphaltContrastNodes(twin as never, kit, asphaltUniforms, mask),
+    asphaltContrastNodes(twin as never, kit, uniforms, mask),
   )
-  material.userData.asphaltContrast = asphaltUniforms
+  material.userData.asphaltContrast = uniforms
   if (mask) material.userData.asphaltMask = mask
   return material
 }

@@ -4,20 +4,13 @@
 
 [Source](../../../../src/runtime/quality-preset.ts)
 
-The player's quality profile (`performancePresets` key, or `custom`).
-
-`?quality=` wins when the page has it; otherwise the profile saved in `localStorage`
-(`nabla.quality`) applies. Hosts that rewrite or strip the query string (the closed Euskadi
-demo keeps only `?renderer=`) therefore still get the profile the player chose: before this,
-«Aplicar calidad» reloaded with `?quality=low`, the host dropped it, and every profile booted
-as `custom` (the heaviest browser defaults).
-
 ## Module dependencies
 
+- `./settings-scope.js`
 
 ## safeGet
 
-[Implementation, line 23](../../../../src/runtime/quality-preset.ts#L23)
+[Implementation, line 24](../../../../src/runtime/quality-preset.ts#L24)
 
 ```ts
 safeGet(storage: ReadStorage | undefined | null, key: string): string | null
@@ -30,15 +23,19 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultStorage
 
-[Implementation, line 32](../../../../src/runtime/quality-preset.ts#L32)
+[Implementation, line 33](../../../../src/runtime/quality-preset.ts#L33)
 
 ```ts
 defaultStorage(): WriteStorage | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## defaultSession
 
-[Implementation, line 40](../../../../src/runtime/quality-preset.ts#L40)
+[Implementation, line 41](../../../../src/runtime/quality-preset.ts#L41)
 
 ```ts
 defaultSession(): ReadStorage | undefined
@@ -46,7 +43,7 @@ defaultSession(): ReadStorage | undefined
 
 ## readQualityPreset
 
-[Implementation, line 52](../../../../src/runtime/quality-preset.ts#L52)
+[Implementation, line 53](../../../../src/runtime/quality-preset.ts#L53)
 
 Active quality profile: URL `quality`, else the tab's test override (phone button), else the
 saved one, else `fallback`.
@@ -66,7 +63,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveQualityPreset
 
-[Implementation, line 68](../../../../src/runtime/quality-preset.ts#L68)
+[Implementation, line 69](../../../../src/runtime/quality-preset.ts#L69)
 
 Remember the profile for the next boots (`custom` clears the saved choice).
 
@@ -83,7 +80,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## mountMobileQualityButton
 
-[Implementation, line 87](../../../../src/runtime/quality-preset.ts#L87)
+[Implementation, line 88](../../../../src/runtime/quality-preset.ts#L88)
 
 Round, icon-only phone button for testing: one click runs this tab in mobile quality and enters
 the game straight away (`sessionStorage` override + one-shot auto-enter flag, then reload). The
@@ -104,12 +101,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `parent.append`
 - `sessionStorage.getItem`
 
-## mountMobileQualityButton.callback@104
+## mountMobileQualityButton.callback@105
 
-[Implementation, line 104](../../../../src/runtime/quality-preset.ts#L104)
+[Implementation, line 105](../../../../src/runtime/quality-preset.ts#L105)
 
 ```ts
-callback@104(event): inferred by TypeScript; see implementation
+callback@105(event): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -124,7 +121,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## takeAutoEnter
 
-[Implementation, line 127](../../../../src/runtime/quality-preset.ts#L127)
+[Implementation, line 128](../../../../src/runtime/quality-preset.ts#L128)
 
 Read and clear the one-shot auto-enter flag.
 
@@ -140,7 +137,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## defaultStorageSession
 
-[Implementation, line 139](../../../../src/runtime/quality-preset.ts#L139)
+[Implementation, line 140](../../../../src/runtime/quality-preset.ts#L140)
 
 ```ts
 defaultStorageSession(): WriteStorage | undefined

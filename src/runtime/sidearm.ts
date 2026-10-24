@@ -1,3 +1,4 @@
+import { smokeDensity, bindSmokeDensity } from '../render/entity/smoke-density.js'
 import { muzzleFlashGeometry, shapeMuzzleFlash } from '../render/entity/muzzle-flash.js'
 import { assetUrlForQuality, type AssetQuality } from '../render/entity/asset-quality.js'
 import type { MagazineEntity } from '../simulation/weapons/magazine.js'
@@ -188,7 +189,7 @@ export class Sidearm {
   }
 
   private tuning: SidearmTuning = { ...sidearmTuningDefaults }
-  private readonly smoke = new MuzzleSmoke()
+  private readonly smoke: MuzzleSmoke
   private worldSmoke: MuzzleSmoke | null = null
   private smokeEnabled = true
   private assembledModel: THREE.Group | null = null
@@ -227,7 +228,10 @@ export class Sidearm {
     _viewport: HTMLElement,
     preset: WeaponPreset | undefined = weaponPresets()[0],
     readonly assetQuality: AssetQuality = 'full',
+    private readonly density = smokeDensity,
   ) {
+    this.smoke = new MuzzleSmoke(density)
+    bindSmokeDensity(this.scene, density)
     this.preset = preset
     this.range = preset?.ammunition?.maxTraceM ?? preset?.range ?? 150
     this.impulse = preset?.impulse ?? 12
@@ -428,6 +432,7 @@ export class Sidearm {
       if (this.disposed) return
       const previous = renderer.getRenderTarget()
       const target = new THREE.WebGLRenderTarget(1, 1)
+      target.texture.colorSpace = renderer.outputColorSpace
       const shadowAuto = renderer.shadowMap.autoUpdate
       const shadowNeeds = renderer.shadowMap.needsUpdate
       try {
@@ -955,7 +960,7 @@ export class Sidearm {
       this.worldPresentation = new THREE.Group()
       this.worldPresentation.name = 'EquippedSidearm'
       this.worldPresentation.add(this.assembledModel.clone(true))
-      this.worldSmoke = new MuzzleSmoke()
+      this.worldSmoke = new MuzzleSmoke(this.density)
       this.worldPresentation.add(this.worldSmoke.root)
       this.worldPresentation.traverse((node) => {
         if (node instanceof THREE.Mesh) node.castShadow = true

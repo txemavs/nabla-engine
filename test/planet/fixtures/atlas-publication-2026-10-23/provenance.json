@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-10-23T19:41:35.454Z",
+  "base": "https://atlas.chained.world/euskadi/terraform",
+  "cells": [
+    {
+      "x": 16223,
+      "y": 11999,
+      "z": 15,
+      "manifestUrl": "https://atlas.chained.world/euskadi/terraform/z/15/16223/11999/manifest.json",
+      "manifestStatus": 200,
+      "manifestSha256": "bc64c1563be3ed94701ccddf5df8e05f2cc0e9831dc49ff37594733fb7dc3ce9",
+      "packageUrl": "https://atlas.chained.world/euskadi/terraform/z/15/16223/11999/z15-5d9b31c8b7394388.json",
+      "packageStatus": 200,
+      "packageBytes": 18133,
+      "packageSha256": "5d9b31c8b7394388593d756932bd5a6b38d3987c1d5a8140cb479d7d1c648d3c",
+      "accessControlAllowOrigin": null,
+      "geometryRevision": "native-surfaces-v5"
+    },
+    {
+      "x": 16224,
+      "y": 11999,
+      "z": 15,
+      "manifestUrl": "https://atlas.chained.world/euskadi/terraform/z/15/16224/11999/manifest.json",
+      "manifestStatus": 200,
+      "manifestSha256": "49751eb077625122f71d1104695db3fb6f4aa76b4761296bbc6ebfcfbc0c43eb",
+      "packageUrl": "https://atlas.chained.world/euskadi/terraform/z/15/16224/11999/z15-15fd70b76bea6c8a.json",
+      "packageStatus": 200,
+      "packageBytes": 19123,
+      "packageSha256": "15fd70b76bea6c8a05cd97d66c25707a9772f03d1575b905ae5eed6a8ff1a4e3",
+      "accessControlAllowOrigin": null,
+      "geometryRevision": "native-surfaces-v5"
+    }
+  ],
+  "missingObject": {
+    "url": "https://atlas.chained.world/euskadi/terraform/z/15/16223/11999/nabla-contract-probe-absent-20261023.json",
+    "status": 403
+  }
+}

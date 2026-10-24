@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { t } from '@nabla/engine/i18n'
 /** Configuración → Pantalla: «Filtrado anisotrópico» for the asphalt and road markings. */
 import type { GameRuntime } from '@nabla/engine/runtime/browser'
@@ -10,7 +11,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -31,7 +32,7 @@ export function resolveAnisotropy(storage: StorageLike | undefined = browserStor
 export function bindAnisotropySelect(
   runtime: GameRuntime,
   group: HTMLElement,
-  storage: StorageLike | undefined = browserStorage(),
+  storage: StorageLike | undefined = runtime.settings,
 ): HTMLSelectElement {
   const max = runtime.maxAnisotropy
   const select = document.createElement('select')
@@ -87,7 +88,7 @@ export function resolveGroundDetail(storage: StorageLike | undefined = browserSt
 export function bindGroundDetailSelect(
   runtime: GameRuntime,
   group: HTMLElement,
-  storage: StorageLike | undefined = browserStorage(),
+  storage: StorageLike | undefined = runtime.settings,
 ): HTMLSelectElement {
   const select = document.createElement('select')
   select.id = 'ground-detail'

@@ -6,6 +6,8 @@ game-dist
 package-lock.json
 test-results
 playwright-report
+# Local diagnostics and browser probes, not repository source.
+tmp/
 
 assets/geography/irun-ventas.json
 test/planet/fixtures/

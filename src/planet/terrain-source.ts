@@ -30,7 +30,7 @@ export const TERRAIN_SOURCES: readonly { kind: TerrainSourceKind; label: string;
 /** The dev-server mount of a package folder. */
 export const DEFAULT_PACKAGES_URL = '/terrain'
 
-/** The public Atlas tile host: `{url}/z/15/{x}/{y}/manifest.json`. No index file; absent cells are holes. */
+/** The public Atlas tile host: `{url}/z/15/{x}/{y}/manifest.json`, with optional `index.json` coverage. */
 export const DEFAULT_TILES_URL = 'https://atlas.chained.world/euskadi/terraform'
 
 /** URL parameters that choose the source. */

@@ -1,0 +1,136 @@
+{
+ "format": "nabla-planet-tile-v1",
+ "id": "WebMercatorQuad/15/16223/11999",
+ "tile": {
+  "z": 15,
+  "x": 16223,
+  "y": 11999
+ },
+ "bounds": {
+  "west": -1.768798828125,
+  "east": -1.7578125,
+  "north": 43.33316939281733,
+  "south": 43.32517767999294
+ },
+ "anchor": {
+  "longitude": -1.7633056640625,
+  "latitude": 43.3291736678439,
+  "altitude": 0
+ },
+ "units": "metres",
+ "axes": "+X east, +Y up, +Z south",
+ "generator": "native-xyz-v2",
+ "geometryRevision": "native-surfaces-v5",
+ "surface": "land",
+ "places": [],
+ "retrievedAt": "2026-10-03T00:48:53.393229+00:00",
+ "source": {
+  "path": "source-be540a11f42b4222.json",
+  "sha256": "be540a11f42b4222e6b88e4c441b8d0f99551debc91f0f4c902d99283757b562"
+ },
+ "files": {
+  "terrain": {
+   "path": "terrain-0524b03e9fdef0f2.glb",
+   "download": "earth-WebMercatorQuad-z15-x16223-y11999-terrain.glb",
+   "sha256": "0524b03e9fdef0f243d2f22eedbf06075d992019201fe3fee545f333e6674592",
+   "bytes": 9594024
+  },
+  "buildings-osm": {
+   "path": "buildings-osm-f7cc72da9833babd.glb",
+   "download": "earth-WebMercatorQuad-z15-x16223-y11999-buildings-osm.glb",
+   "sha256": "f7cc72da9833babd06a31df5c09bb8b78bc24241ac36ce5295f2b8c5f5fd3640",
+   "bytes": 862260
+  }
+ },
+ "collision": "render-triangle-prisms-v1",
+ "attribution": "\u00a9 OpenStreetMap contributors; elevation: Esri; Obra derivada de Ortofoto 2025 \u00a9 Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY; Obra derivada de MDT LiDAR \u00a9 Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY",
+ "groundImagery": {
+  "file": "ground-78f9b997d82bc260.webp",
+  "crs": "EPSG:3857",
+  "bounds": {
+   "west": -1.768798828125,
+   "east": -1.7578125,
+   "north": 43.33316939281733,
+   "south": 43.32517767999294
+  },
+  "sizePx": 4096,
+  "metersPerPixel": 0.216952617517284,
+  "encoding": "webp",
+  "attribution": "Obra derivada de Ortofoto 2025 \u00a9 Eusko Jaurlaritza / Gobierno Vasco (geoEuskadi), CC BY",
+  "pipelineRevision": "nabla-atlas@4edc46a4f0c0b8813c386c506fe3655c13a9d9de"
+ },
+ "z15Package": {
+  "schema": "nabla-z15-package/1",
+  "file": "z15-5d9b31c8b7394388.json",
+  "sha256": "5d9b31c8b7394388593d756932bd5a6b38d3987c1d5a8140cb479d7d1c648d3c",
+  "bytes": 18133,
+  "packageVersion": 1
+ },
+ "roadCandidates": {
+  "schema": "nabla-road-candidates/1",
+  "review": "unreviewed",
+  "drivable": false,
+  "engineLoad": {
+   "asphalt": "immediate",
+   "supports": "immediate",
+   "collision": "opt-in"
+  },
+  "recipe": "terrain-unified-adaptive-29",
+  "evidenceId": "197e27da-1b47-4c40-9992-db1580fb4ac7",
+  "evidenceSha256": "3d8c67561d66668bfc0413c519fb2e550dad82eec523d9fff9e028c31ce6fd6b",
+  "cell": {
+   "z": 15,
+   "x": 16223,
+   "y": 11999
+  },
+  "frame": "atlas-z15-mercator-local/1",
+  "verticalDatum": "EGM08_REDNAP-orthometric-provider-declared",
+  "publication": "road-publication-03f761ef56647206.json",
+  "layers": {
+   "asphalt": {
+    "path": "asphalt-candidate-818a8f2f9061511f.glb",
+    "role": "road.asphalt.candidate",
+    "sha256": "818a8f2f9061511f912b7b5a22008696f377db13a0786b04b61096640a19c7e5",
+    "bytes": 2019836,
+    "mime": "model/gltf-binary",
+    "review": "unreviewed",
+    "drivable": false,
+    "engineLoad": "immediate",
+    "sourceSha256": "882b6a20c19548a34116b5ffd75fb1dec3bb0925849ff857bcbb06b2fd696ca6",
+    "sourceBytes": 153412,
+    "texture": {
+     "file": "ground-lots-2121cf8d3889e9b7.webp",
+     "role": "ground.lots",
+     "sha256": "2121cf8d3889e9b74becaec549329729ee82ed76f1490316e3e026528027a52f",
+     "bytes": 236690,
+     "mime": "image/webp",
+     "mapping": "atlas-z15-cell-uv/1",
+     "embedded": true
+    }
+   },
+   "collision": {
+    "path": "road-collision-candidate-a441fccc351cc217.glb",
+    "role": "road.collision.candidate",
+    "sha256": "a441fccc351cc2176f38296b4384f4f27828a102726d79e681df1f9d92a0d754",
+    "bytes": 113448,
+    "mime": "model/gltf-binary",
+    "review": "unreviewed",
+    "drivable": false,
+    "engineLoad": "opt-in",
+    "optIn": true,
+    "drivingCollision": false
+   },
+   "supports": {
+    "path": "supports-candidate-8665170d81eaff56.glb",
+    "sha256": "8665170d81eaff56ec54655c7947a504fff149dd13a043fe0854fd389cde459e",
+    "bytes": 304,
+    "role": "road.supports.candidate",
+    "mime": "model/gltf-binary",
+    "review": "unreviewed",
+    "drivable": false,
+    "engineLoad": "immediate"
+   }
+  }
+ },
+ "cellVersion": 4
+}

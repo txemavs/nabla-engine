@@ -32,3 +32,30 @@ it('brightens only smoke crossed by the finite laser segment, respecting visibil
     laserSmokePools.delete(pool)
   }
 })
+
+it('does not sample smoke from another runtime at matching world coordinates', () => {
+  const a = new Group(),
+    b = new Group(),
+    frame = new Group(),
+    root = new Points()
+  a.add(frame)
+  b.add(root)
+  const pool = {
+    root,
+    positions: new Float32Array([0, 0, 5]),
+    life: new Float32Array([0.7]),
+    lifetime: 1.4,
+    size: 550,
+  }
+  laserSmokePools.add(pool)
+  try {
+    const result = new Float32Array(32)
+    sampleLaserSmoke(new Vector3(), new Vector3(0, 0, 10), frame, result)
+    expect(Math.max(...result)).toBe(0)
+    a.add(root)
+    sampleLaserSmoke(new Vector3(), new Vector3(0, 0, 10), frame, result)
+    expect(Math.max(...result)).toBeGreaterThan(0)
+  } finally {
+    laserSmokePools.delete(pool)
+  }
+})

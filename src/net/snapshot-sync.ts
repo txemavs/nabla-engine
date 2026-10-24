@@ -21,6 +21,7 @@ import { RemoteVehicle, type KinematicHost } from './remote-vehicle.js'
 import { RemoteAvatar, type RemoteAvatarFactory } from './remote-avatar.js'
 import { defaultInterpolation, type InterpolationOptions } from './interpolation.js'
 import { SharedEntities, decodeEntity, type SharedEntityHooks } from './shared-entities.js'
+import { WorldSpace, type ContinuousWorldOptions, type WorldSession } from './world-space.js'
 
 /** Reads the local entity state; `Simulation` satisfies it with entityTransform/entityVelocity. */
 export interface StateSource {
@@ -37,6 +38,9 @@ export interface StateSource {
 export interface SnapshotSyncOptions {
   transport: Transport
   room: string
+  /** Protocol 2 continuous instance; room is its stable id, never a spatial cell. */
+  world?: ContinuousWorldOptions
+  onError?: (message: string, code?: string) => void
   /** Simulation (or any state source and kinematic host). */
   host: StateSource & KinematicHost
   /** Entity the local player controls right now; null sends nothing. */
@@ -129,6 +133,9 @@ export class SnapshotSync {
   private readonly interval: number
   private readonly clock: () => number
   private readonly unsubscribe: (() => void)[] = []
+  private readonly space?: WorldSpace
+  private readonly session: WorldSession
+  private joinPending = false
 
   /** Room this client is in (or joining); see {@link switchRoom}. */
   room: string
@@ -137,39 +144,64 @@ export class SnapshotSync {
 
   constructor(private readonly options: SnapshotSyncOptions) {
     this.room = options.room
+    this.space = options.world ? new WorldSpace(options.world) : undefined
+    this.session = options.world?.session ?? {}
     this.shared = options.shared
       ? new SharedEntities(
           options.shared,
           options.host,
           (kind, data) => this.sendEvent(kind, data),
           options.interpolation ?? defaultInterpolation,
+          options.world ? () => crypto.randomUUID().replaceAll('-', '').slice(0, 16) : undefined,
+          !options.world,
         )
       : null
     this.interval = 1000 / (options.rate ?? 20)
     this.meta = { ...(options.meta ?? {}) }
     this.clock = options.clock ?? (() => performance.now())
     const { transport } = options
-    const join = () =>
-      transport.send(
-        encodeMessage({
-          type: 'join',
-          version: PROTOCOL_VERSION,
-          room: this.room,
-          meta: this.meta,
-        }),
-      )
     this.unsubscribe.push(
-      transport.onOpen(join),
+      transport.onOpen(() => {
+        this.joinPending = false
+        this.join()
+      }),
       transport.onMessage((data) => this.receive(data)),
-      transport.onClose(() => this.dropAll()),
+      transport.onClose(() => {
+        this.shared?.cancelClaims()
+        this.dropAll(!!this.space)
+      }),
     )
-    if (transport.status === 'open') join()
+    if (transport.status === 'open') this.join()
+  }
+
+  private join(): void {
+    if (this.joinPending || this.options.transport.status !== 'open') return
+    const position = this.localPosition() ?? this.readAvatar()?.p
+    // A continuous observer must be located; never subscribe an unlocated peer to everybody.
+    if (this.space && !position) return
+    this.joinPending = true
+    this.options.transport.send(
+      encodeMessage({
+        type: 'join',
+        version: this.space ? 2 : PROTOCOL_VERSION,
+        room: this.room,
+        meta: this.meta,
+        ...(this.space
+          ? {
+              world: { space: this.space.options.space, content: this.space.options.content },
+              position: this.space.point(position!),
+              ...(this.session.token ? { resume: this.session.token } : {}),
+            }
+          : {}),
+      }),
+    )
   }
 
   /** Call once per frame before stepping the simulation. */
   update(): void {
+    if (this.peerId === null) this.join()
     const now = this.clock()
-    if (this.options.interest) {
+    if (!this.space && this.options.interest) {
       const here = this.localPosition()
       for (const peer of [...this.remotes.keys()])
         if (!this.within(peer, this.options.interest.hide, here)) this.remove(peer)
@@ -177,7 +209,7 @@ export class SnapshotSync {
         if (!this.within(peer, this.options.interest.hide, here)) this.removeAvatar(peer)
     }
     for (const avatar of this.avatars.values()) avatar.update(now)
-    if (this.shared) {
+    if (this.shared && this.peerId !== null) {
       this.shared.update(now)
       if (this.options.applyExtra)
         for (const [localId, extra] of this.shared.extras()) {
@@ -210,8 +242,8 @@ export class SnapshotSync {
         type: 'snapshot',
         t: now,
         seq: this.seq++,
-        ...(state ? { state } : {}),
-        ...(avatar ? { avatar } : {}),
+        ...(state ? { state: this.space?.state(state) ?? state } : {}),
+        ...(avatar ? { avatar: this.space?.avatar(avatar) ?? avatar } : {}),
         ...(extra ? { extra } : {}),
         ...(state && sharedId ? { e: sharedId } : {}),
       }),
@@ -235,6 +267,10 @@ export class SnapshotSync {
    */
   switchRoom(room: string): void {
     if (room === this.room) return
+    if (this.space)
+      throw new Error(
+        'Continuous world instances do not switch spatial rooms; create a new sync to join another instance',
+      )
     this.room = room
     this.dropAll()
     if (this.options.transport.status === 'open')
@@ -246,7 +282,9 @@ export class SnapshotSync {
   /** Send a one-off game event to the other peers of the room; false while not joined. */
   sendEvent(kind: string, data: NetEventData): boolean {
     if (this.peerId === null || this.options.transport.status !== 'open') return false
-    this.options.transport.send(encodeMessage({ type: 'event', kind, data }))
+    this.options.transport.send(
+      encodeMessage({ type: 'event', kind, data: this.space?.event(kind, data) ?? data }),
+    )
     return true
   }
 
@@ -307,8 +345,27 @@ export class SnapshotSync {
   private receive(data: string): void {
     const message = decodeServerMessage(data)
     if (!message) return
+    if (this.space) {
+      if (message.type === 'snapshot') {
+        if (!this.peers.has(message.peer)) return
+        try {
+          if (message.state) message.state = this.space.state(message.state, true)
+          if (message.avatar) message.avatar = this.space.avatar(message.avatar, true)
+        } catch {
+          return
+        }
+      } else if (message.type === 'event')
+        message.data = this.space.event(message.kind, message.data, true)
+      else if (message.type === 'welcome' && message.entities)
+        message.entities = message.entities.map((e) => this.space!.event('entity', e, true))
+    }
     switch (message.type) {
       case 'welcome':
+        if (this.space && (message.version !== 2 || !message.resume)) {
+          this.options.onError?.('Relay does not support continuous worlds', 'protocol')
+          return
+        }
+        if (message.resume) this.session.token = message.resume
         this.peerId = message.peer
         this.slot = message.slot
         this.color = message.color
@@ -319,12 +376,14 @@ export class SnapshotSync {
           ...(message.health ? { health: message.health } : {}),
         })
         if (this.shared) {
+          if (this.shared.self !== message.peer) this.shared.clear()
           this.shared.self = message.peer
           const records = (message.entities ?? []).map(decodeEntity).filter((r) => r !== null)
           this.shared.reset(records)
         }
         for (const peer of message.peers) this.add(peer)
         break
+      case 'visible':
       case 'joined':
         this.add({
           peer: message.peer,
@@ -333,6 +392,7 @@ export class SnapshotSync {
           color: message.color,
         })
         break
+      case 'hidden':
       case 'left':
         this.remove(message.peer)
         this.removeAvatar(message.peer)
@@ -377,6 +437,11 @@ export class SnapshotSync {
           this.receiveAvatar(message.peer, message.t, decodeAvatar(message.avatar))
         break
       case 'error':
+        if (this.space && message.code === 'session-expired' && this.session.token) {
+          this.session.token = undefined
+          this.joinPending = false
+          this.join()
+        } else this.options.onError?.(message.message, message.code)
         break
     }
   }
@@ -390,7 +455,8 @@ export class SnapshotSync {
     if (!this.options.remoteAvatar || peer === this.peerId) return null
     const known = this.avatars.get(peer)
     if (known) return known
-    if (this.options.interest && !this.within(peer, this.options.interest.show)) return null
+    if (!this.space && this.options.interest && !this.within(peer, this.options.interest.show))
+      return null
     const created = new RemoteAvatar(this.options.interpolation ?? defaultInterpolation)
     this.avatars.set(peer, created)
     this.buildAvatar(peer, created)
@@ -424,7 +490,8 @@ export class SnapshotSync {
     this.peers.set(peer.peer, peer)
     if (this.remotes.has(peer.peer)) return
     // Far (or not yet located) peers wait for a snapshot within the show radius.
-    if (this.options.interest && !this.within(peer.peer, this.options.interest.show)) return
+    if (!this.space && this.options.interest && !this.within(peer.peer, this.options.interest.show))
+      return
     const remote = new RemoteVehicle(
       null,
       this.options.host,
@@ -464,12 +531,13 @@ export class SnapshotSync {
     if (remote.entityId !== null) this.options.despawnRemote(peer, remote.entityId)
   }
 
-  private dropAll(): void {
+  private dropAll(preserveShared = false): void {
     for (const peer of [...this.remotes.keys()]) this.remove(peer)
     for (const peer of [...this.avatars.keys()]) this.removeAvatar(peer)
-    this.shared?.clear()
+    if (!preserveShared) this.shared?.clear()
     this.peers.clear()
     this.lastPosition.clear()
     this.peerId = null
+    this.joinPending = false
   }
 }

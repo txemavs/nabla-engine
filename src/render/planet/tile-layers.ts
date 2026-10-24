@@ -48,21 +48,27 @@ export const TILE_LAYERS: readonly TileLayer[] = [
 /** `userData.category` of the floating place-name sprites (layer `places`). */
 export const PLACE_LABEL_CATEGORY = 'Places'
 
-const hidden = new Set<string>()
+const defaultHidden = new Set<string>()
 
 /** Ids of the layers currently hidden (a copy). */
-export function hiddenTileLayers(): string[] {
-  return [...hidden]
+export function hiddenTileLayers(state: ReadonlySet<string> = defaultHidden): string[] {
+  return [...state]
 }
 
 /** Replace the hidden set. Unknown ids are ignored, so a stale stored choice cannot break a tile. */
-export function setHiddenTileLayers(ids: Iterable<string>): void {
+export function setHiddenTileLayers(
+  ids: Iterable<string>,
+  hidden: Set<string> = defaultHidden,
+): void {
   hidden.clear()
   for (const id of ids) if (TILE_LAYERS.some((layer) => layer.id === id)) hidden.add(id)
 }
 
 /** True when a mesh's metadata puts it in a hidden layer. */
-export function tileMeshHidden(metadata: { category?: unknown; drape?: unknown }): boolean {
+export function tileMeshHidden(
+  metadata: { category?: unknown; drape?: unknown },
+  hidden: ReadonlySet<string> = defaultHidden,
+): boolean {
   if (!hidden.size) return false
   return TILE_LAYERS.some(
     (layer) =>

@@ -4,18 +4,9 @@
 
 [Source](../../../game/boot.ts)
 
-Standalone-game boot policy: host splash skin, optional attract (planet-from-orbit) view
-and the short machine probe that picks the auto resolution start.
-
-Host overrides, highest first:
-  1. `window.NABLA_BOOT` set by an inline script before `main.ts` loads
-  2. `VITE_NABLA_BOOT` JSON at build time (`VITE_NABLA_SHADOW_BIAS` for the shadow bias alone)
-  3. URL: `?boot=attract` (attract view), `?probe=0` (skip the probe)
-Per-setting exceptions (the URL wins) are noted on each field.
-Defaults keep the classic centred Nabla splash, no attract, probe on in auto scale.
-
 ## Module dependencies
 
+- `../src/runtime/boot-trace.js`
 - `./page-query.js`
 - `@nabla/engine/runtime/splash`
 - `@nabla/engine/runtime/browser`
@@ -24,7 +15,7 @@ Defaults keep the classic centred Nabla splash, no attract, probe on in auto sca
 
 ## buildTimeBoot
 
-[Implementation, line 93](../../../game/boot.ts#L93)
+[Implementation, line 94](../../../game/boot.ts#L94)
 
 ```ts
 buildTimeBoot(): HostBootConfig
@@ -37,7 +28,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## numberOrUndefined
 
-[Implementation, line 100](../../../game/boot.ts#L100)
+[Implementation, line 101](../../../game/boot.ts#L101)
 
 ```ts
 numberOrUndefined(raw: string | null | undefined): number | undefined
@@ -51,7 +42,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## buildTimeBootJson
 
-[Implementation, line 106](../../../game/boot.ts#L106)
+[Implementation, line 107](../../../game/boot.ts#L107)
 
 ```ts
 buildTimeBootJson(raw: string | undefined): HostBootConfig
@@ -64,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## readBootConfig
 
-[Implementation, line 118](../../../game/boot.ts#L118)
+[Implementation, line 119](../../../game/boot.ts#L119)
 
 Merge URL, build-time and page-supplied boot configuration.
 
@@ -82,7 +73,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bootHiddenLayers
 
-[Implementation, line 155](../../../game/boot.ts#L155)
+[Implementation, line 156](../../../game/boot.ts#L156)
 
 The host's default hidden terrain layers, the base for the URL and the stored player choice.
 
@@ -92,7 +83,7 @@ bootHiddenLayers(config: HostBootConfig): string[]
 
 ## runBootPhase
 
-[Implementation, line 164](../../../game/boot.ts#L164)
+[Implementation, line 165](../../../game/boot.ts#L165)
 
 Start attract and the probe; call right before `play()` without awaiting the probe.
 The probe overlaps the terrain wait and `play()` finishes it before gameplay frames start.
@@ -105,11 +96,33 @@ runBootPhase(runtime: GameRuntime, loading: LoadingScreen, config: HostBootConfi
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `CustomEvent`
+- `attractDone`
 - `canvas?.dispatchEvent`
+- `console.info`
 - `console.warn`
 - `document.getElementById`
 - `loading.setPhase`
 - `pageSearch`
+- `probeDone`
 - `runtime.probeMachine`
 - `runtime.startAttract`
+- `startBootPhase`
 - `wantsAutoResolution`
+
+## startGame
+
+[Implementation, line 202](../../../game/boot.ts#L202)
+
+Shared game launch for plane, model and terrain pages, including branded hosts.
+Register host hooks first; optional world preparation overlaps the advisory probe.
+GameRuntime.play owns ground, physics workers, resources, GPU and reveal gates.
+
+```ts
+startGame(runtime: GameRuntime, loading: LoadingScreen, config: HostBootConfig, options: Parameters<GameRuntime['play']>[0], prepare?: () => Promise<void>): Promise<void>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `prepare`
+- `runBootPhase`
+- `runtime.play`

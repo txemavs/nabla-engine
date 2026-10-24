@@ -22,7 +22,13 @@ describe('terrain folder static route', () => {
     writeFileSync(path.join(cell, 'terrain-ad8550fe0459ce7d.glb'), bytes)
     writeFileSync(path.join(cell, '.hidden'), 'x')
     writeFileSync(outside, 'secret')
-    symlinkSync(outside, path.join(cell, 'escape.txt'))
+    // Directory junctions exercise the same realpath escape check on Windows without
+    // requiring Developer Mode or administrator privileges for a file symlink.
+    symlinkSync(
+      parent,
+      path.join(cell, 'escape'),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    )
     const middleware = terrainFolderMiddleware(root, '/terrain')
     server = createServer((req, res) =>
       middleware(req, res, () => {
@@ -34,8 +40,8 @@ describe('terrain folder static route', () => {
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
   })
   afterAll(async () => {
-    await new Promise((resolve) => server.close(resolve))
-    rmSync(path.dirname(root), { recursive: true, force: true })
+    if (server) await new Promise((resolve) => server.close(resolve))
+    if (root) rmSync(path.dirname(root), { recursive: true, force: true })
   })
 
   it('serves files byte for byte with type, length and cache headers', async () => {
@@ -80,7 +86,7 @@ describe('terrain folder static route', () => {
     expect((await fetch(`${cell}/manifest.json`, { method: 'PUT', body: 'x' })).status).toBe(405)
     expect((await fetch(`${cell}/manifest.json`, { method: 'DELETE' })).status).toBe(405)
     expect((await fetch(`${cell}/.hidden`)).status).toBe(404)
-    expect((await fetch(`${cell}/escape.txt`)).status).toBe(404) // symlink to outside
+    expect((await fetch(`${cell}/escape/secret.txt`)).status).toBe(404) // link to outside
     // fetch() normalises dot segments away, so send the raw request line.
     const raw = (target: string) =>
       new Promise<number>((resolve) => {

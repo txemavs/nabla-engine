@@ -7,7 +7,7 @@
  *     browser), `?vr=headset`;
  *   - `headset-pc`: a PC browser driving a headset over Link / SteamVR, `?vr=pc`.
  *
- * Install the scope before any module reads storage (first import of the entry). Hosts can seed
+ * The page entry selects its default scope; runtimes own independent stores. Hosts can seed
  * per-mode defaults with `window.NABLA_SETTINGS_DEFAULTS = { headset: { 'nabla.quality': … } }`.
  */
 export type PlayMode = 'pc' | 'headset' | 'headset-pc'
@@ -59,67 +59,211 @@ export function scopedKey(mode: PlayMode, key: string): string {
   return `nabla.settings.${mode}.${key.slice('nabla.'.length)}`
 }
 
-interface ScopableStorage {
+/** Storage surface accepted from a host. Enumeration enables eager snapshots. */
+export interface SettingsStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
   removeItem(key: string): void
+  readonly length?: number
+  key?(index: number): string | null
+}
+export type SettingsDefaults = Partial<Record<VRPlayMode, Record<string, string>>>
+export interface SettingsStoreOptions {
+  mode?: PlayMode
+  /** Omit for browser storage; null disables persistence. */
+  storage?: SettingsStorage | null
+  hostDefaults?: SettingsDefaults
+  /** Optional persistent identity for independent runtimes in the same mode. */
+  namespace?: string
+  /** Page compatibility helpers read live; runtimes use snapshots (the default). */
+  snapshot?: boolean
+}
+
+function browserStorage(): SettingsStorage | undefined {
+  try {
+    return globalThis.localStorage
+  } catch {
+    return undefined
+  }
+}
+function hostDefaults(): SettingsDefaults | undefined {
+  return (globalThis as { NABLA_SETTINGS_DEFAULTS?: SettingsDefaults }).NABLA_SETTINGS_DEFAULTS
+}
+
+/** A runtime-owned view: never patches Storage, and keeps working when persistence fails. */
+export class SettingsStore implements Storage {
+  private currentMode: PlayMode
+  private readonly defaults: SettingsDefaults | undefined
+  get mode(): PlayMode {
+    return this.currentMode
+  }
+  private readonly backend: SettingsStorage | null | undefined
+  private readonly values = new Map<string, string | null>()
+  private readonly captured = new Map<string, string>()
+  private readonly snapshot: boolean
+  private enumerated = false
+  private readonly namespace?: string
+  constructor(options: SettingsStoreOptions = {}) {
+    this.currentMode = options.mode ?? activePlayMode()
+    this.defaults = options.hostDefaults ?? hostDefaults()
+    this.backend = options.storage === undefined ? browserStorage() : options.storage
+    this.namespace = options.namespace
+    this.snapshot = options.snapshot !== false
+    this.capture()
+  }
+  /** Explicitly change only this owner's profile (for PC → headset entry). */
+  switchMode(mode: PlayMode): void {
+    if (mode === this.mode) return
+    this.currentMode = mode
+    this.values.clear()
+    this.captured.clear()
+    this.enumerated = false
+    this.capture()
+  }
+  private capture(): void {
+    try {
+      if (this.backend?.key && typeof this.backend.length === 'number') {
+        for (let i = 0; i < this.backend.length; i++) {
+          const key = this.backend.key(i)
+          if (key !== null) {
+            const value = this.backend.getItem(key)
+            if (value !== null) this.captured.set(key, value)
+          }
+        }
+        this.enumerated = true
+      }
+    } catch {
+      /* Fall back to guarded per-key reads. */
+    }
+    if (this.mode !== 'pc' && this.getItem('nabla.modeSeeded') === null) {
+      for (const [key, value] of Object.entries({
+        ...engineModeDefaults[this.mode],
+        ...this.defaults?.[this.mode],
+      }))
+        if (this.getItem(key) === null) this.setItem(key, value)
+      this.setItem('nabla.modeSeeded', '1')
+    }
+  }
+  private physical(key: string): string {
+    const scoped = scopedKey(this.mode, key)
+    return this.namespace === undefined
+      ? scoped
+      : 'nabla.settings.instances.' + encodeURIComponent(this.namespace) + '.' + scoped
+  }
+  private readPhysical(key: string): string | null {
+    if (this.snapshot && this.enumerated) return this.captured.get(key) ?? null
+    try {
+      return this.backend?.getItem(key) ?? null
+    } catch {
+      return null
+    }
+  }
+  getItem(key: string): string | null {
+    key = String(key)
+    if (this.values.has(key)) return this.values.get(key) ?? null
+    const physical = this.physical(key)
+    let value = this.readPhysical(physical)
+    // New named instances inherit the existing mode's preferences, without rewriting them.
+    if (value === null && this.namespace !== undefined)
+      value = this.readPhysical(scopedKey(this.mode, key))
+    if (this.snapshot) this.values.set(key, value)
+    return value
+  }
+  setItem(key: string, value: string): void {
+    key = String(key)
+    value = String(value)
+    this.values.set(key, value)
+    this.captured.set(this.physical(key), value)
+    try {
+      this.backend?.setItem(this.physical(key), value)
+      if (!this.snapshot && this.backend) this.values.delete(key)
+    } catch {
+      /* Session value survives. */
+    }
+  }
+  removeItem(key: string): void {
+    key = String(key)
+    this.values.set(key, null)
+    this.captured.delete(this.physical(key))
+    try {
+      this.backend?.removeItem(this.physical(key))
+      if (!this.snapshot && this.backend) this.values.delete(key)
+    } catch {
+      /* Session removal survives. */
+    }
+  }
+  private keys(): string[] {
+    const physical = new Set(this.captured.keys())
+    if (!this.snapshot && this.backend?.key) {
+      try {
+        for (let i = 0; i < (this.backend.length ?? 0); i++) {
+          const key = this.backend.key(i)
+          if (key !== null) physical.add(key)
+        }
+      } catch {
+        /* Memory keys remain available. */
+      }
+    }
+    const prefix =
+      this.namespace === undefined
+        ? ''
+        : 'nabla.settings.instances.' + encodeURIComponent(this.namespace) + '.'
+    const logical = new Set(this.values.keys())
+    for (let key of physical) {
+      if (prefix && key.startsWith(prefix)) key = key.slice(prefix.length)
+      if (this.mode !== 'pc' && key.startsWith('nabla.settings.' + this.mode + '.'))
+        key = 'nabla.' + key.slice(('nabla.settings.' + this.mode + '.').length)
+      else if (
+        key.startsWith('nabla.settings.') ||
+        (this.mode !== 'pc' && key.startsWith('nabla.'))
+      )
+        continue
+      logical.add(key)
+    }
+    return [...logical].filter((key) => this.getItem(key) !== null)
+  }
+  get length(): number {
+    return this.keys().length
+  }
+  key(index: number): string | null {
+    return this.keys()[index] ?? null
+  }
+  clear(): void {
+    for (const key of this.keys())
+      if (this.namespace !== undefined || key.startsWith('nabla.')) this.removeItem(key)
+  }
+}
+export function createSettingsStore(options: SettingsStoreOptions = {}): SettingsStore {
+  return new SettingsStore(options)
 }
 
 let installed: PlayMode | null = null
-
-/** Active mode: the one installed by {@link installSettingsScope}, else read from the address. */
+let pageStore: SettingsStore | undefined
+let pageBackend: SettingsStorage | null | undefined
+let explicitPageBackend = false
+/** Mode of the single-page compatibility host; existing runtime stores never follow it. */
 export function activePlayMode(): PlayMode {
   return installed ?? playModeFromSearch()
 }
-
-/**
- * Route `storage`'s `nabla.*` keys to `mode`'s namespace and seed that mode's defaults (engine,
- * then host) for keys it has never saved. PC mode leaves storage untouched. Idempotent.
- */
+/** Compatibility default for host helpers. Prefer runtime.settings when a runtime is available. */
+export function pageSettingsStorage(): SettingsStore {
+  const backend = browserStorage()
+  if (!pageStore || (!explicitPageBackend && pageBackend !== backend)) {
+    pageBackend = backend
+    pageStore = createSettingsStore({ mode: activePlayMode(), storage: backend, snapshot: false })
+  }
+  return pageStore
+}
+/** Select the page's default profile without patching Storage methods. Existing stores stay fixed. */
 export function installSettingsScope(
   mode: PlayMode = playModeFromSearch(),
-  storage: ScopableStorage | undefined = (() => {
-    try {
-      return globalThis.localStorage
-    } catch {
-      return undefined
-    }
-  })(),
-  hostDefaults: Partial<Record<VRPlayMode, Record<string, string>>> | undefined = (
-    globalThis as { NABLA_SETTINGS_DEFAULTS?: Partial<Record<VRPlayMode, Record<string, string>>> }
-  ).NABLA_SETTINGS_DEFAULTS,
+  storage: SettingsStorage | undefined = browserStorage(),
+  defaults: SettingsDefaults | undefined = hostDefaults(),
 ): PlayMode {
-  // A PC page may switch once into a VR profile (the `casco` button); otherwise the first wins.
   if (installed && !(installed === 'pc' && mode !== 'pc')) return installed
   installed = mode
-  if (mode === 'pc' || !storage) return mode
-  const get = storage.getItem.bind(storage)
-  const set = storage.setItem.bind(storage)
-  const remove = storage.removeItem.bind(storage)
-  // Own properties shadow Storage.prototype for this object only; every caller sees the scope.
-  Object.defineProperties(storage, {
-    getItem: { configurable: true, value: (key: string) => get(scopedKey(mode, String(key))) },
-    setItem: {
-      configurable: true,
-      value: (key: string, value: string) => set(scopedKey(mode, String(key)), value),
-    },
-    removeItem: {
-      configurable: true,
-      value: (key: string) => remove(scopedKey(mode, String(key))),
-    },
-  })
-  try {
-    const seedFlag = scopedKey(mode, 'nabla.modeSeeded')
-    if (get(seedFlag) === null) {
-      for (const [key, value] of Object.entries({
-        ...engineModeDefaults[mode],
-        ...(hostDefaults?.[mode] ?? {}),
-      }))
-        if (get(scopedKey(mode, key)) === null) set(scopedKey(mode, key), value)
-      set(seedFlag, '1')
-    }
-  } catch {
-    /* Storage is optional. */
-  }
+  explicitPageBackend = storage !== browserStorage()
+  pageBackend = storage
+  pageStore = createSettingsStore({ mode, storage, hostDefaults: defaults, snapshot: false })
   return mode
 }

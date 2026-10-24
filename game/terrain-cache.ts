@@ -74,7 +74,7 @@ function choice(
 export function bindTerrainCache(
   runtime: GameRuntime,
   search: string = pageSearch(),
-  storage: SourceStorage | undefined = browserStorage(),
+  storage: SourceStorage | undefined = runtime.settings,
 ): void {
   // Only the terrain games have a «Terreno» source section; the cache gets its own «Caché» section
   // (Ajustes → Rendimiento).

@@ -19,6 +19,7 @@ export async function warmEffectPresentation(
   camera: PerspectiveCamera,
   roots: readonly Object3D[],
   world?: Scene,
+  colorSpace = renderer.outputColorSpace,
 ): Promise<void> {
   const scene = world ?? new EffectScene()
   const copies: Object3D[] = []
@@ -33,13 +34,14 @@ export async function warmEffectPresentation(
   }
   const previous = renderer.getRenderTarget()
   const target = new WebGLRenderTarget(1, 1)
+  target.texture.colorSpace = colorSpace
   const auto = renderer.shadowMap.autoUpdate,
     needs = renderer.shadowMap.needsUpdate
   try {
-    await renderer.compileAsync(scene, camera)
     renderer.shadowMap.autoUpdate = false
     renderer.shadowMap.needsUpdate = false
     renderer.setRenderTarget(target)
+    await renderer.compileAsync(scene, camera)
     renderer.render(scene, camera)
   } finally {
     renderer.setRenderTarget(previous)
@@ -62,7 +64,7 @@ export interface PresentationWarmup {
   }
   settings: Pick<GameCameraSettings, 'firstPersonFov' | 'chaseFov'>
   signal?: AbortSignal
-  onProgress?: (detail: string) => Promise<void>
+  onProgress?: (detail: string, description?: string) => Promise<void>
 }
 
 /** Complete GPU preparation before play; propagate errors rather than claiming readiness. */
@@ -71,19 +73,28 @@ export async function warmGamePresentation(target: PresentationWarmup): Promise<
   const fov = camera.fov
   try {
     signal?.throwIfAborted()
-    await target.onProgress?.(t('load.preparing-exterior-shaders'))
+    await target.onProgress?.(
+      t('load.preparing-exterior-shaders'),
+      'Compilar shaders de la vista exterior',
+    )
     camera.fov = settings.chaseFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     signal?.throwIfAborted()
-    await target.onProgress?.(t('load.preparing-cockpit-shaders'))
+    await target.onProgress?.(
+      t('load.preparing-cockpit-shaders'),
+      'Compilar shaders de la vista del conductor',
+    )
     camera.fov = settings.firstPersonFov
     camera.updateProjectionMatrix()
     await renderer.compileAsync(scene, camera)
     const now = performance.now()
     for (const id of view.mirroredVehicles) {
       signal?.throwIfAborted()
-      await target.onProgress?.(t('load.mirrors', { id }))
+      await target.onProgress?.(
+        t('load.mirrors', { id }),
+        `Dibujar retrovisores del vehículo ${id}`,
+      )
       view.renderMirrors(renderer as WebGLRenderer, scene, camera, id, now)
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
     }

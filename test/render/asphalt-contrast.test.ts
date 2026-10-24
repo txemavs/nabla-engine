@@ -6,6 +6,7 @@ import {
   ASPHALT_CONTRAST_MIN,
   ASPHALT_CONTRAST_PIVOT,
   asphaltContrast,
+  createAsphaltUniforms,
   asphaltContrastShader,
   asphaltContrastTone,
   setAsphaltContrast,
@@ -82,4 +83,22 @@ describe('asphalt contrast', () => {
     expect(terrain.customProgramCacheKey()).not.toBe(roads.customProgramCacheKey())
     expect(asphaltMaskTexture([], 900)).toBeNull()
   })
+})
+
+it('binds existing and future asphalt materials to their own runtime uniforms', () => {
+  const a = createAsphaltUniforms(),
+    b = createAsphaltUniforms()
+  const first = withAsphaltContrast(new THREE.MeshStandardMaterial(), undefined, a)
+  const second = withAsphaltContrast(new THREE.MeshStandardMaterial(), undefined, b)
+  setAsphaltContrast(2, a)
+  expect(first.userData.asphaltContrast.asphaltContrast.value).toBe(2)
+  expect(second.userData.asphaltContrast.asphaltContrast.value).toBe(1)
+  const late = withAsphaltContrast(new THREE.MeshStandardMaterial(), undefined, a)
+  expect(late.userData.asphaltContrast).toBe(first.userData.asphaltContrast)
+  first.dispose()
+  setAsphaltContrast(0.5, b)
+  expect(second.userData.asphaltContrast.asphaltContrast.value).toBe(0.5)
+  expect(late.userData.asphaltContrast.asphaltContrast.value).toBe(2)
+  second.dispose()
+  late.dispose()
 })

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import type { DriverPoseAdjustment } from '../../../src/config/driver-pose.js'
-test('Ferrari head sliders update the avatar offset, view sliders remain separate and reset restores both', async ({
+test('Driver head sliders update the avatar offset, view sliders remain separate and reset restores both', async ({
   page,
 }) => {
   await page.route('**/driver-pose-preview', (route) =>
@@ -12,7 +12,7 @@ test('Ferrari head sliders update the avatar offset, view sliders remain separat
     const { presetVehicle } = await import(`/@fs/${root}/src/catalog/vehicles/library.ts`)
     const { createEntity } = await import(`/@fs/${root}/src/entity/schema.ts`)
     const { driverPoseControls } = await import(`/@fs/${root}/game/driver-pose-controls.ts`)
-    const car = presetVehicle('ferrari-j50', 'ferrari', [0, 0.6, 0])
+    const car = presetVehicle('car', 'car', [0, 0.6, 0])
     const document = { version: 1, name: 'Driver', entities: [createEntity('spawn', 'spawn'), car] }
     const view = new SceneView(document)
     await view.ready
@@ -21,14 +21,14 @@ test('Ferrari head sliders update the avatar offset, view sliders remain separat
     window.document.body.append(panel.root)
     panel.bind({
       get driverPose() {
-        return { name: 'Ferrari J50', model, offset: view.driverPoseAdjustment(model) }
+        return { name: 'S3 Nabla', model, offset: view.driverPoseAdjustment(model) }
       },
       setDriverPoseOffset: (offset: DriverPoseAdjustment) =>
         view.setDriverPoseAdjustment(model, offset),
       resetDriverPoseOffset: () =>
         view.setDriverPoseAdjustment(model, { head: [0, 0, 0], view: [0, 0, 0] }),
     })
-    const before = [...view.vehicleHeadOffset('ferrari')!]
+    const before = [...view.vehicleHeadOffset('car')!]
     const set = (id: string, value: string) => {
       const input = window.document.getElementById(id) as HTMLInputElement
       input.value = value
@@ -36,14 +36,14 @@ test('Ferrari head sliders update the avatar offset, view sliders remain separat
     }
     set('driver-pose-head-1', '-25')
     set('driver-pose-head-2', '10')
-    const head = [...view.vehicleHeadOffset('ferrari')!]
+    const head = [...view.vehicleHeadOffset('car')!]
     set('driver-pose-view-1', '-10')
-    const unchangedHead = [...view.vehicleHeadOffset('ferrari')!]
-    const eye = [...view.vehicleCameraOffset('ferrari')!]
+    const unchangedHead = [...view.vehicleHeadOffset('car')!]
+    const eye = [...view.vehicleCameraOffset('car')!]
     const serialized = JSON.parse(panel.root.querySelector('textarea')!.value)
     ;(panel.root.querySelector('button') as HTMLButtonElement).click()
-    const resetHead = [...view.vehicleHeadOffset('ferrari')!]
-    const resetEye = [...view.vehicleCameraOffset('ferrari')!]
+    const resetHead = [...view.vehicleHeadOffset('car')!]
+    const resetEye = [...view.vehicleCameraOffset('car')!]
     view.dispose()
     return { before, head, unchangedHead, eye, serialized, resetHead, resetEye }
   }, process.cwd())

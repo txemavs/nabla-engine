@@ -8,6 +8,24 @@ const published = async () => true
 const absent = async () => false
 
 describe('entry point', () => {
+  it('never probes cells for a remembered plane', async () => {
+    const probe = async () => {
+      throw new Error('Unexpected cell probe')
+    }
+    expect(await resolveEntry('', store('{"kind":"flat"}'), probe)).toEqual({
+      mode: 'drive',
+      search: '?example=flat',
+    })
+  })
+  it('does not probe terrain for an explicit local model', async () => {
+    const probe = async () => {
+      throw new Error('Unexpected terrain request')
+    }
+    expect(await resolveEntry('?model=/world.glb', store(null), probe)).toEqual({
+      mode: 'drive',
+      search: '?model=/world.glb',
+    })
+  })
   it('keeps every explicit URL as it is', async () => {
     expect(await resolveEntry('?terrain=/t&tile=1/2', store(null), published)).toEqual({
       mode: 'terrain',

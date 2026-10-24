@@ -4,7 +4,6 @@ export {
   defaultBow,
   bowModels,
   buildBowModel,
-  recurveBow,
   type BowModel,
   type BowModelDescription,
 } from './bow-model.js'

@@ -1,5 +1,5 @@
 import { laserSmokePools, type LaserSmokePool } from './laser-smoke.js'
-import { smokeDensity } from './smoke-density.js'
+import { smokeDensityFor } from './smoke-density.js'
 import {
   SOFT_FRAGMENT_PARS,
   SOFT_VERTEX_PARS,
@@ -68,7 +68,7 @@ class SmokeBatch {
   readonly slots: (AnalyticExhaustSmoke | undefined)[] = new Array(BATCH_EMITTERS)
   forced = 0
 
-  constructor() {
+  constructor(smokeDensity: { readonly value: number }) {
     for (const attribute of [this.position, this.velocity, this.tint, this.spawn])
       attribute.setUsage(THREE.DynamicDrawUsage)
     this.index.setUsage(THREE.DynamicDrawUsage)
@@ -217,7 +217,7 @@ class SmokePool {
     return { batch, ...lease, count: emitter.capacity }
   }
   addBatch(): SmokeBatch {
-    const batch = new SmokeBatch()
+    const batch = new SmokeBatch(smokeDensityFor(this.space))
     this.batches.push(batch)
     this.space.add(batch.points)
     return batch

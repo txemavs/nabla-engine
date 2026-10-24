@@ -1,5 +1,16 @@
 # Documentation
 
+Current maintenance: [first pass and compatibility decisions](maintenance-first-pass.md),
+[verified terrain publication contract](terrain-publication-contract.md).
+
+**[The Nabla Engine Manual](manual/README.md)** — the English learning and technical
+reference, with 26 chapters, practical public-API examples, generated package entry
+points, and a source-reviewed discrepancy register. Start here for current engine
+ownership, integration, and maintenance workflows.
+
+[Reference game startup and host integration](game-runtime.md): current entries, worker defaults,
+loading milestones, profiling and the Euskadi ownership boundary.
+
 **New here? Start with these three** (the documents written for day one):
 
 1. [Engine overview](engine-overview.md): architecture, Z15 cell loading, vehicles,

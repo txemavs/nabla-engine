@@ -1,3 +1,4 @@
+import { OwnedProvider } from './owned-provider.js'
 import { navigationLabel, navigationRoads, type NavigationRoad } from './navigation-places.js'
 import { isChartCarriageway } from '../planet/ground-material.js'
 import { Matrix4, Quaternion, Vector3 } from 'three'
@@ -5,9 +6,13 @@ import { SceneGraph } from '../../scene/graph.js'
 import { type SceneDocument } from '../../scene/document.js'
 import { type Entity, type Transform } from '../../entity/schema.js'
 type ChartTile = { bitmap: ImageBitmap; bounds: [number, number, number, number]; matrix: Matrix4 }
-let planetCharts: () => ChartTile[] = () => []
+const planetCharts = new OwnedProvider<() => ChartTile[]>(() => [])
 export function setPlanetCharts(provider: () => ChartTile[]) {
-  planetCharts = provider
+  planetCharts.set(provider)
+}
+/** Release only this runtime's charts, retaining other live providers. */
+export function registerPlanetCharts(provider: () => ChartTile[]): () => void {
+  return planetCharts.register(provider)
 }
 export type ChartRoad = {
   points: { x: number; z: number }[]
@@ -123,7 +128,7 @@ export class HelmMap {
       ctx.lineTo(580, y)
       ctx.stroke()
     }
-    const tiles = planetCharts()
+    const tiles = planetCharts.value()
     for (const tile of tiles) {
       const [x, z, maxX, maxZ] = tile.bounds
       const e = tile.matrix.elements

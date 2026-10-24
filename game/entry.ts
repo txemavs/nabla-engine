@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { pageSearch } from './page-query.js'
 /** Which game mode a page runs and with which query: the URL first, then the remembered terrain choice. */
 import {
@@ -25,7 +26,7 @@ export interface Entry {
 
 export function browserStorage(): SourceStorage | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -51,15 +52,17 @@ export async function resolveEntry(
   packagesUrl: string = configuredPackagesUrl(),
 ): Promise<Entry> {
   const params = new URLSearchParams(search)
+  if (params.has('model')) return { mode: 'drive', search }
   // Dynamic preparation (`api`, `static`) is the original demo's own mode.
   if (wantsTerrain(search)) return { mode: 'terrain', search }
   if (parseTerrainSource(search) || params.has('api') || params.has('static'))
     return { mode: 'drive', search }
 
-  const published = await probe(packagesUrl)
+  const stored = loadTerrainSource(storage, SOURCE_STORAGE_KEY)
+  const published = stored?.kind === 'flat' ? false : await probe(packagesUrl)
   const choice = chooseTerrainSource({
     search,
-    stored: loadTerrainSource(storage, SOURCE_STORAGE_KEY),
+    stored,
     packagesAvailable: published,
   })
   // The build's tile route (same-origin Atlas proxy, as Euskadi uses) replaces the folder mount.

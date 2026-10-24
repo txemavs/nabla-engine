@@ -6,11 +6,12 @@
 
 ## Module dependencies
 
+- `./settings-scope.js`
 - `three`
 
 ## mirrored
 
-[Implementation, line 42](../../../../src/runtime/xr-calibration.ts#L42)
+[Implementation, line 43](../../../../src/runtime/xr-calibration.ts#L43)
 
 ```ts
 mirrored(p: XRPoseAdjustment): XRPoseAdjustment
@@ -18,7 +19,7 @@ mirrored(p: XRPoseAdjustment): XRPoseAdjustment
 
 ## zero
 
-[Implementation, line 51](../../../../src/runtime/xr-calibration.ts#L51)
+[Implementation, line 52](../../../../src/runtime/xr-calibration.ts#L52)
 
 ```ts
 zero(): XRPoseAdjustment
@@ -26,7 +27,7 @@ zero(): XRPoseAdjustment
 
 ## cleanAngle
 
-[Implementation, line 85](../../../../src/runtime/xr-calibration.ts#L85)
+[Implementation, line 86](../../../../src/runtime/xr-calibration.ts#L86)
 
 ```ts
 cleanAngle(n: number): inferred by TypeScript; see implementation
@@ -38,7 +39,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rotation
 
-[Implementation, line 86](../../../../src/runtime/xr-calibration.ts#L86)
+[Implementation, line 87](../../../../src/runtime/xr-calibration.ts#L87)
 
 ```ts
 rotation(p: XRPoseAdjustment): inferred by TypeScript; see implementation
@@ -51,12 +52,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.Quaternion`
 - `new THREE.Quaternion().setFromEuler`
 
-## callback@98
+## callback@99
 
-[Implementation, line 98](../../../../src/runtime/xr-calibration.ts#L98)
+[Implementation, line 99](../../../../src/runtime/xr-calibration.ts#L99)
 
 ```ts
-callback@98(side): inferred by TypeScript; see implementation
+callback@99(side): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -74,12 +75,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.constructor
 
-[Implementation, line 136](../../../../src/runtime/xr-calibration.ts#L136)
+[Implementation, line 137](../../../../src/runtime/xr-calibration.ts#L137)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
 ```ts
-constructor(): instance
+constructor(private readonly storage: SettingsStorage = createSettingsStore()): instance
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -94,8 +95,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `THREE.MathUtils.radToDeg`
 - `THREE.Vector3`
 - `cleanAngle`
-- `localStorage.getItem`
-- `localStorage.setItem`
+- `createSettingsStore`
 - `mirrorPairs.find`
 - `new THREE.Euler().setFromQuaternion`
 - `new THREE.Vector3(grip.x || 0, grip.y || 0, grip.z || 0).applyQuaternion`
@@ -104,22 +104,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `rotation(delta).invert`
 - `rotation(delta).invert().multiply`
 - `this.set`
+- `this.storage.getItem`
+- `this.storage.setItem`
 - `zero`
 
-## XRCalibration.constructor.callback@148
+## XRCalibration.constructor.callback@149
 
-[Implementation, line 148](../../../../src/runtime/xr-calibration.ts#L148)
+[Implementation, line 149](../../../../src/runtime/xr-calibration.ts#L149)
 
 ```ts
-callback@148([id]): inferred by TypeScript; see implementation
+callback@149([id]): inferred by TypeScript; see implementation
 ```
 
-## XRCalibration.constructor.callback@204
+## XRCalibration.constructor.callback@205
 
-[Implementation, line 204](../../../../src/runtime/xr-calibration.ts#L204)
+[Implementation, line 205](../../../../src/runtime/xr-calibration.ts#L205)
 
 ```ts
-callback@204(pair): inferred by TypeScript; see implementation
+callback@205(pair): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -128,7 +130,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.fields
 
-[Implementation, line 219](../../../../src/runtime/xr-calibration.ts#L219)
+[Implementation, line 220](../../../../src/runtime/xr-calibration.ts#L220)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -138,7 +140,7 @@ fields(id: XRCalibrationObject): inferred by TypeScript; see implementation
 
 ## XRCalibration.editableObjects
 
-[Implementation, line 239](../../../../src/runtime/xr-calibration.ts#L239)
+[Implementation, line 240](../../../../src/runtime/xr-calibration.ts#L240)
 
 One menu entry per symmetric pair; edits retain the existing per-side storage.
 
@@ -152,12 +154,12 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Object.entries(xrCalibrationObjects).filter`
 - `Object.fromEntries`
 
-## XRCalibration.editableObjects.callback@242
+## XRCalibration.editableObjects.callback@243
 
-[Implementation, line 242](../../../../src/runtime/xr-calibration.ts#L242)
+[Implementation, line 243](../../../../src/runtime/xr-calibration.ts#L243)
 
 ```ts
-callback@242([id]): inferred by TypeScript; see implementation
+callback@243([id]): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -166,7 +168,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.objects
 
-[Implementation, line 249](../../../../src/runtime/xr-calibration.ts#L249)
+[Implementation, line 250](../../../../src/runtime/xr-calibration.ts#L250)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -176,7 +178,7 @@ objects(): inferred by TypeScript; see implementation
 
 ## XRCalibration.get
 
-[Implementation, line 252](../../../../src/runtime/xr-calibration.ts#L252)
+[Implementation, line 253](../../../../src/runtime/xr-calibration.ts#L253)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -190,7 +192,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.set
 
-[Implementation, line 255](../../../../src/runtime/xr-calibration.ts#L255)
+[Implementation, line 256](../../../../src/runtime/xr-calibration.ts#L256)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -204,17 +206,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `Number.isFinite`
 - `Object.keys`
 - `THREE.MathUtils.clamp`
-- `localStorage.setItem`
 - `mirrorPairs.find`
 - `mirrored`
 - `this.get`
+- `this.storage.setItem`
 
-## XRCalibration.set.callback@272
+## XRCalibration.set.callback@273
 
-[Implementation, line 272](../../../../src/runtime/xr-calibration.ts#L272)
+[Implementation, line 273](../../../../src/runtime/xr-calibration.ts#L273)
 
 ```ts
-callback@272(pair): inferred by TypeScript; see implementation
+callback@273(pair): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -223,7 +225,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.reset
 
-[Implementation, line 282](../../../../src/runtime/xr-calibration.ts#L282)
+[Implementation, line 283](../../../../src/runtime/xr-calibration.ts#L283)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -238,7 +240,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.export
 
-[Implementation, line 285](../../../../src/runtime/xr-calibration.ts#L285)
+[Implementation, line 286](../../../../src/runtime/xr-calibration.ts#L286)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 
@@ -253,7 +255,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## XRCalibration.apply
 
-[Implementation, line 298](../../../../src/runtime/xr-calibration.ts#L298)
+[Implementation, line 299](../../../../src/runtime/xr-calibration.ts#L299)
 
 Local offsets from the authored pose: centimetres and degrees, never tracking coordinates.
 

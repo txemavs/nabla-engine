@@ -164,9 +164,17 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `new THREE.Color(tint).multiplyScalar`
 - `new THREE.Color(tint).multiplyScalar(0.48).getHexString`
 
+## createAsphaltUniforms
+
+[Implementation, line 185](../../../../../src/render/planet/ground-material.ts#L185)
+
+```ts
+createAsphaltUniforms(): inferred by TypeScript; see implementation
+```
+
 ## clampAsphaltContrast
 
-[Implementation, line 191](../../../../../src/render/planet/ground-material.ts#L191)
+[Implementation, line 192](../../../../../src/render/planet/ground-material.ts#L192)
 
 Clamp to `ASPHALT_CONTRAST_MIN`..`ASPHALT_CONTRAST_MAX`; non-finite input is a caller bug.
 
@@ -187,22 +195,22 @@ Explicit throws in this body:
 
 ## asphaltContrast
 
-[Implementation, line 198](../../../../../src/render/planet/ground-material.ts#L198)
+[Implementation, line 199](../../../../../src/render/planet/ground-material.ts#L199)
 
-Current asphalt contrast, shared by every roads drape in the page.
+Current contrast of the supplied owner, or the legacy standalone default.
 
 ```ts
-asphaltContrast(): number
+asphaltContrast(uniforms = asphaltUniforms): number
 ```
 
 ## setAsphaltContrast
 
-[Implementation, line 203](../../../../../src/render/planet/ground-material.ts#L203)
+[Implementation, line 204](../../../../../src/render/planet/ground-material.ts#L204)
 
 Set the asphalt contrast live for every roads drape; returns the clamped value applied.
 
 ```ts
-setAsphaltContrast(value: number): number
+setAsphaltContrast(value: number, uniforms = asphaltUniforms): number
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -211,7 +219,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## asphaltContrastTone
 
-[Implementation, line 209](../../../../../src/render/planet/ground-material.ts#L209)
+[Implementation, line 210](../../../../../src/render/planet/ground-material.ts#L210)
 
 The shader's curve on one linear luminance (0..1); for tests and tooling.
 
@@ -228,7 +236,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## asphaltTone
 
-[Implementation, line 220](../../../../../src/render/planet/ground-material.ts#L220)
+[Implementation, line 221](../../../../../src/render/planet/ground-material.ts#L221)
 
 ```ts
 asphaltTone(weight: string): inferred by TypeScript; see implementation
@@ -236,7 +244,7 @@ asphaltTone(weight: string): inferred by TypeScript; see implementation
 
 ## asphaltContrastShader
 
-[Implementation, line 240](../../../../../src/render/planet/ground-material.ts#L240)
+[Implementation, line 241](../../../../../src/render/planet/ground-material.ts#L241)
 
 Add the asphalt curve to a fragment shader: it runs on the map texel right before the texel
 multiplies the material colour. `masked` weights it by the `asphaltMask` texture (red channel,
@@ -257,7 +265,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## withAsphaltContrast
 
-[Implementation, line 262](../../../../../src/render/planet/ground-material.ts#L262)
+[Implementation, line 263](../../../../../src/render/planet/ground-material.ts#L263)
 
 Give a photo-drape material the asphalt contrast curve. Without `mask` every pixel is asphalt
 (the roads drape, cut to the road surfaces); with `mask` the curve follows that per-material
@@ -266,19 +274,19 @@ recompile. Call it before shadow setup, which chains `onBeforeCompile`. The prog
 keeps these apart from the other drapes, whose shadow wrappers have the same source text.
 
 ```ts
-withAsphaltContrast(material: T, mask?: { value: THREE.Texture }): T
+withAsphaltContrast(material: T, mask?: { value: THREE.Texture }, uniforms = asphaltUniforms): T
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `addWebGPUMaterialNodes`
 
-## withAsphaltContrast.callback@267
+## withAsphaltContrast.callback@269
 
-[Implementation, line 267](../../../../../src/render/planet/ground-material.ts#L267)
+[Implementation, line 269](../../../../../src/render/planet/ground-material.ts#L269)
 
 ```ts
-callback@267(shader, renderer): inferred by TypeScript; see implementation
+callback@269(shader, renderer): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -287,24 +295,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `asphaltContrastShader`
 - `previous.call`
 
-## withAsphaltContrast.callback@274
+## withAsphaltContrast.callback@276
 
-[Implementation, line 274](../../../../../src/render/planet/ground-material.ts#L274)
+[Implementation, line 276](../../../../../src/render/planet/ground-material.ts#L276)
 
 ```ts
-callback@274(): inferred by TypeScript; see implementation
+callback@276(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `material.onBeforeCompile.toString`
 
-## withAsphaltContrast.callback@275
+## withAsphaltContrast.callback@277
 
-[Implementation, line 275](../../../../../src/render/planet/ground-material.ts#L275)
+[Implementation, line 277](../../../../../src/render/planet/ground-material.ts#L277)
 
 ```ts
-callback@275(kit, twin): inferred by TypeScript; see implementation
+callback@277(kit, twin): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -313,7 +321,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## groundDepthBias
 
-[Implementation, line 283](../../../../../src/render/planet/ground-material.ts#L283)
+[Implementation, line 285](../../../../../src/render/planet/ground-material.ts#L285)
 
 ```ts
 groundDepthBias(layer: number): inferred by TypeScript; see implementation

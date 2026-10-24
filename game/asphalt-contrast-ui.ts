@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 import { pageSearch } from './page-query.js'
 /** Ajustes → Calidad → Asfalto: live asphalt contrast slider (draw time; tile textures untouched). */
 import {
@@ -15,7 +16,7 @@ type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 function browserStorage(): StorageLike | undefined {
   try {
-    return globalThis.localStorage
+    return pageSettingsStorage()
   } catch {
     return undefined
   }
@@ -56,7 +57,7 @@ export function resolveAsphaltContrast(
 export function bindAsphaltContrastSlider(
   runtime: GameRuntime,
   hostDefault?: number,
-  storage: StorageLike | undefined = browserStorage(),
+  storage: StorageLike | undefined = runtime.settings,
 ): HTMLFieldSetElement {
   const fallback = validContrast(hostDefault) ?? ASPHALT_CONTRAST_DEFAULT
   const group = menuSection('road-style', 'Asfalto')

@@ -35,6 +35,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `exhaustSmokeSprites`
 - `laserSmokePools.add`
 - `setWebGPUSubstitute`
+- `smokeDensityFor`
 - `softSmokeUniforms`
 - `softVertex`
 - `this.geometry.setAttribute`

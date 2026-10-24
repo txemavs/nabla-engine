@@ -2,7 +2,7 @@ import { vehicleLightDefaults, type VehicleLightTuning } from './light-tuning.js
 /** Fixed renderer lights for the occupied vehicle. GLB lamps stay hidden so light count never changes. */
 import { Group, PointLight, SpotLight, Vector3, type Light, type Object3D } from 'three'
 import { lightingDefaults, vehicleRearWash } from '../../config/lighting.js'
-import { lowBeamMask } from './authored-lights.js'
+import { lowBeamMask, type BeamSettings } from './authored-lights.js'
 
 export const vehicleLightBudget = Object.freeze({
   spots: lightingDefaults.vehicleSpots,
@@ -15,12 +15,13 @@ export class VehicleLightRig {
   readonly root = new Group()
   private readonly spots: SpotLight[] = []
   private readonly points: PointLight[] = []
-  private readonly mask = lowBeamMask()
+  private readonly mask: ReturnType<typeof lowBeamMask>
   private readonly world = new Vector3()
   private nextGroundPoint = 0
   private freeGroundSlot: SpotLight | undefined
 
-  constructor() {
+  constructor(beams?: BeamSettings) {
+    this.mask = lowBeamMask(true, beams)
     this.root.name = 'Vehicle light rig'
     for (let i = 0; i < vehicleLightBudget.spots; i++) {
       const light = new SpotLight('#fff6e0', 0, 40, Math.PI / 6, 0.35, 1.5)

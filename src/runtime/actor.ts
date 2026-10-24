@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from './settings-scope.js'
 /**
  * Player actor: which robot body the local player wears and, for the default body, its colour.
  * Chosen in Settings → Options → Actor, kept in localStorage and applied live with
@@ -137,7 +138,7 @@ export function saveActor(
 
 function safeStorage(): Storage | null {
   try {
-    return typeof localStorage === 'undefined' ? null : localStorage
+    return pageSettingsStorage()
   } catch {
     return null
   }

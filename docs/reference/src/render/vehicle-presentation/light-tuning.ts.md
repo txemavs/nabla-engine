@@ -11,9 +11,28 @@ player's saved choice (per model, schema `nabla.vehicle-lights/1`) overrides bot
 ## Module dependencies
 
 
+## savedPatch
+
+[Implementation, line 25](../../../../../src/render/vehicle-presentation/light-tuning.ts#L25)
+
+```ts
+savedPatch(storage: VehicleLightStorage, model: string): Partial<VehicleLightTuning>
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `JSON.parse`
+- `Map`
+- `key`
+- `models.get`
+- `models.set`
+- `owned.get`
+- `owned.set`
+- `storage.getItem`
+
 ## key
 
-[Implementation, line 20](../../../../../src/render/vehicle-presentation/light-tuning.ts#L20)
+[Implementation, line 39](../../../../../src/render/vehicle-presentation/light-tuning.ts#L39)
 
 ```ts
 key(model: string): inferred by TypeScript; see implementation
@@ -21,7 +40,7 @@ key(model: string): inferred by TypeScript; see implementation
 
 ## normalizeVehicleLights
 
-[Implementation, line 21](../../../../../src/render/vehicle-presentation/light-tuning.ts#L21)
+[Implementation, line 40](../../../../../src/render/vehicle-presentation/light-tuning.ts#L40)
 
 ```ts
 normalizeVehicleLights(value: Partial<VehicleLightTuning>): VehicleLightTuning
@@ -36,7 +55,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## nudgeRearLight
 
-[Implementation, line 44](../../../../../src/render/vehicle-presentation/light-tuning.ts#L44)
+[Implementation, line 63](../../../../../src/render/vehicle-presentation/light-tuning.ts#L63)
 
 `values` with `key` moved by `delta` (metres, or × for intensity and reach), clamped and rounded to 1 mm.
 
@@ -51,7 +70,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## rearLightJson
 
-[Implementation, line 53](../../../../../src/render/vehicle-presentation/light-tuning.ts#L53)
+[Implementation, line 72](../../../../../src/render/vehicle-presentation/light-tuning.ts#L72)
 
 The `vehicle.lights.tuning` fragment of the vehicle JSON for the current rear-lamp values.
 
@@ -66,22 +85,22 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `normalizeVehicleLights`
 - `rearLightKeys.map`
 
-## rearLightJson.callback@55
+## rearLightJson.callback@74
 
-[Implementation, line 55](../../../../../src/render/vehicle-presentation/light-tuning.ts#L55)
+[Implementation, line 74](../../../../../src/render/vehicle-presentation/light-tuning.ts#L74)
 
 ```ts
-callback@55(key): inferred by TypeScript; see implementation
+callback@74(key): inferred by TypeScript; see implementation
 ```
 
 ## readVehicleLights
 
-[Implementation, line 59](../../../../../src/render/vehicle-presentation/light-tuning.ts#L59)
+[Implementation, line 78](../../../../../src/render/vehicle-presentation/light-tuning.ts#L78)
 
 Calibration of a model: engine defaults, then the vehicle's own defaults, then the saved choice.
 
 ```ts
-readVehicleLights(model: string, defaults: Partial<VehicleLightTuning> = {}): VehicleLightTuning
+readVehicleLights(model: string, defaults: Partial<VehicleLightTuning> = {}, storage?: VehicleLightStorage): VehicleLightTuning
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
@@ -93,23 +112,24 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `globalThis.localStorage?.getItem`
 - `key`
 - `normalizeVehicleLights`
+- `savedPatch`
 
 ## writeVehicleLights
 
-[Implementation, line 75](../../../../../src/render/vehicle-presentation/light-tuning.ts#L75)
+[Implementation, line 96](../../../../../src/render/vehicle-presentation/light-tuning.ts#L96)
 
 Saves a patch for the model, or without one clears the saved choice back to the defaults.
 
 ```ts
-writeVehicleLights(model: string, patch?: Partial<VehicleLightTuning>, defaults: Partial<VehicleLightTuning> = {}): VehicleLightTuning
+writeVehicleLights(model: string, patch?: Partial<VehicleLightTuning>, defaults: Partial<VehicleLightTuning> = {}, storage?: VehicleLightStorage): VehicleLightTuning
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
+- `(storage ?? globalThis.localStorage)?.removeItem`
+- `(storage ?? globalThis.localStorage)?.setItem`
 - `JSON.stringify`
 - `cache.set`
-- `globalThis.localStorage?.removeItem`
-- `globalThis.localStorage?.setItem`
 - `key`
 - `normalizeVehicleLights`
 - `readVehicleLights`

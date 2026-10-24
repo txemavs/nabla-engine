@@ -1,6 +1,6 @@
 # Generalization candidates
 
-Observation list from the October 2026 review. **Nothing here has been changed**; each item
+Historical proposals from the October 2026 review, not a description of the current API. Some findings have since been superseded (notably proposal (b) below); each item
 says what is ad hoc, why it matters, a recommendation and a rough effort (S ≤ ½ day, M 1–3 days,
 L > 3 days). Rule for all of them: default production behaviour must not change; a dev-only
 toggle that lets you compare old and new is fine.
@@ -54,9 +54,11 @@ independently.
 - Effort: schema + resolver + group **M**; migrating mirrors, instruments, lamps one type at a
   time **S–M each**; test: round-trip the JSON and assert overrides.
 
-### Proposal (b): make the VFR rear light movable (minimal)
+### Proposal (b): make the VFR rear light movable (historical; superseded)
 
-What was found (VFR800FI 1999, `vfr800fi-1999.glb`):
+Current status: `vehicle.lights.rearWash` and `vehicle.lights.tuning` already configure rear wash, and the presentation adapter resolves the tail anchor. See [vehicle lighting](vehicle-definition.md#5-lights). Do not implement the proposed `lightOffsets` schema below as though these capabilities were absent. The following records the original observation and proposal.
+
+What was found at the original review (VFR800FI 1999, `vfr800fi-1999.glb`):
 
 - The GLB has a node `light.tail.brake` at `(0, 0.878, 0.992)` with
   `extras.nabla = { anchor: "light.tail.brake", lightMount: true }` and the red lens material

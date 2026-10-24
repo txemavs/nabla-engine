@@ -4,25 +4,28 @@
 
 [Source](../../../game/flip-cinematic-ui.ts)
 
-Menu toggle for the post-flip cinematic camera (default on).
-
 ## Module dependencies
 
+- `@nabla/engine/runtime/settings-scope`
 - `@nabla/engine/runtime/browser`
 - `./menu.js`
 - `@nabla/engine/i18n`
 
 ## browserStorage
 
-[Implementation, line 10](../../../game/flip-cinematic-ui.ts#L10)
+[Implementation, line 11](../../../game/flip-cinematic-ui.ts#L11)
 
 ```ts
 browserStorage(): StorageLike | undefined
 ```
 
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `pageSettingsStorage`
+
 ## resolveFlipCinematicEnabled
 
-[Implementation, line 19](../../../game/flip-cinematic-ui.ts#L19)
+[Implementation, line 20](../../../game/flip-cinematic-ui.ts#L20)
 
 Resolve initial preference: URL (via boot) > localStorage > NABLA_BOOT > on.
 
@@ -37,7 +40,7 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## saveFlipCinematicEnabled
 
-[Implementation, line 29](../../../game/flip-cinematic-ui.ts#L29)
+[Implementation, line 30](../../../game/flip-cinematic-ui.ts#L30)
 
 ```ts
 saveFlipCinematicEnabled(enabled: boolean, storage: StorageLike | undefined = browserStorage()): void
@@ -50,30 +53,29 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 
 ## bindFlipCinematicToggle
 
-[Implementation, line 41](../../../game/flip-cinematic-ui.ts#L41)
+[Implementation, line 42](../../../game/flip-cinematic-ui.ts#L42)
 
 Checkbox in Ajustes → Opciones → Cámara: «Accidentes modo cine» (cinematic camera on a flip).
 
 ```ts
-bindFlipCinematicToggle(runtime: GameRuntime, storage = browserStorage()): void
+bindFlipCinematicToggle(runtime: GameRuntime, storage = runtime.settings): void
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):
 
 - `box.addEventListener`
-- `browserStorage`
 - `document.createElement`
 - `group.append`
 - `label.append`
 - `menuSection`
 - `t`
 
-## bindFlipCinematicToggle.callback@47
+## bindFlipCinematicToggle.callback@48
 
-[Implementation, line 47](../../../game/flip-cinematic-ui.ts#L47)
+[Implementation, line 48](../../../game/flip-cinematic-ui.ts#L48)
 
 ```ts
-callback@47(): inferred by TypeScript; see implementation
+callback@48(): inferred by TypeScript; see implementation
 ```
 
 Direct call sites (syntactic references, not a purity or execution-order guarantee):

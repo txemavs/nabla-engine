@@ -124,3 +124,120 @@ Direct call sites (syntactic references, not a purity or execution-order guarant
 - `readVehiclePreferences`
 - `storage?.setItem`
 - `vehiclePreferencesKey`
+
+## RuntimeVehiclePreferences.constructor
+
+[Implementation, line 95](../../../../src/runtime/vehicle-preferences.ts#L95)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+constructor(private readonly storage?: VehiclePreferenceStorage): instance
+```
+
+## RuntimeVehiclePreferences.read
+
+[Implementation, line 97](../../../../src/runtime/vehicle-preferences.ts#L97)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+read(model: string): VehiclePreferences
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `readVehiclePreferences`
+- `this.cache.get`
+- `this.cache.set`
+
+## RuntimeVehiclePreferences.update
+
+[Implementation, line 103](../../../../src/runtime/vehicle-preferences.ts#L103)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+update(model: string, patch: Partial<VehiclePreferences>): VehiclePreferences
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `this.cache.set`
+- `writeVehiclePreferences`
+
+## RuntimeVehiclePreferences.exhaustAmount
+
+[Implementation, line 109](../../../../src/runtime/vehicle-preferences.ts#L109)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+exhaustAmount(): number
+```
+
+## RuntimeVehiclePreferences.exhaustOffset
+
+[Implementation, line 112](../../../../src/runtime/vehicle-preferences.ts#L112)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+exhaustOffset(): [number, number, number]
+```
+
+## RuntimeVehiclePreferences.setExhaustAmount
+
+[Implementation, line 116](../../../../src/runtime/vehicle-preferences.ts#L116)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+setExhaustAmount(amount: number, apply: (amount: number) => void): number
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `Math.max`
+- `Math.min`
+- `Number.isFinite`
+- `apply`
+
+Explicit throws in this body:
+
+- `new Error('Invalid exhaust amount')`
+
+## RuntimeVehiclePreferences.setExhaustOffset
+
+[Implementation, line 123](../../../../src/runtime/vehicle-preferences.ts#L123)
+
+Per-runtime cache and provisional exhaust controls; persisted model records retain their legacy fallback.
+
+```ts
+setExhaustOffset(offset: [number, number, number], apply: (offset: [number, number, number]) => void): [number, number, number]
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Error`
+- `apply`
+- `offset.every`
+- `offset.map`
+
+Explicit throws in this body:
+
+- `new Error('Invalid exhaust offset')`
+
+## RuntimeVehiclePreferences.setExhaustOffset.callback@128
+
+[Implementation, line 128](../../../../src/runtime/vehicle-preferences.ts#L128)
+
+```ts
+callback@128(value): inferred by TypeScript; see implementation
+```
+
+Direct call sites (syntactic references, not a purity or execution-order guarantee):
+
+- `Math.max`
+- `Math.min`

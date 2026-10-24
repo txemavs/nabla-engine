@@ -1,3 +1,4 @@
+import { pageSettingsStorage } from '@nabla/engine/runtime/settings-scope'
 /**
  * Host defaults for the driver's mirror glass adjustment («Espejos» in the Vehículos menu).
  *
@@ -97,7 +98,7 @@ export function hostMirrorsFromSearch(search: string, fallback: HostMirrors = {}
 /** Where the player's choice is kept: `localStorage`, or nothing when the browser refuses it. */
 export function mirrorStorage(): MirrorStorage | null {
   try {
-    return globalThis.localStorage ?? null
+    return pageSettingsStorage() ?? null
   } catch {
     return null
   }

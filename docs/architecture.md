@@ -25,12 +25,16 @@ SceneDocument (validated JSON v1)
 | `src/planet/`           | Tile frame, places, sky, GLB contract, and collisions                                                  |
 | `src/planet/extract/`   | Downloaded district and tile source: features, tags, colours and multipolygons                         |
 | `src/planet/assemble/`  | District assembler: buildings, ways, cover, water and the sample spawn                                 |
-| `playground/`           | Rendering, browser events, map fetching, location permissions and local storage                        |
+| `src/render/`           | Rendering, effects and visible world streaming                                                         |
+| `src/runtime/`          | Headless sessions and opt-in browser runtime, input, XR and preferences                                |
+| `game/`                 | Reference browser host, pages and application composition                                              |
 | `studio/`               | Studio application lives in the separate nabla-studio repository                                       |
 
-Runtime engine modules do not import the playground or Studio, and they do not access `window`, `document`,
-`localStorage`, Vue or Agency services. The engine uses Three.js math and Rapier
-physics; it does not own a renderer or install global input handlers.
+Engine modules do not import the reference game or the separate Studio application.
+Scene and simulation APIs are usable without a DOM or renderer. The opt-in browser
+runtime owns a renderer, browser input handlers, XR and presentation resources;
+its settings integration accesses browser storage. See the [module map](architecture/module-map.md)
+and [manual](manual/README.md) for the public entry points and ownership boundaries.
 
 ## Spatial contract
 
@@ -66,16 +70,20 @@ compatibility with earlier scene-v1 documents.
 ## Physics and time
 
 Each `Simulation` owns exactly one Rapier world. Controllers apply input before
-each fixed 1/60-second tick. Accepted elapsed time is capped at 0.25 seconds per
-call; excess is observable through `stats.droppedSeconds`. A fixed step does not
+each fixed 1/60-second tick. `GameSession.step` caps host elapsed time at 0.1 seconds.
+`Simulation.step` independently accepts at most eight fixed steps per submission
+(8/60 seconds); time discarded by that limit is counted in `stats.droppedSeconds`.
+The session's earlier clipping is not included in that counter. Values come from
+[`simulationDefaults`](../src/config/simulation.ts). A fixed step does not
 guarantee cross-platform or cross-library-version determinism.
 
-Vehicles use four suspension rays with rear-wheel drive and explicit chassis
-colliders. Wheels are not separate rigid bodies. The character is a dynamic box
+Wheeled vehicles use configured suspension rays, drivetrain and chassis colliders;
+the schema supports two, four and six hubs. Boats and flight have separate controllers.
+Wheels are not separate rigid bodies. The character is a dynamic box
 with fixed rotation, bounded horizontal acceleration and contact-based grounding.
 Jump requests are consumed once. Supporting-platform velocity is incorporated
-into walking; this is not a complete stair or slope controller. The playground
-opts into the hover controller: a compact 0.56 m tall body, a downward ground
+into walking; this is not a complete stair or slope controller. Browser hosts can
+opt into the hover controller: a compact 0.56 m tall body, a downward ground
 sensor and a damped vertical controller maintain 1.25 m centre clearance over
 curbs and ramps. Without nearby support, gravity remains active. A downward sensor and bounded
 braking acceleration recover clearance on descent; jump is a single upward impulse. Solid walls and ceilings still use normal physics contacts.
@@ -84,7 +92,7 @@ braking acceleration recover clearance on descent; jump is a single upward impul
 bounded impulse to dynamic bodies (zero impulse makes an aim-only query). The
 host owns fire cadence, pointer capture, reticle and weapon rendering. Weapon
 geometry lives in a separate presentation scene so it does not intersect the
-camera or participate in portal render passes. The playground can map a shot through one open/window portal before querying
+camera or participate in portal render passes. The browser runtime can map a shot through one open/window portal before querying
 the destination. Transparent sprite pixels are excluded from hit detection.
 
 Entering removes the character body from the world. Exiting tests both sides,
@@ -130,10 +138,10 @@ clock persistence, geographic round trips and tile coordinates. Physics journeys
 exercise walking, collisions, safe exits, driving, garage entry/latching/release,
 loaded flight, accelerated ascent, braking and return to ground.
 
-Playwright covers editing, saving, reload, invalid imports, original asset loading,
-gamepad mode 2, GPS, map switching, offline behavior, planetary views and clock
-changes. Mocked map responses make provider-specific tests repeatable; live map
-availability is a separate integration concern.
+The engine CI runs Vitest, package-consumer checks and Playwright rendering tests,
+including backend parity. Studio editor journeys belong to the separate Studio
+repository. Recorded terrain fixtures make publication-contract tests repeatable;
+live availability is a separate integration concern. See [terrain publication](terrain-publication-contract.md).
 
 ## Render interpolation
 

@@ -1,3 +1,4 @@
+import { createSettingsStore, type SettingsStorage } from './settings-scope.js'
 import * as THREE from 'three'
 
 export const xrCalibrationObjects = {
@@ -133,18 +134,18 @@ export class XRCalibration {
     THREE.Object3D,
     { position: THREE.Vector3; rotation: THREE.Quaternion }
   >()
-  constructor() {
+  constructor(private readonly storage: SettingsStorage = createSettingsStore()) {
     try {
-      const current = localStorage.getItem(storageKey)
-      const saved = current ?? localStorage.getItem('nabla.xr.calibration.v4')
-      const previous = localStorage.getItem('nabla.xr.calibration.v3')
+      const current = this.storage.getItem(storageKey)
+      const saved = current ?? this.storage.getItem('nabla.xr.calibration.v4')
+      const previous = this.storage.getItem('nabla.xr.calibration.v3')
       const stored = saved
         ? JSON.parse(saved)
         : previous
           ? JSON.parse(previous)
           : Object.fromEntries(
               Object.entries(
-                JSON.parse(localStorage.getItem('nabla.xr.calibration.v2') ?? '{}'),
+                JSON.parse(this.storage.getItem('nabla.xr.calibration.v2') ?? '{}'),
               ).filter(([id]) => !(id in baselineAdjustments)),
             )
       // Rebase the old wheel Euler pose exactly, preserving position and other angles.
@@ -189,12 +190,12 @@ export class XRCalibration {
         }
       }
       // Accepted truck posture is the new zero; keep position and the other angle.
-      if (localStorage.getItem('nabla.xr.truck-zero') !== 'x20-z180') {
+      if (this.storage.getItem('nabla.xr.truck-zero') !== 'x20-z180') {
         if (stored['ar-rc-truck'])
           stored['ar-rc-truck'] = { ...stored['ar-rc-truck'], rx: 0, rz: 0 }
         try {
-          localStorage.setItem(storageKey, JSON.stringify(stored))
-          localStorage.setItem('nabla.xr.truck-zero', 'x20-z180')
+          this.storage.setItem(storageKey, JSON.stringify(stored))
+          this.storage.setItem('nabla.xr.truck-zero', 'x20-z180')
         } catch {
           // A read-only store must not discard the adjustments already read.
         }
@@ -207,7 +208,7 @@ export class XRCalibration {
       }
       if (!current) {
         try {
-          localStorage.setItem(storageKey, JSON.stringify(this.poses))
+          this.storage.setItem(storageKey, JSON.stringify(this.poses))
         } catch {
           /* Live poses still work. */
         }
@@ -273,7 +274,7 @@ export class XRCalibration {
     if (pair) this.poses[pair[0] === id ? pair[1] : pair[0]] = mirrored(value)
     if (save) {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(this.poses))
+        this.storage.setItem(storageKey, JSON.stringify(this.poses))
       } catch {
         /* Live adjustments still work. */
       }

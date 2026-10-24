@@ -15,7 +15,7 @@ never has to patch the page. Kept on a global symbol so every module copy sees t
 
 ## setTerrainHost
 
-[Implementation, line 19](../../../game/terrain-host.ts#L19)
+[Implementation, line 21](../../../game/terrain-host.ts#L21)
 
 ```ts
 setTerrainHost(host: TerrainHost): void
@@ -23,7 +23,7 @@ setTerrainHost(host: TerrainHost): void
 
 ## terrainHost
 
-[Implementation, line 23](../../../game/terrain-host.ts#L23)
+[Implementation, line 25](../../../game/terrain-host.ts#L25)
 
 ```ts
 terrainHost(): TerrainHost

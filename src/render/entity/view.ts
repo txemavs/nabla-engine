@@ -1,5 +1,10 @@
+import type { BeamSettings } from '../vehicle-presentation/authored-lights.js'
+import { bindSmokeDensity } from './smoke-density.js'
 import { softDepth } from './soft-smoke.js'
-import { readVehicleLights } from '../vehicle-presentation/light-tuning.js'
+import {
+  readVehicleLights,
+  type VehicleLightStorage,
+} from '../vehicle-presentation/light-tuning.js'
 import { holdItem, type HeldPose } from './held-pose.js'
 import { assetUrlForQuality, type AssetQuality } from './asset-quality.js'
 import type {
@@ -148,6 +153,9 @@ export function applyPose(object: THREE.Object3D, pose: Transform): void {
   object.quaternion.fromArray(pose.rotation)
 }
 export interface SceneViewOptions {
+  vehicleLightStorage?: VehicleLightStorage
+  beams?: BeamSettings
+  smokeDensity?: { value: number }
   /** Geometry variant selected before any assets load; defaults to full. */
   assetQuality?: AssetQuality
   driverPoseOffset?: (model: string) => DriverPoseAdjustment
@@ -468,7 +476,7 @@ export class SceneView {
     return this.instruments.get(id)?.toggleGps() ?? null
   }
   private readonly authoredLights = new Map<string, AuthoredVehicleLights>()
-  readonly vehicleLights = new VehicleLightRig()
+  readonly vehicleLights: VehicleLightRig
   /** Occupied-vehicle ids that already have cockpit mirrors allocated. */
   get mirroredVehicles(): string[] {
     return [...this.carMirrors.keys()]
@@ -675,6 +683,8 @@ export class SceneView {
     validated = false,
     private readonly options: SceneViewOptions = {},
   ) {
+    this.vehicleLights = new VehicleLightRig(options.beams)
+    if (options.smokeDensity) bindSmokeDensity(this.root, options.smokeDensity)
     if (options.startLights) this.startLights.mode = options.startLights
     this.graph = SceneGraph.fromValidated(
       validated ? document : parseScene(document, experimentalLargeScene),
@@ -1373,6 +1383,7 @@ export class SceneView {
         e.id,
         new AuthoredVehicleLights(model, equipment?.lights?.controller, {
           lensEmissive: e.vehicle?.lights?.lensEmissive,
+          beams: this.options.beams,
         }),
       )
       if (e.vehicle && hasLandingGear(e.vehicle)) {
@@ -2271,6 +2282,7 @@ export class SceneView {
     const tuning = readVehicleLights(
       entity?.visual?.body.url ?? vehicleId ?? '',
       entity?.vehicle?.lights?.tuning,
+      this.options.vehicleLightStorage,
     )
     if (vehicleId) this.authoredLights.get(vehicleId)?.setCutoffs(tuning.low, tuning.high)
     // Vehicle-space offsets of a lamp's light, as vectors in the light rig's frame.
@@ -2325,7 +2337,11 @@ export class SceneView {
             entity.size[2],
             1,
             sim.vehicleInfo(vehicleId).braking,
-            readVehicleLights(entity.visual?.body.url ?? entity.id, entity.vehicle?.lights?.tuning),
+            readVehicleLights(
+              entity.visual?.body.url ?? entity.id,
+              entity.vehicle?.lights?.tuning,
+              this.options.vehicleLightStorage,
+            ),
             anchor,
           )
         }

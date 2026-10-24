@@ -50,6 +50,154 @@ const truck = (driver: string | null): NetEventData =>
   })
 
 describe('shared entities', () => {
+  it('binds an authored copy during remote loading and removes the redundant late view', async () => {
+    const { host } = setup()
+    let finish!: (id: string) => void
+    const removed: string[] = []
+    const shared = new SharedEntities(
+      {
+        spawn: () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+        despawn: (_record, local) => removed.push(local),
+        unavailable: (_id, local) => removed.push(local),
+      },
+      host,
+      () => true,
+    )
+    shared.self = 'me'
+    shared.receive(ENTITY_EVENT, truck(null))
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    shared.publish('vehicle', {}, pose, 'authored', { id: 'other.1' })
+    finish('late-copy')
+    await Promise.resolve()
+    shared.publish('vehicle', {}, pose, 'duplicate', { id: 'other.1' })
+    expect(shared.localIdOf('other.1')).toBe('authored')
+    expect(removed).toEqual(['late-copy', 'duplicate'])
+  })
+  it('requires the matching acknowledgement as well as the authoritative driver record', async () => {
+    const { shared, sent } = setup()
+    shared.receive(ENTITY_EVENT, truck(null))
+    let settled = false
+    const result = shared.claimConfirmed('other.1').then((ok) => {
+      settled = true
+      return ok
+    })
+    const request = sent.at(-1)![1]
+    shared.receive(ENTITY_EVENT, truck('me'))
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    shared.receive('entity.claim.result', { ...request, r: 'wrong', ok: true })
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    shared.receive('entity.claim.result', { ...request, ok: true })
+    expect(await result).toBe(true)
+  })
+
+  it('cancels disconnected entries and ignores late acknowledgements', async () => {
+    const { shared, sent } = setup()
+    shared.receive(ENTITY_EVENT, truck(null))
+    const result = shared.claimConfirmed('other.1')
+    const request = sent.at(-1)![1]
+    shared.cancelClaims()
+    expect(await result).toBe(false)
+    shared.receive(ENTITY_EVENT, truck('other'))
+    shared.receive('entity.claim.result', { ...request, ok: true })
+    expect(shared.drives('other.1')).toBe(false)
+    const disputed = shared.claimConfirmed('other.1')
+    shared.receive('entity.claim.result', { ...sent.at(-1)![1], ok: false, reason: 'occupied' })
+    expect(await disputed).toBe(false)
+  })
+
+  it('times out and releases a possible delayed grant instead of seating the player', async () => {
+    const { shared, sent } = setup()
+    shared.receive(ENTITY_EVENT, truck(null))
+    expect(await shared.claimConfirmed('other.1', 5)).toBe(false)
+    expect(sent.at(-1)).toEqual([ENTITY_RELEASE, { i: 'other.1' }])
+  })
+
+  it('does not treat an unacknowledged driver record as permission on a repeated request', async () => {
+    const { shared, sent } = setup()
+    shared.receive(ENTITY_EVENT, truck(null))
+    const first = shared.claimConfirmed('other.1', 5)
+    shared.receive(ENTITY_EVENT, truck('me'))
+    expect(await shared.claimConfirmed('other.1')).toBe(false)
+    expect(await first).toBe(false)
+    const next = shared.claimConfirmed('other.1')
+    expect(sent.at(-1)![0]).toBe(ENTITY_CLAIM)
+    shared.receive('entity.claim.result', { ...sent.at(-1)![1], ok: false })
+    expect(await next).toBe(false)
+  })
+
+  it('removes a provisional authored copy when the existing entity is outside interest', () => {
+    const { host } = setup()
+    const unavailable: string[] = []
+    const shared = new SharedEntities(
+      {
+        spawn: () => null,
+        despawn: () => {},
+        unavailable: (_id, local) => unavailable.push(local),
+      },
+      host,
+      () => true,
+    )
+    shared.self = 'me'
+    shared.publish('vehicle', {}, { position: [0, 0, 0], rotation: [0, 0, 0, 1] }, 'authored', {
+      id: 'map.car',
+    })
+    shared.receive('entity.unavailable', { i: 'map.car', reason: 'outside-interest' })
+    expect(unavailable).toEqual(['authored'])
+    expect(shared.idOfLocal('authored')).toBeNull()
+  })
+  it('AOI hides despawn the view without firing a removal and can reappear', () => {
+    const { shared, removed, despawned, spawned } = setup()
+    shared.receive(ENTITY_EVENT, truck('other'))
+    shared.receive('entity.hidden', { i: 'other.1' })
+    expect(removed).toEqual([])
+    expect(despawned).toEqual(['local-1'])
+    shared.receive(ENTITY_EVENT, truck('other'))
+    expect(spawned).toHaveLength(2)
+    expect(shared.list()[0].driver).toBe('other')
+  })
+
+  it('continuous claims wait for authority and publication suffixes survive recreated identities', () => {
+    const { host } = setup()
+    let suffix = 0
+    const sent: [string, NetEventData][] = []
+    const make = () => {
+      const shared = new SharedEntities(
+        { spawn: () => 'local', despawn: () => {} },
+        host,
+        (kind, data) => (sent.push([kind, data]), true),
+        undefined,
+        () => String(++suffix),
+        false,
+      )
+      shared.self = 'stable-peer'
+      return shared
+    }
+    const a = make()
+    a.receive(ENTITY_EVENT, truck(null))
+    expect(a.claim('other.1')).toBe(true)
+    expect(a.drives('other.1')).toBe(false)
+    a.receive(ENTITY_EVENT, { ...truck(null), d: 'stable-peer' })
+    expect(a.drives('other.1')).toBe(true)
+    a.release('other.1')
+    expect(a.drives('other.1')).toBe(true)
+    a.receive(ENTITY_EVENT, truck(null))
+    expect(a.drives('other.1')).toBe(false)
+    const pose = {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0, 1] as [number, number, number, number],
+    }
+    const first = a.publish('car', {}, pose, null)
+    expect(make().publish('car', {}, pose, null)).not.toBe(first)
+  })
+
   it('encodes and decodes records with params', () => {
     const record = decodeEntity(truck('other'))
     expect(record).toEqual({
