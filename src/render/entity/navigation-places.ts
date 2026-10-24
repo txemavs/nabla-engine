@@ -5,6 +5,8 @@ import { t } from '../../i18n/index.js'
 export interface NavigationPlace {
   id: string
   text: string
+  /** OSM settlement rank (Atlas `places[].category`); sets how far the place's name reaches. */
+  category?: 'city' | 'town' | 'village'
   position: Vector3
 }
 
@@ -26,21 +28,37 @@ export function navigationRoads(): NavigationRoad[] {
   return Array.from(roads())
 }
 
-/** OSM settlement points are references, not municipal boundary polygons. */
-export function nearestLocality(position: readonly number[]): string {
-  let nearest: NavigationPlace | undefined,
-    distance = 20000
+/**
+ * How far a settlement's name reaches, in metres. OSM settlement points are references, not
+ * municipal boundary polygons, so plain nearest-point picks a village across a border over the
+ * town whose outskirts the player is in (Zaisa, Irun: Biriatou 1.6 km away, Irun's point 2.4 km).
+ */
+const PLACE_REACH = { city: 6000, town: 3000, village: 1500 } as const
+const DEFAULT_REACH = 2000
+
+/** The place whose reach covers the position best (distance / reach), and that ratio. */
+function closestPlace(
+  position: readonly number[],
+): { place: NavigationPlace; ratio: number } | undefined {
+  let best: NavigationPlace | undefined,
+    ratio = 10
   for (const place of places()) {
     const d = Math.hypot(place.position.x - position[0], place.position.z - position[2])
-    if (d < distance) {
-      distance = d
-      nearest = place
+    const r = d / (place.category ? PLACE_REACH[place.category] : DEFAULT_REACH)
+    if (r < ratio) {
+      ratio = r
+      best = place
     }
   }
-  return nearest
-    ? distance > 2000
-      ? t('place.near', { name: nearest.text })
-      : nearest.text
+  return best && { place: best, ratio }
+}
+
+export function nearestLocality(position: readonly number[]): string {
+  const closest = closestPlace(position)
+  return closest
+    ? closest.ratio > 1
+      ? t('place.near', { name: closest.place.text })
+      : closest.place.text
     : t('place.unknown')
 }
 
@@ -231,15 +249,7 @@ export class NavigationPlaceLookup {
     void (async () => {
       await yieldTask()
       if (generation !== this.generation) return
-      let city = t('place.unknown'),
-        distance = 20000
-      for (const place of places()) {
-        const d = Math.hypot(place.position.x - pose[0], place.position.z - pose[2])
-        if (d < distance) {
-          distance = d
-          city = place.text
-        }
-      }
+      const city = closestPlace(pose)?.place.text ?? t('place.unknown')
       const list = Array.from(roads())
       if (!this.index || this.index.cell !== this.cellSize || !sameList(this.index.roads, list)) {
         await yieldTask()
