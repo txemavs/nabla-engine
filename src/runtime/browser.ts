@@ -301,6 +301,8 @@ import { GameRuntime as SharedGameRuntime } from './game.js'
 import { availableGamepads } from './input.js'
 import { playGroundClearance } from './placement.js'
 import { auditGround, type GroundAudit } from './ground-audit.js'
+import { RuntimeConstruction } from './construction.js'
+import { resolveFsr } from '../render/effects/fsr1.js'
 import { RuntimeTeardown } from './teardown.js'
 import { FrameLoop } from './frame-loop.js'
 import {
@@ -661,7 +663,7 @@ export class GameRuntime {
   private get quality(): PerformanceSettings {
     return this.performanceSettings.state
   }
-  private readonly pipeline = new GameRenderPipeline()
+  private readonly pipeline: GameRenderPipeline
   private readonly gallery: Gallery
   private sidearm: Sidearm | null = null
   /** Melee or bow from a numbered weapon slot; exclusive with the drawn sidearm. */
@@ -779,7 +781,7 @@ export class GameRuntime {
   private readonly sky: GeographicView
   private readonly environment: WorldEnvironment
   private readonly effects: VehicleEffects
-  private readonly shadows = new ShadowManager()
+  private readonly shadows: ShadowManager
   private readonly sun = new THREE.DirectionalLight(
     lightingDefaults.sunColor,
     lightingDefaults.sunIntensity,
@@ -788,7 +790,7 @@ export class GameRuntime {
     lightingDefaults.ambientColor,
     lightingDefaults.ambientIntensity,
   )
-  private readonly catchFloor = new CatchFloor()
+  private readonly catchFloor: CatchFloor
   /** Live look knobs (Ajustes → Luz); defaults are the shipped look. */
   private readonly lighting: RuntimeLightingPreferences
   private readonly origin = new THREE.Vector3()
@@ -849,6 +851,7 @@ export class GameRuntime {
     () => this.weaponControls.dispose(),
     () => this.toolbar.dispose(),
     () => this.hud?.dispose(),
+    () => this.combatHud.dispose(),
     () => this.wheelDebug.dispose(),
     // Renderer and host canvas are the final releases.
     () => this.renderer.dispose(),
@@ -882,7 +885,7 @@ export class GameRuntime {
   private fpsElapsed = 0
   private fpsFrames = 0
   readonly usbControllers: UsbControllers
-  readonly usbFeedback = new UsbFeedback()
+  readonly usbFeedback: UsbFeedback
   private usbFrame: UsbFrame = idleUsbFrame()
   private previousButtons: boolean[] = []
   private previousPad: number | null = null
@@ -893,7 +896,7 @@ export class GameRuntime {
   private readonly toolbar: GameToolbar
   private readonly weaponControls: WeaponControls
   private readonly hud: GameHud | null
-  private readonly wheelDebug = new WheelDebugOverlay()
+  private readonly wheelDebug: WheelDebugOverlay
   private readonly text: ReturnType<typeof createRuntimeText>
   private readonly weaponPreferences: RuntimeWeaponPreferences
   private sidearmAimPreview = false
@@ -902,76 +905,24 @@ export class GameRuntime {
   private readonly planet = this.planetPreferences.state
 
   constructor(private readonly options: GameRuntimeOptions) {
-    this.preparation = new RuntimePreparation(options.canvas, {
-      prepareAudio: () => this.effects.audio.prepare(),
-      vehiclesReady: () => this.view.ready,
-      loadWeaponAssets: () => this.loadRevealWeaponAssets(),
-      ensureSidearm: () => {
-        this.sidearm ??= this.createSidearm()
-      },
-      warmSidearm: () => this.sidearm!.warm(this.renderer),
-      prepareWeaponPools: () => this.prepareRevealWeaponPools(),
-      prepareTerrain: (signal) => this.prepareRevealTerrain(signal),
-      placeInitialPickup: async (sim) => {
-        if (sim) await this.placeInitialWeaponPickup(sim)
-      },
-      freezeAttract: () => {
-        if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
-      },
-      warmPresentation: (sim, signal) => this.warmRevealPresentation(sim, signal),
-    })
-    this.visuals.bindScene(this.scene)
-    this.settings = createSettingsStore(options.settings)
-    this.vehicleSettings = new RuntimeVehiclePreferences(this.settings)
-    // An opted-in model-settings section uses the same owner; explicit stores/null retain their contract.
-    options = this.options = {
-      ...options,
-      steeringWheel: options.steeringWheel && {
-        ...options.steeringWheel,
-        storage:
-          options.steeringWheel.storage === undefined
-            ? this.settings
-            : options.steeringWheel.storage,
-      },
-      mirrors: options.mirrors && {
-        ...options.mirrors,
-        storage: options.mirrors.storage === undefined ? this.settings : options.mirrors.storage,
-      },
-    }
-    this.lighting = new RuntimeLightingPreferences(this.settings)
-    this.weaponPreferences = new RuntimeWeaponPreferences(this.settings)
-    this.playerPresentation = new RuntimePlayerPresentation(this.settings, {
-      applyBody: (body) => {
-        this.view.setPlayerBody(body)
-        this.combat.setLocalBody(this.view.localPlayerBody)
-      },
-      currentBody: () => this.view.localPlayerBody,
-      actorHands: (choice) => {
-        if (this.xrLoaded && this.xr.wearsActorHands)
-          void this.xr.setActorHands(actorHandAssets(choice)).catch((error) => console.warn(error))
-      },
-      createSidearm: (preset) => this.createSidearm(preset),
-      rememberArrow: (template) => {
-        this.remoteArrowTemplate ??= template
-      },
-      sceneOrigin: () => this.view.root.position,
-      onError: (error) => this.options.onError?.(error),
-    })
-    this.sceneryPhysics = new SceneryPhysics(() => this.session.simulation, this.settings)
-    this.pipeline.diagnostics = !!options.performanceLog
-    this.pipeline.fsr.setSettings(options.fsr ?? {})
-    this.usbControllers = new UsbControllers(
-      options.usb?.storage === undefined ? this.settings : options.usb.storage,
+    if (
+      !options?.canvas ||
+      typeof options.canvas.getContext !== 'function' ||
+      !options.canvas.parentElement
     )
-    try {
-      this.visuals.restoreSmokeEnabled(this.settings)
-      this.cameraPreferences.restoreActionCamEnabled(this.settings)
-      this.visuals.setSmokePercent(
-        Number(this.settings?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
-      )
-    } catch {
-      /* Keep the default if storage is disabled. */
-    }
+      throw new Error('A Nabla game requires a canvas with a parent element')
+    if (options.backend && options.backend.renderer.domElement !== options.canvas)
+      throw new Error('The render backend must use the game canvas')
+    this.document = parseScene(options.scene)
+    if (!this.document.geography)
+      throw new Error('A Nabla game requires planetary coordinates, including offline scenes')
+    if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
+    this.worldContent = options.world ? structuredClone(options.world) : undefined
+    this.displayController = new RuntimeDisplayController(
+      options.display,
+      options.performance?.preset,
+    )
+    this.performanceSettings = new RuntimePerformanceSettings(options.performance)
     this.startCameraController = new RuntimeStartCameraController(
       options.startCameras,
       this.cameraState,
@@ -979,657 +930,798 @@ export class GameRuntime {
         this.options.canvas.dataset.startCameras = status
       },
     )
-    this.cameraPreferences.restoreActionCamSettings(this.settings)
-    this.flipCinematic.enabled = options.flipCinematic !== false
-    this.visuals.setAsphaltContrast(options.asphaltContrast ?? 1)
-    // Reject malformed JavaScript callers before allocating browser resources.
-    if (options.tiles) normalizeTilesBase(options.tiles.baseUrl)
-    this.text = createRuntimeText(options.locale, options.messages)
-    this.game.text = this.text
-    this.worldControls = new RuntimeWorldControls(
-      {
-        document: () => this.document,
-        simulation: () => this.session.simulation,
-        recover: this.game.recover,
-        roads: () => navigationRoads().filter((road) => road.carriageway),
-        pavedAreas: () => this.world?.pavedAreas ?? [],
-        assertAlive: () => this.assertAlive(),
-      },
-      options,
-    )
-    this.toolbar = new GameToolbar(
-      options.canvas.parentElement!,
-      () => this.cameraPreferences.fovOffset,
-      (value) => {
-        this.cameraPreferences.setFovOffset(value, this.settings)
-      },
-      {
-        read: () => this.resolutionScaleState.scale,
-        write: (resolutionScale) =>
-          this.setDisplay({ resolutionScale, resolutionScaleMode: 'manual' }),
-      },
-    )
-    this.toolbar.addAction(
-      t('game.add-a-random-vehicle'),
-      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>',
-      40,
-      async () => {
-        try {
-          const selected = randomRoadVehicle()
-          this.options.onMessage?.(
-            t('load.preparing-vehicle-model', { name: selected.vehicle.name }),
-          )
-          const id = await this.spawnVehicle(selected.vehicle)
-          if (selected.trailer) {
-            selected.trailer.vehicle!.tow = {
-              vehicleId: id,
-              hitch: selected.vehicle.vehicle!.hitch!,
-              anchor: selected.trailer.vehicle!.towAnchor!,
-            }
-            const pose = this.session.simulation!.entityTransform(id)
-            const yaw = 2 * Math.atan2(pose.rotation[1], pose.rotation[3])
-            await this.placeVehicle(selected.trailer, pose.position, yaw)
-          }
-          this.options.onMessage?.(t('game.vehicle-added', { name: selected.vehicle.name }))
-        } catch (error) {
-          this.options.onMessage?.(
-            error instanceof Error ? error.message : t('game.could-not-add-the-vehicle'),
-          )
-        }
-      },
-      'ADD',
-    )
-    this.weaponControls = new WeaponControls(
-      options.canvas.parentElement!,
-      (code) => this.action(code),
-      (held) => this.sidearm?.setAiming(held),
-      this.toolbar,
-    )
-    this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
-    this.scene.add(this.wheelDebug.root)
-    this.displayController = new RuntimeDisplayController(
-      options.display,
-      options.performance?.preset,
-    )
-    Object.assign(this.cameraState, createGameCameraState(options.camera))
-    this.cameraPreferences.restoreView(this.settings)
-    this.camera.near = this.cameraState.settings.nearClip
-    this.camera.far = this.cameraState.settings.farClip
-    this.performanceSettings = new RuntimePerformanceSettings(options.performance)
-    // Profile smoke: off forces it off for the session; otherwise it is the default under a saved value.
+    const cameraState = createGameCameraState(options.camera)
+    resolveFsr(options.fsr)
+    this.originalTabIndex = options.canvas.getAttribute('tabindex')
+    const construction = new RuntimeConstruction()
+    const attributes = [
+      'width',
+      'height',
+      'style',
+      'tabindex',
+      'data-renderer',
+      'data-engine',
+      'data-health',
+      'data-resolution-scale',
+      'data-resolution-scale-mode',
+    ].map((name) => [name, options.canvas.getAttribute(name)] as const)
+    construction.defer(() => {
+      for (const [name, value] of attributes) {
+        if (value === null) options.canvas.removeAttribute(name)
+        else options.canvas.setAttribute(name, value)
+      }
+    })
+    construction.defer(() => this.game.dispose())
     try {
-      if (this.quality.smoke === 0) this.visuals.setSmokePercent(0)
-      else if (this.settings?.getItem('nabla.smokePercent') == null)
+      this.pipeline = new GameRenderPipeline()
+      construction.defer(() => this.pipeline.dispose())
+      this.shadows = new ShadowManager()
+      construction.defer(() => this.shadows.dispose())
+      this.catchFloor = new CatchFloor()
+      construction.defer(() => this.catchFloor.dispose())
+      this.usbFeedback = new UsbFeedback()
+      construction.defer(() => this.usbFeedback.dispose())
+      this.wheelDebug = new WheelDebugOverlay()
+      construction.defer(() => this.wheelDebug.dispose())
+
+      this.preparation = new RuntimePreparation(options.canvas, {
+        prepareAudio: () => this.effects.audio.prepare(),
+        vehiclesReady: () => this.view.ready,
+        loadWeaponAssets: () => this.loadRevealWeaponAssets(),
+        ensureSidearm: () => {
+          this.sidearm ??= this.createSidearm()
+        },
+        warmSidearm: () => this.sidearm!.warm(this.renderer),
+        prepareWeaponPools: () => this.prepareRevealWeaponPools(),
+        prepareTerrain: (signal) => this.prepareRevealTerrain(signal),
+        placeInitialPickup: async (sim) => {
+          if (sim) await this.placeInitialWeaponPickup(sim)
+        },
+        freezeAttract: () => {
+          if (this.attract) this.attract.orbitSpeed = this.attract.orbitTarget = 0
+        },
+        warmPresentation: (sim, signal) => this.warmRevealPresentation(sim, signal),
+      })
+      construction.defer(() => this.preparation.dispose())
+      this.visuals.bindScene(this.scene)
+      this.settings = createSettingsStore(options.settings)
+      this.vehicleSettings = new RuntimeVehiclePreferences(this.settings)
+      // An opted-in model-settings section uses the same owner; explicit stores/null retain their contract.
+      options = this.options = {
+        ...options,
+        steeringWheel: options.steeringWheel && {
+          ...options.steeringWheel,
+          storage:
+            options.steeringWheel.storage === undefined
+              ? this.settings
+              : options.steeringWheel.storage,
+        },
+        mirrors: options.mirrors && {
+          ...options.mirrors,
+          storage: options.mirrors.storage === undefined ? this.settings : options.mirrors.storage,
+        },
+      }
+      this.lighting = new RuntimeLightingPreferences(this.settings)
+      this.weaponPreferences = new RuntimeWeaponPreferences(this.settings)
+      this.playerPresentation = new RuntimePlayerPresentation(this.settings, {
+        applyBody: (body) => {
+          this.view.setPlayerBody(body)
+          this.combat.setLocalBody(this.view.localPlayerBody)
+        },
+        currentBody: () => this.view.localPlayerBody,
+        actorHands: (choice) => {
+          if (this.xrLoaded && this.xr.wearsActorHands)
+            void this.xr
+              .setActorHands(actorHandAssets(choice))
+              .catch((error) => console.warn(error))
+        },
+        createSidearm: (preset) => this.createSidearm(preset),
+        rememberArrow: (template) => {
+          this.remoteArrowTemplate ??= template
+        },
+        sceneOrigin: () => this.view.root.position,
+        onError: (error) => this.options.onError?.(error),
+      })
+      construction.defer(() => this.playerPresentation.dispose())
+      this.sceneryPhysics = new SceneryPhysics(() => this.session.simulation, this.settings)
+      construction.defer(() => this.sceneryPhysics.dispose())
+      this.pipeline.diagnostics = !!options.performanceLog
+      this.pipeline.fsr.setSettings(options.fsr ?? {})
+      this.usbControllers = new UsbControllers(
+        options.usb?.storage === undefined ? this.settings : options.usb.storage,
+      )
+      construction.defer(() => this.usbControllers.reset())
+      try {
+        this.visuals.restoreSmokeEnabled(this.settings)
+        this.cameraPreferences.restoreActionCamEnabled(this.settings)
+        this.visuals.setSmokePercent(
+          Number(this.settings?.getItem('nabla.smokePercent') ?? smokeTuning.defaultPercent),
+        )
+      } catch {
+        /* Keep the default if storage is disabled. */
+      }
+
+      this.cameraPreferences.restoreActionCamSettings(this.settings)
+      this.flipCinematic.enabled = options.flipCinematic !== false
+      this.visuals.setAsphaltContrast(options.asphaltContrast ?? 1)
+
+      this.text = createRuntimeText(options.locale, options.messages)
+      this.game.text = this.text
+      this.worldControls = new RuntimeWorldControls(
+        {
+          document: () => this.document,
+          simulation: () => this.session.simulation,
+          recover: this.game.recover,
+          roads: () => navigationRoads().filter((road) => road.carriageway),
+          pavedAreas: () => this.world?.pavedAreas ?? [],
+          assertAlive: () => this.assertAlive(),
+        },
+        options,
+      )
+      this.toolbar = new GameToolbar(
+        options.canvas.parentElement!,
+        () => this.cameraPreferences.fovOffset,
+        (value) => {
+          this.cameraPreferences.setFovOffset(value, this.settings)
+        },
+        {
+          read: () => this.resolutionScaleState.scale,
+          write: (resolutionScale) =>
+            this.setDisplay({ resolutionScale, resolutionScaleMode: 'manual' }),
+        },
+      )
+      construction.defer(() => this.toolbar.dispose())
+      this.toolbar.addAction(
+        t('game.add-a-random-vehicle'),
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/></svg>',
+        40,
+        async () => {
+          try {
+            const selected = randomRoadVehicle()
+            this.options.onMessage?.(
+              t('load.preparing-vehicle-model', { name: selected.vehicle.name }),
+            )
+            const id = await this.spawnVehicle(selected.vehicle)
+            if (selected.trailer) {
+              selected.trailer.vehicle!.tow = {
+                vehicleId: id,
+                hitch: selected.vehicle.vehicle!.hitch!,
+                anchor: selected.trailer.vehicle!.towAnchor!,
+              }
+              const pose = this.session.simulation!.entityTransform(id)
+              const yaw = 2 * Math.atan2(pose.rotation[1], pose.rotation[3])
+              await this.placeVehicle(selected.trailer, pose.position, yaw)
+            }
+            this.options.onMessage?.(t('game.vehicle-added', { name: selected.vehicle.name }))
+          } catch (error) {
+            this.options.onMessage?.(
+              error instanceof Error ? error.message : t('game.could-not-add-the-vehicle'),
+            )
+          }
+        },
+        'ADD',
+      )
+      this.weaponControls = new WeaponControls(
+        options.canvas.parentElement!,
+        (code) => this.action(code),
+        (held) => this.sidearm?.setAiming(held),
+        this.toolbar,
+      )
+      construction.defer(() => this.weaponControls.dispose())
+      this.hud = options.hud ? new GameHud(options.canvas.parentElement!, this.text) : null
+      construction.defer(() => this.hud?.dispose())
+      this.scene.add(this.wheelDebug.root)
+
+      Object.assign(this.cameraState, cameraState)
+      this.cameraPreferences.restoreView(this.settings)
+      this.camera.near = this.cameraState.settings.nearClip
+      this.camera.far = this.cameraState.settings.farClip
+
+      // Profile smoke: off forces it off for the session; otherwise it is the default under a saved value.
+      try {
+        if (this.quality.smoke === 0) this.visuals.setSmokePercent(0)
+        else if (this.settings?.getItem('nabla.smokePercent') == null)
+          this.visuals.setSmokePercent(this.quality.smoke)
+      } catch {
         this.visuals.setSmokePercent(this.quality.smoke)
-    } catch {
-      this.visuals.setSmokePercent(this.quality.smoke)
-    }
-    this.planetPreferences.restore(this.settings, this.quality.preset)
-    this.document = parseScene(options.scene)
-    this.worldContent = options.world ? structuredClone(options.world) : undefined
-    this.remoteViews = new RemotePortalViews(
-      () => {},
-      (message) => options.onMessage?.(message),
-      (doc) =>
-        new SceneView(doc, false, false, {
-          smokeDensity: this.visuals.smokeDensity,
-          beams: this.visuals.beams,
-          vehicleLightStorage: this.settings,
-        }),
-      (doc) =>
-        doc.geography && options.tiles
+      }
+      this.planetPreferences.restore(this.settings, this.quality.preset)
+
+      this.remoteViews = new RemotePortalViews(
+        () => {},
+        (message) => options.onMessage?.(message),
+        (doc) =>
+          new SceneView(doc, false, false, {
+            smokeDensity: this.visuals.smokeDensity,
+            beams: this.visuals.beams,
+            vehicleLightStorage: this.settings,
+          }),
+        (doc) =>
+          doc.geography && options.tiles
+            ? new PlanetWorld(
+                doc.geography,
+                () => {},
+                () => {},
+                options.tiles.baseUrl,
+                options.tiles.apiUrl ?? '/prepare',
+                options.tiles.mode ?? 'static',
+                options.tiles,
+                this.visuals.world,
+              )
+            : undefined,
+      )
+      construction.defer(() => this.remoteViews.dispose())
+
+      this.renderer =
+        options.backend?.renderer ??
+        new THREE.WebGLRenderer({
+          canvas: options.canvas,
+          antialias: true,
+          alpha: true,
+          logarithmicDepthBuffer: true,
+        })
+      construction.defer(() => this.renderer.forceContextLoss())
+      construction.defer(() => this.renderer.dispose())
+      this.backend = rendererBackend(this.renderer)
+      options.canvas.dataset.renderer = this.backend
+      console.info(`Nabla renderer: ${this.backend}`)
+      if (this.backend === 'webgl') installShaderWarmup(this.renderer)
+      configureWorldRenderer(this.renderer)
+      if (options.onDiagnostics) {
+        this.renderer.info.autoReset = false
+        if (this.backend === 'webgpu') {
+          const timing = new WebGPUGpuTiming(this.renderer as unknown as TimestampRenderer)
+          this.pipeline.gpuTiming = timing.available ? timing : null
+        } else {
+          const gl = this.renderer.getContext()
+          if (gl instanceof WebGL2RenderingContext) {
+            this.pipeline.gpuTiming = createGpuTiming(gl)
+          }
+        }
+      }
+      this.applyPixelRatio()
+      this.renderer.shadowMap.enabled = this.quality.shadows > 0
+      this.renderer.shadowMap.type = THREE.PCFShadowMap
+      this.renderer.shadowMap.autoUpdate = false
+      this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
+      this.fieldLighting = options.fieldLights
+        ? new FieldLighting({
+            ...(options.tiles?.atlas
+              ? {
+                  source: atlasFieldLightSource({
+                    baseUrl: options.tiles.baseUrl,
+                    atlas: options.tiles.atlas,
+                    missingStatuses: [403, 404],
+                  }),
+                }
+              : {}),
+            maxBeams:
+              (
+                {
+                  minimal: 0,
+                  mobile: 0,
+                  low: 4,
+                  road: 6,
+                  balanced: 8,
+                  high: 10,
+                  ultra: 12,
+                } as Record<string, number>
+              )[this.quality.preset] ?? lightingDefaults.maxBeams,
+            ...options.fieldLights,
+          })
+        : null
+      construction.defer(() => this.fieldLighting?.dispose())
+      if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
+      // Same colliders as before the unification: 65 m around every actor, no cap, 3 ms per frame.
+      this.fieldPoles = this.fieldLighting
+        ? this.sceneryPhysics.layer('field-lights', {
+            movable: false,
+            maxBodies: Infinity,
+            world: { reach: 65, budgetMs: 3 },
+          })
+        : null
+      this.view = new SceneView(this.document, false, false, {
+        smokeDensity: this.visuals.smokeDensity,
+        beams: this.visuals.beams,
+        vehicleLightStorage: this.settings,
+        assetQuality:
+          this.options.assetQuality ??
+          assetQualityForDevice(this.quality.preset, navigator.userAgent),
+        mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
+        steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
+        driverPoseOffset: (model) => readDriverPose(this.settings, model),
+        mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
+        startLights: options.startLights ?? 'auto',
+      })
+      construction.defer(() => this.view.dispose())
+      this.view.destruction.simulatedFire = this.options.simulatedFire !== false
+      this.scene.add(this.view.root)
+      this.headlamp = new Headlamp(this.view.vehicleLights.pedestrianLight)
+      this.weaponLight = new THREE.SpotLight(0xfff4de, 0, 45, Math.PI / 9, 0.65, 1.5)
+      construction.defer(() => this.weaponLight?.dispose())
+      this.weaponLight.userData.excludeFromViewmodel = true
+      this.scene.add(this.weaponLight, this.weaponLight.target)
+      this.monitors = new VehicleMonitors(
+        options.canvas.parentElement!,
+        (message) => options.onMessage?.(message),
+        options.canvas,
+        this.text,
+      )
+      construction.defer(() => this.monitors.dispose())
+      this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
+      // The PORTAL panel's Lat/Lon «Ir» form moves the ship (and anyone in its cabin).
+      this.monitors.onJump = (carrier, latitude, longitude) => {
+        const sim = this.session.simulation
+        if (sim) options.onMessage?.(sim.relocateVehicle(carrier, latitude, longitude))
+      }
+      if (this.worldContent) {
+        const world = this.worldContent
+        const source = (id: string) =>
+          portalRegistry(world).find(
+            (entry) => entry.entityId === id && entry.locationId === world.activeLocation,
+          )
+        this.monitors.projectRegistry = {
+          entries: () =>
+            portalRegistry(world).filter((entry) => entry.locationId !== world.activeLocation),
+          selected: (id) =>
+            world.connections?.find((connection) => connection.source === source(id)?.id)
+              ?.destination,
+          configure: (id, destination, open) => {
+            const entry = source(id)
+            if (!entry) throw new Error('Portal is not registered')
+            const mouth = this.document.entities.find((entity) => entity.id === id)
+            const sim = this.session.simulation
+            if (
+              open &&
+              mouth?.portal?.clearsRamp &&
+              mouth.parentId &&
+              sim &&
+              !sim.vehicleInfo(mouth.parentId).rampClosed
+            )
+              throw new Error('Close the garage door first')
+            if (destination && sim) sim.configurePortal(id, null, 'closed')
+            Object.assign(
+              world,
+              setPortalConnection(world, entry.id, destination, open ? 'window' : 'closed'),
+            )
+            this.remoteViews.dispose()
+            return this.text(open ? 'Remote window open' : 'Remote window closed')
+          },
+          status: (id) => {
+            const connection = world.connections?.find((item) => item.source === source(id)?.id)
+            return connection
+              ? this.text(
+                  connection.mode === 'window' ? 'Remote window open' : 'Remote window closed',
+                )
+              : undefined
+          },
+        }
+      }
+      this.monitors.rebuild(this.document)
+      installEngineStyles(options.canvas.ownerDocument)
+      this.gallery = new Gallery(options.canvas.parentElement!, this.text)
+      construction.defer(() => this.gallery.dispose())
+      this.combatHud = new CombatHud(
+        options.canvas.parentElement!,
+        {
+          health: this.text('HP'),
+          dead: (seconds) => this.text('Down · respawn in {0} s', seconds),
+        },
+        options.healthDisplay ?? 'bar',
+        (percent) => {
+          if (percent === null) delete options.canvas.dataset.health
+          else options.canvas.dataset.health = String(percent)
+        },
+      )
+      construction.defer(() => this.combatHud.dispose())
+      this.combat = new Combat({
+        now: () => performance.now() / 1000,
+        sceneOffset: () => this.view.root.position.clone(),
+        respawnLocal: (position) => this.respawnLocalPlayer(position),
+        localDied: () => {
+          this.weaponDrawn = false
+          this.playerPresentation.heldDrawn = false
+          this.sidearm?.setAiming(false)
+        },
+        hud: this.combatHud,
+      })
+      this.versionLabel = mountEngineVersionLabel(options.canvas.parentElement!)
+      construction.defer(() => this.versionLabel?.remove())
+      this.sky = new GeographicView(this.document, () => {})
+      construction.defer(() => this.sky.dispose())
+      // Reattach after Play extraction: viewer still parents the flare; game must too.
+      this.scene.add(this.sky.lensFlare)
+      this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
+      construction.defer(() => this.environment.dispose())
+      this.planetPreferences.initializeView(this.sky, this.options.sea !== false)
+      this.effects = new VehicleEffects(this.scene, undefined, this.visuals.smokeDensity)
+      construction.defer(() => this.effects.dispose())
+      this.effects.audio.mixer.set(readAudioMix(this.settings) ?? {})
+      this.effects.reverseAlarmEnabled = (entity) =>
+        this.vehicleSettings.read(entity.visual?.body.url ?? entity.id).reverseAlarm
+      // Music first: a `startOn: "host"` track must hold the audio before setEnabled() unlocks it.
+      this.effects.audio.setMusic(options.music)
+      this.effects.audio.setEnabled(options.audio !== false)
+
+      const touchActions = {
+        engage: () => {
+          options.canvas.focus()
+          this.effects.audio.unlock()
+        },
+        interact: () => this.action('interact'),
+        camera: () => this.cycleCamera(),
+        respawn: () => {
+          const message = this.game.dispatch('recover')
+          if (message) this.options.onMessage?.(message)
+        },
+      }
+      this.touchDriving =
+        options.touchControls === false
+          ? null
+          : new TouchDriving(
+              options.canvas.parentElement!,
+              touchActions,
+              options.touchControls ?? 'auto',
+              this.text,
+              undefined,
+              this.toolbar,
+            )
+      construction.defer(() => this.touchDriving?.dispose())
+      this.touchFlight =
+        options.touchControls === false
+          ? null
+          : new TouchFlight(
+              options.canvas.parentElement!,
+              touchActions,
+              options.touchControls ?? 'auto',
+              this.text,
+            )
+      construction.defer(() => this.touchFlight?.dispose())
+      this.touchWalk =
+        options.touchControls === false
+          ? null
+          : new TouchWalk(options.canvas.parentElement!, options.touchControls ?? 'auto', this.text)
+      construction.defer(() => this.touchWalk?.dispose())
+      if (readXRQuality(this.settings).shadows && this.quality.shadows === 0)
+        this.performanceSettings.enableXRShadows()
+      // XR preferences can promote a shadowless tier after renderer creation.
+      // Keep the renderer in sync with the final tier before any materials compile.
+      this.renderer.shadowMap.enabled = this.quality.shadows > 0
+      this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
+      if (this.quality.shadows > 0)
+        this.shadows.init({
+          camera: this.camera,
+          scene: this.scene,
+          lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
+          tier: shadowTiers[this.quality.shadows]!,
+          nodeKit: webgpuNodeKit(this.renderer),
+        })
+      this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
+      this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
+      this.shadows.setupMaterial(this.catchFloor.mesh.material)
+      this.sun.visible = this.quality.shadows === 0
+      this.world =
+        options.tiles && this.document.geography
           ? new PlanetWorld(
-              doc.geography,
+              this.document.geography,
               () => {},
-              () => {},
+              (material) => this.shadows.setupMaterial(material),
               options.tiles.baseUrl,
               options.tiles.apiUrl ?? '/prepare',
               options.tiles.mode ?? 'static',
-              options.tiles,
+              // Loading workers (Atlas packages, package photos, cluster prep) on by default for
+              // every backend; `?loadingWorkers=0` keeps all of it on the main thread.
+              loadingWorkersEnabled(globalThis.location?.search ?? '')
+                ? {
+                    ...options.tiles,
+                    packageLoader: workerAtlasPackageLoader(),
+                    loading: workerLoading(),
+                  }
+                : options.tiles,
               this.visuals.world,
             )
-          : undefined,
-    )
-    if (!this.document.geography)
-      throw new Error('A Nabla game requires planetary coordinates, including offline scenes')
-    this.renderer =
-      options.backend?.renderer ??
-      new THREE.WebGLRenderer({
-        canvas: options.canvas,
-        antialias: true,
-        alpha: true,
-        logarithmicDepthBuffer: true,
-      })
-    this.backend = rendererBackend(this.renderer)
-    options.canvas.dataset.renderer = this.backend
-    console.info(`Nabla renderer: ${this.backend}`)
-    if (this.backend === 'webgl') installShaderWarmup(this.renderer)
-    configureWorldRenderer(this.renderer)
-    if (options.onDiagnostics) {
-      this.renderer.info.autoReset = false
-      if (this.backend === 'webgpu') {
-        const timing = new WebGPUGpuTiming(this.renderer as unknown as TimestampRenderer)
-        this.pipeline.gpuTiming = timing.available ? timing : null
-      } else {
-        const gl = this.renderer.getContext()
-        if (gl instanceof WebGL2RenderingContext) {
-          this.pipeline.gpuTiming = createGpuTiming(gl)
+          : null
+      construction.defer(() => this.world?.dispose())
+      if (this.world) {
+        const renderer = this.renderer
+        this.world.gpu = {
+          initTexture: (texture) => renderer.initTexture(texture),
+          compileAsync: (object) => renderer.compileAsync(object, this.camera, this.scene),
         }
-      }
-    }
-    this.applyPixelRatio()
-    this.renderer.shadowMap.enabled = this.quality.shadows > 0
-    this.renderer.shadowMap.type = THREE.PCFShadowMap
-    this.renderer.shadowMap.autoUpdate = false
-    this.scene.add(this.sun, this.ambient, this.catchFloor.mesh)
-    this.fieldLighting = options.fieldLights
-      ? new FieldLighting({
-          ...(options.tiles?.atlas
-            ? {
-                source: atlasFieldLightSource({
-                  baseUrl: options.tiles.baseUrl,
-                  atlas: options.tiles.atlas,
-                  missingStatuses: [403, 404],
-                }),
-              }
-            : {}),
-          maxBeams:
-            (
-              {
-                minimal: 0,
-                mobile: 0,
-                low: 4,
-                road: 6,
-                balanced: 8,
-                high: 10,
-                ultra: 12,
-              } as Record<string, number>
-            )[this.quality.preset] ?? lightingDefaults.maxBeams,
-          ...options.fieldLights,
-        })
-      : null
-    if (this.fieldLighting) this.scene.add(this.fieldLighting.lights.root)
-    // Same colliders as before the unification: 65 m around every actor, no cap, 3 ms per frame.
-    this.fieldPoles = this.fieldLighting
-      ? this.sceneryPhysics.layer('field-lights', {
-          movable: false,
-          maxBodies: Infinity,
-          world: { reach: 65, budgetMs: 3 },
-        })
-      : null
-    this.view = new SceneView(this.document, false, false, {
-      smokeDensity: this.visuals.smokeDensity,
-      beams: this.visuals.beams,
-      vehicleLightStorage: this.settings,
-      assetQuality:
-        this.options.assetQuality ??
-        assetQualityForDevice(this.quality.preset, navigator.userAgent),
-      mirrorPolicy: mirrorPolicyForQuality(this.quality.preset),
-      steeringWheelOffset: (model) => initialSteeringWheelOffset(options.steeringWheel, model),
-      driverPoseOffset: (model) => readDriverPose(this.settings, model),
-      mirrorAdjustment: (model) => initialMirrorAdjustment(options.mirrors, model),
-      startLights: options.startLights ?? 'auto',
-    })
-    this.view.destruction.simulatedFire = this.options.simulatedFire !== false
-    this.scene.add(this.view.root)
-    this.headlamp = new Headlamp(this.view.vehicleLights.pedestrianLight)
-    this.weaponLight = new THREE.SpotLight(0xfff4de, 0, 45, Math.PI / 9, 0.65, 1.5)
-    this.weaponLight.userData.excludeFromViewmodel = true
-    this.scene.add(this.weaponLight, this.weaponLight.target)
-    this.monitors = new VehicleMonitors(
-      options.canvas.parentElement!,
-      (message) => options.onMessage?.(message),
-      options.canvas,
-      this.text,
-    )
-    this.monitors.onShipSwitch = (id, kind) => this.view.pressShipSwitch(id, kind)
-    // The PORTAL panel's Lat/Lon «Ir» form moves the ship (and anyone in its cabin).
-    this.monitors.onJump = (carrier, latitude, longitude) => {
-      const sim = this.session.simulation
-      if (sim) options.onMessage?.(sim.relocateVehicle(carrier, latitude, longitude))
-    }
-    if (this.worldContent) {
-      const world = this.worldContent
-      const source = (id: string) =>
-        portalRegistry(world).find(
-          (entry) => entry.entityId === id && entry.locationId === world.activeLocation,
-        )
-      this.monitors.projectRegistry = {
-        entries: () =>
-          portalRegistry(world).filter((entry) => entry.locationId !== world.activeLocation),
-        selected: (id) =>
-          world.connections?.find((connection) => connection.source === source(id)?.id)
-            ?.destination,
-        configure: (id, destination, open) => {
-          const entry = source(id)
-          if (!entry) throw new Error('Portal is not registered')
-          const mouth = this.document.entities.find((entity) => entity.id === id)
-          const sim = this.session.simulation
-          if (
-            open &&
-            mouth?.portal?.clearsRamp &&
-            mouth.parentId &&
-            sim &&
-            !sim.vehicleInfo(mouth.parentId).rampClosed
-          )
-            throw new Error('Close the garage door first')
-          if (destination && sim) sim.configurePortal(id, null, 'closed')
-          Object.assign(
-            world,
-            setPortalConnection(world, entry.id, destination, open ? 'window' : 'closed'),
-          )
-          this.remoteViews.dispose()
-          return this.text(open ? 'Remote window open' : 'Remote window closed')
-        },
-        status: (id) => {
-          const connection = world.connections?.find((item) => item.source === source(id)?.id)
-          return connection
-            ? this.text(
-                connection.mode === 'window' ? 'Remote window open' : 'Remote window closed',
-              )
-            : undefined
-        },
-      }
-    }
-    this.monitors.rebuild(this.document)
-    installEngineStyles(options.canvas.ownerDocument)
-    this.gallery = new Gallery(options.canvas.parentElement!, this.text)
-    this.combatHud = new CombatHud(
-      options.canvas.parentElement!,
-      {
-        health: this.text('HP'),
-        dead: (seconds) => this.text('Down · respawn in {0} s', seconds),
-      },
-      options.healthDisplay ?? 'bar',
-      (percent) => {
-        if (percent === null) delete options.canvas.dataset.health
-        else options.canvas.dataset.health = String(percent)
-      },
-    )
-    this.combat = new Combat({
-      now: () => performance.now() / 1000,
-      sceneOffset: () => this.view.root.position.clone(),
-      respawnLocal: (position) => this.respawnLocalPlayer(position),
-      localDied: () => {
-        this.weaponDrawn = false
-        this.playerPresentation.heldDrawn = false
-        this.sidearm?.setAiming(false)
-      },
-      hud: this.combatHud,
-    })
-    this.versionLabel = mountEngineVersionLabel(options.canvas.parentElement!)
-    this.sky = new GeographicView(this.document, () => {})
-    // Reattach after Play extraction: viewer still parents the flare; game must too.
-    this.scene.add(this.sky.lensFlare)
-    this.environment = new WorldEnvironment(this.scene, this.sun, this.ambient)
-    this.planetPreferences.initializeView(this.sky, this.options.sea !== false)
-    this.effects = new VehicleEffects(this.scene, undefined, this.visuals.smokeDensity)
-    this.effects.audio.mixer.set(readAudioMix(this.settings) ?? {})
-    this.effects.reverseAlarmEnabled = (entity) =>
-      this.vehicleSettings.read(entity.visual?.body.url ?? entity.id).reverseAlarm
-    // Music first: a `startOn: "host"` track must hold the audio before setEnabled() unlocks it.
-    this.effects.audio.setMusic(options.music)
-    this.effects.audio.setEnabled(options.audio !== false)
-    if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
-    const touchActions = {
-      engage: () => {
-        options.canvas.focus()
-        this.effects.audio.unlock()
-      },
-      interact: () => this.action('interact'),
-      camera: () => this.cycleCamera(),
-      respawn: () => {
-        const message = this.game.dispatch('recover')
-        if (message) this.options.onMessage?.(message)
-      },
-    }
-    this.touchDriving =
-      options.touchControls === false
-        ? null
-        : new TouchDriving(
-            options.canvas.parentElement!,
-            touchActions,
-            options.touchControls ?? 'auto',
-            this.text,
-            undefined,
-            this.toolbar,
-          )
-    this.touchFlight =
-      options.touchControls === false
-        ? null
-        : new TouchFlight(
-            options.canvas.parentElement!,
-            touchActions,
-            options.touchControls ?? 'auto',
-            this.text,
-          )
-    this.touchWalk =
-      options.touchControls === false
-        ? null
-        : new TouchWalk(options.canvas.parentElement!, options.touchControls ?? 'auto', this.text)
-    if (readXRQuality(this.settings).shadows && this.quality.shadows === 0)
-      this.performanceSettings.enableXRShadows()
-    // XR preferences can promote a shadowless tier after renderer creation.
-    // Keep the renderer in sync with the final tier before any materials compile.
-    this.renderer.shadowMap.enabled = this.quality.shadows > 0
-    this.shadows.setBiasScale(options.shadowBias ?? shadowBiasRange.default)
-    if (this.quality.shadows > 0)
-      this.shadows.init({
-        camera: this.camera,
-        scene: this.scene,
-        lightDirection: new THREE.Vector3(25, -45, -25).normalize(),
-        tier: shadowTiers[this.quality.shadows]!,
-        nodeKit: webgpuNodeKit(this.renderer),
-      })
-    this.view.setVehicleShadowReceiving(!!this.quality.vehicleShadows)
-    this.view.setupMaterials((material) => this.shadows.setupMaterial(material))
-    this.shadows.setupMaterial(this.catchFloor.mesh.material)
-    this.sun.visible = this.quality.shadows === 0
-    this.world =
-      options.tiles && this.document.geography
-        ? new PlanetWorld(
-            this.document.geography,
-            () => {},
-            (material) => this.shadows.setupMaterial(material),
-            options.tiles.baseUrl,
-            options.tiles.apiUrl ?? '/prepare',
-            options.tiles.mode ?? 'static',
-            // Loading workers (Atlas packages, package photos, cluster prep) on by default for
-            // every backend; `?loadingWorkers=0` keeps all of it on the main thread.
-            loadingWorkersEnabled(globalThis.location?.search ?? '')
-              ? {
-                  ...options.tiles,
-                  packageLoader: workerAtlasPackageLoader(),
-                  loading: workerLoading(),
-                }
-              : options.tiles,
-            this.visuals.world,
-          )
-        : null
-    if (this.world) {
-      const renderer = this.renderer
-      this.world.gpu = {
-        initTexture: (texture) => renderer.initTexture(texture),
-        compileAsync: (object) => renderer.compileAsync(object, this.camera, this.scene),
-      }
-      // KTX2 tile textures are transcoded in the tile worker to a format this renderer samples.
-      this.world.textureSupport = detectCompressedTextureSupport(renderer)
-      let announced: string | undefined
-      let painted = false
-      this.world.beforeInstall = (key) => {
-        // No diagnostic delay during preload. During play, let the DOM indicator paint
-        // before an indivisible mesh upload can occupy the main thread.
-        if (!options.performanceLog || this.session.state !== 'playing') return true
-        if (announced !== key) {
-          announced = key
+        // KTX2 tile textures are transcoded in the tile worker to a format this renderer samples.
+        this.world.textureSupport = detectCompressedTextureSupport(renderer)
+        let announced: string | undefined
+        let painted = false
+        this.world.beforeInstall = (key) => {
+          // No diagnostic delay during preload. During play, let the DOM indicator paint
+          // before an indivisible mesh upload can occupy the main thread.
+          if (!options.performanceLog || this.session.state !== 'playing') return true
+          if (announced !== key) {
+            announced = key
+            painted = false
+            options.canvas.dataset.tileInstallActive = '1'
+            options.canvas.dataset.tileInstallDetail = 'Instalando celda ' + key
+            window.dispatchEvent(new Event('nabla-stream-step'))
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                if (announced === key) painted = true
+              }),
+            )
+            return false
+          }
+          return painted
+        }
+        this.world.afterInstall = (key) => {
+          if (!options.performanceLog) return
+          options.canvas.dataset.tileInstallActive = '0'
+          options.canvas.dataset.tileInstallDetail = 'Última celda ' + key
+          announced = undefined
           painted = false
-          options.canvas.dataset.tileInstallActive = '1'
-          options.canvas.dataset.tileInstallDetail = 'Instalando celda ' + key
           window.dispatchEvent(new Event('nabla-stream-step'))
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => {
-              if (announced === key) painted = true
-            }),
-          )
-          return false
         }
-        return painted
+        const budget = streamBudget(this.quality)
+        this.world.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
+        this.world.setDistance(this.quality.distance)
+        this.world.setRelief(this.quality.relief)
+        this.scene.add(this.world.root)
+        this.releaseCharts = registerPlanetCharts(() => this.world!.chartTiles)
+        construction.defer(() => this.releaseCharts?.())
+        this.releasePlaces = registerNavigationPlaces(() => this.world!.iterateNavigationPlaces())
+        construction.defer(() => this.releasePlaces?.())
+        this.releaseRoads = registerNavigationRoads(() => this.world!.iterateNavigationRoads())
+        construction.defer(() => this.releaseRoads?.())
       }
-      this.world.afterInstall = (key) => {
-        if (!options.performanceLog) return
-        options.canvas.dataset.tileInstallActive = '0'
-        options.canvas.dataset.tileInstallDetail = 'Última celda ' + key
-        announced = undefined
-        painted = false
-        window.dispatchEvent(new Event('nabla-stream-step'))
-      }
-      const budget = streamBudget(this.quality)
-      this.world.setQuality(budget.concurrent, budget.ahead, budget.retain, budget.tiles)
-      this.world.setDistance(this.quality.distance)
-      this.world.setRelief(this.quality.relief)
-      this.scene.add(this.world.root)
-      this.releaseCharts = registerPlanetCharts(() => this.world!.chartTiles)
-      this.releasePlaces = registerNavigationPlaces(() => this.world!.iterateNavigationPlaces())
-      this.releaseRoads = registerNavigationRoads(() => this.world!.iterateNavigationRoads())
+      this.loop = new FrameLoop((time) => {
+        try {
+          this.frame(time)
+        } catch (error) {
+          this.pause()
+          this.options.onError?.(error)
+        }
+      })
+      construction.defer(() => this.loop.stop())
+      this.loop.setMaxFps(this.displayController.settings.maxFps)
+
+      options.canvas.tabIndex = 0
+      this.pointer = new RuntimePointerCapture(
+        options.canvas,
+        document,
+        () => this.session.state === 'playing',
+      )
+      const vehicleRuntime = this
+      this.vehiclePresentation = new RuntimeVehiclePresentation({
+        canvas: options.canvas,
+        session: this.session,
+        document: this.document,
+        game: this.game,
+        view: this.view,
+        get disposed() {
+          return vehicleRuntime.disposed
+        },
+        get smokeEnabled() {
+          return vehicleRuntime.visuals.smokeEnabled
+        },
+        get cameraYaw() {
+          return vehicleRuntime.cameraState.yaw
+        },
+        get replacementVehicles() {
+          return vehicleRuntime.options.accidentReplacementVehicles
+        },
+        text: this.text,
+        assertAlive: () => this.assertAlive(),
+        hasWorld: () => !!this.world,
+        waitForGround: (x, z, timeoutMs) => waitForGround(this.world!, [x, 0, z], { timeoutMs }),
+        sceneGroundHeight: (player, x, z) => this.sceneGroundHeight(player, x, z),
+        rebuildMonitors: () => this.monitors.rebuild(this.document),
+        createWarmup: () => this.createVehicleWarmup(),
+        pause: () => this.pause(),
+        resume: () => this.resume(),
+        destructionSound: (position) => this.effects.audio.destruction(position),
+      })
+      construction.defer(() => this.vehiclePresentation.dispose())
+      const actionRuntime = this
+      this.actions = new RuntimeActionDispatch({
+        get inspector() {
+          return actionRuntime.inspector
+        },
+        get disposed() {
+          return actionRuntime.disposed
+        },
+        get session() {
+          return actionRuntime.session
+        },
+        get game() {
+          return actionRuntime.game
+        },
+        get keys() {
+          return actionRuntime.keys
+        },
+        get controlContext() {
+          return actionRuntime.controlContext
+        },
+        get document() {
+          return actionRuntime.document
+        },
+        get view() {
+          return actionRuntime.view
+        },
+        get camera() {
+          return actionRuntime.camera
+        },
+        get firearmSamples() {
+          return actionRuntime.firearmSamples
+        },
+        get inventory() {
+          return actionRuntime.inventory
+        },
+        get pickupModels() {
+          return actionRuntime.pickupModels
+        },
+        get loadout() {
+          return actionRuntime.loadout
+        },
+        get bodySlotHost() {
+          return actionRuntime.bodySlotHost
+        },
+        get wheelDebug() {
+          return actionRuntime.wheelDebug
+        },
+        get gallery() {
+          return actionRuntime.gallery
+        },
+        get drivingPrepared() {
+          return actionRuntime.vehiclePresentation.drivingPrepared
+        },
+        get xrActive() {
+          return actionRuntime.xrActive
+        },
+        get weaponOwned() {
+          return actionRuntime.weaponOwned
+        },
+        get headlampEnabled() {
+          return actionRuntime.headlampEnabled
+        },
+        get weaponLight() {
+          return actionRuntime.weaponLight
+        },
+        get text() {
+          return actionRuntime.text
+        },
+        get sidearm() {
+          return actionRuntime.sidearm
+        },
+        set sidearm(value) {
+          actionRuntime.sidearm = value
+        },
+        get weaponDrawn() {
+          return actionRuntime.weaponDrawn
+        },
+        set weaponDrawn(value) {
+          actionRuntime.weaponDrawn = value
+        },
+        get heldDrawn() {
+          return actionRuntime.playerPresentation.heldDrawn
+        },
+        set heldDrawn(value) {
+          actionRuntime.playerPresentation.heldDrawn = value
+        },
+        get ownedWeaponId() {
+          return actionRuntime.ownedWeaponId
+        },
+        set ownedWeaponId(value) {
+          actionRuntime.ownedWeaponId = value
+        },
+        get fireRequested() {
+          return actionRuntime.fireRequested
+        },
+        set fireRequested(value) {
+          actionRuntime.fireRequested = value
+        },
+        get triggerDown() {
+          return actionRuntime.triggerDown
+        },
+        set triggerDown(value) {
+          actionRuntime.triggerDown = value
+        },
+        get weaponLightOn() {
+          return actionRuntime.weaponLightOn
+        },
+        set weaponLightOn(value) {
+          actionRuntime.weaponLightOn = value
+        },
+        get magazineAction() {
+          return actionRuntime.magazineAction
+        },
+        set magazineAction(value) {
+          actionRuntime.magazineAction = value
+        },
+        get audio() {
+          return actionRuntime.effects.audio
+        },
+        report: (message) => this.options.onMessage?.(message),
+        nearbyPickup: (sim) => this.nearbyPickup(sim),
+        pickupVisible: (sim, item) => this.pickupVisible(sim, item),
+        loadoutWeaponFor: (id) => this.loadoutWeaponFor(id),
+        createSidearm: (preset) => this.createSidearm(preset),
+        selectWeaponSlot: (slot) => this.selectWeaponSlot(slot),
+        setHeadlamp: (enabled) => this.setHeadlamp(enabled),
+        prewarmVehicle: (entities) => this.prewarmVehicle(entities),
+        skipStartCamera: (sim) => this.startCameraController.skip(sim, false),
+        adjustFov: (step) => {
+          this.cameraPreferences.setFovOffset(
+            nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
+            this.settings,
+          )
+          const { firstPersonFov, chaseFov } = this.cameraState.settings
+          return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
+        },
+        loadTrailerCars: (id) => this.loadTrailerCars(id),
+      })
+      this.inputEvents = new RuntimeInputEvents(
+        options.canvas,
+        window,
+        document,
+        this.pointer,
+        {
+          playing: () => this.session.state === 'playing',
+          hasInput: () => this.hasInput(),
+          activity: () => this.cameraActivity(),
+          syncShift: (held) => this.keys.syncShift(held, performance.now()),
+          unlockAudio: () => this.effects.audio.unlock(),
+          monitorAtCenter: () => !!this.monitors.panelAt(innerWidth / 2, innerHeight / 2),
+          button: (button, down) => this.applySidearmButton(button, down),
+          cancelPointer: () => {
+            this.triggerReleased = true
+            this.triggerDown = false
+            this.sidearm?.setAiming(false)
+          },
+          wheel: (event) => this.handleInputWheel(event),
+          keyDown: (event) => this.handleInputKeyDown(event),
+          keyUp: (event) => this.handleInputKeyUp(event),
+          move: (event) => this.handleInputMove(event),
+          visibility: (hidden) => {
+            this.effects.audio.setSuspended(hidden || this.session.state !== 'playing')
+            this.effects.audio.setPageHidden(hidden)
+            this.frames.lastTime = null
+          },
+          release: {
+            beam: () => this.releaseBeamFlash(),
+            controllers: () => {
+              this.usbControllers.reset()
+              this.usbFrame = idleUsbFrame()
+              this.usbFeedback.stop()
+            },
+            weapons: () => this.releaseWeaponInput(),
+            touch: () => {
+              this.touchDriving?.clear()
+              this.touchFlight?.clear()
+              this.touchWalk?.clear()
+            },
+            monitors: () => this.monitors.releaseInput(),
+            game: () => this.game.releaseInput(),
+            gamepad: () => {
+              this.previousButtons = []
+              this.previousPad = null
+            },
+          },
+        },
+        this.lifetime.signal,
+      )
+      this.inputEvents.bind()
+      this.observer = new ResizeObserver(() => this.resize())
+      construction.defer(() => this.observer.disconnect())
+      this.observer.observe(options.canvas)
+      this.resize()
+
+      if (options.music?.menuLabel) setCarMenuMusicLabel(options.music.menuLabel)
+      construction.commit()
+    } catch (error) {
+      this.disposed = true
+      this.frames.cancel()
+      this.lifetime.abort()
+      construction.rollback()
+      throw error
     }
-    this.loop = new FrameLoop((time) => {
-      try {
-        this.frame(time)
-      } catch (error) {
-        this.pause()
-        this.options.onError?.(error)
-      }
-    })
-    this.loop.setMaxFps(this.displayController.settings.maxFps)
-    this.originalTabIndex = options.canvas.getAttribute('tabindex')
-    options.canvas.tabIndex = 0
-    this.pointer = new RuntimePointerCapture(
-      options.canvas,
-      document,
-      () => this.session.state === 'playing',
-    )
-    const vehicleRuntime = this
-    this.vehiclePresentation = new RuntimeVehiclePresentation({
-      canvas: options.canvas,
-      session: this.session,
-      document: this.document,
-      game: this.game,
-      view: this.view,
-      get disposed() {
-        return vehicleRuntime.disposed
-      },
-      get smokeEnabled() {
-        return vehicleRuntime.visuals.smokeEnabled
-      },
-      get cameraYaw() {
-        return vehicleRuntime.cameraState.yaw
-      },
-      get replacementVehicles() {
-        return vehicleRuntime.options.accidentReplacementVehicles
-      },
-      text: this.text,
-      assertAlive: () => this.assertAlive(),
-      hasWorld: () => !!this.world,
-      waitForGround: (x, z, timeoutMs) => waitForGround(this.world!, [x, 0, z], { timeoutMs }),
-      sceneGroundHeight: (player, x, z) => this.sceneGroundHeight(player, x, z),
-      rebuildMonitors: () => this.monitors.rebuild(this.document),
-      createWarmup: () => this.createVehicleWarmup(),
-      pause: () => this.pause(),
-      resume: () => this.resume(),
-      destructionSound: (position) => this.effects.audio.destruction(position),
-    })
-    const actionRuntime = this
-    this.actions = new RuntimeActionDispatch({
-      get inspector() {
-        return actionRuntime.inspector
-      },
-      get disposed() {
-        return actionRuntime.disposed
-      },
-      get session() {
-        return actionRuntime.session
-      },
-      get game() {
-        return actionRuntime.game
-      },
-      get keys() {
-        return actionRuntime.keys
-      },
-      get controlContext() {
-        return actionRuntime.controlContext
-      },
-      get document() {
-        return actionRuntime.document
-      },
-      get view() {
-        return actionRuntime.view
-      },
-      get camera() {
-        return actionRuntime.camera
-      },
-      get firearmSamples() {
-        return actionRuntime.firearmSamples
-      },
-      get inventory() {
-        return actionRuntime.inventory
-      },
-      get pickupModels() {
-        return actionRuntime.pickupModels
-      },
-      get loadout() {
-        return actionRuntime.loadout
-      },
-      get bodySlotHost() {
-        return actionRuntime.bodySlotHost
-      },
-      get wheelDebug() {
-        return actionRuntime.wheelDebug
-      },
-      get gallery() {
-        return actionRuntime.gallery
-      },
-      get drivingPrepared() {
-        return actionRuntime.vehiclePresentation.drivingPrepared
-      },
-      get xrActive() {
-        return actionRuntime.xrActive
-      },
-      get weaponOwned() {
-        return actionRuntime.weaponOwned
-      },
-      get headlampEnabled() {
-        return actionRuntime.headlampEnabled
-      },
-      get weaponLight() {
-        return actionRuntime.weaponLight
-      },
-      get text() {
-        return actionRuntime.text
-      },
-      get sidearm() {
-        return actionRuntime.sidearm
-      },
-      set sidearm(value) {
-        actionRuntime.sidearm = value
-      },
-      get weaponDrawn() {
-        return actionRuntime.weaponDrawn
-      },
-      set weaponDrawn(value) {
-        actionRuntime.weaponDrawn = value
-      },
-      get heldDrawn() {
-        return actionRuntime.playerPresentation.heldDrawn
-      },
-      set heldDrawn(value) {
-        actionRuntime.playerPresentation.heldDrawn = value
-      },
-      get ownedWeaponId() {
-        return actionRuntime.ownedWeaponId
-      },
-      set ownedWeaponId(value) {
-        actionRuntime.ownedWeaponId = value
-      },
-      get fireRequested() {
-        return actionRuntime.fireRequested
-      },
-      set fireRequested(value) {
-        actionRuntime.fireRequested = value
-      },
-      get triggerDown() {
-        return actionRuntime.triggerDown
-      },
-      set triggerDown(value) {
-        actionRuntime.triggerDown = value
-      },
-      get weaponLightOn() {
-        return actionRuntime.weaponLightOn
-      },
-      set weaponLightOn(value) {
-        actionRuntime.weaponLightOn = value
-      },
-      get magazineAction() {
-        return actionRuntime.magazineAction
-      },
-      set magazineAction(value) {
-        actionRuntime.magazineAction = value
-      },
-      get audio() {
-        return actionRuntime.effects.audio
-      },
-      report: (message) => this.options.onMessage?.(message),
-      nearbyPickup: (sim) => this.nearbyPickup(sim),
-      pickupVisible: (sim, item) => this.pickupVisible(sim, item),
-      loadoutWeaponFor: (id) => this.loadoutWeaponFor(id),
-      createSidearm: (preset) => this.createSidearm(preset),
-      selectWeaponSlot: (slot) => this.selectWeaponSlot(slot),
-      setHeadlamp: (enabled) => this.setHeadlamp(enabled),
-      prewarmVehicle: (entities) => this.prewarmVehicle(entities),
-      skipStartCamera: (sim) => this.startCameraController.skip(sim, false),
-      adjustFov: (step) => {
-        this.cameraPreferences.setFovOffset(
-          nextCameraFovOffset(this.cameraPreferences.fovOffset, step),
-          this.settings,
-        )
-        const { firstPersonFov, chaseFov } = this.cameraState.settings
-        return this.text('FOV cockpit {0}° · driving {1}°', firstPersonFov, chaseFov)
-      },
-      loadTrailerCars: (id) => this.loadTrailerCars(id),
-    })
-    this.inputEvents = new RuntimeInputEvents(
-      options.canvas,
-      window,
-      document,
-      this.pointer,
-      {
-        playing: () => this.session.state === 'playing',
-        hasInput: () => this.hasInput(),
-        activity: () => this.cameraActivity(),
-        syncShift: (held) => this.keys.syncShift(held, performance.now()),
-        unlockAudio: () => this.effects.audio.unlock(),
-        monitorAtCenter: () => !!this.monitors.panelAt(innerWidth / 2, innerHeight / 2),
-        button: (button, down) => this.applySidearmButton(button, down),
-        cancelPointer: () => {
-          this.triggerReleased = true
-          this.triggerDown = false
-          this.sidearm?.setAiming(false)
-        },
-        wheel: (event) => this.handleInputWheel(event),
-        keyDown: (event) => this.handleInputKeyDown(event),
-        keyUp: (event) => this.handleInputKeyUp(event),
-        move: (event) => this.handleInputMove(event),
-        visibility: (hidden) => {
-          this.effects.audio.setSuspended(hidden || this.session.state !== 'playing')
-          this.effects.audio.setPageHidden(hidden)
-          this.frames.lastTime = null
-        },
-        release: {
-          beam: () => this.releaseBeamFlash(),
-          controllers: () => {
-            this.usbControllers.reset()
-            this.usbFrame = idleUsbFrame()
-            this.usbFeedback.stop()
-          },
-          weapons: () => this.releaseWeaponInput(),
-          touch: () => {
-            this.touchDriving?.clear()
-            this.touchFlight?.clear()
-            this.touchWalk?.clear()
-          },
-          monitors: () => this.monitors.releaseInput(),
-          game: () => this.game.releaseInput(),
-          gamepad: () => {
-            this.previousButtons = []
-            this.previousPad = null
-          },
-        },
-      },
-      this.lifetime.signal,
-    )
-    this.inputEvents.bind()
-    this.observer = new ResizeObserver(() => this.resize())
-    this.observer.observe(options.canvas)
-    this.resize()
   }
 
   /**

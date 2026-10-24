@@ -44,6 +44,31 @@ Node execution; that is not a recommendation to disable workers in the game.
 
 ## Browser startup
 
+`GameRuntime` validates the scene, planetary coordinates, canvas parent, backend
+canvas identity, tile base, cloneable world content and camera/display/FSR options
+before acquiring render resources or installing instance listeners. Invalid options
+throw synchronously; the host does not receive an instance to dispose.
+
+Construction then records each acquired resource in an internal rollback scope.
+If a later setup step throws, it marks the incomplete runtime disposed, aborts its
+listeners and releases completed owners in reverse acquisition order. Cleanup
+continues even if a disposer throws, preserving the original construction error.
+Canvas attributes changed during setup are restored. An accepted renderer, including
+an injected backend, belongs to the runtime and is disposed on subsequent setup
+failure; a backend rejected during preflight remains the host's responsibility.
+
+Successful construction transfers ownership to normal `dispose()` cleanup. Shared
+styles and asset caches retain their existing shared lifetime; rollback releases
+instance owners and registrations without removing another runtime's resources.
+Resource constructors must clean up their own partial allocations if they throw
+before returning an owner. Keep new acquisitions next to their rollback registration
+in `src/runtime/browser.ts`, and add their normal release to runtime teardown too.
+
+Regression coverage: `test/runtime/construction.test.ts` and
+`test/browser/e2e/construction.spec.ts`, including early validation, failures before
+and after renderer creation, failing disposers, listener/DOM restoration and a
+surviving runtime.
+
 The reference host resolves a source, creates the document and browser runtime,
 waits for usable ground where applicable, starts physics, prepares presentation,
 and reveals gameplay. Preparation can include vehicle assets, audio resources,
